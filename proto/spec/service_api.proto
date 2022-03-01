@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.spec;
+
+option go_package = "github.com/lavanet/lava/x/spec/types";
+
+message ServiceApi {
+  
+  string name = 1; 
+  uint64 computeUnits = 2; 
+  string status = 3; 
+}
