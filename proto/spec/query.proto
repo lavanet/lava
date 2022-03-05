@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "spec/params.proto";
+import "spec/spec.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/lavanet/lava/x/spec/types";
@@ -15,7 +16,17 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/spec/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a Spec by id.
+	rpc Spec(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/spec/spec/{id}";
+	}
+
+	// Queries a list of Spec items.
+	rpc SpecAll(QueryAllSpecRequest) returns (QueryAllSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/spec/spec";
+	}
+
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -25,6 +36,23 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetSpecRequest {
+	uint64 id = 1;
+}
+
+message QueryGetSpecResponse {
+	Spec Spec = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSpecRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSpecResponse {
+	repeated Spec Spec = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3
