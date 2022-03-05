@@ -1,21 +1,6 @@
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "ibc.applications.transfer.v1";
 /**
- * FungibleTokenPacketData defines a struct for the packet payload
- * See FungibleTokenPacketData spec:
- * https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#data-structures
- */
-export interface FungibleTokenPacketData {
-    /** the token denomination to be transferred */
-    denom: string;
-    /** the token amount to be transferred */
-    amount: number;
-    /** the sender address */
-    sender: string;
-    /** the recipient address on the destination chain */
-    receiver: string;
-}
-/**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
  */
@@ -46,13 +31,6 @@ export interface Params {
      */
     receiveEnabled: boolean;
 }
-export declare const FungibleTokenPacketData: {
-    encode(message: FungibleTokenPacketData, writer?: Writer): Writer;
-    decode(input: Reader | Uint8Array, length?: number): FungibleTokenPacketData;
-    fromJSON(object: any): FungibleTokenPacketData;
-    toJSON(message: FungibleTokenPacketData): unknown;
-    fromPartial(object: DeepPartial<FungibleTokenPacketData>): FungibleTokenPacketData;
-};
 export declare const DenomTrace: {
     encode(message: DenomTrace, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): DenomTrace;

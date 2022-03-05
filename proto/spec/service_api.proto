@@ -2,6 +2,9 @@ syntax = "proto3";
 package lavanet.lava.spec;
 
 option go_package = "github.com/lavanet/lava/x/spec/types";
+option (gogoproto.equal_all) = true;
+
+import "gogoproto/gogo.proto";
 
 message ServiceApi {
   
