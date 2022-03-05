@@ -93,6 +93,7 @@ import (
 	"github.com/lavanet/lava/docs"
 	"github.com/lavanet/lava/x/spec"
 	specmodule "github.com/lavanet/lava/x/spec"
+	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/lavanet/lava/x/spec/types/addproposal"
@@ -117,6 +118,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		upgradeclient.CancelProposalHandler,
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
+		specmoduleclient.ProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
