@@ -1,6 +1,8 @@
 package spec
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -22,20 +24,19 @@ func NewSpecAddProposalHandler(k keeper.Keeper) govtypes.Handler {
 }
 
 func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *addproposal.SpecAddProposal) error {
-	/*for _, c := range p.Changes {
-		ss, ok := k.GetSubspace(c.Subspace)
-		if !ok {
-			return sdkerrors.Wrap(proposal.ErrUnknownSubspace, c.Subspace)
+	for _, c := range p.Specs {
+		existingSpecs := k.GetAllSpec(ctx)
+		for _, existingSpec := range existingSpecs {
+			if existingSpec.Name == c.Name {
+				return sdkerrors.Wrapf(addproposal.ErrEmptyChanges, "name: %s", c.Name)
+			}
 		}
-
 		k.Logger(ctx).Info(
-			fmt.Sprintf("attempt to set new parameter value; key: %s, value: %s", c.Key, c.Value),
+			fmt.Sprintf("attempt to add new spec; name: %s", c.Name),
 		)
 
-		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
-			return sdkerrors.Wrapf(proposal.ErrSettingParameter, "key: %s, value: %s, err: %s", c.Key, c.Value, err.Error())
-		}
-	}*/
+		k.AppendSpec(ctx, c)
+	}
 
 	return nil
 }

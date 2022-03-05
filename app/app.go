@@ -91,9 +91,11 @@ import (
 	"github.com/tendermint/starport/starport/pkg/openapiconsole"
 
 	"github.com/lavanet/lava/docs"
+	"github.com/lavanet/lava/x/spec"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/x/spec/types/addproposal"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -327,6 +329,11 @@ func New(
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+		//
+		// user defined
+		AddRoute(addproposal.RouterKey, spec.NewSpecAddProposalHandler(app.SpecKeeper)).
+		//
+		// default
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
