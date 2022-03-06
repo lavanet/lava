@@ -1,0 +1,12 @@
+{
+  "title": "Test Proposal",
+  "description": "testing, testing, 1, 2, 3",
+  "changes": [
+    {
+      "subspace": "staking",
+      "key": "MaxValidators",
+      "value": 100
+    }
+  ],
+  "deposit": "10000000stake"
+}

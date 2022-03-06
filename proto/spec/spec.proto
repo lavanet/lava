@@ -11,7 +11,7 @@ import "spec/service_api.proto";
 message Spec {
   uint64 id = 1;
   string name = 2; 
-  repeated ServiceApi apis = 3; 
+  repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
   string status = 4; 
   
 }

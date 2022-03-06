@@ -1,8 +1,7 @@
 package addproposal
 
 import (
-	"fmt"
-	"strings"
+	"log"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	types "github.com/lavanet/lava/x/spec/types"
@@ -40,8 +39,10 @@ func (pcp *SpecAddProposal) ProposalType() string { return ProposalSpecAdd }
 func (pcp *SpecAddProposal) ValidateBasic() error {
 	err := govtypes.ValidateAbstract(pcp)
 	if err != nil {
+		log.Println("ValidateBasic: err", err)
 		return err
 	}
+	log.Println("ValidateBasic: done")
 
 	//return ValidateChanges(pcp.Changes)
 	return nil
@@ -49,21 +50,22 @@ func (pcp *SpecAddProposal) ValidateBasic() error {
 
 // String implements the Stringer interface.
 func (pcp SpecAddProposal) String() string {
-	var b strings.Builder
+	// 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf(`Spec Add Proposal:
-  Title:       %s
-  Description: %s
-  Changes:
-`, pcp.Title, pcp.Description))
+	// 	b.WriteString(fmt.Sprintf(`Spec Add Proposal:
+	//   Title:       %s
+	//   Description: %s
+	//   Changes:
+	// `, pcp.Title, pcp.Description))
 
-	for _, pc := range pcp.Specs {
-		b.WriteString(fmt.Sprintf(`    Spec Add:
-	      Name: %s
-	`, pc.Name))
-	}
+	// 	for _, pc := range pcp.Specs {
+	// 		b.WriteString(fmt.Sprintf(`    Spec Add:
+	// 	      Name: %s
+	// 	`, pc.Name))
+	// 	}
 
-	return b.String()
+	// 	return b.String()
+	return ""
 }
 
 // func NewParamChange(subspace, key, value string) ParamChange {

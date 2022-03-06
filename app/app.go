@@ -328,6 +328,16 @@ func New(
 		appCodec, keys[ibchost.StoreKey], app.GetSubspace(ibchost.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
 	)
 
+	//
+	// Great SpecKeeper prior to initializing govrouter
+	app.SpecKeeper = *specmodulekeeper.NewKeeper(
+		appCodec,
+		keys[specmoduletypes.StoreKey],
+		keys[specmoduletypes.MemStoreKey],
+		app.GetSubspace(specmoduletypes.ModuleName),
+	)
+	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
@@ -360,14 +370,6 @@ func New(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter,
 	)
-
-	app.SpecKeeper = *specmodulekeeper.NewKeeper(
-		appCodec,
-		keys[specmoduletypes.StoreKey],
-		keys[specmoduletypes.MemStoreKey],
-		app.GetSubspace(specmoduletypes.ModuleName),
-	)
-	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

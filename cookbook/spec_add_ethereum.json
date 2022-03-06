@@ -1,0 +1,39 @@
+{
+    "title": "Add Specs: Ethereum",
+    "description": "Adding new specification support for relaying Ethereum data on Lava",
+    "specs": [
+      {
+        "name": "Ethereum Mainnet",
+        "status": "enabled",
+        "apis": [
+            {
+                "name": "eth_getBalance",
+                "compute_units": "10",
+                "status": "enabled"
+            },
+            {
+                "name": "eth_codeAt",
+                "compute_units": "20",
+                "status": "disabled"
+            }
+        ]
+      },
+      {
+        "name": "Ethereum Testnet",
+        "status": "enabled",
+        "apis": [
+            {
+                "name": "eth_getBalance",
+                "compute_units": "10",
+                "status": "enabled"
+            },
+            {
+                "name": "eth_codeAt",
+                "compute_units": "20",
+                "status": "disabled"
+            }
+        ]
+      }
+    ],
+    "deposit": "10000000stake"
+  }

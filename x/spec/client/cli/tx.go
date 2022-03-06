@@ -2,13 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	// "github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/types"
 	"github.com/lavanet/lava/x/spec/types/addproposal"
 
@@ -89,25 +89,23 @@ Where proposal.json contains:
 			if err != nil {
 				return err
 			}
-			/*proposal, err := paramscutils.ParseParamChangeProposalJSON(clientCtx.LegacyAmino, args[0])
+			proposal, err := utils.ParseSpecAddProposalJSON(clientCtx.LegacyAmino, args[0])
 			if err != nil {
 				return err
-			}*/
+			}
 
 			from := clientCtx.GetFromAddress()
-			proposal := addproposal.NewSpecAddProposal("title", "desc", []types.Spec{})
-
-			deposit, err := sdk.ParseCoinsNormalized("1000stake")
+			content := addproposal.NewSpecAddProposal(proposal.Title, proposal.Description, proposal.ToSpecs())
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(proposal, deposit, from)
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
 			}
 
-			log.Println("broadcasting!")
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
