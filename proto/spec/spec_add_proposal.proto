@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.spec;
+
+option go_package = "github.com/lavanet/lava/x/spec/types";
+option (gogoproto.equal_all) = true;
+
+import "gogoproto/gogo.proto";
+
+import "spec/spec.proto"; 
+
+message SpecAddProposal {
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.goproto_stringer) = false;
+
+  string title = 1; 
+  string description = 2; 
+  repeated Spec specs = 3 [(gogoproto.nullable) = false]; 
+}

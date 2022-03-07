@@ -8,17 +8,19 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types/addproposal"
+	"github.com/lavanet/lava/x/spec/types"
 )
 
-// NewSpecAddProposalHandler creates a new governance Handler for a SpecAddProposal
-func NewSpecAddProposalHandler(k keeper.Keeper) govtypes.Handler {
+// NewSpecProposalsHandler creates a new governance Handler for a Spec
+func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 	log.Println(k)
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
-		case *addproposal.SpecAddProposal:
-			log.Println("addproposal.SpecAddProposal", k)
+		case *types.SpecAddProposal:
 			return handleSpecAddProposal(ctx, k, c)
+
+		case *types.SpecModifyProposal:
+			return handleSpecModifyProposal(ctx, k, c)
 
 		default:
 			log.Println("unrecognized spec proposal content")
@@ -27,37 +29,51 @@ func NewSpecAddProposalHandler(k keeper.Keeper) govtypes.Handler {
 	}
 }
 
-func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *addproposal.SpecAddProposal) error {
-	log.Println("handleSpecAddProposal", k)
-
+func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	for _, c := range p.Specs {
-		log.Println("c", c)
 
-		//log.Println("k.StoreKey", )
-		specCount := k.GetSpecCount(ctx)
-		log.Println("specCount", specCount)
-
+		//
+		// Verify 'name' is unique
 		existingSpecs := k.GetAllSpec(ctx)
-		log.Println("existingSpecs", existingSpecs)
-
 		for _, existingSpec := range existingSpecs {
 			if existingSpec.Name == c.Name {
-
-				log.Println("existingSpec.Name == c.Name", existingSpec.Name, c.Name)
-				return sdkerrors.Wrapf(addproposal.ErrEmptyChanges, "name: %s", c.Name)
+				return sdkerrors.Wrapf(types.ErrEmptyChanges, "name: %s", c.Name)
 			}
 		}
-
-		log.Println("attempt to add new spec")
-
 		k.Logger(ctx).Info(
 			fmt.Sprintf("attempt to add new spec; name: %s", c.Name),
 		)
-
 		k.AppendSpec(ctx, c)
 	}
 
-	log.Println("handleSpecAddProposal done")
+	return nil
+}
+
+func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecModifyProposal) error {
+	for _, c := range p.Specs {
+
+		//
+		// Find by name
+		existingSpecs := k.GetAllSpec(ctx)
+		foundSpecI := -1
+		for i, existingSpec := range existingSpecs {
+			if existingSpec.Name == c.Name {
+				foundSpecI = i
+				break
+			}
+		}
+		if foundSpecI < 0 {
+			return sdkerrors.Wrapf(types.ErrEmptyChanges, "spec to modify not found")
+		}
+		c.Id = uint64(foundSpecI)
+
+		//
+		// Set new spec
+		k.Logger(ctx).Info(
+			fmt.Sprintf("attempt to set new spec; name: %s", c.Name),
+		)
+		k.SetSpec(ctx, c)
+	}
 
 	return nil
 }

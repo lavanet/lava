@@ -8,13 +8,18 @@
         "apis": [
             {
                 "name": "eth_getBalance",
-                "compute_units": "10",
-                "status": "enabled"
+                "compute_units": "20",
+                "status": "disabled"
             },
             {
                 "name": "eth_codeAt",
-                "compute_units": "20",
-                "status": "disabled"
+                "compute_units": "30",
+                "status": "enabled"
+            },
+            {
+                "name": "eth_blockNumber",
+                "compute_units": "10",
+                "status": "enabled"
             }
         ]
       },
@@ -24,13 +29,18 @@
         "apis": [
             {
                 "name": "eth_getBalance",
-                "compute_units": "10",
-                "status": "enabled"
+                "compute_units": "20",
+                "status": "disabled"
             },
             {
                 "name": "eth_codeAt",
-                "compute_units": "20",
-                "status": "disabled"
+                "compute_units": "30",
+                "status": "enabled"
+            },
+            {
+                "name": "eth_blockNumber",
+                "compute_units": "10",
+                "status": "enabled"
             }
         ]
       }

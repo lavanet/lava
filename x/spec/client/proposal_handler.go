@@ -7,4 +7,5 @@ import (
 )
 
 // ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(cli.NewSubmitSpecAddProposalTxCmd, rest.ProposalRESTHandler)
+var SpecAddProposalHandler = govclient.NewProposalHandler(cli.NewSubmitSpecAddProposalTxCmd, rest.ProposalRESTHandler)
+var SpecModifyProposalHandler = govclient.NewProposalHandler(cli.NewSubmitSpecModifyProposalTxCmd, rest.ProposalRESTHandler)

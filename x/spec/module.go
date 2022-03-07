@@ -19,7 +19,6 @@ import (
 	"github.com/lavanet/lava/x/spec/client/cli"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
-	"github.com/lavanet/lava/x/spec/types/addproposal"
 )
 
 var (
@@ -55,7 +54,6 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // RegisterInterfaces registers the module's interface types
 func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
-	addproposal.RegisterInterfaces(reg)
 	types.RegisterInterfaces(reg)
 }
 

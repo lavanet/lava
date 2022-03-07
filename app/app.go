@@ -96,7 +96,6 @@ import (
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/lavanet/lava/x/spec/types/addproposal"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -118,7 +117,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		upgradeclient.CancelProposalHandler,
 		ibcclientclient.UpdateClientProposalHandler,
 		ibcclientclient.UpgradeProposalHandler,
-		specmoduleclient.ProposalHandler,
+		specmoduleclient.SpecAddProposalHandler,
+		specmoduleclient.SpecModifyProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -329,7 +329,7 @@ func New(
 	)
 
 	//
-	// Great SpecKeeper prior to initializing govrouter
+	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
 		appCodec,
 		keys[specmoduletypes.StoreKey],
@@ -343,7 +343,8 @@ func New(
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		//
 		// user defined
-		AddRoute(addproposal.RouterKey, spec.NewSpecAddProposalHandler(app.SpecKeeper)).
+		AddRoute(specmoduletypes.ProposalsRouterKey, spec.NewSpecProposalsHandler(app.SpecKeeper)).
+
 		//
 		// default
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
