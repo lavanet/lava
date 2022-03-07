@@ -37,7 +37,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 		existingSpecs := k.GetAllSpec(ctx)
 		for _, existingSpec := range existingSpecs {
 			if existingSpec.Name == c.Name {
-				return sdkerrors.Wrapf(types.ErrEmptyChanges, "name: %s", c.Name)
+				return sdkerrors.Wrapf(types.ErrDuplicateSpecName, "found duplicate spec name; name: %s", c.Name)
 			}
 		}
 		k.Logger(ctx).Info(
@@ -63,7 +63,7 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 			}
 		}
 		if foundSpecI < 0 {
-			return sdkerrors.Wrapf(types.ErrEmptyChanges, "spec to modify not found")
+			return sdkerrors.Wrapf(types.ErrSpecNotFound, "spec to modify not found; name: %s", c.Name)
 		}
 		c.Id = uint64(foundSpecI)
 

@@ -2,18 +2,16 @@ package types
 
 import (
 	fmt "fmt"
-	"log"
 	"strings"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 const (
-	// ProposalTypeChange defines the type for a ParameterChangeProposal
 	ProposalSpecAdd = "SpecAdd"
 )
 
-// Assert ParameterChangeProposal implements govtypes.Content at compile-time
 var _ govtypes.Content = &SpecAddProposal{}
 
 func init() {
@@ -24,28 +22,35 @@ func NewSpecAddProposal(title, description string, specs []Spec) *SpecAddProposa
 	return &SpecAddProposal{title, description, specs}
 }
 
-// GetTitle returns the title of a parameter change proposal.
+// GetTitle returns the title of a proposal.
 func (pcp *SpecAddProposal) GetTitle() string { return pcp.Title }
 
-// GetDescription returns the description of a parameter change proposal.
+// GetDescription returns the description of a proposal.
 func (pcp *SpecAddProposal) GetDescription() string { return pcp.Description }
 
-// ProposalRoute returns the routing key of a parameter change proposal.
+// ProposalRoute returns the routing key of a proposal.
 func (pcp *SpecAddProposal) ProposalRoute() string { return ProposalsRouterKey }
 
-// ProposalType returns the type of a parameter change proposal.
+// ProposalType returns the type of a proposal.
 func (pcp *SpecAddProposal) ProposalType() string { return ProposalSpecAdd }
 
-// ValidateBasic validates the parameter change proposal
+// ValidateBasic validates the proposal
 func (pcp *SpecAddProposal) ValidateBasic() error {
 	err := govtypes.ValidateAbstract(pcp)
 	if err != nil {
-		log.Println("ValidateBasic: err", err)
 		return err
 	}
-	log.Println("ValidateBasic: done")
 
-	//return ValidateChanges(pcp.Changes)
+	if len(pcp.Specs) == 0 {
+		return sdkerrors.Wrap(ErrEmptySpecs, "proposal specs cannot be empty")
+	}
+	for _, spec := range pcp.Specs {
+		err := checkSpecProposal(spec)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -59,43 +64,9 @@ func (pcp SpecAddProposal) String() string {
 	  Changes:
 	`, pcp.Title, pcp.Description))
 
-	for _, pc := range pcp.Specs {
-		b.WriteString(fmt.Sprintf(`    Spec Add:
-		      Name: %s
-		`, pc.Name))
+	for _, spec := range pcp.Specs {
+		b = stringSpec(spec, b)
 	}
 
 	return b.String()
 }
-
-// func NewParamChange(subspace, key, value string) ParamChange {
-// 	return ParamChange{subspace, key, value}
-// }
-
-// String implements the Stringer interface.
-// func (pc ParamChange) String() string {
-// 	out, _ := yaml.Marshal(pc)
-// 	return string(out)
-// }
-
-// ValidateChanges performs basic validation checks over a set of ParamChange. It
-// returns an error if any ParamChange is invalid.
-// func ValidateChanges(changes []ParamChange) error {
-// 	if len(changes) == 0 {
-// 		return ErrEmptyChanges
-// 	}
-
-// 	for _, pc := range changes {
-// 		if len(pc.Subspace) == 0 {
-// 			return ErrEmptySubspace
-// 		}
-// 		if len(pc.Key) == 0 {
-// 			return ErrEmptyKey
-// 		}
-// 		if len(pc.Value) == 0 {
-// 			return ErrEmptyValue
-// 		}
-// 	}
-
-// 	return nil
-// }

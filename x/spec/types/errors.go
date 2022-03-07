@@ -10,10 +10,13 @@ import (
 var (
 	ErrSample = sdkerrors.Register(ModuleName, 1100, "sample error")
 
-	ErrUnknownSubspace  = sdkerrors.Register(ModuleName, 2, "unknown subspace")
-	ErrSettingParameter = sdkerrors.Register(ModuleName, 3, "failed to set parameter")
-	ErrEmptyChanges     = sdkerrors.Register(ModuleName, 4, "submitted parameter changes are empty")
-	ErrEmptySubspace    = sdkerrors.Register(ModuleName, 5, "parameter subspace is empty")
-	ErrEmptyKey         = sdkerrors.Register(ModuleName, 6, "parameter key is empty")
-	ErrEmptyValue       = sdkerrors.Register(ModuleName, 7, "parameter value is empty")
+	//
+	// Proposal errors
+	ErrEmptySpecs        = sdkerrors.Register(ModuleName, 2, "specs list is empty")
+	ErrEmptyApis         = sdkerrors.Register(ModuleName, 3, "apis list is empty")
+	ErrBlankApiName      = sdkerrors.Register(ModuleName, 4, "api name is blank")
+	ErrBlankSpecName     = sdkerrors.Register(ModuleName, 5, "spec name is blank")
+	ErrDuplicateApiName  = sdkerrors.Register(ModuleName, 6, "api name is not unique")
+	ErrSpecNotFound      = sdkerrors.Register(ModuleName, 7, "spec not found")
+	ErrDuplicateSpecName = sdkerrors.Register(ModuleName, 8, "spec name is not unique")
 )
