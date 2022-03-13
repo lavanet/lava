@@ -1,0 +1,14 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+import "gogoproto/gogo.proto";
+import "servicer/params.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+
+// GenesisState defines the servicer module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  // this line is used by starport scaffolding # genesis/proto/state
+}

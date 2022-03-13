@@ -1,4 +1,4 @@
-package spec
+package servicer
 
 import (
 	"math/rand"
@@ -10,14 +10,14 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/lavanet/lava/testutil/sample"
-	specsimulation "github.com/lavanet/lava/x/spec/simulation"
-	"github.com/lavanet/lava/x/spec/types"
+	servicersimulation "github.com/lavanet/lava/x/servicer/simulation"
+	"github.com/lavanet/lava/x/servicer/types"
 )
 
 // avoid unused import issue
 var (
 	_ = sample.AccAddress
-	_ = specsimulation.FindAccount
+	_ = servicersimulation.FindAccount
 	_ = simappparams.StakePerAccount
 	_ = simulation.MsgEntryKind
 	_ = baseapp.Paramspace
@@ -33,10 +33,10 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	for i, acc := range simState.Accounts {
 		accs[i] = acc.Address.String()
 	}
-	specGenesis := types.GenesisState{
+	servicerGenesis := types.GenesisState{
 		// this line is used by starport scaffolding # simapp/module/genesisState
 	}
-	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&specGenesis)
+	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&servicerGenesis)
 }
 
 // ProposalContents doesn't return any content functions for governance proposals
@@ -46,8 +46,24 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 
 // RandomizedParams creates randomized  param changes for the simulator
 func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-
-	return []simtypes.ParamChange{}
+	servicerParams := types.DefaultParams()
+	return []simtypes.ParamChange{
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMinStake), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.MinStake))
+		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyCoinsPerCU), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.CoinsPerCU))
+		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyUnstakeHoldBlocks), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.UnstakeHoldBlocks))
+		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.FraudStakeSlashingFactor))
+		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.FraudSlashingAmount))
+		}),
+	}
 }
 
 // RegisterStoreDecoder registers a decoder

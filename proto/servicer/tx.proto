@@ -1,0 +1,13 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+
+// Msg defines the Msg service.
+service Msg {
+    // this line is used by starport scaffolding # proto/tx/rpc
+}
+
+// this line is used by starport scaffolding # proto/tx/message

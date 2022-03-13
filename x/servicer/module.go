@@ -1,9 +1,9 @@
-package spec
+package servicer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	// this line is used by starport scaffolding # 1
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/spec/client/cli"
-	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/x/servicer/client/cli"
+	"github.com/lavanet/lava/x/servicer/keeper"
+	"github.com/lavanet/lava/x/servicer/types"
 )
 
 var (
@@ -77,7 +77,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	// this line is used by starport scaffolding # 2
 }
 
 // GetTxCmd returns the capability module's root tx command.

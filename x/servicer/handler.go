@@ -1,12 +1,12 @@
-package spec
+package servicer
 
 import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/x/servicer/keeper"
+	"github.com/lavanet/lava/x/servicer/types"
 )
 
 // NewHandler ...
