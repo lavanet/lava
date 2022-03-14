@@ -1,0 +1,9 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+
+message BlockNum {
+  
+  uint64 num = 1; 
+}

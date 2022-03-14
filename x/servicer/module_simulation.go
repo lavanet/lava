@@ -24,7 +24,19 @@ var (
 )
 
 const (
-// this line is used by starport scaffolding # simapp/module/const
+	opWeightMsgStakeServicer = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgStakeServicer int = 100
+
+	opWeightMsgUnstakeServicer = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgUnstakeServicer int = 100
+
+	opWeightMsgProofOfWork = "op_weight_msg_create_chain"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgProofOfWork int = 100
+
+	// this line is used by starport scaffolding # simapp/module/const
 )
 
 // GenerateGenesisState creates a randomized GenState of the module
@@ -72,6 +84,39 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
+
+	var weightMsgStakeServicer int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgStakeServicer, &weightMsgStakeServicer, nil,
+		func(_ *rand.Rand) {
+			weightMsgStakeServicer = defaultWeightMsgStakeServicer
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgStakeServicer,
+		servicersimulation.SimulateMsgStakeServicer(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgUnstakeServicer int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnstakeServicer, &weightMsgUnstakeServicer, nil,
+		func(_ *rand.Rand) {
+			weightMsgUnstakeServicer = defaultWeightMsgUnstakeServicer
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgUnstakeServicer,
+		servicersimulation.SimulateMsgUnstakeServicer(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgProofOfWork int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgProofOfWork, &weightMsgProofOfWork, nil,
+		func(_ *rand.Rand) {
+			weightMsgProofOfWork = defaultWeightMsgProofOfWork
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgProofOfWork,
+		servicersimulation.SimulateMsgProofOfWork(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
 

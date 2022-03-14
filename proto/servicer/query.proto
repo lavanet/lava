@@ -1,11 +1,16 @@
 syntax = "proto3";
 package lavanet.lava.servicer;
 
-import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "servicer/params.proto";
+import "servicer/stake_map.proto";
+import "servicer/spec_stake_storage.proto";
 // this line is used by starport scaffolding # 1
+import "servicer/stake_storage.proto";
+import "servicer/block_num.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/lavanet/lava/x/servicer/types";
 
@@ -15,7 +20,32 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/servicer/params";
   }
-  // this line is used by starport scaffolding # 2
+  // Queries a StakeMap by index.
+	rpc StakeMap(QueryGetStakeMapRequest) returns (QueryGetStakeMapResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/stake_map/{index}";
+	}
+
+	// Queries a list of StakeMap items.
+	rpc StakeMapAll(QueryAllStakeMapRequest) returns (QueryAllStakeMapResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/stake_map";
+	}
+
+// Queries a SpecStakeStorage by index.
+	rpc SpecStakeStorage(QueryGetSpecStakeStorageRequest) returns (QueryGetSpecStakeStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/spec_stake_storage/{index}";
+	}
+
+	// Queries a list of SpecStakeStorage items.
+	rpc SpecStakeStorageAll(QueryAllSpecStakeStorageRequest) returns (QueryAllSpecStakeStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/spec_stake_storage";
+	}
+
+// Queries a list of StakedServicers items.
+	rpc StakedServicers(QueryStakedServicersRequest) returns (QueryStakedServicersResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/staked_servicers/{specName}";
+	}
+
+// this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -25,6 +55,50 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetStakeMapRequest {
+	  string index = 1;
+
+}
+
+message QueryGetStakeMapResponse {
+	StakeMap stakeMap = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllStakeMapRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllStakeMapResponse {
+	repeated StakeMap stakeMap = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetSpecStakeStorageRequest {
+	  string index = 1;
+
+}
+
+message QueryGetSpecStakeStorageResponse {
+	SpecStakeStorage specStakeStorage = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSpecStakeStorageRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSpecStakeStorageResponse {
+	repeated SpecStakeStorage specStakeStorage = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryStakedServicersRequest {
+  string specName = 1;
+}
+
+message QueryStakedServicersResponse {
+  StakeStorage stakeStorage = 1;
 }
 
 // this line is used by starport scaffolding # 3

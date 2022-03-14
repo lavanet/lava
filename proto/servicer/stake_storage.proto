@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+import "servicer/stake_map.proto"; 
+
+message StakeStorage {
+  
+  StakeMap staked = 1; 
+  StakeMap unstaking = 2; 
+}

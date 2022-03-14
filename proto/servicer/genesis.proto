@@ -3,6 +3,8 @@ package lavanet.lava.servicer;
 
 import "gogoproto/gogo.proto";
 import "servicer/params.proto";
+import "servicer/stake_map.proto";
+import "servicer/spec_stake_storage.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/servicer/types";
@@ -10,5 +12,7 @@ option go_package = "github.com/lavanet/lava/x/servicer/types";
 // GenesisState defines the servicer module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
+  repeated StakeMap stakeMapList = 2 [(gogoproto.nullable) = false];
+  repeated SpecStakeStorage specStakeStorageList = 3 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }
