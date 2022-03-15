@@ -3,9 +3,9 @@ package lavanet.lava.servicer;
 
 option go_package = "github.com/lavanet/lava/x/servicer/types";
 import "servicer/stake_map.proto"; 
+import "gogoproto/gogo.proto";
 
 message StakeStorage {
-  
-  StakeMap staked = 1; 
-  StakeMap unstaking = 2; 
+  repeated StakeMap staked = 1 [(gogoproto.nullable) = false];
+  repeated StakeMap unstaking = 2 [(gogoproto.nullable) = false];
 }

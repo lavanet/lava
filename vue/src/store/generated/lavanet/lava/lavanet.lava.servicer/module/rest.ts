@@ -133,8 +133,8 @@ export interface ServicerStakeMap {
 }
 
 export interface ServicerStakeStorage {
-  staked?: ServicerStakeMap;
-  unstaking?: ServicerStakeMap;
+  staked?: ServicerStakeMap[];
+  unstaking?: ServicerStakeMap[];
 }
 
 export interface ServicerWorkProof {

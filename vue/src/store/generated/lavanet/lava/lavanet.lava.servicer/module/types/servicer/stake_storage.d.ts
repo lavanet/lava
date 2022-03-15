@@ -2,8 +2,8 @@ import { StakeMap } from "../servicer/stake_map";
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.servicer";
 export interface StakeStorage {
-    staked: StakeMap | undefined;
-    unstaking: StakeMap | undefined;
+    staked: StakeMap[];
+    unstaking: StakeMap[];
 }
 export declare const StakeStorage: {
     encode(message: StakeStorage, writer?: Writer): Writer;

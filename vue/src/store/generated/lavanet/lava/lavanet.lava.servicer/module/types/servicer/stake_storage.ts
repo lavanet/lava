@@ -5,19 +5,19 @@ import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "lavanet.lava.servicer";
 
 export interface StakeStorage {
-  staked: StakeMap | undefined;
-  unstaking: StakeMap | undefined;
+  staked: StakeMap[];
+  unstaking: StakeMap[];
 }
 
 const baseStakeStorage: object = {};
 
 export const StakeStorage = {
   encode(message: StakeStorage, writer: Writer = Writer.create()): Writer {
-    if (message.staked !== undefined) {
-      StakeMap.encode(message.staked, writer.uint32(10).fork()).ldelim();
+    for (const v of message.staked) {
+      StakeMap.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.unstaking !== undefined) {
-      StakeMap.encode(message.unstaking, writer.uint32(18).fork()).ldelim();
+    for (const v of message.unstaking) {
+      StakeMap.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -26,14 +26,16 @@ export const StakeStorage = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.staked = [];
+    message.unstaking = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.staked = StakeMap.decode(reader, reader.uint32());
+          message.staked.push(StakeMap.decode(reader, reader.uint32()));
           break;
         case 2:
-          message.unstaking = StakeMap.decode(reader, reader.uint32());
+          message.unstaking.push(StakeMap.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -45,43 +47,53 @@ export const StakeStorage = {
 
   fromJSON(object: any): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.staked = [];
+    message.unstaking = [];
     if (object.staked !== undefined && object.staked !== null) {
-      message.staked = StakeMap.fromJSON(object.staked);
-    } else {
-      message.staked = undefined;
+      for (const e of object.staked) {
+        message.staked.push(StakeMap.fromJSON(e));
+      }
     }
     if (object.unstaking !== undefined && object.unstaking !== null) {
-      message.unstaking = StakeMap.fromJSON(object.unstaking);
-    } else {
-      message.unstaking = undefined;
+      for (const e of object.unstaking) {
+        message.unstaking.push(StakeMap.fromJSON(e));
+      }
     }
     return message;
   },
 
   toJSON(message: StakeStorage): unknown {
     const obj: any = {};
-    message.staked !== undefined &&
-      (obj.staked = message.staked
-        ? StakeMap.toJSON(message.staked)
-        : undefined);
-    message.unstaking !== undefined &&
-      (obj.unstaking = message.unstaking
-        ? StakeMap.toJSON(message.unstaking)
-        : undefined);
+    if (message.staked) {
+      obj.staked = message.staked.map((e) =>
+        e ? StakeMap.toJSON(e) : undefined
+      );
+    } else {
+      obj.staked = [];
+    }
+    if (message.unstaking) {
+      obj.unstaking = message.unstaking.map((e) =>
+        e ? StakeMap.toJSON(e) : undefined
+      );
+    } else {
+      obj.unstaking = [];
+    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<StakeStorage>): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.staked = [];
+    message.unstaking = [];
     if (object.staked !== undefined && object.staked !== null) {
-      message.staked = StakeMap.fromPartial(object.staked);
-    } else {
-      message.staked = undefined;
+      for (const e of object.staked) {
+        message.staked.push(StakeMap.fromPartial(e));
+      }
     }
     if (object.unstaking !== undefined && object.unstaking !== null) {
-      message.unstaking = StakeMap.fromPartial(object.unstaking);
-    } else {
-      message.unstaking = undefined;
+      for (const e of object.unstaking) {
+        message.unstaking.push(StakeMap.fromPartial(e));
+      }
     }
     return message;
   },

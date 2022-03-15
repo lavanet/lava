@@ -27,6 +27,13 @@ func (k Keeper) MinStake(ctx sdk.Context) (res uint64) {
 	return
 }
 
+func (k Keeper) GetMinStake(ctx sdk.Context) (res sdk.Coin) {
+	var val uint64
+	k.paramstore.Get(ctx, types.KeyMinStake, &val)
+	res = sdk.Coin{"stake", sdk.NewIntFromUint64(val)}
+	return
+}
+
 // CoinsPerCU returns the CoinsPerCU param
 func (k Keeper) CoinsPerCU(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyCoinsPerCU, &res)

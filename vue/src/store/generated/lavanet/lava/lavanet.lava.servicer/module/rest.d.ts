@@ -97,8 +97,8 @@ export interface ServicerStakeMap {
     deadline?: ServicerBlockNum;
 }
 export interface ServicerStakeStorage {
-    staked?: ServicerStakeMap;
-    unstaking?: ServicerStakeMap;
+    staked?: ServicerStakeMap[];
+    unstaking?: ServicerStakeMap[];
 }
 export interface ServicerWorkProof {
     data?: string;

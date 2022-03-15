@@ -12647,59 +12647,63 @@ paths:
                       type: object
                       properties:
                         staked:
-                          type: object
-                          properties:
-                            index:
-                              type: string
-                            stake:
-                              type: object
-                              properties:
-                                denom:
-                                  type: string
-                                amount:
-                                  type: string
-                              description: >-
-                                Coin defines a token with a denomination and an
-                                amount.
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              stake:
+                                type: object
+                                properties:
+                                  denom:
+                                    type: string
+                                  amount:
+                                    type: string
+                                description: >-
+                                  Coin defines a token with a denomination and
+                                  an amount.
 
 
-                                NOTE: The amount field is an Int which
-                                implements the custom method
+                                  NOTE: The amount field is an Int which
+                                  implements the custom method
 
-                                signatures required by gogoproto.
-                            deadline:
-                              type: object
-                              properties:
-                                num:
-                                  type: string
-                                  format: uint64
+                                  signatures required by gogoproto.
+                              deadline:
+                                type: object
+                                properties:
+                                  num:
+                                    type: string
+                                    format: uint64
                         unstaking:
-                          type: object
-                          properties:
-                            index:
-                              type: string
-                            stake:
-                              type: object
-                              properties:
-                                denom:
-                                  type: string
-                                amount:
-                                  type: string
-                              description: >-
-                                Coin defines a token with a denomination and an
-                                amount.
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              stake:
+                                type: object
+                                properties:
+                                  denom:
+                                    type: string
+                                  amount:
+                                    type: string
+                                description: >-
+                                  Coin defines a token with a denomination and
+                                  an amount.
 
 
-                                NOTE: The amount field is an Int which
-                                implements the custom method
+                                  NOTE: The amount field is an Int which
+                                  implements the custom method
 
-                                signatures required by gogoproto.
-                            deadline:
-                              type: object
-                              properties:
-                                num:
-                                  type: string
-                                  format: uint64
+                                  signatures required by gogoproto.
+                              deadline:
+                                type: object
+                                properties:
+                                  num:
+                                    type: string
+                                    format: uint64
               pagination:
                 type: object
                 properties:
@@ -12823,59 +12827,63 @@ paths:
                     type: object
                     properties:
                       staked:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          stake:
-                            type: object
-                            properties:
-                              denom:
-                                type: string
-                              amount:
-                                type: string
-                            description: >-
-                              Coin defines a token with a denomination and an
-                              amount.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: string
+                            stake:
+                              type: object
+                              properties:
+                                denom:
+                                  type: string
+                                amount:
+                                  type: string
+                              description: >-
+                                Coin defines a token with a denomination and an
+                                amount.
 
 
-                              NOTE: The amount field is an Int which implements
-                              the custom method
+                                NOTE: The amount field is an Int which
+                                implements the custom method
 
-                              signatures required by gogoproto.
-                          deadline:
-                            type: object
-                            properties:
-                              num:
-                                type: string
-                                format: uint64
+                                signatures required by gogoproto.
+                            deadline:
+                              type: object
+                              properties:
+                                num:
+                                  type: string
+                                  format: uint64
                       unstaking:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          stake:
-                            type: object
-                            properties:
-                              denom:
-                                type: string
-                              amount:
-                                type: string
-                            description: >-
-                              Coin defines a token with a denomination and an
-                              amount.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: string
+                            stake:
+                              type: object
+                              properties:
+                                denom:
+                                  type: string
+                                amount:
+                                  type: string
+                              description: >-
+                                Coin defines a token with a denomination and an
+                                amount.
 
 
-                              NOTE: The amount field is an Int which implements
-                              the custom method
+                                NOTE: The amount field is an Int which
+                                implements the custom method
 
-                              signatures required by gogoproto.
-                          deadline:
-                            type: object
-                            properties:
-                              num:
-                                type: string
-                                format: uint64
+                                signatures required by gogoproto.
+                            deadline:
+                              type: object
+                              properties:
+                                num:
+                                  type: string
+                                  format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -13118,59 +13126,63 @@ paths:
                 type: object
                 properties:
                   staked:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      stake:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          Coin defines a token with a denomination and an
-                          amount.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
 
 
-                          NOTE: The amount field is an Int which implements the
-                          custom method
+                            NOTE: The amount field is an Int which implements
+                            the custom method
 
-                          signatures required by gogoproto.
-                      deadline:
-                        type: object
-                        properties:
-                          num:
-                            type: string
-                            format: uint64
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
                   unstaking:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      stake:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          Coin defines a token with a denomination and an
-                          amount.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
 
 
-                          NOTE: The amount field is an Int which implements the
-                          custom method
+                            NOTE: The amount field is an Int which implements
+                            the custom method
 
-                          signatures required by gogoproto.
-                      deadline:
-                        type: object
-                        properties:
-                          num:
-                            type: string
-                            format: uint64
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -20596,57 +20608,63 @@ definitions:
               type: object
               properties:
                 staked:
-                  type: object
-                  properties:
-                    index:
-                      type: string
-                    stake:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
 
 
-                        NOTE: The amount field is an Int which implements the
-                        custom method
+                          NOTE: The amount field is an Int which implements the
+                          custom method
 
-                        signatures required by gogoproto.
-                    deadline:
-                      type: object
-                      properties:
-                        num:
-                          type: string
-                          format: uint64
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
                 unstaking:
-                  type: object
-                  properties:
-                    index:
-                      type: string
-                    stake:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
 
 
-                        NOTE: The amount field is an Int which implements the
-                        custom method
+                          NOTE: The amount field is an Int which implements the
+                          custom method
 
-                        signatures required by gogoproto.
-                    deadline:
-                      type: object
-                      properties:
-                        num:
-                          type: string
-                          format: uint64
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
       pagination:
         type: object
         properties:
@@ -20740,57 +20758,61 @@ definitions:
             type: object
             properties:
               staked:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  stake:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
 
 
-                      NOTE: The amount field is an Int which implements the
-                      custom method
+                        NOTE: The amount field is an Int which implements the
+                        custom method
 
-                      signatures required by gogoproto.
-                  deadline:
-                    type: object
-                    properties:
-                      num:
-                        type: string
-                        format: uint64
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
               unstaking:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  stake:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
 
 
-                      NOTE: The amount field is an Int which implements the
-                      custom method
+                        NOTE: The amount field is an Int which implements the
+                        custom method
 
-                      signatures required by gogoproto.
-                  deadline:
-                    type: object
-                    properties:
-                      num:
-                        type: string
-                        format: uint64
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
   lavanet.lava.servicer.QueryGetStakeMapResponse:
     type: object
     properties:
@@ -20850,57 +20872,61 @@ definitions:
         type: object
         properties:
           staked:
-            type: object
-            properties:
-              index:
-                type: string
-              stake:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
 
 
-                  NOTE: The amount field is an Int which implements the custom
-                  method
+                    NOTE: The amount field is an Int which implements the custom
+                    method
 
-                  signatures required by gogoproto.
-              deadline:
-                type: object
-                properties:
-                  num:
-                    type: string
-                    format: uint64
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
           unstaking:
-            type: object
-            properties:
-              index:
-                type: string
-              stake:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
 
 
-                  NOTE: The amount field is an Int which implements the custom
-                  method
+                    NOTE: The amount field is an Int which implements the custom
+                    method
 
-                  signatures required by gogoproto.
-              deadline:
-                type: object
-                properties:
-                  num:
-                    type: string
-                    format: uint64
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
   lavanet.lava.servicer.SessionID:
     type: object
     properties:
@@ -20921,57 +20947,61 @@ definitions:
         type: object
         properties:
           staked:
-            type: object
-            properties:
-              index:
-                type: string
-              stake:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
 
 
-                  NOTE: The amount field is an Int which implements the custom
-                  method
+                    NOTE: The amount field is an Int which implements the custom
+                    method
 
-                  signatures required by gogoproto.
-              deadline:
-                type: object
-                properties:
-                  num:
-                    type: string
-                    format: uint64
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
           unstaking:
-            type: object
-            properties:
-              index:
-                type: string
-              stake:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
 
 
-                  NOTE: The amount field is an Int which implements the custom
-                  method
+                    NOTE: The amount field is an Int which implements the custom
+                    method
 
-                  signatures required by gogoproto.
-              deadline:
-                type: object
-                properties:
-                  num:
-                    type: string
-                    format: uint64
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
   lavanet.lava.servicer.StakeMap:
     type: object
     properties:
@@ -20999,57 +21029,61 @@ definitions:
     type: object
     properties:
       staked:
-        type: object
-        properties:
-          index:
-            type: string
-          stake:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
 
 
-              NOTE: The amount field is an Int which implements the custom
-              method
+                NOTE: The amount field is an Int which implements the custom
+                method
 
-              signatures required by gogoproto.
-          deadline:
-            type: object
-            properties:
-              num:
-                type: string
-                format: uint64
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
       unstaking:
-        type: object
-        properties:
-          index:
-            type: string
-          stake:
-            type: object
-            properties:
-              denom:
-                type: string
-              amount:
-                type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
 
 
-              NOTE: The amount field is an Int which implements the custom
-              method
+                NOTE: The amount field is an Int which implements the custom
+                method
 
-              signatures required by gogoproto.
-          deadline:
-            type: object
-            properties:
-              num:
-                type: string
-                format: uint64
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
   lavanet.lava.servicer.WorkProof:
     type: object
     properties:
