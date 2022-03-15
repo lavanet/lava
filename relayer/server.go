@@ -31,8 +31,33 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+func isAuthorizedUser(in *RelayRequest) bool {
+	tmp := in.Sig
+	in.Sig = []byte{}
+	hash := hashMsg([]byte(in.String()))
+	in.Sig = tmp
+
+	pubKey, err := recoverPubKey(in.Sig, hash)
+	if err != nil {
+		log.Println("error: recoverPubKey", err)
+		return false
+	}
+
+	//
+	// TODO: missing pairing check
+	log.Println(pubKey.Address())
+
+	return true
+}
+
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
+
+	//
+	//
+	if !isAuthorizedUser(in) {
+		return nil, errors.New("user not authorized or bad signature")
+	}
 
 	//
 	// Unmarshal request
