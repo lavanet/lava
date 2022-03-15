@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 
 	grpc "google.golang.org/grpc"
@@ -13,21 +14,11 @@ import (
 const JSONRPC_ETH_BLOCKNUMBER = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 const JSONRPC_ETH_GETBALANCE = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
 
-func sendRelay(ctx context.Context, clientCtx client.Context, c RelayerClient, req string) {
+func sendRelay(ctx context.Context, clientCtx client.Context, c RelayerClient, req string, privKey *btcec.PrivateKey) {
 	//
 	//
 	relayRequest := &RelayRequest{
 		Data: []byte(req),
-	}
-
-	keyName, err := getKeyName(clientCtx)
-	if err != nil {
-		log.Fatalln("error: getKeyName", err)
-	}
-
-	privKey, err := getPrivKey(clientCtx, keyName)
-	if err != nil {
-		log.Fatalln("error: getPrivKey", err)
 	}
 
 	sig, err := signRelay(privKey, []byte(relayRequest.String()))
@@ -38,16 +29,34 @@ func sendRelay(ctx context.Context, clientCtx client.Context, c RelayerClient, r
 
 	reply, err := c.Relay(ctx, relayRequest)
 	if err != nil {
-		log.Println(err)
+		log.Println("error: c.Relay", err)
 		return
 	}
-	log.Println(reply)
+	serverKey, err := recoverPubKeyFromRelayReply(reply)
+	if err != nil {
+		log.Println("error: recoverPubKeyFromRelayReply", err)
+		return
+	}
+
+	log.Println("server addr", serverKey.Address(), "reply", reply)
 }
 
 func TestClient(ctx context.Context, addr string, clientCtx client.Context) {
 	//
 	// Set up a connection to the server.
 	log.Println("TestClient connecting to", addr)
+
+	keyName, err := getKeyName(clientCtx)
+	if err != nil {
+		log.Fatalln("error: getKeyName", err)
+	}
+
+	privKey, err := getPrivKey(clientCtx, keyName)
+	if err != nil {
+		log.Fatalln("error: getPrivKey", err)
+	}
+	clientKey, _ := clientCtx.Keyring.Key(keyName)
+	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -58,6 +67,6 @@ func TestClient(ctx context.Context, addr string, clientCtx client.Context) {
 	defer conn.Close()
 	c := NewRelayerClient(conn)
 
-	sendRelay(ctx, clientCtx, c, JSONRPC_ETH_BLOCKNUMBER)
-	sendRelay(ctx, clientCtx, c, JSONRPC_ETH_GETBALANCE)
+	sendRelay(ctx, clientCtx, c, JSONRPC_ETH_BLOCKNUMBER, privKey)
+	sendRelay(ctx, clientCtx, c, JSONRPC_ETH_GETBALANCE, privKey)
 }

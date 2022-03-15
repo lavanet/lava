@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/client"
 	grpc "google.golang.org/grpc"
 )
 
@@ -15,6 +17,7 @@ type relayServer struct {
 }
 
 var g_conn *Connector
+var g_privKey *btcSecp256k1.PrivateKey
 
 type jsonError struct {
 	Code    int         `json:"code"`
@@ -32,20 +35,15 @@ type jsonrpcMessage struct {
 }
 
 func isAuthorizedUser(in *RelayRequest) bool {
-	tmp := in.Sig
-	in.Sig = []byte{}
-	hash := hashMsg([]byte(in.String()))
-	in.Sig = tmp
-
-	pubKey, err := recoverPubKey(in.Sig, hash)
+	pubKey, err := recoverPubKeyFromRelay(in)
 	if err != nil {
-		log.Println("error: recoverPubKey", err)
+		log.Println("error: recoverPubKeyFromRelay", err)
 		return false
 	}
 
 	//
 	// TODO: missing pairing check
-	log.Println(pubKey.Address())
+	log.Println("user addr", pubKey.Address())
 
 	return true
 }
@@ -64,14 +62,14 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	var msg jsonrpcMessage
 	err := json.Unmarshal(in.Data, &msg)
 	if err != nil {
-		return nil, errors.New("hello")
+		return nil, err
 	}
 
 	//
 	// Get node
 	rpc, err := g_conn.GetRpc(true)
 	if err != nil {
-		return nil, errors.New("hello 2")
+		return nil, err
 	}
 	defer g_conn.ReturnRpc(rpc)
 
@@ -81,7 +79,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	err = rpc.CallContext(ctx, &result, msg.Method, msg.Params...)
 	if err != nil {
 		log.Println(err)
-		return nil, errors.New("hello 2")
+		return nil, err
 	}
 
 	//
@@ -93,16 +91,35 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	}
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
-		return nil, errors.New("hello 3")
+		return nil, err
 	}
 	reply := RelayReply{
 		Data: data,
 	}
+	sig, err := signRelay(g_privKey, []byte(reply.String()))
+	if err != nil {
+		return nil, err
+	}
+	reply.Sig = sig
+
 	return &reply, nil
 }
 
-func Server(ctx context.Context, listenAddr string, nodeUrl string) {
+func Server(ctx context.Context, listenAddr string, nodeUrl string, clientCtx client.Context) {
 	log.Println("Server starting", listenAddr, "node", nodeUrl)
+
+	keyName, err := getKeyName(clientCtx)
+	if err != nil {
+		log.Fatalln("error: getKeyName", err)
+	}
+
+	privKey, err := getPrivKey(clientCtx, keyName)
+	if err != nil {
+		log.Fatalln("error: getPrivKey", err)
+	}
+	g_privKey = privKey
+	serverKey, _ := clientCtx.Keyring.Key(keyName)
+	log.Println("Server pubkey", serverKey.GetPubKey().Address())
 
 	g_conn = NewConnector(ctx, 5, nodeUrl)
 	if g_conn == nil {

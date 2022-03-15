@@ -51,7 +51,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, listenAddr, args[2])
+			relayer.Server(ctx, listenAddr, args[2], clientCtx)
 
 			return nil
 		},

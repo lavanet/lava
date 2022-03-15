@@ -67,3 +67,29 @@ func recoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 
 	return (secp256k1.PubKey)(pk), nil
 }
+
+func recoverPubKeyFromRelay(in *RelayRequest) (secp256k1.PubKey, error) {
+	tmp := in.Sig
+	in.Sig = []byte{}
+	hash := hashMsg([]byte(in.String()))
+	in.Sig = tmp
+
+	pubKey, err := recoverPubKey(in.Sig, hash)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func recoverPubKeyFromRelayReply(in *RelayReply) (secp256k1.PubKey, error) {
+	tmp := in.Sig
+	in.Sig = []byte{}
+	hash := hashMsg([]byte(in.String()))
+	in.Sig = tmp
+
+	pubKey, err := recoverPubKey(in.Sig, hash)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
