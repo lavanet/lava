@@ -31,7 +31,7 @@ func main() {
 	)
 
 	var cmdServer = &cobra.Command{
-		Use:   "server [listen-ip] [listen-port] [node-url] [node-spec]",
+		Use:   "server [listen-ip] [listen-port] [node-url] [node-spec-id]",
 		Short: "server",
 		Long:  `server`,
 		Args:  cobra.ExactArgs(4),
@@ -61,10 +61,10 @@ func main() {
 	}
 
 	var cmdTestClient = &cobra.Command{
-		Use:   "test_client [listen-ip] [listen-port]",
+		Use:   "test_client [listen-ip] [listen-port] [spec-id]",
 		Short: "test client",
 		Long:  `test client`,
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -77,9 +77,14 @@ func main() {
 				return err
 			}
 
+			specId, err := strconv.Atoi(args[2])
+			if err != nil {
+				return err
+			}
+
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr)
+			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr, specId)
 
 			return nil
 		},

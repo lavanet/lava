@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"sync"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,13 +14,18 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+var (
+	g_conn           *Connector
+	g_privKey        *btcSecp256k1.PrivateKey
+	g_serverSpec     types.Spec
+	g_serverApis     map[string]types.ServiceApi
+	g_sessions       map[string]map[uint64]interface{}
+	g_sessions_mutex sync.Mutex
+)
+
 type relayServer struct {
 	UnimplementedRelayerServer
 }
-
-var g_conn *Connector
-var g_privKey *btcSecp256k1.PrivateKey
-var g_serverSpec types.Spec
 
 type jsonError struct {
 	Code    int         `json:"code"`
@@ -54,6 +60,14 @@ func isSupportedSpec(in *RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpec.Id
 }
 
+func getSupportedApi(name string) (*types.ServiceApi, error) {
+	if api, ok := g_serverApis[name]; ok {
+		return &api, nil
+	}
+
+	return nil, errors.New("api not supported")
+}
+
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
 
@@ -62,9 +76,6 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if !isAuthorizedUser(in) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
-
-	//
-	//
 	if !isSupportedSpec(in) {
 		return nil, errors.New("spec not supported by server")
 	}
@@ -76,6 +87,14 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if err != nil {
 		return nil, err
 	}
+
+	//
+	// TODO: get or create session
+	serviceApi, err := getSupportedApi(msg.Method)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("serviceApi", serviceApi)
 
 	//
 	// Get node
@@ -128,6 +147,9 @@ func Server(ctx context.Context, clientCtx client.Context, queryClient types.Que
 		log.Fatalln("error: bad specId or no specs found", specId)
 	}
 	g_serverSpec = allSpecs.Spec[specId]
+	for _, api := range g_serverSpec.Apis {
+		g_serverApis[api.Name] = api
+	}
 
 	//
 	// Info

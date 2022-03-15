@@ -16,12 +16,21 @@ import (
 const JSONRPC_ETH_BLOCKNUMBER = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 const JSONRPC_ETH_GETBALANCE = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
 
-func sendRelay(ctx context.Context, clientCtx client.Context, c RelayerClient, privKey *btcec.PrivateKey, sessionId int64, req string) {
+func sendRelay(
+	ctx context.Context,
+	clientCtx client.Context,
+	c RelayerClient,
+	privKey *btcec.PrivateKey,
+	specId int,
+	sessionId int64,
+	req string,
+) {
 	//
 	//
 	relayRequest := &RelayRequest{
 		Data:      []byte(req),
 		SessionId: uint64(sessionId),
+		SpecId:    uint32(specId),
 	}
 
 	sig, err := signRelay(privKey, []byte(relayRequest.String()))
@@ -45,7 +54,7 @@ func sendRelay(ctx context.Context, clientCtx client.Context, c RelayerClient, p
 	log.Println("server addr", serverKey.Address(), "reply", reply)
 }
 
-func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string) {
+func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId int) {
 	//
 	// Set up a connection to the server.
 	log.Println("TestClient connecting to", addr)
@@ -73,8 +82,8 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 
 	sessionId := rand.Int63()
 	for i := 0; i < 10; i++ {
-		sendRelay(ctx, clientCtx, c, privKey, sessionId, JSONRPC_ETH_BLOCKNUMBER)
-		sendRelay(ctx, clientCtx, c, privKey, sessionId, JSONRPC_ETH_GETBALANCE)
+		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER)
+		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE)
 	}
 
 }
