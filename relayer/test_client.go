@@ -2,6 +2,7 @@ package relayer
 
 import (
 	context "context"
+	"encoding/json"
 	"log"
 	"math/rand"
 	"time"
@@ -13,8 +14,16 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-const JSONRPC_ETH_BLOCKNUMBER = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
-const JSONRPC_ETH_GETBALANCE = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
+const (
+	JSONRPC_ETH_BLOCKNUMBER = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
+	JSONRPC_ETH_GETBALANCE  = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
+	JSONRPC_UNSUPPORTED     = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
+)
+
+var (
+	g_clientApis map[string]types.ServiceApi
+	g_cu_sum     uint64
+)
 
 func sendRelay(
 	ctx context.Context,
@@ -25,12 +34,29 @@ func sendRelay(
 	sessionId int64,
 	req string,
 ) {
+
+	//
+	// Unmarshal request
+	var msg jsonrpcMessage
+	err := json.Unmarshal([]byte(req), &msg)
+	if err != nil {
+		log.Println("error: json.Unmarshal", err)
+		return
+	}
+	serviceApi, err := getSupportedApi(msg.Method, g_clientApis)
+	if err != nil {
+		log.Println("error: getSupportedApi", err)
+		return
+	}
+	g_cu_sum += serviceApi.ComputeUnits
+
 	//
 	//
 	relayRequest := &RelayRequest{
 		Data:      []byte(req),
 		SessionId: uint64(sessionId),
 		SpecId:    uint32(specId),
+		CuSum:     g_cu_sum,
 	}
 
 	sig, err := signRelay(privKey, []byte(relayRequest.String()))
@@ -55,6 +81,15 @@ func sendRelay(
 }
 
 func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId int) {
+	//
+	// Get specs
+	_, clientApis, err := getSpec(ctx, queryClient, specId)
+	if err != nil {
+		log.Fatalln("error: getSpec", err)
+	}
+	log.Println(clientApis, specId)
+	g_clientApis = clientApis
+
 	//
 	// Set up a connection to the server.
 	log.Println("TestClient connecting to", addr)
@@ -85,5 +120,6 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER)
 		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE)
 	}
+	sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED)
 
 }

@@ -11,6 +11,7 @@ import (
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/x/spec/types"
+	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
 
@@ -19,9 +20,14 @@ var (
 	g_privKey        *btcSecp256k1.PrivateKey
 	g_serverSpec     types.Spec
 	g_serverApis     map[string]types.ServiceApi
-	g_sessions       map[string]map[uint64]interface{}
+	g_sessions       map[string]map[uint64]*RelaySession
 	g_sessions_mutex sync.Mutex
 )
+
+type RelaySession struct {
+	CuSum uint64
+	Lock  sync.Mutex
+}
 
 type relayServer struct {
 	UnimplementedRelayerServer
@@ -42,17 +48,19 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func isAuthorizedUser(in *RelayRequest) bool {
+func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
 	pubKey, err := recoverPubKeyFromRelay(in)
 	if err != nil {
-		log.Println("error: recoverPubKeyFromRelay", err)
-		return false
+		return nil, err
 	}
 
+	return pubKey.Address(), nil
+}
+
+func isAuthorizedUser(user bytes.HexBytes) bool {
 	//
 	// TODO: missing pairing check
-	log.Println("user addr", pubKey.Address())
-
+	log.Println("user addr", user)
 	return true
 }
 
@@ -60,20 +68,63 @@ func isSupportedSpec(in *RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpec.Id
 }
 
-func getSupportedApi(name string) (*types.ServiceApi, error) {
-	if api, ok := g_serverApis[name]; ok {
+func getSupportedApi(name string, apis map[string]types.ServiceApi) (*types.ServiceApi, error) {
+	if api, ok := apis[name]; ok {
 		return &api, nil
 	}
 
 	return nil, errors.New("api not supported")
 }
 
+func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
+	g_sessions_mutex.Lock()
+	defer g_sessions_mutex.Unlock()
+
+	userString := string(user)
+	if _, ok := g_sessions[userString]; !ok {
+		g_sessions[userString] = map[uint64]*RelaySession{}
+	}
+
+	userSessions := g_sessions[userString]
+	if _, ok := userSessions[sessionId]; !ok {
+		userSessions[sessionId] = &RelaySession{}
+	}
+
+	return userSessions[sessionId]
+}
+
+func updateSessionCu(sess *RelaySession, serviceApi *types.ServiceApi, in *RelayRequest) error {
+	sess.Lock.Lock()
+	defer sess.Lock.Unlock()
+
+	log.Println("updateSessionCu", serviceApi.Name, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
+
+	//
+	// TODO: do we worry about overflow here?
+	if sess.CuSum >= in.CuSum {
+		return errors.New("bad cu sum")
+	}
+	if sess.CuSum+serviceApi.ComputeUnits != in.CuSum {
+		return errors.New("bad cu sum")
+	}
+
+	sess.CuSum = in.CuSum
+
+	// TODO:
+	// save relay request here for reward submission at end of session
+	return nil
+}
+
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
-	//
-	if !isAuthorizedUser(in) {
+	// Checks
+	user, err := getRelayUser(in)
+	if err != nil {
+		return nil, err
+	}
+	if !isAuthorizedUser(user) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
 	if !isSupportedSpec(in) {
@@ -83,18 +134,19 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	//
 	// Unmarshal request
 	var msg jsonrpcMessage
-	err := json.Unmarshal(in.Data, &msg)
+	err = json.Unmarshal(in.Data, &msg)
 	if err != nil {
 		return nil, err
 	}
 
 	//
-	// TODO: get or create session
-	serviceApi, err := getSupportedApi(msg.Method)
+	//
+	serviceApi, err := getSupportedApi(msg.Method, g_serverApis)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("serviceApi", serviceApi)
+	relaySession := getOrCreateSession(user, in.SessionId)
+	updateSessionCu(relaySession, serviceApi, in)
 
 	//
 	// Get node
@@ -138,18 +190,14 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 
 func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId int) {
 	//
-	// CU (temp TODO: move to service)
-	allSpecs, err := queryClient.SpecAll(ctx, &types.QueryAllSpecRequest{})
+	// Get specs
+	serverSpec, serverApis, err := getSpec(ctx, queryClient, specId)
 	if err != nil {
-		log.Fatalln("error: queryClient.SpecAll", err)
+		log.Fatalln("error: getSpec", err)
 	}
-	if len(allSpecs.Spec) == 0 || len(allSpecs.Spec) <= specId {
-		log.Fatalln("error: bad specId or no specs found", specId)
-	}
-	g_serverSpec = allSpecs.Spec[specId]
-	for _, api := range g_serverSpec.Apis {
-		g_serverApis[api.Name] = api
-	}
+	g_serverSpec = *serverSpec
+	g_serverApis = serverApis
+	g_sessions = map[string]map[uint64]*RelaySession{}
 
 	//
 	// Info
