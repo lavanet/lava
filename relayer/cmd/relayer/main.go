@@ -12,10 +12,10 @@ import (
 
 func main() {
 	var cmdServer = &cobra.Command{
-		Use:   "server [listen-ip] [listen-port]",
+		Use:   "server [listen-ip] [listen-port] [node-url]",
 		Short: "server",
 		Long:  `server`,
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		Run: func(cmd *cobra.Command, args []string) {
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -24,7 +24,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, listenAddr)
+			relayer.Server(ctx, listenAddr, args[2])
 		},
 	}
 
