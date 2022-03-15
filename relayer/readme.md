@@ -11,7 +11,7 @@ bash ./relayer/compile_proto.sh
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2222
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 wss://mainnet.infura.io/ws/v3/<your_token>
 ```
 
 ## Run relayer test client

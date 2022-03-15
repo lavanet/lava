@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/ethereum/go-ethereum/rpc"
 	grpc "google.golang.org/grpc"
 )
 
@@ -15,7 +14,7 @@ type relayServer struct {
 	UnimplementedRelayerServer
 }
 
-var json_rpc *rpc.Client
+var g_conn *Connector
 
 type jsonError struct {
 	Code    int         `json:"code"`
@@ -32,25 +31,49 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+// TODO: bug bug (wip)
+// can not use global here without locks
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
 
+	//
+	// Unmarshal request
 	var msg jsonrpcMessage
 	err := json.Unmarshal(in.Data, &msg)
 	if err != nil {
 		return nil, errors.New("hello")
 	}
 
-	// TODO: bug bug (wip)
-	// can not use global here without locks
-	var result string
-	err = json_rpc.CallContext(ctx, &result, msg.Method, msg.Params...)
+	//
+	// Get node
+	rpc, err := g_conn.GetRpc(true)
+	if err != nil {
+		return nil, errors.New("hello 2")
+	}
+	defer g_conn.ReturnRpc(rpc)
+
+	//
+	// Call our node
+	var result json.RawMessage
+	err = rpc.CallContext(ctx, &result, msg.Method, msg.Params...)
 	if err != nil {
 		log.Println(err)
 		return nil, errors.New("hello 2")
 	}
+
+	//
+	// Wrap result back to json
+	replyMsg := jsonrpcMessage{
+		Version: msg.Version,
+		ID:      msg.ID,
+		Result:  result,
+	}
+	data, err := json.Marshal(replyMsg)
+	if err != nil {
+		return nil, errors.New("hello 3")
+	}
 	reply := RelayReply{
-		Data: []byte(result),
+		Data: data,
 	}
 	return &reply, nil
 }
@@ -58,13 +81,10 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 func Server(ctx context.Context, listenAddr string, nodeUrl string) {
 	log.Println("Server starting", listenAddr, "node", nodeUrl)
 
-	//
-	// Setup client
-	rpc, err := rpc.Dial(nodeUrl)
-	if err != nil {
-		log.Fatalln("Start", err)
+	g_conn = NewConnector(ctx, 5, nodeUrl)
+	if g_conn == nil {
+		log.Fatalln("g_conn == nil")
 	}
-	json_rpc = rpc
 
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
