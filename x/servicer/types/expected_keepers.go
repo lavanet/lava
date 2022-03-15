@@ -20,3 +20,7 @@ type BankKeeper interface {
 	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	// Methods imported from bank should be defined here
 }
+
+type SpecKeeper interface {
+	IsSpecFoundAndActive(ctx sdk.Context, specName string) bool
+}

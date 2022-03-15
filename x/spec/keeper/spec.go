@@ -93,6 +93,26 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	return
 }
 
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) bool {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.Spec
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		if val.Name == specName {
+			if val.Status == "enabled" {
+				return true
+			}
+			// specs are unique, theres no reason to keep iterating
+			return false
+		}
+	}
+	return false
+}
+
 // GetSpecIDBytes returns the byte representation of the ID
 func GetSpecIDBytes(id uint64) []byte {
 	bz := make([]byte, 8)

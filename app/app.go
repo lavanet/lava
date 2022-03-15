@@ -389,8 +389,9 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		app.EvidenceKeeper,
+		app.SpecKeeper,
 	)
-	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper)
+	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
