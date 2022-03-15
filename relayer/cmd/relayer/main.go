@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -32,26 +31,30 @@ func main() {
 	)
 
 	var cmdServer = &cobra.Command{
-		Use:   "server [listen-ip] [listen-port] [node-url]",
+		Use:   "server [listen-ip] [listen-port] [node-url] [node-spec]",
 		Short: "server",
 		Long:  `server`,
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 			queryClient := types.NewQueryClient(clientCtx)
-			log.Println(clientCtx, queryClient)
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
 				return err
 			}
 
+			specId, err := strconv.Atoi(args[3])
+			if err != nil {
+				return err
+			}
+
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, listenAddr, args[2], clientCtx)
+			relayer.Server(ctx, clientCtx, queryClient, listenAddr, args[2], specId)
 
 			return nil
 		},
@@ -68,7 +71,6 @@ func main() {
 				return err
 			}
 			queryClient := types.NewQueryClient(clientCtx)
-			log.Println(clientCtx, queryClient)
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -77,7 +79,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.TestClient(ctx, listenAddr, clientCtx)
+			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr)
 
 			return nil
 		},

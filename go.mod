@@ -3,7 +3,7 @@ module github.com/lavanet/lava
 go 1.16
 
 require (
-	github.com/btcsuite/btcd v0.22.0-beta // indirect
+	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/cosmos/ibc-go/v2 v2.0.2
 	github.com/ethereum/go-ethereum v1.10.16

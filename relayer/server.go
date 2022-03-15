@@ -9,6 +9,7 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/lavanet/lava/x/spec/types"
 	grpc "google.golang.org/grpc"
 )
 
@@ -18,6 +19,7 @@ type relayServer struct {
 
 var g_conn *Connector
 var g_privKey *btcSecp256k1.PrivateKey
+var g_serverSpec types.Spec
 
 type jsonError struct {
 	Code    int         `json:"code"`
@@ -48,6 +50,10 @@ func isAuthorizedUser(in *RelayRequest) bool {
 	return true
 }
 
+func isSupportedSpec(in *RelayRequest) bool {
+	return uint64(in.SpecId) == g_serverSpec.Id
+}
+
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
 
@@ -55,6 +61,12 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	//
 	if !isAuthorizedUser(in) {
 		return nil, errors.New("user not authorized or bad signature")
+	}
+
+	//
+	//
+	if !isSupportedSpec(in) {
+		return nil, errors.New("spec not supported by server")
 	}
 
 	//
@@ -105,9 +117,24 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	return &reply, nil
 }
 
-func Server(ctx context.Context, listenAddr string, nodeUrl string, clientCtx client.Context) {
-	log.Println("Server starting", listenAddr, "node", nodeUrl)
+func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId int) {
+	//
+	// CU (temp TODO: move to service)
+	allSpecs, err := queryClient.SpecAll(ctx, &types.QueryAllSpecRequest{})
+	if err != nil {
+		log.Fatalln("error: queryClient.SpecAll", err)
+	}
+	if len(allSpecs.Spec) == 0 || len(allSpecs.Spec) <= specId {
+		log.Fatalln("error: bad specId or no specs found", specId)
+	}
+	g_serverSpec = allSpecs.Spec[specId]
 
+	//
+	// Info
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", g_serverSpec.Name)
+
+	//
+	// Keys
 	keyName, err := getKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
@@ -121,11 +148,15 @@ func Server(ctx context.Context, listenAddr string, nodeUrl string, clientCtx cl
 	serverKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Server pubkey", serverKey.GetPubKey().Address())
 
-	g_conn = NewConnector(ctx, 5, nodeUrl)
+	//
+	// Node
+	g_conn = NewConnector(ctx, 1, nodeUrl)
 	if g_conn == nil {
 		log.Fatalln("g_conn == nil")
 	}
 
+	//
+	// GRPC
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
