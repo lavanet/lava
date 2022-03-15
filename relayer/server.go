@@ -31,8 +31,6 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-// TODO: bug bug (wip)
-// can not use global here without locks
 func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
 	log.Println("server got Relay")
 
