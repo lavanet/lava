@@ -11,12 +11,12 @@ bash ./relayer/compile_proto.sh
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go server
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2222
 ```
 
 ## Run relayer test client
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go test_client
+go run relayer/cmd/relayer/main.go test_client 127.0.0.1 2222
 ```
