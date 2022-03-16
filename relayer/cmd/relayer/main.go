@@ -60,6 +60,36 @@ func main() {
 		},
 	}
 
+	var cmdPortalServer = &cobra.Command{
+		Use:   "portal_server [listen-ip] [listen-port] [relayer-url] [relayer-spec-id]",
+		Short: "portal server",
+		Long:  `portal server`,
+		Args:  cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			port, err := strconv.Atoi(args[1])
+			if err != nil {
+				return err
+			}
+
+			specId, err := strconv.Atoi(args[3])
+			if err != nil {
+				return err
+			}
+
+			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
+			ctx := context.Background()
+			relayer.PortalServer(ctx, clientCtx, queryClient, listenAddr, args[2], specId)
+
+			return nil
+		},
+	}
+
 	var cmdTestClient = &cobra.Command{
 		Use:   "test_client [listen-ip] [listen-port] [spec-id]",
 		Short: "test client",
@@ -92,10 +122,13 @@ func main() {
 
 	flags.AddTxFlagsToCmd(cmdServer)
 	cmdServer.MarkFlagRequired(flags.FlagFrom)
+	flags.AddTxFlagsToCmd(cmdPortalServer)
+	cmdPortalServer.MarkFlagRequired(flags.FlagFrom)
 	flags.AddTxFlagsToCmd(cmdTestClient)
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
 
 	rootCmd.AddCommand(cmdServer)
+	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {

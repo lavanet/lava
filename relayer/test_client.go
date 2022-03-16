@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/x/spec/types"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 
 	grpc "google.golang.org/grpc"
 )
@@ -33,20 +34,18 @@ func sendRelay(
 	specId int,
 	sessionId int64,
 	req string,
-) {
+) (*RelayReply, *secp256k1.PubKey, error) {
 
 	//
 	// Unmarshal request
 	var msg jsonrpcMessage
 	err := json.Unmarshal([]byte(req), &msg)
 	if err != nil {
-		log.Println("error: json.Unmarshal", err)
-		return
+		return nil, nil, err
 	}
 	serviceApi, err := getSupportedApi(msg.Method, g_clientApis)
 	if err != nil {
-		log.Println("error: getSupportedApi", err)
-		return
+		return nil, nil, err
 	}
 	g_cu_sum += serviceApi.ComputeUnits
 
@@ -61,23 +60,20 @@ func sendRelay(
 
 	sig, err := signRelay(privKey, []byte(relayRequest.String()))
 	if err != nil {
-		log.Fatalln("error: getPrivKey", err)
+		return nil, nil, err
 	}
 	relayRequest.Sig = sig
 
 	reply, err := c.Relay(ctx, relayRequest)
 	if err != nil {
-		log.Println("error: c.Relay", err)
-		return
+		return nil, nil, err
 	}
 	serverKey, err := recoverPubKeyFromRelayReply(reply)
 	if err != nil {
-		log.Println("error: recoverPubKeyFromRelayReply", err)
-		return
+		return nil, nil, err
 	}
 
-	reply.Sig = nil // for nicer prints
-	log.Println("server addr", serverKey.Address(), "reply", reply)
+	return reply, &serverKey, nil
 }
 
 func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId int) {
@@ -106,20 +102,43 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := NewRelayerClient(conn)
-
 	sessionId := rand.Int63()
+
+	//
+	// Call a few times and print results
 	for i := 0; i < 10; i++ {
-		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER)
-		sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE)
+		reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER)
+		if err != nil {
+			log.Println(err)
+		} else {
+			reply.Sig = nil // for nicer prints
+			log.Println("server addr", serverKey.Address(), "reply", reply)
+		}
+		reply, serverKey, err = sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE)
+		if err != nil {
+			log.Println(err)
+		} else {
+			reply.Sig = nil // for nicer prints
+			log.Println("server addr", serverKey.Address(), "reply", reply)
+		}
 	}
-	sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED)
+
+	//
+	// Expected unsupported API:
+	reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED)
+	if err != nil {
+		log.Println(err)
+	} else {
+		reply.Sig = nil // for nicer prints
+		log.Println("server addr", serverKey.Address(), "reply", reply)
+	}
 
 }
