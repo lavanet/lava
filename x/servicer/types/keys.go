@@ -20,3 +20,12 @@ const (
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
+
+const (
+	BlockDeadlineForCallbackKey = "BlockDeadlineForCallback-value-"
+)
+
+const (
+	UnstakingServicersAllSpecsKey      = "UnstakingServicersAllSpecs-value-"
+	UnstakingServicersAllSpecsCountKey = "UnstakingServicersAllSpecs-count-"
+)

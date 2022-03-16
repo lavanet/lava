@@ -30,6 +30,18 @@ func TestGenesis(t *testing.T) {
 				Index: "1",
 			},
 		},
+		BlockDeadlineForCallback: &types.BlockDeadlineForCallback{
+			Deadline: new(types.BlockNum),
+		},
+		UnstakingServicersAllSpecsList: []types.UnstakingServicersAllSpecs{
+			{
+				Id: 0,
+			},
+			{
+				Id: 1,
+			},
+		},
+		UnstakingServicersAllSpecsCount: 2,
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -43,5 +55,8 @@ func TestGenesis(t *testing.T) {
 
 	require.ElementsMatch(t, genesisState.StakeMapList, got.StakeMapList)
 	require.ElementsMatch(t, genesisState.SpecStakeStorageList, got.SpecStakeStorageList)
+	require.Equal(t, genesisState.BlockDeadlineForCallback, got.BlockDeadlineForCallback)
+	require.ElementsMatch(t, genesisState.UnstakingServicersAllSpecsList, got.UnstakingServicersAllSpecsList)
+	require.Equal(t, genesisState.UnstakingServicersAllSpecsCount, got.UnstakingServicersAllSpecsCount)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

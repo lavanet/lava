@@ -46,17 +46,33 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 				storageMap.Deadline.Num = blockHeight + holdBlocks
 			}
 			//TODO: store this list sorted by deadline so when we go over it in the timeout, we can do this efficiently
+			//we store unstaking in two places, inside the stakeStorage for queries and inside the UnstakingServicersAllSpecs for quicker finding of entries
 			stakeStorage.Unstaking = append(stakeStorage.Unstaking, storageMap)
-			// effeciently delete an element
+			unstakingServicerAllSpecs := types.UnstakingServicersAllSpecs{
+				Id:               0,
+				Unstaking:        &storageMap,
+				SpecStakeStorage: &specStakeStorage,
+			}
+			k.Keeper.AppendUnstakingServicersAllSpecs(ctx, unstakingServicerAllSpecs)
+			currentDeadline, found := k.GetBlockDeadlineForCallback(ctx)
+			if !found {
+				panic("didn't find single variable BlockDeadlineForCallback")
+			}
+			if currentDeadline.Deadline.Num == 0 || currentDeadline.Deadline.Num > storageMap.Deadline.Num {
+				currentDeadline.Deadline.Num = storageMap.Deadline.Num
+				k.SetBlockDeadlineForCallback(ctx, currentDeadline)
+			}
+			// effeciently delete storageMap from stakeStorage.Staked
 			stakeStorage.Staked[idx] = stakeStorage.Staked[len(stakeStorage.Staked)-1] // replace the element at delete index with the last one
 			stakeStorage.Staked = stakeStorage.Staked[:len(stakeStorage.Staked)-1]     // remove last element
+			//should be unique so there's no reason to keep iterating
 			break
 		}
 	}
 	if !found_staked_entry {
 		return nil, errors.New(fmt.Sprintf("can't unstake servicer, stake entry not found for address: %s", msg.Creator))
 	}
-
+	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 	_ = ctx
 
 	return &types.MsgUnstakeServicerResponse{}, nil

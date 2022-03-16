@@ -4,6 +4,8 @@ import { StakeMap } from "../servicer/stake_map";
 import { PageRequest, PageResponse } from "../cosmos/base/query/v1beta1/pagination";
 import { SpecStakeStorage } from "../servicer/spec_stake_storage";
 import { StakeStorage } from "../servicer/stake_storage";
+import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callback";
+import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -44,6 +46,24 @@ export interface QueryStakedServicersRequest {
 }
 export interface QueryStakedServicersResponse {
     stakeStorage: StakeStorage | undefined;
+}
+export interface QueryGetBlockDeadlineForCallbackRequest {
+}
+export interface QueryGetBlockDeadlineForCallbackResponse {
+    BlockDeadlineForCallback: BlockDeadlineForCallback | undefined;
+}
+export interface QueryGetUnstakingServicersAllSpecsRequest {
+    id: number;
+}
+export interface QueryGetUnstakingServicersAllSpecsResponse {
+    UnstakingServicersAllSpecs: UnstakingServicersAllSpecs | undefined;
+}
+export interface QueryAllUnstakingServicersAllSpecsRequest {
+    pagination: PageRequest | undefined;
+}
+export interface QueryAllUnstakingServicersAllSpecsResponse {
+    UnstakingServicersAllSpecs: UnstakingServicersAllSpecs[];
+    pagination: PageResponse | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -129,6 +149,48 @@ export declare const QueryStakedServicersResponse: {
     toJSON(message: QueryStakedServicersResponse): unknown;
     fromPartial(object: DeepPartial<QueryStakedServicersResponse>): QueryStakedServicersResponse;
 };
+export declare const QueryGetBlockDeadlineForCallbackRequest: {
+    encode(_: QueryGetBlockDeadlineForCallbackRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetBlockDeadlineForCallbackRequest;
+    fromJSON(_: any): QueryGetBlockDeadlineForCallbackRequest;
+    toJSON(_: QueryGetBlockDeadlineForCallbackRequest): unknown;
+    fromPartial(_: DeepPartial<QueryGetBlockDeadlineForCallbackRequest>): QueryGetBlockDeadlineForCallbackRequest;
+};
+export declare const QueryGetBlockDeadlineForCallbackResponse: {
+    encode(message: QueryGetBlockDeadlineForCallbackResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetBlockDeadlineForCallbackResponse;
+    fromJSON(object: any): QueryGetBlockDeadlineForCallbackResponse;
+    toJSON(message: QueryGetBlockDeadlineForCallbackResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetBlockDeadlineForCallbackResponse>): QueryGetBlockDeadlineForCallbackResponse;
+};
+export declare const QueryGetUnstakingServicersAllSpecsRequest: {
+    encode(message: QueryGetUnstakingServicersAllSpecsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUnstakingServicersAllSpecsRequest;
+    fromJSON(object: any): QueryGetUnstakingServicersAllSpecsRequest;
+    toJSON(message: QueryGetUnstakingServicersAllSpecsRequest): unknown;
+    fromPartial(object: DeepPartial<QueryGetUnstakingServicersAllSpecsRequest>): QueryGetUnstakingServicersAllSpecsRequest;
+};
+export declare const QueryGetUnstakingServicersAllSpecsResponse: {
+    encode(message: QueryGetUnstakingServicersAllSpecsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUnstakingServicersAllSpecsResponse;
+    fromJSON(object: any): QueryGetUnstakingServicersAllSpecsResponse;
+    toJSON(message: QueryGetUnstakingServicersAllSpecsResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetUnstakingServicersAllSpecsResponse>): QueryGetUnstakingServicersAllSpecsResponse;
+};
+export declare const QueryAllUnstakingServicersAllSpecsRequest: {
+    encode(message: QueryAllUnstakingServicersAllSpecsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUnstakingServicersAllSpecsRequest;
+    fromJSON(object: any): QueryAllUnstakingServicersAllSpecsRequest;
+    toJSON(message: QueryAllUnstakingServicersAllSpecsRequest): unknown;
+    fromPartial(object: DeepPartial<QueryAllUnstakingServicersAllSpecsRequest>): QueryAllUnstakingServicersAllSpecsRequest;
+};
+export declare const QueryAllUnstakingServicersAllSpecsResponse: {
+    encode(message: QueryAllUnstakingServicersAllSpecsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUnstakingServicersAllSpecsResponse;
+    fromJSON(object: any): QueryAllUnstakingServicersAllSpecsResponse;
+    toJSON(message: QueryAllUnstakingServicersAllSpecsResponse): unknown;
+    fromPartial(object: DeepPartial<QueryAllUnstakingServicersAllSpecsResponse>): QueryAllUnstakingServicersAllSpecsResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -143,6 +205,12 @@ export interface Query {
     SpecStakeStorageAll(request: QueryAllSpecStakeStorageRequest): Promise<QueryAllSpecStakeStorageResponse>;
     /** Queries a list of StakedServicers items. */
     StakedServicers(request: QueryStakedServicersRequest): Promise<QueryStakedServicersResponse>;
+    /** Queries a BlockDeadlineForCallback by index. */
+    BlockDeadlineForCallback(request: QueryGetBlockDeadlineForCallbackRequest): Promise<QueryGetBlockDeadlineForCallbackResponse>;
+    /** Queries a UnstakingServicersAllSpecs by id. */
+    UnstakingServicersAllSpecs(request: QueryGetUnstakingServicersAllSpecsRequest): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
+    /** Queries a list of UnstakingServicersAllSpecs items. */
+    UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -153,6 +221,9 @@ export declare class QueryClientImpl implements Query {
     SpecStakeStorage(request: QueryGetSpecStakeStorageRequest): Promise<QueryGetSpecStakeStorageResponse>;
     SpecStakeStorageAll(request: QueryAllSpecStakeStorageRequest): Promise<QueryAllSpecStakeStorageResponse>;
     StakedServicers(request: QueryStakedServicersRequest): Promise<QueryStakedServicersResponse>;
+    BlockDeadlineForCallback(request: QueryGetBlockDeadlineForCallbackRequest): Promise<QueryGetBlockDeadlineForCallbackResponse>;
+    UnstakingServicersAllSpecs(request: QueryGetUnstakingServicersAllSpecsRequest): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
+    UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

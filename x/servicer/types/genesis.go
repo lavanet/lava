@@ -10,8 +10,10 @@ const DefaultIndex uint64 = 1
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		StakeMapList:         []StakeMap{},
-		SpecStakeStorageList: []SpecStakeStorage{},
+		StakeMapList:                   []StakeMap{},
+		SpecStakeStorageList:           []SpecStakeStorage{},
+		BlockDeadlineForCallback:       nil,
+		UnstakingServicersAllSpecsList: []UnstakingServicersAllSpecs{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -39,6 +41,18 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for specStakeStorage")
 		}
 		specStakeStorageIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated ID in unstakingServicersAllSpecs
+	unstakingServicersAllSpecsIdMap := make(map[uint64]bool)
+	unstakingServicersAllSpecsCount := gs.GetUnstakingServicersAllSpecsCount()
+	for _, elem := range gs.UnstakingServicersAllSpecsList {
+		if _, ok := unstakingServicersAllSpecsIdMap[elem.Id]; ok {
+			return fmt.Errorf("duplicated id for unstakingServicersAllSpecs")
+		}
+		if elem.Id >= unstakingServicersAllSpecsCount {
+			return fmt.Errorf("unstakingServicersAllSpecs id should be lower or equal than the last id")
+		}
+		unstakingServicersAllSpecsIdMap[elem.Id] = true
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

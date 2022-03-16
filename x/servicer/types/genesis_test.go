@@ -38,6 +38,18 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
+				BlockDeadlineForCallback: &types.BlockDeadlineForCallback{
+					Deadline: new(types.BlockNum),
+				},
+				UnstakingServicersAllSpecsList: []types.UnstakingServicersAllSpecs{
+					{
+						Id: 0,
+					},
+					{
+						Id: 1,
+					},
+				},
+				UnstakingServicersAllSpecsCount: 2,
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -67,6 +79,32 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "0",
 					},
 				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated unstakingServicersAllSpecs",
+			genState: &types.GenesisState{
+				UnstakingServicersAllSpecsList: []types.UnstakingServicersAllSpecs{
+					{
+						Id: 0,
+					},
+					{
+						Id: 0,
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "invalid unstakingServicersAllSpecs count",
+			genState: &types.GenesisState{
+				UnstakingServicersAllSpecsList: []types.UnstakingServicersAllSpecs{
+					{
+						Id: 1,
+					},
+				},
+				UnstakingServicersAllSpecsCount: 0,
 			},
 			valid: false,
 		},

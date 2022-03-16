@@ -6,6 +6,8 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "servicer/params.proto";
 import "servicer/stake_map.proto";
 import "servicer/spec_stake_storage.proto";
+import "servicer/block_deadline_for_callback.proto";
+import "servicer/unstaking_servicers_all_specs.proto";
 // this line is used by starport scaffolding # 1
 import "servicer/stake_storage.proto";
 import "servicer/block_num.proto";
@@ -43,6 +45,20 @@ service Query {
 // Queries a list of StakedServicers items.
 	rpc StakedServicers(QueryStakedServicersRequest) returns (QueryStakedServicersResponse) {
 		option (google.api.http).get = "/lavanet/lava/servicer/staked_servicers/{specName}";
+	}
+
+// Queries a BlockDeadlineForCallback by index.
+	rpc BlockDeadlineForCallback(QueryGetBlockDeadlineForCallbackRequest) returns (QueryGetBlockDeadlineForCallbackResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/block_deadline_for_callback";
+	}
+// Queries a UnstakingServicersAllSpecs by id.
+	rpc UnstakingServicersAllSpecs(QueryGetUnstakingServicersAllSpecsRequest) returns (QueryGetUnstakingServicersAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}";
+	}
+
+	// Queries a list of UnstakingServicersAllSpecs items.
+	rpc UnstakingServicersAllSpecsAll(QueryAllUnstakingServicersAllSpecsRequest) returns (QueryAllUnstakingServicersAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unstaking_servicers_all_specs";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -99,6 +115,28 @@ message QueryStakedServicersRequest {
 
 message QueryStakedServicersResponse {
   StakeStorage stakeStorage = 1;
+}
+
+message QueryGetBlockDeadlineForCallbackRequest {}
+
+message QueryGetBlockDeadlineForCallbackResponse {
+	BlockDeadlineForCallback BlockDeadlineForCallback = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetUnstakingServicersAllSpecsRequest {
+	uint64 id = 1;
+}
+
+message QueryGetUnstakingServicersAllSpecsResponse {
+	UnstakingServicersAllSpecs UnstakingServicersAllSpecs = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllUnstakingServicersAllSpecsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllUnstakingServicersAllSpecsResponse {
+	repeated UnstakingServicersAllSpecs UnstakingServicersAllSpecs = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3

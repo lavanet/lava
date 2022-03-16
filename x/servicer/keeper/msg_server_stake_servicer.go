@@ -35,7 +35,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		if k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake").IsLT(neededAmount) {
 			return false, errors.New(fmt.Sprintf("insufficient balance for staking %s current balance: %s", neededAmount, k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake")))
 		}
-		err = k.Keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, "servicer", []sdk.Coin{neededAmount})
+		err := k.Keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {
 			return false, errors.New(fmt.Sprintf("invalid transfer coins to module, %s", err))
 		}
@@ -44,7 +44,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 
 	// }
 	specStakeStorage, found := k.Keeper.GetSpecStakeStorage(ctx, specName.Name)
-	if found != true {
+	if !found {
 
 		//this is the first servicer for the supported spec
 		stakeStorage := types.StakeStorage{

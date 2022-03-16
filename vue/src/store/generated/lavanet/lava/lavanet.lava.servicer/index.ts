@@ -2,6 +2,7 @@ import { txClient, queryClient, MissingWalletError , registry} from './module'
 // @ts-ignore
 import { SpVuexError } from '@starport/vuex'
 
+import { BlockDeadlineForCallback } from "./module/types/servicer/block_deadline_for_callback"
 import { BlockNum } from "./module/types/servicer/block_num"
 import { ClientRequest } from "./module/types/servicer/client_request"
 import { Params } from "./module/types/servicer/params"
@@ -10,10 +11,11 @@ import { SpecName } from "./module/types/servicer/spec_name"
 import { SpecStakeStorage } from "./module/types/servicer/spec_stake_storage"
 import { StakeMap } from "./module/types/servicer/stake_map"
 import { StakeStorage } from "./module/types/servicer/stake_storage"
+import { UnstakingServicersAllSpecs } from "./module/types/servicer/unstaking_servicers_all_specs"
 import { WorkProof } from "./module/types/servicer/work_proof"
 
 
-export { BlockNum, ClientRequest, Params, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, WorkProof };
+export { BlockDeadlineForCallback, BlockNum, ClientRequest, Params, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
 
 async function initTxClient(vuexGetters) {
 	return await txClient(vuexGetters['common/wallet/signer'], {
@@ -57,8 +59,12 @@ const getDefaultState = () => {
 				SpecStakeStorage: {},
 				SpecStakeStorageAll: {},
 				StakedServicers: {},
+				BlockDeadlineForCallback: {},
+				UnstakingServicersAllSpecs: {},
+				UnstakingServicersAllSpecsAll: {},
 				
 				_Structure: {
+						BlockDeadlineForCallback: getStructure(BlockDeadlineForCallback.fromPartial({})),
 						BlockNum: getStructure(BlockNum.fromPartial({})),
 						ClientRequest: getStructure(ClientRequest.fromPartial({})),
 						Params: getStructure(Params.fromPartial({})),
@@ -67,6 +73,7 @@ const getDefaultState = () => {
 						SpecStakeStorage: getStructure(SpecStakeStorage.fromPartial({})),
 						StakeMap: getStructure(StakeMap.fromPartial({})),
 						StakeStorage: getStructure(StakeStorage.fromPartial({})),
+						UnstakingServicersAllSpecs: getStructure(UnstakingServicersAllSpecs.fromPartial({})),
 						WorkProof: getStructure(WorkProof.fromPartial({})),
 						
 		},
@@ -131,6 +138,24 @@ export default {
 						(<any> params).query=null
 					}
 			return state.StakedServicers[JSON.stringify(params)] ?? {}
+		},
+				getBlockDeadlineForCallback: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.BlockDeadlineForCallback[JSON.stringify(params)] ?? {}
+		},
+				getUnstakingServicersAllSpecs: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.UnstakingServicersAllSpecs[JSON.stringify(params)] ?? {}
+		},
+				getUnstakingServicersAllSpecsAll: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.UnstakingServicersAllSpecsAll[JSON.stringify(params)] ?? {}
 		},
 				
 		getTypeStructure: (state) => (type) => {
@@ -306,18 +331,88 @@ export default {
 		},
 		
 		
-		async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {
+		
+		
+		 		
+		
+		
+		async QueryBlockDeadlineForCallback({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryBlockDeadlineForCallback()).data
+				
+					
+				commit('QUERY', { query: 'BlockDeadlineForCallback', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryBlockDeadlineForCallback', payload: { options: { all }, params: {...key},query }})
+				return getters['getBlockDeadlineForCallback']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryBlockDeadlineForCallback', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryUnstakingServicersAllSpecs({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryUnstakingServicersAllSpecs( key.id)).data
+				
+					
+				commit('QUERY', { query: 'UnstakingServicersAllSpecs', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryUnstakingServicersAllSpecs', payload: { options: { all }, params: {...key},query }})
+				return getters['getUnstakingServicersAllSpecs']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryUnstakingServicersAllSpecs', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryUnstakingServicersAllSpecsAll({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryUnstakingServicersAllSpecsAll(query)).data
+				
+					
+				while (all && (<any> value).pagination && (<any> value).pagination.next_key!=null) {
+					let next_values=(await queryClient.queryUnstakingServicersAllSpecsAll({...query, 'pagination.key':(<any> value).pagination.next_key})).data
+					value = mergeResults(value, next_values);
+				}
+				commit('QUERY', { query: 'UnstakingServicersAllSpecsAll', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryUnstakingServicersAllSpecsAll', payload: { options: { all }, params: {...key},query }})
+				return getters['getUnstakingServicersAllSpecsAll']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryUnstakingServicersAllSpecsAll', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		async sendMsgStakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgProofOfWork(value)
+				const msg = await txClient.msgStakeServicer(value)
 				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
 	gas: "200000" }, memo})
 				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgProofOfWork:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgProofOfWork:Send', 'Could not broadcast Tx: '+ e.message)
+					throw new SpVuexError('TxClient:MsgStakeServicer:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
@@ -336,32 +431,32 @@ export default {
 				}
 			}
 		},
-		async sendMsgStakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+		async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgStakeServicer(value)
+				const msg = await txClient.msgProofOfWork(value)
 				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
 	gas: "200000" }, memo})
 				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgProofOfWork:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgStakeServicer:Send', 'Could not broadcast Tx: '+ e.message)
+					throw new SpVuexError('TxClient:MsgProofOfWork:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
 		
-		async MsgProofOfWork({ rootGetters }, { value }) {
+		async MsgStakeServicer({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgProofOfWork(value)
+				const msg = await txClient.msgStakeServicer(value)
 				return msg
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgProofOfWork:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgProofOfWork:Create', 'Could not create message: ' + e.message)
+					throw new SpVuexError('TxClient:MsgStakeServicer:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}
@@ -380,16 +475,16 @@ export default {
 				}
 			}
 		},
-		async MsgStakeServicer({ rootGetters }, { value }) {
+		async MsgProofOfWork({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgStakeServicer(value)
+				const msg = await txClient.msgProofOfWork(value)
 				return msg
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
+					throw new SpVuexError('TxClient:MsgProofOfWork:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgStakeServicer:Create', 'Could not create message: ' + e.message)
+					throw new SpVuexError('TxClient:MsgProofOfWork:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}

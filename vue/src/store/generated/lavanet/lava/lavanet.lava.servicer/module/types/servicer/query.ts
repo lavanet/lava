@@ -1,5 +1,6 @@
 /* eslint-disable */
-import { Reader, Writer } from "protobufjs/minimal";
+import { Reader, util, configure, Writer } from "protobufjs/minimal";
+import * as Long from "long";
 import { Params } from "../servicer/params";
 import { StakeMap } from "../servicer/stake_map";
 import {
@@ -8,6 +9,8 @@ import {
 } from "../cosmos/base/query/v1beta1/pagination";
 import { SpecStakeStorage } from "../servicer/spec_stake_storage";
 import { StakeStorage } from "../servicer/stake_storage";
+import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callback";
+import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
 
 export const protobufPackage = "lavanet.lava.servicer";
 
@@ -60,6 +63,29 @@ export interface QueryStakedServicersRequest {
 
 export interface QueryStakedServicersResponse {
   stakeStorage: StakeStorage | undefined;
+}
+
+export interface QueryGetBlockDeadlineForCallbackRequest {}
+
+export interface QueryGetBlockDeadlineForCallbackResponse {
+  BlockDeadlineForCallback: BlockDeadlineForCallback | undefined;
+}
+
+export interface QueryGetUnstakingServicersAllSpecsRequest {
+  id: number;
+}
+
+export interface QueryGetUnstakingServicersAllSpecsResponse {
+  UnstakingServicersAllSpecs: UnstakingServicersAllSpecs | undefined;
+}
+
+export interface QueryAllUnstakingServicersAllSpecsRequest {
+  pagination: PageRequest | undefined;
+}
+
+export interface QueryAllUnstakingServicersAllSpecsResponse {
+  UnstakingServicersAllSpecs: UnstakingServicersAllSpecs[];
+  pagination: PageResponse | undefined;
 }
 
 const baseQueryParamsRequest: object = {};
@@ -949,6 +975,488 @@ export const QueryStakedServicersResponse = {
   },
 };
 
+const baseQueryGetBlockDeadlineForCallbackRequest: object = {};
+
+export const QueryGetBlockDeadlineForCallbackRequest = {
+  encode(
+    _: QueryGetBlockDeadlineForCallbackRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetBlockDeadlineForCallbackRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackRequest,
+    } as QueryGetBlockDeadlineForCallbackRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): QueryGetBlockDeadlineForCallbackRequest {
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackRequest,
+    } as QueryGetBlockDeadlineForCallbackRequest;
+    return message;
+  },
+
+  toJSON(_: QueryGetBlockDeadlineForCallbackRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<QueryGetBlockDeadlineForCallbackRequest>
+  ): QueryGetBlockDeadlineForCallbackRequest {
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackRequest,
+    } as QueryGetBlockDeadlineForCallbackRequest;
+    return message;
+  },
+};
+
+const baseQueryGetBlockDeadlineForCallbackResponse: object = {};
+
+export const QueryGetBlockDeadlineForCallbackResponse = {
+  encode(
+    message: QueryGetBlockDeadlineForCallbackResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.BlockDeadlineForCallback !== undefined) {
+      BlockDeadlineForCallback.encode(
+        message.BlockDeadlineForCallback,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetBlockDeadlineForCallbackResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackResponse,
+    } as QueryGetBlockDeadlineForCallbackResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.BlockDeadlineForCallback = BlockDeadlineForCallback.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetBlockDeadlineForCallbackResponse {
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackResponse,
+    } as QueryGetBlockDeadlineForCallbackResponse;
+    if (
+      object.BlockDeadlineForCallback !== undefined &&
+      object.BlockDeadlineForCallback !== null
+    ) {
+      message.BlockDeadlineForCallback = BlockDeadlineForCallback.fromJSON(
+        object.BlockDeadlineForCallback
+      );
+    } else {
+      message.BlockDeadlineForCallback = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetBlockDeadlineForCallbackResponse): unknown {
+    const obj: any = {};
+    message.BlockDeadlineForCallback !== undefined &&
+      (obj.BlockDeadlineForCallback = message.BlockDeadlineForCallback
+        ? BlockDeadlineForCallback.toJSON(message.BlockDeadlineForCallback)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetBlockDeadlineForCallbackResponse>
+  ): QueryGetBlockDeadlineForCallbackResponse {
+    const message = {
+      ...baseQueryGetBlockDeadlineForCallbackResponse,
+    } as QueryGetBlockDeadlineForCallbackResponse;
+    if (
+      object.BlockDeadlineForCallback !== undefined &&
+      object.BlockDeadlineForCallback !== null
+    ) {
+      message.BlockDeadlineForCallback = BlockDeadlineForCallback.fromPartial(
+        object.BlockDeadlineForCallback
+      );
+    } else {
+      message.BlockDeadlineForCallback = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryGetUnstakingServicersAllSpecsRequest: object = { id: 0 };
+
+export const QueryGetUnstakingServicersAllSpecsRequest = {
+  encode(
+    message: QueryGetUnstakingServicersAllSpecsRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.id !== 0) {
+      writer.uint32(8).uint64(message.id);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUnstakingServicersAllSpecsRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsRequest,
+    } as QueryGetUnstakingServicersAllSpecsRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.id = longToNumber(reader.uint64() as Long);
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUnstakingServicersAllSpecsRequest {
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsRequest,
+    } as QueryGetUnstakingServicersAllSpecsRequest;
+    if (object.id !== undefined && object.id !== null) {
+      message.id = Number(object.id);
+    } else {
+      message.id = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUnstakingServicersAllSpecsRequest): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUnstakingServicersAllSpecsRequest>
+  ): QueryGetUnstakingServicersAllSpecsRequest {
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsRequest,
+    } as QueryGetUnstakingServicersAllSpecsRequest;
+    if (object.id !== undefined && object.id !== null) {
+      message.id = object.id;
+    } else {
+      message.id = 0;
+    }
+    return message;
+  },
+};
+
+const baseQueryGetUnstakingServicersAllSpecsResponse: object = {};
+
+export const QueryGetUnstakingServicersAllSpecsResponse = {
+  encode(
+    message: QueryGetUnstakingServicersAllSpecsResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.UnstakingServicersAllSpecs !== undefined) {
+      UnstakingServicersAllSpecs.encode(
+        message.UnstakingServicersAllSpecs,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUnstakingServicersAllSpecsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsResponse,
+    } as QueryGetUnstakingServicersAllSpecsResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.UnstakingServicersAllSpecs = UnstakingServicersAllSpecs.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUnstakingServicersAllSpecsResponse {
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsResponse,
+    } as QueryGetUnstakingServicersAllSpecsResponse;
+    if (
+      object.UnstakingServicersAllSpecs !== undefined &&
+      object.UnstakingServicersAllSpecs !== null
+    ) {
+      message.UnstakingServicersAllSpecs = UnstakingServicersAllSpecs.fromJSON(
+        object.UnstakingServicersAllSpecs
+      );
+    } else {
+      message.UnstakingServicersAllSpecs = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUnstakingServicersAllSpecsResponse): unknown {
+    const obj: any = {};
+    message.UnstakingServicersAllSpecs !== undefined &&
+      (obj.UnstakingServicersAllSpecs = message.UnstakingServicersAllSpecs
+        ? UnstakingServicersAllSpecs.toJSON(message.UnstakingServicersAllSpecs)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUnstakingServicersAllSpecsResponse>
+  ): QueryGetUnstakingServicersAllSpecsResponse {
+    const message = {
+      ...baseQueryGetUnstakingServicersAllSpecsResponse,
+    } as QueryGetUnstakingServicersAllSpecsResponse;
+    if (
+      object.UnstakingServicersAllSpecs !== undefined &&
+      object.UnstakingServicersAllSpecs !== null
+    ) {
+      message.UnstakingServicersAllSpecs = UnstakingServicersAllSpecs.fromPartial(
+        object.UnstakingServicersAllSpecs
+      );
+    } else {
+      message.UnstakingServicersAllSpecs = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUnstakingServicersAllSpecsRequest: object = {};
+
+export const QueryAllUnstakingServicersAllSpecsRequest = {
+  encode(
+    message: QueryAllUnstakingServicersAllSpecsRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUnstakingServicersAllSpecsRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsRequest,
+    } as QueryAllUnstakingServicersAllSpecsRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUnstakingServicersAllSpecsRequest {
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsRequest,
+    } as QueryAllUnstakingServicersAllSpecsRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUnstakingServicersAllSpecsRequest): unknown {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUnstakingServicersAllSpecsRequest>
+  ): QueryAllUnstakingServicersAllSpecsRequest {
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsRequest,
+    } as QueryAllUnstakingServicersAllSpecsRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUnstakingServicersAllSpecsResponse: object = {};
+
+export const QueryAllUnstakingServicersAllSpecsResponse = {
+  encode(
+    message: QueryAllUnstakingServicersAllSpecsResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    for (const v of message.UnstakingServicersAllSpecs) {
+      UnstakingServicersAllSpecs.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUnstakingServicersAllSpecsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsResponse,
+    } as QueryAllUnstakingServicersAllSpecsResponse;
+    message.UnstakingServicersAllSpecs = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.UnstakingServicersAllSpecs.push(
+            UnstakingServicersAllSpecs.decode(reader, reader.uint32())
+          );
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUnstakingServicersAllSpecsResponse {
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsResponse,
+    } as QueryAllUnstakingServicersAllSpecsResponse;
+    message.UnstakingServicersAllSpecs = [];
+    if (
+      object.UnstakingServicersAllSpecs !== undefined &&
+      object.UnstakingServicersAllSpecs !== null
+    ) {
+      for (const e of object.UnstakingServicersAllSpecs) {
+        message.UnstakingServicersAllSpecs.push(
+          UnstakingServicersAllSpecs.fromJSON(e)
+        );
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUnstakingServicersAllSpecsResponse): unknown {
+    const obj: any = {};
+    if (message.UnstakingServicersAllSpecs) {
+      obj.UnstakingServicersAllSpecs = message.UnstakingServicersAllSpecs.map(
+        (e) => (e ? UnstakingServicersAllSpecs.toJSON(e) : undefined)
+      );
+    } else {
+      obj.UnstakingServicersAllSpecs = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUnstakingServicersAllSpecsResponse>
+  ): QueryAllUnstakingServicersAllSpecsResponse {
+    const message = {
+      ...baseQueryAllUnstakingServicersAllSpecsResponse,
+    } as QueryAllUnstakingServicersAllSpecsResponse;
+    message.UnstakingServicersAllSpecs = [];
+    if (
+      object.UnstakingServicersAllSpecs !== undefined &&
+      object.UnstakingServicersAllSpecs !== null
+    ) {
+      for (const e of object.UnstakingServicersAllSpecs) {
+        message.UnstakingServicersAllSpecs.push(
+          UnstakingServicersAllSpecs.fromPartial(e)
+        );
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -971,6 +1479,18 @@ export interface Query {
   StakedServicers(
     request: QueryStakedServicersRequest
   ): Promise<QueryStakedServicersResponse>;
+  /** Queries a BlockDeadlineForCallback by index. */
+  BlockDeadlineForCallback(
+    request: QueryGetBlockDeadlineForCallbackRequest
+  ): Promise<QueryGetBlockDeadlineForCallbackResponse>;
+  /** Queries a UnstakingServicersAllSpecs by id. */
+  UnstakingServicersAllSpecs(
+    request: QueryGetUnstakingServicersAllSpecsRequest
+  ): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
+  /** Queries a list of UnstakingServicersAllSpecs items. */
+  UnstakingServicersAllSpecsAll(
+    request: QueryAllUnstakingServicersAllSpecsRequest
+  ): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -1057,6 +1577,54 @@ export class QueryClientImpl implements Query {
       QueryStakedServicersResponse.decode(new Reader(data))
     );
   }
+
+  BlockDeadlineForCallback(
+    request: QueryGetBlockDeadlineForCallbackRequest
+  ): Promise<QueryGetBlockDeadlineForCallbackResponse> {
+    const data = QueryGetBlockDeadlineForCallbackRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "BlockDeadlineForCallback",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetBlockDeadlineForCallbackResponse.decode(new Reader(data))
+    );
+  }
+
+  UnstakingServicersAllSpecs(
+    request: QueryGetUnstakingServicersAllSpecsRequest
+  ): Promise<QueryGetUnstakingServicersAllSpecsResponse> {
+    const data = QueryGetUnstakingServicersAllSpecsRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UnstakingServicersAllSpecs",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetUnstakingServicersAllSpecsResponse.decode(new Reader(data))
+    );
+  }
+
+  UnstakingServicersAllSpecsAll(
+    request: QueryAllUnstakingServicersAllSpecsRequest
+  ): Promise<QueryAllUnstakingServicersAllSpecsResponse> {
+    const data = QueryAllUnstakingServicersAllSpecsRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UnstakingServicersAllSpecsAll",
+      data
+    );
+    return promise.then((data) =>
+      QueryAllUnstakingServicersAllSpecsResponse.decode(new Reader(data))
+    );
+  }
 }
 
 interface Rpc {
@@ -1066,6 +1634,16 @@ interface Rpc {
     data: Uint8Array
   ): Promise<Uint8Array>;
 }
+
+declare var self: any | undefined;
+declare var window: any | undefined;
+var globalThis: any = (() => {
+  if (typeof globalThis !== "undefined") return globalThis;
+  if (typeof self !== "undefined") return self;
+  if (typeof window !== "undefined") return window;
+  if (typeof global !== "undefined") return global;
+  throw "Unable to locate global object";
+})();
 
 type Builtin = Date | Function | Uint8Array | string | number | undefined;
 export type DeepPartial<T> = T extends Builtin
@@ -1077,3 +1655,15 @@ export type DeepPartial<T> = T extends Builtin
   : T extends {}
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (util.Long !== Long) {
+  util.Long = Long as any;
+  configure();
+}

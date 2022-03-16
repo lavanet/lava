@@ -7,6 +7,9 @@ export interface RpcStatus {
     message?: string;
     details?: ProtobufAny[];
 }
+export interface ServicerBlockDeadlineForCallback {
+    deadline?: ServicerBlockNum;
+}
 export interface ServicerBlockNum {
     /** @format uint64 */
     num?: string;
@@ -58,11 +61,30 @@ export interface ServicerQueryAllStakeMapResponse {
      */
     pagination?: V1Beta1PageResponse;
 }
+export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
+    UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
+export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
+    BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
+}
 export interface ServicerQueryGetSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage;
 }
 export interface ServicerQueryGetStakeMapResponse {
     stakeMap?: ServicerStakeMap;
+}
+export interface ServicerQueryGetUnstakingServicersAllSpecsResponse {
+    UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs;
 }
 /**
  * QueryParamsResponse is response type for the Query/Params RPC method.
@@ -99,6 +121,12 @@ export interface ServicerStakeMap {
 export interface ServicerStakeStorage {
     staked?: ServicerStakeMap[];
     unstaking?: ServicerStakeMap[];
+}
+export interface ServicerUnstakingServicersAllSpecs {
+    /** @format uint64 */
+    id?: string;
+    unstaking?: ServicerStakeMap;
+    specStakeStorage?: ServicerSpecStakeStorage;
 }
 export interface ServicerWorkProof {
     data?: string;
@@ -223,10 +251,19 @@ export declare class HttpClient<SecurityDataType = unknown> {
     request: <T = any, E = any>({ body, secure, path, type, query, format, baseUrl, cancelToken, ...params }: FullRequestParams) => Promise<HttpResponse<T, E>>;
 }
 /**
- * @title servicer/block_num.proto
+ * @title servicer/block_deadline_for_callback.proto
  * @version version not set
  */
 export declare class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryBlockDeadlineForCallback
+     * @summary Queries a BlockDeadlineForCallback by index.
+     * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
+     */
+    queryBlockDeadlineForCallback: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetBlockDeadlineForCallbackResponse, RpcStatus>>;
     /**
      * No description
      *
@@ -293,5 +330,29 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/staked_servicers/{specName}
      */
     queryStakedServicers: (specName: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryStakedServicersResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUnstakingServicersAllSpecsAll
+     * @summary Queries a list of UnstakingServicersAllSpecs items.
+     * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs
+     */
+    queryUnstakingServicersAllSpecsAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllUnstakingServicersAllSpecsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUnstakingServicersAllSpecs
+     * @summary Queries a UnstakingServicersAllSpecs by id.
+     * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}
+     */
+    queryUnstakingServicersAllSpecs: (id: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>>;
 }
 export {};

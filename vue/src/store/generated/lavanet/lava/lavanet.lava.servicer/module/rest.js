@@ -130,12 +130,26 @@ export class HttpClient {
     }
 }
 /**
- * @title servicer/block_num.proto
+ * @title servicer/block_deadline_for_callback.proto
  * @version version not set
  */
 export class Api extends HttpClient {
     constructor() {
         super(...arguments);
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryBlockDeadlineForCallback
+         * @summary Queries a BlockDeadlineForCallback by index.
+         * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
+         */
+        this.queryBlockDeadlineForCallback = (params = {}) => this.request({
+            path: `/lavanet/lava/servicer/block_deadline_for_callback`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
         /**
          * No description
          *
@@ -218,6 +232,35 @@ export class Api extends HttpClient {
          */
         this.queryStakedServicers = (specName, params = {}) => this.request({
             path: `/lavanet/lava/servicer/staked_servicers/${specName}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUnstakingServicersAllSpecsAll
+         * @summary Queries a list of UnstakingServicersAllSpecs items.
+         * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs
+         */
+        this.queryUnstakingServicersAllSpecsAll = (query, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/unstaking_servicers_all_specs`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUnstakingServicersAllSpecs
+         * @summary Queries a UnstakingServicersAllSpecs by id.
+         * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}
+         */
+        this.queryUnstakingServicersAllSpecs = (id, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/unstaking_servicers_all_specs/${id}`,
             method: "GET",
             format: "json",
             ...params,

@@ -17,6 +17,17 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.SpecStakeStorageList {
 		k.SetSpecStakeStorage(ctx, elem)
 	}
+	// Set if defined
+	if genState.BlockDeadlineForCallback != nil {
+		k.SetBlockDeadlineForCallback(ctx, *genState.BlockDeadlineForCallback)
+	}
+	// Set all the unstakingServicersAllSpecs
+	for _, elem := range genState.UnstakingServicersAllSpecsList {
+		k.SetUnstakingServicersAllSpecs(ctx, elem)
+	}
+
+	// Set unstakingServicersAllSpecs count
+	k.SetUnstakingServicersAllSpecsCount(ctx, genState.UnstakingServicersAllSpecsCount)
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -28,6 +39,13 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 
 	genesis.StakeMapList = k.GetAllStakeMap(ctx)
 	genesis.SpecStakeStorageList = k.GetAllSpecStakeStorage(ctx)
+	// Get all blockDeadlineForCallback
+	blockDeadlineForCallback, found := k.GetBlockDeadlineForCallback(ctx)
+	if found {
+		genesis.BlockDeadlineForCallback = &blockDeadlineForCallback
+	}
+	genesis.UnstakingServicersAllSpecsList = k.GetAllUnstakingServicersAllSpecs(ctx)
+	genesis.UnstakingServicersAllSpecsCount = k.GetUnstakingServicersAllSpecsCount(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
