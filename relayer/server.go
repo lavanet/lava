@@ -4,6 +4,7 @@ import (
 	context "context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -37,6 +38,21 @@ type jsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+func (err *jsonError) Error() string {
+	if err.Message == "" {
+		return fmt.Sprintf("json-rpc error %d", err.Code)
+	}
+	return err.Message
+}
+
+func (err *jsonError) ErrorCode() int {
+	return err.Code
+}
+
+func (err *jsonError) ErrorData() interface{} {
+	return err.Data
 }
 
 type jsonrpcMessage struct {
@@ -163,18 +179,25 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	// Call our node
 	var result json.RawMessage
 	err = rpc.CallContext(ctx, &result, msg.Method, msg.Params...)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 
 	//
 	// Wrap result back to json
 	replyMsg := jsonrpcMessage{
 		Version: msg.Version,
 		ID:      msg.ID,
-		Result:  result,
 	}
+	if err != nil {
+		//
+		// TODO: CallContext is limited, it does not give us the source
+		// of the error or the error code if json (we need smarter error handling)
+		replyMsg.Error = &jsonError{
+			Code:    1, // TODO
+			Message: fmt.Sprintf("%s", err),
+		}
+	} else {
+		replyMsg.Result = result
+	}
+
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
 		return nil, err
