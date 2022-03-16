@@ -25,5 +25,5 @@ type BankKeeper interface {
 }
 
 type SpecKeeper interface {
-	IsSpecFoundAndActive(ctx sdk.Context, specName string) bool
+	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool)
 }

@@ -18,7 +18,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		return nil, err
 	}
 
-	foundAndActive := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
+	foundAndActive, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if foundAndActive != true {
 		return nil, errors.New("spec not found or not enabled")
 	}
@@ -30,6 +30,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("invalid creator address %s error: %s", msg.Creator, err))
 	}
+	//define the function here for later use
 	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k msgServer, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		if k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake").IsLT(neededAmount) {
 			return false, errors.New(fmt.Sprintf("insufficient balance for staking %s current balance: %s", neededAmount, k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake")))
