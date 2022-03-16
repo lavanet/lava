@@ -208,47 +208,12 @@
           "status": "enabled"
         },
         {
-          "name": "parity_getBlockReceipts",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
-          "name": "erigon_forks",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
-          "name": "erigon_getHeaderByHash",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
-          "name": "erigon_getHeaderByNumber",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
-          "name": "erigon_getLogsByHash",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
-          "name": "erigon_issuance",
-          "compute_units": "24",
-          "status": "enabled"
-        },
-        {
           "name": "eth_getTransactionCount",
           "compute_units": "26",
           "status": "enabled"
         },
         {
           "name": "eth_call",
-          "compute_units": "26",
-          "status": "enabled"
-        },
-        {
-          "name": "alchemy_getTokenBalances",
           "compute_units": "26",
           "status": "enabled"
         },
@@ -290,16 +255,6 @@
         {
           "name": "eth_estimateGas",
           "compute_units": "87",
-          "status": "enabled"
-        },
-        {
-          "name": "alchemy_getAssetTransfers",
-          "compute_units": "150",
-          "status": "enabled"
-        },
-        {
-          "name": "alchemy_getTransactionReceipts",
-          "compute_units": "250",
           "status": "enabled"
         },
         {

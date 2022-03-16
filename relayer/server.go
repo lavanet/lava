@@ -70,6 +70,9 @@ func isSupportedSpec(in *RelayRequest) bool {
 
 func getSupportedApi(name string, apis map[string]types.ServiceApi) (*types.ServiceApi, error) {
 	if api, ok := apis[name]; ok {
+		if api.Status != "enabled" {
+			return nil, errors.New("api is disabled")
+		}
 		return &api, nil
 	}
 
