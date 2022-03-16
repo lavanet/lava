@@ -16,6 +16,7 @@ message RelayRequest {
 
     bytes data = 5;
     bytes sig = 6;
+    bytes servicer = 7;
 }
 
 message RelayReply {
