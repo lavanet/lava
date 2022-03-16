@@ -1,39 +1,339 @@
 {
-    "title": "Add Specs: Ethereum",
-    "description": "Adding new specification support for relaying Ethereum data on Lava",
-    "specs": [
-      {
-        "name": "Ethereum Mainnet",
-        "status": "enabled",
-        "apis": [
-            {
-                "name": "eth_getBalance",
-                "compute_units": "10",
-                "status": "enabled"
-            },
-            {
-                "name": "eth_codeAt",
-                "compute_units": "20",
-                "status": "disabled"
-            }
-        ]
-      },
-      {
-        "name": "Ethereum Rinkeby",
-        "status": "enabled",
-        "apis": [
-            {
-                "name": "eth_getBalance",
-                "compute_units": "10",
-                "status": "enabled"
-            },
-            {
-                "name": "eth_codeAt",
-                "compute_units": "20",
-                "status": "disabled"
-            }
-        ]
-      }
-    ],
-    "deposit": "10000000stake"
-  }
+  "title": "Add Specs: Ethereum",
+  "description": "Adding new specification support for relaying Ethereum data on Lava",
+  "specs": [
+    {
+      "name": "Ethereum Mainnet",
+      "status": "enabled",
+      "apis": [
+        {
+          "name": "net_version",
+          "compute_units": "0",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_chainId",
+          "compute_units": "0",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_syncing",
+          "compute_units": "0",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_protocolVersion",
+          "compute_units": "0",
+          "status": "enabled"
+        },
+        {
+          "name": "net_listening",
+          "compute_units": "0",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_uninstallFilter",
+          "compute_units": "10",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_accounts",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_blockNumber",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_subscribe",
+          "compute_units": "10",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_unsubscribe",
+          "compute_units": "10",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_feeHistory",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_maxPriorityFeePerGas",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_createAccessList",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getTransactionReceipt",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getUncleByBlockHashAndIndex",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getUncleByBlockNumberAndIndex",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getTransactionByBlockHashAndIndex",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getTransactionByBlockNumberAndIndex",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getUncleCountByBlockHash",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getUncleCountByBlockNumber",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "web3_clientVersion",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "web3_sha3",
+          "compute_units": "15",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getBlockByNumber",
+          "compute_units": "16",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getStorageAt",
+          "compute_units": "17",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getTransactionByHash",
+          "compute_units": "17",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_get",
+          "compute_units": "17",
+          "status": "enabled"
+        },
+        {
+          "name": "alchemy_getTokenAllowance",
+          "compute_units": "19",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_gasPrice",
+          "compute_units": "19",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getBalance",
+          "compute_units": "19",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getCode",
+          "compute_units": "19",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getFilterChanges",
+          "compute_units": "20",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_newBlockFilter",
+          "compute_units": "20",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_newFilter",
+          "compute_units": "20",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_newPendingTransactionFilter",
+          "compute_units": "20",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_getBlockTransactionCountByHash",
+          "compute_units": "20",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getBlockTransactionCountByNumber",
+          "compute_units": "20",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getProof",
+          "compute_units": "21",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getBlockByHash",
+          "compute_units": "21",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_block",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "parity_getBlockReceipts",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "erigon_forks",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "erigon_getHeaderByHash",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "erigon_getHeaderByNumber",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "erigon_getLogsByHash",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "erigon_issuance",
+          "compute_units": "24",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getTransactionCount",
+          "compute_units": "26",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_call",
+          "compute_units": "26",
+          "status": "enabled"
+        },
+        {
+          "name": "alchemy_getTokenBalances",
+          "compute_units": "26",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_transaction",
+          "compute_units": "26",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_getFilterLogs",
+          "compute_units": "75",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_getLogs",
+          "compute_units": "75",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_call",
+          "compute_units": "75",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_callMany",
+          "compute_units": "75",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_rawTransaction",
+          "compute_units": "75",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_filter",
+          "compute_units": "75",
+          "status": "disabled"
+        },
+        {
+          "name": "eth_estimateGas",
+          "compute_units": "87",
+          "status": "enabled"
+        },
+        {
+          "name": "alchemy_getAssetTransfers",
+          "compute_units": "150",
+          "status": "enabled"
+        },
+        {
+          "name": "alchemy_getTransactionReceipts",
+          "compute_units": "250",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_sendRawTransaction",
+          "compute_units": "250",
+          "status": "enabled"
+        },
+        {
+          "name": "debug_traceTransaction",
+          "compute_units": "309",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_replayTransaction",
+          "compute_units": "2983",
+          "status": "enabled"
+        },
+        {
+          "name": "trace_replayBlockTransactions",
+          "compute_units": "2983",
+          "status": "enabled"
+        }
+      ]
+    },
+    {
+      "name": "Ethereum Rinkeby",
+      "status": "enabled",
+      "apis": [
+        {
+          "name": "eth_getBalance",
+          "compute_units": "10",
+          "status": "enabled"
+        },
+        {
+          "name": "eth_codeAt",
+          "compute_units": "20",
+          "status": "disabled"
+        }
+      ]
+    }
+  ],
+  "deposit": "10000000stake"
+}
