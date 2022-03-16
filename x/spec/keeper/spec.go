@@ -115,6 +115,20 @@ func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bo
 	return false, false
 }
 
+//returns whether a spec id is a valid spec in the consensus
+//first return value is found and active, second argument is found only
+func (k Keeper) IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool) {
+	val, found := k.GetSpec(ctx, id)
+	if !found {
+		return false, false
+	}
+	if val.Status == "enabled" {
+		return true, true
+	}
+	// spec is found but disabled
+	return false, true
+}
+
 // GetSpecIDBytes returns the byte representation of the ID
 func GetSpecIDBytes(id uint64) []byte {
 	bz := make([]byte, 8)

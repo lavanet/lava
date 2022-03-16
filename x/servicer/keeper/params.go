@@ -39,6 +39,12 @@ func (k Keeper) CoinsPerCU(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyCoinsPerCU, &res)
 	return
 }
+func (k Keeper) GetCoinsPerCU(ctx sdk.Context) (res float64) {
+	var val uint64
+	k.paramstore.Get(ctx, types.KeyCoinsPerCU, &val)
+	res = float64(val) / float64(types.PrecisionForCoinsPerCU)
+	return
+}
 
 // UnstakeHoldBlocks returns the UnstakeHoldBlocks param
 func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context) (res uint64) {

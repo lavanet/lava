@@ -9,6 +9,8 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
+const PrecisionForCoinsPerCU uint64 = 1000000
+
 var (
 	KeyMinStake            = []byte("MinStake")
 	DefaultMinStake uint64 = 1000
