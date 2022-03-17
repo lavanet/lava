@@ -13222,6 +13222,8 @@ paths:
                             num:
                               type: string
                               format: uint64
+              output:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -21566,6 +21568,8 @@ definitions:
                     num:
                       type: string
                       format: uint64
+      output:
+        type: string
   lavanet.lava.servicer.SessionID:
     type: object
     properties:

@@ -115,6 +115,7 @@ message QueryStakedServicersRequest {
 
 message QueryStakedServicersResponse {
   StakeStorage stakeStorage = 1;
+  string output = 2;
 }
 
 message QueryGetBlockDeadlineForCallbackRequest {}

@@ -20,17 +20,17 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 
 	// we can unstake disabled specs, but not missing ones
 	_, found := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
-	if found != true {
+	if !found {
 		return nil, errors.New("spec not found, can't unstake")
 	}
 	// receiverAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	// if err != nil {
-	// 	return nil, errors.New(fmt.Sprintf("invalid creator address %s error: %s", msg.Creator, err))
+	// 	return nil, fmt.Errorf("invalid creator address %s error: %s", msg.Creator, err))
 	// }
 	specStakeStorage, found := k.Keeper.GetSpecStakeStorage(ctx, specName.Name)
-	if found != true {
+	if !found {
 		// the spec storage is empty
-		return nil, errors.New(fmt.Sprintf("can't unstake empty specStakeStorage for spec name: %s", specName.Name))
+		return nil, fmt.Errorf("can't unstake empty specStakeStorage for spec name: %s", specName.Name)
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	found_staked_entry := false
@@ -70,7 +70,7 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 		}
 	}
 	if !found_staked_entry {
-		return nil, errors.New(fmt.Sprintf("can't unstake servicer, stake entry not found for address: %s", msg.Creator))
+		return nil, fmt.Errorf("can't unstake servicer, stake entry not found for address: %s", msg.Creator)
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 	_ = ctx

@@ -678,11 +678,14 @@ export const QueryStakedServicersRequest = {
         return message;
     },
 };
-const baseQueryStakedServicersResponse = {};
+const baseQueryStakedServicersResponse = { output: "" };
 export const QueryStakedServicersResponse = {
     encode(message, writer = Writer.create()) {
         if (message.stakeStorage !== undefined) {
             StakeStorage.encode(message.stakeStorage, writer.uint32(10).fork()).ldelim();
+        }
+        if (message.output !== "") {
+            writer.uint32(18).string(message.output);
         }
         return writer;
     },
@@ -697,6 +700,9 @@ export const QueryStakedServicersResponse = {
             switch (tag >>> 3) {
                 case 1:
                     message.stakeStorage = StakeStorage.decode(reader, reader.uint32());
+                    break;
+                case 2:
+                    message.output = reader.string();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -715,6 +721,12 @@ export const QueryStakedServicersResponse = {
         else {
             message.stakeStorage = undefined;
         }
+        if (object.output !== undefined && object.output !== null) {
+            message.output = String(object.output);
+        }
+        else {
+            message.output = "";
+        }
         return message;
     },
     toJSON(message) {
@@ -723,6 +735,7 @@ export const QueryStakedServicersResponse = {
             (obj.stakeStorage = message.stakeStorage
                 ? StakeStorage.toJSON(message.stakeStorage)
                 : undefined);
+        message.output !== undefined && (obj.output = message.output);
         return obj;
     },
     fromPartial(object) {
@@ -734,6 +747,12 @@ export const QueryStakedServicersResponse = {
         }
         else {
             message.stakeStorage = undefined;
+        }
+        if (object.output !== undefined && object.output !== null) {
+            message.output = object.output;
+        }
+        else {
+            message.output = "";
         }
         return message;
     },

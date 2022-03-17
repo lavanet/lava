@@ -19,25 +19,25 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 
 	foundAndActive, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
-	if foundAndActive != true {
+	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")
 	}
 	//if we get here, the spec is active and supported
 	if msg.Amount.IsLT(k.Keeper.GetMinStake(ctx)) {
-		return nil, errors.New(fmt.Sprintf("insufficient stake amount, amount must be %s or greater", k.Keeper.GetMinStake(ctx)))
+		return nil, fmt.Errorf("insufficient stake amount, amount must be %s or greater", k.Keeper.GetMinStake(ctx))
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("invalid creator address %s error: %s", msg.Creator, err))
+		return nil, fmt.Errorf("invalid creator address %s error: %s", msg.Creator, err)
 	}
 	//define the function here for later use
 	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k msgServer, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		if k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake").IsLT(neededAmount) {
-			return false, errors.New(fmt.Sprintf("insufficient balance for staking %s current balance: %s", neededAmount, k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake")))
+			return false, fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.Keeper.bankKeeper.GetBalance(ctx, addr, "stake"))
 		}
 		err := k.Keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("invalid transfer coins to module, %s", err))
+			return false, fmt.Errorf("invalid transfer coins to module, %s", err)
 		}
 		return true, nil
 	}
@@ -69,7 +69,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 					//lowering the deadline is allowed
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(storageMap.Stake))
 					if !valid {
-						return nil, errors.New(fmt.Sprintf("error updating stake: %s", err))
+						return nil, fmt.Errorf("error updating stake: %s", err)
 					}
 					storageMap.Stake = msg.Amount
 					storageMap.Deadline = msg.Deadline
@@ -82,7 +82,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	// servicer isn't staked so add him
 	valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 	if !valid {
-		return nil, errors.New(fmt.Sprintf("error staking: %s", err))
+		return nil, fmt.Errorf("error staking: %s", err)
 	}
 
 	stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{

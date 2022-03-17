@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,25 +14,26 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 	clientRequestRaw := msg.ClientRequest
 	clientRequest, err := clientRequestRaw.ParseData(ctx)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error on proof of work, can't verify client message: %s", err))
+		return nil, fmt.Errorf("error on proof of work, can't verify client message: %s", err)
 	}
 	foundAndActive, _ := k.Keeper.specKeeper.IsSpecIDFoundAndActive(ctx, uint64(clientRequest.Spec_id))
 	if !foundAndActive {
-		return nil, errors.New(fmt.Sprintf("error on proof of work, spec specified: %s is inactive", clientRequest.Spec_id))
+		return nil, fmt.Errorf("error on proof of work, spec specified: %d is inactive", clientRequest.Spec_id)
 	}
 	clientAddr, err := sdk.AccAddressFromBech32(clientRequest.ClientSig)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error on proof of work, invalid client address: %s", err))
+		return nil, fmt.Errorf("error on proof of work, invalid client address: %s", err)
 	}
 	//TODO: validate CU requested is valid for the user and not too big, this requires the user module
+	//TODO: validate the user request only holds supported apis
 	possibleServicerAddresses, err := k.Keeper.GetPairingForClient(ctx, *msg.BlockOfWork, uint64(clientRequest.Spec_id), clientAddr)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error on pairing for addresses : %s and %s, err: %s", clientAddr, msg.Creator, err))
+		return nil, fmt.Errorf("error on pairing for addresses : %s and %s, err: %s", clientAddr, msg.Creator, err)
 	}
 	for _, possibleAddr := range possibleServicerAddresses {
 		servicerAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("error on proof of work, invalid servicer address: %s", err))
+			return nil, fmt.Errorf("error on proof of work, invalid servicer address: %s", err)
 		}
 		if possibleAddr.Equals(servicerAddr) {
 			//pairing is possible, we can pay servicer for work

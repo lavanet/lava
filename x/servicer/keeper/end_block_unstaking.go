@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"fmt"
 	"math"
 
@@ -39,11 +38,11 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), "stake")
 		if moduleBalance.IsLT(neededAmount) {
-			return false, errors.New(fmt.Sprintf("insufficient balance for unstaking %s current balance: %s", neededAmount, moduleBalance))
+			return false, fmt.Errorf("insufficient balance for unstaking %s current balance: %s", neededAmount, moduleBalance)
 		}
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{neededAmount})
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("invalid transfer coins from module, %s to account %s", err, addr))
+			return false, fmt.Errorf("invalid transfer coins from module, %s to account %s", err, addr)
 		}
 		return true, nil
 	}

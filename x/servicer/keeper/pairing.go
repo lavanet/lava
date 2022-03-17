@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,11 +11,11 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, block types.BlockNum, specI
 	//TODO: client stake needs to be verified
 	spec, found := k.specKeeper.GetSpec(ctx, specID)
 	if !found {
-		return nil, errors.New(fmt.Sprintf("spec not found for id given: %s", specID))
+		return nil, fmt.Errorf("spec not found for id given: %d", specID)
 	}
 	specStakeStorage, found := k.GetSpecStakeStorage(ctx, spec.Name)
 	if !found {
-		return nil, errors.New(fmt.Sprintf("no specStakeStorage for spec name: %s", spec.Name))
+		return nil, fmt.Errorf("no specStakeStorage for spec name: %s", spec.Name)
 	}
 	stakedServicers := specStakeStorage.StakeStorage.Staked
 	return k.calculatePairingForClient(ctx, stakedServicers, block, clientAddress)

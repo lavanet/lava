@@ -95,6 +95,7 @@ export interface ServicerQueryParamsResponse {
 }
 export interface ServicerQueryStakedServicersResponse {
     stakeStorage?: ServicerStakeStorage;
+    output?: string;
 }
 export interface ServicerSessionID {
     /** @format uint64 */

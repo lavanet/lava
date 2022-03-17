@@ -46,6 +46,7 @@ export interface QueryStakedServicersRequest {
 }
 export interface QueryStakedServicersResponse {
     stakeStorage: StakeStorage | undefined;
+    output: string;
 }
 export interface QueryGetBlockDeadlineForCallbackRequest {
 }
