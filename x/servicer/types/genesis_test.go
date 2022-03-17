@@ -38,8 +38,8 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
-				BlockDeadlineForCallback: &types.BlockDeadlineForCallback{
-					Deadline: new(types.BlockNum),
+				BlockDeadlineForCallback: types.BlockDeadlineForCallback{
+					Deadline: types.BlockNum{Num: 0},
 				},
 				UnstakingServicersAllSpecsList: []types.UnstakingServicersAllSpecs{
 					{

@@ -3,8 +3,9 @@ package lavanet.lava.servicer;
 
 option go_package = "github.com/lavanet/lava/x/servicer/types";
 import "servicer/block_num.proto"; 
+import "gogoproto/gogo.proto";
 
 message BlockDeadlineForCallback {
-  BlockNum deadline = 1; 
+  BlockNum deadline = 1  [(gogoproto.nullable) = false];
   
 }

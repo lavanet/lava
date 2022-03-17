@@ -22,9 +22,10 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	}
 	err := k.creditUnstakingServicersAndRemoveFromCallback(ctx, deadline.Deadline)
 	return err
+	return nil
 }
 
-func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, deadline *types.BlockNum) error {
+func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, deadline types.BlockNum) error {
 	unstakingServicers := k.GetAllUnstakingServicersAllSpecs(ctx)
 	minDeadaline := uint64(math.MaxUint64)
 	indexesForDelete := make([]uint64, 0)
@@ -98,14 +99,14 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 	//A5. set new deadline for next callback
 	if k.GetUnstakingServicersAllSpecsCount(ctx) == 0 {
 		//no more deadlines, resolved all unstaking
-		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: &types.BlockNum{Num: 0}})
+		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: 0}})
 	} else {
 		// still some deadlines to go over, so set the closest one
 		// and check sanity that deadlines are in the future
 		if minDeadaline < uint64(ctx.BlockHeight()) || minDeadaline == uint64(math.MaxUint64) {
 			panic(fmt.Sprintf("trying to set invalid next deadline! %d block height: %d", minDeadaline, uint64(ctx.BlockHeight())))
 		}
-		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: &types.BlockNum{Num: minDeadaline}})
+		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: minDeadaline}})
 	}
 	return nil
 }
