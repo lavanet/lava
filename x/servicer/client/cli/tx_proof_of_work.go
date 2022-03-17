@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"encoding/json"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -20,16 +21,12 @@ func CmdProofOfWork() *cobra.Command {
 		Short: "Broadcast message proofOfWork",
 		Args:  cobra.ExactArgs(6),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argSpec := new(types.SpecName)
-			err = json.Unmarshal([]byte(args[0]), argSpec)
+			argSpec := &types.SpecName{Name: args[0]}
+			num, err := cast.ToUint64E(args[1])
 			if err != nil {
 				return err
 			}
-			argSession := new(types.SessionID)
-			err = json.Unmarshal([]byte(args[1]), argSession)
-			if err != nil {
-				return err
-			}
+			argSession := &types.SessionID{Num: num}
 			argClientRequest := new(types.ClientRequest)
 			err = json.Unmarshal([]byte(args[2]), argClientRequest)
 			if err != nil {
@@ -44,11 +41,11 @@ func CmdProofOfWork() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			argBlockOfWork := new(types.BlockNum)
-			err = json.Unmarshal([]byte(args[5]), argBlockOfWork)
+			num, err = cast.ToUint64E(args[5])
 			if err != nil {
 				return err
 			}
+			argBlockOfWork := &types.BlockNum{Num: num}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
