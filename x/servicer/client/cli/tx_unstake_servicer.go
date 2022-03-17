@@ -3,11 +3,11 @@ package cli
 import (
 	"strconv"
 
-	"encoding/json"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/x/servicer/types"
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )
 
@@ -19,16 +19,13 @@ func CmdUnstakeServicer() *cobra.Command {
 		Short: "Broadcast message unstakeServicer",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argSpec := new(types.SpecName)
-			err = json.Unmarshal([]byte(args[0]), argSpec)
+			argSpec := &types.SpecName{Name: args[0]}
+
+			num, err := cast.ToUint64E(args[1])
 			if err != nil {
 				return err
 			}
-			argDeadline := new(types.BlockNum)
-			err = json.Unmarshal([]byte(args[1]), argDeadline)
-			if err != nil {
-				return err
-			}
+			argDeadline := &types.BlockNum{Num: num}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

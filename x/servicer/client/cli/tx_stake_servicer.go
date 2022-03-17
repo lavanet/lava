@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/servicer/types"
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +25,7 @@ func CmdStakeServicer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			num, err := strconv.ParseUint(args[2], 0, 64)
+			num, err := cast.ToUint64E(args[2])
 			if err != nil {
 				return err
 			}
