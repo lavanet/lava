@@ -34,6 +34,7 @@ func sendRelay(
 	specId int,
 	sessionId int64,
 	req string,
+	blockHeight int64,
 ) (*RelayReply, *secp256k1.PubKey, error) {
 
 	//
@@ -52,10 +53,11 @@ func sendRelay(
 	//
 	//
 	relayRequest := &RelayRequest{
-		Data:      []byte(req),
-		SessionId: uint64(sessionId),
-		SpecId:    uint32(specId),
-		CuSum:     g_cu_sum,
+		Data:        []byte(req),
+		SessionId:   uint64(sessionId),
+		SpecId:      uint32(specId),
+		CuSum:       g_cu_sum,
+		BlockHeight: blockHeight,
 	}
 
 	sig, err := signRelay(privKey, []byte(relayRequest.String()))
@@ -87,6 +89,18 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 	g_clientApis = clientApis
 
 	//
+	// Start sentry
+	sentry := NewSentry(clientCtx.Client)
+	err = sentry.Init(ctx)
+	if err != nil {
+		log.Fatalln("error sentry.Init", err)
+	}
+	go sentry.Start()
+	for sentry.GetBlockHeight() == 0 {
+		time.Sleep(1 * time.Second)
+	}
+
+	//
 	// Set up a connection to the server.
 	log.Println("TestClient connecting to", addr)
 
@@ -115,14 +129,14 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 	//
 	// Call a few times and print results
 	for i := 0; i < 10; i++ {
-		reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER)
+		reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 		} else {
 			reply.Sig = nil // for nicer prints
 			log.Println("server addr", serverKey.Address(), "reply", reply)
 		}
-		reply, serverKey, err = sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE)
+		reply, serverKey, err = sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 		} else {
@@ -133,7 +147,7 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 
 	//
 	// Expected unsupported API:
-	reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED)
+	reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
 	if err != nil {
 		log.Println(err)
 	} else {

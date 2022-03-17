@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -224,6 +225,18 @@ func Server(ctx context.Context, clientCtx client.Context, queryClient types.Que
 	g_serverSpec = *serverSpec
 	g_serverApis = serverApis
 	g_sessions = map[string]map[uint64]*RelaySession{}
+
+	//
+	// Start sentry
+	sentry := NewSentry(clientCtx.Client)
+	err = sentry.Init(ctx)
+	if err != nil {
+		log.Fatalln("error sentry.Init", err)
+	}
+	go sentry.Start()
+	for sentry.GetBlockHeight() == 0 {
+		time.Sleep(1 * time.Second)
+	}
 
 	//
 	// Info

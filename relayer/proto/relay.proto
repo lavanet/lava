@@ -17,6 +17,7 @@ message RelayRequest {
     bytes data = 5;
     bytes sig = 6;
     bytes servicer = 7;
+    int64 block_height = 8;
 }
 
 message RelayReply {
