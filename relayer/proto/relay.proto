@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option go_package = "./relayer";
+
+package relayer;
+
+service Relayer {
+    rpc Relay (RelayRequest) returns (RelayReply) {}
+}
+
+message RelayRequest {
+    uint32 spec_id = 1;
+    uint32 api_id = 2;
+    uint64 session_id = 3;
+    uint64 cu_sum = 4; // total compute unit used including this relay
+
+    bytes data = 5;
+    bytes sig = 6;
+    bytes servicer = 7;
+    int64 block_height = 8;
+}
+
+message RelayReply {
+    bytes data = 1;
+    bytes sig = 2;
+}
