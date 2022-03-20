@@ -6,6 +6,7 @@ export interface StakeMap {
     index: string;
     stake: Coin | undefined;
     deadline: BlockNum | undefined;
+    operatorAddresses: string[];
 }
 export declare const StakeMap: {
     encode(message: StakeMap, writer?: Writer): Writer;

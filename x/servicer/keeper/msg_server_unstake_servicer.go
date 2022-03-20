@@ -46,8 +46,6 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 				storageMap.Deadline.Num = blockHeight + holdBlocks
 			}
 			//TODO: store this list sorted by deadline so when we go over it in the timeout, we can do this efficiently
-			//we store unstaking in two places, inside the stakeStorage for queries and inside the UnstakingServicersAllSpecs for quicker finding of entries
-			stakeStorage.Unstaking = append(stakeStorage.Unstaking, storageMap)
 			unstakingServicerAllSpecs := types.UnstakingServicersAllSpecs{
 				Id:               0,
 				Unstaking:        &storageMap,

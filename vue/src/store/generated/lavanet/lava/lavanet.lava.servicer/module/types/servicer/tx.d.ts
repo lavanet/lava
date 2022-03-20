@@ -11,6 +11,7 @@ export interface MsgStakeServicer {
     spec: SpecName | undefined;
     amount: Coin | undefined;
     deadline: BlockNum | undefined;
+    operatorAddresses: string[];
 }
 export interface MsgStakeServicerResponse {
 }

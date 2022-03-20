@@ -35,8 +35,15 @@ func (k Keeper) StakedServicers(goCtx context.Context, req *types.QueryStakedSer
 	if enabled {
 		enabledStr = "enabled"
 	}
-	outputStr := fmt.Sprintf("Spec: %s Status: %s Block: %d\nStaked Servicers:\n%s\nUnstaking Servicers:\n%s", specName.Name, enabledStr, ctx.BlockHeight(), stakeStorage.Staked, stakeStorage.Unstaking)
-	_ = ctx
+	unstaking_servicers := make([]string, 0)
+	unstakingServicersAllSpecs := k.GetAllUnstakingServicersAllSpecs(ctx)
+	for _, unstakingServicer := range unstakingServicersAllSpecs {
+		if unstakingServicer.SpecStakeStorage.Index == specName.Name {
+			unstaking_servicers = append(unstaking_servicers, unstakingServicer.Unstaking.String())
+		}
+	}
+
+	outputStr := fmt.Sprintf("Staked Servicers Query Output:\nSpec: %s Status: %s Block: %d\nStaked Servicers:\n%s\nUnstaking Servicers:\n%s\n--------------------------------------\n", specName.Name, enabledStr, ctx.BlockHeight(), stakeStorage.Staked, unstaking_servicers)
 
 	response := types.QueryStakedServicersResponse{StakeStorage: stakeStorage, Output: outputStr}
 	return &response, nil

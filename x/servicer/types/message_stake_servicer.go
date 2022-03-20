@@ -9,12 +9,13 @@ const TypeMsgStakeServicer = "stake_servicer"
 
 var _ sdk.Msg = &MsgStakeServicer{}
 
-func NewMsgStakeServicer(creator string, spec *SpecName, amount sdk.Coin, deadline *BlockNum) *MsgStakeServicer {
+func NewMsgStakeServicer(creator string, spec *SpecName, amount sdk.Coin, deadline *BlockNum, operatorAdresses []string) *MsgStakeServicer {
 	return &MsgStakeServicer{
-		Creator:  creator,
-		Spec:     spec,
-		Amount:   amount,
-		Deadline: deadline,
+		Creator:           creator,
+		Spec:              spec,
+		Amount:            amount,
+		Deadline:          deadline,
+		OperatorAddresses: operatorAdresses,
 	}
 }
 

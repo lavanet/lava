@@ -15,6 +15,7 @@ export interface MsgStakeServicer {
   spec: SpecName | undefined;
   amount: Coin | undefined;
   deadline: BlockNum | undefined;
+  operatorAddresses: string[];
 }
 
 export interface MsgStakeServicerResponse {}
@@ -39,7 +40,7 @@ export interface MsgProofOfWork {
 
 export interface MsgProofOfWorkResponse {}
 
-const baseMsgStakeServicer: object = { creator: "" };
+const baseMsgStakeServicer: object = { creator: "", operatorAddresses: "" };
 
 export const MsgStakeServicer = {
   encode(message: MsgStakeServicer, writer: Writer = Writer.create()): Writer {
@@ -55,6 +56,9 @@ export const MsgStakeServicer = {
     if (message.deadline !== undefined) {
       BlockNum.encode(message.deadline, writer.uint32(34).fork()).ldelim();
     }
+    for (const v of message.operatorAddresses) {
+      writer.uint32(42).string(v!);
+    }
     return writer;
   },
 
@@ -62,6 +66,7 @@ export const MsgStakeServicer = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseMsgStakeServicer } as MsgStakeServicer;
+    message.operatorAddresses = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -77,6 +82,9 @@ export const MsgStakeServicer = {
         case 4:
           message.deadline = BlockNum.decode(reader, reader.uint32());
           break;
+        case 5:
+          message.operatorAddresses.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -87,6 +95,7 @@ export const MsgStakeServicer = {
 
   fromJSON(object: any): MsgStakeServicer {
     const message = { ...baseMsgStakeServicer } as MsgStakeServicer;
+    message.operatorAddresses = [];
     if (object.creator !== undefined && object.creator !== null) {
       message.creator = String(object.creator);
     } else {
@@ -107,6 +116,14 @@ export const MsgStakeServicer = {
     } else {
       message.deadline = undefined;
     }
+    if (
+      object.operatorAddresses !== undefined &&
+      object.operatorAddresses !== null
+    ) {
+      for (const e of object.operatorAddresses) {
+        message.operatorAddresses.push(String(e));
+      }
+    }
     return message;
   },
 
@@ -121,11 +138,17 @@ export const MsgStakeServicer = {
       (obj.deadline = message.deadline
         ? BlockNum.toJSON(message.deadline)
         : undefined);
+    if (message.operatorAddresses) {
+      obj.operatorAddresses = message.operatorAddresses.map((e) => e);
+    } else {
+      obj.operatorAddresses = [];
+    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<MsgStakeServicer>): MsgStakeServicer {
     const message = { ...baseMsgStakeServicer } as MsgStakeServicer;
+    message.operatorAddresses = [];
     if (object.creator !== undefined && object.creator !== null) {
       message.creator = object.creator;
     } else {
@@ -145,6 +168,14 @@ export const MsgStakeServicer = {
       message.deadline = BlockNum.fromPartial(object.deadline);
     } else {
       message.deadline = undefined;
+    }
+    if (
+      object.operatorAddresses !== undefined &&
+      object.operatorAddresses !== null
+    ) {
+      for (const e of object.operatorAddresses) {
+        message.operatorAddresses.push(e);
+      }
     }
     return message;
   },

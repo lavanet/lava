@@ -42,3 +42,12 @@ func (clientReq *ClientRequest) ParseData(ctx sdk.Context) (*TmpType, error) {
 	}
 	return &parseRes, nil
 }
+
+type OperatorAddress struct {
+	Address string
+}
+
+func (operatorAddr OperatorAddress) ValidateBasic() error {
+	//TODO: validate the endpoint
+	return nil
+}

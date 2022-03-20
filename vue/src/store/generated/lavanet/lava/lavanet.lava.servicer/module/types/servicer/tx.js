@@ -8,7 +8,7 @@ import { SessionID } from "../servicer/session_id";
 import { ClientRequest } from "../servicer/client_request";
 import { WorkProof } from "../servicer/work_proof";
 export const protobufPackage = "lavanet.lava.servicer";
-const baseMsgStakeServicer = { creator: "" };
+const baseMsgStakeServicer = { creator: "", operatorAddresses: "" };
 export const MsgStakeServicer = {
     encode(message, writer = Writer.create()) {
         if (message.creator !== "") {
@@ -23,12 +23,16 @@ export const MsgStakeServicer = {
         if (message.deadline !== undefined) {
             BlockNum.encode(message.deadline, writer.uint32(34).fork()).ldelim();
         }
+        for (const v of message.operatorAddresses) {
+            writer.uint32(42).string(v);
+        }
         return writer;
     },
     decode(input, length) {
         const reader = input instanceof Uint8Array ? new Reader(input) : input;
         let end = length === undefined ? reader.len : reader.pos + length;
         const message = { ...baseMsgStakeServicer };
+        message.operatorAddresses = [];
         while (reader.pos < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -44,6 +48,9 @@ export const MsgStakeServicer = {
                 case 4:
                     message.deadline = BlockNum.decode(reader, reader.uint32());
                     break;
+                case 5:
+                    message.operatorAddresses.push(reader.string());
+                    break;
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -53,6 +60,7 @@ export const MsgStakeServicer = {
     },
     fromJSON(object) {
         const message = { ...baseMsgStakeServicer };
+        message.operatorAddresses = [];
         if (object.creator !== undefined && object.creator !== null) {
             message.creator = String(object.creator);
         }
@@ -77,6 +85,12 @@ export const MsgStakeServicer = {
         else {
             message.deadline = undefined;
         }
+        if (object.operatorAddresses !== undefined &&
+            object.operatorAddresses !== null) {
+            for (const e of object.operatorAddresses) {
+                message.operatorAddresses.push(String(e));
+            }
+        }
         return message;
     },
     toJSON(message) {
@@ -90,10 +104,17 @@ export const MsgStakeServicer = {
             (obj.deadline = message.deadline
                 ? BlockNum.toJSON(message.deadline)
                 : undefined);
+        if (message.operatorAddresses) {
+            obj.operatorAddresses = message.operatorAddresses.map((e) => e);
+        }
+        else {
+            obj.operatorAddresses = [];
+        }
         return obj;
     },
     fromPartial(object) {
         const message = { ...baseMsgStakeServicer };
+        message.operatorAddresses = [];
         if (object.creator !== undefined && object.creator !== null) {
             message.creator = object.creator;
         }
@@ -117,6 +138,12 @@ export const MsgStakeServicer = {
         }
         else {
             message.deadline = undefined;
+        }
+        if (object.operatorAddresses !== undefined &&
+            object.operatorAddresses !== null) {
+            for (const e of object.operatorAddresses) {
+                message.operatorAddresses.push(e);
+            }
         }
         return message;
     },

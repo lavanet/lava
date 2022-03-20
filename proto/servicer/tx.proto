@@ -25,6 +25,7 @@ message MsgStakeServicer {
   SpecName spec = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   BlockNum deadline = 4;
+  repeated string operatorAddresses = 5 [(gogoproto.nullable) = false]; 
 }
 
 message MsgStakeServicerResponse {

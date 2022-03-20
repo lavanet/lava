@@ -16,9 +16,9 @@ var _ = strconv.Itoa(0)
 
 func CmdStakeServicer() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-servicer [spec] [amount] [deadline]",
+		Use:   "stake-servicer [spec] [amount] [deadline] [endpoints]",
 		Short: "Broadcast message stakeServicer",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argSpec := &types.SpecName{Name: args[0]}
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -31,6 +31,11 @@ func CmdStakeServicer() *cobra.Command {
 			}
 			argDeadline := &types.BlockNum{Num: num}
 
+			argOperatorAddresses, err := cast.ToStringSliceE(args[3])
+			if err != nil {
+				return err
+			}
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -41,6 +46,7 @@ func CmdStakeServicer() *cobra.Command {
 				argSpec,
 				argAmount,
 				argDeadline,
+				argOperatorAddresses,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

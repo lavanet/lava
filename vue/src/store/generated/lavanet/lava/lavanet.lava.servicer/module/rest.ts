@@ -158,11 +158,11 @@ export interface ServicerStakeMap {
    */
   stake?: V1Beta1Coin;
   deadline?: ServicerBlockNum;
+  operatorAddresses?: string[];
 }
 
 export interface ServicerStakeStorage {
   staked?: ServicerStakeMap[];
-  unstaking?: ServicerStakeMap[];
 }
 
 export interface ServicerUnstakingServicersAllSpecs {

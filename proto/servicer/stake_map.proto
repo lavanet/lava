@@ -10,6 +10,6 @@ message StakeMap {
   string index = 1; 
   cosmos.base.v1beta1.Coin stake = 2 [(gogoproto.nullable) = false]; 
   BlockNum deadline = 3; 
-  
+  repeated string operatorAddresses = 4 [(gogoproto.nullable) = false]; 
 }
 

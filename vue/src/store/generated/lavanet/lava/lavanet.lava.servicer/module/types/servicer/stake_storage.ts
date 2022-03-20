@@ -5,8 +5,8 @@ import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "lavanet.lava.servicer";
 
 export interface StakeStorage {
+  /** repeated StakeMap unstaking = 2 [(gogoproto.nullable) = false]; */
   staked: StakeMap[];
-  unstaking: StakeMap[];
 }
 
 const baseStakeStorage: object = {};
@@ -16,9 +16,6 @@ export const StakeStorage = {
     for (const v of message.staked) {
       StakeMap.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.unstaking) {
-      StakeMap.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
     return writer;
   },
 
@@ -27,15 +24,11 @@ export const StakeStorage = {
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseStakeStorage } as StakeStorage;
     message.staked = [];
-    message.unstaking = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
           message.staked.push(StakeMap.decode(reader, reader.uint32()));
-          break;
-        case 2:
-          message.unstaking.push(StakeMap.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -48,15 +41,9 @@ export const StakeStorage = {
   fromJSON(object: any): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
     message.staked = [];
-    message.unstaking = [];
     if (object.staked !== undefined && object.staked !== null) {
       for (const e of object.staked) {
         message.staked.push(StakeMap.fromJSON(e));
-      }
-    }
-    if (object.unstaking !== undefined && object.unstaking !== null) {
-      for (const e of object.unstaking) {
-        message.unstaking.push(StakeMap.fromJSON(e));
       }
     }
     return message;
@@ -71,28 +58,15 @@ export const StakeStorage = {
     } else {
       obj.staked = [];
     }
-    if (message.unstaking) {
-      obj.unstaking = message.unstaking.map((e) =>
-        e ? StakeMap.toJSON(e) : undefined
-      );
-    } else {
-      obj.unstaking = [];
-    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<StakeStorage>): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
     message.staked = [];
-    message.unstaking = [];
     if (object.staked !== undefined && object.staked !== null) {
       for (const e of object.staked) {
         message.staked.push(StakeMap.fromPartial(e));
-      }
-    }
-    if (object.unstaking !== undefined && object.unstaking !== null) {
-      for (const e of object.unstaking) {
-        message.unstaking.push(StakeMap.fromPartial(e));
       }
     }
     return message;

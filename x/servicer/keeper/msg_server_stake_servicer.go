@@ -41,6 +41,13 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		}
 		return true, nil
 	}
+	for _, operatorAddressData := range msg.OperatorAddresses {
+		operatorAddr := types.OperatorAddress{Address: operatorAddressData}
+		err := operatorAddr.ValidateBasic()
+		if err != nil {
+			return nil, fmt.Errorf("invalid operator address %s error: %s", operatorAddressData, err)
+		}
+	}
 
 	// }
 	specStakeStorage, found := k.Keeper.GetSpecStakeStorage(ctx, specName.Name)
@@ -48,8 +55,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 
 		//this is the first servicer for the supported spec
 		stakeStorage := types.StakeStorage{
-			Staked:    []types.StakeMap{},
-			Unstaking: []types.StakeMap{},
+			Staked: []types.StakeMap{},
 		}
 		specStakeStorage = types.SpecStakeStorage{
 			Index:        specName.Name,
@@ -59,6 +65,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		// k.Keeper.SetSpecStakeStorage(ctx, newSpecStakeStorage)
 	}
 	stakeStorage := specStakeStorage.StakeStorage
+	entryExists := false
 	//TODO: improve the finding logic and the way its saved looping a list is slow and bad
 	for _, storageMap := range stakeStorage.Staked {
 		if storageMap.Index == msg.Creator {
@@ -73,25 +80,29 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 					}
 					storageMap.Stake = msg.Amount
 					storageMap.Deadline = msg.Deadline
+					storageMap.OperatorAddresses = msg.OperatorAddresses
+					entryExists = true
+					break
 				}
 				return nil, errors.New("can't increase deadline for existing servicer")
 			}
 			return nil, errors.New("can't decrease stake for existing servicer")
 		}
 	}
-	// servicer isn't staked so add him
-	valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
-	if !valid {
-		return nil, fmt.Errorf("error staking: %s", err)
+	if !entryExists {
+		// servicer isn't staked so add him
+		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
+		if !valid {
+			return nil, fmt.Errorf("error staking: %s", err)
+		}
+
+		stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{
+			Index:             msg.Creator,
+			Stake:             msg.Amount,
+			Deadline:          msg.Deadline,
+			OperatorAddresses: msg.OperatorAddresses,
+		})
 	}
-
-	stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{
-		Index:    msg.Creator,
-		Stake:    msg.Amount,
-		Deadline: msg.Deadline,
-	})
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
-	_ = ctx
-
 	return &types.MsgStakeServicerResponse{}, nil
 }
