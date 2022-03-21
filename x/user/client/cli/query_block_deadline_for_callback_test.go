@@ -21,13 +21,12 @@ func networkWithBlockDeadlineForCallbackObjects(t *testing.T) (*network.Network,
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
-	blockDeadlineForCallback := &types.BlockDeadlineForCallback{}
-	nullify.Fill(&blockDeadlineForCallback)
+	blockDeadlineForCallback := types.BlockDeadlineForCallback{types.BlockNum{Num: 0}}
 	state.BlockDeadlineForCallback = blockDeadlineForCallback
 	buf, err := cfg.Codec.MarshalJSON(&state)
 	require.NoError(t, err)
 	cfg.GenesisState[types.ModuleName] = buf
-	return network.New(t, cfg), *state.BlockDeadlineForCallback
+	return network.New(t, cfg), state.BlockDeadlineForCallback
 }
 
 func TestShowBlockDeadlineForCallback(t *testing.T) {

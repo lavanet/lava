@@ -132,7 +132,7 @@ export interface UserSpecName {
 
 export interface UserSpecStakeStorage {
   index?: string;
-  stakeStorage?: UserStakeStorage;
+  stakeStorage?: UserStakeStorage[];
 }
 
 export interface UserStakeStorage {

@@ -12,7 +12,7 @@ func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		UserStakeList:              []UserStake{},
 		SpecStakeStorageList:       []SpecStakeStorage{},
-		BlockDeadlineForCallback:   nil,
+		BlockDeadlineForCallback:   BlockDeadlineForCallback{Deadline: BlockNum{Num: 0}},
 		UnstakingUsersAllSpecsList: []UnstakingUsersAllSpecs{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),

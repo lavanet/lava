@@ -8,8 +8,8 @@ export const SpecStakeStorage = {
         if (message.index !== "") {
             writer.uint32(10).string(message.index);
         }
-        if (message.stakeStorage !== undefined) {
-            StakeStorage.encode(message.stakeStorage, writer.uint32(18).fork()).ldelim();
+        for (const v of message.stakeStorage) {
+            StakeStorage.encode(v, writer.uint32(18).fork()).ldelim();
         }
         return writer;
     },
@@ -17,6 +17,7 @@ export const SpecStakeStorage = {
         const reader = input instanceof Uint8Array ? new Reader(input) : input;
         let end = length === undefined ? reader.len : reader.pos + length;
         const message = { ...baseSpecStakeStorage };
+        message.stakeStorage = [];
         while (reader.pos < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -24,7 +25,7 @@ export const SpecStakeStorage = {
                     message.index = reader.string();
                     break;
                 case 2:
-                    message.stakeStorage = StakeStorage.decode(reader, reader.uint32());
+                    message.stakeStorage.push(StakeStorage.decode(reader, reader.uint32()));
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -35,6 +36,7 @@ export const SpecStakeStorage = {
     },
     fromJSON(object) {
         const message = { ...baseSpecStakeStorage };
+        message.stakeStorage = [];
         if (object.index !== undefined && object.index !== null) {
             message.index = String(object.index);
         }
@@ -42,24 +44,26 @@ export const SpecStakeStorage = {
             message.index = "";
         }
         if (object.stakeStorage !== undefined && object.stakeStorage !== null) {
-            message.stakeStorage = StakeStorage.fromJSON(object.stakeStorage);
-        }
-        else {
-            message.stakeStorage = undefined;
+            for (const e of object.stakeStorage) {
+                message.stakeStorage.push(StakeStorage.fromJSON(e));
+            }
         }
         return message;
     },
     toJSON(message) {
         const obj = {};
         message.index !== undefined && (obj.index = message.index);
-        message.stakeStorage !== undefined &&
-            (obj.stakeStorage = message.stakeStorage
-                ? StakeStorage.toJSON(message.stakeStorage)
-                : undefined);
+        if (message.stakeStorage) {
+            obj.stakeStorage = message.stakeStorage.map((e) => e ? StakeStorage.toJSON(e) : undefined);
+        }
+        else {
+            obj.stakeStorage = [];
+        }
         return obj;
     },
     fromPartial(object) {
         const message = { ...baseSpecStakeStorage };
+        message.stakeStorage = [];
         if (object.index !== undefined && object.index !== null) {
             message.index = object.index;
         }
@@ -67,10 +71,9 @@ export const SpecStakeStorage = {
             message.index = "";
         }
         if (object.stakeStorage !== undefined && object.stakeStorage !== null) {
-            message.stakeStorage = StakeStorage.fromPartial(object.stakeStorage);
-        }
-        else {
-            message.stakeStorage = undefined;
+            for (const e of object.stakeStorage) {
+                message.stakeStorage.push(StakeStorage.fromPartial(e));
+            }
         }
         return message;
     },

@@ -9,7 +9,7 @@ const TypeMsgStakeUser = "stake_user"
 
 var _ sdk.Msg = &MsgStakeUser{}
 
-func NewMsgStakeUser(creator string, spec *SpecName, amount sdk.Coin, deadline *BlockNum) *MsgStakeUser {
+func NewMsgStakeUser(creator string, spec *SpecName, amount sdk.Coin, deadline BlockNum) *MsgStakeUser {
 	return &MsgStakeUser{
 		Creator:  creator,
 		Spec:     spec,

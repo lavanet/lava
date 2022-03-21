@@ -17,10 +17,8 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.SpecStakeStorageList {
 		k.SetSpecStakeStorage(ctx, elem)
 	}
-	// Set if defined
-	if genState.BlockDeadlineForCallback != nil {
-		k.SetBlockDeadlineForCallback(ctx, *genState.BlockDeadlineForCallback)
-	}
+	k.SetBlockDeadlineForCallback(ctx, genState.BlockDeadlineForCallback)
+
 	// Set all the unstakingUsersAllSpecs
 	for _, elem := range genState.UnstakingUsersAllSpecsList {
 		k.SetUnstakingUsersAllSpecs(ctx, elem)
@@ -42,7 +40,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	// Get all blockDeadlineForCallback
 	blockDeadlineForCallback, found := k.GetBlockDeadlineForCallback(ctx)
 	if found {
-		genesis.BlockDeadlineForCallback = &blockDeadlineForCallback
+		genesis.BlockDeadlineForCallback = blockDeadlineForCallback
 	}
 	genesis.UnstakingUsersAllSpecsList = k.GetAllUnstakingUsersAllSpecs(ctx)
 	genesis.UnstakingUsersAllSpecsCount = k.GetUnstakingUsersAllSpecsCount(ctx)

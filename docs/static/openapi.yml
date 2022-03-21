@@ -13599,37 +13599,39 @@ paths:
                     index:
                       type: string
                     stakeStorage:
-                      type: object
-                      properties:
-                        stakedUsers:
-                          type: object
-                          properties:
-                            index:
-                              type: string
-                            address:
-                              type: string
-                            stake:
-                              type: object
-                              properties:
-                                denom:
-                                  type: string
-                                amount:
-                                  type: string
-                              description: >-
-                                Coin defines a token with a denomination and an
-                                amount.
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          stakedUsers:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              address:
+                                type: string
+                              stake:
+                                type: object
+                                properties:
+                                  denom:
+                                    type: string
+                                  amount:
+                                    type: string
+                                description: >-
+                                  Coin defines a token with a denomination and
+                                  an amount.
 
 
-                                NOTE: The amount field is an Int which
-                                implements the custom method
+                                  NOTE: The amount field is an Int which
+                                  implements the custom method
 
-                                signatures required by gogoproto.
-                            deadline:
-                              type: object
-                              properties:
-                                num:
-                                  type: string
-                                  format: uint64
+                                  signatures required by gogoproto.
+                              deadline:
+                                type: object
+                                properties:
+                                  num:
+                                    type: string
+                                    format: uint64
               pagination:
                 type: object
                 properties:
@@ -13750,37 +13752,39 @@ paths:
                   index:
                     type: string
                   stakeStorage:
-                    type: object
-                    properties:
-                      stakedUsers:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          address:
-                            type: string
-                          stake:
-                            type: object
-                            properties:
-                              denom:
-                                type: string
-                              amount:
-                                type: string
-                            description: >-
-                              Coin defines a token with a denomination and an
-                              amount.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stakedUsers:
+                          type: object
+                          properties:
+                            index:
+                              type: string
+                            address:
+                              type: string
+                            stake:
+                              type: object
+                              properties:
+                                denom:
+                                  type: string
+                                amount:
+                                  type: string
+                              description: >-
+                                Coin defines a token with a denomination and an
+                                amount.
 
 
-                              NOTE: The amount field is an Int which implements
-                              the custom method
+                                NOTE: The amount field is an Int which
+                                implements the custom method
 
-                              signatures required by gogoproto.
-                          deadline:
-                            type: object
-                            properties:
-                              num:
-                                type: string
-                                format: uint64
+                                signatures required by gogoproto.
+                            deadline:
+                              type: object
+                              properties:
+                                num:
+                                  type: string
+                                  format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -22413,36 +22417,39 @@ definitions:
             index:
               type: string
             stakeStorage:
-              type: object
-              properties:
-                stakedUsers:
-                  type: object
-                  properties:
-                    index:
-                      type: string
-                    address:
-                      type: string
-                    stake:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
+              type: array
+              items:
+                type: object
+                properties:
+                  stakedUsers:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      address:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
 
 
-                        NOTE: The amount field is an Int which implements the
-                        custom method
+                          NOTE: The amount field is an Int which implements the
+                          custom method
 
-                        signatures required by gogoproto.
-                    deadline:
-                      type: object
-                      properties:
-                        num:
-                          type: string
-                          format: uint64
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
       pagination:
         type: object
         properties:
@@ -22611,36 +22618,38 @@ definitions:
           index:
             type: string
           stakeStorage:
-            type: object
-            properties:
-              stakedUsers:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  address:
-                    type: string
-                  stake:
-                    type: object
-                    properties:
-                      denom:
-                        type: string
-                      amount:
-                        type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
+            type: array
+            items:
+              type: object
+              properties:
+                stakedUsers:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    address:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
 
 
-                      NOTE: The amount field is an Int which implements the
-                      custom method
+                        NOTE: The amount field is an Int which implements the
+                        custom method
 
-                      signatures required by gogoproto.
-                  deadline:
-                    type: object
-                    properties:
-                      num:
-                        type: string
-                        format: uint64
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
   lavanet.lava.user.QueryGetUnstakingUsersAllSpecsResponse:
     type: object
     properties:
@@ -22777,36 +22786,38 @@ definitions:
       index:
         type: string
       stakeStorage:
-        type: object
-        properties:
-          stakedUsers:
-            type: object
-            properties:
-              index:
-                type: string
-              address:
-                type: string
-              stake:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  Coin defines a token with a denomination and an amount.
+        type: array
+        items:
+          type: object
+          properties:
+            stakedUsers:
+              type: object
+              properties:
+                index:
+                  type: string
+                address:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
 
 
-                  NOTE: The amount field is an Int which implements the custom
-                  method
+                    NOTE: The amount field is an Int which implements the custom
+                    method
 
-                  signatures required by gogoproto.
-              deadline:
-                type: object
-                properties:
-                  num:
-                    type: string
-                    format: uint64
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
   lavanet.lava.user.StakeStorage:
     type: object
     properties:

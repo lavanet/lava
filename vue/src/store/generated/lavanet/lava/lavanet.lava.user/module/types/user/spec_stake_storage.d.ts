@@ -3,7 +3,7 @@ import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.user";
 export interface SpecStakeStorage {
     index: string;
-    stakeStorage: StakeStorage | undefined;
+    stakeStorage: StakeStorage[];
 }
 export declare const SpecStakeStorage: {
     encode(message: SpecStakeStorage, writer?: Writer): Writer;
