@@ -3,8 +3,12 @@ module github.com/lavanet/lava
 go 1.16
 
 require (
+	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cosmos/cosmos-sdk v0.44.5
 	github.com/cosmos/ibc-go/v2 v2.0.2
+	github.com/ethereum/go-ethereum v1.10.16
+	github.com/gofiber/fiber/v2 v2.29.0
+	github.com/gofiber/websocket/v2 v2.0.18
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.7 // indirect
@@ -20,6 +24,7 @@ require (
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	google.golang.org/genproto v0.0.0-20220314164441-57ef72a4c106
 	google.golang.org/grpc v1.45.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
 
