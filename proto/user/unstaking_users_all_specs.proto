@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+import "user/user_stake.proto"; 
+import "gogoproto/gogo.proto";
+
+message UnstakingUsersAllSpecs {
+  uint64 id = 1;
+  UserStake unstaking = 2 [(gogoproto.nullable) = false]; 
+  
+}

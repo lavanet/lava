@@ -1,0 +1,9 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+
+message SpecName {
+  
+  string name = 1; 
+}

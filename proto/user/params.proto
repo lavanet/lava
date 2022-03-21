@@ -1,0 +1,17 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  uint64 minStake = 1 [(gogoproto.moretags) = "yaml:\"min_stake\""];
+  uint64 coinsPerCU = 2 [(gogoproto.moretags) = "yaml:\"coins_per_cu\""];
+  uint64 unstakeHoldBlocks = 3 [(gogoproto.moretags) = "yaml:\"unstake_hold_blocks\""];
+  uint64 fraudStakeSlashingFactor = 4 [(gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\""];
+  uint64 fraudSlashingAmount = 5 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
+}

@@ -1,0 +1,38 @@
+package keeper_test
+
+import (
+	"testing"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
+	keepertest "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/testutil/nullify"
+	"github.com/lavanet/lava/x/user/keeper"
+	"github.com/lavanet/lava/x/user/types"
+)
+
+func createTestBlockDeadlineForCallback(keeper *keeper.Keeper, ctx sdk.Context) types.BlockDeadlineForCallback {
+	item := types.BlockDeadlineForCallback{}
+	keeper.SetBlockDeadlineForCallback(ctx, item)
+	return item
+}
+
+func TestBlockDeadlineForCallbackGet(t *testing.T) {
+	keeper, ctx := keepertest.UserKeeper(t)
+	item := createTestBlockDeadlineForCallback(keeper, ctx)
+	rst, found := keeper.GetBlockDeadlineForCallback(ctx)
+	require.True(t, found)
+	require.Equal(t,
+		nullify.Fill(&item),
+		nullify.Fill(&rst),
+	)
+}
+
+func TestBlockDeadlineForCallbackRemove(t *testing.T) {
+	keeper, ctx := keepertest.UserKeeper(t)
+	createTestBlockDeadlineForCallback(keeper, ctx)
+	keeper.RemoveBlockDeadlineForCallback(ctx)
+	_, found := keeper.GetBlockDeadlineForCallback(ctx)
+	require.False(t, found)
+}

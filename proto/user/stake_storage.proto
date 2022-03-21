@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+import "user/user_stake.proto"; 
+import "gogoproto/gogo.proto";
+
+message StakeStorage {
+  
+  UserStake stakedUsers = 1 [(gogoproto.nullable) = false]; 
+}

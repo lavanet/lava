@@ -99,6 +99,9 @@ import (
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
+	usermodule "github.com/lavanet/lava/x/user"
+	usermodulekeeper "github.com/lavanet/lava/x/user/keeper"
+	usermoduletypes "github.com/lavanet/lava/x/user/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -155,6 +158,7 @@ var (
 		vesting.AppModuleBasic{},
 		specmodule.AppModuleBasic{},
 		servicermodule.AppModuleBasic{},
+		usermodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -168,6 +172,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		servicermoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		usermoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -228,6 +233,8 @@ type App struct {
 	SpecKeeper specmodulekeeper.Keeper
 
 	ServicerKeeper servicermodulekeeper.Keeper
+
+	UserKeeper usermodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -266,6 +273,7 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
 		servicermoduletypes.StoreKey,
+		usermoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -393,6 +401,18 @@ func New(
 	)
 	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper)
 
+	app.UserKeeper = *usermodulekeeper.NewKeeper(
+		appCodec,
+		keys[usermoduletypes.StoreKey],
+		keys[usermoduletypes.MemStoreKey],
+		app.GetSubspace(usermoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+	)
+	userModule := usermodule.NewAppModule(appCodec, app.UserKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -433,6 +453,7 @@ func New(
 		transferModule,
 		specModule,
 		servicerModule,
+		userModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -469,6 +490,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		servicermoduletypes.ModuleName,
+		usermoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -493,6 +515,7 @@ func New(
 		transferModule,
 		specModule,
 		servicerModule,
+		userModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -682,6 +705,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(servicermoduletypes.ModuleName)
+	paramsKeeper.Subspace(usermoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
