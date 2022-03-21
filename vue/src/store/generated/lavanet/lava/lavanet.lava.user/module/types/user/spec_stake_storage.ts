@@ -6,7 +6,7 @@ export const protobufPackage = "lavanet.lava.user";
 
 export interface SpecStakeStorage {
   index: string;
-  stakeStorage: StakeStorage[];
+  stakeStorage: StakeStorage | undefined;
 }
 
 const baseSpecStakeStorage: object = { index: "" };
@@ -16,8 +16,11 @@ export const SpecStakeStorage = {
     if (message.index !== "") {
       writer.uint32(10).string(message.index);
     }
-    for (const v of message.stakeStorage) {
-      StakeStorage.encode(v!, writer.uint32(18).fork()).ldelim();
+    if (message.stakeStorage !== undefined) {
+      StakeStorage.encode(
+        message.stakeStorage,
+        writer.uint32(18).fork()
+      ).ldelim();
     }
     return writer;
   },
@@ -26,7 +29,6 @@ export const SpecStakeStorage = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseSpecStakeStorage } as SpecStakeStorage;
-    message.stakeStorage = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -34,9 +36,7 @@ export const SpecStakeStorage = {
           message.index = reader.string();
           break;
         case 2:
-          message.stakeStorage.push(
-            StakeStorage.decode(reader, reader.uint32())
-          );
+          message.stakeStorage = StakeStorage.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -48,16 +48,15 @@ export const SpecStakeStorage = {
 
   fromJSON(object: any): SpecStakeStorage {
     const message = { ...baseSpecStakeStorage } as SpecStakeStorage;
-    message.stakeStorage = [];
     if (object.index !== undefined && object.index !== null) {
       message.index = String(object.index);
     } else {
       message.index = "";
     }
     if (object.stakeStorage !== undefined && object.stakeStorage !== null) {
-      for (const e of object.stakeStorage) {
-        message.stakeStorage.push(StakeStorage.fromJSON(e));
-      }
+      message.stakeStorage = StakeStorage.fromJSON(object.stakeStorage);
+    } else {
+      message.stakeStorage = undefined;
     }
     return message;
   },
@@ -65,28 +64,24 @@ export const SpecStakeStorage = {
   toJSON(message: SpecStakeStorage): unknown {
     const obj: any = {};
     message.index !== undefined && (obj.index = message.index);
-    if (message.stakeStorage) {
-      obj.stakeStorage = message.stakeStorage.map((e) =>
-        e ? StakeStorage.toJSON(e) : undefined
-      );
-    } else {
-      obj.stakeStorage = [];
-    }
+    message.stakeStorage !== undefined &&
+      (obj.stakeStorage = message.stakeStorage
+        ? StakeStorage.toJSON(message.stakeStorage)
+        : undefined);
     return obj;
   },
 
   fromPartial(object: DeepPartial<SpecStakeStorage>): SpecStakeStorage {
     const message = { ...baseSpecStakeStorage } as SpecStakeStorage;
-    message.stakeStorage = [];
     if (object.index !== undefined && object.index !== null) {
       message.index = object.index;
     } else {
       message.index = "";
     }
     if (object.stakeStorage !== undefined && object.stakeStorage !== null) {
-      for (const e of object.stakeStorage) {
-        message.stakeStorage.push(StakeStorage.fromPartial(e));
-      }
+      message.stakeStorage = StakeStorage.fromPartial(object.stakeStorage);
+    } else {
+      message.stakeStorage = undefined;
     }
     return message;
   },

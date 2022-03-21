@@ -8,9 +8,8 @@ import "cosmos/base/v1beta1/coin.proto";
 
 message UserStake {
   string index = 1; 
-  string address = 2; 
-  cosmos.base.v1beta1.Coin stake = 3 [(gogoproto.nullable) = false]; 
-  BlockNum deadline = 4 [(gogoproto.nullable) = false]; 
+  cosmos.base.v1beta1.Coin stake = 2 [(gogoproto.nullable) = false]; 
+  BlockNum deadline = 3 [(gogoproto.nullable) = false]; 
   
 }
 

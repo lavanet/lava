@@ -7,6 +7,6 @@ import "gogoproto/gogo.proto";
 
 message SpecStakeStorage {
   string index = 1; 
-  repeated StakeStorage stakeStorage = 2 [(gogoproto.nullable) = false]; 
+  StakeStorage stakeStorage = 2; 
 }
 

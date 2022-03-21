@@ -199,10 +199,10 @@ export class Api extends HttpClient {
          * @tags Query
          * @name QueryStakedUsers
          * @summary Queries a list of StakedUsers items.
-         * @request GET:/lavanet/lava/user/staked_users/{specName}/{output}
+         * @request GET:/lavanet/lava/user/staked_users/{specName}
          */
-        this.queryStakedUsers = (specName, output, params = {}) => this.request({
-            path: `/lavanet/lava/user/staked_users/${specName}/${output}`,
+        this.queryStakedUsers = (specName, params = {}) => this.request({
+            path: `/lavanet/lava/user/staked_users/${specName}`,
             method: "GET",
             format: "json",
             ...params,

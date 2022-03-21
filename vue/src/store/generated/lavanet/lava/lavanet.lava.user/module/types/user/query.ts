@@ -82,11 +82,11 @@ export interface QueryAllUnstakingUsersAllSpecsResponse {
 
 export interface QueryStakedUsersRequest {
   specName: string;
-  output: string;
 }
 
 export interface QueryStakedUsersResponse {
   stakeStorage: StakeStorage | undefined;
+  output: string;
 }
 
 const baseQueryParamsRequest: object = {};
@@ -1318,7 +1318,7 @@ export const QueryAllUnstakingUsersAllSpecsResponse = {
   },
 };
 
-const baseQueryStakedUsersRequest: object = { specName: "", output: "" };
+const baseQueryStakedUsersRequest: object = { specName: "" };
 
 export const QueryStakedUsersRequest = {
   encode(
@@ -1327,9 +1327,6 @@ export const QueryStakedUsersRequest = {
   ): Writer {
     if (message.specName !== "") {
       writer.uint32(10).string(message.specName);
-    }
-    if (message.output !== "") {
-      writer.uint32(18).string(message.output);
     }
     return writer;
   },
@@ -1345,9 +1342,6 @@ export const QueryStakedUsersRequest = {
       switch (tag >>> 3) {
         case 1:
           message.specName = reader.string();
-          break;
-        case 2:
-          message.output = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -1366,18 +1360,12 @@ export const QueryStakedUsersRequest = {
     } else {
       message.specName = "";
     }
-    if (object.output !== undefined && object.output !== null) {
-      message.output = String(object.output);
-    } else {
-      message.output = "";
-    }
     return message;
   },
 
   toJSON(message: QueryStakedUsersRequest): unknown {
     const obj: any = {};
     message.specName !== undefined && (obj.specName = message.specName);
-    message.output !== undefined && (obj.output = message.output);
     return obj;
   },
 
@@ -1392,16 +1380,11 @@ export const QueryStakedUsersRequest = {
     } else {
       message.specName = "";
     }
-    if (object.output !== undefined && object.output !== null) {
-      message.output = object.output;
-    } else {
-      message.output = "";
-    }
     return message;
   },
 };
 
-const baseQueryStakedUsersResponse: object = {};
+const baseQueryStakedUsersResponse: object = { output: "" };
 
 export const QueryStakedUsersResponse = {
   encode(
@@ -1413,6 +1396,9 @@ export const QueryStakedUsersResponse = {
         message.stakeStorage,
         writer.uint32(10).fork()
       ).ldelim();
+    }
+    if (message.output !== "") {
+      writer.uint32(18).string(message.output);
     }
     return writer;
   },
@@ -1432,6 +1418,9 @@ export const QueryStakedUsersResponse = {
         case 1:
           message.stakeStorage = StakeStorage.decode(reader, reader.uint32());
           break;
+        case 2:
+          message.output = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1449,6 +1438,11 @@ export const QueryStakedUsersResponse = {
     } else {
       message.stakeStorage = undefined;
     }
+    if (object.output !== undefined && object.output !== null) {
+      message.output = String(object.output);
+    } else {
+      message.output = "";
+    }
     return message;
   },
 
@@ -1458,6 +1452,7 @@ export const QueryStakedUsersResponse = {
       (obj.stakeStorage = message.stakeStorage
         ? StakeStorage.toJSON(message.stakeStorage)
         : undefined);
+    message.output !== undefined && (obj.output = message.output);
     return obj;
   },
 
@@ -1471,6 +1466,11 @@ export const QueryStakedUsersResponse = {
       message.stakeStorage = StakeStorage.fromPartial(object.stakeStorage);
     } else {
       message.stakeStorage = undefined;
+    }
+    if (object.output !== undefined && object.output !== null) {
+      message.output = object.output;
+    } else {
+      message.output = "";
     }
     return message;
   },

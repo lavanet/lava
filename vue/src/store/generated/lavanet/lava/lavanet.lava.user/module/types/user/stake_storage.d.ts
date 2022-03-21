@@ -2,7 +2,7 @@ import { UserStake } from "../user/user_stake";
 import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.user";
 export interface StakeStorage {
-    stakedUsers: UserStake | undefined;
+    stakedUsers: UserStake[];
 }
 export declare const StakeStorage: {
     encode(message: StakeStorage, writer?: Writer): Writer;

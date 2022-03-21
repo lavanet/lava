@@ -9,33 +9,32 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
+const PrecisionForCoinsPerCU uint64 = 1000000
+
 var (
-	KeyMinStake = []byte("MinStake")
-	// TODO: Determine the default value
-	DefaultMinStake uint64 = 0
+	KeyMinStake            = []byte("MinStake")
+	DefaultMinStake uint64 = 100
 )
 
 var (
 	KeyCoinsPerCU = []byte("CoinsPerCU")
-	// TODO: Determine the default value
-	DefaultCoinsPerCU uint64 = 0
+	// this value is later divided by 1000000
+	DefaultCoinsPerCU uint64 = 1
 )
 
 var (
-	KeyUnstakeHoldBlocks = []byte("UnstakeHoldBlocks")
-	// TODO: Determine the default value
-	DefaultUnstakeHoldBlocks uint64 = 0
+	KeyUnstakeHoldBlocks            = []byte("UnstakeHoldBlocks")
+	DefaultUnstakeHoldBlocks uint64 = 10
 )
 
 var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
-	// TODO: Determine the default value
-	DefaultFraudStakeSlashingFactor uint64 = 0
+	// this value is divided by 1000000
+	DefaultFraudStakeSlashingFactor uint64 = 100000
 )
 
 var (
-	KeyFraudSlashingAmount = []byte("FraudSlashingAmount")
-	// TODO: Determine the default value
+	KeyFraudSlashingAmount            = []byte("FraudSlashingAmount")
 	DefaultFraudSlashingAmount uint64 = 0
 )
 

@@ -58,7 +58,7 @@ service Query {
 
 // Queries a list of StakedUsers items.
 	rpc StakedUsers(QueryStakedUsersRequest) returns (QueryStakedUsersResponse) {
-		option (google.api.http).get = "/lavanet/lava/user/staked_users/{specName}/{output}";
+		option (google.api.http).get = "/lavanet/lava/user/staked_users/{specName}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -133,11 +133,11 @@ message QueryAllUnstakingUsersAllSpecsResponse {
 
 message QueryStakedUsersRequest {
   string specName = 1;
-  string output = 2;
 }
 
 message QueryStakedUsersResponse {
   StakeStorage stakeStorage = 1;
+  string output = 2;
 }
 
 // this line is used by starport scaffolding # 3

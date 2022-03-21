@@ -49,7 +49,6 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		}
 	}
 
-	// }
 	specStakeStorage, found := k.Keeper.GetSpecStakeStorage(ctx, specName.Name)
 	if !found {
 
@@ -66,20 +65,22 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	entryExists := false
+	blockDeadline := msg.Deadline
+
 	//TODO: improve the finding logic and the way its saved looping a list is slow and bad
 	for _, storageMap := range stakeStorage.Staked {
 		if storageMap.Index == msg.Creator {
 			// already exists
 			if storageMap.Stake.IsLT(msg.Amount) {
 				// increasing stake is allowed
-				if storageMap.Deadline.Num >= msg.Deadline.Num {
+				if storageMap.Deadline.Num >= blockDeadline.Num {
 					//lowering the deadline is allowed
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(storageMap.Stake))
 					if !valid {
 						return nil, fmt.Errorf("error updating stake: %s", err)
 					}
 					storageMap.Stake = msg.Amount
-					storageMap.Deadline = msg.Deadline
+					storageMap.Deadline = blockDeadline
 					storageMap.OperatorAddresses = msg.OperatorAddresses
 					entryExists = true
 					break
@@ -91,6 +92,11 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 	if !entryExists {
 		// servicer isn't staked so add him
+
+		// new staking takes effect from the next block
+		if blockDeadline.Num <= uint64(ctx.BlockHeight())+1 {
+			blockDeadline.Num = uint64(ctx.BlockHeight()) + 1
+		}
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			return nil, fmt.Errorf("error staking: %s", err)
@@ -99,7 +105,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{
 			Index:             msg.Creator,
 			Stake:             msg.Amount,
-			Deadline:          msg.Deadline,
+			Deadline:          blockDeadline,
 			OperatorAddresses: msg.OperatorAddresses,
 		})
 	}

@@ -61,10 +61,10 @@ export interface QueryAllUnstakingUsersAllSpecsResponse {
 }
 export interface QueryStakedUsersRequest {
     specName: string;
-    output: string;
 }
 export interface QueryStakedUsersResponse {
     stakeStorage: StakeStorage | undefined;
+    output: string;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;

@@ -13,12 +13,11 @@ var _ = strconv.Itoa(0)
 
 func CmdStakedUsers() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "staked-users [spec-name] [output]",
+		Use:   "staked-users [spec-name]",
 		Short: "Query stakedUsers",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqSpecName := args[0]
-			reqOutput := args[1]
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -30,7 +29,6 @@ func CmdStakedUsers() *cobra.Command {
 			params := &types.QueryStakedUsersRequest{
 
 				SpecName: reqSpecName,
-				Output:   reqOutput,
 			}
 
 			res, err := queryClient.StakedUsers(cmd.Context(), params)

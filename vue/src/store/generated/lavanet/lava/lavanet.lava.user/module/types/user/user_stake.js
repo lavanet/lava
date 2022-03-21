@@ -3,20 +3,17 @@ import { Coin } from "../cosmos/base/v1beta1/coin";
 import { BlockNum } from "../user/block_num";
 import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "lavanet.lava.user";
-const baseUserStake = { index: "", address: "" };
+const baseUserStake = { index: "" };
 export const UserStake = {
     encode(message, writer = Writer.create()) {
         if (message.index !== "") {
             writer.uint32(10).string(message.index);
         }
-        if (message.address !== "") {
-            writer.uint32(18).string(message.address);
-        }
         if (message.stake !== undefined) {
-            Coin.encode(message.stake, writer.uint32(26).fork()).ldelim();
+            Coin.encode(message.stake, writer.uint32(18).fork()).ldelim();
         }
         if (message.deadline !== undefined) {
-            BlockNum.encode(message.deadline, writer.uint32(34).fork()).ldelim();
+            BlockNum.encode(message.deadline, writer.uint32(26).fork()).ldelim();
         }
         return writer;
     },
@@ -31,12 +28,9 @@ export const UserStake = {
                     message.index = reader.string();
                     break;
                 case 2:
-                    message.address = reader.string();
-                    break;
-                case 3:
                     message.stake = Coin.decode(reader, reader.uint32());
                     break;
-                case 4:
+                case 3:
                     message.deadline = BlockNum.decode(reader, reader.uint32());
                     break;
                 default:
@@ -53,12 +47,6 @@ export const UserStake = {
         }
         else {
             message.index = "";
-        }
-        if (object.address !== undefined && object.address !== null) {
-            message.address = String(object.address);
-        }
-        else {
-            message.address = "";
         }
         if (object.stake !== undefined && object.stake !== null) {
             message.stake = Coin.fromJSON(object.stake);
@@ -77,7 +65,6 @@ export const UserStake = {
     toJSON(message) {
         const obj = {};
         message.index !== undefined && (obj.index = message.index);
-        message.address !== undefined && (obj.address = message.address);
         message.stake !== undefined &&
             (obj.stake = message.stake ? Coin.toJSON(message.stake) : undefined);
         message.deadline !== undefined &&
@@ -93,12 +80,6 @@ export const UserStake = {
         }
         else {
             message.index = "";
-        }
-        if (object.address !== undefined && object.address !== null) {
-            message.address = object.address;
-        }
-        else {
-            message.address = "";
         }
         if (object.stake !== undefined && object.stake !== null) {
             message.stake = Coin.fromPartial(object.stake);

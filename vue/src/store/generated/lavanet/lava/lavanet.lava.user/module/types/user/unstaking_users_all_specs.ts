@@ -2,12 +2,14 @@
 import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
 import { UserStake } from "../user/user_stake";
+import { SpecStakeStorage } from "../user/spec_stake_storage";
 
 export const protobufPackage = "lavanet.lava.user";
 
 export interface UnstakingUsersAllSpecs {
   id: number;
   unstaking: UserStake | undefined;
+  specStakeStorage: SpecStakeStorage | undefined;
 }
 
 const baseUnstakingUsersAllSpecs: object = { id: 0 };
@@ -22,6 +24,12 @@ export const UnstakingUsersAllSpecs = {
     }
     if (message.unstaking !== undefined) {
       UserStake.encode(message.unstaking, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.specStakeStorage !== undefined) {
+      SpecStakeStorage.encode(
+        message.specStakeStorage,
+        writer.uint32(26).fork()
+      ).ldelim();
     }
     return writer;
   },
@@ -38,6 +46,12 @@ export const UnstakingUsersAllSpecs = {
           break;
         case 2:
           message.unstaking = UserStake.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.specStakeStorage = SpecStakeStorage.decode(
+            reader,
+            reader.uint32()
+          );
           break;
         default:
           reader.skipType(tag & 7);
@@ -59,6 +73,16 @@ export const UnstakingUsersAllSpecs = {
     } else {
       message.unstaking = undefined;
     }
+    if (
+      object.specStakeStorage !== undefined &&
+      object.specStakeStorage !== null
+    ) {
+      message.specStakeStorage = SpecStakeStorage.fromJSON(
+        object.specStakeStorage
+      );
+    } else {
+      message.specStakeStorage = undefined;
+    }
     return message;
   },
 
@@ -68,6 +92,10 @@ export const UnstakingUsersAllSpecs = {
     message.unstaking !== undefined &&
       (obj.unstaking = message.unstaking
         ? UserStake.toJSON(message.unstaking)
+        : undefined);
+    message.specStakeStorage !== undefined &&
+      (obj.specStakeStorage = message.specStakeStorage
+        ? SpecStakeStorage.toJSON(message.specStakeStorage)
         : undefined);
     return obj;
   },
@@ -85,6 +113,16 @@ export const UnstakingUsersAllSpecs = {
       message.unstaking = UserStake.fromPartial(object.unstaking);
     } else {
       message.unstaking = undefined;
+    }
+    if (
+      object.specStakeStorage !== undefined &&
+      object.specStakeStorage !== null
+    ) {
+      message.specStakeStorage = SpecStakeStorage.fromPartial(
+        object.specStakeStorage
+      );
+    } else {
+      message.specStakeStorage = undefined;
     }
     return message;
   },

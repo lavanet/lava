@@ -71,7 +71,6 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 		return nil, fmt.Errorf("can't unstake servicer, stake entry not found for address: %s", msg.Creator)
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
-	_ = ctx
 
 	return &types.MsgUnstakeServicerResponse{}, nil
 }

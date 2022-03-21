@@ -124,6 +124,7 @@ export interface UserQueryParamsResponse {
 
 export interface UserQueryStakedUsersResponse {
   stakeStorage?: UserStakeStorage;
+  output?: string;
 }
 
 export interface UserSpecName {
@@ -132,22 +133,22 @@ export interface UserSpecName {
 
 export interface UserSpecStakeStorage {
   index?: string;
-  stakeStorage?: UserStakeStorage[];
+  stakeStorage?: UserStakeStorage;
 }
 
 export interface UserStakeStorage {
-  stakedUsers?: UserUserStake;
+  stakedUsers?: UserUserStake[];
 }
 
 export interface UserUnstakingUsersAllSpecs {
   /** @format uint64 */
   id?: string;
   unstaking?: UserUserStake;
+  specStakeStorage?: UserSpecStakeStorage;
 }
 
 export interface UserUserStake {
   index?: string;
-  address?: string;
 
   /**
    * Coin defines a token with a denomination and an amount.
@@ -509,11 +510,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * @tags Query
    * @name QueryStakedUsers
    * @summary Queries a list of StakedUsers items.
-   * @request GET:/lavanet/lava/user/staked_users/{specName}/{output}
+   * @request GET:/lavanet/lava/user/staked_users/{specName}
    */
-  queryStakedUsers = (specName: string, output: string, params: RequestParams = {}) =>
+  queryStakedUsers = (specName: string, params: RequestParams = {}) =>
     this.request<UserQueryStakedUsersResponse, RpcStatus>({
-      path: `/lavanet/lava/user/staked_users/${specName}/${output}`,
+      path: `/lavanet/lava/user/staked_users/${specName}`,
       method: "GET",
       format: "json",
       ...params,

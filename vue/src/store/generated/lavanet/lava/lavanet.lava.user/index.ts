@@ -382,7 +382,7 @@ export default {
 			try {
 				const key = params ?? {};
 				const queryClient=await initQueryClient(rootGetters)
-				let value= (await queryClient.queryStakedUsers( key.specName,  key.output)).data
+				let value= (await queryClient.queryStakedUsers( key.specName)).data
 				
 					
 				commit('QUERY', { query: 'StakedUsers', key: { params: {...key}, query}, value })
@@ -395,21 +395,6 @@ export default {
 		},
 		
 		
-		async sendMsgStakeUser({ rootGetters }, { value, fee = [], memo = '' }) {
-			try {
-				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgStakeUser(value)
-				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
-	gas: "200000" }, memo})
-				return result
-			} catch (e) {
-				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgStakeUser:Init', 'Could not initialize signing client. Wallet is required.')
-				}else{
-					throw new SpVuexError('TxClient:MsgStakeUser:Send', 'Could not broadcast Tx: '+ e.message)
-				}
-			}
-		},
 		async sendMsgUnstakeUser({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -425,21 +410,22 @@ export default {
 				}
 			}
 		},
-		
-		async MsgStakeUser({ rootGetters }, { value }) {
+		async sendMsgStakeUser({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
 				const msg = await txClient.msgStakeUser(value)
-				return msg
+				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
+	gas: "200000" }, memo})
+				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
 					throw new SpVuexError('TxClient:MsgStakeUser:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgStakeUser:Create', 'Could not create message: ' + e.message)
-					
+					throw new SpVuexError('TxClient:MsgStakeUser:Send', 'Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
+		
 		async MsgUnstakeUser({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -450,6 +436,20 @@ export default {
 					throw new SpVuexError('TxClient:MsgUnstakeUser:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
 					throw new SpVuexError('TxClient:MsgUnstakeUser:Create', 'Could not create message: ' + e.message)
+					
+				}
+			}
+		},
+		async MsgStakeUser({ rootGetters }, { value }) {
+			try {
+				const txClient=await initTxClient(rootGetters)
+				const msg = await txClient.msgStakeUser(value)
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new SpVuexError('TxClient:MsgStakeUser:Init', 'Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new SpVuexError('TxClient:MsgStakeUser:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}

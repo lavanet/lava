@@ -4,7 +4,6 @@ import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.user";
 export interface UserStake {
     index: string;
-    address: string;
     stake: Coin | undefined;
     deadline: BlockNum | undefined;
 }

@@ -5,15 +5,15 @@ import { Writer, Reader } from "protobufjs/minimal";
 export const protobufPackage = "lavanet.lava.user";
 
 export interface StakeStorage {
-  stakedUsers: UserStake | undefined;
+  stakedUsers: UserStake[];
 }
 
 const baseStakeStorage: object = {};
 
 export const StakeStorage = {
   encode(message: StakeStorage, writer: Writer = Writer.create()): Writer {
-    if (message.stakedUsers !== undefined) {
-      UserStake.encode(message.stakedUsers, writer.uint32(10).fork()).ldelim();
+    for (const v of message.stakedUsers) {
+      UserStake.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
@@ -22,11 +22,12 @@ export const StakeStorage = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.stakedUsers = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.stakedUsers = UserStake.decode(reader, reader.uint32());
+          message.stakedUsers.push(UserStake.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -38,29 +39,34 @@ export const StakeStorage = {
 
   fromJSON(object: any): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.stakedUsers = [];
     if (object.stakedUsers !== undefined && object.stakedUsers !== null) {
-      message.stakedUsers = UserStake.fromJSON(object.stakedUsers);
-    } else {
-      message.stakedUsers = undefined;
+      for (const e of object.stakedUsers) {
+        message.stakedUsers.push(UserStake.fromJSON(e));
+      }
     }
     return message;
   },
 
   toJSON(message: StakeStorage): unknown {
     const obj: any = {};
-    message.stakedUsers !== undefined &&
-      (obj.stakedUsers = message.stakedUsers
-        ? UserStake.toJSON(message.stakedUsers)
-        : undefined);
+    if (message.stakedUsers) {
+      obj.stakedUsers = message.stakedUsers.map((e) =>
+        e ? UserStake.toJSON(e) : undefined
+      );
+    } else {
+      obj.stakedUsers = [];
+    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<StakeStorage>): StakeStorage {
     const message = { ...baseStakeStorage } as StakeStorage;
+    message.stakedUsers = [];
     if (object.stakedUsers !== undefined && object.stakedUsers !== null) {
-      message.stakedUsers = UserStake.fromPartial(object.stakedUsers);
-    } else {
-      message.stakedUsers = undefined;
+      for (const e of object.stakedUsers) {
+        message.stakedUsers.push(UserStake.fromPartial(e));
+      }
     }
     return message;
   },

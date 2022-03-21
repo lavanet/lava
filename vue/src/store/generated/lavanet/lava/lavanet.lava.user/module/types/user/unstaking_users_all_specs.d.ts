@@ -1,9 +1,11 @@
 import { Writer, Reader } from "protobufjs/minimal";
 import { UserStake } from "../user/user_stake";
+import { SpecStakeStorage } from "../user/spec_stake_storage";
 export declare const protobufPackage = "lavanet.lava.user";
 export interface UnstakingUsersAllSpecs {
     id: number;
     unstaking: UserStake | undefined;
+    specStakeStorage: SpecStakeStorage | undefined;
 }
 export declare const UnstakingUsersAllSpecs: {
     encode(message: UnstakingUsersAllSpecs, writer?: Writer): Writer;
