@@ -388,8 +388,6 @@ func New(
 		&stakingKeeper, govRouter,
 	)
 
-	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper)
-
 	app.UserKeeper = *usermodulekeeper.NewKeeper(
 		appCodec,
 		keys[usermoduletypes.StoreKey],
@@ -400,6 +398,8 @@ func New(
 		app.AccountKeeper,
 		app.SpecKeeper,
 	)
+	userModule := usermodule.NewAppModule(appCodec, app.UserKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.ServicerKeeper = *servicermodulekeeper.NewKeeper(
 		appCodec,
 		keys[servicermoduletypes.StoreKey],
@@ -412,7 +412,7 @@ func New(
 		app.SpecKeeper,
 		app.UserKeeper,
 	)
-	userModule := usermodule.NewAppModule(appCodec, app.UserKeeper, app.AccountKeeper, app.BankKeeper)
+	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper, app.UserKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

@@ -102,6 +102,7 @@ type AppModule struct {
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
 	specKeeper    types.SpecKeeper
+	userKeeper    types.UserKeeper
 }
 
 func NewAppModule(
@@ -110,6 +111,7 @@ func NewAppModule(
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	specKeeper types.SpecKeeper,
+	userKeeper types.UserKeeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
@@ -117,6 +119,7 @@ func NewAppModule(
 		accountKeeper:  accountKeeper,
 		bankKeeper:     bankKeeper,
 		specKeeper:     specKeeper,
+		userKeeper:     userKeeper,
 	}
 }
 

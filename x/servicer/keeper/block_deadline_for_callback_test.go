@@ -13,7 +13,7 @@ import (
 )
 
 func createTestBlockDeadlineForCallback(keeper *keeper.Keeper, ctx sdk.Context) types.BlockDeadlineForCallback {
-	item := types.BlockDeadlineForCallback{}
+	item := types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: 0}}
 	keeper.SetBlockDeadlineForCallback(ctx, item)
 	return item
 }

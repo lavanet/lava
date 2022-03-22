@@ -21,7 +21,7 @@ func networkWithBlockDeadlineForCallbackObjects(t *testing.T) (*network.Network,
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
-	blockDeadlineForCallback := types.BlockDeadlineForCallback{}
+	blockDeadlineForCallback := types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: 0}}
 	nullify.Fill(&blockDeadlineForCallback)
 	state.BlockDeadlineForCallback = blockDeadlineForCallback
 	buf, err := cfg.Codec.MarshalJSON(&state)
