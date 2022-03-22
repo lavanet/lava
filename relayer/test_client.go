@@ -31,7 +31,7 @@ func sendRelay(
 	clientCtx client.Context,
 	c RelayerClient,
 	privKey *btcec.PrivateKey,
-	specId int,
+	specId uint64,
 	sessionId int64,
 	req string,
 	blockHeight int64,
@@ -44,7 +44,7 @@ func sendRelay(
 	if err != nil {
 		return nil, nil, err
 	}
-	serviceApi, err := getSupportedApi(msg.Method, g_clientApis)
+	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,27 +78,20 @@ func sendRelay(
 	return reply, &serverKey, nil
 }
 
-func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId int) {
-	//
-	// Get specs
-	_, clientApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	log.Println(clientApis, specId)
-	g_clientApis = clientApis
-
+func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId uint64) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_serverSpecId = specId
 
 	//
 	// Set up a connection to the server.

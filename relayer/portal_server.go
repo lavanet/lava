@@ -22,28 +22,21 @@ func PortalServer(
 	queryClient types.QueryClient,
 	listenAddr string,
 	relayerUrl string,
-	specId int,
+	specId uint64,
 ) {
 	//
-	// Get specs
-	_, clientApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	log.Println(clientApis, specId)
-	g_clientApis = clientApis
-
-	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_serverSpecId = specId
 
 	//
 	// Set up a connection to the server.
@@ -97,7 +90,7 @@ func PortalServer(
 			log.Println("in <<< ", string(msg))
 
 			g_request_lock.Lock()
-			reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, specId, sessionId, string(msg), sentry.GetBlockHeight())
+			reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, g_serverSpecId, sessionId, string(msg), sentry.GetBlockHeight())
 			g_request_lock.Unlock()
 			if err != nil {
 				log.Println(err)
@@ -117,7 +110,7 @@ func PortalServer(
 		defer g_request_lock.Unlock()
 
 		log.Println("in <<< ", string(c.Body()))
-		reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, specId, sessionId, string(c.Body()), sentry.GetBlockHeight())
+		reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, g_serverSpecId, sessionId, string(c.Body()), sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 			return nil

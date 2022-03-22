@@ -20,10 +20,10 @@ import (
 var (
 	g_conn           *Connector
 	g_privKey        *btcSecp256k1.PrivateKey
-	g_serverSpec     types.Spec
-	g_serverApis     map[string]types.ServiceApi
 	g_sessions       map[string]map[uint64]*RelaySession
 	g_sessions_mutex sync.Mutex
+	g_sentry         *Sentry
+	g_serverSpecId   uint64
 )
 
 type RelaySession struct {
@@ -82,11 +82,11 @@ func isAuthorizedUser(user bytes.HexBytes) bool {
 }
 
 func isSupportedSpec(in *RelayRequest) bool {
-	return uint64(in.SpecId) == g_serverSpec.Id
+	return uint64(in.SpecId) == g_serverSpecId
 }
 
-func getSupportedApi(name string, apis map[string]types.ServiceApi) (*types.ServiceApi, error) {
-	if api, ok := apis[name]; ok {
+func getSupportedApi(name string, sentry *Sentry) (*types.ServiceApi, error) {
+	if api, ok := sentry.GetSpecApiByName(name); ok {
 		if api.Status != "enabled" {
 			return nil, errors.New("api is disabled")
 		}
@@ -161,7 +161,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 
 	//
 	//
-	serviceApi, err := getSupportedApi(msg.Method, g_serverApis)
+	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
 	if err != nil {
 		return nil, err
 	}
@@ -215,32 +215,25 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	return &reply, nil
 }
 
-func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId int) {
-	//
-	// Get specs
-	serverSpec, serverApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	g_serverSpec = *serverSpec
-	g_serverApis = serverApis
-	g_sessions = map[string]map[uint64]*RelaySession{}
-
+func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId uint64) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_sessions = map[string]map[uint64]*RelaySession{}
+	g_serverSpecId = specId
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", g_serverSpec.Name)
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName())
 
 	//
 	// Keys

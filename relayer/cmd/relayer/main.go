@@ -54,7 +54,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, clientCtx, queryClient, listenAddr, args[2], specId)
+			relayer.Server(ctx, clientCtx, queryClient, listenAddr, args[2], uint64(specId))
 
 			return nil
 		},
@@ -84,7 +84,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, queryClient, listenAddr, args[2], specId)
+			relayer.PortalServer(ctx, clientCtx, queryClient, listenAddr, args[2], uint64(specId))
 
 			return nil
 		},
@@ -114,7 +114,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr, specId)
+			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr, uint64(specId))
 
 			return nil
 		},
