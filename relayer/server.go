@@ -12,7 +12,6 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
@@ -219,15 +218,13 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 func Server(
 	ctx context.Context,
 	clientCtx client.Context,
-	specQueryClient spectypes.QueryClient,
-	servicerQueryClient servicertypes.QueryClient,
 	listenAddr string,
 	nodeUrl string,
 	specId uint64,
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client, specQueryClient, servicerQueryClient, specId)
+	sentry := NewSentry(clientCtx, specId, false)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

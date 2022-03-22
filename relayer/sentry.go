@@ -9,6 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -23,6 +24,8 @@ type Sentry struct {
 	servicerQueryClient servicertypes.QueryClient
 	specId              uint64
 	txs                 <-chan ctypes.ResultEvent
+	isUser              bool
+	addr                string
 
 	blockHeight int64
 
@@ -30,6 +33,18 @@ type Sentry struct {
 	specHash   []byte
 	serverSpec spectypes.Spec
 	serverApis map[string]spectypes.ServiceApi
+}
+
+func (s *Sentry) getPairing(ctx context.Context) error {
+	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
+		SpecName: s.GetSpecName(),
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Println(res)
+	return nil
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
@@ -108,6 +123,9 @@ func (s *Sentry) Start(ctx context.Context) {
 			if err != nil {
 				log.Println("error: getSpec", err)
 			}
+
+			//
+			// Update pairing
 		}
 	}
 }
@@ -133,15 +151,21 @@ func (s *Sentry) SetBlockHeight(blockHeight int64) {
 }
 
 func NewSentry(
-	rpcClient rpcclient.Client,
-	specQueryClient spectypes.QueryClient,
-	servicerQueryClient servicertypes.QueryClient,
+	clientCtx client.Context,
 	specId uint64,
+	isUser bool,
 ) *Sentry {
+	rpcClient := clientCtx.Client
+	specQueryClient := spectypes.NewQueryClient(clientCtx)
+	servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
+	acc := clientCtx.GetFromAddress().String()
+
 	return &Sentry{
 		rpcClient:           rpcClient,
 		specQueryClient:     specQueryClient,
 		servicerQueryClient: servicerQueryClient,
 		specId:              specId,
+		isUser:              isUser,
+		addr:                acc,
 	}
 }
