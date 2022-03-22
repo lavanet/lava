@@ -18,7 +18,7 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 		return nil, err
 	}
 
-	foundAndActive, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
+	foundAndActive, _, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")
 	}

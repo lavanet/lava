@@ -24,7 +24,7 @@ type BankKeeper interface {
 }
 
 type SpecKeeper interface {
-	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool)
+	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool, uint64)
 	IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool)
 	GetSpec(ctx sdk.Context, id uint64) (val spectypes.Spec, found bool)
 }

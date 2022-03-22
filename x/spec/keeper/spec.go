@@ -95,7 +95,7 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 
 //returns whether a spec name is a valid spec in the consensus
 //first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool) {
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool, uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
@@ -106,13 +106,13 @@ func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bo
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.Name == specName {
 			if val.Status == "enabled" {
-				return true, true
+				return true, true, val.Id
 			}
 			// specs are unique, theres no reason to keep iterating
-			return false, true
+			return false, true, val.Id
 		}
 	}
-	return false, false
+	return false, false, 0
 }
 
 //returns whether a spec id is a valid spec in the consensus

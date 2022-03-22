@@ -21,7 +21,7 @@ func (k Keeper) StakedUsers(goCtx context.Context, req *types.QueryStakedUsersRe
 	if err != nil {
 		return nil, fmt.Errorf("invalid spec name given : %s, %s", specName, err)
 	}
-	enabled, found := k.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
+	enabled, found, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if !found {
 		return nil, fmt.Errorf("spec name given is not in the spec: %s", specName)
 	}

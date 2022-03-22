@@ -26,7 +26,8 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 	}
 	//TODO: validate CU requested is valid for the user and not too big, this requires the user module
 	//TODO: validate the user request only holds supported apis
-	_, possibleServicerAddresses, err := k.Keeper.GetPairingForClient(ctx, *msg.BlockOfWork, uint64(clientRequest.Spec_id), clientAddr)
+	//TODO: get the pairing for the block of work and not the current one
+	_, possibleServicerAddresses, err := k.Keeper.GetPairingForClient(ctx, uint64(clientRequest.Spec_id), clientAddr)
 	if err != nil {
 		return nil, fmt.Errorf("error on pairing for addresses : %s and %s, err: %s", clientAddr, msg.Creator, err)
 	}

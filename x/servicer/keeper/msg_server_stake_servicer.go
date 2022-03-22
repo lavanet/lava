@@ -18,7 +18,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		return nil, err
 	}
 
-	foundAndActive, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
+	foundAndActive, _, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")
 	}

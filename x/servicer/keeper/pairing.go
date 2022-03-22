@@ -8,7 +8,7 @@ import (
 )
 
 //first argument has all metadata, second argument is only the addresses
-func (k Keeper) GetPairingForClient(ctx sdk.Context, block types.BlockNum, specID uint64, clientAddress sdk.AccAddress) ([]types.StakeMap, []sdk.AccAddress, error) {
+func (k Keeper) GetPairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress) ([]types.StakeMap, []sdk.AccAddress, error) {
 	spec, found := k.specKeeper.GetSpec(ctx, specID)
 	if !found {
 		return nil, nil, fmt.Errorf("spec not found for id given: %d", specID)
@@ -39,10 +39,10 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, block types.BlockNum, specI
 		return nil, nil, fmt.Errorf("client: %s isn't staked for spec %s", clientAddress, spec.Name)
 	}
 
-	return k.calculatePairingForClient(ctx, stakedServicers, block, clientAddress)
+	return k.calculatePairingForClient(ctx, stakedServicers, clientAddress)
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedServicers []types.StakeMap, block types.BlockNum, clientAddress sdk.AccAddress) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedServicers []types.StakeMap, clientAddress sdk.AccAddress) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {
 	//create a list of valid servicers (deadline reached)
 	for _, stakeMap := range stakedServicers {
 		if stakeMap.Deadline.Num > uint64(ctx.BlockHeight()) {
@@ -53,7 +53,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedServicers []typ
 	}
 
 	//calculates a hash and randomly chooses the servicers
-	k.returnSubsetOfServicersByStake(validServicers, k.ServicersToPairCount(ctx), uint(block.Num))
+	k.returnSubsetOfServicersByStake(validServicers, k.ServicersToPairCount(ctx), uint(ctx.BlockHeight()))
 
 	for _, stakeMap := range validServicers {
 		servicerAddress := stakeMap.Index

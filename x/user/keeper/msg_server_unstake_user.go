@@ -19,7 +19,7 @@ func (k msgServer) UnstakeUser(goCtx context.Context, msg *types.MsgUnstakeUser)
 	}
 
 	// we can unstake disabled specs, but not missing ones
-	_, found := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
+	_, found, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if !found {
 		return nil, errors.New("spec not found, can't unstake")
 	}
