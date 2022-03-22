@@ -1,0 +1,15 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+import "user/block_num.proto"; 
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message UserStake {
+  string index = 1; 
+  cosmos.base.v1beta1.Coin stake = 2 [(gogoproto.nullable) = false]; 
+  BlockNum deadline = 3 [(gogoproto.nullable) = false]; 
+  
+}
+

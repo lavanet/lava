@@ -12574,6 +12574,1880 @@ paths:
                         }
       tags:
         - Query
+  /lavanet/lava/servicer/block_deadline_for_callback:
+    get:
+      summary: Queries a BlockDeadlineForCallback by index.
+      operationId: LavanetLavaServicerBlockDeadlineForCallback
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              BlockDeadlineForCallback:
+                type: object
+                properties:
+                  deadline:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  '/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}':
+    get:
+      summary: Queries a list of GetPairing items.
+      operationId: LavanetLavaServicerGetPairing
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              servicers:
+                type: object
+                properties:
+                  staked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                        operatorAddresses:
+                          type: array
+                          items:
+                            type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: specName
+          in: path
+          required: true
+          type: string
+        - name: userAddr
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  /lavanet/lava/servicer/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaServicerParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+                properties:
+                  minStake:
+                    type: string
+                    format: uint64
+                  coinsPerCU:
+                    type: string
+                    format: uint64
+                  unstakeHoldBlocks:
+                    type: string
+                    format: uint64
+                  fraudStakeSlashingFactor:
+                    type: string
+                    format: uint64
+                  fraudSlashingAmount:
+                    type: string
+                    format: uint64
+                  servicersToPairCount:
+                    type: string
+                    format: uint64
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/servicer/spec_stake_storage:
+    get:
+      summary: Queries a list of SpecStakeStorage items.
+      operationId: LavanetLavaServicerSpecStakeStorageAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              specStakeStorage:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stakeStorage:
+                      type: object
+                      properties:
+                        staked:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              stake:
+                                type: object
+                                properties:
+                                  denom:
+                                    type: string
+                                  amount:
+                                    type: string
+                                description: >-
+                                  Coin defines a token with a denomination and
+                                  an amount.
+
+
+                                  NOTE: The amount field is an Int which
+                                  implements the custom method
+
+                                  signatures required by gogoproto.
+                              deadline:
+                                type: object
+                                properties:
+                                  num:
+                                    type: string
+                                    format: uint64
+                              operatorAddresses:
+                                type: array
+                                items:
+                                  type: string
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/servicer/spec_stake_storage/{index}':
+    get:
+      summary: Queries a SpecStakeStorage by index.
+      operationId: LavanetLavaServicerSpecStakeStorage
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              specStakeStorage:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  stakeStorage:
+                    type: object
+                    properties:
+                      staked:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: string
+                            stake:
+                              type: object
+                              properties:
+                                denom:
+                                  type: string
+                                amount:
+                                  type: string
+                              description: >-
+                                Coin defines a token with a denomination and an
+                                amount.
+
+
+                                NOTE: The amount field is an Int which
+                                implements the custom method
+
+                                signatures required by gogoproto.
+                            deadline:
+                              type: object
+                              properties:
+                                num:
+                                  type: string
+                                  format: uint64
+                            operatorAddresses:
+                              type: array
+                              items:
+                                type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  /lavanet/lava/servicer/stake_map:
+    get:
+      summary: Queries a list of StakeMap items.
+      operationId: LavanetLavaServicerStakeMapAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              stakeMap:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+                    operatorAddresses:
+                      type: array
+                      items:
+                        type: string
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/servicer/stake_map/{index}':
+    get:
+      summary: Queries a StakeMap by index.
+      operationId: LavanetLavaServicerStakeMap
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              stakeMap:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  stake:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  deadline:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+                  operatorAddresses:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  '/lavanet/lava/servicer/staked_servicers/{specName}':
+    get:
+      summary: Queries a list of StakedServicers items.
+      operationId: LavanetLavaServicerStakedServicers
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              stakeStorage:
+                type: object
+                properties:
+                  staked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                        operatorAddresses:
+                          type: array
+                          items:
+                            type: string
+              output:
+                type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: specName
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  /lavanet/lava/servicer/unstaking_servicers_all_specs:
+    get:
+      summary: Queries a list of UnstakingServicersAllSpecs items.
+      operationId: LavanetLavaServicerUnstakingServicersAllSpecsAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              UnstakingServicersAllSpecs:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uint64
+                    unstaking:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                        operatorAddresses:
+                          type: array
+                          items:
+                            type: string
+                    specStakeStorage:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stakeStorage:
+                          type: object
+                          properties:
+                            staked:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  index:
+                                    type: string
+                                  stake:
+                                    type: object
+                                    properties:
+                                      denom:
+                                        type: string
+                                      amount:
+                                        type: string
+                                    description: >-
+                                      Coin defines a token with a denomination
+                                      and an amount.
+
+
+                                      NOTE: The amount field is an Int which
+                                      implements the custom method
+
+                                      signatures required by gogoproto.
+                                  deadline:
+                                    type: object
+                                    properties:
+                                      num:
+                                        type: string
+                                        format: uint64
+                                  operatorAddresses:
+                                    type: array
+                                    items:
+                                      type: string
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}':
+    get:
+      summary: Queries a UnstakingServicersAllSpecs by id.
+      operationId: LavanetLavaServicerUnstakingServicersAllSpecs
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              UnstakingServicersAllSpecs:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uint64
+                  unstaking:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
+                      operatorAddresses:
+                        type: array
+                        items:
+                          type: string
+                  specStakeStorage:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stakeStorage:
+                        type: object
+                        properties:
+                          staked:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                index:
+                                  type: string
+                                stake:
+                                  type: object
+                                  properties:
+                                    denom:
+                                      type: string
+                                    amount:
+                                      type: string
+                                  description: >-
+                                    Coin defines a token with a denomination and
+                                    an amount.
+
+
+                                    NOTE: The amount field is an Int which
+                                    implements the custom method
+
+                                    signatures required by gogoproto.
+                                deadline:
+                                  type: object
+                                  properties:
+                                    num:
+                                      type: string
+                                      format: uint64
+                                operatorAddresses:
+                                  type: array
+                                  items:
+                                    type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
+  /lavanet/lava/user/block_deadline_for_callback:
+    get:
+      summary: Queries a BlockDeadlineForCallback by index.
+      operationId: LavanetLavaUserBlockDeadlineForCallback
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              BlockDeadlineForCallback:
+                type: object
+                properties:
+                  deadline:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/user/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaUserParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+                properties:
+                  minStake:
+                    type: string
+                    format: uint64
+                  coinsPerCU:
+                    type: string
+                    format: uint64
+                  unstakeHoldBlocks:
+                    type: string
+                    format: uint64
+                  fraudStakeSlashingFactor:
+                    type: string
+                    format: uint64
+                  fraudSlashingAmount:
+                    type: string
+                    format: uint64
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/user/spec_stake_storage:
+    get:
+      summary: Queries a list of SpecStakeStorage items.
+      operationId: LavanetLavaUserSpecStakeStorageAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              specStakeStorage:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stakeStorage:
+                      type: object
+                      properties:
+                        stakedUsers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              stake:
+                                type: object
+                                properties:
+                                  denom:
+                                    type: string
+                                  amount:
+                                    type: string
+                                description: >-
+                                  Coin defines a token with a denomination and
+                                  an amount.
+
+
+                                  NOTE: The amount field is an Int which
+                                  implements the custom method
+
+                                  signatures required by gogoproto.
+                              deadline:
+                                type: object
+                                properties:
+                                  num:
+                                    type: string
+                                    format: uint64
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/user/spec_stake_storage/{index}':
+    get:
+      summary: Queries a SpecStakeStorage by index.
+      operationId: LavanetLavaUserSpecStakeStorage
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              specStakeStorage:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  stakeStorage:
+                    type: object
+                    properties:
+                      stakedUsers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: string
+                            stake:
+                              type: object
+                              properties:
+                                denom:
+                                  type: string
+                                amount:
+                                  type: string
+                              description: >-
+                                Coin defines a token with a denomination and an
+                                amount.
+
+
+                                NOTE: The amount field is an Int which
+                                implements the custom method
+
+                                signatures required by gogoproto.
+                            deadline:
+                              type: object
+                              properties:
+                                num:
+                                  type: string
+                                  format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  '/lavanet/lava/user/staked_users/{specName}':
+    get:
+      summary: Queries a list of StakedUsers items.
+      operationId: LavanetLavaUserStakedUsers
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              stakeStorage:
+                type: object
+                properties:
+                  stakedUsers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+              output:
+                type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: specName
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
+  /lavanet/lava/user/unstaking_users_all_specs:
+    get:
+      summary: Queries a list of UnstakingUsersAllSpecs items.
+      operationId: LavanetLavaUserUnstakingUsersAllSpecsAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              UnstakingUsersAllSpecs:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uint64
+                    unstaking:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                    specStakeStorage:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stakeStorage:
+                          type: object
+                          properties:
+                            stakedUsers:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  index:
+                                    type: string
+                                  stake:
+                                    type: object
+                                    properties:
+                                      denom:
+                                        type: string
+                                      amount:
+                                        type: string
+                                    description: >-
+                                      Coin defines a token with a denomination
+                                      and an amount.
+
+
+                                      NOTE: The amount field is an Int which
+                                      implements the custom method
+
+                                      signatures required by gogoproto.
+                                  deadline:
+                                    type: object
+                                    properties:
+                                      num:
+                                        type: string
+                                        format: uint64
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/user/unstaking_users_all_specs/{id}':
+    get:
+      summary: Queries a UnstakingUsersAllSpecs by id.
+      operationId: LavanetLavaUserUnstakingUsersAllSpecs
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              UnstakingUsersAllSpecs:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uint64
+                  unstaking:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
+                  specStakeStorage:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stakeStorage:
+                        type: object
+                        properties:
+                          stakedUsers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                index:
+                                  type: string
+                                stake:
+                                  type: object
+                                  properties:
+                                    denom:
+                                      type: string
+                                    amount:
+                                      type: string
+                                  description: >-
+                                    Coin defines a token with a denomination and
+                                    an amount.
+
+
+                                    NOTE: The amount field is an Int which
+                                    implements the custom method
+
+                                    signatures required by gogoproto.
+                                deadline:
+                                  type: object
+                                  properties:
+                                    num:
+                                      type: string
+                                      format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
+  /lavanet/lava/user/user_stake:
+    get:
+      summary: Queries a list of UserStake items.
+      operationId: LavanetLavaUserUserStakeAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              userStake:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+              pagination:
+                type: object
+                properties:
+                  nextKey:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.countTotal
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/user/user_stake/{index}':
+    get:
+      summary: Queries a UserStake by index.
+      operationId: LavanetLavaUserUserStake
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              userStake:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  stake:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  deadline:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
 definitions:
   cosmos.authz.v1beta1.Grant:
     type: object
@@ -19924,3 +21798,1389 @@ definitions:
       and
 
       freezing clients
+  lavanet.lava.servicer.BlockDeadlineForCallback:
+    type: object
+    properties:
+      deadline:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64
+  lavanet.lava.servicer.BlockNum:
+    type: object
+    properties:
+      num:
+        type: string
+        format: uint64
+  lavanet.lava.servicer.ClientRequest:
+    type: object
+    properties:
+      data:
+        type: string
+  lavanet.lava.servicer.MsgProofOfWorkResponse:
+    type: object
+  lavanet.lava.servicer.MsgStakeServicerResponse:
+    type: object
+  lavanet.lava.servicer.MsgUnstakeServicerResponse:
+    type: object
+  lavanet.lava.servicer.Params:
+    type: object
+    properties:
+      minStake:
+        type: string
+        format: uint64
+      coinsPerCU:
+        type: string
+        format: uint64
+      unstakeHoldBlocks:
+        type: string
+        format: uint64
+      fraudStakeSlashingFactor:
+        type: string
+        format: uint64
+      fraudSlashingAmount:
+        type: string
+        format: uint64
+      servicersToPairCount:
+        type: string
+        format: uint64
+    description: Params defines the parameters for the module.
+  lavanet.lava.servicer.QueryAllSpecStakeStorageResponse:
+    type: object
+    properties:
+      specStakeStorage:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stakeStorage:
+              type: object
+              properties:
+                staked:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
+                      operatorAddresses:
+                        type: array
+                        items:
+                          type: string
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.servicer.QueryAllStakeMapResponse:
+    type: object
+    properties:
+      stakeMap:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
+            operatorAddresses:
+              type: array
+              items:
+                type: string
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.servicer.QueryAllUnstakingServicersAllSpecsResponse:
+    type: object
+    properties:
+      UnstakingServicersAllSpecs:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uint64
+            unstaking:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+                operatorAddresses:
+                  type: array
+                  items:
+                    type: string
+            specStakeStorage:
+              type: object
+              properties:
+                index:
+                  type: string
+                stakeStorage:
+                  type: object
+                  properties:
+                    staked:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          index:
+                            type: string
+                          stake:
+                            type: object
+                            properties:
+                              denom:
+                                type: string
+                              amount:
+                                type: string
+                            description: >-
+                              Coin defines a token with a denomination and an
+                              amount.
+
+
+                              NOTE: The amount field is an Int which implements
+                              the custom method
+
+                              signatures required by gogoproto.
+                          deadline:
+                            type: object
+                            properties:
+                              num:
+                                type: string
+                                format: uint64
+                          operatorAddresses:
+                            type: array
+                            items:
+                              type: string
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.servicer.QueryGetBlockDeadlineForCallbackResponse:
+    type: object
+    properties:
+      BlockDeadlineForCallback:
+        type: object
+        properties:
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+  lavanet.lava.servicer.QueryGetPairingResponse:
+    type: object
+    properties:
+      servicers:
+        type: object
+        properties:
+          staked:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+                operatorAddresses:
+                  type: array
+                  items:
+                    type: string
+  lavanet.lava.servicer.QueryGetSpecStakeStorageResponse:
+    type: object
+    properties:
+      specStakeStorage:
+        type: object
+        properties:
+          index:
+            type: string
+          stakeStorage:
+            type: object
+            properties:
+              staked:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+                    operatorAddresses:
+                      type: array
+                      items:
+                        type: string
+  lavanet.lava.servicer.QueryGetStakeMapResponse:
+    type: object
+    properties:
+      stakeMap:
+        type: object
+        properties:
+          index:
+            type: string
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+          operatorAddresses:
+            type: array
+            items:
+              type: string
+  lavanet.lava.servicer.QueryGetUnstakingServicersAllSpecsResponse:
+    type: object
+    properties:
+      UnstakingServicersAllSpecs:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uint64
+          unstaking:
+            type: object
+            properties:
+              index:
+                type: string
+              stake:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  Coin defines a token with a denomination and an amount.
+
+
+                  NOTE: The amount field is an Int which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+              deadline:
+                type: object
+                properties:
+                  num:
+                    type: string
+                    format: uint64
+              operatorAddresses:
+                type: array
+                items:
+                  type: string
+          specStakeStorage:
+            type: object
+            properties:
+              index:
+                type: string
+              stakeStorage:
+                type: object
+                properties:
+                  staked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                        operatorAddresses:
+                          type: array
+                          items:
+                            type: string
+  lavanet.lava.servicer.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+        properties:
+          minStake:
+            type: string
+            format: uint64
+          coinsPerCU:
+            type: string
+            format: uint64
+          unstakeHoldBlocks:
+            type: string
+            format: uint64
+          fraudStakeSlashingFactor:
+            type: string
+            format: uint64
+          fraudSlashingAmount:
+            type: string
+            format: uint64
+          servicersToPairCount:
+            type: string
+            format: uint64
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.servicer.QueryStakedServicersResponse:
+    type: object
+    properties:
+      stakeStorage:
+        type: object
+        properties:
+          staked:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+                operatorAddresses:
+                  type: array
+                  items:
+                    type: string
+      output:
+        type: string
+  lavanet.lava.servicer.SessionID:
+    type: object
+    properties:
+      num:
+        type: string
+        format: uint64
+  lavanet.lava.servicer.SpecName:
+    type: object
+    properties:
+      name:
+        type: string
+  lavanet.lava.servicer.SpecStakeStorage:
+    type: object
+    properties:
+      index:
+        type: string
+      stakeStorage:
+        type: object
+        properties:
+          staked:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+                operatorAddresses:
+                  type: array
+                  items:
+                    type: string
+  lavanet.lava.servicer.StakeMap:
+    type: object
+    properties:
+      index:
+        type: string
+      stake:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+      deadline:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64
+      operatorAddresses:
+        type: array
+        items:
+          type: string
+  lavanet.lava.servicer.StakeStorage:
+    type: object
+    properties:
+      staked:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
+            operatorAddresses:
+              type: array
+              items:
+                type: string
+  lavanet.lava.servicer.UnstakingServicersAllSpecs:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uint64
+      unstaking:
+        type: object
+        properties:
+          index:
+            type: string
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+          operatorAddresses:
+            type: array
+            items:
+              type: string
+      specStakeStorage:
+        type: object
+        properties:
+          index:
+            type: string
+          stakeStorage:
+            type: object
+            properties:
+              staked:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+                    operatorAddresses:
+                      type: array
+                      items:
+                        type: string
+  lavanet.lava.servicer.WorkProof:
+    type: object
+    properties:
+      data:
+        type: string
+  lavanet.lava.user.BlockDeadlineForCallback:
+    type: object
+    properties:
+      deadline:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64
+  lavanet.lava.user.BlockNum:
+    type: object
+    properties:
+      num:
+        type: string
+        format: uint64
+  lavanet.lava.user.MsgStakeUserResponse:
+    type: object
+  lavanet.lava.user.MsgUnstakeUserResponse:
+    type: object
+  lavanet.lava.user.Params:
+    type: object
+    properties:
+      minStake:
+        type: string
+        format: uint64
+      coinsPerCU:
+        type: string
+        format: uint64
+      unstakeHoldBlocks:
+        type: string
+        format: uint64
+      fraudStakeSlashingFactor:
+        type: string
+        format: uint64
+      fraudSlashingAmount:
+        type: string
+        format: uint64
+    description: Params defines the parameters for the module.
+  lavanet.lava.user.QueryAllSpecStakeStorageResponse:
+    type: object
+    properties:
+      specStakeStorage:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stakeStorage:
+              type: object
+              properties:
+                stakedUsers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      stake:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          Coin defines a token with a denomination and an
+                          amount.
+
+
+                          NOTE: The amount field is an Int which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      deadline:
+                        type: object
+                        properties:
+                          num:
+                            type: string
+                            format: uint64
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.user.QueryAllUnstakingUsersAllSpecsResponse:
+    type: object
+    properties:
+      UnstakingUsersAllSpecs:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uint64
+            unstaking:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+            specStakeStorage:
+              type: object
+              properties:
+                index:
+                  type: string
+                stakeStorage:
+                  type: object
+                  properties:
+                    stakedUsers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          index:
+                            type: string
+                          stake:
+                            type: object
+                            properties:
+                              denom:
+                                type: string
+                              amount:
+                                type: string
+                            description: >-
+                              Coin defines a token with a denomination and an
+                              amount.
+
+
+                              NOTE: The amount field is an Int which implements
+                              the custom method
+
+                              signatures required by gogoproto.
+                          deadline:
+                            type: object
+                            properties:
+                              num:
+                                type: string
+                                format: uint64
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.user.QueryAllUserStakeResponse:
+    type: object
+    properties:
+      userStake:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
+      pagination:
+        type: object
+        properties:
+          nextKey:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.user.QueryGetBlockDeadlineForCallbackResponse:
+    type: object
+    properties:
+      BlockDeadlineForCallback:
+        type: object
+        properties:
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+  lavanet.lava.user.QueryGetSpecStakeStorageResponse:
+    type: object
+    properties:
+      specStakeStorage:
+        type: object
+        properties:
+          index:
+            type: string
+          stakeStorage:
+            type: object
+            properties:
+              stakedUsers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+  lavanet.lava.user.QueryGetUnstakingUsersAllSpecsResponse:
+    type: object
+    properties:
+      UnstakingUsersAllSpecs:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uint64
+          unstaking:
+            type: object
+            properties:
+              index:
+                type: string
+              stake:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  Coin defines a token with a denomination and an amount.
+
+
+                  NOTE: The amount field is an Int which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+              deadline:
+                type: object
+                properties:
+                  num:
+                    type: string
+                    format: uint64
+          specStakeStorage:
+            type: object
+            properties:
+              index:
+                type: string
+              stakeStorage:
+                type: object
+                properties:
+                  stakedUsers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+  lavanet.lava.user.QueryGetUserStakeResponse:
+    type: object
+    properties:
+      userStake:
+        type: object
+        properties:
+          index:
+            type: string
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+  lavanet.lava.user.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+        properties:
+          minStake:
+            type: string
+            format: uint64
+          coinsPerCU:
+            type: string
+            format: uint64
+          unstakeHoldBlocks:
+            type: string
+            format: uint64
+          fraudStakeSlashingFactor:
+            type: string
+            format: uint64
+          fraudSlashingAmount:
+            type: string
+            format: uint64
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.user.QueryStakedUsersResponse:
+    type: object
+    properties:
+      stakeStorage:
+        type: object
+        properties:
+          stakedUsers:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+      output:
+        type: string
+  lavanet.lava.user.SpecName:
+    type: object
+    properties:
+      name:
+        type: string
+  lavanet.lava.user.SpecStakeStorage:
+    type: object
+    properties:
+      index:
+        type: string
+      stakeStorage:
+        type: object
+        properties:
+          stakedUsers:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+  lavanet.lava.user.StakeStorage:
+    type: object
+    properties:
+      stakedUsers:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            deadline:
+              type: object
+              properties:
+                num:
+                  type: string
+                  format: uint64
+  lavanet.lava.user.UnstakingUsersAllSpecs:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uint64
+      unstaking:
+        type: object
+        properties:
+          index:
+            type: string
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          deadline:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+      specStakeStorage:
+        type: object
+        properties:
+          index:
+            type: string
+          stakeStorage:
+            type: object
+            properties:
+              stakedUsers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    deadline:
+                      type: object
+                      properties:
+                        num:
+                          type: string
+                          format: uint64
+  lavanet.lava.user.UserStake:
+    type: object
+    properties:
+      index:
+        type: string
+      stake:
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
+      deadline:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64

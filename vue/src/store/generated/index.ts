@@ -12,6 +12,8 @@ import CosmosCosmosSdkCosmosStakingV1Beta1 from './cosmos/cosmos-sdk/cosmos.stak
 import CosmosCosmosSdkCosmosVestingV1Beta1 from './cosmos/cosmos-sdk/cosmos.vesting.v1beta1'
 import CosmosIbcGoIbcApplicationsTransferV1 from './cosmos/ibc-go/ibc.applications.transfer.v1'
 import CosmosIbcGoIbcApplicationsTransferV2 from './cosmos/ibc-go/ibc.applications.transfer.v2'
+import LavanetLavaLavanetLavaServicer from './lavanet/lava/lavanet.lava.servicer'
+import LavanetLavaLavanetLavaUser from './lavanet/lava/lavanet.lava.user'
 
 
 export default { 
@@ -27,6 +29,8 @@ export default {
   CosmosCosmosSdkCosmosVestingV1Beta1: load(CosmosCosmosSdkCosmosVestingV1Beta1, 'cosmos.vesting.v1beta1'),
   CosmosIbcGoIbcApplicationsTransferV1: load(CosmosIbcGoIbcApplicationsTransferV1, 'ibc.applications.transfer.v1'),
   CosmosIbcGoIbcApplicationsTransferV2: load(CosmosIbcGoIbcApplicationsTransferV2, 'ibc.applications.transfer.v2'),
+  LavanetLavaLavanetLavaServicer: load(LavanetLavaLavanetLavaServicer, 'lavanet.lava.servicer'),
+  LavanetLavaLavanetLavaUser: load(LavanetLavaLavanetLavaUser, 'lavanet.lava.user'),
   
 }
 

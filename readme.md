@@ -3,9 +3,16 @@
 
 ## Get started
 
+* install starport on your computer from the starport repository: https://docs.starport.com/guide/install.html
+* install Go Version 1.16 or newer, follow the go installation instructions: https://go.dev/doc/install
+* make sure you set your go environment properly: https://go.dev/doc/gopath_code#GOPATH
+* checkout the repository, you might need a personal token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+
+## build your chain
 ```
 starport chain serve
 ```
+you might want to provide arguments like -v for verbosity or -r for restart, use the help for more
 
 `serve` command installs dependencies, builds, initializes, and starts your blockchain in development.
 

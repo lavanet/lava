@@ -1,0 +1,157 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "servicer/params.proto";
+import "servicer/stake_map.proto";
+import "servicer/spec_stake_storage.proto";
+import "servicer/block_deadline_for_callback.proto";
+import "servicer/unstaking_servicers_all_specs.proto";
+// this line is used by starport scaffolding # 1
+import "servicer/stake_storage.proto";
+import "servicer/block_num.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/servicer/params";
+  }
+  // Queries a StakeMap by index.
+	rpc StakeMap(QueryGetStakeMapRequest) returns (QueryGetStakeMapResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/stake_map/{index}";
+	}
+
+	// Queries a list of StakeMap items.
+	rpc StakeMapAll(QueryAllStakeMapRequest) returns (QueryAllStakeMapResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/stake_map";
+	}
+
+// Queries a SpecStakeStorage by index.
+	rpc SpecStakeStorage(QueryGetSpecStakeStorageRequest) returns (QueryGetSpecStakeStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/spec_stake_storage/{index}";
+	}
+
+	// Queries a list of SpecStakeStorage items.
+	rpc SpecStakeStorageAll(QueryAllSpecStakeStorageRequest) returns (QueryAllSpecStakeStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/spec_stake_storage";
+	}
+
+// Queries a list of StakedServicers items.
+	rpc StakedServicers(QueryStakedServicersRequest) returns (QueryStakedServicersResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/staked_servicers/{specName}";
+	}
+
+// Queries a BlockDeadlineForCallback by index.
+	rpc BlockDeadlineForCallback(QueryGetBlockDeadlineForCallbackRequest) returns (QueryGetBlockDeadlineForCallbackResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/block_deadline_for_callback";
+	}
+// Queries a UnstakingServicersAllSpecs by id.
+	rpc UnstakingServicersAllSpecs(QueryGetUnstakingServicersAllSpecsRequest) returns (QueryGetUnstakingServicersAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}";
+	}
+
+	// Queries a list of UnstakingServicersAllSpecs items.
+	rpc UnstakingServicersAllSpecsAll(QueryAllUnstakingServicersAllSpecsRequest) returns (QueryAllUnstakingServicersAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unstaking_servicers_all_specs";
+	}
+
+// Queries a list of GetPairing items.
+	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetStakeMapRequest {
+	  string index = 1;
+
+}
+
+message QueryGetStakeMapResponse {
+	StakeMap stakeMap = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllStakeMapRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllStakeMapResponse {
+	repeated StakeMap stakeMap = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetSpecStakeStorageRequest {
+	  string index = 1;
+
+}
+
+message QueryGetSpecStakeStorageResponse {
+	SpecStakeStorage specStakeStorage = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSpecStakeStorageRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSpecStakeStorageResponse {
+	repeated SpecStakeStorage specStakeStorage = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryStakedServicersRequest {
+  string specName = 1;
+}
+
+message QueryStakedServicersResponse {
+  StakeStorage stakeStorage = 1;
+  string output = 2;
+}
+
+message QueryGetBlockDeadlineForCallbackRequest {}
+
+message QueryGetBlockDeadlineForCallbackResponse {
+	BlockDeadlineForCallback BlockDeadlineForCallback = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetUnstakingServicersAllSpecsRequest {
+	uint64 id = 1;
+}
+
+message QueryGetUnstakingServicersAllSpecsResponse {
+	UnstakingServicersAllSpecs UnstakingServicersAllSpecs = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllUnstakingServicersAllSpecsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllUnstakingServicersAllSpecsResponse {
+	repeated UnstakingServicersAllSpecs UnstakingServicersAllSpecs = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetPairingRequest {
+  string specName = 1;
+  string userAddr = 2;
+}
+
+message QueryGetPairingResponse {
+  StakeStorage servicers = 1;
+}
+
+// this line is used by starport scaffolding # 3

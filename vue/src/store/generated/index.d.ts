@@ -11,5 +11,7 @@ declare const _default: {
     CosmosCosmosSdkCosmosVestingV1Beta1: (store: any) => void;
     CosmosIbcGoIbcApplicationsTransferV1: (store: any) => void;
     CosmosIbcGoIbcApplicationsTransferV2: (store: any) => void;
+    LavanetLavaLavanetLavaServicer: (store: any) => void;
+    LavanetLavaLavanetLavaUser: (store: any) => void;
 };
 export default _default;
