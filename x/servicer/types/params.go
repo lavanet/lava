@@ -38,6 +38,11 @@ var (
 	DefaultFraudSlashingAmount uint64 = 0
 )
 
+var (
+	KeyServicersToPairCount            = []byte("ServicersToPairCount")
+	DefaultServicersToPairCount uint64 = 3
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -50,6 +55,7 @@ func NewParams(
 	unstakeHoldBlocks uint64,
 	fraudStakeSlashingFactor uint64,
 	fraudSlashingAmount uint64,
+	servicersToPairCount uint64,
 ) Params {
 	return Params{
 		MinStake:                 minStake,
@@ -57,6 +63,7 @@ func NewParams(
 		UnstakeHoldBlocks:        unstakeHoldBlocks,
 		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
 		FraudSlashingAmount:      fraudSlashingAmount,
+		ServicersToPairCount:     servicersToPairCount,
 	}
 }
 
@@ -68,6 +75,7 @@ func DefaultParams() Params {
 		DefaultUnstakeHoldBlocks,
 		DefaultFraudStakeSlashingFactor,
 		DefaultFraudSlashingAmount,
+		DefaultServicersToPairCount,
 	)
 }
 
@@ -79,6 +87,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyUnstakeHoldBlocks, &p.UnstakeHoldBlocks, validateUnstakeHoldBlocks),
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
+		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
 	}
 }
 
@@ -103,7 +112,9 @@ func (p Params) Validate() error {
 	if err := validateFraudSlashingAmount(p.FraudSlashingAmount); err != nil {
 		return err
 	}
-
+	if err := validateServicersToPairCount(p.ServicersToPairCount); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -175,6 +186,17 @@ func validateFraudSlashingAmount(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 	_ = fraudSlashingAmount
+
+	return nil
+}
+
+// validateServicersToPairCount validates the ServicersToPairCount param
+func validateServicersToPairCount(v interface{}) error {
+	servicersToPairCount, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = servicersToPairCount
 
 	return nil
 }

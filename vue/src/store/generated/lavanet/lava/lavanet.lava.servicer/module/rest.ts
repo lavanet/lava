@@ -57,6 +57,9 @@ export interface ServicerParams {
 
   /** @format uint64 */
   fraudSlashingAmount?: string;
+
+  /** @format uint64 */
+  servicersToPairCount?: string;
 }
 
 export interface ServicerQueryAllSpecStakeStorageResponse {

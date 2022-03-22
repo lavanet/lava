@@ -8,6 +8,7 @@ const baseParams = {
     unstakeHoldBlocks: 0,
     fraudStakeSlashingFactor: 0,
     fraudSlashingAmount: 0,
+    servicersToPairCount: 0,
 };
 export const Params = {
     encode(message, writer = Writer.create()) {
@@ -25,6 +26,9 @@ export const Params = {
         }
         if (message.fraudSlashingAmount !== 0) {
             writer.uint32(40).uint64(message.fraudSlashingAmount);
+        }
+        if (message.servicersToPairCount !== 0) {
+            writer.uint32(48).uint64(message.servicersToPairCount);
         }
         return writer;
     },
@@ -49,6 +53,9 @@ export const Params = {
                     break;
                 case 5:
                     message.fraudSlashingAmount = longToNumber(reader.uint64());
+                    break;
+                case 6:
+                    message.servicersToPairCount = longToNumber(reader.uint64());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -92,6 +99,13 @@ export const Params = {
         else {
             message.fraudSlashingAmount = 0;
         }
+        if (object.servicersToPairCount !== undefined &&
+            object.servicersToPairCount !== null) {
+            message.servicersToPairCount = Number(object.servicersToPairCount);
+        }
+        else {
+            message.servicersToPairCount = 0;
+        }
         return message;
     },
     toJSON(message) {
@@ -104,6 +118,8 @@ export const Params = {
             (obj.fraudStakeSlashingFactor = message.fraudStakeSlashingFactor);
         message.fraudSlashingAmount !== undefined &&
             (obj.fraudSlashingAmount = message.fraudSlashingAmount);
+        message.servicersToPairCount !== undefined &&
+            (obj.servicersToPairCount = message.servicersToPairCount);
         return obj;
     },
     fromPartial(object) {
@@ -140,6 +156,13 @@ export const Params = {
         }
         else {
             message.fraudSlashingAmount = 0;
+        }
+        if (object.servicersToPairCount !== undefined &&
+            object.servicersToPairCount !== null) {
+            message.servicersToPairCount = object.servicersToPairCount;
+        }
+        else {
+            message.servicersToPairCount = 0;
         }
         return message;
     },

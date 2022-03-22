@@ -20,4 +20,5 @@ func TestGetParams(t *testing.T) {
 	require.EqualValues(t, params.UnstakeHoldBlocks, k.UnstakeHoldBlocks(ctx))
 	require.EqualValues(t, params.FraudStakeSlashingFactor, k.FraudStakeSlashingFactor(ctx))
 	require.EqualValues(t, params.FraudSlashingAmount, k.FraudSlashingAmount(ctx))
+	require.EqualValues(t, params.ServicersToPairCount, k.ServicersToPairCount(ctx))
 }

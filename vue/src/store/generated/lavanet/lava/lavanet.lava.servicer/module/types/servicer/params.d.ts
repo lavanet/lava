@@ -7,6 +7,7 @@ export interface Params {
     unstakeHoldBlocks: number;
     fraudStakeSlashingFactor: number;
     fraudSlashingAmount: number;
+    servicersToPairCount: number;
 }
 export declare const Params: {
     encode(message: Params, writer?: Writer): Writer;

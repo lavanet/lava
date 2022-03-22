@@ -14,4 +14,5 @@ message Params {
   uint64 unstakeHoldBlocks = 3 [(gogoproto.moretags) = "yaml:\"unstake_hold_blocks\""];
   uint64 fraudStakeSlashingFactor = 4 [(gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\""];
   uint64 fraudSlashingAmount = 5 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
+  uint64 servicersToPairCount = 6 [(gogoproto.moretags) = "yaml:\"servicers_to_pair_count\""];
 }

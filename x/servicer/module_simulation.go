@@ -75,6 +75,9 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(servicerParams.FraudSlashingAmount))
 		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyServicersToPairCount), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(servicerParams.ServicersToPairCount))
+		}),
 	}
 }
 

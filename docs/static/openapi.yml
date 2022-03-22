@@ -12642,6 +12642,9 @@ paths:
                   fraudSlashingAmount:
                     type: string
                     format: uint64
+                  servicersToPairCount:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -21764,6 +21767,9 @@ definitions:
       fraudSlashingAmount:
         type: string
         format: uint64
+      servicersToPairCount:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.servicer.QueryAllSpecStakeStorageResponse:
     type: object
@@ -22191,6 +22197,9 @@ definitions:
             type: string
             format: uint64
           fraudSlashingAmount:
+            type: string
+            format: uint64
+          servicersToPairCount:
             type: string
             format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.

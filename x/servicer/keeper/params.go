@@ -13,6 +13,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.UnstakeHoldBlocks(ctx),
 		k.FraudStakeSlashingFactor(ctx),
 		k.FraudSlashingAmount(ctx),
+		k.ServicersToPairCount(ctx),
 	)
 }
 
@@ -61,5 +62,11 @@ func (k Keeper) FraudStakeSlashingFactor(ctx sdk.Context) (res uint64) {
 // FraudSlashingAmount returns the FraudSlashingAmount param
 func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyFraudSlashingAmount, &res)
+	return
+}
+
+// ServicersToPairCount returns the ServicersToPairCount param
+func (k Keeper) ServicersToPairCount(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyServicersToPairCount, &res)
 	return
 }

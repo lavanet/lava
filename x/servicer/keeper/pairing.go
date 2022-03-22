@@ -21,6 +21,9 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, block types.BlockNum, specI
 
 	verifiedUser := false
 	userSpecStakeStorageForSpec, found := k.userKeeper.GetSpecStakeStorage(ctx, spec.Name)
+	if !found {
+		return nil, nil, fmt.Errorf("no user spec stake storage for spec %s", spec.Name)
+	}
 	allStakedUsersForSpec := userSpecStakeStorageForSpec.StakeStorage.StakedUsers
 	for _, stakedUser := range allStakedUsersForSpec {
 		userAddr, err := sdk.AccAddressFromBech32(stakedUser.Index)
@@ -50,7 +53,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedServicers []typ
 	}
 
 	//calculates a hash and randomly chooses the servicers
-	k.returnSubsetOfServicersByStake(validServicers, 2, uint(block.Num))
+	k.returnSubsetOfServicersByStake(validServicers, k.ServicersToPairCount(ctx), uint(block.Num))
 
 	for _, stakeMap := range validServicers {
 		servicerAddress := stakeMap.Index
@@ -63,10 +66,10 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedServicers []typ
 	return validServicers, addrList, nil
 }
 
-func (k Keeper) returnSubsetOfServicersByStake(servicersMaps []types.StakeMap, count uint, block uint) (returnedServicers []types.StakeMap) {
+func (k Keeper) returnSubsetOfServicersByStake(servicersMaps []types.StakeMap, count uint64, block uint) (returnedServicers []types.StakeMap) {
 	//TODO: need to do the pairing function, right now i just return the first staked servicers addresses
 	for _, stakedServicer := range servicersMaps {
-		if uint(len(returnedServicers)) >= count {
+		if uint64(len(returnedServicers)) >= count {
 			return returnedServicers
 		}
 		returnedServicers = append(returnedServicers, stakedServicer)
