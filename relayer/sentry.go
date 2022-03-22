@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -32,20 +31,18 @@ type Sentry struct {
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
-	allSpecs, err := s.queryClient.SpecAll(ctx, &types.QueryAllSpecRequest{})
+	//
+	// TODO: decide if it's fatal to not have spec (probably!)
+	spec, err := s.queryClient.Spec(ctx, &types.QueryGetSpecRequest{
+		Id: s.specId,
+	})
 	if err != nil {
 		return err
 	}
 
 	//
-	// TODO: decide if it's fatal to not have spec (probably!)
-	if len(allSpecs.Spec) == 0 || uint64(len(allSpecs.Spec)) <= s.specId {
-		return errors.New("bad specId or no specs found")
-	}
-
-	//
 	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(allSpecs.String())) // TODO: we use cheaper algo for speed
+	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
 	if bytes.Equal(s.specHash, hash) {
 		return nil
 	}
@@ -54,14 +51,13 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// Update
 	log.Println("new spec found; updating spec!")
-	curSpec := allSpecs.Spec[s.specId]
 	serverApis := map[string]types.ServiceApi{}
-	for _, api := range curSpec.Apis {
+	for _, api := range spec.Spec.Apis {
 		serverApis[api.Name] = api
 	}
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
-	s.serverSpec = curSpec
+	s.serverSpec = spec.Spec
 	s.serverApis = serverApis
 
 	return nil
