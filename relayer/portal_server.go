@@ -10,7 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/x/spec/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	grpc "google.golang.org/grpc"
 )
 
@@ -19,14 +20,15 @@ var g_request_lock sync.Mutex
 func PortalServer(
 	ctx context.Context,
 	clientCtx client.Context,
-	queryClient types.QueryClient,
+	specQueryClient spectypes.QueryClient,
+	servicerQueryClient servicertypes.QueryClient,
 	listenAddr string,
 	relayerUrl string,
 	specId uint64,
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	sentry := NewSentry(clientCtx.Client, specQueryClient, servicerQueryClient, specId)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

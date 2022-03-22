@@ -9,7 +9,8 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/x/spec/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 
 	grpc "google.golang.org/grpc"
@@ -22,7 +23,7 @@ const (
 )
 
 var (
-	g_clientApis map[string]types.ServiceApi
+	g_clientApis map[string]spectypes.ServiceApi
 	g_cu_sum     uint64
 )
 
@@ -78,10 +79,17 @@ func sendRelay(
 	return reply, &serverKey, nil
 }
 
-func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId uint64) {
+func TestClient(
+	ctx context.Context,
+	clientCtx client.Context,
+	specQueryClient spectypes.QueryClient,
+	servicerQueryClient servicertypes.QueryClient,
+	addr string,
+	specId uint64,
+) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	sentry := NewSentry(clientCtx.Client, specQueryClient, servicerQueryClient, specId)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

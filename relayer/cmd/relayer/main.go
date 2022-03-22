@@ -12,7 +12,8 @@ import (
 
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
-	"github.com/lavanet/lava/x/spec/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 )
@@ -40,7 +41,8 @@ func main() {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			specQueryClient := spectypes.NewQueryClient(clientCtx)
+			servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -54,7 +56,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, clientCtx, queryClient, listenAddr, args[2], uint64(specId))
+			relayer.Server(ctx, clientCtx, specQueryClient, servicerQueryClient, listenAddr, args[2], uint64(specId))
 
 			return nil
 		},
@@ -70,7 +72,8 @@ func main() {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			specQueryClient := spectypes.NewQueryClient(clientCtx)
+			servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -84,7 +87,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, queryClient, listenAddr, args[2], uint64(specId))
+			relayer.PortalServer(ctx, clientCtx, specQueryClient, servicerQueryClient, listenAddr, args[2], uint64(specId))
 
 			return nil
 		},
@@ -100,7 +103,8 @@ func main() {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			specQueryClient := spectypes.NewQueryClient(clientCtx)
+			servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -114,7 +118,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, queryClient, listenAddr, uint64(specId))
+			relayer.TestClient(ctx, clientCtx, specQueryClient, servicerQueryClient, listenAddr, uint64(specId))
 
 			return nil
 		},

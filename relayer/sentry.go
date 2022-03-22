@@ -9,7 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/lavanet/lava/x/spec/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -17,23 +18,24 @@ import (
 )
 
 type Sentry struct {
-	rpcClient   rpcclient.Client
-	queryClient types.QueryClient
-	specId      uint64
-	txs         <-chan ctypes.ResultEvent
+	rpcClient           rpcclient.Client
+	specQueryClient     spectypes.QueryClient
+	servicerQueryClient servicertypes.QueryClient
+	specId              uint64
+	txs                 <-chan ctypes.ResultEvent
 
 	blockHeight int64
 
 	specMu     sync.RWMutex
 	specHash   []byte
-	serverSpec types.Spec
-	serverApis map[string]types.ServiceApi
+	serverSpec spectypes.Spec
+	serverApis map[string]spectypes.ServiceApi
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
-	spec, err := s.queryClient.Spec(ctx, &types.QueryGetSpecRequest{
+	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		Id: s.specId,
 	})
 	if err != nil {
@@ -51,7 +53,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// Update
 	log.Println("new spec found; updating spec!")
-	serverApis := map[string]types.ServiceApi{}
+	serverApis := map[string]spectypes.ServiceApi{}
 	for _, api := range spec.Spec.Apis {
 		serverApis[api.Name] = api
 	}
@@ -114,7 +116,7 @@ func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
 
-func (s *Sentry) GetSpecApiByName(name string) (types.ServiceApi, bool) {
+func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
 
@@ -130,6 +132,16 @@ func (s *Sentry) SetBlockHeight(blockHeight int64) {
 	atomic.StoreInt64(&s.blockHeight, blockHeight)
 }
 
-func NewSentry(rpcClient rpcclient.Client, queryClient types.QueryClient, specId uint64) *Sentry {
-	return &Sentry{rpcClient: rpcClient, queryClient: queryClient, specId: specId}
+func NewSentry(
+	rpcClient rpcclient.Client,
+	specQueryClient spectypes.QueryClient,
+	servicerQueryClient servicertypes.QueryClient,
+	specId uint64,
+) *Sentry {
+	return &Sentry{
+		rpcClient:           rpcClient,
+		specQueryClient:     specQueryClient,
+		servicerQueryClient: servicerQueryClient,
+		specId:              specId,
+	}
 }

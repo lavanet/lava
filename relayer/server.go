@@ -12,7 +12,8 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/x/spec/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
@@ -85,7 +86,7 @@ func isSupportedSpec(in *RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpecId
 }
 
-func getSupportedApi(name string, sentry *Sentry) (*types.ServiceApi, error) {
+func getSupportedApi(name string, sentry *Sentry) (*spectypes.ServiceApi, error) {
 	if api, ok := sentry.GetSpecApiByName(name); ok {
 		if api.Status != "enabled" {
 			return nil, errors.New("api is disabled")
@@ -113,7 +114,7 @@ func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
 	return userSessions[sessionId]
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *types.ServiceApi, in *RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
@@ -215,10 +216,18 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	return &reply, nil
 }
 
-func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId uint64) {
+func Server(
+	ctx context.Context,
+	clientCtx client.Context,
+	specQueryClient spectypes.QueryClient,
+	servicerQueryClient servicertypes.QueryClient,
+	listenAddr string,
+	nodeUrl string,
+	specId uint64,
+) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client, queryClient, specId)
+	sentry := NewSentry(clientCtx.Client, specQueryClient, servicerQueryClient, specId)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
