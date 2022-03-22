@@ -61,6 +61,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/servicer/unstaking_servicers_all_specs";
 	}
 
+// Queries a list of GetPairing items.
+	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -138,6 +143,15 @@ message QueryAllUnstakingServicersAllSpecsRequest {
 message QueryAllUnstakingServicersAllSpecsResponse {
 	repeated UnstakingServicersAllSpecs UnstakingServicersAllSpecs = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetPairingRequest {
+  string specName = 1;
+  string userAddr = 2;
+}
+
+message QueryGetPairingResponse {
+  StakeStorage servicers = 1;
 }
 
 // this line is used by starport scaffolding # 3

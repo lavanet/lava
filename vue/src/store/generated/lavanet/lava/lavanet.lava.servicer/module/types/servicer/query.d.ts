@@ -66,6 +66,13 @@ export interface QueryAllUnstakingServicersAllSpecsResponse {
     UnstakingServicersAllSpecs: UnstakingServicersAllSpecs[];
     pagination: PageResponse | undefined;
 }
+export interface QueryGetPairingRequest {
+    specName: string;
+    userAddr: string;
+}
+export interface QueryGetPairingResponse {
+    servicers: StakeStorage | undefined;
+}
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): QueryParamsRequest;
@@ -192,6 +199,20 @@ export declare const QueryAllUnstakingServicersAllSpecsResponse: {
     toJSON(message: QueryAllUnstakingServicersAllSpecsResponse): unknown;
     fromPartial(object: DeepPartial<QueryAllUnstakingServicersAllSpecsResponse>): QueryAllUnstakingServicersAllSpecsResponse;
 };
+export declare const QueryGetPairingRequest: {
+    encode(message: QueryGetPairingRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetPairingRequest;
+    fromJSON(object: any): QueryGetPairingRequest;
+    toJSON(message: QueryGetPairingRequest): unknown;
+    fromPartial(object: DeepPartial<QueryGetPairingRequest>): QueryGetPairingRequest;
+};
+export declare const QueryGetPairingResponse: {
+    encode(message: QueryGetPairingResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetPairingResponse;
+    fromJSON(object: any): QueryGetPairingResponse;
+    toJSON(message: QueryGetPairingResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetPairingResponse>): QueryGetPairingResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -212,6 +233,8 @@ export interface Query {
     UnstakingServicersAllSpecs(request: QueryGetUnstakingServicersAllSpecsRequest): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
     /** Queries a list of UnstakingServicersAllSpecs items. */
     UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
+    /** Queries a list of GetPairing items. */
+    GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -225,6 +248,7 @@ export declare class QueryClientImpl implements Query {
     BlockDeadlineForCallback(request: QueryGetBlockDeadlineForCallbackRequest): Promise<QueryGetBlockDeadlineForCallbackResponse>;
     UnstakingServicersAllSpecs(request: QueryGetUnstakingServicersAllSpecsRequest): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
     UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
+    GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

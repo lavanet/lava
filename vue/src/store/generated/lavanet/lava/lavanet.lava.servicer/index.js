@@ -55,6 +55,7 @@ const getDefaultState = () => {
         BlockDeadlineForCallback: {},
         UnstakingServicersAllSpecs: {},
         UnstakingServicersAllSpecsAll: {},
+        GetPairing: {},
         _Structure: {
             BlockDeadlineForCallback: getStructure(BlockDeadlineForCallback.fromPartial({})),
             BlockNum: getStructure(BlockNum.fromPartial({})),
@@ -145,6 +146,12 @@ export default {
                 params.query = null;
             }
             return state.UnstakingServicersAllSpecsAll[JSON.stringify(params)] ?? {};
+        },
+        getGetPairing: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.GetPairing[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -317,21 +324,18 @@ export default {
                 throw new SpVuexError('QueryClient:QueryUnstakingServicersAllSpecsAll', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
-        async sendMsgUnstakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+        async QueryGetPairing({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
             try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgUnstakeServicer(value);
-                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
-                        gas: "200000" }, memo });
-                return result;
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryGetPairing(key.specName, key.userAddr)).data;
+                commit('QUERY', { query: 'GetPairing', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryGetPairing', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getGetPairing']({ params: { ...key }, query }) ?? {};
             }
             catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
-                }
-                else {
-                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Send', 'Could not broadcast Tx: ' + e.message);
-                }
+                throw new SpVuexError('QueryClient:QueryGetPairing', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
         async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {
@@ -348,6 +352,23 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgProofOfWork:Send', 'Could not broadcast Tx: ' + e.message);
+                }
+            }
+        },
+        async sendMsgUnstakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgUnstakeServicer(value);
+                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
+                        gas: "200000" }, memo });
+                return result;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Send', 'Could not broadcast Tx: ' + e.message);
                 }
             }
         },
@@ -368,21 +389,6 @@ export default {
                 }
             }
         },
-        async MsgUnstakeServicer({ rootGetters }, { value }) {
-            try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgUnstakeServicer(value);
-                return msg;
-            }
-            catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
-                }
-                else {
-                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Create', 'Could not create message: ' + e.message);
-                }
-            }
-        },
         async MsgProofOfWork({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
@@ -395,6 +401,21 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgProofOfWork:Create', 'Could not create message: ' + e.message);
+                }
+            }
+        },
+        async MsgUnstakeServicer({ rootGetters }, { value }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgUnstakeServicer(value);
+                return msg;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgUnstakeServicer:Create', 'Could not create message: ' + e.message);
                 }
             }
         },

@@ -12613,6 +12613,81 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
+  '/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}':
+    get:
+      summary: Queries a list of GetPairing items.
+      operationId: LavanetLavaServicerGetPairing
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              servicers:
+                type: object
+                properties:
+                  staked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        stake:
+                          type: object
+                          properties:
+                            denom:
+                              type: string
+                            amount:
+                              type: string
+                          description: >-
+                            Coin defines a token with a denomination and an
+                            amount.
+
+
+                            NOTE: The amount field is an Int which implements
+                            the custom method
+
+                            signatures required by gogoproto.
+                        deadline:
+                          type: object
+                          properties:
+                            num:
+                              type: string
+                              format: uint64
+                        operatorAddresses:
+                          type: array
+                          items:
+                            type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: specName
+          in: path
+          required: true
+          type: string
+        - name: userAddr
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/servicer/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -22021,6 +22096,44 @@ definitions:
               num:
                 type: string
                 format: uint64
+  lavanet.lava.servicer.QueryGetPairingResponse:
+    type: object
+    properties:
+      servicers:
+        type: object
+        properties:
+          staked:
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                stake:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                deadline:
+                  type: object
+                  properties:
+                    num:
+                      type: string
+                      format: uint64
+                operatorAddresses:
+                  type: array
+                  items:
+                    type: string
   lavanet.lava.servicer.QueryGetSpecStakeStorageResponse:
     type: object
     properties:

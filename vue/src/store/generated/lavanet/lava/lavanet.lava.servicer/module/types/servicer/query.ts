@@ -89,6 +89,15 @@ export interface QueryAllUnstakingServicersAllSpecsResponse {
   pagination: PageResponse | undefined;
 }
 
+export interface QueryGetPairingRequest {
+  specName: string;
+  userAddr: string;
+}
+
+export interface QueryGetPairingResponse {
+  servicers: StakeStorage | undefined;
+}
+
 const baseQueryParamsRequest: object = {};
 
 export const QueryParamsRequest = {
@@ -1475,6 +1484,152 @@ export const QueryAllUnstakingServicersAllSpecsResponse = {
   },
 };
 
+const baseQueryGetPairingRequest: object = { specName: "", userAddr: "" };
+
+export const QueryGetPairingRequest = {
+  encode(
+    message: QueryGetPairingRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.specName !== "") {
+      writer.uint32(10).string(message.specName);
+    }
+    if (message.userAddr !== "") {
+      writer.uint32(18).string(message.userAddr);
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): QueryGetPairingRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = { ...baseQueryGetPairingRequest } as QueryGetPairingRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.specName = reader.string();
+          break;
+        case 2:
+          message.userAddr = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetPairingRequest {
+    const message = { ...baseQueryGetPairingRequest } as QueryGetPairingRequest;
+    if (object.specName !== undefined && object.specName !== null) {
+      message.specName = String(object.specName);
+    } else {
+      message.specName = "";
+    }
+    if (object.userAddr !== undefined && object.userAddr !== null) {
+      message.userAddr = String(object.userAddr);
+    } else {
+      message.userAddr = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetPairingRequest): unknown {
+    const obj: any = {};
+    message.specName !== undefined && (obj.specName = message.specName);
+    message.userAddr !== undefined && (obj.userAddr = message.userAddr);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetPairingRequest>
+  ): QueryGetPairingRequest {
+    const message = { ...baseQueryGetPairingRequest } as QueryGetPairingRequest;
+    if (object.specName !== undefined && object.specName !== null) {
+      message.specName = object.specName;
+    } else {
+      message.specName = "";
+    }
+    if (object.userAddr !== undefined && object.userAddr !== null) {
+      message.userAddr = object.userAddr;
+    } else {
+      message.userAddr = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryGetPairingResponse: object = {};
+
+export const QueryGetPairingResponse = {
+  encode(
+    message: QueryGetPairingResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.servicers !== undefined) {
+      StakeStorage.encode(message.servicers, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): QueryGetPairingResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetPairingResponse,
+    } as QueryGetPairingResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.servicers = StakeStorage.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetPairingResponse {
+    const message = {
+      ...baseQueryGetPairingResponse,
+    } as QueryGetPairingResponse;
+    if (object.servicers !== undefined && object.servicers !== null) {
+      message.servicers = StakeStorage.fromJSON(object.servicers);
+    } else {
+      message.servicers = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetPairingResponse): unknown {
+    const obj: any = {};
+    message.servicers !== undefined &&
+      (obj.servicers = message.servicers
+        ? StakeStorage.toJSON(message.servicers)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetPairingResponse>
+  ): QueryGetPairingResponse {
+    const message = {
+      ...baseQueryGetPairingResponse,
+    } as QueryGetPairingResponse;
+    if (object.servicers !== undefined && object.servicers !== null) {
+      message.servicers = StakeStorage.fromPartial(object.servicers);
+    } else {
+      message.servicers = undefined;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -1509,6 +1664,8 @@ export interface Query {
   UnstakingServicersAllSpecsAll(
     request: QueryAllUnstakingServicersAllSpecsRequest
   ): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
+  /** Queries a list of GetPairing items. */
+  GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -1641,6 +1798,20 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryAllUnstakingServicersAllSpecsResponse.decode(new Reader(data))
+    );
+  }
+
+  GetPairing(
+    request: QueryGetPairingRequest
+  ): Promise<QueryGetPairingResponse> {
+    const data = QueryGetPairingRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "GetPairing",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetPairingResponse.decode(new Reader(data))
     );
   }
 }

@@ -154,6 +154,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryGetPairing
+         * @summary Queries a list of GetPairing items.
+         * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
+         */
+        this.queryGetPairing = (specName, userAddr, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/get_pairing/${specName}/${userAddr}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryParams
          * @summary Parameters queries the parameters of the module.
          * @request GET:/lavanet/lava/servicer/params

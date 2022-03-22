@@ -111,6 +111,10 @@ export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
   BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
 }
 
+export interface ServicerQueryGetPairingResponse {
+  servicers?: ServicerStakeStorage;
+}
+
 export interface ServicerQueryGetSpecStakeStorageResponse {
   specStakeStorage?: ServicerSpecStakeStorage;
 }
@@ -460,6 +464,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryBlockDeadlineForCallback = (params: RequestParams = {}) =>
     this.request<ServicerQueryGetBlockDeadlineForCallbackResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/block_deadline_for_callback`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryGetPairing
+   * @summary Queries a list of GetPairing items.
+   * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
+   */
+  queryGetPairing = (specName: string, userAddr: string, params: RequestParams = {}) =>
+    this.request<ServicerQueryGetPairingResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/get_pairing/${specName}/${userAddr}`,
       method: "GET",
       format: "json",
       ...params,

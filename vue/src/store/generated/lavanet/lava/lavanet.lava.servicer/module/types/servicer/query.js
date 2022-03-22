@@ -1123,6 +1123,136 @@ export const QueryAllUnstakingServicersAllSpecsResponse = {
         return message;
     },
 };
+const baseQueryGetPairingRequest = { specName: "", userAddr: "" };
+export const QueryGetPairingRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.specName !== "") {
+            writer.uint32(10).string(message.specName);
+        }
+        if (message.userAddr !== "") {
+            writer.uint32(18).string(message.userAddr);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = { ...baseQueryGetPairingRequest };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.specName = reader.string();
+                    break;
+                case 2:
+                    message.userAddr = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = { ...baseQueryGetPairingRequest };
+        if (object.specName !== undefined && object.specName !== null) {
+            message.specName = String(object.specName);
+        }
+        else {
+            message.specName = "";
+        }
+        if (object.userAddr !== undefined && object.userAddr !== null) {
+            message.userAddr = String(object.userAddr);
+        }
+        else {
+            message.userAddr = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.specName !== undefined && (obj.specName = message.specName);
+        message.userAddr !== undefined && (obj.userAddr = message.userAddr);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = { ...baseQueryGetPairingRequest };
+        if (object.specName !== undefined && object.specName !== null) {
+            message.specName = object.specName;
+        }
+        else {
+            message.specName = "";
+        }
+        if (object.userAddr !== undefined && object.userAddr !== null) {
+            message.userAddr = object.userAddr;
+        }
+        else {
+            message.userAddr = "";
+        }
+        return message;
+    },
+};
+const baseQueryGetPairingResponse = {};
+export const QueryGetPairingResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.servicers !== undefined) {
+            StakeStorage.encode(message.servicers, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryGetPairingResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.servicers = StakeStorage.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryGetPairingResponse,
+        };
+        if (object.servicers !== undefined && object.servicers !== null) {
+            message.servicers = StakeStorage.fromJSON(object.servicers);
+        }
+        else {
+            message.servicers = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.servicers !== undefined &&
+            (obj.servicers = message.servicers
+                ? StakeStorage.toJSON(message.servicers)
+                : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryGetPairingResponse,
+        };
+        if (object.servicers !== undefined && object.servicers !== null) {
+            message.servicers = StakeStorage.fromPartial(object.servicers);
+        }
+        else {
+            message.servicers = undefined;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -1171,6 +1301,11 @@ export class QueryClientImpl {
         const data = QueryAllUnstakingServicersAllSpecsRequest.encode(request).finish();
         const promise = this.rpc.request("lavanet.lava.servicer.Query", "UnstakingServicersAllSpecsAll", data);
         return promise.then((data) => QueryAllUnstakingServicersAllSpecsResponse.decode(new Reader(data)));
+    }
+    GetPairing(request) {
+        const data = QueryGetPairingRequest.encode(request).finish();
+        const promise = this.rpc.request("lavanet.lava.servicer.Query", "GetPairing", data);
+        return promise.then((data) => QueryGetPairingResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

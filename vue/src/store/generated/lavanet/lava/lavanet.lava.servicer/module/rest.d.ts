@@ -79,6 +79,9 @@ export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
 export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
     BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
 }
+export interface ServicerQueryGetPairingResponse {
+    servicers?: ServicerStakeStorage;
+}
 export interface ServicerQueryGetSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage;
 }
@@ -267,6 +270,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
      */
     queryBlockDeadlineForCallback: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetBlockDeadlineForCallbackResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryGetPairing
+     * @summary Queries a list of GetPairing items.
+     * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
+     */
+    queryGetPairing: (specName: string, userAddr: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetPairingResponse, RpcStatus>>;
     /**
      * No description
      *
