@@ -1,0 +1,23 @@
+syntax = "proto3";
+package lavanet.lava.user;
+
+import "gogoproto/gogo.proto";
+import "user/params.proto";
+import "user/user_stake.proto";
+import "user/spec_stake_storage.proto";
+import "user/block_deadline_for_callback.proto";
+import "user/unstaking_users_all_specs.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/user/types";
+
+// GenesisState defines the user module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated UserStake userStakeList = 2 [(gogoproto.nullable) = false];
+  repeated SpecStakeStorage specStakeStorageList = 3 [(gogoproto.nullable) = false];
+  BlockDeadlineForCallback blockDeadlineForCallback = 4 [(gogoproto.nullable) = false];
+  repeated UnstakingUsersAllSpecs unstakingUsersAllSpecsList = 5 [(gogoproto.nullable) = false];
+  uint64 unstakingUsersAllSpecsCount = 6;
+  // this line is used by starport scaffolding # genesis/proto/state
+}
