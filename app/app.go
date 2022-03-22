@@ -388,17 +388,6 @@ func New(
 		&stakingKeeper, govRouter,
 	)
 
-	app.ServicerKeeper = *servicermodulekeeper.NewKeeper(
-		appCodec,
-		keys[servicermoduletypes.StoreKey],
-		keys[servicermoduletypes.MemStoreKey],
-		app.GetSubspace(servicermoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.EvidenceKeeper,
-		app.SpecKeeper,
-	)
 	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper)
 
 	app.UserKeeper = *usermodulekeeper.NewKeeper(
@@ -410,6 +399,18 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		app.SpecKeeper,
+	)
+	app.ServicerKeeper = *servicermodulekeeper.NewKeeper(
+		appCodec,
+		keys[servicermoduletypes.StoreKey],
+		keys[servicermoduletypes.MemStoreKey],
+		app.GetSubspace(servicermoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.EvidenceKeeper,
+		app.SpecKeeper,
+		app.UserKeeper,
 	)
 	userModule := usermodule.NewAppModule(appCodec, app.UserKeeper, app.AccountKeeper, app.BankKeeper)
 

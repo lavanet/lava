@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	usertypes "github.com/lavanet/lava/x/user/types"
 )
 
 type EvidenceKeeper interface {
@@ -31,4 +32,8 @@ type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool)
 	IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool)
 	GetSpec(ctx sdk.Context, id uint64) (val spectypes.Spec, found bool)
+}
+
+type UserKeeper interface {
+	GetSpecStakeStorage(sdk.Context, string) (usertypes.SpecStakeStorage, bool)
 }
