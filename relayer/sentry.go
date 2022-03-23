@@ -39,6 +39,7 @@ type RelayerClientWrapper struct {
 }
 
 type Sentry struct {
+	ClientCtx           client.Context
 	rpcClient           rpcclient.Client
 	specQueryClient     spectypes.QueryClient
 	servicerQueryClient servicertypes.QueryClient
@@ -256,10 +257,6 @@ func (s *Sentry) Start(ctx context.Context) {
 								sess := client.Sessions[i]
 								delete(client.Sessions, i)
 								sess.Lock.Unlock()
-
-								//
-								// TODO: send reward
-								//
 							}
 
 							//
@@ -444,6 +441,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 
 	return &Sentry{
+		ClientCtx:           clientCtx,
 		rpcClient:           rpcClient,
 		specQueryClient:     specQueryClient,
 		servicerQueryClient: servicerQueryClient,

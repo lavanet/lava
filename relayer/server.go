@@ -12,7 +12,9 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
@@ -30,6 +32,7 @@ var (
 type RelaySession struct {
 	CuSum uint64
 	Lock  sync.Mutex
+	Proof *RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
@@ -64,6 +67,27 @@ type jsonrpcMessage struct {
 	Params  []interface{}   `json:"params,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
+}
+
+func askForRewards(sess *RelaySession, sessionId uint64) {
+
+	//
+	// TODO: send reward properly (use sess.Proof)
+	//
+	msg := servicertypes.NewMsgProofOfWork(
+		"creator",
+		&servicertypes.SpecName{Name: g_sentry.GetSpecName()},
+		&servicertypes.SessionID{Num: uint64(sessionId)},
+		&servicertypes.ClientRequest{Data: "hello"},
+		&servicertypes.WorkProof{Data: "bye"},
+		sess.CuSum,
+		&servicertypes.BlockNum{Num: uint64(g_sentry.GetBlockHeight())},
+	)
+	err := tx.BroadcastTx(g_sentry.ClientCtx, tx.Factory{}, msg)
+	if err != nil {
+		log.Println(err)
+	}
+
 }
 
 func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
@@ -169,6 +193,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	}
 	relaySession := getOrCreateSession(user, in.SessionId)
 	updateSessionCu(relaySession, serviceApi, in)
+	relaySession.Proof = in
 
 	//
 	// Get node
