@@ -3,11 +3,13 @@ package relayer
 import (
 	context "context"
 	"encoding/json"
+	"errors"
 	"log"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -65,7 +67,13 @@ func sendRelay(
 		if err != nil {
 			return nil, err
 		}
-		log.Println(serverKey)
+		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+		if err != nil {
+			return nil, err
+		}
+		if serverAddr.String() != clientSession.Client.Acc {
+			return nil, errors.New("server address mismatch in reply")
+		}
 
 		return reply, nil
 	})

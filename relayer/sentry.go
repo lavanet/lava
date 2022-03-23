@@ -349,7 +349,6 @@ func (s *Sentry) SendRelay(
 	// call user
 	defer clientSession.Lock.Unlock()
 	reply, err := cb(clientSession)
-	// TODO: check servicer pubkey is correct!
 
 	return reply, err
 }
