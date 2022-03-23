@@ -193,27 +193,29 @@ func (s *Sentry) Init(ctx context.Context) error {
 
 	//
 	// Sanity
-	servicers, err := s.servicerQueryClient.StakedServicers(ctx, &servicertypes.QueryStakedServicersRequest{
-		SpecName: s.GetSpecName(),
-	})
-	if err != nil {
-		return err
-	}
-	if servicers.GetStakeStorage() == nil {
-		return errors.New("no stake storage")
-	}
-	if servicers.StakeStorage.GetStaked() == nil {
-		return errors.New("no staked")
-	}
-	found := false
-	for _, servicer := range servicers.StakeStorage.Staked {
-		if servicer.Index == s.acc {
-			found = true
-			break
+	if !s.isUser {
+		servicers, err := s.servicerQueryClient.StakedServicers(ctx, &servicertypes.QueryStakedServicersRequest{
+			SpecName: s.GetSpecName(),
+		})
+		if err != nil {
+			return err
 		}
-	}
-	if !found {
-		return errors.New("servicer not staked")
+		if servicers.GetStakeStorage() == nil {
+			return errors.New("no stake storage")
+		}
+		if servicers.StakeStorage.GetStaked() == nil {
+			return errors.New("no staked")
+		}
+		found := false
+		for _, servicer := range servicers.StakeStorage.Staked {
+			if servicer.Index == s.acc {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New("servicer not staked")
+		}
 	}
 	return nil
 }
