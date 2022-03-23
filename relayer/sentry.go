@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
@@ -59,9 +60,11 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu   sync.RWMutex
-	pairingHash []byte
-	pairing     []*RelayerClientWrapper
+	pairingMu        sync.RWMutex
+	pairingHash      []byte
+	pairing          []*RelayerClientWrapper
+	pairingPurgeLock sync.Mutex
+	pairingPurge     []*RelayerClientWrapper
 }
 
 func (s *Sentry) getPairing(ctx context.Context) error {
@@ -115,7 +118,10 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	}
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
-	s.pairing = pairing
+	s.pairingPurgeLock.Lock()
+	defer s.pairingPurgeLock.Unlock()
+	s.pairingPurge = append(s.pairingPurge, s.pairing...) // append old connections to purge list
+	s.pairing = pairing                                   // replace with new connections
 	log.Println("update pairing list!", pairing)
 
 	return nil
@@ -187,7 +193,60 @@ func (s *Sentry) Init(ctx context.Context) error {
 	return nil
 }
 
+func removeFromSlice(s []int, i int) []int {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}
+
 func (s *Sentry) Start(ctx context.Context) {
+
+	//
+	// Purge finished sessions
+	ticker := time.NewTicker(5 * time.Second)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				func() {
+					s.pairingPurgeLock.Lock()
+					defer s.pairingPurgeLock.Unlock()
+
+					for i := len(s.pairingPurge) - 1; i >= 0; i-- {
+						client := s.pairingPurge[i]
+						client.SessionsLock.Lock()
+
+						//
+						// remove done sessions
+						removeList := []int64{}
+						for k, sess := range client.Sessions {
+							if sess.Lock.TryLock() {
+								removeList = append(removeList, k)
+							}
+						}
+						for _, i := range removeList {
+							delete(client.Sessions, i)
+							client.Sessions[i].Lock.Unlock()
+						}
+
+						//
+						// remove empty client
+						if len(client.Sessions) == 0 {
+							s.pairingPurge = append(s.pairingPurge[:i], s.pairingPurge[i+1:]...)
+						}
+						client.SessionsLock.Unlock()
+					}
+				}()
+
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	//
+	// Listne for blockchain events
 	for e := range s.txs {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
@@ -229,9 +288,6 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*RelayerCli
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error) {
-	s.pairingMu.RLock()
-	defer s.pairingMu.RUnlock()
-
 	if len(s.pairing) == 0 {
 		return nil, errors.New("no pairings available")
 	}
@@ -255,6 +311,8 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb func(clientSession *ClientSession) (*RelayReply, error),
 ) (*RelayReply, error) {
+
+	s.pairingMu.RLock()
 
 	//
 	// Get pairing
@@ -285,21 +343,13 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}()
 
+	s.pairingMu.RUnlock()
+
 	//
 	// call user
-
+	defer clientSession.Lock.Unlock()
 	reply, err := cb(clientSession)
 	// TODO: check servicer pubkey is correct!
-
-	go func() {
-		//Unlock client session when done &
-		defer clientSession.Lock.Unlock()
-
-		//
-		// Check we're not stale
-		s.pairingMu.RLock()
-		defer s.pairingMu.RUnlock()
-	}()
 
 	return reply, err
 }
