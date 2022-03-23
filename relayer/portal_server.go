@@ -3,15 +3,12 @@ package relayer
 import (
 	context "context"
 	"log"
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/x/spec/types"
-	grpc "google.golang.org/grpc"
 )
 
 var g_request_lock sync.Mutex
@@ -19,35 +16,26 @@ var g_request_lock sync.Mutex
 func PortalServer(
 	ctx context.Context,
 	clientCtx client.Context,
-	queryClient types.QueryClient,
 	listenAddr string,
-	relayerUrl string,
-	specId int,
+	specId uint64,
 ) {
 	//
-	// Get specs
-	_, clientApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	log.Println(clientApis, specId)
-	g_clientApis = clientApis
-
-	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx, specId, true)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_serverSpecId = specId
 
 	//
 	// Set up a connection to the server.
-	log.Println("PortalServer connecting to", relayerUrl)
+	log.Println("PortalServer")
 	keyName, err := getKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
@@ -58,16 +46,6 @@ func PortalServer(
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
-
-	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, relayerUrl, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	relayerClient := NewRelayerClient(conn)
-	sessionId := rand.Int63()
 
 	//
 	// Setup HTTP Server
@@ -97,7 +75,7 @@ func PortalServer(
 			log.Println("in <<< ", string(msg))
 
 			g_request_lock.Lock()
-			reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, specId, sessionId, string(msg), sentry.GetBlockHeight())
+			reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(msg), sentry.GetBlockHeight())
 			g_request_lock.Unlock()
 			if err != nil {
 				log.Println(err)
@@ -117,7 +95,7 @@ func PortalServer(
 		defer g_request_lock.Unlock()
 
 		log.Println("in <<< ", string(c.Body()))
-		reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, specId, sessionId, string(c.Body()), sentry.GetBlockHeight())
+		reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(c.Body()), sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 			return nil

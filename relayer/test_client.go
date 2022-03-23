@@ -3,16 +3,13 @@ package relayer
 import (
 	context "context"
 	"encoding/json"
+	"errors"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/x/spec/types"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-
-	grpc "google.golang.org/grpc"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -21,88 +18,91 @@ const (
 	JSONRPC_UNSUPPORTED     = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
 )
 
-var (
-	g_clientApis map[string]types.ServiceApi
-	g_cu_sum     uint64
-)
-
 func sendRelay(
 	ctx context.Context,
-	clientCtx client.Context,
-	c RelayerClient,
+	sentry *Sentry,
 	privKey *btcec.PrivateKey,
-	specId int,
-	sessionId int64,
+	specId uint64,
 	req string,
 	blockHeight int64,
-) (*RelayReply, *secp256k1.PubKey, error) {
+) (*RelayReply, error) {
 
 	//
 	// Unmarshal request
 	var msg jsonrpcMessage
 	err := json.Unmarshal([]byte(req), &msg)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	serviceApi, err := getSupportedApi(msg.Method, g_clientApis)
+	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	g_cu_sum += serviceApi.ComputeUnits
 
 	//
 	//
-	relayRequest := &RelayRequest{
-		Data:        []byte(req),
-		SessionId:   uint64(sessionId),
-		SpecId:      uint32(specId),
-		CuSum:       g_cu_sum,
-		BlockHeight: blockHeight,
-	}
+	reply, err := sentry.SendRelay(ctx, func(clientSession *ClientSession) (*RelayReply, error) {
+		clientSession.CuSum += serviceApi.ComputeUnits
 
-	sig, err := signRelay(privKey, []byte(relayRequest.String()))
-	if err != nil {
-		return nil, nil, err
-	}
-	relayRequest.Sig = sig
+		relayRequest := &RelayRequest{
+			Data:        []byte(req),
+			SessionId:   uint64(clientSession.SessionId),
+			SpecId:      uint32(specId),
+			CuSum:       clientSession.CuSum,
+			BlockHeight: blockHeight,
+		}
 
-	reply, err := c.Relay(ctx, relayRequest)
-	if err != nil {
-		return nil, nil, err
-	}
-	serverKey, err := recoverPubKeyFromRelayReply(reply)
-	if err != nil {
-		return nil, nil, err
-	}
+		sig, err := signRelay(privKey, []byte(relayRequest.String()))
+		if err != nil {
+			return nil, err
+		}
+		relayRequest.Sig = sig
 
-	return reply, &serverKey, nil
+		c := *clientSession.Client.Client
+		reply, err := c.Relay(ctx, relayRequest)
+		if err != nil {
+			return nil, err
+		}
+		serverKey, err := recoverPubKeyFromRelayReply(reply)
+		if err != nil {
+			return nil, err
+		}
+		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+		if err != nil {
+			return nil, err
+		}
+		if serverAddr.String() != clientSession.Client.Acc {
+			return nil, errors.New("server address mismatch in reply")
+		}
+
+		return reply, nil
+	})
+
+	return reply, err
 }
 
-func TestClient(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, addr string, specId int) {
-	//
-	// Get specs
-	_, clientApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	log.Println(clientApis, specId)
-	g_clientApis = clientApis
-
+func TestClient(
+	ctx context.Context,
+	clientCtx client.Context,
+	specId uint64,
+) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx, specId, true)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_serverSpecId = specId
 
 	//
 	// Set up a connection to the server.
-	log.Println("TestClient connecting to", addr)
+	log.Println("TestClient connecting")
 
 	keyName, err := getKeyName(clientCtx)
 	if err != nil {
@@ -116,43 +116,33 @@ func TestClient(ctx context.Context, clientCtx client.Context, queryClient types
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
-	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := NewRelayerClient(conn)
-	sessionId := rand.Int63()
-
 	//
 	// Call a few times and print results
 	for i := 0; i < 10; i++ {
-		reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
+		reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 		} else {
 			reply.Sig = nil // for nicer prints
-			log.Println("server addr", serverKey.Address(), "reply", reply)
+			log.Println("reply", reply)
 		}
-		reply, serverKey, err = sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
+		reply, err = sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 		} else {
 			reply.Sig = nil // for nicer prints
-			log.Println("server addr", serverKey.Address(), "reply", reply)
+			log.Println("reply", reply)
 		}
 	}
 
 	//
 	// Expected unsupported API:
-	reply, serverKey, err := sendRelay(ctx, clientCtx, c, privKey, specId, sessionId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
+	reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
 	if err != nil {
 		log.Println(err)
 	} else {
 		reply.Sig = nil // for nicer prints
-		log.Println("server addr", serverKey.Address(), "reply", reply)
+		log.Println("reply", reply)
 	}
 
 }

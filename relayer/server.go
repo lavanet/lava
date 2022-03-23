@@ -12,7 +12,10 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
@@ -20,15 +23,16 @@ import (
 var (
 	g_conn           *Connector
 	g_privKey        *btcSecp256k1.PrivateKey
-	g_serverSpec     types.Spec
-	g_serverApis     map[string]types.ServiceApi
 	g_sessions       map[string]map[uint64]*RelaySession
 	g_sessions_mutex sync.Mutex
+	g_sentry         *Sentry
+	g_serverSpecId   uint64
 )
 
 type RelaySession struct {
 	CuSum uint64
 	Lock  sync.Mutex
+	Proof *RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
@@ -65,6 +69,27 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
+func askForRewards(sess *RelaySession, sessionId uint64) {
+
+	//
+	// TODO: send reward properly (use sess.Proof)
+	//
+	msg := servicertypes.NewMsgProofOfWork(
+		"creator",
+		&servicertypes.SpecName{Name: g_sentry.GetSpecName()},
+		&servicertypes.SessionID{Num: uint64(sessionId)},
+		&servicertypes.ClientRequest{Data: "hello"},
+		&servicertypes.WorkProof{Data: "bye"},
+		sess.CuSum,
+		&servicertypes.BlockNum{Num: uint64(g_sentry.GetBlockHeight())},
+	)
+	err := tx.BroadcastTx(g_sentry.ClientCtx, tx.Factory{}, msg)
+	if err != nil {
+		log.Println(err)
+	}
+
+}
+
 func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
 	pubKey, err := recoverPubKeyFromRelay(in)
 	if err != nil {
@@ -74,19 +99,20 @@ func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
 	return pubKey.Address(), nil
 }
 
-func isAuthorizedUser(user bytes.HexBytes) bool {
-	//
-	// TODO: missing pairing check
-	log.Println("user addr", user)
-	return true
+func isAuthorizedUser(ctx context.Context, user bytes.HexBytes) bool {
+	userAddr, err := sdk.AccAddressFromHex(user.String())
+	if err != nil {
+		return false
+	}
+	return g_sentry.isAuthorizedUser(ctx, userAddr.String())
 }
 
 func isSupportedSpec(in *RelayRequest) bool {
-	return uint64(in.SpecId) == g_serverSpec.Id
+	return uint64(in.SpecId) == g_serverSpecId
 }
 
-func getSupportedApi(name string, apis map[string]types.ServiceApi) (*types.ServiceApi, error) {
-	if api, ok := apis[name]; ok {
+func getSupportedApi(name string, sentry *Sentry) (*spectypes.ServiceApi, error) {
+	if api, ok := sentry.GetSpecApiByName(name); ok {
 		if api.Status != "enabled" {
 			return nil, errors.New("api is disabled")
 		}
@@ -113,11 +139,11 @@ func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
 	return userSessions[sessionId]
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *types.ServiceApi, in *RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
+	log.Println("updateSessionCu", serviceApi.Name, in.SessionId, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
 
 	//
 	// TODO: do we worry about overflow here?
@@ -144,7 +170,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if err != nil {
 		return nil, err
 	}
-	if !isAuthorizedUser(user) {
+	if !isAuthorizedUser(ctx, user) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
 	if !isSupportedSpec(in) {
@@ -161,12 +187,13 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 
 	//
 	//
-	serviceApi, err := getSupportedApi(msg.Method, g_serverApis)
+	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
 	if err != nil {
 		return nil, err
 	}
 	relaySession := getOrCreateSession(user, in.SessionId)
 	updateSessionCu(relaySession, serviceApi, in)
+	relaySession.Proof = in
 
 	//
 	// Get node
@@ -215,32 +242,31 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	return &reply, nil
 }
 
-func Server(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, listenAddr string, nodeUrl string, specId int) {
-	//
-	// Get specs
-	serverSpec, serverApis, err := getSpec(ctx, queryClient, specId)
-	if err != nil {
-		log.Fatalln("error: getSpec", err)
-	}
-	g_serverSpec = *serverSpec
-	g_serverApis = serverApis
-	g_sessions = map[string]map[uint64]*RelaySession{}
-
+func Server(
+	ctx context.Context,
+	clientCtx client.Context,
+	listenAddr string,
+	nodeUrl string,
+	specId uint64,
+) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx.Client)
-	err = sentry.Init(ctx)
+	sentry := NewSentry(clientCtx, specId, false)
+	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start()
+	go sentry.Start(ctx)
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
+	g_sentry = sentry
+	g_sessions = map[string]map[uint64]*RelaySession{}
+	g_serverSpecId = specId
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", g_serverSpec.Name)
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName())
 
 	//
 	// Keys

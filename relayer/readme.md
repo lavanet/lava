@@ -18,12 +18,12 @@ go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 wss://mainnet.infura.io
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go test_client 127.0.0.1 2222 0 --from alice
+go run relayer/cmd/relayer/main.go test_client 0 --from alice
 ```
 
 ## Run portal server
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 127.0.0.1:2222 0 --from bob
+go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 0 --from bob
 ```
