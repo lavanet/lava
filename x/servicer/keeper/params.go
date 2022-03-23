@@ -14,6 +14,9 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.FraudStakeSlashingFactor(ctx),
 		k.FraudSlashingAmount(ctx),
 		k.ServicersToPairCount(ctx),
+		k.SessionBlocks(ctx),
+		k.SessionsToSave(ctx),
+		k.SessionBlocksOverlap(ctx),
 	)
 }
 
@@ -68,5 +71,23 @@ func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 // ServicersToPairCount returns the ServicersToPairCount param
 func (k Keeper) ServicersToPairCount(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyServicersToPairCount, &res)
+	return
+}
+
+// SessionBlocks returns the SessionBlocks param
+func (k Keeper) SessionBlocks(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeySessionBlocks, &res)
+	return
+}
+
+// SessionsToSave returns the SessionsToSave param
+func (k Keeper) SessionsToSave(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeySessionsToSave, &res)
+	return
+}
+
+// SessionBlocksOverlap returns the SessionBlocksOverlap param
+func (k Keeper) SessionBlocksOverlap(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeySessionBlocksOverlap, &res)
 	return
 }

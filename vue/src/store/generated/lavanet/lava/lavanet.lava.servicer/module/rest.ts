@@ -60,6 +60,15 @@ export interface ServicerParams {
 
   /** @format uint64 */
   servicersToPairCount?: string;
+
+  /** @format uint64 */
+  sessionBlocks?: string;
+
+  /** @format uint64 */
+  sessionsToSave?: string;
+
+  /** @format uint64 */
+  sessionBlocksOverlap?: string;
 }
 
 export interface ServicerQueryAllSpecStakeStorageResponse {

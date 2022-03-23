@@ -43,6 +43,21 @@ var (
 	DefaultServicersToPairCount uint64 = 3
 )
 
+var (
+	KeySessionBlocks            = []byte("SessionBlocks")
+	DefaultSessionBlocks uint64 = 200
+)
+
+var (
+	KeySessionsToSave            = []byte("SessionsToSave")
+	DefaultSessionsToSave uint64 = 100
+)
+
+var (
+	KeySessionBlocksOverlap            = []byte("SessionBlocksOverlap")
+	DefaultSessionBlocksOverlap uint64 = 20
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -56,6 +71,9 @@ func NewParams(
 	fraudStakeSlashingFactor uint64,
 	fraudSlashingAmount uint64,
 	servicersToPairCount uint64,
+	sessionBlocks uint64,
+	sessionsToSave uint64,
+	sessionBlocksOverlap uint64,
 ) Params {
 	return Params{
 		MinStake:                 minStake,
@@ -64,6 +82,9 @@ func NewParams(
 		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
 		FraudSlashingAmount:      fraudSlashingAmount,
 		ServicersToPairCount:     servicersToPairCount,
+		SessionBlocks:            sessionBlocks,
+		SessionsToSave:           sessionsToSave,
+		SessionBlocksOverlap:     sessionBlocksOverlap,
 	}
 }
 
@@ -76,6 +97,9 @@ func DefaultParams() Params {
 		DefaultFraudStakeSlashingFactor,
 		DefaultFraudSlashingAmount,
 		DefaultServicersToPairCount,
+		DefaultSessionBlocks,
+		DefaultSessionsToSave,
+		DefaultSessionBlocksOverlap,
 	)
 }
 
@@ -88,6 +112,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
 		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
+		paramtypes.NewParamSetPair(KeySessionBlocks, &p.SessionBlocks, validateSessionBlocks),
+		paramtypes.NewParamSetPair(KeySessionsToSave, &p.SessionsToSave, validateSessionsToSave),
+		paramtypes.NewParamSetPair(KeySessionBlocksOverlap, &p.SessionBlocksOverlap, validateSessionBlocksOverlap),
 	}
 }
 
@@ -113,6 +140,15 @@ func (p Params) Validate() error {
 		return err
 	}
 	if err := validateServicersToPairCount(p.ServicersToPairCount); err != nil {
+		return err
+	}
+	if err := validateSessionBlocks(p.SessionBlocks); err != nil {
+		return err
+	}
+	if err := validateSessionsToSave(p.SessionsToSave); err != nil {
+		return err
+	}
+	if err := validateSessionBlocksOverlap(p.SessionBlocksOverlap); err != nil {
 		return err
 	}
 	return nil
@@ -197,6 +233,39 @@ func validateServicersToPairCount(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 	_ = servicersToPairCount
+
+	return nil
+}
+
+// validateSessionBlocks validates the SessionBlocks param
+func validateSessionBlocks(v interface{}) error {
+	sessionBlocks, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = sessionBlocks
+
+	return nil
+}
+
+// validateSessionsToSave validates the SessionsToSave param
+func validateSessionsToSave(v interface{}) error {
+	sessionsToSave, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = sessionsToSave
+
+	return nil
+}
+
+// validateSessionBlocksOverlap validates the SessionBlocksOverlap param
+func validateSessionBlocksOverlap(v interface{}) error {
+	sessionBlocksOverlap, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = sessionBlocksOverlap
 
 	return nil
 }
