@@ -61,3 +61,16 @@ func (k Keeper) GetAllSpecStakeStorage(ctx sdk.Context) (list []types.SpecStakeS
 
 	return
 }
+func (k Keeper) CopyStakeStorageContents(ctx sdk.Context, stakeStorage *types.StakeStorage) (returnedStorage *types.StakeStorage) {
+	returnedStorage = &types.StakeStorage{Staked: []types.StakeMap{}}
+	for _, stakeMap := range stakeStorage.Staked {
+		newStakeMap := types.StakeMap{
+			Index:             stakeMap.Index,
+			Stake:             stakeMap.Stake,
+			Deadline:          &types.BlockNum{Num: stakeMap.Deadline.Num},
+			OperatorAddresses: stakeMap.OperatorAddresses,
+		}
+		returnedStorage.Staked = append(returnedStorage.Staked, newStakeMap)
+	}
+	return
+}

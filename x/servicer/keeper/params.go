@@ -104,6 +104,11 @@ func (k Keeper) SessionsToSave(ctx sdk.Context) (res uint64) {
 	return
 }
 
+func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
+	blocksToSave := k.SessionsToSave(ctx) * k.SessionBlocks(ctx)
+	return blocksToSave
+}
+
 // SessionBlocksOverlap returns the SessionBlocksOverlap param
 func (k Keeper) SessionBlocksOverlap(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeySessionBlocksOverlap, &res)

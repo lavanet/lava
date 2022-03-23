@@ -1,12 +1,19 @@
 /* eslint-disable */
 import * as Long from "long";
 import { util, configure, Writer, Reader } from "protobufjs/minimal";
+import { BlockNum } from "../servicer/block_num";
 export const protobufPackage = "lavanet.lava.servicer";
-const basePreviousSessionBlocks = { blocksNum: 0 };
+const basePreviousSessionBlocks = { blocksNum: 0, overlapBlocks: 0 };
 export const PreviousSessionBlocks = {
     encode(message, writer = Writer.create()) {
         if (message.blocksNum !== 0) {
             writer.uint32(8).uint64(message.blocksNum);
+        }
+        if (message.changeBlock !== undefined) {
+            BlockNum.encode(message.changeBlock, writer.uint32(18).fork()).ldelim();
+        }
+        if (message.overlapBlocks !== 0) {
+            writer.uint32(24).uint64(message.overlapBlocks);
         }
         return writer;
     },
@@ -19,6 +26,12 @@ export const PreviousSessionBlocks = {
             switch (tag >>> 3) {
                 case 1:
                     message.blocksNum = longToNumber(reader.uint64());
+                    break;
+                case 2:
+                    message.changeBlock = BlockNum.decode(reader, reader.uint32());
+                    break;
+                case 3:
+                    message.overlapBlocks = longToNumber(reader.uint64());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -35,11 +48,29 @@ export const PreviousSessionBlocks = {
         else {
             message.blocksNum = 0;
         }
+        if (object.changeBlock !== undefined && object.changeBlock !== null) {
+            message.changeBlock = BlockNum.fromJSON(object.changeBlock);
+        }
+        else {
+            message.changeBlock = undefined;
+        }
+        if (object.overlapBlocks !== undefined && object.overlapBlocks !== null) {
+            message.overlapBlocks = Number(object.overlapBlocks);
+        }
+        else {
+            message.overlapBlocks = 0;
+        }
         return message;
     },
     toJSON(message) {
         const obj = {};
         message.blocksNum !== undefined && (obj.blocksNum = message.blocksNum);
+        message.changeBlock !== undefined &&
+            (obj.changeBlock = message.changeBlock
+                ? BlockNum.toJSON(message.changeBlock)
+                : undefined);
+        message.overlapBlocks !== undefined &&
+            (obj.overlapBlocks = message.overlapBlocks);
         return obj;
     },
     fromPartial(object) {
@@ -49,6 +80,18 @@ export const PreviousSessionBlocks = {
         }
         else {
             message.blocksNum = 0;
+        }
+        if (object.changeBlock !== undefined && object.changeBlock !== null) {
+            message.changeBlock = BlockNum.fromPartial(object.changeBlock);
+        }
+        else {
+            message.changeBlock = undefined;
+        }
+        if (object.overlapBlocks !== undefined && object.overlapBlocks !== null) {
+            message.overlapBlocks = object.overlapBlocks;
+        }
+        else {
+            message.overlapBlocks = 0;
         }
         return message;
     },

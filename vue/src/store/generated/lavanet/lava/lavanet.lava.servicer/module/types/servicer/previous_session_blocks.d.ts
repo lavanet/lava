@@ -1,7 +1,10 @@
 import { Writer, Reader } from "protobufjs/minimal";
+import { BlockNum } from "../servicer/block_num";
 export declare const protobufPackage = "lavanet.lava.servicer";
 export interface PreviousSessionBlocks {
     blocksNum: number;
+    changeBlock: BlockNum | undefined;
+    overlapBlocks: number;
 }
 export declare const PreviousSessionBlocks: {
     encode(message: PreviousSessionBlocks, writer?: Writer): Writer;

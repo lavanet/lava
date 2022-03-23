@@ -49,6 +49,9 @@ export interface ServicerParams {
 export interface ServicerPreviousSessionBlocks {
     /** @format uint64 */
     blocksNum?: string;
+    changeBlock?: ServicerBlockNum;
+    /** @format uint64 */
+    overlapBlocks?: string;
 }
 export interface ServicerQueryAllSessionStorageForSpecResponse {
     sessionStorageForSpec?: ServicerSessionStorageForSpec[];

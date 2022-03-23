@@ -12807,6 +12807,15 @@ paths:
                   blocksNum:
                     type: string
                     format: uint64
+                  changeBlock:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+                  overlapBlocks:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -22187,6 +22196,15 @@ definitions:
       blocksNum:
         type: string
         format: uint64
+      changeBlock:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64
+      overlapBlocks:
+        type: string
+        format: uint64
   lavanet.lava.servicer.QueryAllSessionStorageForSpecResponse:
     type: object
     properties:
@@ -22565,6 +22583,15 @@ definitions:
         type: object
         properties:
           blocksNum:
+            type: string
+            format: uint64
+          changeBlock:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
+          overlapBlocks:
             type: string
             format: uint64
   lavanet.lava.servicer.QueryGetSessionStorageForSpecResponse:
