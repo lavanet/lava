@@ -3,14 +3,12 @@ package relayer
 import (
 	context "context"
 	"log"
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	grpc "google.golang.org/grpc"
 )
 
 var g_request_lock sync.Mutex
@@ -50,16 +48,6 @@ func PortalServer(
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
-	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, relayerUrl, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	relayerClient := NewRelayerClient(conn)
-	sessionId := rand.Int63()
-
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
@@ -88,7 +76,7 @@ func PortalServer(
 			log.Println("in <<< ", string(msg))
 
 			g_request_lock.Lock()
-			reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, g_serverSpecId, sessionId, string(msg), sentry.GetBlockHeight())
+			reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(msg), sentry.GetBlockHeight())
 			g_request_lock.Unlock()
 			if err != nil {
 				log.Println(err)
@@ -108,7 +96,7 @@ func PortalServer(
 		defer g_request_lock.Unlock()
 
 		log.Println("in <<< ", string(c.Body()))
-		reply, _, err := sendRelay(ctx, clientCtx, relayerClient, privKey, g_serverSpecId, sessionId, string(c.Body()), sentry.GetBlockHeight())
+		reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(c.Body()), sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 			return nil

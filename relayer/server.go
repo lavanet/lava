@@ -117,7 +117,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *R
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
+	log.Println("updateSessionCu", serviceApi.Name, in.SessionId, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
 
 	//
 	// TODO: do we worry about overflow here?
