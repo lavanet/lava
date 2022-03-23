@@ -2,14 +2,12 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/servicer/types"
 )
 
 func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork) (*types.MsgProofOfWorkResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	/*ctx := sdk.UnwrapSDKContext(goCtx)
 
 	clientRequestRaw := msg.ClientRequest
 	clientRequest, err := clientRequestRaw.ParseData(ctx)
@@ -55,6 +53,6 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			_ = amountToBurnClient
 			break
 		}
-	}
+	}*/
 	return &types.MsgProofOfWorkResponse{}, nil
 }

@@ -32,11 +32,11 @@ var (
 type RelaySession struct {
 	CuSum uint64
 	Lock  sync.Mutex
-	Proof *RelayRequest // saves last relay request of a session as proof
+	Proof *servicertypes.RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
-	UnimplementedRelayerServer
+	servicertypes.UnimplementedRelayerServer
 }
 
 type jsonError struct {
@@ -74,15 +74,7 @@ func askForRewards(sess *RelaySession, sessionId uint64) {
 	//
 	// TODO: send reward properly (use sess.Proof)
 	//
-	msg := servicertypes.NewMsgProofOfWork(
-		"creator",
-		&servicertypes.SpecName{Name: g_sentry.GetSpecName()},
-		&servicertypes.SessionID{Num: uint64(sessionId)},
-		&servicertypes.ClientRequest{Data: "hello"},
-		&servicertypes.WorkProof{Data: "bye"},
-		sess.CuSum,
-		&servicertypes.BlockNum{Num: uint64(g_sentry.GetBlockHeight())},
-	)
+	msg := servicertypes.NewMsgProofOfWork()
 	err := tx.BroadcastTx(g_sentry.ClientCtx, tx.Factory{}, msg)
 	if err != nil {
 		log.Println(err)
@@ -90,7 +82,7 @@ func askForRewards(sess *RelaySession, sessionId uint64) {
 
 }
 
-func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
+func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
 	pubKey, err := recoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
@@ -107,7 +99,7 @@ func isAuthorizedUser(ctx context.Context, user bytes.HexBytes) bool {
 	return g_sentry.isAuthorizedUser(ctx, userAddr.String())
 }
 
-func isSupportedSpec(in *RelayRequest) bool {
+func isSupportedSpec(in *servicertypes.RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpecId
 }
 
@@ -139,7 +131,7 @@ func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
 	return userSessions[sessionId]
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *servicertypes.RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
@@ -161,7 +153,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *R
 	return nil
 }
 
-func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
+func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest) (*servicertypes.RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
@@ -230,7 +222,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if err != nil {
 		return nil, err
 	}
-	reply := RelayReply{
+	reply := servicertypes.RelayReply{
 		Data: data,
 	}
 	sig, err := signRelay(g_privKey, []byte(reply.String()))
@@ -306,7 +298,7 @@ func Server(
 	}()
 
 	Server := &relayServer{}
-	RegisterRelayerServer(s, Server)
+	servicertypes.RegisterRelayerServer(s, Server)
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

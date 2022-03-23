@@ -30,7 +30,7 @@ type ClientSession struct {
 }
 
 type RelayerClientWrapper struct {
-	Client *RelayerClient
+	Client *servicertypes.RelayerClient
 	Acc    string
 	Addr   string
 
@@ -304,7 +304,7 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 }
 
-func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*RelayerClient, error) {
+func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*servicertypes.RelayerClient, error) {
 
 	/*connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()*/
@@ -314,7 +314,7 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*RelayerCli
 	}
 	/*defer conn.Close()*/
 
-	c := NewRelayerClient(conn)
+	c := servicertypes.NewRelayerClient(conn)
 	return &c, nil
 }
 
@@ -340,8 +340,8 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb func(clientSession *ClientSession) (*RelayReply, error),
-) (*RelayReply, error) {
+	cb func(clientSession *ClientSession) (*servicertypes.RelayReply, error),
+) (*servicertypes.RelayReply, error) {
 
 	s.pairingMu.RLock()
 

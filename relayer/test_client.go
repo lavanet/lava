@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
 )
 
 const (
@@ -25,7 +26,7 @@ func sendRelay(
 	specId uint64,
 	req string,
 	blockHeight int64,
-) (*RelayReply, error) {
+) (*servicertypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
@@ -41,10 +42,10 @@ func sendRelay(
 
 	//
 	//
-	reply, err := sentry.SendRelay(ctx, func(clientSession *ClientSession) (*RelayReply, error) {
+	reply, err := sentry.SendRelay(ctx, func(clientSession *ClientSession) (*servicertypes.RelayReply, error) {
 		clientSession.CuSum += serviceApi.ComputeUnits
 
-		relayRequest := &RelayRequest{
+		relayRequest := &servicertypes.RelayRequest{
 			Data:        []byte(req),
 			SessionId:   uint64(clientSession.SessionId),
 			SpecId:      uint32(specId),
