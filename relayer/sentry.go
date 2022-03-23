@@ -190,6 +190,31 @@ func (s *Sentry) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	//
+	// Sanity
+	servicers, err := s.servicerQueryClient.StakedServicers(ctx, &servicertypes.QueryStakedServicersRequest{
+		SpecName: s.GetSpecName(),
+	})
+	if err != nil {
+		return err
+	}
+	if servicers.GetStakeStorage() == nil {
+		return errors.New("no stake storage")
+	}
+	if servicers.StakeStorage.GetStaked() == nil {
+		return errors.New("no staked")
+	}
+	found := false
+	for _, servicer := range servicers.StakeStorage.Staked {
+		if servicer.Index == s.acc {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.New("servicer not staked")
+	}
 	return nil
 }
 
@@ -202,48 +227,50 @@ func (s *Sentry) Start(ctx context.Context) {
 
 	//
 	// Purge finished sessions
-	ticker := time.NewTicker(5 * time.Second)
-	quit := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				func() {
-					s.pairingPurgeLock.Lock()
-					defer s.pairingPurgeLock.Unlock()
+	if s.isUser {
+		ticker := time.NewTicker(5 * time.Second)
+		quit := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					func() {
+						s.pairingPurgeLock.Lock()
+						defer s.pairingPurgeLock.Unlock()
 
-					for i := len(s.pairingPurge) - 1; i >= 0; i-- {
-						client := s.pairingPurge[i]
-						client.SessionsLock.Lock()
+						for i := len(s.pairingPurge) - 1; i >= 0; i-- {
+							client := s.pairingPurge[i]
+							client.SessionsLock.Lock()
 
-						//
-						// remove done sessions
-						removeList := []int64{}
-						for k, sess := range client.Sessions {
-							if sess.Lock.TryLock() {
-								removeList = append(removeList, k)
+							//
+							// remove done sessions
+							removeList := []int64{}
+							for k, sess := range client.Sessions {
+								if sess.Lock.TryLock() {
+									removeList = append(removeList, k)
+								}
 							}
-						}
-						for _, i := range removeList {
-							delete(client.Sessions, i)
-							client.Sessions[i].Lock.Unlock()
-						}
+							for _, i := range removeList {
+								delete(client.Sessions, i)
+								client.Sessions[i].Lock.Unlock()
+							}
 
-						//
-						// remove empty client
-						if len(client.Sessions) == 0 {
-							s.pairingPurge = append(s.pairingPurge[:i], s.pairingPurge[i+1:]...)
+							//
+							// remove empty client
+							if len(client.Sessions) == 0 {
+								s.pairingPurge = append(s.pairingPurge[:i], s.pairingPurge[i+1:]...)
+							}
+							client.SessionsLock.Unlock()
 						}
-						client.SessionsLock.Unlock()
-					}
-				}()
+					}()
 
-			case <-quit:
-				ticker.Stop()
-				return
+				case <-quit:
+					ticker.Stop()
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	//
 	// Listne for blockchain events
