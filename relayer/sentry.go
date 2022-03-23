@@ -353,6 +353,32 @@ func (s *Sentry) SendRelay(
 	return reply, err
 }
 
+func (s *Sentry) isAuthorizedUser(ctx context.Context, user string) bool {
+	//
+	// TODO: cache results!
+	log.Println("user addr", user)
+	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
+		SpecName: s.GetSpecName(),
+		UserAddr: user,
+	})
+	if err != nil {
+		return false
+	}
+
+	servicers := res.GetServicers()
+	if servicers == nil || len(servicers.Staked) == 0 {
+		return false
+	}
+
+	for _, servicer := range servicers.Staked {
+		if servicer.Index == s.acc {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }

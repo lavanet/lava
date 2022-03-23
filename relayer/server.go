@@ -12,6 +12,7 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
@@ -74,11 +75,12 @@ func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
 	return pubKey.Address(), nil
 }
 
-func isAuthorizedUser(user bytes.HexBytes) bool {
-	//
-	// TODO: missing pairing check
-	log.Println("user addr", user)
-	return true
+func isAuthorizedUser(ctx context.Context, user bytes.HexBytes) bool {
+	userAddr, err := sdk.AccAddressFromHex(user.String())
+	if err != nil {
+		return false
+	}
+	return g_sentry.isAuthorizedUser(ctx, userAddr.String())
 }
 
 func isSupportedSpec(in *RelayRequest) bool {
@@ -144,7 +146,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if err != nil {
 		return nil, err
 	}
-	if !isAuthorizedUser(user) {
+	if !isAuthorizedUser(ctx, user) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
 	if !isSupportedSpec(in) {
