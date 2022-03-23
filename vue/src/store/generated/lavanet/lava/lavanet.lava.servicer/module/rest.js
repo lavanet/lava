@@ -154,6 +154,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryCurrentSessionStart
+         * @summary Queries a CurrentSessionStart by index.
+         * @request GET:/lavanet/lava/servicer/current_session_start
+         */
+        this.queryCurrentSessionStart = (params = {}) => this.request({
+            path: `/lavanet/lava/servicer/current_session_start`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryGetPairing
          * @summary Queries a list of GetPairing items.
          * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
@@ -174,6 +188,20 @@ export class Api extends HttpClient {
          */
         this.queryParams = (params = {}) => this.request({
             path: `/lavanet/lava/servicer/params`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryPreviousSessionBlocks
+         * @summary Queries a PreviousSessionBlocks by index.
+         * @request GET:/lavanet/lava/servicer/previous_session_blocks
+         */
+        this.queryPreviousSessionBlocks = (params = {}) => this.request({
+            path: `/lavanet/lava/servicer/previous_session_blocks`,
             method: "GET",
             format: "json",
             ...params,

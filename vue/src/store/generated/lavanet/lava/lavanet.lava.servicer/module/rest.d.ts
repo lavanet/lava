@@ -17,6 +17,9 @@ export interface ServicerBlockNum {
 export interface ServicerClientRequest {
     data?: string;
 }
+export interface ServicerCurrentSessionStart {
+    block?: ServicerBlockNum;
+}
 export declare type ServicerMsgProofOfWorkResponse = object;
 export declare type ServicerMsgStakeServicerResponse = object;
 export declare type ServicerMsgUnstakeServicerResponse = object;
@@ -42,6 +45,10 @@ export interface ServicerParams {
     sessionsToSave?: string;
     /** @format uint64 */
     sessionBlocksOverlap?: string;
+}
+export interface ServicerPreviousSessionBlocks {
+    /** @format uint64 */
+    blocksNum?: string;
 }
 export interface ServicerQueryAllSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage[];
@@ -85,8 +92,14 @@ export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
 export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
     BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
 }
+export interface ServicerQueryGetCurrentSessionStartResponse {
+    CurrentSessionStart?: ServicerCurrentSessionStart;
+}
 export interface ServicerQueryGetPairingResponse {
     servicers?: ServicerStakeStorage;
+}
+export interface ServicerQueryGetPreviousSessionBlocksResponse {
+    PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
 }
 export interface ServicerQueryGetSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage;
@@ -280,6 +293,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryCurrentSessionStart
+     * @summary Queries a CurrentSessionStart by index.
+     * @request GET:/lavanet/lava/servicer/current_session_start
+     */
+    queryCurrentSessionStart: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetCurrentSessionStartResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryGetPairing
      * @summary Queries a list of GetPairing items.
      * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
@@ -294,6 +316,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/params
      */
     queryParams: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryParamsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryPreviousSessionBlocks
+     * @summary Queries a PreviousSessionBlocks by index.
+     * @request GET:/lavanet/lava/servicer/previous_session_blocks
+     */
+    queryPreviousSessionBlocks: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>>;
     /**
      * No description
      *

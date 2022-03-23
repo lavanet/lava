@@ -4,7 +4,9 @@ import { SpVuexError } from '@starport/vuex';
 import { BlockDeadlineForCallback } from "./module/types/servicer/block_deadline_for_callback";
 import { BlockNum } from "./module/types/servicer/block_num";
 import { ClientRequest } from "./module/types/servicer/client_request";
+import { CurrentSessionStart } from "./module/types/servicer/current_session_start";
 import { Params } from "./module/types/servicer/params";
+import { PreviousSessionBlocks } from "./module/types/servicer/previous_session_blocks";
 import { SessionID } from "./module/types/servicer/session_id";
 import { SpecName } from "./module/types/servicer/spec_name";
 import { SpecStakeStorage } from "./module/types/servicer/spec_stake_storage";
@@ -12,7 +14,7 @@ import { StakeMap } from "./module/types/servicer/stake_map";
 import { StakeStorage } from "./module/types/servicer/stake_storage";
 import { UnstakingServicersAllSpecs } from "./module/types/servicer/unstaking_servicers_all_specs";
 import { WorkProof } from "./module/types/servicer/work_proof";
-export { BlockDeadlineForCallback, BlockNum, ClientRequest, Params, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
+export { BlockDeadlineForCallback, BlockNum, ClientRequest, CurrentSessionStart, Params, PreviousSessionBlocks, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
 async function initTxClient(vuexGetters) {
     return await txClient(vuexGetters['common/wallet/signer'], {
         addr: vuexGetters['common/env/apiTendermint']
@@ -56,11 +58,15 @@ const getDefaultState = () => {
         UnstakingServicersAllSpecs: {},
         UnstakingServicersAllSpecsAll: {},
         GetPairing: {},
+        CurrentSessionStart: {},
+        PreviousSessionBlocks: {},
         _Structure: {
             BlockDeadlineForCallback: getStructure(BlockDeadlineForCallback.fromPartial({})),
             BlockNum: getStructure(BlockNum.fromPartial({})),
             ClientRequest: getStructure(ClientRequest.fromPartial({})),
+            CurrentSessionStart: getStructure(CurrentSessionStart.fromPartial({})),
             Params: getStructure(Params.fromPartial({})),
+            PreviousSessionBlocks: getStructure(PreviousSessionBlocks.fromPartial({})),
             SessionID: getStructure(SessionID.fromPartial({})),
             SpecName: getStructure(SpecName.fromPartial({})),
             SpecStakeStorage: getStructure(SpecStakeStorage.fromPartial({})),
@@ -152,6 +158,18 @@ export default {
                 params.query = null;
             }
             return state.GetPairing[JSON.stringify(params)] ?? {};
+        },
+        getCurrentSessionStart: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.CurrentSessionStart[JSON.stringify(params)] ?? {};
+        },
+        getPreviousSessionBlocks: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.PreviousSessionBlocks[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -336,6 +354,34 @@ export default {
             }
             catch (e) {
                 throw new SpVuexError('QueryClient:QueryGetPairing', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryCurrentSessionStart({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryCurrentSessionStart()).data;
+                commit('QUERY', { query: 'CurrentSessionStart', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryCurrentSessionStart', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getCurrentSessionStart']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryCurrentSessionStart', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QueryPreviousSessionBlocks({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.queryPreviousSessionBlocks()).data;
+                commit('QUERY', { query: 'PreviousSessionBlocks', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QueryPreviousSessionBlocks', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getPreviousSessionBlocks']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QueryPreviousSessionBlocks', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
         async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {

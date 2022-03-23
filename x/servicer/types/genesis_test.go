@@ -50,6 +50,12 @@ func TestGenesisState_Validate(t *testing.T) {
 					},
 				},
 				UnstakingServicersAllSpecsCount: 2,
+				CurrentSessionStart: &types.CurrentSessionStart{
+					Block: types.BlockNum{Num: 0},
+				},
+				PreviousSessionBlocks: &types.PreviousSessionBlocks{
+					BlocksNum: 6,
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

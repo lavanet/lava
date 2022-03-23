@@ -6,6 +6,8 @@ import { SpecStakeStorage } from "../servicer/spec_stake_storage";
 import { StakeStorage } from "../servicer/stake_storage";
 import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callback";
 import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
+import { CurrentSessionStart } from "../servicer/current_session_start";
+import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -72,6 +74,16 @@ export interface QueryGetPairingRequest {
 }
 export interface QueryGetPairingResponse {
     servicers: StakeStorage | undefined;
+}
+export interface QueryGetCurrentSessionStartRequest {
+}
+export interface QueryGetCurrentSessionStartResponse {
+    CurrentSessionStart: CurrentSessionStart | undefined;
+}
+export interface QueryGetPreviousSessionBlocksRequest {
+}
+export interface QueryGetPreviousSessionBlocksResponse {
+    PreviousSessionBlocks: PreviousSessionBlocks | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -213,6 +225,34 @@ export declare const QueryGetPairingResponse: {
     toJSON(message: QueryGetPairingResponse): unknown;
     fromPartial(object: DeepPartial<QueryGetPairingResponse>): QueryGetPairingResponse;
 };
+export declare const QueryGetCurrentSessionStartRequest: {
+    encode(_: QueryGetCurrentSessionStartRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetCurrentSessionStartRequest;
+    fromJSON(_: any): QueryGetCurrentSessionStartRequest;
+    toJSON(_: QueryGetCurrentSessionStartRequest): unknown;
+    fromPartial(_: DeepPartial<QueryGetCurrentSessionStartRequest>): QueryGetCurrentSessionStartRequest;
+};
+export declare const QueryGetCurrentSessionStartResponse: {
+    encode(message: QueryGetCurrentSessionStartResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetCurrentSessionStartResponse;
+    fromJSON(object: any): QueryGetCurrentSessionStartResponse;
+    toJSON(message: QueryGetCurrentSessionStartResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetCurrentSessionStartResponse>): QueryGetCurrentSessionStartResponse;
+};
+export declare const QueryGetPreviousSessionBlocksRequest: {
+    encode(_: QueryGetPreviousSessionBlocksRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetPreviousSessionBlocksRequest;
+    fromJSON(_: any): QueryGetPreviousSessionBlocksRequest;
+    toJSON(_: QueryGetPreviousSessionBlocksRequest): unknown;
+    fromPartial(_: DeepPartial<QueryGetPreviousSessionBlocksRequest>): QueryGetPreviousSessionBlocksRequest;
+};
+export declare const QueryGetPreviousSessionBlocksResponse: {
+    encode(message: QueryGetPreviousSessionBlocksResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetPreviousSessionBlocksResponse;
+    fromJSON(object: any): QueryGetPreviousSessionBlocksResponse;
+    toJSON(message: QueryGetPreviousSessionBlocksResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetPreviousSessionBlocksResponse>): QueryGetPreviousSessionBlocksResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -235,6 +275,10 @@ export interface Query {
     UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
     /** Queries a list of GetPairing items. */
     GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
+    /** Queries a CurrentSessionStart by index. */
+    CurrentSessionStart(request: QueryGetCurrentSessionStartRequest): Promise<QueryGetCurrentSessionStartResponse>;
+    /** Queries a PreviousSessionBlocks by index. */
+    PreviousSessionBlocks(request: QueryGetPreviousSessionBlocksRequest): Promise<QueryGetPreviousSessionBlocksResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -249,6 +293,8 @@ export declare class QueryClientImpl implements Query {
     UnstakingServicersAllSpecs(request: QueryGetUnstakingServicersAllSpecsRequest): Promise<QueryGetUnstakingServicersAllSpecsResponse>;
     UnstakingServicersAllSpecsAll(request: QueryAllUnstakingServicersAllSpecsRequest): Promise<QueryAllUnstakingServicersAllSpecsResponse>;
     GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
+    CurrentSessionStart(request: QueryGetCurrentSessionStartRequest): Promise<QueryGetCurrentSessionStartResponse>;
+    PreviousSessionBlocks(request: QueryGetPreviousSessionBlocksRequest): Promise<QueryGetPreviousSessionBlocksResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

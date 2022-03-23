@@ -27,6 +27,14 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 
 	// Set unstakingServicersAllSpecs count
 	k.SetUnstakingServicersAllSpecsCount(ctx, genState.UnstakingServicersAllSpecsCount)
+	// Set if defined
+	if genState.CurrentSessionStart != nil {
+		k.SetCurrentSessionStart(ctx, *genState.CurrentSessionStart)
+	}
+	// Set if defined
+	if genState.PreviousSessionBlocks != nil {
+		k.SetPreviousSessionBlocks(ctx, *genState.PreviousSessionBlocks)
+	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -45,6 +53,16 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	}
 	genesis.UnstakingServicersAllSpecsList = k.GetAllUnstakingServicersAllSpecs(ctx)
 	genesis.UnstakingServicersAllSpecsCount = k.GetUnstakingServicersAllSpecsCount(ctx)
+	// Get all currentSessionStart
+	currentSessionStart, found := k.GetCurrentSessionStart(ctx)
+	if found {
+		genesis.CurrentSessionStart = &currentSessionStart
+	}
+	// Get all previousSessionBlocks
+	previousSessionBlocks, found := k.GetPreviousSessionBlocks(ctx)
+	if found {
+		genesis.PreviousSessionBlocks = &previousSessionBlocks
+	}
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

@@ -14,6 +14,8 @@ func DefaultGenesis() *GenesisState {
 		SpecStakeStorageList:           []SpecStakeStorage{},
 		BlockDeadlineForCallback:       BlockDeadlineForCallback{Deadline: BlockNum{Num: 0}},
 		UnstakingServicersAllSpecsList: []UnstakingServicersAllSpecs{},
+		CurrentSessionStart:            &CurrentSessionStart{Block: BlockNum{Num: 0}},
+		PreviousSessionBlocks:          &PreviousSessionBlocks{BlocksNum: 0},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}

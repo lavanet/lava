@@ -33,7 +33,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, errors.New("spec not found or not enabled")
 	}
 
-	servicers, _, err := k.GetPairingForClient(ctx, specID, clientAddr)
+	servicers, err := k.GetPairingForClient(ctx, specID, clientAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not get pairing for spec ID: %d, client addr: %s, blockHeight: %d, err: %s", specID, clientAddr, ctx.BlockHeight(), err)
 	}

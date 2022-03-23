@@ -80,6 +80,24 @@ func (k Keeper) SessionBlocks(ctx sdk.Context) (res uint64) {
 	return
 }
 
+// return the next session start
+func (k Keeper) NextSessionStart(ctx sdk.Context) (res uint64) {
+	blocksCycle := k.SessionBlocks(ctx)
+	currentBlock := uint64(ctx.BlockHeight())
+	//current block modulu blocks cycle returns how many block in the current session we are, remove this and we get session start
+	thisSessionStart := (currentBlock - (currentBlock % blocksCycle))
+	//add the block cycle to get the next session start
+	return thisSessionStart + blocksCycle
+}
+
+// return the next session start
+func (k Keeper) IsSessionStart(ctx sdk.Context) (res bool) {
+	blocksCycle := k.SessionBlocks(ctx)
+	currentBlock := uint64(ctx.BlockHeight())
+	//current block modulu blocks cycle returns how many block in the current session we are, if its 0 we are at session start
+	return (currentBlock % blocksCycle) == 0
+}
+
 // SessionsToSave returns the SessionsToSave param
 func (k Keeper) SessionsToSave(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeySessionsToSave, &res)

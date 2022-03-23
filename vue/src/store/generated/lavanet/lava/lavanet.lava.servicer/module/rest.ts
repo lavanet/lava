@@ -33,6 +33,10 @@ export interface ServicerClientRequest {
   data?: string;
 }
 
+export interface ServicerCurrentSessionStart {
+  block?: ServicerBlockNum;
+}
+
 export type ServicerMsgProofOfWorkResponse = object;
 
 export type ServicerMsgStakeServicerResponse = object;
@@ -69,6 +73,11 @@ export interface ServicerParams {
 
   /** @format uint64 */
   sessionBlocksOverlap?: string;
+}
+
+export interface ServicerPreviousSessionBlocks {
+  /** @format uint64 */
+  blocksNum?: string;
 }
 
 export interface ServicerQueryAllSpecStakeStorageResponse {
@@ -120,8 +129,16 @@ export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
   BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
 }
 
+export interface ServicerQueryGetCurrentSessionStartResponse {
+  CurrentSessionStart?: ServicerCurrentSessionStart;
+}
+
 export interface ServicerQueryGetPairingResponse {
   servicers?: ServicerStakeStorage;
+}
+
+export interface ServicerQueryGetPreviousSessionBlocksResponse {
+  PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
 }
 
 export interface ServicerQueryGetSpecStakeStorageResponse {
@@ -482,6 +499,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QueryCurrentSessionStart
+   * @summary Queries a CurrentSessionStart by index.
+   * @request GET:/lavanet/lava/servicer/current_session_start
+   */
+  queryCurrentSessionStart = (params: RequestParams = {}) =>
+    this.request<ServicerQueryGetCurrentSessionStartResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/current_session_start`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QueryGetPairing
    * @summary Queries a list of GetPairing items.
    * @request GET:/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}
@@ -505,6 +538,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryParams = (params: RequestParams = {}) =>
     this.request<ServicerQueryParamsResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/params`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryPreviousSessionBlocks
+   * @summary Queries a PreviousSessionBlocks by index.
+   * @request GET:/lavanet/lava/servicer/previous_session_blocks
+   */
+  queryPreviousSessionBlocks = (params: RequestParams = {}) =>
+    this.request<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/previous_session_blocks`,
       method: "GET",
       format: "json",
       ...params,

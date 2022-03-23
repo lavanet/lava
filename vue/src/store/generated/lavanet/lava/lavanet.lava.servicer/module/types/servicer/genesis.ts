@@ -6,6 +6,8 @@ import { StakeMap } from "../servicer/stake_map";
 import { SpecStakeStorage } from "../servicer/spec_stake_storage";
 import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callback";
 import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
+import { CurrentSessionStart } from "../servicer/current_session_start";
+import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 
 export const protobufPackage = "lavanet.lava.servicer";
 
@@ -16,8 +18,10 @@ export interface GenesisState {
   specStakeStorageList: SpecStakeStorage[];
   blockDeadlineForCallback: BlockDeadlineForCallback | undefined;
   unstakingServicersAllSpecsList: UnstakingServicersAllSpecs[];
-  /** this line is used by starport scaffolding # genesis/proto/state */
   unstakingServicersAllSpecsCount: number;
+  currentSessionStart: CurrentSessionStart | undefined;
+  /** this line is used by starport scaffolding # genesis/proto/state */
+  previousSessionBlocks: PreviousSessionBlocks | undefined;
 }
 
 const baseGenesisState: object = { unstakingServicersAllSpecsCount: 0 };
@@ -44,6 +48,18 @@ export const GenesisState = {
     }
     if (message.unstakingServicersAllSpecsCount !== 0) {
       writer.uint32(48).uint64(message.unstakingServicersAllSpecsCount);
+    }
+    if (message.currentSessionStart !== undefined) {
+      CurrentSessionStart.encode(
+        message.currentSessionStart,
+        writer.uint32(58).fork()
+      ).ldelim();
+    }
+    if (message.previousSessionBlocks !== undefined) {
+      PreviousSessionBlocks.encode(
+        message.previousSessionBlocks,
+        writer.uint32(66).fork()
+      ).ldelim();
     }
     return writer;
   },
@@ -83,6 +99,18 @@ export const GenesisState = {
         case 6:
           message.unstakingServicersAllSpecsCount = longToNumber(
             reader.uint64() as Long
+          );
+          break;
+        case 7:
+          message.currentSessionStart = CurrentSessionStart.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        case 8:
+          message.previousSessionBlocks = PreviousSessionBlocks.decode(
+            reader,
+            reader.uint32()
           );
           break;
         default:
@@ -146,6 +174,26 @@ export const GenesisState = {
     } else {
       message.unstakingServicersAllSpecsCount = 0;
     }
+    if (
+      object.currentSessionStart !== undefined &&
+      object.currentSessionStart !== null
+    ) {
+      message.currentSessionStart = CurrentSessionStart.fromJSON(
+        object.currentSessionStart
+      );
+    } else {
+      message.currentSessionStart = undefined;
+    }
+    if (
+      object.previousSessionBlocks !== undefined &&
+      object.previousSessionBlocks !== null
+    ) {
+      message.previousSessionBlocks = PreviousSessionBlocks.fromJSON(
+        object.previousSessionBlocks
+      );
+    } else {
+      message.previousSessionBlocks = undefined;
+    }
     return message;
   },
 
@@ -181,6 +229,14 @@ export const GenesisState = {
     message.unstakingServicersAllSpecsCount !== undefined &&
       (obj.unstakingServicersAllSpecsCount =
         message.unstakingServicersAllSpecsCount);
+    message.currentSessionStart !== undefined &&
+      (obj.currentSessionStart = message.currentSessionStart
+        ? CurrentSessionStart.toJSON(message.currentSessionStart)
+        : undefined);
+    message.previousSessionBlocks !== undefined &&
+      (obj.previousSessionBlocks = message.previousSessionBlocks
+        ? PreviousSessionBlocks.toJSON(message.previousSessionBlocks)
+        : undefined);
     return obj;
   },
 
@@ -235,6 +291,26 @@ export const GenesisState = {
         object.unstakingServicersAllSpecsCount;
     } else {
       message.unstakingServicersAllSpecsCount = 0;
+    }
+    if (
+      object.currentSessionStart !== undefined &&
+      object.currentSessionStart !== null
+    ) {
+      message.currentSessionStart = CurrentSessionStart.fromPartial(
+        object.currentSessionStart
+      );
+    } else {
+      message.currentSessionStart = undefined;
+    }
+    if (
+      object.previousSessionBlocks !== undefined &&
+      object.previousSessionBlocks !== null
+    ) {
+      message.previousSessionBlocks = PreviousSessionBlocks.fromPartial(
+        object.previousSessionBlocks
+      );
+    } else {
+      message.previousSessionBlocks = undefined;
     }
     return message;
   },

@@ -12613,6 +12613,45 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
+  /lavanet/lava/servicer/current_session_start:
+    get:
+      summary: Queries a CurrentSessionStart by index.
+      operationId: LavanetLavaServicerCurrentSessionStart
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              CurrentSessionStart:
+                type: object
+                properties:
+                  block:
+                    type: object
+                    properties:
+                      num:
+                        type: string
+                        format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
   '/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}':
     get:
       summary: Queries a list of GetPairing items.
@@ -12732,6 +12771,42 @@ paths:
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/servicer/previous_session_blocks:
+    get:
+      summary: Queries a PreviousSessionBlocks by index.
+      operationId: LavanetLavaServicerPreviousSessionBlocks
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              PreviousSessionBlocks:
+                type: object
+                properties:
+                  blocksNum:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -21827,6 +21902,15 @@ definitions:
     properties:
       data:
         type: string
+  lavanet.lava.servicer.CurrentSessionStart:
+    type: object
+    properties:
+      block:
+        type: object
+        properties:
+          num:
+            type: string
+            format: uint64
   lavanet.lava.servicer.MsgProofOfWorkResponse:
     type: object
   lavanet.lava.servicer.MsgStakeServicerResponse:
@@ -21864,6 +21948,12 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
+  lavanet.lava.servicer.PreviousSessionBlocks:
+    type: object
+    properties:
+      blocksNum:
+        type: string
+        format: uint64
   lavanet.lava.servicer.QueryAllSpecStakeStorageResponse:
     type: object
     properties:
@@ -22114,6 +22204,18 @@ definitions:
               num:
                 type: string
                 format: uint64
+  lavanet.lava.servicer.QueryGetCurrentSessionStartResponse:
+    type: object
+    properties:
+      CurrentSessionStart:
+        type: object
+        properties:
+          block:
+            type: object
+            properties:
+              num:
+                type: string
+                format: uint64
   lavanet.lava.servicer.QueryGetPairingResponse:
     type: object
     properties:
@@ -22152,6 +22254,15 @@ definitions:
                   type: array
                   items:
                     type: string
+  lavanet.lava.servicer.QueryGetPreviousSessionBlocksResponse:
+    type: object
+    properties:
+      PreviousSessionBlocks:
+        type: object
+        properties:
+          blocksNum:
+            type: string
+            format: uint64
   lavanet.lava.servicer.QueryGetSpecStakeStorageResponse:
     type: object
     properties:

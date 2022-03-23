@@ -42,6 +42,12 @@ func TestGenesis(t *testing.T) {
 			},
 		},
 		UnstakingServicersAllSpecsCount: 2,
+		CurrentSessionStart: &types.CurrentSessionStart{
+			Block: types.BlockNum{Num: 0},
+		},
+		PreviousSessionBlocks: &types.PreviousSessionBlocks{
+			BlocksNum: 83,
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -58,5 +64,7 @@ func TestGenesis(t *testing.T) {
 	require.Equal(t, genesisState.BlockDeadlineForCallback, got.BlockDeadlineForCallback)
 	require.ElementsMatch(t, genesisState.UnstakingServicersAllSpecsList, got.UnstakingServicersAllSpecsList)
 	require.Equal(t, genesisState.UnstakingServicersAllSpecsCount, got.UnstakingServicersAllSpecsCount)
+	require.Equal(t, genesisState.CurrentSessionStart, got.CurrentSessionStart)
+	require.Equal(t, genesisState.PreviousSessionBlocks, got.PreviousSessionBlocks)
 	// this line is used by starport scaffolding # genesis/test/assert
 }
