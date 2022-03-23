@@ -6,6 +6,7 @@ import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callbac
 import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
+import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** GenesisState defines the servicer module's genesis state. */
 export interface GenesisState {
@@ -16,8 +17,9 @@ export interface GenesisState {
     unstakingServicersAllSpecsList: UnstakingServicersAllSpecs[];
     unstakingServicersAllSpecsCount: number;
     currentSessionStart: CurrentSessionStart | undefined;
-    /** this line is used by starport scaffolding # genesis/proto/state */
     previousSessionBlocks: PreviousSessionBlocks | undefined;
+    /** this line is used by starport scaffolding # genesis/proto/state */
+    sessionStorageForSpecList: SessionStorageForSpec[];
 }
 export declare const GenesisState: {
     encode(message: GenesisState, writer?: Writer): Writer;

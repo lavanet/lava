@@ -8,13 +8,14 @@ import { CurrentSessionStart } from "./module/types/servicer/current_session_sta
 import { Params } from "./module/types/servicer/params";
 import { PreviousSessionBlocks } from "./module/types/servicer/previous_session_blocks";
 import { SessionID } from "./module/types/servicer/session_id";
+import { SessionStorageForSpec } from "./module/types/servicer/session_storage_for_spec";
 import { SpecName } from "./module/types/servicer/spec_name";
 import { SpecStakeStorage } from "./module/types/servicer/spec_stake_storage";
 import { StakeMap } from "./module/types/servicer/stake_map";
 import { StakeStorage } from "./module/types/servicer/stake_storage";
 import { UnstakingServicersAllSpecs } from "./module/types/servicer/unstaking_servicers_all_specs";
 import { WorkProof } from "./module/types/servicer/work_proof";
-export { BlockDeadlineForCallback, BlockNum, ClientRequest, CurrentSessionStart, Params, PreviousSessionBlocks, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
+export { BlockDeadlineForCallback, BlockNum, ClientRequest, CurrentSessionStart, Params, PreviousSessionBlocks, SessionID, SessionStorageForSpec, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
 async function initTxClient(vuexGetters) {
     return await txClient(vuexGetters['common/wallet/signer'], {
         addr: vuexGetters['common/env/apiTendermint']
@@ -60,6 +61,8 @@ const getDefaultState = () => {
         GetPairing: {},
         CurrentSessionStart: {},
         PreviousSessionBlocks: {},
+        SessionStorageForSpec: {},
+        SessionStorageForSpecAll: {},
         _Structure: {
             BlockDeadlineForCallback: getStructure(BlockDeadlineForCallback.fromPartial({})),
             BlockNum: getStructure(BlockNum.fromPartial({})),
@@ -68,6 +71,7 @@ const getDefaultState = () => {
             Params: getStructure(Params.fromPartial({})),
             PreviousSessionBlocks: getStructure(PreviousSessionBlocks.fromPartial({})),
             SessionID: getStructure(SessionID.fromPartial({})),
+            SessionStorageForSpec: getStructure(SessionStorageForSpec.fromPartial({})),
             SpecName: getStructure(SpecName.fromPartial({})),
             SpecStakeStorage: getStructure(SpecStakeStorage.fromPartial({})),
             StakeMap: getStructure(StakeMap.fromPartial({})),
@@ -170,6 +174,18 @@ export default {
                 params.query = null;
             }
             return state.PreviousSessionBlocks[JSON.stringify(params)] ?? {};
+        },
+        getSessionStorageForSpec: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.SessionStorageForSpec[JSON.stringify(params)] ?? {};
+        },
+        getSessionStorageForSpecAll: (state) => (params = { params: {} }) => {
+            if (!params.query) {
+                params.query = null;
+            }
+            return state.SessionStorageForSpecAll[JSON.stringify(params)] ?? {};
         },
         getTypeStructure: (state) => (type) => {
             return state._Structure[type].fields;
@@ -384,6 +400,38 @@ export default {
                 throw new SpVuexError('QueryClient:QueryPreviousSessionBlocks', 'API Node Unavailable. Could not perform query: ' + e.message);
             }
         },
+        async QuerySessionStorageForSpec({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.querySessionStorageForSpec(key.index)).data;
+                commit('QUERY', { query: 'SessionStorageForSpec', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QuerySessionStorageForSpec', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getSessionStorageForSpec']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QuerySessionStorageForSpec', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
+        async QuerySessionStorageForSpecAll({ commit, rootGetters, getters }, { options: { subscribe, all } = { subscribe: false, all: false }, params, query = null }) {
+            try {
+                const key = params ?? {};
+                const queryClient = await initQueryClient(rootGetters);
+                let value = (await queryClient.querySessionStorageForSpecAll(query)).data;
+                while (all && value.pagination && value.pagination.next_key != null) {
+                    let next_values = (await queryClient.querySessionStorageForSpecAll({ ...query, 'pagination.key': value.pagination.next_key })).data;
+                    value = mergeResults(value, next_values);
+                }
+                commit('QUERY', { query: 'SessionStorageForSpecAll', key: { params: { ...key }, query }, value });
+                if (subscribe)
+                    commit('SUBSCRIBE', { action: 'QuerySessionStorageForSpecAll', payload: { options: { all }, params: { ...key }, query } });
+                return getters['getSessionStorageForSpecAll']({ params: { ...key }, query }) ?? {};
+            }
+            catch (e) {
+                throw new SpVuexError('QueryClient:QuerySessionStorageForSpecAll', 'API Node Unavailable. Could not perform query: ' + e.message);
+            }
+        },
         async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {
             try {
                 const txClient = await initTxClient(rootGetters);
@@ -398,23 +446,6 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgProofOfWork:Send', 'Could not broadcast Tx: ' + e.message);
-                }
-            }
-        },
-        async sendMsgStakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
-            try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgStakeServicer(value);
-                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
-                        gas: "200000" }, memo });
-                return result;
-            }
-            catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
-                }
-                else {
-                    throw new SpVuexError('TxClient:MsgStakeServicer:Send', 'Could not broadcast Tx: ' + e.message);
                 }
             }
         },
@@ -435,6 +466,23 @@ export default {
                 }
             }
         },
+        async sendMsgStakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgStakeServicer(value);
+                const result = await txClient.signAndBroadcast([msg], { fee: { amount: fee,
+                        gas: "200000" }, memo });
+                return result;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgStakeServicer:Send', 'Could not broadcast Tx: ' + e.message);
+                }
+            }
+        },
         async MsgProofOfWork({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
@@ -450,21 +498,6 @@ export default {
                 }
             }
         },
-        async MsgStakeServicer({ rootGetters }, { value }) {
-            try {
-                const txClient = await initTxClient(rootGetters);
-                const msg = await txClient.msgStakeServicer(value);
-                return msg;
-            }
-            catch (e) {
-                if (e == MissingWalletError) {
-                    throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
-                }
-                else {
-                    throw new SpVuexError('TxClient:MsgStakeServicer:Create', 'Could not create message: ' + e.message);
-                }
-            }
-        },
         async MsgUnstakeServicer({ rootGetters }, { value }) {
             try {
                 const txClient = await initTxClient(rootGetters);
@@ -477,6 +510,21 @@ export default {
                 }
                 else {
                     throw new SpVuexError('TxClient:MsgUnstakeServicer:Create', 'Could not create message: ' + e.message);
+                }
+            }
+        },
+        async MsgStakeServicer({ rootGetters }, { value }) {
+            try {
+                const txClient = await initTxClient(rootGetters);
+                const msg = await txClient.msgStakeServicer(value);
+                return msg;
+            }
+            catch (e) {
+                if (e == MissingWalletError) {
+                    throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.');
+                }
+                else {
+                    throw new SpVuexError('TxClient:MsgStakeServicer:Create', 'Could not create message: ' + e.message);
                 }
             }
         },

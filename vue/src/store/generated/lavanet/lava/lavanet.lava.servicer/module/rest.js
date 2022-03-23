@@ -210,6 +210,35 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QuerySessionStorageForSpecAll
+         * @summary Queries a list of SessionStorageForSpec items.
+         * @request GET:/lavanet/lava/servicer/session_storage_for_spec
+         */
+        this.querySessionStorageForSpecAll = (query, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/session_storage_for_spec`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QuerySessionStorageForSpec
+         * @summary Queries a SessionStorageForSpec by index.
+         * @request GET:/lavanet/lava/servicer/session_storage_for_spec/{index}
+         */
+        this.querySessionStorageForSpec = (index, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/session_storage_for_spec/${index}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QuerySpecStakeStorageAll
          * @summary Queries a list of SpecStakeStorage items.
          * @request GET:/lavanet/lava/servicer/spec_stake_storage

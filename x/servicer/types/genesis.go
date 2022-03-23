@@ -16,6 +16,7 @@ func DefaultGenesis() *GenesisState {
 		UnstakingServicersAllSpecsList: []UnstakingServicersAllSpecs{},
 		CurrentSessionStart:            &CurrentSessionStart{Block: BlockNum{Num: 0}},
 		PreviousSessionBlocks:          &PreviousSessionBlocks{BlocksNum: 0},
+		SessionStorageForSpecList:      []SessionStorageForSpec{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -55,6 +56,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("unstakingServicersAllSpecs id should be lower or equal than the last id")
 		}
 		unstakingServicersAllSpecsIdMap[elem.Id] = true
+	}
+	// Check for duplicated index in sessionStorageForSpec
+	sessionStorageForSpecIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.SessionStorageForSpecList {
+		index := string(SessionStorageForSpecKey(elem.Index))
+		if _, ok := sessionStorageForSpecIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for sessionStorageForSpec")
+		}
+		sessionStorageForSpecIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

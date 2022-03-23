@@ -48,6 +48,14 @@ func TestGenesis(t *testing.T) {
 		PreviousSessionBlocks: &types.PreviousSessionBlocks{
 			BlocksNum: 83,
 		},
+		SessionStorageForSpecList: []types.SessionStorageForSpec{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -66,5 +74,6 @@ func TestGenesis(t *testing.T) {
 	require.Equal(t, genesisState.UnstakingServicersAllSpecsCount, got.UnstakingServicersAllSpecsCount)
 	require.Equal(t, genesisState.CurrentSessionStart, got.CurrentSessionStart)
 	require.Equal(t, genesisState.PreviousSessionBlocks, got.PreviousSessionBlocks)
+	require.ElementsMatch(t, genesisState.SessionStorageForSpecList, got.SessionStorageForSpecList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

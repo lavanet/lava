@@ -50,6 +50,19 @@ export interface ServicerPreviousSessionBlocks {
     /** @format uint64 */
     blocksNum?: string;
 }
+export interface ServicerQueryAllSessionStorageForSpecResponse {
+    sessionStorageForSpec?: ServicerSessionStorageForSpec[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
 export interface ServicerQueryAllSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage[];
     /**
@@ -101,6 +114,9 @@ export interface ServicerQueryGetPairingResponse {
 export interface ServicerQueryGetPreviousSessionBlocksResponse {
     PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
 }
+export interface ServicerQueryGetSessionStorageForSpecResponse {
+    sessionStorageForSpec?: ServicerSessionStorageForSpec;
+}
 export interface ServicerQueryGetSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage;
 }
@@ -124,6 +140,10 @@ export interface ServicerQueryStakedServicersResponse {
 export interface ServicerSessionID {
     /** @format uint64 */
     num?: string;
+}
+export interface ServicerSessionStorageForSpec {
+    index?: string;
+    stakeStorage?: ServicerStakeStorage;
 }
 export interface ServicerSpecName {
     name?: string;
@@ -325,6 +345,30 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/previous_session_blocks
      */
     queryPreviousSessionBlocks: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForSpecAll
+     * @summary Queries a list of SessionStorageForSpec items.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_spec
+     */
+    querySessionStorageForSpecAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllSessionStorageForSpecResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForSpec
+     * @summary Queries a SessionStorageForSpec by index.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_spec/{index}
+     */
+    querySessionStorageForSpec: (index: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetSessionStorageForSpecResponse, RpcStatus>>;
     /**
      * No description
      *

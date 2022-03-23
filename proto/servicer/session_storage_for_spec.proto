@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+import "servicer/stake_storage.proto"; 
+
+message SessionStorageForSpec {
+  string index = 1; 
+  StakeStorage stakeStorage = 2; 
+  
+}
+

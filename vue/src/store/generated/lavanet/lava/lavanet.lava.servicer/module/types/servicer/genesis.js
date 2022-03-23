@@ -8,6 +8,7 @@ import { BlockDeadlineForCallback } from "../servicer/block_deadline_for_callbac
 import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_specs";
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
+import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 export const protobufPackage = "lavanet.lava.servicer";
 const baseGenesisState = { unstakingServicersAllSpecsCount: 0 };
 export const GenesisState = {
@@ -36,6 +37,9 @@ export const GenesisState = {
         if (message.previousSessionBlocks !== undefined) {
             PreviousSessionBlocks.encode(message.previousSessionBlocks, writer.uint32(66).fork()).ldelim();
         }
+        for (const v of message.sessionStorageForSpecList) {
+            SessionStorageForSpec.encode(v, writer.uint32(74).fork()).ldelim();
+        }
         return writer;
     },
     decode(input, length) {
@@ -45,6 +49,7 @@ export const GenesisState = {
         message.stakeMapList = [];
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
+        message.sessionStorageForSpecList = [];
         while (reader.pos < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -72,6 +77,9 @@ export const GenesisState = {
                 case 8:
                     message.previousSessionBlocks = PreviousSessionBlocks.decode(reader, reader.uint32());
                     break;
+                case 9:
+                    message.sessionStorageForSpecList.push(SessionStorageForSpec.decode(reader, reader.uint32()));
+                    break;
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -84,6 +92,7 @@ export const GenesisState = {
         message.stakeMapList = [];
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
+        message.sessionStorageForSpecList = [];
         if (object.params !== undefined && object.params !== null) {
             message.params = Params.fromJSON(object.params);
         }
@@ -135,6 +144,12 @@ export const GenesisState = {
         else {
             message.previousSessionBlocks = undefined;
         }
+        if (object.sessionStorageForSpecList !== undefined &&
+            object.sessionStorageForSpecList !== null) {
+            for (const e of object.sessionStorageForSpecList) {
+                message.sessionStorageForSpecList.push(SessionStorageForSpec.fromJSON(e));
+            }
+        }
         return message;
     },
     toJSON(message) {
@@ -174,6 +189,12 @@ export const GenesisState = {
             (obj.previousSessionBlocks = message.previousSessionBlocks
                 ? PreviousSessionBlocks.toJSON(message.previousSessionBlocks)
                 : undefined);
+        if (message.sessionStorageForSpecList) {
+            obj.sessionStorageForSpecList = message.sessionStorageForSpecList.map((e) => (e ? SessionStorageForSpec.toJSON(e) : undefined));
+        }
+        else {
+            obj.sessionStorageForSpecList = [];
+        }
         return obj;
     },
     fromPartial(object) {
@@ -181,6 +202,7 @@ export const GenesisState = {
         message.stakeMapList = [];
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
+        message.sessionStorageForSpecList = [];
         if (object.params !== undefined && object.params !== null) {
             message.params = Params.fromPartial(object.params);
         }
@@ -232,6 +254,12 @@ export const GenesisState = {
         }
         else {
             message.previousSessionBlocks = undefined;
+        }
+        if (object.sessionStorageForSpecList !== undefined &&
+            object.sessionStorageForSpecList !== null) {
+            for (const e of object.sessionStorageForSpecList) {
+                message.sessionStorageForSpecList.push(SessionStorageForSpec.fromPartial(e));
+            }
         }
         return message;
     },

@@ -9,6 +9,7 @@ import "servicer/block_deadline_for_callback.proto";
 import "servicer/unstaking_servicers_all_specs.proto";
 import "servicer/current_session_start.proto";
 import "servicer/previous_session_blocks.proto";
+import "servicer/session_storage_for_spec.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/servicer/types";
@@ -23,5 +24,6 @@ message GenesisState {
   uint64 unstakingServicersAllSpecsCount = 6;
   CurrentSessionStart currentSessionStart = 7;
   PreviousSessionBlocks previousSessionBlocks = 8;
+  repeated SessionStorageForSpec sessionStorageForSpecList = 9 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

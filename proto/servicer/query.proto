@@ -10,6 +10,7 @@ import "servicer/block_deadline_for_callback.proto";
 import "servicer/unstaking_servicers_all_specs.proto";
 import "servicer/current_session_start.proto";
 import "servicer/previous_session_blocks.proto";
+import "servicer/session_storage_for_spec.proto";
 // this line is used by starport scaffolding # 1
 import "servicer/stake_storage.proto";
 import "servicer/block_num.proto";
@@ -76,6 +77,16 @@ service Query {
 	rpc PreviousSessionBlocks(QueryGetPreviousSessionBlocksRequest) returns (QueryGetPreviousSessionBlocksResponse) {
 		option (google.api.http).get = "/lavanet/lava/servicer/previous_session_blocks";
 	}
+// Queries a SessionStorageForSpec by index.
+	rpc SessionStorageForSpec(QueryGetSessionStorageForSpecRequest) returns (QueryGetSessionStorageForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_spec/{index}";
+	}
+
+	// Queries a list of SessionStorageForSpec items.
+	rpc SessionStorageForSpecAll(QueryAllSessionStorageForSpecRequest) returns (QueryAllSessionStorageForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_spec";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -174,4 +185,22 @@ message QueryGetPreviousSessionBlocksRequest {}
 message QueryGetPreviousSessionBlocksResponse {
 	PreviousSessionBlocks PreviousSessionBlocks = 1 [(gogoproto.nullable) = false];
 }
+message QueryGetSessionStorageForSpecRequest {
+	  string index = 1;
+
+}
+
+message QueryGetSessionStorageForSpecResponse {
+	SessionStorageForSpec sessionStorageForSpec = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSessionStorageForSpecRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSessionStorageForSpecResponse {
+	repeated SessionStorageForSpec sessionStorageForSpec = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
 // this line is used by starport scaffolding # 3
