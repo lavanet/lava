@@ -253,8 +253,13 @@ func (s *Sentry) Start(ctx context.Context) {
 								}
 							}
 							for _, i := range removeList {
+								sess := client.Sessions[i]
 								delete(client.Sessions, i)
-								client.Sessions[i].Lock.Unlock()
+								sess.Lock.Unlock()
+
+								//
+								// TODO: send reward
+								//
 							}
 
 							//

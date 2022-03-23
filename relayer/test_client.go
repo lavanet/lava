@@ -84,7 +84,6 @@ func sendRelay(
 func TestClient(
 	ctx context.Context,
 	clientCtx client.Context,
-	addr string,
 	specId uint64,
 ) {
 	//
@@ -103,7 +102,7 @@ func TestClient(
 
 	//
 	// Set up a connection to the server.
-	log.Println("TestClient connecting to", addr)
+	log.Println("TestClient connecting")
 
 	keyName, err := getKeyName(clientCtx)
 	if err != nil {

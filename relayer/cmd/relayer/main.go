@@ -59,38 +59,9 @@ func main() {
 	}
 
 	var cmdPortalServer = &cobra.Command{
-		Use:   "portal_server [listen-ip] [listen-port] [relayer-url] [relayer-spec-id]",
+		Use:   "portal_server [listen-ip] [listen-port] [relayer-spec-id]",
 		Short: "portal server",
 		Long:  `portal server`,
-		Args:  cobra.ExactArgs(4),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			port, err := strconv.Atoi(args[1])
-			if err != nil {
-				return err
-			}
-
-			specId, err := strconv.Atoi(args[3])
-			if err != nil {
-				return err
-			}
-
-			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
-			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, listenAddr, args[2], uint64(specId))
-
-			return nil
-		},
-	}
-
-	var cmdTestClient = &cobra.Command{
-		Use:   "test_client [listen-ip] [listen-port] [spec-id]",
-		Short: "test client",
-		Long:  `test client`,
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -110,7 +81,30 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, listenAddr, uint64(specId))
+			relayer.PortalServer(ctx, clientCtx, listenAddr, uint64(specId))
+
+			return nil
+		},
+	}
+
+	var cmdTestClient = &cobra.Command{
+		Use:   "test_client [spec-id]",
+		Short: "test client",
+		Long:  `test client`,
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			specId, err := strconv.Atoi(args[0])
+			if err != nil {
+				return err
+			}
+
+			ctx := context.Background()
+			relayer.TestClient(ctx, clientCtx, uint64(specId))
 
 			return nil
 		},

@@ -17,7 +17,6 @@ func PortalServer(
 	ctx context.Context,
 	clientCtx client.Context,
 	listenAddr string,
-	relayerUrl string,
 	specId uint64,
 ) {
 	//
@@ -36,7 +35,7 @@ func PortalServer(
 
 	//
 	// Set up a connection to the server.
-	log.Println("PortalServer connecting to", relayerUrl)
+	log.Println("PortalServer")
 	keyName, err := getKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
