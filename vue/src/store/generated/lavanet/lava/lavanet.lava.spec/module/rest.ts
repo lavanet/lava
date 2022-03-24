@@ -20,41 +20,13 @@ export interface RpcStatus {
   details?: ProtobufAny[];
 }
 
-export interface UserBlockDeadlineForCallback {
-  deadline?: UserBlockNum;
-}
-
-export interface UserBlockNum {
-  /** @format uint64 */
-  num?: string;
-}
-
-export type UserMsgStakeUserResponse = object;
-
-export type UserMsgUnstakeUserResponse = object;
-
 /**
  * Params defines the parameters for the module.
  */
-export interface UserParams {
-  /** @format uint64 */
-  minStake?: string;
+export type SpecParams = object;
 
-  /** @format uint64 */
-  coinsPerCU?: string;
-
-  /** @format uint64 */
-  unstakeHoldBlocks?: string;
-
-  /** @format uint64 */
-  fraudStakeSlashingFactor?: string;
-
-  /** @format uint64 */
-  fraudSlashingAmount?: string;
-}
-
-export interface UserQueryAllSpecStakeStorageResponse {
-  specStakeStorage?: UserSpecStakeStorage[];
+export interface SpecQueryAllSpecResponse {
+  Spec?: SpecSpec[];
 
   /**
    * PageResponse is to be embedded in gRPC response messages where the
@@ -68,107 +40,32 @@ export interface UserQueryAllSpecStakeStorageResponse {
   pagination?: V1Beta1PageResponse;
 }
 
-export interface UserQueryAllUnstakingUsersAllSpecsResponse {
-  UnstakingUsersAllSpecs?: UserUnstakingUsersAllSpecs[];
-
-  /**
-   * PageResponse is to be embedded in gRPC response messages where the
-   * corresponding request message has used PageRequest.
-   *
-   *  message SomeResponse {
-   *          repeated Bar results = 1;
-   *          PageResponse page = 2;
-   *  }
-   */
-  pagination?: V1Beta1PageResponse;
-}
-
-export interface UserQueryAllUserStakeResponse {
-  userStake?: UserUserStake[];
-
-  /**
-   * PageResponse is to be embedded in gRPC response messages where the
-   * corresponding request message has used PageRequest.
-   *
-   *  message SomeResponse {
-   *          repeated Bar results = 1;
-   *          PageResponse page = 2;
-   *  }
-   */
-  pagination?: V1Beta1PageResponse;
-}
-
-export interface UserQueryGetBlockDeadlineForCallbackResponse {
-  BlockDeadlineForCallback?: UserBlockDeadlineForCallback;
-}
-
-export interface UserQueryGetSpecStakeStorageResponse {
-  specStakeStorage?: UserSpecStakeStorage;
-}
-
-export interface UserQueryGetUnstakingUsersAllSpecsResponse {
-  UnstakingUsersAllSpecs?: UserUnstakingUsersAllSpecs;
-}
-
-export interface UserQueryGetUserStakeResponse {
-  userStake?: UserUserStake;
+export interface SpecQueryGetSpecResponse {
+  Spec?: SpecSpec;
 }
 
 /**
  * QueryParamsResponse is response type for the Query/Params RPC method.
  */
-export interface UserQueryParamsResponse {
+export interface SpecQueryParamsResponse {
   /** params holds all the parameters of this module. */
-  params?: UserParams;
+  params?: SpecParams;
 }
 
-export interface UserQueryStakedUsersResponse {
-  stakeStorage?: UserStakeStorage;
-  output?: string;
-}
-
-export interface UserSpecName {
+export interface SpecServiceApi {
   name?: string;
+
+  /** @format uint64 */
+  computeUnits?: string;
+  status?: string;
 }
 
-export interface UserSpecStakeStorage {
-  index?: string;
-  stakeStorage?: UserStakeStorage;
-}
-
-export interface UserStakeStorage {
-  stakedUsers?: UserUserStake[];
-}
-
-export interface UserUnstakingUsersAllSpecs {
+export interface SpecSpec {
   /** @format uint64 */
   id?: string;
-  unstaking?: UserUserStake;
-  specStakeStorage?: UserSpecStakeStorage;
-}
-
-export interface UserUserStake {
-  index?: string;
-
-  /**
-   * Coin defines a token with a denomination and an amount.
-   *
-   * NOTE: The amount field is an Int which implements the custom method
-   * signatures required by gogoproto.
-   */
-  stake?: V1Beta1Coin;
-  deadline?: UserBlockNum;
-}
-
-/**
-* Coin defines a token with a denomination and an amount.
-
-NOTE: The amount field is an Int which implements the custom method
-signatures required by gogoproto.
-*/
-export interface V1Beta1Coin {
-  denom?: string;
-  amount?: string;
+  name?: string;
+  apis?: SpecServiceApi[];
+  status?: string;
 }
 
 /**
@@ -426,7 +323,7 @@ export class HttpClient<SecurityDataType = unknown> {
 }
 
 /**
- * @title user/block_deadline_for_callback.proto
+ * @title spec/genesis.proto
  * @version version not set
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
@@ -434,29 +331,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
-   * @name QueryBlockDeadlineForCallback
-   * @summary Queries a BlockDeadlineForCallback by index.
-   * @request GET:/lavanet/lava/user/block_deadline_for_callback
-   */
-  queryBlockDeadlineForCallback = (params: RequestParams = {}) =>
-    this.request<UserQueryGetBlockDeadlineForCallbackResponse, RpcStatus>({
-      path: `/lavanet/lava/user/block_deadline_for_callback`,
-      method: "GET",
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
    * @name QueryParams
    * @summary Parameters queries the parameters of the module.
-   * @request GET:/lavanet/lava/user/params
+   * @request GET:/lavanet/lava/spec/params
    */
   queryParams = (params: RequestParams = {}) =>
-    this.request<UserQueryParamsResponse, RpcStatus>({
-      path: `/lavanet/lava/user/params`,
+    this.request<SpecQueryParamsResponse, RpcStatus>({
+      path: `/lavanet/lava/spec/params`,
       method: "GET",
       format: "json",
       ...params,
@@ -466,11 +347,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
-   * @name QuerySpecStakeStorageAll
-   * @summary Queries a list of SpecStakeStorage items.
-   * @request GET:/lavanet/lava/user/spec_stake_storage
+   * @name QuerySpecAll
+   * @summary Queries a list of Spec items.
+   * @request GET:/lavanet/lava/spec/spec
    */
-  querySpecStakeStorageAll = (
+  querySpecAll = (
     query?: {
       "pagination.key"?: string;
       "pagination.offset"?: string;
@@ -480,8 +361,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     },
     params: RequestParams = {},
   ) =>
-    this.request<UserQueryAllSpecStakeStorageResponse, RpcStatus>({
-      path: `/lavanet/lava/user/spec_stake_storage`,
+    this.request<SpecQueryAllSpecResponse, RpcStatus>({
+      path: `/lavanet/lava/spec/spec`,
       method: "GET",
       query: query,
       format: "json",
@@ -492,113 +373,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
-   * @name QuerySpecStakeStorage
-   * @summary Queries a SpecStakeStorage by index.
-   * @request GET:/lavanet/lava/user/spec_stake_storage/{index}
+   * @name QuerySpec
+   * @summary Queries a Spec by id.
+   * @request GET:/lavanet/lava/spec/spec/{id}
    */
-  querySpecStakeStorage = (index: string, params: RequestParams = {}) =>
-    this.request<UserQueryGetSpecStakeStorageResponse, RpcStatus>({
-      path: `/lavanet/lava/user/spec_stake_storage/${index}`,
-      method: "GET",
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
-   * @name QueryStakedUsers
-   * @summary Queries a list of StakedUsers items.
-   * @request GET:/lavanet/lava/user/staked_users/{specName}
-   */
-  queryStakedUsers = (specName: string, params: RequestParams = {}) =>
-    this.request<UserQueryStakedUsersResponse, RpcStatus>({
-      path: `/lavanet/lava/user/staked_users/${specName}`,
-      method: "GET",
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
-   * @name QueryUnstakingUsersAllSpecsAll
-   * @summary Queries a list of UnstakingUsersAllSpecs items.
-   * @request GET:/lavanet/lava/user/unstaking_users_all_specs
-   */
-  queryUnstakingUsersAllSpecsAll = (
-    query?: {
-      "pagination.key"?: string;
-      "pagination.offset"?: string;
-      "pagination.limit"?: string;
-      "pagination.count_total"?: boolean;
-      "pagination.reverse"?: boolean;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.request<UserQueryAllUnstakingUsersAllSpecsResponse, RpcStatus>({
-      path: `/lavanet/lava/user/unstaking_users_all_specs`,
-      method: "GET",
-      query: query,
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
-   * @name QueryUnstakingUsersAllSpecs
-   * @summary Queries a UnstakingUsersAllSpecs by id.
-   * @request GET:/lavanet/lava/user/unstaking_users_all_specs/{id}
-   */
-  queryUnstakingUsersAllSpecs = (id: string, params: RequestParams = {}) =>
-    this.request<UserQueryGetUnstakingUsersAllSpecsResponse, RpcStatus>({
-      path: `/lavanet/lava/user/unstaking_users_all_specs/${id}`,
-      method: "GET",
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
-   * @name QueryUserStakeAll
-   * @summary Queries a list of UserStake items.
-   * @request GET:/lavanet/lava/user/user_stake
-   */
-  queryUserStakeAll = (
-    query?: {
-      "pagination.key"?: string;
-      "pagination.offset"?: string;
-      "pagination.limit"?: string;
-      "pagination.count_total"?: boolean;
-      "pagination.reverse"?: boolean;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.request<UserQueryAllUserStakeResponse, RpcStatus>({
-      path: `/lavanet/lava/user/user_stake`,
-      method: "GET",
-      query: query,
-      format: "json",
-      ...params,
-    });
-
-  /**
-   * No description
-   *
-   * @tags Query
-   * @name QueryUserStake
-   * @summary Queries a UserStake by index.
-   * @request GET:/lavanet/lava/user/user_stake/{index}
-   */
-  queryUserStake = (index: string, params: RequestParams = {}) =>
-    this.request<UserQueryGetUserStakeResponse, RpcStatus>({
-      path: `/lavanet/lava/user/user_stake/${index}`,
+  querySpec = (id: string, params: RequestParams = {}) =>
+    this.request<SpecQueryGetSpecResponse, RpcStatus>({
+      path: `/lavanet/lava/spec/spec/${id}`,
       method: "GET",
       format: "json",
       ...params,
