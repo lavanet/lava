@@ -42,9 +42,12 @@ func (k Keeper) GetSessionStartForBlock(ctx sdk.Context, block types.BlockNum) (
 	}
 	blockCycleToUse := k.SessionBlocks(ctx)
 	overlapBlocks := k.SessionBlocksOverlap(ctx)
-	if previousSessionsBlocks.ChangeBlock.Num >= block.Num {
+	if previousSessionsBlocks.ChangeBlock.Num > block.Num {
 		blockCycleToUse = previousSessionsBlocks.BlocksNum
 		overlapBlocks = previousSessionsBlocks.OverlapBlocks
+	}
+	if blockCycleToUse == 0 {
+		panic(fmt.Sprintf("blockCycleToUse is 0: previous session block: %d, block num:%d", previousSessionsBlocks.ChangeBlock.Num, block.Num))
 	}
 	blocksInTargetSession := block.Num % blockCycleToUse
 	targetBlockStart := block.Num - blocksInTargetSession

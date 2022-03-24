@@ -44,18 +44,21 @@ var (
 )
 
 var (
-	KeySessionBlocks            = []byte("SessionBlocks")
-	DefaultSessionBlocks uint64 = 200
+	KeySessionBlocks = []byte("SessionBlocks")
+	// DefaultSessionBlocks uint64 = 200
+	DefaultSessionBlocks uint64 = 20
 )
 
 var (
-	KeySessionsToSave            = []byte("SessionsToSave")
-	DefaultSessionsToSave uint64 = 100
+	KeySessionsToSave = []byte("SessionsToSave")
+	// DefaultSessionsToSave uint64 = 100
+	DefaultSessionsToSave uint64 = 10
 )
 
 var (
-	KeySessionBlocksOverlap            = []byte("SessionBlocksOverlap")
-	DefaultSessionBlocksOverlap uint64 = 20
+	KeySessionBlocksOverlap = []byte("SessionBlocksOverlap")
+	// DefaultSessionBlocksOverlap uint64 = 20
+	DefaultSessionBlocksOverlap uint64 = 5
 )
 
 // ParamKeyTable the param key table for launch module
