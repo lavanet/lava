@@ -1,8 +1,7 @@
 syntax = "proto3";
+package lavanet.lava.servicer;
 
-option go_package = "./relayer";
-
-package relayer;
+option go_package = "github.com/lavanet/lava/x/servicer/types";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -16,7 +15,7 @@ message RelayRequest {
 
     bytes data = 5;
     bytes sig = 6;
-    bytes servicer = 7;
+    string servicer = 7;
     int64 block_height = 8;
 }
 

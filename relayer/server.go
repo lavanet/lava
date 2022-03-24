@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
@@ -27,16 +29,17 @@ var (
 	g_sessions_mutex sync.Mutex
 	g_sentry         *Sentry
 	g_serverSpecId   uint64
+	g_txFactory      tx.Factory
 )
 
 type RelaySession struct {
 	CuSum uint64
 	Lock  sync.Mutex
-	Proof *RelayRequest // saves last relay request of a session as proof
+	Proof *servicertypes.RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
-	UnimplementedRelayerServer
+	servicertypes.UnimplementedRelayerServer
 }
 
 type jsonError struct {
@@ -69,29 +72,29 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func askForRewards(sess *RelaySession, sessionId uint64) {
+func askForRewards() {
+	log.Println("askForRewards")
 
-	//
-	// TODO: send reward properly (use sess.Proof)
-	//
-	msg := servicertypes.NewMsgProofOfWork(
-		"creator",
-		&servicertypes.SpecName{Name: g_sentry.GetSpecName()},
-		&servicertypes.SessionID{Num: uint64(sessionId)},
-		&servicertypes.ClientRequest{Data: "hello"},
-		&servicertypes.WorkProof{Data: "bye"},
-		sess.CuSum,
-		&servicertypes.BlockNum{Num: uint64(g_sentry.GetBlockHeight())},
-	)
-	err := tx.BroadcastTx(g_sentry.ClientCtx, tx.Factory{}, msg)
-	if err != nil {
-		log.Println(err)
+	g_sessions_mutex.Lock()
+	defer g_sessions_mutex.Unlock()
+
+	relays := []*servicertypes.RelayRequest{}
+	for _, userSessions := range g_sessions {
+		for _, sess := range userSessions {
+			relays = append(relays, sess.Proof)
+		}
 	}
 
+	msg := servicertypes.NewMsgProofOfWork(g_sentry.acc, relays)
+	log.Println("msg", msg)
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Println("GenerateOrBroadcastTxWithFactory", err)
+	}
 }
 
-func getRelayUser(in *RelayRequest) (bytes.HexBytes, error) {
-	pubKey, err := recoverPubKeyFromRelay(in)
+func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
+	pubKey, err := RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +110,7 @@ func isAuthorizedUser(ctx context.Context, user bytes.HexBytes) bool {
 	return g_sentry.isAuthorizedUser(ctx, userAddr.String())
 }
 
-func isSupportedSpec(in *RelayRequest) bool {
+func isSupportedSpec(in *servicertypes.RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpecId
 }
 
@@ -139,7 +142,7 @@ func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
 	return userSessions[sessionId]
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *servicertypes.RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
@@ -161,7 +164,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *R
 	return nil
 }
 
-func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply, error) {
+func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest) (*servicertypes.RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
@@ -230,7 +233,7 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 	if err != nil {
 		return nil, err
 	}
-	reply := RelayReply{
+	reply := servicertypes.RelayReply{
 		Data: data,
 	}
 	sig, err := signRelay(g_privKey, []byte(reply.String()))
@@ -245,10 +248,21 @@ func (s *relayServer) Relay(ctx context.Context, in *RelayRequest) (*RelayReply,
 func Server(
 	ctx context.Context,
 	clientCtx client.Context,
+	txFactory tx.Factory,
 	listenAddr string,
 	nodeUrl string,
 	specId uint64,
 ) {
+	//
+	// ctrl+c
+	ctx, cancel := context.WithCancel(ctx)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	defer func() {
+		signal.Stop(signalChan)
+		cancel()
+	}()
+
 	//
 	// Start sentry
 	sentry := NewSentry(clientCtx, specId, false)
@@ -263,6 +277,7 @@ func Server(
 	g_sentry = sentry
 	g_sessions = map[string]map[uint64]*RelaySession{}
 	g_serverSpecId = specId
+	g_txFactory = txFactory
 
 	//
 	// Info
@@ -301,16 +316,21 @@ func Server(
 		select {
 		case <-ctx.Done():
 			log.Println("server ctx.Done")
-			s.Stop()
+		case <-signalChan:
+			log.Println("signalChan")
 		}
+
+		cancel()
+		s.Stop()
 	}()
 
 	Server := &relayServer{}
-	RegisterRelayerServer(s, Server)
+	servicertypes.RegisterRelayerServer(s, Server)
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
+	askForRewards()
 }
