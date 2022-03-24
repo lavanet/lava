@@ -140,6 +140,20 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryAllSessionStoragesForSpec
+         * @summary Queries a list of AllSessionStoragesForSpec items.
+         * @request GET:/lavanet/lava/servicer/all_session_storages_for_spec/{specName}
+         */
+        this.queryAllSessionStoragesForSpec = (specName, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/all_session_storages_for_spec/${specName}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryBlockDeadlineForCallback
          * @summary Queries a BlockDeadlineForCallback by index.
          * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
@@ -160,6 +174,20 @@ export class Api extends HttpClient {
          */
         this.queryCurrentSessionStart = (params = {}) => this.request({
             path: `/lavanet/lava/servicer/current_session_start`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryEarliestSessionStart
+         * @summary Queries a EarliestSessionStart by index.
+         * @request GET:/lavanet/lava/servicer/earliest_session_start
+         */
+        this.queryEarliestSessionStart = (params = {}) => this.request({
+            path: `/lavanet/lava/servicer/earliest_session_start`,
             method: "GET",
             format: "json",
             ...params,
@@ -202,6 +230,20 @@ export class Api extends HttpClient {
          */
         this.queryPreviousSessionBlocks = (params = {}) => this.request({
             path: `/lavanet/lava/servicer/previous_session_blocks`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QuerySessionStorageForAllSpecs
+         * @summary Queries a list of SessionStorageForAllSpecs items.
+         * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
+         */
+        this.querySessionStorageForAllSpecs = (blockNum, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/session_storage_for_all_specs/${blockNum}`,
             method: "GET",
             format: "json",
             ...params,

@@ -34,11 +34,10 @@ func (k Keeper) RemovePreviousSessionBlocks(ctx sdk.Context) {
 	store.Delete([]byte{0})
 }
 
-// GetSessionStartForBlock gets a session start supports one param change
-func (k Keeper) GetSessionStartForBlock(ctx sdk.Context, block types.BlockNum) (targetSessionStart *types.BlockNum, overlappingPreviousSession *types.BlockNum, err error) {
+func (k Keeper) GetSessionBlocksAndOverlapForBlock(ctx sdk.Context, block types.BlockNum) (uint64, uint64) {
 	previousSessionsBlocks, found := k.GetPreviousSessionBlocks(ctx)
 	if !found {
-		return nil, nil, fmt.Errorf("did not find previousSessionBlocks")
+		panic("did not find previousSessionBlocks")
 	}
 	blockCycleToUse := k.SessionBlocks(ctx)
 	overlapBlocks := k.SessionBlocksOverlap(ctx)
@@ -49,6 +48,12 @@ func (k Keeper) GetSessionStartForBlock(ctx sdk.Context, block types.BlockNum) (
 	if blockCycleToUse == 0 {
 		panic(fmt.Sprintf("blockCycleToUse is 0: previous session block: %d, block num:%d", previousSessionsBlocks.ChangeBlock.Num, block.Num))
 	}
+	return blockCycleToUse, overlapBlocks
+}
+
+// GetSessionStartForBlock gets a session start supports one param change
+func (k Keeper) GetSessionStartForBlock(ctx sdk.Context, block types.BlockNum) (targetSessionStart *types.BlockNum, overlappingPreviousSession *types.BlockNum, err error) {
+	blockCycleToUse, overlapBlocks := k.GetSessionBlocksAndOverlapForBlock(ctx, block)
 	blocksInTargetSession := block.Num % blockCycleToUse
 	targetBlockStart := block.Num - blocksInTargetSession
 	overlappingPreviousSession = nil
@@ -70,14 +75,17 @@ func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 	previousSessionBlocks, found := k.GetPreviousSessionBlocks(ctx)
 	//update with current data now, ebcause we dont know when it will change, and i didn't want to hook the param change
 	//TODO: hook the param change instead and write to this struct only when it changes
-	if previousSessionBlocks.ChangeBlock.Num+k.BlocksToSave(ctx) < currentBlock {
-		//meaning there was enough time since the last change, so we save the new value
+
+	if previousSessionBlocks.BlocksNum != k.SessionBlocks(ctx) && previousSessionBlocks.ChangeBlock.Num+k.BlocksToSave(ctx) < currentBlock {
+		//meaning there was enough time since the last change, and we didn't store the new value yet, so we save the new value
 		previousSessionBlocks.BlocksNum = k.SessionBlocks(ctx)
 		previousSessionBlocks.OverlapBlocks = k.SessionBlocksOverlap(ctx)
 		previousSessionBlocks.ChangeBlock = types.BlockNum{Num: currentBlock}
 		k.SetPreviousSessionBlocks(ctx, previousSessionBlocks)
 	}
 	//1.
+	//this check is before we updated currentSession start to be the current block, and itsd a new sessionBlock
+	// the difference between them should be sessionBlocks unless it was changed
 	if currentSessionStart.Block.Num+sessionBlocks != currentBlock && currentBlock > 0 {
 		//we updated sessionBlocks
 		if !found {

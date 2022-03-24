@@ -7,6 +7,7 @@ import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
+import { EarliestSessionStart } from "../servicer/earliest_session_start";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** GenesisState defines the servicer module's genesis state. */
 export interface GenesisState {
@@ -18,8 +19,9 @@ export interface GenesisState {
     unstakingServicersAllSpecsCount: number;
     currentSessionStart: CurrentSessionStart | undefined;
     previousSessionBlocks: PreviousSessionBlocks | undefined;
-    /** this line is used by starport scaffolding # genesis/proto/state */
     sessionStorageForSpecList: SessionStorageForSpec[];
+    /** this line is used by starport scaffolding # genesis/proto/state */
+    earliestSessionStart: EarliestSessionStart | undefined;
 }
 export declare const GenesisState: {
     encode(message: GenesisState, writer?: Writer): Writer;

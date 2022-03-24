@@ -17,6 +17,7 @@ func DefaultGenesis() *GenesisState {
 		CurrentSessionStart:            &CurrentSessionStart{Block: BlockNum{Num: 0}},
 		PreviousSessionBlocks:          &PreviousSessionBlocks{BlocksNum: 0},
 		SessionStorageForSpecList:      []SessionStorageForSpec{},
+		EarliestSessionStart:           &EarliestSessionStart{BlockNum{Num: 0}},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}

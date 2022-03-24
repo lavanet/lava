@@ -9,6 +9,7 @@ import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
+import { EarliestSessionStart } from "../servicer/earliest_session_start";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -98,6 +99,23 @@ export interface QueryAllSessionStorageForSpecRequest {
 export interface QueryAllSessionStorageForSpecResponse {
     sessionStorageForSpec: SessionStorageForSpec[];
     pagination: PageResponse | undefined;
+}
+export interface QuerySessionStorageForAllSpecsRequest {
+    blockNum: number;
+}
+export interface QuerySessionStorageForAllSpecsResponse {
+    servicers: StakeStorage | undefined;
+}
+export interface QueryAllSessionStoragesForSpecRequest {
+    specName: string;
+}
+export interface QueryAllSessionStoragesForSpecResponse {
+    storages: SessionStorageForSpec[];
+}
+export interface QueryGetEarliestSessionStartRequest {
+}
+export interface QueryGetEarliestSessionStartResponse {
+    EarliestSessionStart: EarliestSessionStart | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -295,6 +313,48 @@ export declare const QueryAllSessionStorageForSpecResponse: {
     toJSON(message: QueryAllSessionStorageForSpecResponse): unknown;
     fromPartial(object: DeepPartial<QueryAllSessionStorageForSpecResponse>): QueryAllSessionStorageForSpecResponse;
 };
+export declare const QuerySessionStorageForAllSpecsRequest: {
+    encode(message: QuerySessionStorageForAllSpecsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QuerySessionStorageForAllSpecsRequest;
+    fromJSON(object: any): QuerySessionStorageForAllSpecsRequest;
+    toJSON(message: QuerySessionStorageForAllSpecsRequest): unknown;
+    fromPartial(object: DeepPartial<QuerySessionStorageForAllSpecsRequest>): QuerySessionStorageForAllSpecsRequest;
+};
+export declare const QuerySessionStorageForAllSpecsResponse: {
+    encode(message: QuerySessionStorageForAllSpecsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QuerySessionStorageForAllSpecsResponse;
+    fromJSON(object: any): QuerySessionStorageForAllSpecsResponse;
+    toJSON(message: QuerySessionStorageForAllSpecsResponse): unknown;
+    fromPartial(object: DeepPartial<QuerySessionStorageForAllSpecsResponse>): QuerySessionStorageForAllSpecsResponse;
+};
+export declare const QueryAllSessionStoragesForSpecRequest: {
+    encode(message: QueryAllSessionStoragesForSpecRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllSessionStoragesForSpecRequest;
+    fromJSON(object: any): QueryAllSessionStoragesForSpecRequest;
+    toJSON(message: QueryAllSessionStoragesForSpecRequest): unknown;
+    fromPartial(object: DeepPartial<QueryAllSessionStoragesForSpecRequest>): QueryAllSessionStoragesForSpecRequest;
+};
+export declare const QueryAllSessionStoragesForSpecResponse: {
+    encode(message: QueryAllSessionStoragesForSpecResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllSessionStoragesForSpecResponse;
+    fromJSON(object: any): QueryAllSessionStoragesForSpecResponse;
+    toJSON(message: QueryAllSessionStoragesForSpecResponse): unknown;
+    fromPartial(object: DeepPartial<QueryAllSessionStoragesForSpecResponse>): QueryAllSessionStoragesForSpecResponse;
+};
+export declare const QueryGetEarliestSessionStartRequest: {
+    encode(_: QueryGetEarliestSessionStartRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetEarliestSessionStartRequest;
+    fromJSON(_: any): QueryGetEarliestSessionStartRequest;
+    toJSON(_: QueryGetEarliestSessionStartRequest): unknown;
+    fromPartial(_: DeepPartial<QueryGetEarliestSessionStartRequest>): QueryGetEarliestSessionStartRequest;
+};
+export declare const QueryGetEarliestSessionStartResponse: {
+    encode(message: QueryGetEarliestSessionStartResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetEarliestSessionStartResponse;
+    fromJSON(object: any): QueryGetEarliestSessionStartResponse;
+    toJSON(message: QueryGetEarliestSessionStartResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetEarliestSessionStartResponse>): QueryGetEarliestSessionStartResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -325,6 +385,12 @@ export interface Query {
     SessionStorageForSpec(request: QueryGetSessionStorageForSpecRequest): Promise<QueryGetSessionStorageForSpecResponse>;
     /** Queries a list of SessionStorageForSpec items. */
     SessionStorageForSpecAll(request: QueryAllSessionStorageForSpecRequest): Promise<QueryAllSessionStorageForSpecResponse>;
+    /** Queries a list of SessionStorageForAllSpecs items. */
+    SessionStorageForAllSpecs(request: QuerySessionStorageForAllSpecsRequest): Promise<QuerySessionStorageForAllSpecsResponse>;
+    /** Queries a list of AllSessionStoragesForSpec items. */
+    AllSessionStoragesForSpec(request: QueryAllSessionStoragesForSpecRequest): Promise<QueryAllSessionStoragesForSpecResponse>;
+    /** Queries a EarliestSessionStart by index. */
+    EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -343,6 +409,9 @@ export declare class QueryClientImpl implements Query {
     PreviousSessionBlocks(request: QueryGetPreviousSessionBlocksRequest): Promise<QueryGetPreviousSessionBlocksResponse>;
     SessionStorageForSpec(request: QueryGetSessionStorageForSpecRequest): Promise<QueryGetSessionStorageForSpecResponse>;
     SessionStorageForSpecAll(request: QueryAllSessionStorageForSpecRequest): Promise<QueryAllSessionStorageForSpecResponse>;
+    SessionStorageForAllSpecs(request: QuerySessionStorageForAllSpecsRequest): Promise<QuerySessionStorageForAllSpecsResponse>;
+    AllSessionStoragesForSpec(request: QueryAllSessionStoragesForSpecRequest): Promise<QueryAllSessionStoragesForSpecResponse>;
+    EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

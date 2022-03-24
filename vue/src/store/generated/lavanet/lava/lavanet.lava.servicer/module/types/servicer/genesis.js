@@ -9,6 +9,7 @@ import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
+import { EarliestSessionStart } from "../servicer/earliest_session_start";
 export const protobufPackage = "lavanet.lava.servicer";
 const baseGenesisState = { unstakingServicersAllSpecsCount: 0 };
 export const GenesisState = {
@@ -39,6 +40,9 @@ export const GenesisState = {
         }
         for (const v of message.sessionStorageForSpecList) {
             SessionStorageForSpec.encode(v, writer.uint32(74).fork()).ldelim();
+        }
+        if (message.earliestSessionStart !== undefined) {
+            EarliestSessionStart.encode(message.earliestSessionStart, writer.uint32(82).fork()).ldelim();
         }
         return writer;
     },
@@ -79,6 +83,9 @@ export const GenesisState = {
                     break;
                 case 9:
                     message.sessionStorageForSpecList.push(SessionStorageForSpec.decode(reader, reader.uint32()));
+                    break;
+                case 10:
+                    message.earliestSessionStart = EarliestSessionStart.decode(reader, reader.uint32());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -150,6 +157,13 @@ export const GenesisState = {
                 message.sessionStorageForSpecList.push(SessionStorageForSpec.fromJSON(e));
             }
         }
+        if (object.earliestSessionStart !== undefined &&
+            object.earliestSessionStart !== null) {
+            message.earliestSessionStart = EarliestSessionStart.fromJSON(object.earliestSessionStart);
+        }
+        else {
+            message.earliestSessionStart = undefined;
+        }
         return message;
     },
     toJSON(message) {
@@ -195,6 +209,10 @@ export const GenesisState = {
         else {
             obj.sessionStorageForSpecList = [];
         }
+        message.earliestSessionStart !== undefined &&
+            (obj.earliestSessionStart = message.earliestSessionStart
+                ? EarliestSessionStart.toJSON(message.earliestSessionStart)
+                : undefined);
         return obj;
     },
     fromPartial(object) {
@@ -260,6 +278,13 @@ export const GenesisState = {
             for (const e of object.sessionStorageForSpecList) {
                 message.sessionStorageForSpecList.push(SessionStorageForSpec.fromPartial(e));
             }
+        }
+        if (object.earliestSessionStart !== undefined &&
+            object.earliestSessionStart !== null) {
+            message.earliestSessionStart = EarliestSessionStart.fromPartial(object.earliestSessionStart);
+        }
+        else {
+            message.earliestSessionStart = undefined;
         }
         return message;
     },

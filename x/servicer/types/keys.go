@@ -37,3 +37,7 @@ const (
 const (
 	PreviousSessionBlocksKey = "PreviousSessionBlocks-value-"
 )
+
+const (
+	EarliestSessionStartKey = "EarliestSessionStart-value-"
+)

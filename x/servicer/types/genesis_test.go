@@ -64,6 +64,9 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
+				EarliestSessionStart: &types.EarliestSessionStart{
+					Block: types.BlockNum{Num: 0},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,

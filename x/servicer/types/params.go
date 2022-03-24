@@ -39,8 +39,9 @@ var (
 )
 
 var (
-	KeyServicersToPairCount            = []byte("ServicersToPairCount")
-	DefaultServicersToPairCount uint64 = 3
+	KeyServicersToPairCount = []byte("ServicersToPairCount")
+	// DefaultServicersToPairCount uint64 = 3
+	DefaultServicersToPairCount uint64 = 2
 )
 
 var (

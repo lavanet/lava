@@ -37,6 +37,10 @@ export interface ServicerCurrentSessionStart {
   block?: ServicerBlockNum;
 }
 
+export interface ServicerEarliestSessionStart {
+  block?: ServicerBlockNum;
+}
+
 export type ServicerMsgProofOfWorkResponse = object;
 
 export type ServicerMsgStakeServicerResponse = object;
@@ -99,6 +103,10 @@ export interface ServicerQueryAllSessionStorageForSpecResponse {
   pagination?: V1Beta1PageResponse;
 }
 
+export interface ServicerQueryAllSessionStoragesForSpecResponse {
+  storages?: ServicerSessionStorageForSpec[];
+}
+
 export interface ServicerQueryAllSpecStakeStorageResponse {
   specStakeStorage?: ServicerSpecStakeStorage[];
 
@@ -152,6 +160,10 @@ export interface ServicerQueryGetCurrentSessionStartResponse {
   CurrentSessionStart?: ServicerCurrentSessionStart;
 }
 
+export interface ServicerQueryGetEarliestSessionStartResponse {
+  EarliestSessionStart?: ServicerEarliestSessionStart;
+}
+
 export interface ServicerQueryGetPairingResponse {
   servicers?: ServicerStakeStorage;
 }
@@ -182,6 +194,10 @@ export interface ServicerQueryGetUnstakingServicersAllSpecsResponse {
 export interface ServicerQueryParamsResponse {
   /** params holds all the parameters of this module. */
   params?: ServicerParams;
+}
+
+export interface ServicerQuerySessionStorageForAllSpecsResponse {
+  servicers?: ServicerStakeStorage;
 }
 
 export interface ServicerQueryStakedServicersResponse {
@@ -511,6 +527,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QueryAllSessionStoragesForSpec
+   * @summary Queries a list of AllSessionStoragesForSpec items.
+   * @request GET:/lavanet/lava/servicer/all_session_storages_for_spec/{specName}
+   */
+  queryAllSessionStoragesForSpec = (specName: string, params: RequestParams = {}) =>
+    this.request<ServicerQueryAllSessionStoragesForSpecResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/all_session_storages_for_spec/${specName}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QueryBlockDeadlineForCallback
    * @summary Queries a BlockDeadlineForCallback by index.
    * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
@@ -534,6 +566,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryCurrentSessionStart = (params: RequestParams = {}) =>
     this.request<ServicerQueryGetCurrentSessionStartResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/current_session_start`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryEarliestSessionStart
+   * @summary Queries a EarliestSessionStart by index.
+   * @request GET:/lavanet/lava/servicer/earliest_session_start
+   */
+  queryEarliestSessionStart = (params: RequestParams = {}) =>
+    this.request<ServicerQueryGetEarliestSessionStartResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/earliest_session_start`,
       method: "GET",
       format: "json",
       ...params,
@@ -582,6 +630,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryPreviousSessionBlocks = (params: RequestParams = {}) =>
     this.request<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/previous_session_blocks`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QuerySessionStorageForAllSpecs
+   * @summary Queries a list of SessionStorageForAllSpecs items.
+   * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
+   */
+  querySessionStorageForAllSpecs = (blockNum: string, params: RequestParams = {}) =>
+    this.request<ServicerQuerySessionStorageForAllSpecsResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/session_storage_for_all_specs/${blockNum}`,
       method: "GET",
       format: "json",
       ...params,

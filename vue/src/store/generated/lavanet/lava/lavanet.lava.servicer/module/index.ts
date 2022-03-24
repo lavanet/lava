@@ -5,14 +5,14 @@ import { SigningStargateClient } from "@cosmjs/stargate";
 import { Registry, OfflineSigner, EncodeObject, DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { Api } from "./rest";
 import { MsgStakeServicer } from "./types/servicer/tx";
-import { MsgUnstakeServicer } from "./types/servicer/tx";
 import { MsgProofOfWork } from "./types/servicer/tx";
+import { MsgUnstakeServicer } from "./types/servicer/tx";
 
 
 const types = [
   ["/lavanet.lava.servicer.MsgStakeServicer", MsgStakeServicer],
-  ["/lavanet.lava.servicer.MsgUnstakeServicer", MsgUnstakeServicer],
   ["/lavanet.lava.servicer.MsgProofOfWork", MsgProofOfWork],
+  ["/lavanet.lava.servicer.MsgUnstakeServicer", MsgUnstakeServicer],
   
 ];
 export const MissingWalletError = new Error("wallet is required");
@@ -46,8 +46,8 @@ const txClient = async (wallet: OfflineSigner, { addr: addr }: TxClientOptions =
   return {
     signAndBroadcast: (msgs: EncodeObject[], { fee, memo }: SignAndBroadcastOptions = {fee: defaultFee, memo: ""}) => client.signAndBroadcast(address, msgs, fee,memo),
     msgStakeServicer: (data: MsgStakeServicer): EncodeObject => ({ typeUrl: "/lavanet.lava.servicer.MsgStakeServicer", value: MsgStakeServicer.fromPartial( data ) }),
-    msgUnstakeServicer: (data: MsgUnstakeServicer): EncodeObject => ({ typeUrl: "/lavanet.lava.servicer.MsgUnstakeServicer", value: MsgUnstakeServicer.fromPartial( data ) }),
     msgProofOfWork: (data: MsgProofOfWork): EncodeObject => ({ typeUrl: "/lavanet.lava.servicer.MsgProofOfWork", value: MsgProofOfWork.fromPartial( data ) }),
+    msgUnstakeServicer: (data: MsgUnstakeServicer): EncodeObject => ({ typeUrl: "/lavanet.lava.servicer.MsgUnstakeServicer", value: MsgUnstakeServicer.fromPartial( data ) }),
     
   };
 };

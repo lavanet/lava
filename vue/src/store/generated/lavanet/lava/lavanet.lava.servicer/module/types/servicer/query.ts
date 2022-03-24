@@ -14,6 +14,7 @@ import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
+import { EarliestSessionStart } from "../servicer/earliest_session_start";
 
 export const protobufPackage = "lavanet.lava.servicer";
 
@@ -128,6 +129,28 @@ export interface QueryAllSessionStorageForSpecRequest {
 export interface QueryAllSessionStorageForSpecResponse {
   sessionStorageForSpec: SessionStorageForSpec[];
   pagination: PageResponse | undefined;
+}
+
+export interface QuerySessionStorageForAllSpecsRequest {
+  blockNum: number;
+}
+
+export interface QuerySessionStorageForAllSpecsResponse {
+  servicers: StakeStorage | undefined;
+}
+
+export interface QueryAllSessionStoragesForSpecRequest {
+  specName: string;
+}
+
+export interface QueryAllSessionStoragesForSpecResponse {
+  storages: SessionStorageForSpec[];
+}
+
+export interface QueryGetEarliestSessionStartRequest {}
+
+export interface QueryGetEarliestSessionStartResponse {
+  EarliestSessionStart: EarliestSessionStart | undefined;
 }
 
 const baseQueryParamsRequest: object = {};
@@ -2282,6 +2305,436 @@ export const QueryAllSessionStorageForSpecResponse = {
   },
 };
 
+const baseQuerySessionStorageForAllSpecsRequest: object = { blockNum: 0 };
+
+export const QuerySessionStorageForAllSpecsRequest = {
+  encode(
+    message: QuerySessionStorageForAllSpecsRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.blockNum !== 0) {
+      writer.uint32(8).uint64(message.blockNum);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QuerySessionStorageForAllSpecsRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsRequest,
+    } as QuerySessionStorageForAllSpecsRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.blockNum = longToNumber(reader.uint64() as Long);
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuerySessionStorageForAllSpecsRequest {
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsRequest,
+    } as QuerySessionStorageForAllSpecsRequest;
+    if (object.blockNum !== undefined && object.blockNum !== null) {
+      message.blockNum = Number(object.blockNum);
+    } else {
+      message.blockNum = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: QuerySessionStorageForAllSpecsRequest): unknown {
+    const obj: any = {};
+    message.blockNum !== undefined && (obj.blockNum = message.blockNum);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QuerySessionStorageForAllSpecsRequest>
+  ): QuerySessionStorageForAllSpecsRequest {
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsRequest,
+    } as QuerySessionStorageForAllSpecsRequest;
+    if (object.blockNum !== undefined && object.blockNum !== null) {
+      message.blockNum = object.blockNum;
+    } else {
+      message.blockNum = 0;
+    }
+    return message;
+  },
+};
+
+const baseQuerySessionStorageForAllSpecsResponse: object = {};
+
+export const QuerySessionStorageForAllSpecsResponse = {
+  encode(
+    message: QuerySessionStorageForAllSpecsResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.servicers !== undefined) {
+      StakeStorage.encode(message.servicers, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QuerySessionStorageForAllSpecsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsResponse,
+    } as QuerySessionStorageForAllSpecsResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.servicers = StakeStorage.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuerySessionStorageForAllSpecsResponse {
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsResponse,
+    } as QuerySessionStorageForAllSpecsResponse;
+    if (object.servicers !== undefined && object.servicers !== null) {
+      message.servicers = StakeStorage.fromJSON(object.servicers);
+    } else {
+      message.servicers = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QuerySessionStorageForAllSpecsResponse): unknown {
+    const obj: any = {};
+    message.servicers !== undefined &&
+      (obj.servicers = message.servicers
+        ? StakeStorage.toJSON(message.servicers)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QuerySessionStorageForAllSpecsResponse>
+  ): QuerySessionStorageForAllSpecsResponse {
+    const message = {
+      ...baseQuerySessionStorageForAllSpecsResponse,
+    } as QuerySessionStorageForAllSpecsResponse;
+    if (object.servicers !== undefined && object.servicers !== null) {
+      message.servicers = StakeStorage.fromPartial(object.servicers);
+    } else {
+      message.servicers = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllSessionStoragesForSpecRequest: object = { specName: "" };
+
+export const QueryAllSessionStoragesForSpecRequest = {
+  encode(
+    message: QueryAllSessionStoragesForSpecRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.specName !== "") {
+      writer.uint32(10).string(message.specName);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllSessionStoragesForSpecRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecRequest,
+    } as QueryAllSessionStoragesForSpecRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.specName = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllSessionStoragesForSpecRequest {
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecRequest,
+    } as QueryAllSessionStoragesForSpecRequest;
+    if (object.specName !== undefined && object.specName !== null) {
+      message.specName = String(object.specName);
+    } else {
+      message.specName = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllSessionStoragesForSpecRequest): unknown {
+    const obj: any = {};
+    message.specName !== undefined && (obj.specName = message.specName);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllSessionStoragesForSpecRequest>
+  ): QueryAllSessionStoragesForSpecRequest {
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecRequest,
+    } as QueryAllSessionStoragesForSpecRequest;
+    if (object.specName !== undefined && object.specName !== null) {
+      message.specName = object.specName;
+    } else {
+      message.specName = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryAllSessionStoragesForSpecResponse: object = {};
+
+export const QueryAllSessionStoragesForSpecResponse = {
+  encode(
+    message: QueryAllSessionStoragesForSpecResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    for (const v of message.storages) {
+      SessionStorageForSpec.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllSessionStoragesForSpecResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecResponse,
+    } as QueryAllSessionStoragesForSpecResponse;
+    message.storages = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.storages.push(
+            SessionStorageForSpec.decode(reader, reader.uint32())
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllSessionStoragesForSpecResponse {
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecResponse,
+    } as QueryAllSessionStoragesForSpecResponse;
+    message.storages = [];
+    if (object.storages !== undefined && object.storages !== null) {
+      for (const e of object.storages) {
+        message.storages.push(SessionStorageForSpec.fromJSON(e));
+      }
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllSessionStoragesForSpecResponse): unknown {
+    const obj: any = {};
+    if (message.storages) {
+      obj.storages = message.storages.map((e) =>
+        e ? SessionStorageForSpec.toJSON(e) : undefined
+      );
+    } else {
+      obj.storages = [];
+    }
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllSessionStoragesForSpecResponse>
+  ): QueryAllSessionStoragesForSpecResponse {
+    const message = {
+      ...baseQueryAllSessionStoragesForSpecResponse,
+    } as QueryAllSessionStoragesForSpecResponse;
+    message.storages = [];
+    if (object.storages !== undefined && object.storages !== null) {
+      for (const e of object.storages) {
+        message.storages.push(SessionStorageForSpec.fromPartial(e));
+      }
+    }
+    return message;
+  },
+};
+
+const baseQueryGetEarliestSessionStartRequest: object = {};
+
+export const QueryGetEarliestSessionStartRequest = {
+  encode(
+    _: QueryGetEarliestSessionStartRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetEarliestSessionStartRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetEarliestSessionStartRequest,
+    } as QueryGetEarliestSessionStartRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(_: any): QueryGetEarliestSessionStartRequest {
+    const message = {
+      ...baseQueryGetEarliestSessionStartRequest,
+    } as QueryGetEarliestSessionStartRequest;
+    return message;
+  },
+
+  toJSON(_: QueryGetEarliestSessionStartRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  fromPartial(
+    _: DeepPartial<QueryGetEarliestSessionStartRequest>
+  ): QueryGetEarliestSessionStartRequest {
+    const message = {
+      ...baseQueryGetEarliestSessionStartRequest,
+    } as QueryGetEarliestSessionStartRequest;
+    return message;
+  },
+};
+
+const baseQueryGetEarliestSessionStartResponse: object = {};
+
+export const QueryGetEarliestSessionStartResponse = {
+  encode(
+    message: QueryGetEarliestSessionStartResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.EarliestSessionStart !== undefined) {
+      EarliestSessionStart.encode(
+        message.EarliestSessionStart,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetEarliestSessionStartResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetEarliestSessionStartResponse,
+    } as QueryGetEarliestSessionStartResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.EarliestSessionStart = EarliestSessionStart.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetEarliestSessionStartResponse {
+    const message = {
+      ...baseQueryGetEarliestSessionStartResponse,
+    } as QueryGetEarliestSessionStartResponse;
+    if (
+      object.EarliestSessionStart !== undefined &&
+      object.EarliestSessionStart !== null
+    ) {
+      message.EarliestSessionStart = EarliestSessionStart.fromJSON(
+        object.EarliestSessionStart
+      );
+    } else {
+      message.EarliestSessionStart = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetEarliestSessionStartResponse): unknown {
+    const obj: any = {};
+    message.EarliestSessionStart !== undefined &&
+      (obj.EarliestSessionStart = message.EarliestSessionStart
+        ? EarliestSessionStart.toJSON(message.EarliestSessionStart)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetEarliestSessionStartResponse>
+  ): QueryGetEarliestSessionStartResponse {
+    const message = {
+      ...baseQueryGetEarliestSessionStartResponse,
+    } as QueryGetEarliestSessionStartResponse;
+    if (
+      object.EarliestSessionStart !== undefined &&
+      object.EarliestSessionStart !== null
+    ) {
+      message.EarliestSessionStart = EarliestSessionStart.fromPartial(
+        object.EarliestSessionStart
+      );
+    } else {
+      message.EarliestSessionStart = undefined;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -2334,6 +2787,18 @@ export interface Query {
   SessionStorageForSpecAll(
     request: QueryAllSessionStorageForSpecRequest
   ): Promise<QueryAllSessionStorageForSpecResponse>;
+  /** Queries a list of SessionStorageForAllSpecs items. */
+  SessionStorageForAllSpecs(
+    request: QuerySessionStorageForAllSpecsRequest
+  ): Promise<QuerySessionStorageForAllSpecsResponse>;
+  /** Queries a list of AllSessionStoragesForSpec items. */
+  AllSessionStoragesForSpec(
+    request: QueryAllSessionStoragesForSpecRequest
+  ): Promise<QueryAllSessionStoragesForSpecResponse>;
+  /** Queries a EarliestSessionStart by index. */
+  EarliestSessionStart(
+    request: QueryGetEarliestSessionStartRequest
+  ): Promise<QueryGetEarliestSessionStartResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -2536,6 +3001,48 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryAllSessionStorageForSpecResponse.decode(new Reader(data))
+    );
+  }
+
+  SessionStorageForAllSpecs(
+    request: QuerySessionStorageForAllSpecsRequest
+  ): Promise<QuerySessionStorageForAllSpecsResponse> {
+    const data = QuerySessionStorageForAllSpecsRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "SessionStorageForAllSpecs",
+      data
+    );
+    return promise.then((data) =>
+      QuerySessionStorageForAllSpecsResponse.decode(new Reader(data))
+    );
+  }
+
+  AllSessionStoragesForSpec(
+    request: QueryAllSessionStoragesForSpecRequest
+  ): Promise<QueryAllSessionStoragesForSpecResponse> {
+    const data = QueryAllSessionStoragesForSpecRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "AllSessionStoragesForSpec",
+      data
+    );
+    return promise.then((data) =>
+      QueryAllSessionStoragesForSpecResponse.decode(new Reader(data))
+    );
+  }
+
+  EarliestSessionStart(
+    request: QueryGetEarliestSessionStartRequest
+  ): Promise<QueryGetEarliestSessionStartResponse> {
+    const data = QueryGetEarliestSessionStartRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "EarliestSessionStart",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetEarliestSessionStartResponse.decode(new Reader(data))
     );
   }
 }

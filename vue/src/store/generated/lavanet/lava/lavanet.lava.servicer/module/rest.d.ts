@@ -20,6 +20,9 @@ export interface ServicerClientRequest {
 export interface ServicerCurrentSessionStart {
     block?: ServicerBlockNum;
 }
+export interface ServicerEarliestSessionStart {
+    block?: ServicerBlockNum;
+}
 export declare type ServicerMsgProofOfWorkResponse = object;
 export declare type ServicerMsgStakeServicerResponse = object;
 export declare type ServicerMsgUnstakeServicerResponse = object;
@@ -66,6 +69,9 @@ export interface ServicerQueryAllSessionStorageForSpecResponse {
      */
     pagination?: V1Beta1PageResponse;
 }
+export interface ServicerQueryAllSessionStoragesForSpecResponse {
+    storages?: ServicerSessionStorageForSpec[];
+}
 export interface ServicerQueryAllSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage[];
     /**
@@ -111,6 +117,9 @@ export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
 export interface ServicerQueryGetCurrentSessionStartResponse {
     CurrentSessionStart?: ServicerCurrentSessionStart;
 }
+export interface ServicerQueryGetEarliestSessionStartResponse {
+    EarliestSessionStart?: ServicerEarliestSessionStart;
+}
 export interface ServicerQueryGetPairingResponse {
     servicers?: ServicerStakeStorage;
 }
@@ -135,6 +144,9 @@ export interface ServicerQueryGetUnstakingServicersAllSpecsResponse {
 export interface ServicerQueryParamsResponse {
     /** params holds all the parameters of this module. */
     params?: ServicerParams;
+}
+export interface ServicerQuerySessionStorageForAllSpecsResponse {
+    servicers?: ServicerStakeStorage;
 }
 export interface ServicerQueryStakedServicersResponse {
     stakeStorage?: ServicerStakeStorage;
@@ -307,6 +319,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryAllSessionStoragesForSpec
+     * @summary Queries a list of AllSessionStoragesForSpec items.
+     * @request GET:/lavanet/lava/servicer/all_session_storages_for_spec/{specName}
+     */
+    queryAllSessionStoragesForSpec: (specName: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllSessionStoragesForSpecResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryBlockDeadlineForCallback
      * @summary Queries a BlockDeadlineForCallback by index.
      * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
@@ -321,6 +342,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/current_session_start
      */
     queryCurrentSessionStart: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetCurrentSessionStartResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryEarliestSessionStart
+     * @summary Queries a EarliestSessionStart by index.
+     * @request GET:/lavanet/lava/servicer/earliest_session_start
+     */
+    queryEarliestSessionStart: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetEarliestSessionStartResponse, RpcStatus>>;
     /**
      * No description
      *
@@ -348,6 +378,15 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/previous_session_blocks
      */
     queryPreviousSessionBlocks: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForAllSpecs
+     * @summary Queries a list of SessionStorageForAllSpecs items.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
+     */
+    querySessionStorageForAllSpecs: (blockNum: string, params?: RequestParams) => Promise<HttpResponse<ServicerQuerySessionStorageForAllSpecsResponse, RpcStatus>>;
     /**
      * No description
      *

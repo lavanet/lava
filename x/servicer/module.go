@@ -185,7 +185,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 		//4. remove old sessionStorageForSpec
 		//5. unstake any unstaking servicers
 
-		//1.
+		//1. !!! must be before SetCurrentSessionStart, it counts on the fact it wasn't updated yet
 		am.keeper.HandleStoringPreviousSessionData(ctx)
 
 		//2.

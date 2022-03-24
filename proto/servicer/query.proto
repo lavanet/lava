@@ -11,6 +11,7 @@ import "servicer/unstaking_servicers_all_specs.proto";
 import "servicer/current_session_start.proto";
 import "servicer/previous_session_blocks.proto";
 import "servicer/session_storage_for_spec.proto";
+import "servicer/earliest_session_start.proto";
 // this line is used by starport scaffolding # 1
 import "servicer/stake_storage.proto";
 import "servicer/block_num.proto";
@@ -87,6 +88,20 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_spec";
 	}
 
+// Queries a list of SessionStorageForAllSpecs items.
+	rpc SessionStorageForAllSpecs(QuerySessionStorageForAllSpecsRequest) returns (QuerySessionStorageForAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}";
+	}
+
+// Queries a list of AllSessionStoragesForSpec items.
+	rpc AllSessionStoragesForSpec(QueryAllSessionStoragesForSpecRequest) returns (QueryAllSessionStoragesForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/all_session_storages_for_spec/{specName}";
+	}
+
+// Queries a EarliestSessionStart by index.
+	rpc EarliestSessionStart(QueryGetEarliestSessionStartRequest) returns (QueryGetEarliestSessionStartResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/earliest_session_start";
+	}
 // this line is used by starport scaffolding # 2
 }
 
@@ -203,4 +218,25 @@ message QueryAllSessionStorageForSpecResponse {
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
+message QuerySessionStorageForAllSpecsRequest {
+  uint64 blockNum = 1;
+}
+
+message QuerySessionStorageForAllSpecsResponse {
+  StakeStorage servicers = 1;
+}
+
+message QueryAllSessionStoragesForSpecRequest {
+  string specName = 1;
+}
+
+message QueryAllSessionStoragesForSpecResponse {
+	repeated SessionStorageForSpec storages = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetEarliestSessionStartRequest {}
+
+message QueryGetEarliestSessionStartResponse {
+	EarliestSessionStart EarliestSessionStart = 1 [(gogoproto.nullable) = false];
+}
 // this line is used by starport scaffolding # 3

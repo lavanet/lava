@@ -94,6 +94,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientA
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.StakeStorage, clientAddress sdk.AccAddress, sessionStartBlock types.BlockNum) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {
 	if sessionStartBlock.Num > uint64(ctx.BlockHeight()) {
+		k.Logger(ctx).Error("\ninvalid session start\n")
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", sessionStartBlock.Num, uint64(ctx.BlockHeight())))
 	}
 	stakedServicers := stakedStorage.Staked
@@ -107,7 +108,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.
 	}
 
 	//calculates a hash and randomly chooses the servicers
-	k.returnSubsetOfServicersByStake(validServicers, k.ServicersToPairCount(ctx), sessionStartBlock.Num)
+	k.returnSubsetOfServicersByStake(ctx, validServicers, k.ServicersToPairCount(ctx), sessionStartBlock.Num)
 
 	for _, stakeMap := range validServicers {
 		servicerAddress := stakeMap.Index
@@ -121,12 +122,16 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.
 }
 
 //this function randomly chooses count servicers by weight
-func (k Keeper) returnSubsetOfServicersByStake(servicersMaps []types.StakeMap, count uint64, block uint64) (returnedServicers []types.StakeMap) {
+func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []types.StakeMap, count uint64, block uint64) (returnedServicers []types.StakeMap) {
 	var stakeSum uint64 = 0
 	hashData := make([]byte, 0)
 	for _, stakedServicer := range servicersMaps {
 		stakeSum += stakedServicer.Stake.Amount.Uint64()
 		hashData = append(hashData, []byte(stakedServicer.Index)...)
+	}
+	if stakeSum == 0 {
+		//list is empty
+		return
 	}
 	extradata := make([]byte, 8)
 	binary.LittleEndian.PutUint64(extradata, uint64(block))
@@ -137,6 +142,7 @@ func (k Keeper) returnSubsetOfServicersByStake(servicersMaps []types.StakeMap, c
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		hashAsNumber, ok := sdk.NewIntFromString(string(hash))
 		if !ok {
+			k.Logger(ctx).Error("panicing sdk.Int problem casting the hash")
 			panic("problem converting hash to sdk.Int")
 		}
 		//stakeSum needs to be less than 2^128 and this is super random

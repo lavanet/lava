@@ -11,6 +11,7 @@ import { UnstakingServicersAllSpecs } from "../servicer/unstaking_servicers_all_
 import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
+import { EarliestSessionStart } from "../servicer/earliest_session_start";
 export const protobufPackage = "lavanet.lava.servicer";
 const baseQueryParamsRequest = {};
 export const QueryParamsRequest = {
@@ -1722,6 +1723,343 @@ export const QueryAllSessionStorageForSpecResponse = {
         return message;
     },
 };
+const baseQuerySessionStorageForAllSpecsRequest = { blockNum: 0 };
+export const QuerySessionStorageForAllSpecsRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.blockNum !== 0) {
+            writer.uint32(8).uint64(message.blockNum);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.blockNum = longToNumber(reader.uint64());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsRequest,
+        };
+        if (object.blockNum !== undefined && object.blockNum !== null) {
+            message.blockNum = Number(object.blockNum);
+        }
+        else {
+            message.blockNum = 0;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.blockNum !== undefined && (obj.blockNum = message.blockNum);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsRequest,
+        };
+        if (object.blockNum !== undefined && object.blockNum !== null) {
+            message.blockNum = object.blockNum;
+        }
+        else {
+            message.blockNum = 0;
+        }
+        return message;
+    },
+};
+const baseQuerySessionStorageForAllSpecsResponse = {};
+export const QuerySessionStorageForAllSpecsResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.servicers !== undefined) {
+            StakeStorage.encode(message.servicers, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.servicers = StakeStorage.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsResponse,
+        };
+        if (object.servicers !== undefined && object.servicers !== null) {
+            message.servicers = StakeStorage.fromJSON(object.servicers);
+        }
+        else {
+            message.servicers = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.servicers !== undefined &&
+            (obj.servicers = message.servicers
+                ? StakeStorage.toJSON(message.servicers)
+                : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQuerySessionStorageForAllSpecsResponse,
+        };
+        if (object.servicers !== undefined && object.servicers !== null) {
+            message.servicers = StakeStorage.fromPartial(object.servicers);
+        }
+        else {
+            message.servicers = undefined;
+        }
+        return message;
+    },
+};
+const baseQueryAllSessionStoragesForSpecRequest = { specName: "" };
+export const QueryAllSessionStoragesForSpecRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.specName !== "") {
+            writer.uint32(10).string(message.specName);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.specName = reader.string();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecRequest,
+        };
+        if (object.specName !== undefined && object.specName !== null) {
+            message.specName = String(object.specName);
+        }
+        else {
+            message.specName = "";
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.specName !== undefined && (obj.specName = message.specName);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecRequest,
+        };
+        if (object.specName !== undefined && object.specName !== null) {
+            message.specName = object.specName;
+        }
+        else {
+            message.specName = "";
+        }
+        return message;
+    },
+};
+const baseQueryAllSessionStoragesForSpecResponse = {};
+export const QueryAllSessionStoragesForSpecResponse = {
+    encode(message, writer = Writer.create()) {
+        for (const v of message.storages) {
+            SessionStorageForSpec.encode(v, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecResponse,
+        };
+        message.storages = [];
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.storages.push(SessionStorageForSpec.decode(reader, reader.uint32()));
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecResponse,
+        };
+        message.storages = [];
+        if (object.storages !== undefined && object.storages !== null) {
+            for (const e of object.storages) {
+                message.storages.push(SessionStorageForSpec.fromJSON(e));
+            }
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.storages) {
+            obj.storages = message.storages.map((e) => e ? SessionStorageForSpec.toJSON(e) : undefined);
+        }
+        else {
+            obj.storages = [];
+        }
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryAllSessionStoragesForSpecResponse,
+        };
+        message.storages = [];
+        if (object.storages !== undefined && object.storages !== null) {
+            for (const e of object.storages) {
+                message.storages.push(SessionStorageForSpec.fromPartial(e));
+            }
+        }
+        return message;
+    },
+};
+const baseQueryGetEarliestSessionStartRequest = {};
+export const QueryGetEarliestSessionStartRequest = {
+    encode(_, writer = Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryGetEarliestSessionStartRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(_) {
+        const message = {
+            ...baseQueryGetEarliestSessionStartRequest,
+        };
+        return message;
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    fromPartial(_) {
+        const message = {
+            ...baseQueryGetEarliestSessionStartRequest,
+        };
+        return message;
+    },
+};
+const baseQueryGetEarliestSessionStartResponse = {};
+export const QueryGetEarliestSessionStartResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.EarliestSessionStart !== undefined) {
+            EarliestSessionStart.encode(message.EarliestSessionStart, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryGetEarliestSessionStartResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.EarliestSessionStart = EarliestSessionStart.decode(reader, reader.uint32());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryGetEarliestSessionStartResponse,
+        };
+        if (object.EarliestSessionStart !== undefined &&
+            object.EarliestSessionStart !== null) {
+            message.EarliestSessionStart = EarliestSessionStart.fromJSON(object.EarliestSessionStart);
+        }
+        else {
+            message.EarliestSessionStart = undefined;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.EarliestSessionStart !== undefined &&
+            (obj.EarliestSessionStart = message.EarliestSessionStart
+                ? EarliestSessionStart.toJSON(message.EarliestSessionStart)
+                : undefined);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryGetEarliestSessionStartResponse,
+        };
+        if (object.EarliestSessionStart !== undefined &&
+            object.EarliestSessionStart !== null) {
+            message.EarliestSessionStart = EarliestSessionStart.fromPartial(object.EarliestSessionStart);
+        }
+        else {
+            message.EarliestSessionStart = undefined;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -1795,6 +2133,21 @@ export class QueryClientImpl {
         const data = QueryAllSessionStorageForSpecRequest.encode(request).finish();
         const promise = this.rpc.request("lavanet.lava.servicer.Query", "SessionStorageForSpecAll", data);
         return promise.then((data) => QueryAllSessionStorageForSpecResponse.decode(new Reader(data)));
+    }
+    SessionStorageForAllSpecs(request) {
+        const data = QuerySessionStorageForAllSpecsRequest.encode(request).finish();
+        const promise = this.rpc.request("lavanet.lava.servicer.Query", "SessionStorageForAllSpecs", data);
+        return promise.then((data) => QuerySessionStorageForAllSpecsResponse.decode(new Reader(data)));
+    }
+    AllSessionStoragesForSpec(request) {
+        const data = QueryAllSessionStoragesForSpecRequest.encode(request).finish();
+        const promise = this.rpc.request("lavanet.lava.servicer.Query", "AllSessionStoragesForSpec", data);
+        return promise.then((data) => QueryAllSessionStoragesForSpecResponse.decode(new Reader(data)));
+    }
+    EarliestSessionStart(request) {
+        const data = QueryGetEarliestSessionStartRequest.encode(request).finish();
+        const promise = this.rpc.request("lavanet.lava.servicer.Query", "EarliestSessionStart", data);
+        return promise.then((data) => QueryGetEarliestSessionStartResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

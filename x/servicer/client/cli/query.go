@@ -40,6 +40,11 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdShowPreviousSessionBlocks())
 	cmd.AddCommand(CmdListSessionStorageForSpec())
 	cmd.AddCommand(CmdShowSessionStorageForSpec())
+	cmd.AddCommand(CmdSessionStorageForAllSpecs())
+
+	cmd.AddCommand(CmdAllSessionStoragesForSpec())
+
+	cmd.AddCommand(CmdShowEarliestSessionStart())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

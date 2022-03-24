@@ -71,17 +71,24 @@ func (k Keeper) RemoveStakeStorageInSession(ctx sdk.Context) (err error) {
 		return nil
 	}
 	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)}
-	sessionStartForTarget, _, err := k.GetSessionStartForBlock(ctx, block)
-	if err != nil || sessionStartForTarget == nil {
-		return err
+	earliestSessionBlock, found := k.GetEarliestSessionStart(ctx)
+	if !found {
+		return fmt.Errorf("keeper didn't find EarliestSessionStart")
 	}
+	if earliestSessionBlock.Block.Num > block.Num {
+		return nil
+	}
+	//we passed the distance to earliest session block, so remove the entries and update the earliestSessionBlock
 	allSpecStakeStorages := k.GetAllSpecStakeStorage(ctx)
 	for _, specStakeStorage := range allSpecStakeStorages {
 		specName := specStakeStorage.Index
-		k.RemoveSessionStorageForSpec(ctx, k.SessionStorageKey(*sessionStartForTarget, specName))
+		k.RemoveSessionStorageForSpec(ctx, k.SessionStorageKey(earliestSessionBlock.Block, specName))
 	}
-	//TODO: on param change we are going to miss all the entries before the param change on the delete, this can be handled with the previousData that we have
-	// another way is to just clean up if we have too many entries, old entries dont kill us just take up space
+	//now update the earliest session start
+	sessionBlocks, _ := k.GetSessionBlocksAndOverlapForBlock(ctx, block)
+	nextEarliestBlock := types.EarliestSessionStart{Block: types.BlockNum{Num: earliestSessionBlock.Block.Num + sessionBlocks}}
+	k.SetEarliestSessionStart(ctx, nextEarliestBlock)
+	//TODO: after a long period go over all entries and find leftovers, to make sure edge cases are handled
 	return nil
 }
 
@@ -117,7 +124,7 @@ func (k Keeper) GetSpecStakeStorageInSessionStorageForSpec(ctx sdk.Context, bloc
 	}
 	sessionStorage, found := k.GetSessionStorageForSpec(ctx, k.SessionStorageKey(*sessionStartForTarget, specName))
 	if !found {
-		return nil, nil, fmt.Errorf("did not manage to get GetSessionStorageForSpec: %s spec name:", sessionStartForTarget, specName)
+		return nil, nil, fmt.Errorf("did not manage to get GetSessionStorageForSpec: %s spec name: %s", sessionStartForTarget, specName)
 	}
 	currentStorage = sessionStorage.StakeStorage
 	if overlappingPreviousdSessionStart != nil {
