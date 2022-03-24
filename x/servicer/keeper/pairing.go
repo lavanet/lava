@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/servicer/types"
@@ -108,7 +109,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.
 	}
 
 	//calculates a hash and randomly chooses the servicers
-	k.returnSubsetOfServicersByStake(ctx, validServicers, k.ServicersToPairCount(ctx), sessionStartBlock.Num)
+	validServicers = k.returnSubsetOfServicersByStake(ctx, validServicers, k.ServicersToPairCount(ctx), sessionStartBlock.Num)
 
 	for _, stakeMap := range validServicers {
 		servicerAddress := stakeMap.Index
@@ -140,12 +141,9 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
 	for it := 0; it < int(count); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
-		hashAsNumber, ok := sdk.NewIntFromString(string(hash))
-		if !ok {
-			k.Logger(ctx).Error("panicing sdk.Int problem casting the hash")
-			panic("problem converting hash to sdk.Int")
-		}
-		//stakeSum needs to be less than 2^128 and this is super random
+		bigIntNum := new(big.Int).SetBytes(hash)
+		k.Logger(ctx).Error("bigIntNum: %s", bigIntNum)
+		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.ModRaw(int64(stakeSum)).Uint64()
 		var newStakeSum uint64 = 0
 		for idx, stakedServicer := range servicersMaps {
