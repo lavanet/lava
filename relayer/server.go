@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
@@ -27,6 +29,7 @@ var (
 	g_sessions_mutex sync.Mutex
 	g_sentry         *Sentry
 	g_serverSpecId   uint64
+	g_txFactory      tx.Factory
 )
 
 type RelaySession struct {
@@ -69,21 +72,29 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func askForRewards(sess *RelaySession, sessionId uint64) {
+func askForRewards() {
+	log.Println("askForRewards")
 
-	//
-	// TODO: send reward properly (use sess.Proof)
-	//
-	msg := servicertypes.NewMsgProofOfWork()
-	err := tx.BroadcastTx(g_sentry.ClientCtx, tx.Factory{}, msg)
-	if err != nil {
-		log.Println(err)
+	g_sessions_mutex.Lock()
+	defer g_sessions_mutex.Unlock()
+
+	relays := []*servicertypes.RelayRequest{}
+	for _, userSessions := range g_sessions {
+		for _, sess := range userSessions {
+			relays = append(relays, sess.Proof)
+		}
 	}
 
+	msg := servicertypes.NewMsgProofOfWork(g_sentry.acc, relays)
+	log.Println("msg", msg)
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Println("GenerateOrBroadcastTxWithFactory", err)
+	}
 }
 
 func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
-	pubKey, err := recoverPubKeyFromRelay(in)
+	pubKey, err := RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
 	}
@@ -237,10 +248,21 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 func Server(
 	ctx context.Context,
 	clientCtx client.Context,
+	txFactory tx.Factory,
 	listenAddr string,
 	nodeUrl string,
 	specId uint64,
 ) {
+	//
+	// ctrl+c
+	ctx, cancel := context.WithCancel(ctx)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	defer func() {
+		signal.Stop(signalChan)
+		cancel()
+	}()
+
 	//
 	// Start sentry
 	sentry := NewSentry(clientCtx, specId, false)
@@ -255,6 +277,7 @@ func Server(
 	g_sentry = sentry
 	g_sessions = map[string]map[uint64]*RelaySession{}
 	g_serverSpecId = specId
+	g_txFactory = txFactory
 
 	//
 	// Info
@@ -293,8 +316,12 @@ func Server(
 		select {
 		case <-ctx.Done():
 			log.Println("server ctx.Done")
-			s.Stop()
+		case <-signalChan:
+			log.Println("signalChan")
 		}
+
+		cancel()
+		s.Stop()
 	}()
 
 	Server := &relayServer{}
@@ -305,4 +332,5 @@ func Server(
 		log.Fatalf("failed to serve: %v", err)
 	}
 
+	askForRewards()
 }

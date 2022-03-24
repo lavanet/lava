@@ -43,7 +43,8 @@ message MsgUnstakeServicerResponse {
 }
 
 message MsgProofOfWork {
-  repeated RelayRequest relays = 1;
+  string creator = 1;
+  repeated RelayRequest relays = 2;
 }
 
 message MsgProofOfWorkResponse {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	"github.com/lavanet/lava/app"
@@ -40,6 +41,12 @@ func main() {
 				return err
 			}
 
+			//
+			// TODO: there has to be a better way to send txs
+			// (cosmosclient was a fail)
+			clientCtx.SkipConfirm = true
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID("lava")
+
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
 				return err
@@ -52,7 +59,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, clientCtx, listenAddr, args[2], uint64(specId))
+			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], uint64(specId))
 
 			return nil
 		},

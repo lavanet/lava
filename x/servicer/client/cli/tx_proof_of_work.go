@@ -23,7 +23,10 @@ func CmdProofOfWork() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgProofOfWork()
+			msg := types.NewMsgProofOfWork(
+				clientCtx.GetFromAddress().String(),
+				[]*types.RelayRequest{},
+			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
