@@ -53,11 +53,11 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 
 		//
 		//TODO: get the pairing for the block of work and not the current one
-		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(ctx, uint64(clientRequest.Spec_id), clientAddr, servicerAddr, *msg.BlockOfWork)
+		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(ctx, uint64(relay.SpecId), clientAddr, servicerAddr, types.BlockNum{Num: uint64(relay.BlockHeight)})
 		//TODO: use isOverlap to calculate limiting the CU of previous session
 		_ = isOverlap
 		if err != nil {
-			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, msg.BlockOfWork.Num, err)
+			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err)
 		}
 
 		//
@@ -91,7 +91,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			//
 
 			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
-			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(clientRequest.CU_sum) * clientBurn))
+			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
 			//TODO: burn stake for client
 			_ = amountToBurnClient
 		}

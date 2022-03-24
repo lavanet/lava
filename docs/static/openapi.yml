@@ -22381,11 +22381,6 @@ definitions:
       num:
         type: string
         format: uint64
-  lavanet.lava.servicer.ClientRequest:
-    type: object
-    properties:
-      data:
-        type: string
   lavanet.lava.servicer.CurrentSessionStart:
     type: object
     properties:
@@ -23222,12 +23217,41 @@ definitions:
         type: boolean
       overlap:
         type: boolean
-  lavanet.lava.servicer.SessionID:
+  lavanet.lava.servicer.RelayReply:
     type: object
     properties:
-      num:
+      data:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
+  lavanet.lava.servicer.RelayRequest:
+    type: object
+    properties:
+      specId:
+        type: integer
+        format: int64
+      apiId:
+        type: integer
+        format: int64
+      sessionId:
         type: string
         format: uint64
+      cuSum:
+        type: string
+        format: uint64
+      data:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
+      servicer:
+        type: string
+      blockHeight:
+        type: string
+        format: int64
   lavanet.lava.servicer.SessionStorageForSpec:
     type: object
     properties:
@@ -23451,11 +23475,6 @@ definitions:
                       type: array
                       items:
                         type: string
-  lavanet.lava.servicer.WorkProof:
-    type: object
-    properties:
-      data:
-        type: string
   lavanet.lava.user.BlockDeadlineForCallback:
     type: object
     properties:

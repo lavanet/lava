@@ -14,9 +14,6 @@ export interface ServicerBlockNum {
     /** @format uint64 */
     num?: string;
 }
-export interface ServicerClientRequest {
-    data?: string;
-}
 export interface ServicerCurrentSessionStart {
     block?: ServicerBlockNum;
 }
@@ -156,9 +153,28 @@ export interface ServicerQueryVerifyPairingResponse {
     valid?: boolean;
     overlap?: boolean;
 }
-export interface ServicerSessionID {
+export interface ServicerRelayReply {
+    /** @format byte */
+    data?: string;
+    /** @format byte */
+    sig?: string;
+}
+export interface ServicerRelayRequest {
+    /** @format int64 */
+    specId?: number;
+    /** @format int64 */
+    apiId?: number;
     /** @format uint64 */
-    num?: string;
+    sessionId?: string;
+    /** @format uint64 */
+    cuSum?: string;
+    /** @format byte */
+    data?: string;
+    /** @format byte */
+    sig?: string;
+    servicer?: string;
+    /** @format int64 */
+    blockHeight?: string;
 }
 export interface ServicerSessionStorageForSpec {
     index?: string;
@@ -191,9 +207,6 @@ export interface ServicerUnstakingServicersAllSpecs {
     id?: string;
     unstaking?: ServicerStakeMap;
     specStakeStorage?: ServicerSpecStakeStorage;
-}
-export interface ServicerWorkProof {
-    data?: string;
 }
 /**
 * Coin defines a token with a denomination and an amount.
