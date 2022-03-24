@@ -30,7 +30,7 @@ type ClientSession struct {
 }
 
 type RelayerClientWrapper struct {
-	Client *RelayerClient
+	Client *servicertypes.RelayerClient
 	Acc    string
 	Addr   string
 
@@ -260,7 +260,7 @@ func (s *Sentry) Start(ctx context.Context) {
 							}
 
 							//
-							// remove empty client
+							// remove empty client (TODO: efficiently delete)
 							if len(client.Sessions) == 0 {
 								s.pairingPurge = append(s.pairingPurge[:i], s.pairingPurge[i+1:]...)
 							}
@@ -304,7 +304,7 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 }
 
-func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*RelayerClient, error) {
+func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*servicertypes.RelayerClient, error) {
 
 	/*connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()*/
@@ -314,7 +314,7 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*RelayerCli
 	}
 	/*defer conn.Close()*/
 
-	c := NewRelayerClient(conn)
+	c := servicertypes.NewRelayerClient(conn)
 	return &c, nil
 }
 
@@ -327,21 +327,23 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error
 	// TODO: this should be weighetd
 	wrap := s.pairing[rand.Intn(len(s.pairing))]
 
-	//
-	// TODO: we should retry with another addr
-	conn, err := s.connectRawClient(ctx, wrap.Addr)
-	if err != nil {
-		return nil, err
+	if wrap.Client == nil {
+		//
+		// TODO: we should retry with another addr
+		conn, err := s.connectRawClient(ctx, wrap.Addr)
+		if err != nil {
+			return nil, err
+		}
+		wrap.Client = conn
 	}
 
-	wrap.Client = conn
 	return wrap, nil
 }
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb func(clientSession *ClientSession) (*RelayReply, error),
-) (*RelayReply, error) {
+	cb func(clientSession *ClientSession) (*servicertypes.RelayReply, error),
+) (*servicertypes.RelayReply, error) {
 
 	s.pairingMu.RLock()
 

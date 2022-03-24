@@ -9,15 +9,10 @@ const TypeMsgProofOfWork = "proof_of_work"
 
 var _ sdk.Msg = &MsgProofOfWork{}
 
-func NewMsgProofOfWork(creator string, spec *SpecName, session *SessionID, clientRequest *ClientRequest, workProof *WorkProof, computeUnits uint64, blockOfWork *BlockNum) *MsgProofOfWork {
+func NewMsgProofOfWork(creator string, relays []*RelayRequest) *MsgProofOfWork {
 	return &MsgProofOfWork{
-		Creator:       creator,
-		Spec:          spec,
-		Session:       session,
-		ClientRequest: clientRequest,
-		WorkProof:     workProof,
-		ComputeUnits:  computeUnits,
-		BlockOfWork:   blockOfWork,
+		Creator: creator,
+		Relays:  relays,
 	}
 }
 

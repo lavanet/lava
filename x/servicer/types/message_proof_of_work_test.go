@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,15 +15,11 @@ func TestMsgProofOfWork_ValidateBasic(t *testing.T) {
 	}{
 		{
 			name: "invalid address",
-			msg: MsgProofOfWork{
-				Creator: "invalid_address",
-			},
-			err: sdkerrors.ErrInvalidAddress,
+			msg:  MsgProofOfWork{},
+			err:  sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
-			msg: MsgProofOfWork{
-				Creator: sample.AccAddress(),
-			},
+			msg:  MsgProofOfWork{},
 		},
 	}
 	for _, tt := range tests {
