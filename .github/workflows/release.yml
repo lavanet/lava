@@ -28,6 +28,8 @@ jobs:
         with:
           go-version: '1.18' # The Go version to download (if necessary) and use.
 
+      - run: unset GOROOT
+
       - name: Prepare Release Variables 
         id: vars
         uses: tendermint/starport/actions/release/vars@develop
