@@ -50,6 +50,23 @@ func TestGenesisState_Validate(t *testing.T) {
 					},
 				},
 				UnstakingServicersAllSpecsCount: 2,
+				CurrentSessionStart: &types.CurrentSessionStart{
+					Block: types.BlockNum{Num: 0},
+				},
+				PreviousSessionBlocks: &types.PreviousSessionBlocks{
+					BlocksNum: 6,
+				},
+				SessionStorageForSpecList: []types.SessionStorageForSpec{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
+				EarliestSessionStart: &types.EarliestSessionStart{
+					Block: types.BlockNum{Num: 0},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -105,6 +122,20 @@ func TestGenesisState_Validate(t *testing.T) {
 					},
 				},
 				UnstakingServicersAllSpecsCount: 0,
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated sessionStorageForSpec",
+			genState: &types.GenesisState{
+				SessionStorageForSpecList: []types.SessionStorageForSpec{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
 			},
 			valid: false,
 		},

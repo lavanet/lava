@@ -14,8 +14,11 @@ export interface ServicerBlockNum {
     /** @format uint64 */
     num?: string;
 }
-export interface ServicerClientRequest {
-    data?: string;
+export interface ServicerCurrentSessionStart {
+    block?: ServicerBlockNum;
+}
+export interface ServicerEarliestSessionStart {
+    block?: ServicerBlockNum;
 }
 export declare type ServicerMsgProofOfWorkResponse = object;
 export declare type ServicerMsgStakeServicerResponse = object;
@@ -36,6 +39,35 @@ export interface ServicerParams {
     fraudSlashingAmount?: string;
     /** @format uint64 */
     servicersToPairCount?: string;
+    /** @format uint64 */
+    sessionBlocks?: string;
+    /** @format uint64 */
+    sessionsToSave?: string;
+    /** @format uint64 */
+    sessionBlocksOverlap?: string;
+}
+export interface ServicerPreviousSessionBlocks {
+    /** @format uint64 */
+    blocksNum?: string;
+    changeBlock?: ServicerBlockNum;
+    /** @format uint64 */
+    overlapBlocks?: string;
+}
+export interface ServicerQueryAllSessionStorageForSpecResponse {
+    sessionStorageForSpec?: ServicerSessionStorageForSpec[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
+export interface ServicerQueryAllSessionStoragesForSpecResponse {
+    storages?: ServicerSessionStorageForSpec[];
 }
 export interface ServicerQueryAllSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage[];
@@ -79,8 +111,20 @@ export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
 export interface ServicerQueryGetBlockDeadlineForCallbackResponse {
     BlockDeadlineForCallback?: ServicerBlockDeadlineForCallback;
 }
+export interface ServicerQueryGetCurrentSessionStartResponse {
+    CurrentSessionStart?: ServicerCurrentSessionStart;
+}
+export interface ServicerQueryGetEarliestSessionStartResponse {
+    EarliestSessionStart?: ServicerEarliestSessionStart;
+}
 export interface ServicerQueryGetPairingResponse {
     servicers?: ServicerStakeStorage;
+}
+export interface ServicerQueryGetPreviousSessionBlocksResponse {
+    PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
+}
+export interface ServicerQueryGetSessionStorageForSpecResponse {
+    sessionStorageForSpec?: ServicerSessionStorageForSpec;
 }
 export interface ServicerQueryGetSpecStakeStorageResponse {
     specStakeStorage?: ServicerSpecStakeStorage;
@@ -98,13 +142,43 @@ export interface ServicerQueryParamsResponse {
     /** params holds all the parameters of this module. */
     params?: ServicerParams;
 }
+export interface ServicerQuerySessionStorageForAllSpecsResponse {
+    servicers?: ServicerStakeStorage;
+}
 export interface ServicerQueryStakedServicersResponse {
     stakeStorage?: ServicerStakeStorage;
     output?: string;
 }
-export interface ServicerSessionID {
+export interface ServicerQueryVerifyPairingResponse {
+    valid?: boolean;
+    overlap?: boolean;
+}
+export interface ServicerRelayReply {
+    /** @format byte */
+    data?: string;
+    /** @format byte */
+    sig?: string;
+}
+export interface ServicerRelayRequest {
+    /** @format int64 */
+    specId?: number;
+    /** @format int64 */
+    apiId?: number;
     /** @format uint64 */
-    num?: string;
+    sessionId?: string;
+    /** @format uint64 */
+    cuSum?: string;
+    /** @format byte */
+    data?: string;
+    /** @format byte */
+    sig?: string;
+    servicer?: string;
+    /** @format int64 */
+    blockHeight?: string;
+}
+export interface ServicerSessionStorageForSpec {
+    index?: string;
+    stakeStorage?: ServicerStakeStorage;
 }
 export interface ServicerSpecName {
     name?: string;
@@ -133,9 +207,6 @@ export interface ServicerUnstakingServicersAllSpecs {
     id?: string;
     unstaking?: ServicerStakeMap;
     specStakeStorage?: ServicerSpecStakeStorage;
-}
-export interface ServicerWorkProof {
-    data?: string;
 }
 /**
 * Coin defines a token with a denomination and an amount.
@@ -265,11 +336,38 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryAllSessionStoragesForSpec
+     * @summary Queries a list of AllSessionStoragesForSpec items.
+     * @request GET:/lavanet/lava/servicer/all_session_storages_for_spec/{specName}
+     */
+    queryAllSessionStoragesForSpec: (specName: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllSessionStoragesForSpecResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryBlockDeadlineForCallback
      * @summary Queries a BlockDeadlineForCallback by index.
      * @request GET:/lavanet/lava/servicer/block_deadline_for_callback
      */
     queryBlockDeadlineForCallback: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetBlockDeadlineForCallbackResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryCurrentSessionStart
+     * @summary Queries a CurrentSessionStart by index.
+     * @request GET:/lavanet/lava/servicer/current_session_start
+     */
+    queryCurrentSessionStart: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetCurrentSessionStartResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryEarliestSessionStart
+     * @summary Queries a EarliestSessionStart by index.
+     * @request GET:/lavanet/lava/servicer/earliest_session_start
+     */
+    queryEarliestSessionStart: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetEarliestSessionStartResponse, RpcStatus>>;
     /**
      * No description
      *
@@ -288,6 +386,48 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/params
      */
     queryParams: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryParamsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryPreviousSessionBlocks
+     * @summary Queries a PreviousSessionBlocks by index.
+     * @request GET:/lavanet/lava/servicer/previous_session_blocks
+     */
+    queryPreviousSessionBlocks: (params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetPreviousSessionBlocksResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForAllSpecs
+     * @summary Queries a list of SessionStorageForAllSpecs items.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
+     */
+    querySessionStorageForAllSpecs: (blockNum: string, params?: RequestParams) => Promise<HttpResponse<ServicerQuerySessionStorageForAllSpecsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForSpecAll
+     * @summary Queries a list of SessionStorageForSpec items.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_spec
+     */
+    querySessionStorageForSpecAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllSessionStorageForSpecResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionStorageForSpec
+     * @summary Queries a SessionStorageForSpec by index.
+     * @request GET:/lavanet/lava/servicer/session_storage_for_spec/{index}
+     */
+    querySessionStorageForSpec: (index: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetSessionStorageForSpecResponse, RpcStatus>>;
     /**
      * No description
      *
@@ -369,5 +509,14 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}
      */
     queryUnstakingServicersAllSpecs: (id: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryVerifyPairing
+     * @summary Queries a list of VerifyPairing items.
+     * @request GET:/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}
+     */
+    queryVerifyPairing: (spec: string, userAddr: string, servicerAddr: string, blockNum: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryVerifyPairingResponse, RpcStatus>>;
 }
 export {};

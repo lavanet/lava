@@ -29,3 +29,15 @@ const (
 	UnstakingServicersAllSpecsKey      = "UnstakingServicersAllSpecs-value-"
 	UnstakingServicersAllSpecsCountKey = "UnstakingServicersAllSpecs-count-"
 )
+
+const (
+	CurrentSessionStartKey = "CurrentSessionStart-value-"
+)
+
+const (
+	PreviousSessionBlocksKey = "PreviousSessionBlocks-value-"
+)
+
+const (
+	EarliestSessionStartKey = "EarliestSessionStart-value-"
+)

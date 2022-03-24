@@ -1,12 +1,9 @@
 /* eslint-disable */
-import { Reader, util, configure, Writer } from "protobufjs/minimal";
-import * as Long from "long";
+import { Reader, Writer } from "protobufjs/minimal";
 import { SpecName } from "../servicer/spec_name";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { BlockNum } from "../servicer/block_num";
-import { SessionID } from "../servicer/session_id";
-import { ClientRequest } from "../servicer/client_request";
-import { WorkProof } from "../servicer/work_proof";
+import { RelayRequest } from "../servicer/relay";
 
 export const protobufPackage = "lavanet.lava.servicer";
 
@@ -30,12 +27,7 @@ export interface MsgUnstakeServicerResponse {}
 
 export interface MsgProofOfWork {
   creator: string;
-  spec: SpecName | undefined;
-  session: SessionID | undefined;
-  clientRequest: ClientRequest | undefined;
-  workProof: WorkProof | undefined;
-  computeUnits: number;
-  blockOfWork: BlockNum | undefined;
+  relays: RelayRequest[];
 }
 
 export interface MsgProofOfWorkResponse {}
@@ -381,33 +373,15 @@ export const MsgUnstakeServicerResponse = {
   },
 };
 
-const baseMsgProofOfWork: object = { creator: "", computeUnits: 0 };
+const baseMsgProofOfWork: object = { creator: "" };
 
 export const MsgProofOfWork = {
   encode(message: MsgProofOfWork, writer: Writer = Writer.create()): Writer {
     if (message.creator !== "") {
       writer.uint32(10).string(message.creator);
     }
-    if (message.spec !== undefined) {
-      SpecName.encode(message.spec, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.session !== undefined) {
-      SessionID.encode(message.session, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.clientRequest !== undefined) {
-      ClientRequest.encode(
-        message.clientRequest,
-        writer.uint32(34).fork()
-      ).ldelim();
-    }
-    if (message.workProof !== undefined) {
-      WorkProof.encode(message.workProof, writer.uint32(42).fork()).ldelim();
-    }
-    if (message.computeUnits !== 0) {
-      writer.uint32(48).uint64(message.computeUnits);
-    }
-    if (message.blockOfWork !== undefined) {
-      BlockNum.encode(message.blockOfWork, writer.uint32(58).fork()).ldelim();
+    for (const v of message.relays) {
+      RelayRequest.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -416,6 +390,7 @@ export const MsgProofOfWork = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseMsgProofOfWork } as MsgProofOfWork;
+    message.relays = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -423,22 +398,7 @@ export const MsgProofOfWork = {
           message.creator = reader.string();
           break;
         case 2:
-          message.spec = SpecName.decode(reader, reader.uint32());
-          break;
-        case 3:
-          message.session = SessionID.decode(reader, reader.uint32());
-          break;
-        case 4:
-          message.clientRequest = ClientRequest.decode(reader, reader.uint32());
-          break;
-        case 5:
-          message.workProof = WorkProof.decode(reader, reader.uint32());
-          break;
-        case 6:
-          message.computeUnits = longToNumber(reader.uint64() as Long);
-          break;
-        case 7:
-          message.blockOfWork = BlockNum.decode(reader, reader.uint32());
+          message.relays.push(RelayRequest.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -450,40 +410,16 @@ export const MsgProofOfWork = {
 
   fromJSON(object: any): MsgProofOfWork {
     const message = { ...baseMsgProofOfWork } as MsgProofOfWork;
+    message.relays = [];
     if (object.creator !== undefined && object.creator !== null) {
       message.creator = String(object.creator);
     } else {
       message.creator = "";
     }
-    if (object.spec !== undefined && object.spec !== null) {
-      message.spec = SpecName.fromJSON(object.spec);
-    } else {
-      message.spec = undefined;
-    }
-    if (object.session !== undefined && object.session !== null) {
-      message.session = SessionID.fromJSON(object.session);
-    } else {
-      message.session = undefined;
-    }
-    if (object.clientRequest !== undefined && object.clientRequest !== null) {
-      message.clientRequest = ClientRequest.fromJSON(object.clientRequest);
-    } else {
-      message.clientRequest = undefined;
-    }
-    if (object.workProof !== undefined && object.workProof !== null) {
-      message.workProof = WorkProof.fromJSON(object.workProof);
-    } else {
-      message.workProof = undefined;
-    }
-    if (object.computeUnits !== undefined && object.computeUnits !== null) {
-      message.computeUnits = Number(object.computeUnits);
-    } else {
-      message.computeUnits = 0;
-    }
-    if (object.blockOfWork !== undefined && object.blockOfWork !== null) {
-      message.blockOfWork = BlockNum.fromJSON(object.blockOfWork);
-    } else {
-      message.blockOfWork = undefined;
+    if (object.relays !== undefined && object.relays !== null) {
+      for (const e of object.relays) {
+        message.relays.push(RelayRequest.fromJSON(e));
+      }
     }
     return message;
   },
@@ -491,65 +427,28 @@ export const MsgProofOfWork = {
   toJSON(message: MsgProofOfWork): unknown {
     const obj: any = {};
     message.creator !== undefined && (obj.creator = message.creator);
-    message.spec !== undefined &&
-      (obj.spec = message.spec ? SpecName.toJSON(message.spec) : undefined);
-    message.session !== undefined &&
-      (obj.session = message.session
-        ? SessionID.toJSON(message.session)
-        : undefined);
-    message.clientRequest !== undefined &&
-      (obj.clientRequest = message.clientRequest
-        ? ClientRequest.toJSON(message.clientRequest)
-        : undefined);
-    message.workProof !== undefined &&
-      (obj.workProof = message.workProof
-        ? WorkProof.toJSON(message.workProof)
-        : undefined);
-    message.computeUnits !== undefined &&
-      (obj.computeUnits = message.computeUnits);
-    message.blockOfWork !== undefined &&
-      (obj.blockOfWork = message.blockOfWork
-        ? BlockNum.toJSON(message.blockOfWork)
-        : undefined);
+    if (message.relays) {
+      obj.relays = message.relays.map((e) =>
+        e ? RelayRequest.toJSON(e) : undefined
+      );
+    } else {
+      obj.relays = [];
+    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<MsgProofOfWork>): MsgProofOfWork {
     const message = { ...baseMsgProofOfWork } as MsgProofOfWork;
+    message.relays = [];
     if (object.creator !== undefined && object.creator !== null) {
       message.creator = object.creator;
     } else {
       message.creator = "";
     }
-    if (object.spec !== undefined && object.spec !== null) {
-      message.spec = SpecName.fromPartial(object.spec);
-    } else {
-      message.spec = undefined;
-    }
-    if (object.session !== undefined && object.session !== null) {
-      message.session = SessionID.fromPartial(object.session);
-    } else {
-      message.session = undefined;
-    }
-    if (object.clientRequest !== undefined && object.clientRequest !== null) {
-      message.clientRequest = ClientRequest.fromPartial(object.clientRequest);
-    } else {
-      message.clientRequest = undefined;
-    }
-    if (object.workProof !== undefined && object.workProof !== null) {
-      message.workProof = WorkProof.fromPartial(object.workProof);
-    } else {
-      message.workProof = undefined;
-    }
-    if (object.computeUnits !== undefined && object.computeUnits !== null) {
-      message.computeUnits = object.computeUnits;
-    } else {
-      message.computeUnits = 0;
-    }
-    if (object.blockOfWork !== undefined && object.blockOfWork !== null) {
-      message.blockOfWork = BlockNum.fromPartial(object.blockOfWork);
-    } else {
-      message.blockOfWork = undefined;
+    if (object.relays !== undefined && object.relays !== null) {
+      for (const e of object.relays) {
+        message.relays.push(RelayRequest.fromPartial(e));
+      }
     }
     return message;
   },
@@ -655,16 +554,6 @@ interface Rpc {
   ): Promise<Uint8Array>;
 }
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-var globalThis: any = (() => {
-  if (typeof globalThis !== "undefined") return globalThis;
-  if (typeof self !== "undefined") return self;
-  if (typeof window !== "undefined") return window;
-  if (typeof global !== "undefined") return global;
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | undefined;
 export type DeepPartial<T> = T extends Builtin
   ? T
@@ -675,15 +564,3 @@ export type DeepPartial<T> = T extends Builtin
   : T extends {}
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  return long.toNumber();
-}
-
-if (util.Long !== Long) {
-  util.Long = Long as any;
-  configure();
-}

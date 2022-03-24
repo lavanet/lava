@@ -177,6 +177,29 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.CheckUnstakingForCommit(ctx)
+	if am.keeper.IsSessionStart(ctx) {
+		//on session start we need to do:
+		//1. update param change (previousSessionBlocks) if change detected
+		//2. update session start
+		//3. update the SpecStakeStorage in sessionStorageForSpec
+		//4. remove old sessionStorageForSpec
+		//5. unstake any unstaking servicers
+
+		//1. !!! must be before SetCurrentSessionStart, it counts on the fact it wasn't updated yet
+		am.keeper.HandleStoringPreviousSessionData(ctx)
+
+		//2.
+		am.keeper.SetCurrentSessionStart(ctx, types.CurrentSessionStart{Block: types.BlockNum{Num: uint64(ctx.BlockHeight())}})
+
+		//3.
+		am.keeper.StoreSpecStakeStorageInSession(ctx)
+
+		//4.
+		am.keeper.RemoveStakeStorageInSession(ctx)
+
+		//5.
+		am.keeper.CheckUnstakingForCommit(ctx)
+	}
+
 	return []abci.ValidatorUpdate{}
 }

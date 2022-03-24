@@ -15,4 +15,7 @@ message Params {
   uint64 fraudStakeSlashingFactor = 4 [(gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\""];
   uint64 fraudSlashingAmount = 5 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
   uint64 servicersToPairCount = 6 [(gogoproto.moretags) = "yaml:\"servicers_to_pair_count\""];
+  uint64 sessionBlocks = 7 [(gogoproto.moretags) = "yaml:\"session_blocks\""];
+  uint64 sessionsToSave = 8 [(gogoproto.moretags) = "yaml:\"sessions_to_save\""];
+  uint64 sessionBlocksOverlap = 9 [(gogoproto.moretags) = "yaml:\"session_block_overlap\""];
 }

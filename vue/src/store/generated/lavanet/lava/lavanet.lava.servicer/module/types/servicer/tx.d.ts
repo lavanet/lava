@@ -2,9 +2,7 @@ import { Reader, Writer } from "protobufjs/minimal";
 import { SpecName } from "../servicer/spec_name";
 import { Coin } from "../cosmos/base/v1beta1/coin";
 import { BlockNum } from "../servicer/block_num";
-import { SessionID } from "../servicer/session_id";
-import { ClientRequest } from "../servicer/client_request";
-import { WorkProof } from "../servicer/work_proof";
+import { RelayRequest } from "../servicer/relay";
 export declare const protobufPackage = "lavanet.lava.servicer";
 export interface MsgStakeServicer {
     creator: string;
@@ -24,12 +22,7 @@ export interface MsgUnstakeServicerResponse {
 }
 export interface MsgProofOfWork {
     creator: string;
-    spec: SpecName | undefined;
-    session: SessionID | undefined;
-    clientRequest: ClientRequest | undefined;
-    workProof: WorkProof | undefined;
-    computeUnits: number;
-    blockOfWork: BlockNum | undefined;
+    relays: RelayRequest[];
 }
 export interface MsgProofOfWorkResponse {
 }

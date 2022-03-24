@@ -5,8 +5,12 @@ import { SpVuexError } from '@starport/vuex'
 import { BlockDeadlineForCallback } from "./module/types/servicer/block_deadline_for_callback"
 import { BlockNum } from "./module/types/servicer/block_num"
 import { ClientRequest } from "./module/types/servicer/client_request"
+import { CurrentSessionStart } from "./module/types/servicer/current_session_start"
+import { EarliestSessionStart } from "./module/types/servicer/earliest_session_start"
 import { Params } from "./module/types/servicer/params"
+import { PreviousSessionBlocks } from "./module/types/servicer/previous_session_blocks"
 import { SessionID } from "./module/types/servicer/session_id"
+import { SessionStorageForSpec } from "./module/types/servicer/session_storage_for_spec"
 import { SpecName } from "./module/types/servicer/spec_name"
 import { SpecStakeStorage } from "./module/types/servicer/spec_stake_storage"
 import { StakeMap } from "./module/types/servicer/stake_map"
@@ -15,7 +19,7 @@ import { UnstakingServicersAllSpecs } from "./module/types/servicer/unstaking_se
 import { WorkProof } from "./module/types/servicer/work_proof"
 
 
-export { BlockDeadlineForCallback, BlockNum, ClientRequest, Params, SessionID, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
+export { BlockDeadlineForCallback, BlockNum, ClientRequest, CurrentSessionStart, EarliestSessionStart, Params, PreviousSessionBlocks, SessionID, SessionStorageForSpec, SpecName, SpecStakeStorage, StakeMap, StakeStorage, UnstakingServicersAllSpecs, WorkProof };
 
 async function initTxClient(vuexGetters) {
 	return await txClient(vuexGetters['common/wallet/signer'], {
@@ -63,13 +67,25 @@ const getDefaultState = () => {
 				UnstakingServicersAllSpecs: {},
 				UnstakingServicersAllSpecsAll: {},
 				GetPairing: {},
+				CurrentSessionStart: {},
+				PreviousSessionBlocks: {},
+				SessionStorageForSpec: {},
+				SessionStorageForSpecAll: {},
+				SessionStorageForAllSpecs: {},
+				AllSessionStoragesForSpec: {},
+				EarliestSessionStart: {},
+				VerifyPairing: {},
 				
 				_Structure: {
 						BlockDeadlineForCallback: getStructure(BlockDeadlineForCallback.fromPartial({})),
 						BlockNum: getStructure(BlockNum.fromPartial({})),
 						ClientRequest: getStructure(ClientRequest.fromPartial({})),
+						CurrentSessionStart: getStructure(CurrentSessionStart.fromPartial({})),
+						EarliestSessionStart: getStructure(EarliestSessionStart.fromPartial({})),
 						Params: getStructure(Params.fromPartial({})),
+						PreviousSessionBlocks: getStructure(PreviousSessionBlocks.fromPartial({})),
 						SessionID: getStructure(SessionID.fromPartial({})),
+						SessionStorageForSpec: getStructure(SessionStorageForSpec.fromPartial({})),
 						SpecName: getStructure(SpecName.fromPartial({})),
 						SpecStakeStorage: getStructure(SpecStakeStorage.fromPartial({})),
 						StakeMap: getStructure(StakeMap.fromPartial({})),
@@ -163,6 +179,54 @@ export default {
 						(<any> params).query=null
 					}
 			return state.GetPairing[JSON.stringify(params)] ?? {}
+		},
+				getCurrentSessionStart: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.CurrentSessionStart[JSON.stringify(params)] ?? {}
+		},
+				getPreviousSessionBlocks: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.PreviousSessionBlocks[JSON.stringify(params)] ?? {}
+		},
+				getSessionStorageForSpec: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.SessionStorageForSpec[JSON.stringify(params)] ?? {}
+		},
+				getSessionStorageForSpecAll: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.SessionStorageForSpecAll[JSON.stringify(params)] ?? {}
+		},
+				getSessionStorageForAllSpecs: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.SessionStorageForAllSpecs[JSON.stringify(params)] ?? {}
+		},
+				getAllSessionStoragesForSpec: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.AllSessionStoragesForSpec[JSON.stringify(params)] ?? {}
+		},
+				getEarliestSessionStart: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.EarliestSessionStart[JSON.stringify(params)] ?? {}
+		},
+				getVerifyPairing: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.VerifyPairing[JSON.stringify(params)] ?? {}
 		},
 				
 		getTypeStructure: (state) => (type) => {
@@ -430,6 +494,201 @@ export default {
 		},
 		
 		
+		
+		
+		 		
+		
+		
+		async QueryCurrentSessionStart({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryCurrentSessionStart()).data
+				
+					
+				commit('QUERY', { query: 'CurrentSessionStart', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryCurrentSessionStart', payload: { options: { all }, params: {...key},query }})
+				return getters['getCurrentSessionStart']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryCurrentSessionStart', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryPreviousSessionBlocks({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryPreviousSessionBlocks()).data
+				
+					
+				commit('QUERY', { query: 'PreviousSessionBlocks', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryPreviousSessionBlocks', payload: { options: { all }, params: {...key},query }})
+				return getters['getPreviousSessionBlocks']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryPreviousSessionBlocks', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QuerySessionStorageForSpec({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.querySessionStorageForSpec( key.index)).data
+				
+					
+				commit('QUERY', { query: 'SessionStorageForSpec', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QuerySessionStorageForSpec', payload: { options: { all }, params: {...key},query }})
+				return getters['getSessionStorageForSpec']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QuerySessionStorageForSpec', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QuerySessionStorageForSpecAll({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.querySessionStorageForSpecAll(query)).data
+				
+					
+				while (all && (<any> value).pagination && (<any> value).pagination.next_key!=null) {
+					let next_values=(await queryClient.querySessionStorageForSpecAll({...query, 'pagination.key':(<any> value).pagination.next_key})).data
+					value = mergeResults(value, next_values);
+				}
+				commit('QUERY', { query: 'SessionStorageForSpecAll', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QuerySessionStorageForSpecAll', payload: { options: { all }, params: {...key},query }})
+				return getters['getSessionStorageForSpecAll']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QuerySessionStorageForSpecAll', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QuerySessionStorageForAllSpecs({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.querySessionStorageForAllSpecs( key.blockNum)).data
+				
+					
+				commit('QUERY', { query: 'SessionStorageForAllSpecs', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QuerySessionStorageForAllSpecs', payload: { options: { all }, params: {...key},query }})
+				return getters['getSessionStorageForAllSpecs']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QuerySessionStorageForAllSpecs', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryAllSessionStoragesForSpec({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryAllSessionStoragesForSpec( key.specName)).data
+				
+					
+				commit('QUERY', { query: 'AllSessionStoragesForSpec', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryAllSessionStoragesForSpec', payload: { options: { all }, params: {...key},query }})
+				return getters['getAllSessionStoragesForSpec']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryAllSessionStoragesForSpec', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryEarliestSessionStart({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryEarliestSessionStart()).data
+				
+					
+				commit('QUERY', { query: 'EarliestSessionStart', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryEarliestSessionStart', payload: { options: { all }, params: {...key},query }})
+				return getters['getEarliestSessionStart']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryEarliestSessionStart', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryVerifyPairing({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const queryClient=await initQueryClient(rootGetters)
+				let value= (await queryClient.queryVerifyPairing( key.spec,  key.userAddr,  key.servicerAddr,  key.blockNum)).data
+				
+					
+				commit('QUERY', { query: 'VerifyPairing', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryVerifyPairing', payload: { options: { all }, params: {...key},query }})
+				return getters['getVerifyPairing']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new SpVuexError('QueryClient:QueryVerifyPairing', 'API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
+		async sendMsgUnstakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const txClient=await initTxClient(rootGetters)
+				const msg = await txClient.msgUnstakeServicer(value)
+				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
+	gas: "200000" }, memo})
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new SpVuexError('TxClient:MsgUnstakeServicer:Send', 'Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
 		async sendMsgProofOfWork({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -460,22 +719,21 @@ export default {
 				}
 			}
 		},
-		async sendMsgUnstakeServicer({ rootGetters }, { value, fee = [], memo = '' }) {
+		
+		async MsgUnstakeServicer({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
 				const msg = await txClient.msgUnstakeServicer(value)
-				const result = await txClient.signAndBroadcast([msg], {fee: { amount: fee, 
-	gas: "200000" }, memo})
-				return result
+				return msg
 			} catch (e) {
 				if (e == MissingWalletError) {
 					throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
-					throw new SpVuexError('TxClient:MsgUnstakeServicer:Send', 'Could not broadcast Tx: '+ e.message)
+					throw new SpVuexError('TxClient:MsgUnstakeServicer:Create', 'Could not create message: ' + e.message)
+					
 				}
 			}
 		},
-		
 		async MsgProofOfWork({ rootGetters }, { value }) {
 			try {
 				const txClient=await initTxClient(rootGetters)
@@ -500,20 +758,6 @@ export default {
 					throw new SpVuexError('TxClient:MsgStakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
 				}else{
 					throw new SpVuexError('TxClient:MsgStakeServicer:Create', 'Could not create message: ' + e.message)
-					
-				}
-			}
-		},
-		async MsgUnstakeServicer({ rootGetters }, { value }) {
-			try {
-				const txClient=await initTxClient(rootGetters)
-				const msg = await txClient.msgUnstakeServicer(value)
-				return msg
-			} catch (e) {
-				if (e == MissingWalletError) {
-					throw new SpVuexError('TxClient:MsgUnstakeServicer:Init', 'Could not initialize signing client. Wallet is required.')
-				}else{
-					throw new SpVuexError('TxClient:MsgUnstakeServicer:Create', 'Could not create message: ' + e.message)
 					
 				}
 			}

@@ -53,52 +53,49 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 
 		//
 		//TODO: get the pairing for the block of work and not the current one
-		_, servicers, err := k.Keeper.GetPairingForClient(ctx, uint64(relay.SpecId), clientAddr)
+		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(ctx, uint64(relay.SpecId), clientAddr, servicerAddr, types.BlockNum{Num: uint64(relay.BlockHeight)})
+		//TODO: use isOverlap to calculate limiting the CU of previous session
+		_ = isOverlap
 		if err != nil {
-			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, err: %s", clientAddr, msg.Creator, err)
+			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err)
 		}
 
 		//
-		// Find pairing, reward servicer, burn user tokens
-		for _, servicer := range servicers {
-
-			if servicer.Equals(servicerAddr) {
-				uintReward := uint64(float64(relay.CuSum) * k.Keeper.GetCoinsPerCU(ctx))
-				if uintReward == 0 {
-					continue
-				}
-
-				reward := sdk.NewIntFromUint64(uintReward)
-				rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
-
-				//
-				// Mint to module
-				err := k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-				if err != nil {
-					logger.Error("MintCoins", "err", err)
-					panic(fmt.Sprintf("module failed to mint coins to give to servicer: %s", err))
-				}
-				//
-				// Send to servicer
-				err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, servicerAddr, rewardCoins)
-				if err != nil {
-					logger.Error("SendCoinsFromModuleToAccount", "err", err, "servicerAddr", servicerAddr)
-					panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
-				}
-
-				//
-				// TODO: save session information to prevent replay attack
-				//
-
-				// TODO: add param to burn client, and add code for that
-				//k.Keeper.GetBurnClientFactor(ctx)
-				amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * 0))
-				//need client Keeper and add a function BurnFromStake
-				_ = amountToBurnClient
-
-				break
+		if isValidPairing {
+			//pairing is valid, we can pay servicer for work
+			uintReward := uint64(float64(relay.CuSum) * k.Keeper.GetCoinsPerCU(ctx))
+			if uintReward == 0 {
+				continue
 			}
+
+			reward := sdk.NewIntFromUint64(uintReward)
+			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
+
+			//
+			// Mint to module
+			err := k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
+			if err != nil {
+				logger.Error("MintCoins", "err", err)
+				panic(fmt.Sprintf("module failed to mint coins to give to servicer: %s", err))
+			}
+			//
+			// Send to servicer
+			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, servicerAddr, rewardCoins)
+			if err != nil {
+				logger.Error("SendCoinsFromModuleToAccount", "err", err, "servicerAddr", servicerAddr)
+				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
+			}
+
+			//
+			// TODO: save session information to prevent replay attack
+			//
+
+			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
+			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
+			//TODO: burn stake for client
+			_ = amountToBurnClient
 		}
+
 	}
 
 	return &types.MsgProofOfWorkResponse{}, nil

@@ -8,6 +8,10 @@ import "servicer/stake_map.proto";
 import "servicer/spec_stake_storage.proto";
 import "servicer/block_deadline_for_callback.proto";
 import "servicer/unstaking_servicers_all_specs.proto";
+import "servicer/current_session_start.proto";
+import "servicer/previous_session_blocks.proto";
+import "servicer/session_storage_for_spec.proto";
+import "servicer/earliest_session_start.proto";
 // this line is used by starport scaffolding # 1
 import "servicer/stake_storage.proto";
 import "servicer/block_num.proto";
@@ -64,6 +68,43 @@ service Query {
 // Queries a list of GetPairing items.
 	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/servicer/get_pairing/{specName}/{userAddr}";
+	}
+
+// Queries a CurrentSessionStart by index.
+	rpc CurrentSessionStart(QueryGetCurrentSessionStartRequest) returns (QueryGetCurrentSessionStartResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/current_session_start";
+	}
+// Queries a PreviousSessionBlocks by index.
+	rpc PreviousSessionBlocks(QueryGetPreviousSessionBlocksRequest) returns (QueryGetPreviousSessionBlocksResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/previous_session_blocks";
+	}
+// Queries a SessionStorageForSpec by index.
+	rpc SessionStorageForSpec(QueryGetSessionStorageForSpecRequest) returns (QueryGetSessionStorageForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_spec/{index}";
+	}
+
+	// Queries a list of SessionStorageForSpec items.
+	rpc SessionStorageForSpecAll(QueryAllSessionStorageForSpecRequest) returns (QueryAllSessionStorageForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_spec";
+	}
+
+// Queries a list of SessionStorageForAllSpecs items.
+	rpc SessionStorageForAllSpecs(QuerySessionStorageForAllSpecsRequest) returns (QuerySessionStorageForAllSpecsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}";
+	}
+
+// Queries a list of AllSessionStoragesForSpec items.
+	rpc AllSessionStoragesForSpec(QueryAllSessionStoragesForSpecRequest) returns (QueryAllSessionStoragesForSpecResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/all_session_storages_for_spec/{specName}";
+	}
+
+// Queries a EarliestSessionStart by index.
+	rpc EarliestSessionStart(QueryGetEarliestSessionStartRequest) returns (QueryGetEarliestSessionStartResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/earliest_session_start";
+	}
+// Queries a list of VerifyPairing items.
+	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -152,6 +193,67 @@ message QueryGetPairingRequest {
 
 message QueryGetPairingResponse {
   StakeStorage servicers = 1;
+}
+
+message QueryGetCurrentSessionStartRequest {}
+
+message QueryGetCurrentSessionStartResponse {
+	CurrentSessionStart CurrentSessionStart = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetPreviousSessionBlocksRequest {}
+
+message QueryGetPreviousSessionBlocksResponse {
+	PreviousSessionBlocks PreviousSessionBlocks = 1 [(gogoproto.nullable) = false];
+}
+message QueryGetSessionStorageForSpecRequest {
+	  string index = 1;
+
+}
+
+message QueryGetSessionStorageForSpecResponse {
+	SessionStorageForSpec sessionStorageForSpec = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSessionStorageForSpecRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSessionStorageForSpecResponse {
+	repeated SessionStorageForSpec sessionStorageForSpec = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QuerySessionStorageForAllSpecsRequest {
+  uint64 blockNum = 1;
+}
+
+message QuerySessionStorageForAllSpecsResponse {
+  StakeStorage servicers = 1;
+}
+
+message QueryAllSessionStoragesForSpecRequest {
+  string specName = 1;
+}
+
+message QueryAllSessionStoragesForSpecResponse {
+	repeated SessionStorageForSpec storages = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryGetEarliestSessionStartRequest {}
+
+message QueryGetEarliestSessionStartResponse {
+	EarliestSessionStart EarliestSessionStart = 1 [(gogoproto.nullable) = false];
+}
+message QueryVerifyPairingRequest {
+  uint64 spec = 1;
+  string userAddr = 2;
+  string servicerAddr = 3;
+  uint64 blockNum = 4;
+}
+
+message QueryVerifyPairingResponse {
+  bool valid = 1;
+  bool overlap = 5;
 }
 
 // this line is used by starport scaffolding # 3
