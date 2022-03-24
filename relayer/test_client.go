@@ -3,7 +3,7 @@ package relayer
 import (
 	context "context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -46,6 +46,7 @@ func sendRelay(
 		clientSession.CuSum += serviceApi.ComputeUnits
 
 		relayRequest := &servicertypes.RelayRequest{
+			Servicer:    clientSession.Client.Acc,
 			Data:        []byte(req),
 			SessionId:   uint64(clientSession.SessionId),
 			SpecId:      uint32(specId),
@@ -73,7 +74,7 @@ func sendRelay(
 			return nil, err
 		}
 		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, errors.New("server address mismatch in reply")
+			return nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
 		}
 
 		return reply, nil
