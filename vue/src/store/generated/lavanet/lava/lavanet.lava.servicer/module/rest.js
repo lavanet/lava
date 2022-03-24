@@ -378,5 +378,19 @@ export class Api extends HttpClient {
             format: "json",
             ...params,
         });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryVerifyPairing
+         * @summary Queries a list of VerifyPairing items.
+         * @request GET:/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}
+         */
+        this.queryVerifyPairing = (spec, userAddr, servicerAddr, blockNum, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/verify_pairing/${spec}/${userAddr}/${servicerAddr}/${blockNum}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
     }
 }

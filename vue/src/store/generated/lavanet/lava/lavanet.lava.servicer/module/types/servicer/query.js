@@ -2060,6 +2060,202 @@ export const QueryGetEarliestSessionStartResponse = {
         return message;
     },
 };
+const baseQueryVerifyPairingRequest = {
+    spec: 0,
+    userAddr: "",
+    servicerAddr: "",
+    blockNum: 0,
+};
+export const QueryVerifyPairingRequest = {
+    encode(message, writer = Writer.create()) {
+        if (message.spec !== 0) {
+            writer.uint32(8).uint64(message.spec);
+        }
+        if (message.userAddr !== "") {
+            writer.uint32(18).string(message.userAddr);
+        }
+        if (message.servicerAddr !== "") {
+            writer.uint32(26).string(message.servicerAddr);
+        }
+        if (message.blockNum !== 0) {
+            writer.uint32(32).uint64(message.blockNum);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryVerifyPairingRequest,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.spec = longToNumber(reader.uint64());
+                    break;
+                case 2:
+                    message.userAddr = reader.string();
+                    break;
+                case 3:
+                    message.servicerAddr = reader.string();
+                    break;
+                case 4:
+                    message.blockNum = longToNumber(reader.uint64());
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryVerifyPairingRequest,
+        };
+        if (object.spec !== undefined && object.spec !== null) {
+            message.spec = Number(object.spec);
+        }
+        else {
+            message.spec = 0;
+        }
+        if (object.userAddr !== undefined && object.userAddr !== null) {
+            message.userAddr = String(object.userAddr);
+        }
+        else {
+            message.userAddr = "";
+        }
+        if (object.servicerAddr !== undefined && object.servicerAddr !== null) {
+            message.servicerAddr = String(object.servicerAddr);
+        }
+        else {
+            message.servicerAddr = "";
+        }
+        if (object.blockNum !== undefined && object.blockNum !== null) {
+            message.blockNum = Number(object.blockNum);
+        }
+        else {
+            message.blockNum = 0;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.spec !== undefined && (obj.spec = message.spec);
+        message.userAddr !== undefined && (obj.userAddr = message.userAddr);
+        message.servicerAddr !== undefined &&
+            (obj.servicerAddr = message.servicerAddr);
+        message.blockNum !== undefined && (obj.blockNum = message.blockNum);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryVerifyPairingRequest,
+        };
+        if (object.spec !== undefined && object.spec !== null) {
+            message.spec = object.spec;
+        }
+        else {
+            message.spec = 0;
+        }
+        if (object.userAddr !== undefined && object.userAddr !== null) {
+            message.userAddr = object.userAddr;
+        }
+        else {
+            message.userAddr = "";
+        }
+        if (object.servicerAddr !== undefined && object.servicerAddr !== null) {
+            message.servicerAddr = object.servicerAddr;
+        }
+        else {
+            message.servicerAddr = "";
+        }
+        if (object.blockNum !== undefined && object.blockNum !== null) {
+            message.blockNum = object.blockNum;
+        }
+        else {
+            message.blockNum = 0;
+        }
+        return message;
+    },
+};
+const baseQueryVerifyPairingResponse = { valid: false, overlap: false };
+export const QueryVerifyPairingResponse = {
+    encode(message, writer = Writer.create()) {
+        if (message.valid === true) {
+            writer.uint32(8).bool(message.valid);
+        }
+        if (message.overlap === true) {
+            writer.uint32(40).bool(message.overlap);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof Uint8Array ? new Reader(input) : input;
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = {
+            ...baseQueryVerifyPairingResponse,
+        };
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    message.valid = reader.bool();
+                    break;
+                case 5:
+                    message.overlap = reader.bool();
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+            }
+        }
+        return message;
+    },
+    fromJSON(object) {
+        const message = {
+            ...baseQueryVerifyPairingResponse,
+        };
+        if (object.valid !== undefined && object.valid !== null) {
+            message.valid = Boolean(object.valid);
+        }
+        else {
+            message.valid = false;
+        }
+        if (object.overlap !== undefined && object.overlap !== null) {
+            message.overlap = Boolean(object.overlap);
+        }
+        else {
+            message.overlap = false;
+        }
+        return message;
+    },
+    toJSON(message) {
+        const obj = {};
+        message.valid !== undefined && (obj.valid = message.valid);
+        message.overlap !== undefined && (obj.overlap = message.overlap);
+        return obj;
+    },
+    fromPartial(object) {
+        const message = {
+            ...baseQueryVerifyPairingResponse,
+        };
+        if (object.valid !== undefined && object.valid !== null) {
+            message.valid = object.valid;
+        }
+        else {
+            message.valid = false;
+        }
+        if (object.overlap !== undefined && object.overlap !== null) {
+            message.overlap = object.overlap;
+        }
+        else {
+            message.overlap = false;
+        }
+        return message;
+    },
+};
 export class QueryClientImpl {
     constructor(rpc) {
         this.rpc = rpc;
@@ -2148,6 +2344,11 @@ export class QueryClientImpl {
         const data = QueryGetEarliestSessionStartRequest.encode(request).finish();
         const promise = this.rpc.request("lavanet.lava.servicer.Query", "EarliestSessionStart", data);
         return promise.then((data) => QueryGetEarliestSessionStartResponse.decode(new Reader(data)));
+    }
+    VerifyPairing(request) {
+        const data = QueryVerifyPairingRequest.encode(request).finish();
+        const promise = this.rpc.request("lavanet.lava.servicer.Query", "VerifyPairing", data);
+        return promise.then((data) => QueryVerifyPairingResponse.decode(new Reader(data)));
     }
 }
 var globalThis = (() => {

@@ -117,6 +117,16 @@ export interface QueryGetEarliestSessionStartRequest {
 export interface QueryGetEarliestSessionStartResponse {
     EarliestSessionStart: EarliestSessionStart | undefined;
 }
+export interface QueryVerifyPairingRequest {
+    spec: number;
+    userAddr: string;
+    servicerAddr: string;
+    blockNum: number;
+}
+export interface QueryVerifyPairingResponse {
+    valid: boolean;
+    overlap: boolean;
+}
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
     decode(input: Reader | Uint8Array, length?: number): QueryParamsRequest;
@@ -355,6 +365,20 @@ export declare const QueryGetEarliestSessionStartResponse: {
     toJSON(message: QueryGetEarliestSessionStartResponse): unknown;
     fromPartial(object: DeepPartial<QueryGetEarliestSessionStartResponse>): QueryGetEarliestSessionStartResponse;
 };
+export declare const QueryVerifyPairingRequest: {
+    encode(message: QueryVerifyPairingRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryVerifyPairingRequest;
+    fromJSON(object: any): QueryVerifyPairingRequest;
+    toJSON(message: QueryVerifyPairingRequest): unknown;
+    fromPartial(object: DeepPartial<QueryVerifyPairingRequest>): QueryVerifyPairingRequest;
+};
+export declare const QueryVerifyPairingResponse: {
+    encode(message: QueryVerifyPairingResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryVerifyPairingResponse;
+    fromJSON(object: any): QueryVerifyPairingResponse;
+    toJSON(message: QueryVerifyPairingResponse): unknown;
+    fromPartial(object: DeepPartial<QueryVerifyPairingResponse>): QueryVerifyPairingResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -391,6 +415,8 @@ export interface Query {
     AllSessionStoragesForSpec(request: QueryAllSessionStoragesForSpecRequest): Promise<QueryAllSessionStoragesForSpecResponse>;
     /** Queries a EarliestSessionStart by index. */
     EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
+    /** Queries a list of VerifyPairing items. */
+    VerifyPairing(request: QueryVerifyPairingRequest): Promise<QueryVerifyPairingResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -412,6 +438,7 @@ export declare class QueryClientImpl implements Query {
     SessionStorageForAllSpecs(request: QuerySessionStorageForAllSpecsRequest): Promise<QuerySessionStorageForAllSpecsResponse>;
     AllSessionStoragesForSpec(request: QueryAllSessionStoragesForSpecRequest): Promise<QueryAllSessionStoragesForSpecResponse>;
     EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
+    VerifyPairing(request: QueryVerifyPairingRequest): Promise<QueryVerifyPairingResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

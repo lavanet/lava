@@ -205,6 +205,11 @@ export interface ServicerQueryStakedServicersResponse {
   output?: string;
 }
 
+export interface ServicerQueryVerifyPairingResponse {
+  valid?: boolean;
+  overlap?: boolean;
+}
+
 export interface ServicerSessionID {
   /** @format uint64 */
   num?: string;
@@ -830,6 +835,28 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryUnstakingServicersAllSpecs = (id: string, params: RequestParams = {}) =>
     this.request<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/unstaking_servicers_all_specs/${id}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryVerifyPairing
+   * @summary Queries a list of VerifyPairing items.
+   * @request GET:/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}
+   */
+  queryVerifyPairing = (
+    spec: string,
+    userAddr: string,
+    servicerAddr: string,
+    blockNum: string,
+    params: RequestParams = {},
+  ) =>
+    this.request<ServicerQueryVerifyPairingResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/verify_pairing/${spec}/${userAddr}/${servicerAddr}/${blockNum}`,
       method: "GET",
       format: "json",
       ...params,

@@ -63,21 +63,27 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, specID uint64, clientAddres
 	return
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, block types.BlockNum) (validAddresses []sdk.AccAddress, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, servicerAddress sdk.AccAddress, block types.BlockNum) (isValidPairing bool, isOverlap bool, errorRet error) {
+	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
 	k.verifyPairingData(ctx, specID, clientAddress, false)
 	spec, _ := k.specKeeper.GetSpec(ctx, specID)
 
 	stakeStorage, previousOverlappingStakeStorage, err := k.GetSpecStakeStorageInSessionStorageForSpec(ctx, block, spec.Name)
 	if err != nil {
-		return nil, err
+		return false, false, err
 	}
 	sessionStart, overlappingBlock, err := k.GetSessionStartForBlock(ctx, block)
 	if err != nil {
-		return nil, err
+		return false, false, err
 	}
-	_, validAddresses, errorRet = k.calculatePairingForClient(ctx, stakeStorage, clientAddress, *sessionStart)
+	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, stakeStorage, clientAddress, *sessionStart)
 	if errorRet != nil {
-		return nil, errorRet
+		return false, false, errorRet
+	}
+	for _, possibleAddr := range validAddresses {
+		if possibleAddr.Equals(servicerAddress) {
+			return true, false, nil
+		}
 	}
 	if previousOverlappingStakeStorage != nil {
 		if overlappingBlock == nil {
@@ -85,12 +91,16 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientA
 		}
 		_, validAddressesOverlap, errorRet := k.calculatePairingForClient(ctx, previousOverlappingStakeStorage, clientAddress, *overlappingBlock)
 		if errorRet != nil {
-			return nil, errorRet
+			return false, false, errorRet
 		}
-		//add overlap addresses from previous session
-		validAddresses = append(validAddresses, validAddressesOverlap...)
+		//check overlap addresses from previous session
+		for _, possibleAddr := range validAddressesOverlap {
+			if possibleAddr.Equals(servicerAddress) {
+				return true, true, nil
+			}
+		}
 	}
-	return
+	return false, false, nil
 }
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.StakeStorage, clientAddress sdk.AccAddress, sessionStartBlock types.BlockNum) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {
@@ -142,7 +152,6 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 	for it := 0; it < int(count); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
-		k.Logger(ctx).Error("bigIntNum: %s", bigIntNum)
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.ModRaw(int64(stakeSum)).Uint64()
 		var newStakeSum uint64 = 0

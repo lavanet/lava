@@ -152,6 +152,10 @@ export interface ServicerQueryStakedServicersResponse {
     stakeStorage?: ServicerStakeStorage;
     output?: string;
 }
+export interface ServicerQueryVerifyPairingResponse {
+    valid?: boolean;
+    overlap?: boolean;
+}
 export interface ServicerSessionID {
     /** @format uint64 */
     num?: string;
@@ -492,5 +496,14 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}
      */
     queryUnstakingServicersAllSpecs: (id: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryVerifyPairing
+     * @summary Queries a list of VerifyPairing items.
+     * @request GET:/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}
+     */
+    queryVerifyPairing: (spec: string, userAddr: string, servicerAddr: string, blockNum: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryVerifyPairingResponse, RpcStatus>>;
 }
 export {};

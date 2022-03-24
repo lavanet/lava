@@ -36,4 +36,5 @@ type SpecKeeper interface {
 
 type UserKeeper interface {
 	GetSpecStakeStorage(sdk.Context, string) (usertypes.SpecStakeStorage, bool)
+	GetCoinsPerCU(ctx sdk.Context) (res float64)
 }

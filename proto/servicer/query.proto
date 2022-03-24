@@ -102,6 +102,11 @@ service Query {
 	rpc EarliestSessionStart(QueryGetEarliestSessionStartRequest) returns (QueryGetEarliestSessionStartResponse) {
 		option (google.api.http).get = "/lavanet/lava/servicer/earliest_session_start";
 	}
+// Queries a list of VerifyPairing items.
+	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -239,4 +244,16 @@ message QueryGetEarliestSessionStartRequest {}
 message QueryGetEarliestSessionStartResponse {
 	EarliestSessionStart EarliestSessionStart = 1 [(gogoproto.nullable) = false];
 }
+message QueryVerifyPairingRequest {
+  uint64 spec = 1;
+  string userAddr = 2;
+  string servicerAddr = 3;
+  uint64 blockNum = 4;
+}
+
+message QueryVerifyPairingResponse {
+  bool valid = 1;
+  bool overlap = 5;
+}
+
 // this line is used by starport scaffolding # 3

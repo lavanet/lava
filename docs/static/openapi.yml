@@ -14083,6 +14083,59 @@ paths:
           format: uint64
       tags:
         - Query
+  '/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}':
+    get:
+      summary: Queries a list of VerifyPairing items.
+      operationId: LavanetLavaServicerVerifyPairing
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              valid:
+                type: boolean
+              overlap:
+                type: boolean
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: spec
+          in: path
+          required: true
+          type: string
+          format: uint64
+        - name: userAddr
+          in: path
+          required: true
+          type: string
+        - name: servicerAddr
+          in: path
+          required: true
+          type: string
+        - name: blockNum
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /lavanet/lava/user/block_deadline_for_callback:
     get:
       summary: Queries a BlockDeadlineForCallback by index.
@@ -23162,6 +23215,13 @@ definitions:
                     type: string
       output:
         type: string
+  lavanet.lava.servicer.QueryVerifyPairingResponse:
+    type: object
+    properties:
+      valid:
+        type: boolean
+      overlap:
+        type: boolean
   lavanet.lava.servicer.SessionID:
     type: object
     properties:
