@@ -25,5 +25,6 @@ go run relayer/cmd/relayer/main.go test_client 0 --from alice
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 0 --from bob
+go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 0 --from user2
+geth attach ws://127.0.0.1:3333/ws
 ```
