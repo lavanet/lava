@@ -23,23 +23,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Go environment
-        uses: actions/setup-go@v3.0.0
-        with:
-          go-version: '1.18.0' # The Go version to download (if necessary) and use.
-
+      # https://github.com/tendermint/starport/blob/develop/actions/release/vars/action.yml
       - name: Prepare Release Variables 
         id: vars
         uses: tendermint/starport/actions/release/vars@develop
 
+      # https://github.com/tendermint/starport/tree/develop/actions/cli
       - name: Issue Release Assets 
         uses: tendermint/starport/actions/cli@develop
         if: ${{ steps.vars.outputs.should_release == 'true' }}
         with:
-          args: chain build --release --release.prefix ${{ steps.vars.outputs.tarball_prefix }} -t linux:amd64 -t darwin:amd64
-        env:
-          GOROOT: ""
-
+          args: wget https://go.dev/dl/go1.18.linux-amd64.tar.gz && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz && chain build --release --release.prefix ${{ steps.vars.outputs.tarball_prefix }} -t linux:amd64 -t darwin:amd64
       - name: Delete the "latest" Release
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         if: ${{ steps.vars.outputs.is_release_type_latest == 'true' }}
