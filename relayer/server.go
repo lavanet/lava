@@ -73,20 +73,50 @@ type jsonrpcMessage struct {
 }
 
 func askForRewards() {
-	log.Println("askForRewards")
-
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
-	relays := []*servicertypes.RelayRequest{}
-	for _, userSessions := range g_sessions {
-		for _, sess := range userSessions {
-			relays = append(relays, sess.Proof)
-		}
+	if len(g_sessions) > 0 {
+		log.Println("active sessions", g_sessions)
 	}
 
+	relays := []*servicertypes.RelayRequest{}
+	for user, userSessions := range g_sessions {
+
+		res, err := g_sentry.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
+			Spec:         g_serverSpecId,
+			UserAddr:     user,
+			ServicerAddr: g_sentry.acc,
+			BlockNum:     uint64(g_sentry.GetBlockHeight()),
+		})
+		if err != nil {
+			log.Println("error: VerifyPairing", err)
+			continue
+		}
+		if res.Valid {
+			// session still valid, skip this user
+			continue
+		}
+
+		//
+		// TODO: we can come up with a better locking mechanism
+		for k, sess := range userSessions {
+			sess.Lock.Lock()
+			relays = append(relays, sess.Proof)
+			delete(userSessions, k)
+			sess.Lock.Unlock()
+		}
+		if len(userSessions) == 0 {
+			delete(g_sessions, user)
+		}
+	}
+	if len(relays) == 0 {
+		// no rewards to ask for
+		return
+	}
+
+	log.Println("asking for rewards", g_sentry.acc)
 	msg := servicertypes.NewMsgProofOfWork(g_sentry.acc, relays)
-	log.Println("msg", msg)
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
@@ -102,12 +132,8 @@ func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
 	return pubKey.Address(), nil
 }
 
-func isAuthorizedUser(ctx context.Context, user bytes.HexBytes) bool {
-	userAddr, err := sdk.AccAddressFromHex(user.String())
-	if err != nil {
-		return false
-	}
-	return g_sentry.isAuthorizedUser(ctx, userAddr.String())
+func isAuthorizedUser(ctx context.Context, userAddr string) bool {
+	return g_sentry.isAuthorizedUser(ctx, userAddr)
 }
 
 func isSupportedSpec(in *servicertypes.RelayRequest) bool {
@@ -125,16 +151,15 @@ func getSupportedApi(name string, sentry *Sentry) (*spectypes.ServiceApi, error)
 	return nil, errors.New("api not supported")
 }
 
-func getOrCreateSession(user bytes.HexBytes, sessionId uint64) *RelaySession {
+func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
-	userString := string(user)
-	if _, ok := g_sessions[userString]; !ok {
-		g_sessions[userString] = map[uint64]*RelaySession{}
+	if _, ok := g_sessions[userAddr]; !ok {
+		g_sessions[userAddr] = map[uint64]*RelaySession{}
 	}
 
-	userSessions := g_sessions[userString]
+	userSessions := g_sessions[userAddr]
 	if _, ok := userSessions[sessionId]; !ok {
 		userSessions[sessionId] = &RelaySession{}
 	}
@@ -173,7 +198,12 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 	if err != nil {
 		return nil, err
 	}
-	if !isAuthorizedUser(ctx, user) {
+	userAddr, err := sdk.AccAddressFromHex(user.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !isAuthorizedUser(ctx, userAddr.String()) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
 	if !isSupportedSpec(in) {
@@ -194,7 +224,7 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 	if err != nil {
 		return nil, err
 	}
-	relaySession := getOrCreateSession(user, in.SessionId)
+	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, serviceApi, in)
 	relaySession.Proof = in
 
@@ -265,7 +295,7 @@ func Server(
 
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, false)
+	sentry := NewSentry(clientCtx, specId, false, askForRewards)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

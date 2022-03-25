@@ -21,7 +21,7 @@ func PortalServer(
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, true)
+	sentry := NewSentry(clientCtx, specId, true, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

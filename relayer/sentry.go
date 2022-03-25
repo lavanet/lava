@@ -3,7 +3,6 @@ package relayer
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -47,7 +46,7 @@ type Sentry struct {
 	txs                 <-chan ctypes.ResultEvent
 	isUser              bool
 	acc                 string // account address (bech32)
-
+	newBlockCb          func()
 	//
 	// Block storage (atomic)
 	blockHeight int64
@@ -170,7 +169,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	//
-	// Listen to new sessions
+	// Listen to new blocks
 	query := "tm.event = 'NewBlock'"
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
@@ -281,11 +280,15 @@ func (s *Sentry) Start(ctx context.Context) {
 	for e := range s.txs {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
+			//
+			// Update block
+			s.SetBlockHeight(data.Block.Height)
+			if s.newBlockCb != nil {
+				go s.newBlockCb()
+			}
+
 			if _, ok := e.Events["new_session.height"]; ok {
-				//
-				// Update block
-				s.SetBlockHeight(data.Block.Height)
-				fmt.Printf("Block %s - Height: %d \n", hex.EncodeToString(data.Block.Hash()), data.Block.Height)
+				fmt.Printf("New session - Height: %d \n", data.Block.Height)
 
 				//
 				// Update specs
@@ -437,6 +440,7 @@ func NewSentry(
 	clientCtx client.Context,
 	specId uint64,
 	isUser bool,
+	newBlockCb func(),
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -451,5 +455,6 @@ func NewSentry(
 		specId:              specId,
 		isUser:              isUser,
 		acc:                 acc,
+		newBlockCb:          newBlockCb,
 	}
 }
