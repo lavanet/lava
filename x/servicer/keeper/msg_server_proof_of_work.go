@@ -52,8 +52,16 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 		//
 
 		//
-		//TODO: get the pairing for the block of work and not the current one
-		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(ctx, uint64(relay.SpecId), clientAddr, servicerAddr, types.BlockNum{Num: uint64(relay.BlockHeight)})
+		//
+		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(
+			ctx,
+			uint64(relay.SpecId),
+			clientAddr,
+			servicerAddr,
+			types.BlockNum{
+				Num: uint64(relay.BlockHeight),
+			},
+		)
 		//TODO: use isOverlap to calculate limiting the CU of previous session
 		_ = isOverlap
 		if err != nil {
