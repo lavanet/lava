@@ -83,17 +83,7 @@ func askForRewards() {
 	relays := []*servicertypes.RelayRequest{}
 	for user, userSessions := range g_sessions {
 
-		res, err := g_sentry.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
-			Spec:         g_serverSpecId,
-			UserAddr:     user,
-			ServicerAddr: g_sentry.acc,
-			BlockNum:     uint64(g_sentry.GetBlockHeight()),
-		})
-		if err != nil {
-			log.Println("error: VerifyPairing", err)
-			continue
-		}
-		if res.Valid {
+		if g_sentry.isAuthorizedUser(context.Background(), user) {
 			// session still valid, skip this user
 			continue
 		}
