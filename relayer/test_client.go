@@ -90,7 +90,7 @@ func TestClient(
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, true)
+	sentry := NewSentry(clientCtx, specId, true, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -120,21 +120,24 @@ func TestClient(
 
 	//
 	// Call a few times and print results
-	for i := 0; i < 10; i++ {
-		reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
-		if err != nil {
-			log.Println(err)
-		} else {
-			reply.Sig = nil // for nicer prints
-			log.Println("reply", reply)
+	for i2 := 0; i2 < 30; i2++ {
+		for i := 0; i < 10; i++ {
+			reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply", reply)
+			}
+			reply, err = sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply", reply)
+			}
 		}
-		reply, err = sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
-		if err != nil {
-			log.Println(err)
-		} else {
-			reply.Sig = nil // for nicer prints
-			log.Println("reply", reply)
-		}
+		time.Sleep(2 * time.Second)
 	}
 
 	//

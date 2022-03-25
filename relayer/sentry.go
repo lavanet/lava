@@ -3,7 +3,6 @@ package relayer
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -47,7 +46,7 @@ type Sentry struct {
 	txs                 <-chan ctypes.ResultEvent
 	isUser              bool
 	acc                 string // account address (bech32)
-
+	newBlockCb          func()
 	//
 	// Block storage (atomic)
 	blockHeight int64
@@ -170,7 +169,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	//
-	// Listen to new block events
+	// Listen to new blocks
 	query := "tm.event = 'NewBlock'"
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
@@ -277,28 +276,33 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 
 	//
-	// Listne for blockchain events
+	// Listen for blockchain events
 	for e := range s.txs {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
-
 			//
 			// Update block
 			s.SetBlockHeight(data.Block.Height)
-			fmt.Printf("Block %s - Height: %d \n", hex.EncodeToString(data.Block.Hash()), data.Block.Height)
-
-			//
-			// Update specs
-			err := s.getSpec(ctx)
-			if err != nil {
-				log.Println("error: getSpec", err)
+			if s.newBlockCb != nil {
+				go s.newBlockCb()
 			}
 
-			//
-			// Update pairing
-			err = s.getPairing(ctx)
-			if err != nil {
-				log.Println("error: getPairing", err)
+			if _, ok := e.Events["new_session.height"]; ok {
+				fmt.Printf("New session - Height: %d \n", data.Block.Height)
+
+				//
+				// Update specs
+				err := s.getSpec(ctx)
+				if err != nil {
+					log.Println("error: getSpec", err)
+				}
+
+				//
+				// Update pairing
+				err = s.getPairing(ctx)
+				if err != nil {
+					log.Println("error: getPairing", err)
+				}
 			}
 		}
 	}
@@ -389,26 +393,19 @@ func (s *Sentry) SendRelay(
 func (s *Sentry) isAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
-	log.Println("user addr", user)
-	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
-		SpecName: s.GetSpecName(),
-		UserAddr: user,
+
+	res, err := g_sentry.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
+		Spec:         s.specId,
+		UserAddr:     user,
+		ServicerAddr: s.acc,
+		BlockNum:     uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
 		return false
 	}
-
-	servicers := res.GetServicers()
-	if servicers == nil || len(servicers.Staked) == 0 {
-		return false
+	if res.Valid {
+		return true
 	}
-
-	for _, servicer := range servicers.Staked {
-		if servicer.Index == s.acc {
-			return true
-		}
-	}
-
 	return false
 }
 
@@ -436,6 +433,7 @@ func NewSentry(
 	clientCtx client.Context,
 	specId uint64,
 	isUser bool,
+	newBlockCb func(),
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -450,5 +448,6 @@ func NewSentry(
 		specId:              specId,
 		isUser:              isUser,
 		acc:                 acc,
+		newBlockCb:          newBlockCb,
 	}
 }
