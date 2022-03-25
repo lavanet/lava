@@ -170,7 +170,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	//
-	// Listen to new block events
+	// Listen to new sessions
 	query := "tm.event = 'NewBlock'"
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
@@ -277,28 +277,29 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 
 	//
-	// Listne for blockchain events
+	// Listen for blockchain events
 	for e := range s.txs {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
+			if _, ok := e.Events["new_session.height"]; ok {
+				//
+				// Update block
+				s.SetBlockHeight(data.Block.Height)
+				fmt.Printf("Block %s - Height: %d \n", hex.EncodeToString(data.Block.Hash()), data.Block.Height)
 
-			//
-			// Update block
-			s.SetBlockHeight(data.Block.Height)
-			fmt.Printf("Block %s - Height: %d \n", hex.EncodeToString(data.Block.Hash()), data.Block.Height)
+				//
+				// Update specs
+				err := s.getSpec(ctx)
+				if err != nil {
+					log.Println("error: getSpec", err)
+				}
 
-			//
-			// Update specs
-			err := s.getSpec(ctx)
-			if err != nil {
-				log.Println("error: getSpec", err)
-			}
-
-			//
-			// Update pairing
-			err = s.getPairing(ctx)
-			if err != nil {
-				log.Println("error: getPairing", err)
+				//
+				// Update pairing
+				err = s.getPairing(ctx)
+				if err != nil {
+					log.Println("error: getPairing", err)
+				}
 			}
 		}
 	}
