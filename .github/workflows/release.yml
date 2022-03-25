@@ -12,7 +12,7 @@
 #
 # The workflow will not run if there is no tag pushed with a "v" prefix and no change pushed to your 
 # default branch.
-on: push
+#on: push
 
 jobs:
   might_release:
@@ -33,7 +33,8 @@ jobs:
         uses: tendermint/starport/actions/cli@develop
         if: ${{ steps.vars.outputs.should_release == 'true' }}
         with:
-          args: wget https://go.dev/dl/go1.18.linux-amd64.tar.gz && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz && chain build --release --release.prefix ${{ steps.vars.outputs.tarball_prefix }} -t linux:amd64 -t darwin:amd64
+          args: chain build --release --release.prefix ${{ steps.vars.outputs.tarball_prefix }} -t linux:amd64 -t darwin:amd64
+      
       - name: Delete the "latest" Release
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         if: ${{ steps.vars.outputs.is_release_type_latest == 'true' }}
