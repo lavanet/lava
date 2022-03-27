@@ -1,4 +1,4 @@
-package relayer
+package sentry
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ type Sentry struct {
 	specId              uint64
 	txs                 <-chan ctypes.ResultEvent
 	isUser              bool
-	acc                 string // account address (bech32)
+	Acc                 string // account address (bech32)
 	newBlockCb          func()
 	//
 	// Block storage (atomic)
@@ -78,7 +78,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	// Get
 	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
 		SpecName: s.GetSpecName(),
-		UserAddr: s.acc,
+		UserAddr: s.Acc,
 	})
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		}
 		found := false
 		for _, servicer := range servicers.StakeStorage.Staked {
-			if servicer.Index == s.acc {
+			if servicer.Index == s.Acc {
 				found = true
 				break
 			}
@@ -390,14 +390,14 @@ func (s *Sentry) SendRelay(
 	return reply, err
 }
 
-func (s *Sentry) isAuthorizedUser(ctx context.Context, user string) bool {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
 
-	res, err := g_sentry.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
+	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
 		Spec:         s.specId,
 		UserAddr:     user,
-		ServicerAddr: s.acc,
+		ServicerAddr: s.Acc,
 		BlockNum:     uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
@@ -447,7 +447,7 @@ func NewSentry(
 		servicerQueryClient: servicerQueryClient,
 		specId:              specId,
 		isUser:              isUser,
-		acc:                 acc,
+		Acc:                 acc,
 		newBlockCb:          newBlockCb,
 	}
 }

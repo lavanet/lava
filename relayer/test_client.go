@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/sentry"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 )
 
@@ -21,7 +22,7 @@ const (
 
 func sendRelay(
 	ctx context.Context,
-	sentry *Sentry,
+	sentry *sentry.Sentry,
 	privKey *btcec.PrivateKey,
 	specId uint64,
 	req string,
@@ -90,7 +91,7 @@ func TestClient(
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, true, nil)
+	sentry := sentry.NewSentry(clientCtx, specId, true, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

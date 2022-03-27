@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/sentry"
 )
 
 var g_request_lock sync.Mutex
@@ -21,7 +22,7 @@ func PortalServer(
 ) {
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, true, nil)
+	sentry := sentry.NewSentry(clientCtx, specId, true, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
