@@ -19,12 +19,13 @@ var (
 var (
 	KeyCoinsPerCU = []byte("CoinsPerCU")
 	// this value is later divided by 1000000
-	DefaultCoinsPerCU uint64 = 1
+	DefaultCoinsPerCU uint64 = 10000 //just for test
 )
 
 var (
-	KeyUnstakeHoldBlocks            = []byte("UnstakeHoldBlocks")
-	DefaultUnstakeHoldBlocks uint64 = 10
+	KeyUnstakeHoldBlocks = []byte("UnstakeHoldBlocks")
+	//this param needs to be bigger than sessionsToSave*BlocksSession i.e blocksToSave
+	DefaultUnstakeHoldBlocks uint64 = 200
 )
 
 var (

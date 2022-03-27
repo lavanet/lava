@@ -41,9 +41,15 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 			found_staked_entry = true
 			holdBlocks := k.Keeper.UnstakeHoldBlocks(ctx)
 			blockHeight := uint64(ctx.BlockHeight())
-			if msg.Deadline.Num < blockHeight+holdBlocks {
-				// unstaking demands they wait until a cedrftain block height so we can catch frauds before they escape with the money
+			storageMap.Deadline.Num = msg.Deadline.Num
+			if storageMap.Deadline.Num < blockHeight+holdBlocks {
+				// unstaking demands they wait until a certain block height so we can catch frauds before they escape with the money
 				storageMap.Deadline.Num = blockHeight + holdBlocks
+			}
+			if storageMap.Deadline.Num < blockHeight+k.BlocksToSave(ctx) {
+				// protocol demands the stake stays in deposit until proofsOfWork for older blocks are no longer valid,
+				// this is to prevent fraud and escaping with the money
+				storageMap.Deadline.Num = blockHeight + k.BlocksToSave(ctx)
 			}
 			//TODO: store this list sorted by deadline so when we go over it in the timeout, we can do this efficiently
 			unstakingServicerAllSpecs := types.UnstakingServicersAllSpecs{

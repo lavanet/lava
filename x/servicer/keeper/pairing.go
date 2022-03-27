@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/servicer/types"
+	usertypes "github.com/lavanet/lava/x/user/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
@@ -29,7 +30,7 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress 
 	for _, stakedUser := range allStakedUsersForSpec {
 		userAddr, err := sdk.AccAddressFromBech32(stakedUser.Index)
 		if err != nil {
-			panic(fmt.Sprintf("invalid servicer address saved in keeper %s, err: %s", stakedUser.Index, err))
+			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", stakedUser.Index, err))
 		}
 		if userAddr.Equals(clientAddress) {
 			verifiedUser = true
@@ -37,7 +38,19 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress 
 		}
 	}
 	if !isNew {
-		//TODO: add verification for unstaking users too, for the proof of work to work on unstaking users
+		//verification for unstaking users too, for the proof of work to work on unstaking users that used relays before unstaking
+		unstakingUsersForSpec, _ := k.userKeeper.GetUnstakingUsersForSpec(ctx, usertypes.SpecName{Name: spec.Name})
+		for _, userStake := range unstakingUsersForSpec {
+			userAddr, err := sdk.AccAddressFromBech32(userStake.Index)
+			if err != nil {
+				panic(fmt.Sprintf("invalid user address saved on unstaking users storage in keeper %s, err: %s", userStake.Index, err))
+			}
+			if userAddr.Equals(clientAddress) {
+				verifiedUser = true
+				break
+			}
+		}
+
 	}
 	if !verifiedUser {
 		return false, fmt.Errorf("client: %s isn't staked for spec %s", clientAddress, spec.Name)

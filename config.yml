@@ -6,14 +6,6 @@ accounts:
     coins: ["20000token", "200000000000stake"]
   - name: bob
     coins: ["10000token", "100000000stake"]
-  - name: charlie
-    coins: ["10000token", "100000000stake"]
-  - name: delta
-    coins: ["10000token", "100000000stake"]
-  - name: echo
-    coins: ["10000token", "100000000stake"]
-  - name: frank
-    coins: ["10000token", "100000000stake"]
   - name: user1
     coins: ["10000token", "200000000stake"]
   - name: user2

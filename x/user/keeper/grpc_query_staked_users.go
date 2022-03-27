@@ -34,15 +34,9 @@ func (k Keeper) StakedUsers(goCtx context.Context, req *types.QueryStakedUsersRe
 	if enabled {
 		enabledStr = "enabled"
 	}
-	unstaking_Users := make([]string, 0)
-	unstakingUsersAllSpecs := k.GetAllUnstakingUsersAllSpecs(ctx)
-	for _, unstakingUser := range unstakingUsersAllSpecs {
-		if unstakingUser.SpecStakeStorage.Index == specName.Name {
-			unstaking_Users = append(unstaking_Users, unstakingUser.Unstaking.String())
-		}
-	}
+	unstakingUsersForSpec, _ := k.GetUnstakingUsersForSpec(ctx, specName)
 
-	outputStr := fmt.Sprintf("Staked Users Query Output:\nSpec: %s Status: %s Block: %d\nStaked Users:\n%s\nUnstaking Users:\n%s\n--------------------------------------\n", specName.Name, enabledStr, ctx.BlockHeight(), stakeStorage.StakedUsers, unstaking_Users)
+	outputStr := fmt.Sprintf("Staked Users Query Output:\nSpec: %s Status: %s Block: %d\nStaked Users:\n%s\nUnstaking Users:\n%s\n--------------------------------------\n", specName.Name, enabledStr, ctx.BlockHeight(), stakeStorage.StakedUsers, unstakingUsersForSpec)
 
 	response := types.QueryStakedUsersResponse{StakeStorage: stakeStorage, Output: outputStr}
 

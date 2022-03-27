@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer"
 	"github.com/lavanet/lava/x/servicer/types"
+	usertypes "github.com/lavanet/lava/x/user/types"
 )
 
 func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork) (*types.MsgProofOfWorkResponse, error) {
@@ -41,7 +42,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 		}
 
 		//
-		// TODO: is this correct? spec could be disabled after the fact
+		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecIDFoundAndActive(ctx, uint64(relay.SpecId))
 		if !ok {
 			return nil, fmt.Errorf("error on proof of work, spec specified: %d is inactive", relay.SpecId)
@@ -79,6 +80,22 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			reward := sdk.NewIntFromUint64(uintReward)
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
 
+			//first check we can burn user before we give money to the servicer
+			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
+			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
+			spec, found := k.specKeeper.GetSpec(ctx, uint64(relay.SpecId))
+			if !found {
+				panic(fmt.Sprintf("failed to get spec for index: %d", relay.SpecId))
+			}
+			burnAmount := sdk.Coin{Amount: amountToBurnClient, Denom: "stake"}
+			burnSucceeded, err2 := k.userKeeper.BurnUserStake(ctx, usertypes.SpecName{Name: spec.Name}, clientAddr, burnAmount, false)
+			if err2 != nil {
+				return nil, fmt.Errorf("BurnUserStake failed on user %s, amount to burn: %s, error: ", clientAddr, burnAmount, err2)
+			}
+			if !burnSucceeded {
+				return nil, fmt.Errorf("BurnUserStake failed on user %s, did not find user, or insufficient funds: %s ", clientAddr, burnAmount)
+			}
+
 			//
 			// Mint to module
 			err := k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
@@ -98,10 +115,6 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			// TODO: save session information to prevent replay attack
 			//
 
-			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
-			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
-			//TODO: burn stake for client
-			_ = amountToBurnClient
 		}
 
 	}

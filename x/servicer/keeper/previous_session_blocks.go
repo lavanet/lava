@@ -91,7 +91,10 @@ func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 		if !found {
 			panic("fail due to faulty GetPreviousSessionBlocks in keeper")
 		}
-		previousSessionBlocks.ChangeBlock = types.BlockNum{Num: currentBlock - 1} //-1 because we want the comparison with current block to return the new value
+		//we save the change as the current block (that is a session start), comparisons are always for strong inequality,
+		// so all blocks that are smaller
+		//will use the session start with the previous params
+		previousSessionBlocks.ChangeBlock = types.BlockNum{Num: currentBlock}
 		k.SetPreviousSessionBlocks(ctx, previousSessionBlocks)
 	}
 }

@@ -104,3 +104,15 @@ func GetUnstakingUsersAllSpecsIDBytes(id uint64) []byte {
 func GetUnstakingUsersAllSpecsIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
+
+func (k Keeper) GetUnstakingUsersForSpec(ctx sdk.Context, specName types.SpecName) (unstaking_Users []types.UserStake, indexes []int) {
+	unstakingUsersAllSpecs := k.GetAllUnstakingUsersAllSpecs(ctx)
+	for idx, unstakingUser := range unstakingUsersAllSpecs {
+		if unstakingUser.SpecStakeStorage.Index == specName.Name {
+			unstaking_Users = append(unstaking_Users, unstakingUser.Unstaking)
+			//indexes and unstaking users are synchronised in length
+			indexes = append(indexes, idx)
+		}
+	}
+	return
+}
