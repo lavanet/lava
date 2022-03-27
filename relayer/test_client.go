@@ -2,7 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 )
@@ -22,7 +22,7 @@ const (
 
 func sendRelay(
 	ctx context.Context,
-	sentry *sentry.Sentry,
+	cp chainproxy.ChainProxy,
 	privKey *btcec.PrivateKey,
 	specId uint64,
 	req string,
@@ -31,20 +31,15 @@ func sendRelay(
 
 	//
 	// Unmarshal request
-	var msg jsonrpcMessage
-	err := json.Unmarshal([]byte(req), &msg)
-	if err != nil {
-		return nil, err
-	}
-	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
+	nodeMsg, err := cp.ParseMsg([]byte(req))
 	if err != nil {
 		return nil, err
 	}
 
 	//
 	//
-	reply, err := sentry.SendRelay(ctx, func(clientSession *ClientSession) (*servicertypes.RelayReply, error) {
-		clientSession.CuSum += serviceApi.ComputeUnits
+	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*servicertypes.RelayReply, error) {
+		clientSession.CuSum += nodeMsg.GetServiceApi().ComputeUnits
 
 		relayRequest := &servicertypes.RelayRequest{
 			Servicer:    clientSession.Client.Acc,
@@ -100,8 +95,13 @@ func TestClient(
 	for sentry.GetBlockHeight() == 0 {
 		time.Sleep(1 * time.Second)
 	}
-	g_sentry = sentry
-	g_serverSpecId = specId
+
+	//
+	// Node
+	chainProxy, err := chainproxy.GetChainProxy(specId, "", 1, sentry)
+	if err != nil {
+		log.Fatalln("error: GetChainProxy", err)
+	}
 
 	//
 	// Set up a connection to the server.
@@ -123,14 +123,14 @@ func TestClient(
 	// Call a few times and print results
 	for i2 := 0; i2 < 30; i2++ {
 		for i := 0; i < 10; i++ {
-			reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
+			reply, err := sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
 			if err != nil {
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
 				log.Println("reply", reply)
 			}
-			reply, err = sendRelay(ctx, sentry, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
+			reply, err = sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -143,7 +143,7 @@ func TestClient(
 
 	//
 	// Expected unsupported API:
-	reply, err := sendRelay(ctx, sentry, privKey, specId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
+	reply, err := sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
 	if err != nil {
 		log.Println(err)
 	} else {

@@ -47,6 +47,10 @@ func NewEthereumChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) C
 	}
 }
 
+func (cp *EthereumChainProxy) GetSentry() *sentry.Sentry {
+	return cp.sentry
+}
+
 func (cp *EthereumChainProxy) Start(ctx context.Context) error {
 	cp.conn = NewConnector(ctx, cp.nConns, cp.nodeUrl)
 	if cp.conn == nil {

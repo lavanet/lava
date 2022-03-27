@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 )
 
@@ -33,6 +34,13 @@ func PortalServer(
 	}
 	g_sentry = sentry
 	g_serverSpecId = specId
+
+	//
+	// Node
+	chainProxy, err := chainproxy.GetChainProxy(specId, "", 1, sentry)
+	if err != nil {
+		log.Fatalln("error: GetChainProxy", err)
+	}
 
 	//
 	// Set up a connection to the server.
@@ -76,7 +84,7 @@ func PortalServer(
 			log.Println("in <<< ", string(msg))
 
 			g_request_lock.Lock()
-			reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(msg), sentry.GetBlockHeight())
+			reply, err := sendRelay(ctx, chainProxy, privKey, g_serverSpecId, string(msg), sentry.GetBlockHeight())
 			g_request_lock.Unlock()
 			if err != nil {
 				log.Println(err)
@@ -96,7 +104,7 @@ func PortalServer(
 		defer g_request_lock.Unlock()
 
 		log.Println("in <<< ", string(c.Body()))
-		reply, err := sendRelay(ctx, sentry, privKey, g_serverSpecId, string(c.Body()), sentry.GetBlockHeight())
+		reply, err := sendRelay(ctx, chainProxy, privKey, g_serverSpecId, string(c.Body()), sentry.GetBlockHeight())
 		if err != nil {
 			log.Println(err)
 			return nil

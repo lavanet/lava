@@ -16,6 +16,7 @@ type NodeMessage interface {
 
 type ChainProxy interface {
 	Start(context.Context) error
+	GetSentry() *sentry.Sentry
 	ParseMsg([]byte) (NodeMessage, error)
 }
 
@@ -24,7 +25,7 @@ func GetChainProxy(specId uint64, nodeUrl string, nConns uint, sentry *sentry.Se
 	case 0, 1:
 		return NewEthereumChainProxy(nodeUrl, nConns, sentry), nil
 	case 2:
-		return NewCosmosChainProxy(nodeUrl), nil
+		return NewCosmosChainProxy(nodeUrl, sentry), nil
 	}
 	return nil, fmt.Errorf("chain proxy for chain id (%d) not found", specId)
 }
