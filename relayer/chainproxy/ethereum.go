@@ -75,7 +75,7 @@ func (cp *EthereumChainProxy) getSupportedApi(name string) (*spectypes.ServiceAp
 	return nil, errors.New("api not supported")
 }
 
-func (cp *EthereumChainProxy) ParseMsg(data []byte) (NodeMessage, error) {
+func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 
 	//
 	// Unmarshal request

@@ -20,7 +20,7 @@ type NodeMessage interface {
 type ChainProxy interface {
 	Start(context.Context) error
 	GetSentry() *sentry.Sentry
-	ParseMsg([]byte) (NodeMessage, error)
+	ParseMsg(string, []byte) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 }
 
