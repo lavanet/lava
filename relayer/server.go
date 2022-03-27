@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/relayer/sigs"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -84,7 +85,7 @@ func askForRewards() {
 }
 
 func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
-	pubKey, err := RecoverPubKeyFromRelay(in)
+	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +182,7 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 
 	//
 	// Update signature, return reply to user
-	sig, err := signRelay(g_privKey, []byte(reply.String()))
+	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
 	if err != nil {
 		return nil, err
 	}
@@ -229,12 +230,12 @@ func Server(
 
 	//
 	// Keys
-	keyName, err := getKeyName(clientCtx)
+	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
 	}
 
-	privKey, err := getPrivKey(clientCtx, keyName)
+	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 	if err != nil {
 		log.Fatalln("error: getPrivKey", err)
 	}

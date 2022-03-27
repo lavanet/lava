@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/sentry"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -93,6 +97,70 @@ func (cp *EthereumChainProxy) ParseMsg(data []byte) (NodeMessage, error) {
 		msg:        &msg,
 	}
 	return nodeMsg, nil
+}
+
+func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+
+	//
+	// Setup HTTP Server
+	app := fiber.New(fiber.Config{})
+
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		// IsWebSocketUpgrade returns true if the client
+		// requested upgrade to the WebSocket protocol.
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		var (
+			mt  int
+			msg []byte
+			err error
+		)
+		for {
+			if mt, msg, err = c.ReadMessage(); err != nil {
+				log.Println("read:", err)
+				break
+			}
+			log.Println("in <<< ", string(msg))
+
+			reply, err := SendRelay(ctx, cp, privKey, string(msg))
+			if err != nil {
+				log.Println(err)
+				break
+			}
+
+			if err = c.WriteMessage(mt, reply.Data); err != nil {
+				log.Println("write:", err)
+				break
+			}
+			log.Println("out >>> ", string(reply.Data))
+		}
+	}))
+
+	app.Post("/", func(c *fiber.Ctx) error {
+		log.Println("in <<< ", string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, string(c.Body()))
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
+
+		log.Println("out >>> ", string(reply.Data))
+		return c.SendString(string(reply.Data))
+	})
+
+	//
+	// Go
+	err := app.Listen(listenAddr)
+	if err != nil {
+		log.Println(err)
+	}
+	return
 }
 
 func (nm *EthereumMessage) GetServiceApi() *spectypes.ServiceApi {

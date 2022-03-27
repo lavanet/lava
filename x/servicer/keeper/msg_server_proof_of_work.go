@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/x/servicer/types"
 )
 
@@ -20,7 +20,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 
 	for _, relay := range msg.Relays {
 
-		pubKey, err := relayer.RecoverPubKeyFromRelay(relay)
+		pubKey, err := sigs.RecoverPubKeyFromRelay(relay)
 		if err != nil {
 			logger.Error("error on proof of work, bad sig")
 			return nil, fmt.Errorf("error on proof of work, bad sig")
