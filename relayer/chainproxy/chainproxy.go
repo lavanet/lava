@@ -38,12 +38,13 @@ func SendRelay(
 	ctx context.Context,
 	cp ChainProxy,
 	privKey *btcec.PrivateKey,
+	url string,
 	req string,
 ) (*servicertypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
-	nodeMsg, err := cp.ParseMsg([]byte(req))
+	nodeMsg, err := cp.ParseMsg(url, []byte(req))
 	if err != nil {
 		return nil, err
 	}

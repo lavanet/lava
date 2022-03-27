@@ -128,7 +128,7 @@ func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.Pr
 			}
 			log.Println("in <<< ", string(msg))
 
-			reply, err := SendRelay(ctx, cp, privKey, string(msg))
+			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
 			if err != nil {
 				log.Println(err)
 				break
@@ -144,7 +144,7 @@ func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.Pr
 
 	app.Post("/", func(c *fiber.Ctx) error {
 		log.Println("in <<< ", string(c.Body()))
-		reply, err := SendRelay(ctx, cp, privKey, string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
 		if err != nil {
 			log.Println(err)
 			return nil

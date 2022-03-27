@@ -162,7 +162,7 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 
 	//
 	// Parse message, check valid api, etc
-	nodeMsg, err := g_chainProxy.ParseMsg("", in.Data)
+	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
 	if err != nil {
 		return nil, err
 	}

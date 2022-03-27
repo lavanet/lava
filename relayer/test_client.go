@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
@@ -15,7 +16,56 @@ const (
 	JSONRPC_ETH_BLOCKNUMBER = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 	JSONRPC_ETH_GETBALANCE  = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
 	JSONRPC_UNSUPPORTED     = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
+
+	TERRA_BLOCKS_LATEST_URL  = "/blocks/latest"
+	TERRA_BLOCKS_LATEST_DATA = ``
 )
+
+func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
+	//
+	// Call a few times and print results
+	for i2 := 0; i2 < 30; i2++ {
+		for i := 0; i < 10; i++ {
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_BLOCKNUMBER)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply", reply)
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	//
+	// Expected unsupported API:
+	reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_UNSUPPORTED)
+	if err != nil {
+		log.Println(err)
+	} else {
+		reply.Sig = nil // for nicer prints
+		log.Println("reply", reply)
+	}
+}
+
+func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
+	for i := 0; i < 10; i++ {
+		reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL, TERRA_BLOCKS_LATEST_DATA)
+		if err != nil {
+			log.Println(err)
+		} else {
+			reply.Sig = nil // for nicer prints
+			log.Println("reply", reply)
+		}
+	}
+}
 
 func TestClient(
 	ctx context.Context,
@@ -58,35 +108,11 @@ func TestClient(
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
 	//
-	// Call a few times and print results
-	for i2 := 0; i2 < 30; i2++ {
-		for i := 0; i < 10; i++ {
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, JSONRPC_ETH_BLOCKNUMBER)
-			if err != nil {
-				log.Println(err)
-			} else {
-				reply.Sig = nil // for nicer prints
-				log.Println("reply", reply)
-			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, JSONRPC_ETH_GETBALANCE)
-			if err != nil {
-				log.Println(err)
-			} else {
-				reply.Sig = nil // for nicer prints
-				log.Println("reply", reply)
-			}
-		}
-		time.Sleep(2 * time.Second)
+	// Run tests
+	switch specId {
+	case 0, 1:
+		ethTests(ctx, chainProxy, privKey)
+	case 2:
+		terraTests(ctx, chainProxy, privKey)
 	}
-
-	//
-	// Expected unsupported API:
-	reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, JSONRPC_UNSUPPORTED)
-	if err != nil {
-		log.Println(err)
-	} else {
-		reply.Sig = nil // for nicer prints
-		log.Println("reply", reply)
-	}
-
 }
