@@ -7,6 +7,8 @@ export const protobufPackage = "lavanet.lava.servicer";
 export interface RelayRequest {
   spec_id: number;
   api_id: number;
+  /** some relays have associated urls that are filled with params ('/block/{height}') */
+  api_url: string;
   session_id: number;
   /** total compute unit used including this relay */
   cu_sum: number;
@@ -24,6 +26,7 @@ export interface RelayReply {
 const baseRelayRequest: object = {
   spec_id: 0,
   api_id: 0,
+  api_url: "",
   session_id: 0,
   cu_sum: 0,
   servicer: "",
@@ -38,23 +41,26 @@ export const RelayRequest = {
     if (message.api_id !== 0) {
       writer.uint32(16).uint32(message.api_id);
     }
+    if (message.api_url !== "") {
+      writer.uint32(26).string(message.api_url);
+    }
     if (message.session_id !== 0) {
-      writer.uint32(24).uint64(message.session_id);
+      writer.uint32(32).uint64(message.session_id);
     }
     if (message.cu_sum !== 0) {
-      writer.uint32(32).uint64(message.cu_sum);
+      writer.uint32(40).uint64(message.cu_sum);
     }
     if (message.data.length !== 0) {
-      writer.uint32(42).bytes(message.data);
+      writer.uint32(50).bytes(message.data);
     }
     if (message.sig.length !== 0) {
-      writer.uint32(50).bytes(message.sig);
+      writer.uint32(58).bytes(message.sig);
     }
     if (message.servicer !== "") {
-      writer.uint32(58).string(message.servicer);
+      writer.uint32(66).string(message.servicer);
     }
     if (message.block_height !== 0) {
-      writer.uint32(64).int64(message.block_height);
+      writer.uint32(72).int64(message.block_height);
     }
     return writer;
   },
@@ -73,21 +79,24 @@ export const RelayRequest = {
           message.api_id = reader.uint32();
           break;
         case 3:
-          message.session_id = longToNumber(reader.uint64() as Long);
+          message.api_url = reader.string();
           break;
         case 4:
-          message.cu_sum = longToNumber(reader.uint64() as Long);
+          message.session_id = longToNumber(reader.uint64() as Long);
           break;
         case 5:
-          message.data = reader.bytes();
+          message.cu_sum = longToNumber(reader.uint64() as Long);
           break;
         case 6:
-          message.sig = reader.bytes();
+          message.data = reader.bytes();
           break;
         case 7:
-          message.servicer = reader.string();
+          message.sig = reader.bytes();
           break;
         case 8:
+          message.servicer = reader.string();
+          break;
+        case 9:
           message.block_height = longToNumber(reader.int64() as Long);
           break;
         default:
@@ -109,6 +118,11 @@ export const RelayRequest = {
       message.api_id = Number(object.api_id);
     } else {
       message.api_id = 0;
+    }
+    if (object.api_url !== undefined && object.api_url !== null) {
+      message.api_url = String(object.api_url);
+    } else {
+      message.api_url = "";
     }
     if (object.session_id !== undefined && object.session_id !== null) {
       message.session_id = Number(object.session_id);
@@ -143,6 +157,7 @@ export const RelayRequest = {
     const obj: any = {};
     message.spec_id !== undefined && (obj.spec_id = message.spec_id);
     message.api_id !== undefined && (obj.api_id = message.api_id);
+    message.api_url !== undefined && (obj.api_url = message.api_url);
     message.session_id !== undefined && (obj.session_id = message.session_id);
     message.cu_sum !== undefined && (obj.cu_sum = message.cu_sum);
     message.data !== undefined &&
@@ -170,6 +185,11 @@ export const RelayRequest = {
       message.api_id = object.api_id;
     } else {
       message.api_id = 0;
+    }
+    if (object.api_url !== undefined && object.api_url !== null) {
+      message.api_url = object.api_url;
+    } else {
+      message.api_url = "";
     }
     if (object.session_id !== undefined && object.session_id !== null) {
       message.session_id = object.session_id;

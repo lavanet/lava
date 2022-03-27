@@ -220,6 +220,7 @@ export interface ServicerRelayRequest {
 
   /** @format int64 */
   api_id?: number;
+  api_url?: string;
 
   /** @format uint64 */
   session_id?: string;

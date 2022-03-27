@@ -50534,6 +50534,8 @@ definitions:
       api_id:
         type: integer
         format: int64
+      api_url:
+        type: string
       session_id:
         type: string
         format: uint64
