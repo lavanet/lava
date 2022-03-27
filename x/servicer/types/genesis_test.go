@@ -67,6 +67,30 @@ func TestGenesisState_Validate(t *testing.T) {
 				EarliestSessionStart: &types.EarliestSessionStart{
 					Block: types.BlockNum{Num: 0},
 				},
+				UniquePaymentStorageUserServicerList: []types.UniquePaymentStorageUserServicer{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
+				UserPaymentStorageList: []types.UserPaymentStorage{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
+				SessionPaymentsList: []types.SessionPayments{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -129,6 +153,48 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated sessionStorageForSpec",
 			genState: &types.GenesisState{
 				SessionStorageForSpecList: []types.SessionStorageForSpec{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated uniquePaymentStorageUserServicer",
+			genState: &types.GenesisState{
+				UniquePaymentStorageUserServicerList: []types.UniquePaymentStorageUserServicer{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated userPaymentStorage",
+			genState: &types.GenesisState{
+				UserPaymentStorageList: []types.UserPaymentStorage{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated sessionPayments",
+			genState: &types.GenesisState{
+				SessionPaymentsList: []types.SessionPayments{
 					{
 						Index: "0",
 					},

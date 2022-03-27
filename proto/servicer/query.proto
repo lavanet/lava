@@ -12,7 +12,10 @@ import "servicer/current_session_start.proto";
 import "servicer/previous_session_blocks.proto";
 import "servicer/session_storage_for_spec.proto";
 import "servicer/earliest_session_start.proto";
+import "servicer/session_payments.proto";
 // this line is used by starport scaffolding # 1
+import "servicer/user_payment_storage.proto";
+import "servicer/unique_payment_storage_user_servicer.proto";
 import "servicer/stake_storage.proto";
 import "servicer/block_num.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -105,6 +108,36 @@ service Query {
 // Queries a list of VerifyPairing items.
 	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/servicer/verify_pairing/{spec}/{userAddr}/{servicerAddr}/{blockNum}";
+	}
+
+// Queries a UniquePaymentStorageUserServicer by index.
+	rpc UniquePaymentStorageUserServicer(QueryGetUniquePaymentStorageUserServicerRequest) returns (QueryGetUniquePaymentStorageUserServicerResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unique_payment_storage_user_servicer/{index}";
+	}
+
+	// Queries a list of UniquePaymentStorageUserServicer items.
+	rpc UniquePaymentStorageUserServicerAll(QueryAllUniquePaymentStorageUserServicerRequest) returns (QueryAllUniquePaymentStorageUserServicerResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/unique_payment_storage_user_servicer";
+	}
+
+// Queries a UserPaymentStorage by index.
+	rpc UserPaymentStorage(QueryGetUserPaymentStorageRequest) returns (QueryGetUserPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/user_payment_storage/{index}";
+	}
+
+	// Queries a list of UserPaymentStorage items.
+	rpc UserPaymentStorageAll(QueryAllUserPaymentStorageRequest) returns (QueryAllUserPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/user_payment_storage";
+	}
+
+// Queries a SessionPayments by index.
+	rpc SessionPayments(QueryGetSessionPaymentsRequest) returns (QueryGetSessionPaymentsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_payments/{index}";
+	}
+
+	// Queries a list of SessionPayments items.
+	rpc SessionPaymentsAll(QueryAllSessionPaymentsRequest) returns (QueryAllSessionPaymentsResponse) {
+		option (google.api.http).get = "/lavanet/lava/servicer/session_payments";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -254,6 +287,60 @@ message QueryVerifyPairingRequest {
 message QueryVerifyPairingResponse {
   bool valid = 1;
   bool overlap = 5;
+}
+
+message QueryGetUniquePaymentStorageUserServicerRequest {
+	  string index = 1;
+
+}
+
+message QueryGetUniquePaymentStorageUserServicerResponse {
+	UniquePaymentStorageUserServicer uniquePaymentStorageUserServicer = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllUniquePaymentStorageUserServicerRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllUniquePaymentStorageUserServicerResponse {
+	repeated UniquePaymentStorageUserServicer uniquePaymentStorageUserServicer = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetUserPaymentStorageRequest {
+	  string index = 1;
+
+}
+
+message QueryGetUserPaymentStorageResponse {
+	UserPaymentStorage userPaymentStorage = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllUserPaymentStorageRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllUserPaymentStorageResponse {
+	repeated UserPaymentStorage userPaymentStorage = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetSessionPaymentsRequest {
+	  string index = 1;
+
+}
+
+message QueryGetSessionPaymentsResponse {
+	SessionPayments sessionPayments = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllSessionPaymentsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSessionPaymentsResponse {
+	repeated SessionPayments sessionPayments = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3

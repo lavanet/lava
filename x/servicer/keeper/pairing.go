@@ -11,11 +11,11 @@ import (
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, isNew bool) (bool, error) {
+func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, isNew bool, block types.BlockNum) (userStakeMap *usertypes.UserStake, errorRet error) {
 
 	spec, found := k.specKeeper.GetSpec(ctx, specID)
 	if !found {
-		return false, fmt.Errorf("spec not found for id given: %d", specID)
+		return nil, fmt.Errorf("spec not found for id given: %d", specID)
 	}
 
 	verifiedUser := false
@@ -24,7 +24,7 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress 
 	//instead, to overcome unstaking users problems, we add support for unstaking users, and make sure users can't unstake sooner than savedSessions*blocksPerSession
 	userSpecStakeStorageForSpec, found := k.userKeeper.GetSpecStakeStorage(ctx, spec.Name)
 	if !found {
-		return false, fmt.Errorf("no user spec stake storage for spec %s", spec.Name)
+		return nil, fmt.Errorf("no user spec stake storage for spec %s", spec.Name)
 	}
 	allStakedUsersForSpec := userSpecStakeStorageForSpec.StakeStorage.StakedUsers
 	for _, stakedUser := range allStakedUsersForSpec {
@@ -33,7 +33,12 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress 
 			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", stakedUser.Index, err))
 		}
 		if userAddr.Equals(clientAddress) {
+			if stakedUser.Deadline.Num > block.Num {
+				//user is not valid for new pairings yet, or was jailed
+				return nil, fmt.Errorf("found staked user %s, but his deadline %d, was bigger than checked block: %d", stakedUser, stakedUser.Deadline.Num, block)
+			}
 			verifiedUser = true
+			userStakeMap = &stakedUser
 			break
 		}
 	}
@@ -47,21 +52,26 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress 
 			}
 			if userAddr.Equals(clientAddress) {
 				verifiedUser = true
+				userStakeMap = &userStake
 				break
 			}
 		}
 
 	}
 	if !verifiedUser {
-		return false, fmt.Errorf("client: %s isn't staked for spec %s", clientAddress, spec.Name)
+		return nil, fmt.Errorf("client: %s isn't staked for spec %s", clientAddress, spec.Name)
 	}
-	return true, nil
+	return userStakeMap, nil
 }
 
 //function used to get a new pairing from relayer and client
 //first argument has all metadata, second argument is only the addresses
 func (k Keeper) GetPairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress) (servicerOptions []types.StakeMap, errorRet error) {
-	k.verifyPairingData(ctx, specID, clientAddress, true)
+	_, err := k.verifyPairingData(ctx, specID, clientAddress, true, types.BlockNum{Num: uint64(ctx.BlockHeight())})
+	if err != nil {
+		//user is not valid for pairing
+		return nil, fmt.Errorf("invalid user for pairing: %s", err)
+	}
 	spec, _ := k.specKeeper.GetSpec(ctx, specID)
 	sessionStart, found := k.GetCurrentSessionStart(ctx)
 	if !found {
@@ -76,26 +86,30 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, specID uint64, clientAddres
 	return
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, servicerAddress sdk.AccAddress, block types.BlockNum) (isValidPairing bool, isOverlap bool, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, servicerAddress sdk.AccAddress, block types.BlockNum) (isValidPairing bool, isOverlap bool, userStake *usertypes.UserStake, errorRet error) {
 	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
-	k.verifyPairingData(ctx, specID, clientAddress, false)
+	userStake, err := k.verifyPairingData(ctx, specID, clientAddress, false, block)
+	if err != nil {
+		//user is not valid for pairing
+		return false, false, nil, fmt.Errorf("invalid user for pairing: %s", err)
+	}
 	spec, _ := k.specKeeper.GetSpec(ctx, specID)
 
 	stakeStorage, previousOverlappingStakeStorage, err := k.GetSpecStakeStorageInSessionStorageForSpec(ctx, block, spec.Name)
 	if err != nil {
-		return false, false, err
+		return false, false, nil, err
 	}
 	sessionStart, overlappingBlock, err := k.GetSessionStartForBlock(ctx, block)
 	if err != nil {
-		return false, false, err
+		return false, false, nil, err
 	}
 	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, stakeStorage, clientAddress, *sessionStart)
 	if errorRet != nil {
-		return false, false, errorRet
+		return false, false, nil, errorRet
 	}
 	for _, possibleAddr := range validAddresses {
 		if possibleAddr.Equals(servicerAddress) {
-			return true, false, nil
+			return true, false, userStake, nil
 		}
 	}
 	if previousOverlappingStakeStorage != nil {
@@ -104,16 +118,16 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, specID uint64, clientA
 		}
 		_, validAddressesOverlap, errorRet := k.calculatePairingForClient(ctx, previousOverlappingStakeStorage, clientAddress, *overlappingBlock)
 		if errorRet != nil {
-			return false, false, errorRet
+			return false, false, nil, errorRet
 		}
 		//check overlap addresses from previous session
 		for _, possibleAddr := range validAddressesOverlap {
 			if possibleAddr.Equals(servicerAddress) {
-				return true, true, nil
+				return true, true, userStake, nil
 			}
 		}
 	}
-	return false, false, nil
+	return false, false, userStake, nil
 }
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, stakedStorage *types.StakeStorage, clientAddress sdk.AccAddress, sessionStartBlock types.BlockNum) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {

@@ -8,6 +8,9 @@ import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 import { EarliestSessionStart } from "../servicer/earliest_session_start";
+import { UniquePaymentStorageUserServicer } from "../servicer/unique_payment_storage_user_servicer";
+import { UserPaymentStorage } from "../servicer/user_payment_storage";
+import { SessionPayments } from "../servicer/session_payments";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** GenesisState defines the servicer module's genesis state. */
 export interface GenesisState {
@@ -20,8 +23,11 @@ export interface GenesisState {
     currentSessionStart: CurrentSessionStart | undefined;
     previousSessionBlocks: PreviousSessionBlocks | undefined;
     sessionStorageForSpecList: SessionStorageForSpec[];
-    /** this line is used by starport scaffolding # genesis/proto/state */
     earliestSessionStart: EarliestSessionStart | undefined;
+    uniquePaymentStorageUserServicerList: UniquePaymentStorageUserServicer[];
+    userPaymentStorageList: UserPaymentStorage[];
+    /** this line is used by starport scaffolding # genesis/proto/state */
+    sessionPaymentsList: SessionPayments[];
 }
 export declare const GenesisState: {
     encode(message: GenesisState, writer?: Writer): Writer;

@@ -10,6 +10,9 @@ import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 import { EarliestSessionStart } from "../servicer/earliest_session_start";
+import { UniquePaymentStorageUserServicer } from "../servicer/unique_payment_storage_user_servicer";
+import { UserPaymentStorage } from "../servicer/user_payment_storage";
+import { SessionPayments } from "../servicer/session_payments";
 export const protobufPackage = "lavanet.lava.servicer";
 const baseGenesisState = { unstakingServicersAllSpecsCount: 0 };
 export const GenesisState = {
@@ -44,6 +47,15 @@ export const GenesisState = {
         if (message.earliestSessionStart !== undefined) {
             EarliestSessionStart.encode(message.earliestSessionStart, writer.uint32(82).fork()).ldelim();
         }
+        for (const v of message.uniquePaymentStorageUserServicerList) {
+            UniquePaymentStorageUserServicer.encode(v, writer.uint32(90).fork()).ldelim();
+        }
+        for (const v of message.userPaymentStorageList) {
+            UserPaymentStorage.encode(v, writer.uint32(98).fork()).ldelim();
+        }
+        for (const v of message.sessionPaymentsList) {
+            SessionPayments.encode(v, writer.uint32(106).fork()).ldelim();
+        }
         return writer;
     },
     decode(input, length) {
@@ -54,6 +66,9 @@ export const GenesisState = {
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
         message.sessionStorageForSpecList = [];
+        message.uniquePaymentStorageUserServicerList = [];
+        message.userPaymentStorageList = [];
+        message.sessionPaymentsList = [];
         while (reader.pos < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -87,6 +102,15 @@ export const GenesisState = {
                 case 10:
                     message.earliestSessionStart = EarliestSessionStart.decode(reader, reader.uint32());
                     break;
+                case 11:
+                    message.uniquePaymentStorageUserServicerList.push(UniquePaymentStorageUserServicer.decode(reader, reader.uint32()));
+                    break;
+                case 12:
+                    message.userPaymentStorageList.push(UserPaymentStorage.decode(reader, reader.uint32()));
+                    break;
+                case 13:
+                    message.sessionPaymentsList.push(SessionPayments.decode(reader, reader.uint32()));
+                    break;
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -100,6 +124,9 @@ export const GenesisState = {
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
         message.sessionStorageForSpecList = [];
+        message.uniquePaymentStorageUserServicerList = [];
+        message.userPaymentStorageList = [];
+        message.sessionPaymentsList = [];
         if (object.params !== undefined && object.params !== null) {
             message.params = Params.fromJSON(object.params);
         }
@@ -164,6 +191,24 @@ export const GenesisState = {
         else {
             message.earliestSessionStart = undefined;
         }
+        if (object.uniquePaymentStorageUserServicerList !== undefined &&
+            object.uniquePaymentStorageUserServicerList !== null) {
+            for (const e of object.uniquePaymentStorageUserServicerList) {
+                message.uniquePaymentStorageUserServicerList.push(UniquePaymentStorageUserServicer.fromJSON(e));
+            }
+        }
+        if (object.userPaymentStorageList !== undefined &&
+            object.userPaymentStorageList !== null) {
+            for (const e of object.userPaymentStorageList) {
+                message.userPaymentStorageList.push(UserPaymentStorage.fromJSON(e));
+            }
+        }
+        if (object.sessionPaymentsList !== undefined &&
+            object.sessionPaymentsList !== null) {
+            for (const e of object.sessionPaymentsList) {
+                message.sessionPaymentsList.push(SessionPayments.fromJSON(e));
+            }
+        }
         return message;
     },
     toJSON(message) {
@@ -213,6 +258,24 @@ export const GenesisState = {
             (obj.earliestSessionStart = message.earliestSessionStart
                 ? EarliestSessionStart.toJSON(message.earliestSessionStart)
                 : undefined);
+        if (message.uniquePaymentStorageUserServicerList) {
+            obj.uniquePaymentStorageUserServicerList = message.uniquePaymentStorageUserServicerList.map((e) => (e ? UniquePaymentStorageUserServicer.toJSON(e) : undefined));
+        }
+        else {
+            obj.uniquePaymentStorageUserServicerList = [];
+        }
+        if (message.userPaymentStorageList) {
+            obj.userPaymentStorageList = message.userPaymentStorageList.map((e) => e ? UserPaymentStorage.toJSON(e) : undefined);
+        }
+        else {
+            obj.userPaymentStorageList = [];
+        }
+        if (message.sessionPaymentsList) {
+            obj.sessionPaymentsList = message.sessionPaymentsList.map((e) => e ? SessionPayments.toJSON(e) : undefined);
+        }
+        else {
+            obj.sessionPaymentsList = [];
+        }
         return obj;
     },
     fromPartial(object) {
@@ -221,6 +284,9 @@ export const GenesisState = {
         message.specStakeStorageList = [];
         message.unstakingServicersAllSpecsList = [];
         message.sessionStorageForSpecList = [];
+        message.uniquePaymentStorageUserServicerList = [];
+        message.userPaymentStorageList = [];
+        message.sessionPaymentsList = [];
         if (object.params !== undefined && object.params !== null) {
             message.params = Params.fromPartial(object.params);
         }
@@ -285,6 +351,24 @@ export const GenesisState = {
         }
         else {
             message.earliestSessionStart = undefined;
+        }
+        if (object.uniquePaymentStorageUserServicerList !== undefined &&
+            object.uniquePaymentStorageUserServicerList !== null) {
+            for (const e of object.uniquePaymentStorageUserServicerList) {
+                message.uniquePaymentStorageUserServicerList.push(UniquePaymentStorageUserServicer.fromPartial(e));
+            }
+        }
+        if (object.userPaymentStorageList !== undefined &&
+            object.userPaymentStorageList !== null) {
+            for (const e of object.userPaymentStorageList) {
+                message.userPaymentStorageList.push(UserPaymentStorage.fromPartial(e));
+            }
+        }
+        if (object.sessionPaymentsList !== undefined &&
+            object.sessionPaymentsList !== null) {
+            for (const e of object.sessionPaymentsList) {
+                message.sessionPaymentsList.push(SessionPayments.fromPartial(e));
+            }
         }
         return message;
     },

@@ -84,6 +84,21 @@ export interface ServicerPreviousSessionBlocks {
   overlapBlocks?: string;
 }
 
+export interface ServicerQueryAllSessionPaymentsResponse {
+  sessionPayments?: ServicerSessionPayments[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
 export interface ServicerQueryAllSessionStorageForSpecResponse {
   sessionStorageForSpec?: ServicerSessionStorageForSpec[];
 
@@ -133,8 +148,38 @@ export interface ServicerQueryAllStakeMapResponse {
   pagination?: V1Beta1PageResponse;
 }
 
+export interface ServicerQueryAllUniquePaymentStorageUserServicerResponse {
+  uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
 export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
   UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs[];
+
+  /**
+   * PageResponse is to be embedded in gRPC response messages where the
+   * corresponding request message has used PageRequest.
+   *
+   *  message SomeResponse {
+   *          repeated Bar results = 1;
+   *          PageResponse page = 2;
+   *  }
+   */
+  pagination?: V1Beta1PageResponse;
+}
+
+export interface ServicerQueryAllUserPaymentStorageResponse {
+  userPaymentStorage?: ServicerUserPaymentStorage[];
 
   /**
    * PageResponse is to be embedded in gRPC response messages where the
@@ -168,6 +213,10 @@ export interface ServicerQueryGetPreviousSessionBlocksResponse {
   PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
 }
 
+export interface ServicerQueryGetSessionPaymentsResponse {
+  sessionPayments?: ServicerSessionPayments;
+}
+
 export interface ServicerQueryGetSessionStorageForSpecResponse {
   sessionStorageForSpec?: ServicerSessionStorageForSpec;
 }
@@ -180,8 +229,16 @@ export interface ServicerQueryGetStakeMapResponse {
   stakeMap?: ServicerStakeMap;
 }
 
+export interface ServicerQueryGetUniquePaymentStorageUserServicerResponse {
+  uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer;
+}
+
 export interface ServicerQueryGetUnstakingServicersAllSpecsResponse {
   UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs;
+}
+
+export interface ServicerQueryGetUserPaymentStorageResponse {
+  userPaymentStorage?: ServicerUserPaymentStorage;
 }
 
 /**
@@ -238,6 +295,11 @@ export interface ServicerRelayRequest {
   blockHeight?: string;
 }
 
+export interface ServicerSessionPayments {
+  index?: string;
+  usersPayments?: ServicerUserPaymentStorage;
+}
+
 export interface ServicerSessionStorageForSpec {
   index?: string;
   stakeStorage?: ServicerStakeStorage;
@@ -270,11 +332,29 @@ export interface ServicerStakeStorage {
   staked?: ServicerStakeMap[];
 }
 
+export interface ServicerUniquePaymentStorageUserServicer {
+  index?: string;
+
+  /** @format uint64 */
+  block?: string;
+}
+
 export interface ServicerUnstakingServicersAllSpecs {
   /** @format uint64 */
   id?: string;
   unstaking?: ServicerStakeMap;
   specStakeStorage?: ServicerSpecStakeStorage;
+}
+
+export interface ServicerUserPaymentStorage {
+  index?: string;
+  uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer;
+
+  /** @format uint64 */
+  totalCU?: string;
+
+  /** @format uint64 */
+  session?: string;
 }
 
 /**
@@ -663,6 +743,48 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QuerySessionPaymentsAll
+   * @summary Queries a list of SessionPayments items.
+   * @request GET:/lavanet/lava/servicer/session_payments
+   */
+  querySessionPaymentsAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<ServicerQueryAllSessionPaymentsResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/session_payments`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QuerySessionPayments
+   * @summary Queries a SessionPayments by index.
+   * @request GET:/lavanet/lava/servicer/session_payments/{index}
+   */
+  querySessionPayments = (index: string, params: RequestParams = {}) =>
+    this.request<ServicerQueryGetSessionPaymentsResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/session_payments/${index}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QuerySessionStorageForAllSpecs
    * @summary Queries a list of SessionStorageForAllSpecs items.
    * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
@@ -821,6 +943,48 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
    * No description
    *
    * @tags Query
+   * @name QueryUniquePaymentStorageUserServicerAll
+   * @summary Queries a list of UniquePaymentStorageUserServicer items.
+   * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer
+   */
+  queryUniquePaymentStorageUserServicerAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<ServicerQueryAllUniquePaymentStorageUserServicerResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/unique_payment_storage_user_servicer`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUniquePaymentStorageUserServicer
+   * @summary Queries a UniquePaymentStorageUserServicer by index.
+   * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer/{index}
+   */
+  queryUniquePaymentStorageUserServicer = (index: string, params: RequestParams = {}) =>
+    this.request<ServicerQueryGetUniquePaymentStorageUserServicerResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/unique_payment_storage_user_servicer/${index}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
    * @name QueryUnstakingServicersAllSpecsAll
    * @summary Queries a list of UnstakingServicersAllSpecs items.
    * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs
@@ -854,6 +1018,48 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
   queryUnstakingServicersAllSpecs = (id: string, params: RequestParams = {}) =>
     this.request<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>({
       path: `/lavanet/lava/servicer/unstaking_servicers_all_specs/${id}`,
+      method: "GET",
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUserPaymentStorageAll
+   * @summary Queries a list of UserPaymentStorage items.
+   * @request GET:/lavanet/lava/servicer/user_payment_storage
+   */
+  queryUserPaymentStorageAll = (
+    query?: {
+      "pagination.key"?: string;
+      "pagination.offset"?: string;
+      "pagination.limit"?: string;
+      "pagination.countTotal"?: boolean;
+      "pagination.reverse"?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<ServicerQueryAllUserPaymentStorageResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/user_payment_storage`,
+      method: "GET",
+      query: query,
+      format: "json",
+      ...params,
+    });
+
+  /**
+   * No description
+   *
+   * @tags Query
+   * @name QueryUserPaymentStorage
+   * @summary Queries a UserPaymentStorage by index.
+   * @request GET:/lavanet/lava/servicer/user_payment_storage/{index}
+   */
+  queryUserPaymentStorage = (index: string, params: RequestParams = {}) =>
+    this.request<ServicerQueryGetUserPaymentStorageResponse, RpcStatus>({
+      path: `/lavanet/lava/servicer/user_payment_storage/${index}`,
       method: "GET",
       format: "json",
       ...params,

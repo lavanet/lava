@@ -238,6 +238,35 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QuerySessionPaymentsAll
+         * @summary Queries a list of SessionPayments items.
+         * @request GET:/lavanet/lava/servicer/session_payments
+         */
+        this.querySessionPaymentsAll = (query, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/session_payments`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QuerySessionPayments
+         * @summary Queries a SessionPayments by index.
+         * @request GET:/lavanet/lava/servicer/session_payments/{index}
+         */
+        this.querySessionPayments = (index, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/session_payments/${index}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QuerySessionStorageForAllSpecs
          * @summary Queries a list of SessionStorageForAllSpecs items.
          * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
@@ -353,6 +382,35 @@ export class Api extends HttpClient {
          * No description
          *
          * @tags Query
+         * @name QueryUniquePaymentStorageUserServicerAll
+         * @summary Queries a list of UniquePaymentStorageUserServicer items.
+         * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer
+         */
+        this.queryUniquePaymentStorageUserServicerAll = (query, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/unique_payment_storage_user_servicer`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUniquePaymentStorageUserServicer
+         * @summary Queries a UniquePaymentStorageUserServicer by index.
+         * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer/{index}
+         */
+        this.queryUniquePaymentStorageUserServicer = (index, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/unique_payment_storage_user_servicer/${index}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
          * @name QueryUnstakingServicersAllSpecsAll
          * @summary Queries a list of UnstakingServicersAllSpecs items.
          * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs
@@ -374,6 +432,35 @@ export class Api extends HttpClient {
          */
         this.queryUnstakingServicersAllSpecs = (id, params = {}) => this.request({
             path: `/lavanet/lava/servicer/unstaking_servicers_all_specs/${id}`,
+            method: "GET",
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUserPaymentStorageAll
+         * @summary Queries a list of UserPaymentStorage items.
+         * @request GET:/lavanet/lava/servicer/user_payment_storage
+         */
+        this.queryUserPaymentStorageAll = (query, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/user_payment_storage`,
+            method: "GET",
+            query: query,
+            format: "json",
+            ...params,
+        });
+        /**
+         * No description
+         *
+         * @tags Query
+         * @name QueryUserPaymentStorage
+         * @summary Queries a UserPaymentStorage by index.
+         * @request GET:/lavanet/lava/servicer/user_payment_storage/{index}
+         */
+        this.queryUserPaymentStorage = (index, params = {}) => this.request({
+            path: `/lavanet/lava/servicer/user_payment_storage/${index}`,
             method: "GET",
             format: "json",
             ...params,

@@ -10,6 +10,9 @@ import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 import { EarliestSessionStart } from "../servicer/earliest_session_start";
+import { UniquePaymentStorageUserServicer } from "../servicer/unique_payment_storage_user_servicer";
+import { UserPaymentStorage } from "../servicer/user_payment_storage";
+import { SessionPayments } from "../servicer/session_payments";
 export declare const protobufPackage = "lavanet.lava.servicer";
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -126,6 +129,45 @@ export interface QueryVerifyPairingRequest {
 export interface QueryVerifyPairingResponse {
     valid: boolean;
     overlap: boolean;
+}
+export interface QueryGetUniquePaymentStorageUserServicerRequest {
+    index: string;
+}
+export interface QueryGetUniquePaymentStorageUserServicerResponse {
+    uniquePaymentStorageUserServicer: UniquePaymentStorageUserServicer | undefined;
+}
+export interface QueryAllUniquePaymentStorageUserServicerRequest {
+    pagination: PageRequest | undefined;
+}
+export interface QueryAllUniquePaymentStorageUserServicerResponse {
+    uniquePaymentStorageUserServicer: UniquePaymentStorageUserServicer[];
+    pagination: PageResponse | undefined;
+}
+export interface QueryGetUserPaymentStorageRequest {
+    index: string;
+}
+export interface QueryGetUserPaymentStorageResponse {
+    userPaymentStorage: UserPaymentStorage | undefined;
+}
+export interface QueryAllUserPaymentStorageRequest {
+    pagination: PageRequest | undefined;
+}
+export interface QueryAllUserPaymentStorageResponse {
+    userPaymentStorage: UserPaymentStorage[];
+    pagination: PageResponse | undefined;
+}
+export interface QueryGetSessionPaymentsRequest {
+    index: string;
+}
+export interface QueryGetSessionPaymentsResponse {
+    sessionPayments: SessionPayments | undefined;
+}
+export interface QueryAllSessionPaymentsRequest {
+    pagination: PageRequest | undefined;
+}
+export interface QueryAllSessionPaymentsResponse {
+    sessionPayments: SessionPayments[];
+    pagination: PageResponse | undefined;
 }
 export declare const QueryParamsRequest: {
     encode(_: QueryParamsRequest, writer?: Writer): Writer;
@@ -379,6 +421,90 @@ export declare const QueryVerifyPairingResponse: {
     toJSON(message: QueryVerifyPairingResponse): unknown;
     fromPartial(object: DeepPartial<QueryVerifyPairingResponse>): QueryVerifyPairingResponse;
 };
+export declare const QueryGetUniquePaymentStorageUserServicerRequest: {
+    encode(message: QueryGetUniquePaymentStorageUserServicerRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUniquePaymentStorageUserServicerRequest;
+    fromJSON(object: any): QueryGetUniquePaymentStorageUserServicerRequest;
+    toJSON(message: QueryGetUniquePaymentStorageUserServicerRequest): unknown;
+    fromPartial(object: DeepPartial<QueryGetUniquePaymentStorageUserServicerRequest>): QueryGetUniquePaymentStorageUserServicerRequest;
+};
+export declare const QueryGetUniquePaymentStorageUserServicerResponse: {
+    encode(message: QueryGetUniquePaymentStorageUserServicerResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUniquePaymentStorageUserServicerResponse;
+    fromJSON(object: any): QueryGetUniquePaymentStorageUserServicerResponse;
+    toJSON(message: QueryGetUniquePaymentStorageUserServicerResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetUniquePaymentStorageUserServicerResponse>): QueryGetUniquePaymentStorageUserServicerResponse;
+};
+export declare const QueryAllUniquePaymentStorageUserServicerRequest: {
+    encode(message: QueryAllUniquePaymentStorageUserServicerRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUniquePaymentStorageUserServicerRequest;
+    fromJSON(object: any): QueryAllUniquePaymentStorageUserServicerRequest;
+    toJSON(message: QueryAllUniquePaymentStorageUserServicerRequest): unknown;
+    fromPartial(object: DeepPartial<QueryAllUniquePaymentStorageUserServicerRequest>): QueryAllUniquePaymentStorageUserServicerRequest;
+};
+export declare const QueryAllUniquePaymentStorageUserServicerResponse: {
+    encode(message: QueryAllUniquePaymentStorageUserServicerResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUniquePaymentStorageUserServicerResponse;
+    fromJSON(object: any): QueryAllUniquePaymentStorageUserServicerResponse;
+    toJSON(message: QueryAllUniquePaymentStorageUserServicerResponse): unknown;
+    fromPartial(object: DeepPartial<QueryAllUniquePaymentStorageUserServicerResponse>): QueryAllUniquePaymentStorageUserServicerResponse;
+};
+export declare const QueryGetUserPaymentStorageRequest: {
+    encode(message: QueryGetUserPaymentStorageRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUserPaymentStorageRequest;
+    fromJSON(object: any): QueryGetUserPaymentStorageRequest;
+    toJSON(message: QueryGetUserPaymentStorageRequest): unknown;
+    fromPartial(object: DeepPartial<QueryGetUserPaymentStorageRequest>): QueryGetUserPaymentStorageRequest;
+};
+export declare const QueryGetUserPaymentStorageResponse: {
+    encode(message: QueryGetUserPaymentStorageResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetUserPaymentStorageResponse;
+    fromJSON(object: any): QueryGetUserPaymentStorageResponse;
+    toJSON(message: QueryGetUserPaymentStorageResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetUserPaymentStorageResponse>): QueryGetUserPaymentStorageResponse;
+};
+export declare const QueryAllUserPaymentStorageRequest: {
+    encode(message: QueryAllUserPaymentStorageRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUserPaymentStorageRequest;
+    fromJSON(object: any): QueryAllUserPaymentStorageRequest;
+    toJSON(message: QueryAllUserPaymentStorageRequest): unknown;
+    fromPartial(object: DeepPartial<QueryAllUserPaymentStorageRequest>): QueryAllUserPaymentStorageRequest;
+};
+export declare const QueryAllUserPaymentStorageResponse: {
+    encode(message: QueryAllUserPaymentStorageResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllUserPaymentStorageResponse;
+    fromJSON(object: any): QueryAllUserPaymentStorageResponse;
+    toJSON(message: QueryAllUserPaymentStorageResponse): unknown;
+    fromPartial(object: DeepPartial<QueryAllUserPaymentStorageResponse>): QueryAllUserPaymentStorageResponse;
+};
+export declare const QueryGetSessionPaymentsRequest: {
+    encode(message: QueryGetSessionPaymentsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetSessionPaymentsRequest;
+    fromJSON(object: any): QueryGetSessionPaymentsRequest;
+    toJSON(message: QueryGetSessionPaymentsRequest): unknown;
+    fromPartial(object: DeepPartial<QueryGetSessionPaymentsRequest>): QueryGetSessionPaymentsRequest;
+};
+export declare const QueryGetSessionPaymentsResponse: {
+    encode(message: QueryGetSessionPaymentsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryGetSessionPaymentsResponse;
+    fromJSON(object: any): QueryGetSessionPaymentsResponse;
+    toJSON(message: QueryGetSessionPaymentsResponse): unknown;
+    fromPartial(object: DeepPartial<QueryGetSessionPaymentsResponse>): QueryGetSessionPaymentsResponse;
+};
+export declare const QueryAllSessionPaymentsRequest: {
+    encode(message: QueryAllSessionPaymentsRequest, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllSessionPaymentsRequest;
+    fromJSON(object: any): QueryAllSessionPaymentsRequest;
+    toJSON(message: QueryAllSessionPaymentsRequest): unknown;
+    fromPartial(object: DeepPartial<QueryAllSessionPaymentsRequest>): QueryAllSessionPaymentsRequest;
+};
+export declare const QueryAllSessionPaymentsResponse: {
+    encode(message: QueryAllSessionPaymentsResponse, writer?: Writer): Writer;
+    decode(input: Reader | Uint8Array, length?: number): QueryAllSessionPaymentsResponse;
+    fromJSON(object: any): QueryAllSessionPaymentsResponse;
+    toJSON(message: QueryAllSessionPaymentsResponse): unknown;
+    fromPartial(object: DeepPartial<QueryAllSessionPaymentsResponse>): QueryAllSessionPaymentsResponse;
+};
 /** Query defines the gRPC querier service. */
 export interface Query {
     /** Parameters queries the parameters of the module. */
@@ -417,6 +543,18 @@ export interface Query {
     EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
     /** Queries a list of VerifyPairing items. */
     VerifyPairing(request: QueryVerifyPairingRequest): Promise<QueryVerifyPairingResponse>;
+    /** Queries a UniquePaymentStorageUserServicer by index. */
+    UniquePaymentStorageUserServicer(request: QueryGetUniquePaymentStorageUserServicerRequest): Promise<QueryGetUniquePaymentStorageUserServicerResponse>;
+    /** Queries a list of UniquePaymentStorageUserServicer items. */
+    UniquePaymentStorageUserServicerAll(request: QueryAllUniquePaymentStorageUserServicerRequest): Promise<QueryAllUniquePaymentStorageUserServicerResponse>;
+    /** Queries a UserPaymentStorage by index. */
+    UserPaymentStorage(request: QueryGetUserPaymentStorageRequest): Promise<QueryGetUserPaymentStorageResponse>;
+    /** Queries a list of UserPaymentStorage items. */
+    UserPaymentStorageAll(request: QueryAllUserPaymentStorageRequest): Promise<QueryAllUserPaymentStorageResponse>;
+    /** Queries a SessionPayments by index. */
+    SessionPayments(request: QueryGetSessionPaymentsRequest): Promise<QueryGetSessionPaymentsResponse>;
+    /** Queries a list of SessionPayments items. */
+    SessionPaymentsAll(request: QueryAllSessionPaymentsRequest): Promise<QueryAllSessionPaymentsResponse>;
 }
 export declare class QueryClientImpl implements Query {
     private readonly rpc;
@@ -439,6 +577,12 @@ export declare class QueryClientImpl implements Query {
     AllSessionStoragesForSpec(request: QueryAllSessionStoragesForSpecRequest): Promise<QueryAllSessionStoragesForSpecResponse>;
     EarliestSessionStart(request: QueryGetEarliestSessionStartRequest): Promise<QueryGetEarliestSessionStartResponse>;
     VerifyPairing(request: QueryVerifyPairingRequest): Promise<QueryVerifyPairingResponse>;
+    UniquePaymentStorageUserServicer(request: QueryGetUniquePaymentStorageUserServicerRequest): Promise<QueryGetUniquePaymentStorageUserServicerResponse>;
+    UniquePaymentStorageUserServicerAll(request: QueryAllUniquePaymentStorageUserServicerRequest): Promise<QueryAllUniquePaymentStorageUserServicerResponse>;
+    UserPaymentStorage(request: QueryGetUserPaymentStorageRequest): Promise<QueryGetUserPaymentStorageResponse>;
+    UserPaymentStorageAll(request: QueryAllUserPaymentStorageRequest): Promise<QueryAllUserPaymentStorageResponse>;
+    SessionPayments(request: QueryGetSessionPaymentsRequest): Promise<QueryGetSessionPaymentsResponse>;
+    SessionPaymentsAll(request: QueryAllSessionPaymentsRequest): Promise<QueryAllSessionPaymentsResponse>;
 }
 interface Rpc {
     request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;

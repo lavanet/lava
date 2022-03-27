@@ -53,6 +53,19 @@ export interface ServicerPreviousSessionBlocks {
     /** @format uint64 */
     overlapBlocks?: string;
 }
+export interface ServicerQueryAllSessionPaymentsResponse {
+    sessionPayments?: ServicerSessionPayments[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
 export interface ServicerQueryAllSessionStorageForSpecResponse {
     sessionStorageForSpec?: ServicerSessionStorageForSpec[];
     /**
@@ -95,8 +108,34 @@ export interface ServicerQueryAllStakeMapResponse {
      */
     pagination?: V1Beta1PageResponse;
 }
+export interface ServicerQueryAllUniquePaymentStorageUserServicerResponse {
+    uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
 export interface ServicerQueryAllUnstakingServicersAllSpecsResponse {
     UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs[];
+    /**
+     * PageResponse is to be embedded in gRPC response messages where the
+     * corresponding request message has used PageRequest.
+     *
+     *  message SomeResponse {
+     *          repeated Bar results = 1;
+     *          PageResponse page = 2;
+     *  }
+     */
+    pagination?: V1Beta1PageResponse;
+}
+export interface ServicerQueryAllUserPaymentStorageResponse {
+    userPaymentStorage?: ServicerUserPaymentStorage[];
     /**
      * PageResponse is to be embedded in gRPC response messages where the
      * corresponding request message has used PageRequest.
@@ -123,6 +162,9 @@ export interface ServicerQueryGetPairingResponse {
 export interface ServicerQueryGetPreviousSessionBlocksResponse {
     PreviousSessionBlocks?: ServicerPreviousSessionBlocks;
 }
+export interface ServicerQueryGetSessionPaymentsResponse {
+    sessionPayments?: ServicerSessionPayments;
+}
 export interface ServicerQueryGetSessionStorageForSpecResponse {
     sessionStorageForSpec?: ServicerSessionStorageForSpec;
 }
@@ -132,8 +174,14 @@ export interface ServicerQueryGetSpecStakeStorageResponse {
 export interface ServicerQueryGetStakeMapResponse {
     stakeMap?: ServicerStakeMap;
 }
+export interface ServicerQueryGetUniquePaymentStorageUserServicerResponse {
+    uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer;
+}
 export interface ServicerQueryGetUnstakingServicersAllSpecsResponse {
     UnstakingServicersAllSpecs?: ServicerUnstakingServicersAllSpecs;
+}
+export interface ServicerQueryGetUserPaymentStorageResponse {
+    userPaymentStorage?: ServicerUserPaymentStorage;
 }
 /**
  * QueryParamsResponse is response type for the Query/Params RPC method.
@@ -176,6 +224,10 @@ export interface ServicerRelayRequest {
     /** @format int64 */
     blockHeight?: string;
 }
+export interface ServicerSessionPayments {
+    index?: string;
+    usersPayments?: ServicerUserPaymentStorage;
+}
 export interface ServicerSessionStorageForSpec {
     index?: string;
     stakeStorage?: ServicerStakeStorage;
@@ -202,11 +254,24 @@ export interface ServicerStakeMap {
 export interface ServicerStakeStorage {
     staked?: ServicerStakeMap[];
 }
+export interface ServicerUniquePaymentStorageUserServicer {
+    index?: string;
+    /** @format uint64 */
+    block?: string;
+}
 export interface ServicerUnstakingServicersAllSpecs {
     /** @format uint64 */
     id?: string;
     unstaking?: ServicerStakeMap;
     specStakeStorage?: ServicerSpecStakeStorage;
+}
+export interface ServicerUserPaymentStorage {
+    index?: string;
+    uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer;
+    /** @format uint64 */
+    totalCU?: string;
+    /** @format uint64 */
+    session?: string;
 }
 /**
 * Coin defines a token with a denomination and an amount.
@@ -399,6 +464,30 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QuerySessionPaymentsAll
+     * @summary Queries a list of SessionPayments items.
+     * @request GET:/lavanet/lava/servicer/session_payments
+     */
+    querySessionPaymentsAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllSessionPaymentsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QuerySessionPayments
+     * @summary Queries a SessionPayments by index.
+     * @request GET:/lavanet/lava/servicer/session_payments/{index}
+     */
+    querySessionPayments: (index: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetSessionPaymentsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QuerySessionStorageForAllSpecs
      * @summary Queries a list of SessionStorageForAllSpecs items.
      * @request GET:/lavanet/lava/servicer/session_storage_for_all_specs/{blockNum}
@@ -489,6 +578,30 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * No description
      *
      * @tags Query
+     * @name QueryUniquePaymentStorageUserServicerAll
+     * @summary Queries a list of UniquePaymentStorageUserServicer items.
+     * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer
+     */
+    queryUniquePaymentStorageUserServicerAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllUniquePaymentStorageUserServicerResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUniquePaymentStorageUserServicer
+     * @summary Queries a UniquePaymentStorageUserServicer by index.
+     * @request GET:/lavanet/lava/servicer/unique_payment_storage_user_servicer/{index}
+     */
+    queryUniquePaymentStorageUserServicer: (index: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUniquePaymentStorageUserServicerResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
      * @name QueryUnstakingServicersAllSpecsAll
      * @summary Queries a list of UnstakingServicersAllSpecs items.
      * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs
@@ -509,6 +622,30 @@ export declare class Api<SecurityDataType extends unknown> extends HttpClient<Se
      * @request GET:/lavanet/lava/servicer/unstaking_servicers_all_specs/{id}
      */
     queryUnstakingServicersAllSpecs: (id: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUnstakingServicersAllSpecsResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserPaymentStorageAll
+     * @summary Queries a list of UserPaymentStorage items.
+     * @request GET:/lavanet/lava/servicer/user_payment_storage
+     */
+    queryUserPaymentStorageAll: (query?: {
+        "pagination.key"?: string;
+        "pagination.offset"?: string;
+        "pagination.limit"?: string;
+        "pagination.countTotal"?: boolean;
+        "pagination.reverse"?: boolean;
+    }, params?: RequestParams) => Promise<HttpResponse<ServicerQueryAllUserPaymentStorageResponse, RpcStatus>>;
+    /**
+     * No description
+     *
+     * @tags Query
+     * @name QueryUserPaymentStorage
+     * @summary Queries a UserPaymentStorage by index.
+     * @request GET:/lavanet/lava/servicer/user_payment_storage/{index}
+     */
+    queryUserPaymentStorage: (index: string, params?: RequestParams) => Promise<HttpResponse<ServicerQueryGetUserPaymentStorageResponse, RpcStatus>>;
     /**
      * No description
      *

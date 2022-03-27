@@ -39,4 +39,5 @@ type UserKeeper interface {
 	GetCoinsPerCU(ctx sdk.Context) (res float64)
 	GetUnstakingUsersForSpec(sdk.Context, usertypes.SpecName) ([]usertypes.UserStake, []int)
 	BurnUserStake(sdk.Context, usertypes.SpecName, sdk.AccAddress, sdk.Coin, bool) (bool, error)
+	EnforceUserCUsUsageInSession(sdk.Context, *usertypes.UserStake, uint64) error
 }

@@ -43,6 +43,18 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	if genState.EarliestSessionStart != nil {
 		k.SetEarliestSessionStart(ctx, *genState.EarliestSessionStart)
 	}
+	// Set all the uniquePaymentStorageUserServicer
+	for _, elem := range genState.UniquePaymentStorageUserServicerList {
+		k.SetUniquePaymentStorageUserServicer(ctx, elem)
+	}
+	// Set all the userPaymentStorage
+	for _, elem := range genState.UserPaymentStorageList {
+		k.SetUserPaymentStorage(ctx, elem)
+	}
+	// Set all the sessionPayments
+	for _, elem := range genState.SessionPaymentsList {
+		k.SetSessionPayments(ctx, elem)
+	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -77,6 +89,9 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	if found {
 		genesis.EarliestSessionStart = &earliestSessionStart
 	}
+	genesis.UniquePaymentStorageUserServicerList = k.GetAllUniquePaymentStorageUserServicer(ctx)
+	genesis.UserPaymentStorageList = k.GetAllUserPaymentStorage(ctx)
+	genesis.SessionPaymentsList = k.GetAllSessionPayments(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

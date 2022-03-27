@@ -184,7 +184,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 		//1. update param change (previousSessionBlocks) if change detected
 		//2. update session start
 		//3. update the SpecStakeStorage in sessionStorageForSpec
-		//4. remove old sessionStorageForSpec
+		//4. remove old sessionStorageForSpec, old sessionPayments
 		//5. unstake any unstaking servicers
 
 		//1. !!! must be before SetCurrentSessionStart, it counts on the fact it wasn't updated yet
@@ -197,8 +197,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 		am.keeper.StoreSpecStakeStorageInSession(ctx)
 
 		//4.
-		am.keeper.RemoveStakeStorageInSession(ctx)
-
+		am.keeper.RemoveOldSessionPayment(ctx)     //this needs to be first, it uses earliest session start
+		am.keeper.RemoveStakeStorageInSession(ctx) //this updates earliest session start
 		//5.
 		am.keeper.CheckUnstakingForCommit(ctx)
 

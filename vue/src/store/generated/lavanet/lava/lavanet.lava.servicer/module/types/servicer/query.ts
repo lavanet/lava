@@ -15,6 +15,9 @@ import { CurrentSessionStart } from "../servicer/current_session_start";
 import { PreviousSessionBlocks } from "../servicer/previous_session_blocks";
 import { SessionStorageForSpec } from "../servicer/session_storage_for_spec";
 import { EarliestSessionStart } from "../servicer/earliest_session_start";
+import { UniquePaymentStorageUserServicer } from "../servicer/unique_payment_storage_user_servicer";
+import { UserPaymentStorage } from "../servicer/user_payment_storage";
+import { SessionPayments } from "../servicer/session_payments";
 
 export const protobufPackage = "lavanet.lava.servicer";
 
@@ -163,6 +166,59 @@ export interface QueryVerifyPairingRequest {
 export interface QueryVerifyPairingResponse {
   valid: boolean;
   overlap: boolean;
+}
+
+export interface QueryGetUniquePaymentStorageUserServicerRequest {
+  index: string;
+}
+
+export interface QueryGetUniquePaymentStorageUserServicerResponse {
+  uniquePaymentStorageUserServicer:
+    | UniquePaymentStorageUserServicer
+    | undefined;
+}
+
+export interface QueryAllUniquePaymentStorageUserServicerRequest {
+  pagination: PageRequest | undefined;
+}
+
+export interface QueryAllUniquePaymentStorageUserServicerResponse {
+  uniquePaymentStorageUserServicer: UniquePaymentStorageUserServicer[];
+  pagination: PageResponse | undefined;
+}
+
+export interface QueryGetUserPaymentStorageRequest {
+  index: string;
+}
+
+export interface QueryGetUserPaymentStorageResponse {
+  userPaymentStorage: UserPaymentStorage | undefined;
+}
+
+export interface QueryAllUserPaymentStorageRequest {
+  pagination: PageRequest | undefined;
+}
+
+export interface QueryAllUserPaymentStorageResponse {
+  userPaymentStorage: UserPaymentStorage[];
+  pagination: PageResponse | undefined;
+}
+
+export interface QueryGetSessionPaymentsRequest {
+  index: string;
+}
+
+export interface QueryGetSessionPaymentsResponse {
+  sessionPayments: SessionPayments | undefined;
+}
+
+export interface QueryAllSessionPaymentsRequest {
+  pagination: PageRequest | undefined;
+}
+
+export interface QueryAllSessionPaymentsResponse {
+  sessionPayments: SessionPayments[];
+  pagination: PageResponse | undefined;
 }
 
 const baseQueryParamsRequest: object = {};
@@ -2959,6 +3015,1031 @@ export const QueryVerifyPairingResponse = {
   },
 };
 
+const baseQueryGetUniquePaymentStorageUserServicerRequest: object = {
+  index: "",
+};
+
+export const QueryGetUniquePaymentStorageUserServicerRequest = {
+  encode(
+    message: QueryGetUniquePaymentStorageUserServicerRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.index !== "") {
+      writer.uint32(10).string(message.index);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUniquePaymentStorageUserServicerRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerRequest,
+    } as QueryGetUniquePaymentStorageUserServicerRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.index = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUniquePaymentStorageUserServicerRequest {
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerRequest,
+    } as QueryGetUniquePaymentStorageUserServicerRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = String(object.index);
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUniquePaymentStorageUserServicerRequest): unknown {
+    const obj: any = {};
+    message.index !== undefined && (obj.index = message.index);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUniquePaymentStorageUserServicerRequest>
+  ): QueryGetUniquePaymentStorageUserServicerRequest {
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerRequest,
+    } as QueryGetUniquePaymentStorageUserServicerRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = object.index;
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryGetUniquePaymentStorageUserServicerResponse: object = {};
+
+export const QueryGetUniquePaymentStorageUserServicerResponse = {
+  encode(
+    message: QueryGetUniquePaymentStorageUserServicerResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.uniquePaymentStorageUserServicer !== undefined) {
+      UniquePaymentStorageUserServicer.encode(
+        message.uniquePaymentStorageUserServicer,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUniquePaymentStorageUserServicerResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerResponse,
+    } as QueryGetUniquePaymentStorageUserServicerResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUniquePaymentStorageUserServicerResponse {
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerResponse,
+    } as QueryGetUniquePaymentStorageUserServicerResponse;
+    if (
+      object.uniquePaymentStorageUserServicer !== undefined &&
+      object.uniquePaymentStorageUserServicer !== null
+    ) {
+      message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.fromJSON(
+        object.uniquePaymentStorageUserServicer
+      );
+    } else {
+      message.uniquePaymentStorageUserServicer = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUniquePaymentStorageUserServicerResponse): unknown {
+    const obj: any = {};
+    message.uniquePaymentStorageUserServicer !== undefined &&
+      (obj.uniquePaymentStorageUserServicer = message.uniquePaymentStorageUserServicer
+        ? UniquePaymentStorageUserServicer.toJSON(
+            message.uniquePaymentStorageUserServicer
+          )
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUniquePaymentStorageUserServicerResponse>
+  ): QueryGetUniquePaymentStorageUserServicerResponse {
+    const message = {
+      ...baseQueryGetUniquePaymentStorageUserServicerResponse,
+    } as QueryGetUniquePaymentStorageUserServicerResponse;
+    if (
+      object.uniquePaymentStorageUserServicer !== undefined &&
+      object.uniquePaymentStorageUserServicer !== null
+    ) {
+      message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.fromPartial(
+        object.uniquePaymentStorageUserServicer
+      );
+    } else {
+      message.uniquePaymentStorageUserServicer = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUniquePaymentStorageUserServicerRequest: object = {};
+
+export const QueryAllUniquePaymentStorageUserServicerRequest = {
+  encode(
+    message: QueryAllUniquePaymentStorageUserServicerRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUniquePaymentStorageUserServicerRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerRequest,
+    } as QueryAllUniquePaymentStorageUserServicerRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUniquePaymentStorageUserServicerRequest {
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerRequest,
+    } as QueryAllUniquePaymentStorageUserServicerRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUniquePaymentStorageUserServicerRequest): unknown {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUniquePaymentStorageUserServicerRequest>
+  ): QueryAllUniquePaymentStorageUserServicerRequest {
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerRequest,
+    } as QueryAllUniquePaymentStorageUserServicerRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUniquePaymentStorageUserServicerResponse: object = {};
+
+export const QueryAllUniquePaymentStorageUserServicerResponse = {
+  encode(
+    message: QueryAllUniquePaymentStorageUserServicerResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    for (const v of message.uniquePaymentStorageUserServicer) {
+      UniquePaymentStorageUserServicer.encode(
+        v!,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUniquePaymentStorageUserServicerResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerResponse,
+    } as QueryAllUniquePaymentStorageUserServicerResponse;
+    message.uniquePaymentStorageUserServicer = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.uniquePaymentStorageUserServicer.push(
+            UniquePaymentStorageUserServicer.decode(reader, reader.uint32())
+          );
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUniquePaymentStorageUserServicerResponse {
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerResponse,
+    } as QueryAllUniquePaymentStorageUserServicerResponse;
+    message.uniquePaymentStorageUserServicer = [];
+    if (
+      object.uniquePaymentStorageUserServicer !== undefined &&
+      object.uniquePaymentStorageUserServicer !== null
+    ) {
+      for (const e of object.uniquePaymentStorageUserServicer) {
+        message.uniquePaymentStorageUserServicer.push(
+          UniquePaymentStorageUserServicer.fromJSON(e)
+        );
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUniquePaymentStorageUserServicerResponse): unknown {
+    const obj: any = {};
+    if (message.uniquePaymentStorageUserServicer) {
+      obj.uniquePaymentStorageUserServicer = message.uniquePaymentStorageUserServicer.map(
+        (e) => (e ? UniquePaymentStorageUserServicer.toJSON(e) : undefined)
+      );
+    } else {
+      obj.uniquePaymentStorageUserServicer = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUniquePaymentStorageUserServicerResponse>
+  ): QueryAllUniquePaymentStorageUserServicerResponse {
+    const message = {
+      ...baseQueryAllUniquePaymentStorageUserServicerResponse,
+    } as QueryAllUniquePaymentStorageUserServicerResponse;
+    message.uniquePaymentStorageUserServicer = [];
+    if (
+      object.uniquePaymentStorageUserServicer !== undefined &&
+      object.uniquePaymentStorageUserServicer !== null
+    ) {
+      for (const e of object.uniquePaymentStorageUserServicer) {
+        message.uniquePaymentStorageUserServicer.push(
+          UniquePaymentStorageUserServicer.fromPartial(e)
+        );
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryGetUserPaymentStorageRequest: object = { index: "" };
+
+export const QueryGetUserPaymentStorageRequest = {
+  encode(
+    message: QueryGetUserPaymentStorageRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.index !== "") {
+      writer.uint32(10).string(message.index);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUserPaymentStorageRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUserPaymentStorageRequest,
+    } as QueryGetUserPaymentStorageRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.index = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUserPaymentStorageRequest {
+    const message = {
+      ...baseQueryGetUserPaymentStorageRequest,
+    } as QueryGetUserPaymentStorageRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = String(object.index);
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUserPaymentStorageRequest): unknown {
+    const obj: any = {};
+    message.index !== undefined && (obj.index = message.index);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUserPaymentStorageRequest>
+  ): QueryGetUserPaymentStorageRequest {
+    const message = {
+      ...baseQueryGetUserPaymentStorageRequest,
+    } as QueryGetUserPaymentStorageRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = object.index;
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryGetUserPaymentStorageResponse: object = {};
+
+export const QueryGetUserPaymentStorageResponse = {
+  encode(
+    message: QueryGetUserPaymentStorageResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.userPaymentStorage !== undefined) {
+      UserPaymentStorage.encode(
+        message.userPaymentStorage,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetUserPaymentStorageResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetUserPaymentStorageResponse,
+    } as QueryGetUserPaymentStorageResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userPaymentStorage = UserPaymentStorage.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetUserPaymentStorageResponse {
+    const message = {
+      ...baseQueryGetUserPaymentStorageResponse,
+    } as QueryGetUserPaymentStorageResponse;
+    if (
+      object.userPaymentStorage !== undefined &&
+      object.userPaymentStorage !== null
+    ) {
+      message.userPaymentStorage = UserPaymentStorage.fromJSON(
+        object.userPaymentStorage
+      );
+    } else {
+      message.userPaymentStorage = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetUserPaymentStorageResponse): unknown {
+    const obj: any = {};
+    message.userPaymentStorage !== undefined &&
+      (obj.userPaymentStorage = message.userPaymentStorage
+        ? UserPaymentStorage.toJSON(message.userPaymentStorage)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetUserPaymentStorageResponse>
+  ): QueryGetUserPaymentStorageResponse {
+    const message = {
+      ...baseQueryGetUserPaymentStorageResponse,
+    } as QueryGetUserPaymentStorageResponse;
+    if (
+      object.userPaymentStorage !== undefined &&
+      object.userPaymentStorage !== null
+    ) {
+      message.userPaymentStorage = UserPaymentStorage.fromPartial(
+        object.userPaymentStorage
+      );
+    } else {
+      message.userPaymentStorage = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUserPaymentStorageRequest: object = {};
+
+export const QueryAllUserPaymentStorageRequest = {
+  encode(
+    message: QueryAllUserPaymentStorageRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUserPaymentStorageRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUserPaymentStorageRequest,
+    } as QueryAllUserPaymentStorageRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUserPaymentStorageRequest {
+    const message = {
+      ...baseQueryAllUserPaymentStorageRequest,
+    } as QueryAllUserPaymentStorageRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUserPaymentStorageRequest): unknown {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUserPaymentStorageRequest>
+  ): QueryAllUserPaymentStorageRequest {
+    const message = {
+      ...baseQueryAllUserPaymentStorageRequest,
+    } as QueryAllUserPaymentStorageRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllUserPaymentStorageResponse: object = {};
+
+export const QueryAllUserPaymentStorageResponse = {
+  encode(
+    message: QueryAllUserPaymentStorageResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    for (const v of message.userPaymentStorage) {
+      UserPaymentStorage.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllUserPaymentStorageResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllUserPaymentStorageResponse,
+    } as QueryAllUserPaymentStorageResponse;
+    message.userPaymentStorage = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userPaymentStorage.push(
+            UserPaymentStorage.decode(reader, reader.uint32())
+          );
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllUserPaymentStorageResponse {
+    const message = {
+      ...baseQueryAllUserPaymentStorageResponse,
+    } as QueryAllUserPaymentStorageResponse;
+    message.userPaymentStorage = [];
+    if (
+      object.userPaymentStorage !== undefined &&
+      object.userPaymentStorage !== null
+    ) {
+      for (const e of object.userPaymentStorage) {
+        message.userPaymentStorage.push(UserPaymentStorage.fromJSON(e));
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllUserPaymentStorageResponse): unknown {
+    const obj: any = {};
+    if (message.userPaymentStorage) {
+      obj.userPaymentStorage = message.userPaymentStorage.map((e) =>
+        e ? UserPaymentStorage.toJSON(e) : undefined
+      );
+    } else {
+      obj.userPaymentStorage = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllUserPaymentStorageResponse>
+  ): QueryAllUserPaymentStorageResponse {
+    const message = {
+      ...baseQueryAllUserPaymentStorageResponse,
+    } as QueryAllUserPaymentStorageResponse;
+    message.userPaymentStorage = [];
+    if (
+      object.userPaymentStorage !== undefined &&
+      object.userPaymentStorage !== null
+    ) {
+      for (const e of object.userPaymentStorage) {
+        message.userPaymentStorage.push(UserPaymentStorage.fromPartial(e));
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryGetSessionPaymentsRequest: object = { index: "" };
+
+export const QueryGetSessionPaymentsRequest = {
+  encode(
+    message: QueryGetSessionPaymentsRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.index !== "") {
+      writer.uint32(10).string(message.index);
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetSessionPaymentsRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetSessionPaymentsRequest,
+    } as QueryGetSessionPaymentsRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.index = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetSessionPaymentsRequest {
+    const message = {
+      ...baseQueryGetSessionPaymentsRequest,
+    } as QueryGetSessionPaymentsRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = String(object.index);
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetSessionPaymentsRequest): unknown {
+    const obj: any = {};
+    message.index !== undefined && (obj.index = message.index);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetSessionPaymentsRequest>
+  ): QueryGetSessionPaymentsRequest {
+    const message = {
+      ...baseQueryGetSessionPaymentsRequest,
+    } as QueryGetSessionPaymentsRequest;
+    if (object.index !== undefined && object.index !== null) {
+      message.index = object.index;
+    } else {
+      message.index = "";
+    }
+    return message;
+  },
+};
+
+const baseQueryGetSessionPaymentsResponse: object = {};
+
+export const QueryGetSessionPaymentsResponse = {
+  encode(
+    message: QueryGetSessionPaymentsResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.sessionPayments !== undefined) {
+      SessionPayments.encode(
+        message.sessionPayments,
+        writer.uint32(10).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryGetSessionPaymentsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryGetSessionPaymentsResponse,
+    } as QueryGetSessionPaymentsResponse;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sessionPayments = SessionPayments.decode(
+            reader,
+            reader.uint32()
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryGetSessionPaymentsResponse {
+    const message = {
+      ...baseQueryGetSessionPaymentsResponse,
+    } as QueryGetSessionPaymentsResponse;
+    if (
+      object.sessionPayments !== undefined &&
+      object.sessionPayments !== null
+    ) {
+      message.sessionPayments = SessionPayments.fromJSON(
+        object.sessionPayments
+      );
+    } else {
+      message.sessionPayments = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryGetSessionPaymentsResponse): unknown {
+    const obj: any = {};
+    message.sessionPayments !== undefined &&
+      (obj.sessionPayments = message.sessionPayments
+        ? SessionPayments.toJSON(message.sessionPayments)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryGetSessionPaymentsResponse>
+  ): QueryGetSessionPaymentsResponse {
+    const message = {
+      ...baseQueryGetSessionPaymentsResponse,
+    } as QueryGetSessionPaymentsResponse;
+    if (
+      object.sessionPayments !== undefined &&
+      object.sessionPayments !== null
+    ) {
+      message.sessionPayments = SessionPayments.fromPartial(
+        object.sessionPayments
+      );
+    } else {
+      message.sessionPayments = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllSessionPaymentsRequest: object = {};
+
+export const QueryAllSessionPaymentsRequest = {
+  encode(
+    message: QueryAllSessionPaymentsRequest,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllSessionPaymentsRequest {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllSessionPaymentsRequest,
+    } as QueryAllSessionPaymentsRequest;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllSessionPaymentsRequest {
+    const message = {
+      ...baseQueryAllSessionPaymentsRequest,
+    } as QueryAllSessionPaymentsRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllSessionPaymentsRequest): unknown {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllSessionPaymentsRequest>
+  ): QueryAllSessionPaymentsRequest {
+    const message = {
+      ...baseQueryAllSessionPaymentsRequest,
+    } as QueryAllSessionPaymentsRequest;
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageRequest.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
+const baseQueryAllSessionPaymentsResponse: object = {};
+
+export const QueryAllSessionPaymentsResponse = {
+  encode(
+    message: QueryAllSessionPaymentsResponse,
+    writer: Writer = Writer.create()
+  ): Writer {
+    for (const v of message.sessionPayments) {
+      SessionPayments.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    return writer;
+  },
+
+  decode(
+    input: Reader | Uint8Array,
+    length?: number
+  ): QueryAllSessionPaymentsResponse {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = {
+      ...baseQueryAllSessionPaymentsResponse,
+    } as QueryAllSessionPaymentsResponse;
+    message.sessionPayments = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sessionPayments.push(
+            SessionPayments.decode(reader, reader.uint32())
+          );
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryAllSessionPaymentsResponse {
+    const message = {
+      ...baseQueryAllSessionPaymentsResponse,
+    } as QueryAllSessionPaymentsResponse;
+    message.sessionPayments = [];
+    if (
+      object.sessionPayments !== undefined &&
+      object.sessionPayments !== null
+    ) {
+      for (const e of object.sessionPayments) {
+        message.sessionPayments.push(SessionPayments.fromJSON(e));
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromJSON(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+
+  toJSON(message: QueryAllSessionPaymentsResponse): unknown {
+    const obj: any = {};
+    if (message.sessionPayments) {
+      obj.sessionPayments = message.sessionPayments.map((e) =>
+        e ? SessionPayments.toJSON(e) : undefined
+      );
+    } else {
+      obj.sessionPayments = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+
+  fromPartial(
+    object: DeepPartial<QueryAllSessionPaymentsResponse>
+  ): QueryAllSessionPaymentsResponse {
+    const message = {
+      ...baseQueryAllSessionPaymentsResponse,
+    } as QueryAllSessionPaymentsResponse;
+    message.sessionPayments = [];
+    if (
+      object.sessionPayments !== undefined &&
+      object.sessionPayments !== null
+    ) {
+      for (const e of object.sessionPayments) {
+        message.sessionPayments.push(SessionPayments.fromPartial(e));
+      }
+    }
+    if (object.pagination !== undefined && object.pagination !== null) {
+      message.pagination = PageResponse.fromPartial(object.pagination);
+    } else {
+      message.pagination = undefined;
+    }
+    return message;
+  },
+};
+
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Parameters queries the parameters of the module. */
@@ -3027,6 +4108,30 @@ export interface Query {
   VerifyPairing(
     request: QueryVerifyPairingRequest
   ): Promise<QueryVerifyPairingResponse>;
+  /** Queries a UniquePaymentStorageUserServicer by index. */
+  UniquePaymentStorageUserServicer(
+    request: QueryGetUniquePaymentStorageUserServicerRequest
+  ): Promise<QueryGetUniquePaymentStorageUserServicerResponse>;
+  /** Queries a list of UniquePaymentStorageUserServicer items. */
+  UniquePaymentStorageUserServicerAll(
+    request: QueryAllUniquePaymentStorageUserServicerRequest
+  ): Promise<QueryAllUniquePaymentStorageUserServicerResponse>;
+  /** Queries a UserPaymentStorage by index. */
+  UserPaymentStorage(
+    request: QueryGetUserPaymentStorageRequest
+  ): Promise<QueryGetUserPaymentStorageResponse>;
+  /** Queries a list of UserPaymentStorage items. */
+  UserPaymentStorageAll(
+    request: QueryAllUserPaymentStorageRequest
+  ): Promise<QueryAllUserPaymentStorageResponse>;
+  /** Queries a SessionPayments by index. */
+  SessionPayments(
+    request: QueryGetSessionPaymentsRequest
+  ): Promise<QueryGetSessionPaymentsResponse>;
+  /** Queries a list of SessionPayments items. */
+  SessionPaymentsAll(
+    request: QueryAllSessionPaymentsRequest
+  ): Promise<QueryAllSessionPaymentsResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -3285,6 +4390,94 @@ export class QueryClientImpl implements Query {
     );
     return promise.then((data) =>
       QueryVerifyPairingResponse.decode(new Reader(data))
+    );
+  }
+
+  UniquePaymentStorageUserServicer(
+    request: QueryGetUniquePaymentStorageUserServicerRequest
+  ): Promise<QueryGetUniquePaymentStorageUserServicerResponse> {
+    const data = QueryGetUniquePaymentStorageUserServicerRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UniquePaymentStorageUserServicer",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetUniquePaymentStorageUserServicerResponse.decode(new Reader(data))
+    );
+  }
+
+  UniquePaymentStorageUserServicerAll(
+    request: QueryAllUniquePaymentStorageUserServicerRequest
+  ): Promise<QueryAllUniquePaymentStorageUserServicerResponse> {
+    const data = QueryAllUniquePaymentStorageUserServicerRequest.encode(
+      request
+    ).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UniquePaymentStorageUserServicerAll",
+      data
+    );
+    return promise.then((data) =>
+      QueryAllUniquePaymentStorageUserServicerResponse.decode(new Reader(data))
+    );
+  }
+
+  UserPaymentStorage(
+    request: QueryGetUserPaymentStorageRequest
+  ): Promise<QueryGetUserPaymentStorageResponse> {
+    const data = QueryGetUserPaymentStorageRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UserPaymentStorage",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetUserPaymentStorageResponse.decode(new Reader(data))
+    );
+  }
+
+  UserPaymentStorageAll(
+    request: QueryAllUserPaymentStorageRequest
+  ): Promise<QueryAllUserPaymentStorageResponse> {
+    const data = QueryAllUserPaymentStorageRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "UserPaymentStorageAll",
+      data
+    );
+    return promise.then((data) =>
+      QueryAllUserPaymentStorageResponse.decode(new Reader(data))
+    );
+  }
+
+  SessionPayments(
+    request: QueryGetSessionPaymentsRequest
+  ): Promise<QueryGetSessionPaymentsResponse> {
+    const data = QueryGetSessionPaymentsRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "SessionPayments",
+      data
+    );
+    return promise.then((data) =>
+      QueryGetSessionPaymentsResponse.decode(new Reader(data))
+    );
+  }
+
+  SessionPaymentsAll(
+    request: QueryAllSessionPaymentsRequest
+  ): Promise<QueryAllSessionPaymentsResponse> {
+    const data = QueryAllSessionPaymentsRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      "lavanet.lava.servicer.Query",
+      "SessionPaymentsAll",
+      data
+    );
+    return promise.then((data) =>
+      QueryAllSessionPaymentsResponse.decode(new Reader(data))
     );
   }
 }

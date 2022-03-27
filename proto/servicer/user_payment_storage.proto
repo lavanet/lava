@@ -1,0 +1,14 @@
+syntax = "proto3";
+package lavanet.lava.servicer;
+
+option go_package = "github.com/lavanet/lava/x/servicer/types";
+import "servicer/unique_payment_storage_user_servicer.proto"; 
+
+message UserPaymentStorage {
+  string index = 1; 
+  repeated UniquePaymentStorageUserServicer uniquePaymentStorageUserServicer = 2; 
+  uint64 totalCU = 3; 
+  uint64 session = 4; 
+  
+}
+

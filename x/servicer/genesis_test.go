@@ -59,6 +59,30 @@ func TestGenesis(t *testing.T) {
 		EarliestSessionStart: &types.EarliestSessionStart{
 			Block: types.BlockNum{Num: 0},
 		},
+		UniquePaymentStorageUserServicerList: []types.UniquePaymentStorageUserServicer{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
+		UserPaymentStorageList: []types.UserPaymentStorage{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
+		SessionPaymentsList: []types.SessionPayments{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -79,5 +103,8 @@ func TestGenesis(t *testing.T) {
 	require.Equal(t, genesisState.PreviousSessionBlocks, got.PreviousSessionBlocks)
 	require.ElementsMatch(t, genesisState.SessionStorageForSpecList, got.SessionStorageForSpecList)
 	require.Equal(t, genesisState.EarliestSessionStart, got.EarliestSessionStart)
+	require.ElementsMatch(t, genesisState.UniquePaymentStorageUserServicerList, got.UniquePaymentStorageUserServicerList)
+	require.ElementsMatch(t, genesisState.UserPaymentStorageList, got.UserPaymentStorageList)
+	require.ElementsMatch(t, genesisState.SessionPaymentsList, got.SessionPaymentsList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

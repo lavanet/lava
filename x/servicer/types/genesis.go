@@ -10,14 +10,17 @@ const DefaultIndex uint64 = 1
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		StakeMapList:                   []StakeMap{},
-		SpecStakeStorageList:           []SpecStakeStorage{},
-		BlockDeadlineForCallback:       BlockDeadlineForCallback{Deadline: BlockNum{Num: 0}},
-		UnstakingServicersAllSpecsList: []UnstakingServicersAllSpecs{},
-		CurrentSessionStart:            &CurrentSessionStart{Block: BlockNum{Num: 0}},
-		PreviousSessionBlocks:          &PreviousSessionBlocks{BlocksNum: 0},
-		SessionStorageForSpecList:      []SessionStorageForSpec{},
-		EarliestSessionStart:           &EarliestSessionStart{BlockNum{Num: 0}},
+		StakeMapList:                         []StakeMap{},
+		SpecStakeStorageList:                 []SpecStakeStorage{},
+		BlockDeadlineForCallback:             BlockDeadlineForCallback{Deadline: BlockNum{Num: 0}},
+		UnstakingServicersAllSpecsList:       []UnstakingServicersAllSpecs{},
+		CurrentSessionStart:                  &CurrentSessionStart{Block: BlockNum{Num: 0}},
+		PreviousSessionBlocks:                &PreviousSessionBlocks{BlocksNum: 0},
+		SessionStorageForSpecList:            []SessionStorageForSpec{},
+		EarliestSessionStart:                 &EarliestSessionStart{BlockNum{Num: 0}},
+		UniquePaymentStorageUserServicerList: []UniquePaymentStorageUserServicer{},
+		UserPaymentStorageList:               []UserPaymentStorage{},
+		SessionPaymentsList:                  []SessionPayments{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -67,6 +70,36 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for sessionStorageForSpec")
 		}
 		sessionStorageForSpecIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in uniquePaymentStorageUserServicer
+	uniquePaymentStorageUserServicerIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.UniquePaymentStorageUserServicerList {
+		index := string(UniquePaymentStorageUserServicerKey(elem.Index))
+		if _, ok := uniquePaymentStorageUserServicerIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for uniquePaymentStorageUserServicer")
+		}
+		uniquePaymentStorageUserServicerIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in userPaymentStorage
+	userPaymentStorageIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.UserPaymentStorageList {
+		index := string(UserPaymentStorageKey(elem.Index))
+		if _, ok := userPaymentStorageIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for userPaymentStorage")
+		}
+		userPaymentStorageIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in sessionPayments
+	sessionPaymentsIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.SessionPaymentsList {
+		index := string(SessionPaymentsKey(elem.Index))
+		if _, ok := sessionPaymentsIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for sessionPayments")
+		}
+		sessionPaymentsIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

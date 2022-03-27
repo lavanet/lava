@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer"
@@ -48,13 +49,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			return nil, fmt.Errorf("error on proof of work, spec specified: %d is inactive", relay.SpecId)
 		}
 
-		//
-		//TODO: validate CU requested is valid for the user and not too big, this requires the user module
-		//
-
-		//
-		//
-		isValidPairing, isOverlap, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			uint64(relay.SpecId),
 			clientAddr,
@@ -63,12 +58,27 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 				Num: uint64(relay.BlockHeight),
 			},
 		)
-		//TODO: use isOverlap to calculate limiting the CU of previous session
-		_ = isOverlap
 		if err != nil {
 			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err)
 		}
 
+		sessionStart, overlapSessionStart, err := k.GetSessionStartForBlock(ctx, types.BlockNum{Num: uint64(relay.BlockHeight)})
+		if err != nil {
+			return nil, fmt.Errorf("error on proof of work, could not get session start for: %d err: %s", relay.BlockHeight, err)
+		}
+		if isOverlap {
+			sessionStart = overlapSessionStart
+		}
+		//this prevents double spend attacks, and tracks the CU per session a client can use
+		totalCUInSessionForUser, err := k.Keeper.AddSessionPayment(ctx, *sessionStart, clientAddr, servicerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		if err != nil {
+			//double spending on user detected!
+			return nil, err
+		}
+		err = k.userKeeper.EnforceUserCUsUsageInSession(ctx, userStake, totalCUInSessionForUser)
+		if err != nil {
+			return nil, err
+		}
 		//
 		if isValidPairing {
 			//pairing is valid, we can pay servicer for work

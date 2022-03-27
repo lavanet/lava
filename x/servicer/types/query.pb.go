@@ -1682,6 +1682,574 @@ func (m *QueryVerifyPairingResponse) GetOverlap() bool {
 	return false
 }
 
+type QueryGetUniquePaymentStorageUserServicerRequest struct {
+	Index string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) Reset() {
+	*m = QueryGetUniquePaymentStorageUserServicerRequest{}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryGetUniquePaymentStorageUserServicerRequest) ProtoMessage() {}
+func (*QueryGetUniquePaymentStorageUserServicerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{36}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerRequest.Merge(m, src)
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerRequest proto.InternalMessageInfo
+
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) GetIndex() string {
+	if m != nil {
+		return m.Index
+	}
+	return ""
+}
+
+type QueryGetUniquePaymentStorageUserServicerResponse struct {
+	UniquePaymentStorageUserServicer UniquePaymentStorageUserServicer `protobuf:"bytes,1,opt,name=uniquePaymentStorageUserServicer,proto3" json:"uniquePaymentStorageUserServicer"`
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) Reset() {
+	*m = QueryGetUniquePaymentStorageUserServicerResponse{}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryGetUniquePaymentStorageUserServicerResponse) ProtoMessage() {}
+func (*QueryGetUniquePaymentStorageUserServicerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{37}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerResponse.Merge(m, src)
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetUniquePaymentStorageUserServicerResponse proto.InternalMessageInfo
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) GetUniquePaymentStorageUserServicer() UniquePaymentStorageUserServicer {
+	if m != nil {
+		return m.UniquePaymentStorageUserServicer
+	}
+	return UniquePaymentStorageUserServicer{}
+}
+
+type QueryAllUniquePaymentStorageUserServicerRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) Reset() {
+	*m = QueryAllUniquePaymentStorageUserServicerRequest{}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryAllUniquePaymentStorageUserServicerRequest) ProtoMessage() {}
+func (*QueryAllUniquePaymentStorageUserServicerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{38}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerRequest.Merge(m, src)
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerRequest proto.InternalMessageInfo
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAllUniquePaymentStorageUserServicerResponse struct {
+	UniquePaymentStorageUserServicer []UniquePaymentStorageUserServicer `protobuf:"bytes,1,rep,name=uniquePaymentStorageUserServicer,proto3" json:"uniquePaymentStorageUserServicer"`
+	Pagination                       *query.PageResponse                `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) Reset() {
+	*m = QueryAllUniquePaymentStorageUserServicerResponse{}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryAllUniquePaymentStorageUserServicerResponse) ProtoMessage() {}
+func (*QueryAllUniquePaymentStorageUserServicerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{39}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerResponse.Merge(m, src)
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllUniquePaymentStorageUserServicerResponse proto.InternalMessageInfo
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) GetUniquePaymentStorageUserServicer() []UniquePaymentStorageUserServicer {
+	if m != nil {
+		return m.UniquePaymentStorageUserServicer
+	}
+	return nil
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryGetUserPaymentStorageRequest struct {
+	Index string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (m *QueryGetUserPaymentStorageRequest) Reset()         { *m = QueryGetUserPaymentStorageRequest{} }
+func (m *QueryGetUserPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryGetUserPaymentStorageRequest) ProtoMessage()    {}
+func (*QueryGetUserPaymentStorageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{40}
+}
+func (m *QueryGetUserPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetUserPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetUserPaymentStorageRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetUserPaymentStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetUserPaymentStorageRequest.Merge(m, src)
+}
+func (m *QueryGetUserPaymentStorageRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetUserPaymentStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetUserPaymentStorageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetUserPaymentStorageRequest proto.InternalMessageInfo
+
+func (m *QueryGetUserPaymentStorageRequest) GetIndex() string {
+	if m != nil {
+		return m.Index
+	}
+	return ""
+}
+
+type QueryGetUserPaymentStorageResponse struct {
+	UserPaymentStorage UserPaymentStorage `protobuf:"bytes,1,opt,name=userPaymentStorage,proto3" json:"userPaymentStorage"`
+}
+
+func (m *QueryGetUserPaymentStorageResponse) Reset()         { *m = QueryGetUserPaymentStorageResponse{} }
+func (m *QueryGetUserPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryGetUserPaymentStorageResponse) ProtoMessage()    {}
+func (*QueryGetUserPaymentStorageResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{41}
+}
+func (m *QueryGetUserPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetUserPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetUserPaymentStorageResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetUserPaymentStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetUserPaymentStorageResponse.Merge(m, src)
+}
+func (m *QueryGetUserPaymentStorageResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetUserPaymentStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetUserPaymentStorageResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetUserPaymentStorageResponse proto.InternalMessageInfo
+
+func (m *QueryGetUserPaymentStorageResponse) GetUserPaymentStorage() UserPaymentStorage {
+	if m != nil {
+		return m.UserPaymentStorage
+	}
+	return UserPaymentStorage{}
+}
+
+type QueryAllUserPaymentStorageRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllUserPaymentStorageRequest) Reset()         { *m = QueryAllUserPaymentStorageRequest{} }
+func (m *QueryAllUserPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAllUserPaymentStorageRequest) ProtoMessage()    {}
+func (*QueryAllUserPaymentStorageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{42}
+}
+func (m *QueryAllUserPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllUserPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllUserPaymentStorageRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllUserPaymentStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllUserPaymentStorageRequest.Merge(m, src)
+}
+func (m *QueryAllUserPaymentStorageRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllUserPaymentStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllUserPaymentStorageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllUserPaymentStorageRequest proto.InternalMessageInfo
+
+func (m *QueryAllUserPaymentStorageRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAllUserPaymentStorageResponse struct {
+	UserPaymentStorage []UserPaymentStorage `protobuf:"bytes,1,rep,name=userPaymentStorage,proto3" json:"userPaymentStorage"`
+	Pagination         *query.PageResponse  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllUserPaymentStorageResponse) Reset()         { *m = QueryAllUserPaymentStorageResponse{} }
+func (m *QueryAllUserPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAllUserPaymentStorageResponse) ProtoMessage()    {}
+func (*QueryAllUserPaymentStorageResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{43}
+}
+func (m *QueryAllUserPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllUserPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllUserPaymentStorageResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllUserPaymentStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllUserPaymentStorageResponse.Merge(m, src)
+}
+func (m *QueryAllUserPaymentStorageResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllUserPaymentStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllUserPaymentStorageResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllUserPaymentStorageResponse proto.InternalMessageInfo
+
+func (m *QueryAllUserPaymentStorageResponse) GetUserPaymentStorage() []UserPaymentStorage {
+	if m != nil {
+		return m.UserPaymentStorage
+	}
+	return nil
+}
+
+func (m *QueryAllUserPaymentStorageResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryGetSessionPaymentsRequest struct {
+	Index string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (m *QueryGetSessionPaymentsRequest) Reset()         { *m = QueryGetSessionPaymentsRequest{} }
+func (m *QueryGetSessionPaymentsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryGetSessionPaymentsRequest) ProtoMessage()    {}
+func (*QueryGetSessionPaymentsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{44}
+}
+func (m *QueryGetSessionPaymentsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetSessionPaymentsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetSessionPaymentsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetSessionPaymentsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetSessionPaymentsRequest.Merge(m, src)
+}
+func (m *QueryGetSessionPaymentsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetSessionPaymentsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetSessionPaymentsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetSessionPaymentsRequest proto.InternalMessageInfo
+
+func (m *QueryGetSessionPaymentsRequest) GetIndex() string {
+	if m != nil {
+		return m.Index
+	}
+	return ""
+}
+
+type QueryGetSessionPaymentsResponse struct {
+	SessionPayments SessionPayments `protobuf:"bytes,1,opt,name=sessionPayments,proto3" json:"sessionPayments"`
+}
+
+func (m *QueryGetSessionPaymentsResponse) Reset()         { *m = QueryGetSessionPaymentsResponse{} }
+func (m *QueryGetSessionPaymentsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryGetSessionPaymentsResponse) ProtoMessage()    {}
+func (*QueryGetSessionPaymentsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{45}
+}
+func (m *QueryGetSessionPaymentsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryGetSessionPaymentsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryGetSessionPaymentsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryGetSessionPaymentsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetSessionPaymentsResponse.Merge(m, src)
+}
+func (m *QueryGetSessionPaymentsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryGetSessionPaymentsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetSessionPaymentsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryGetSessionPaymentsResponse proto.InternalMessageInfo
+
+func (m *QueryGetSessionPaymentsResponse) GetSessionPayments() SessionPayments {
+	if m != nil {
+		return m.SessionPayments
+	}
+	return SessionPayments{}
+}
+
+type QueryAllSessionPaymentsRequest struct {
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllSessionPaymentsRequest) Reset()         { *m = QueryAllSessionPaymentsRequest{} }
+func (m *QueryAllSessionPaymentsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAllSessionPaymentsRequest) ProtoMessage()    {}
+func (*QueryAllSessionPaymentsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{46}
+}
+func (m *QueryAllSessionPaymentsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllSessionPaymentsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllSessionPaymentsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllSessionPaymentsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllSessionPaymentsRequest.Merge(m, src)
+}
+func (m *QueryAllSessionPaymentsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllSessionPaymentsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllSessionPaymentsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllSessionPaymentsRequest proto.InternalMessageInfo
+
+func (m *QueryAllSessionPaymentsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+type QueryAllSessionPaymentsResponse struct {
+	SessionPayments []SessionPayments   `protobuf:"bytes,1,rep,name=sessionPayments,proto3" json:"sessionPayments"`
+	Pagination      *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryAllSessionPaymentsResponse) Reset()         { *m = QueryAllSessionPaymentsResponse{} }
+func (m *QueryAllSessionPaymentsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAllSessionPaymentsResponse) ProtoMessage()    {}
+func (*QueryAllSessionPaymentsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d5f8eb2622289c7a, []int{47}
+}
+func (m *QueryAllSessionPaymentsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryAllSessionPaymentsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryAllSessionPaymentsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryAllSessionPaymentsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllSessionPaymentsResponse.Merge(m, src)
+}
+func (m *QueryAllSessionPaymentsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryAllSessionPaymentsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllSessionPaymentsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryAllSessionPaymentsResponse proto.InternalMessageInfo
+
+func (m *QueryAllSessionPaymentsResponse) GetSessionPayments() []SessionPayments {
+	if m != nil {
+		return m.SessionPayments
+	}
+	return nil
+}
+
+func (m *QueryAllSessionPaymentsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.servicer.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.servicer.QueryParamsResponse")
@@ -1719,120 +2287,158 @@ func init() {
 	proto.RegisterType((*QueryGetEarliestSessionStartResponse)(nil), "lavanet.lava.servicer.QueryGetEarliestSessionStartResponse")
 	proto.RegisterType((*QueryVerifyPairingRequest)(nil), "lavanet.lava.servicer.QueryVerifyPairingRequest")
 	proto.RegisterType((*QueryVerifyPairingResponse)(nil), "lavanet.lava.servicer.QueryVerifyPairingResponse")
+	proto.RegisterType((*QueryGetUniquePaymentStorageUserServicerRequest)(nil), "lavanet.lava.servicer.QueryGetUniquePaymentStorageUserServicerRequest")
+	proto.RegisterType((*QueryGetUniquePaymentStorageUserServicerResponse)(nil), "lavanet.lava.servicer.QueryGetUniquePaymentStorageUserServicerResponse")
+	proto.RegisterType((*QueryAllUniquePaymentStorageUserServicerRequest)(nil), "lavanet.lava.servicer.QueryAllUniquePaymentStorageUserServicerRequest")
+	proto.RegisterType((*QueryAllUniquePaymentStorageUserServicerResponse)(nil), "lavanet.lava.servicer.QueryAllUniquePaymentStorageUserServicerResponse")
+	proto.RegisterType((*QueryGetUserPaymentStorageRequest)(nil), "lavanet.lava.servicer.QueryGetUserPaymentStorageRequest")
+	proto.RegisterType((*QueryGetUserPaymentStorageResponse)(nil), "lavanet.lava.servicer.QueryGetUserPaymentStorageResponse")
+	proto.RegisterType((*QueryAllUserPaymentStorageRequest)(nil), "lavanet.lava.servicer.QueryAllUserPaymentStorageRequest")
+	proto.RegisterType((*QueryAllUserPaymentStorageResponse)(nil), "lavanet.lava.servicer.QueryAllUserPaymentStorageResponse")
+	proto.RegisterType((*QueryGetSessionPaymentsRequest)(nil), "lavanet.lava.servicer.QueryGetSessionPaymentsRequest")
+	proto.RegisterType((*QueryGetSessionPaymentsResponse)(nil), "lavanet.lava.servicer.QueryGetSessionPaymentsResponse")
+	proto.RegisterType((*QueryAllSessionPaymentsRequest)(nil), "lavanet.lava.servicer.QueryAllSessionPaymentsRequest")
+	proto.RegisterType((*QueryAllSessionPaymentsResponse)(nil), "lavanet.lava.servicer.QueryAllSessionPaymentsResponse")
 }
 
 func init() { proto.RegisterFile("servicer/query.proto", fileDescriptor_d5f8eb2622289c7a) }
 
 var fileDescriptor_d5f8eb2622289c7a = []byte{
-	// 1718 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x59, 0xcd, 0x6f, 0xdc, 0x44,
-	0x1b, 0xcf, 0xe4, 0xeb, 0x4d, 0xa7, 0x7d, 0xdf, 0xb7, 0x9a, 0x26, 0x65, 0xeb, 0xb6, 0x49, 0x99,
-	0x36, 0x9f, 0x6d, 0xd7, 0x4d, 0x5a, 0x12, 0xd2, 0x14, 0xda, 0x4d, 0xa0, 0xb9, 0x40, 0x95, 0x6e,
-	0x04, 0x52, 0x11, 0x68, 0xe5, 0xec, 0x4e, 0xb7, 0x56, 0x1c, 0x7b, 0x6b, 0x7b, 0x43, 0xab, 0x28,
-	0x42, 0xe2, 0x80, 0x84, 0x10, 0x12, 0x88, 0x0b, 0x97, 0x1e, 0xe1, 0xc6, 0x15, 0x89, 0x0b, 0x07,
-	0x0e, 0x55, 0xc5, 0x01, 0x2a, 0xf5, 0x00, 0xe2, 0x80, 0x20, 0xed, 0x99, 0x0b, 0xff, 0x00, 0xf2,
-	0xf8, 0x19, 0x7b, 0xd7, 0x3b, 0x63, 0x6f, 0xb6, 0xcb, 0x29, 0xb1, 0xe7, 0xf9, 0xf8, 0xfd, 0x9e,
-	0x67, 0xbe, 0x7e, 0x5e, 0x3c, 0xec, 0x31, 0x77, 0xdb, 0x2c, 0x33, 0x57, 0xbf, 0x5b, 0x67, 0xee,
-	0xfd, 0x7c, 0xcd, 0x75, 0x7c, 0x87, 0x8c, 0x58, 0xc6, 0xb6, 0x61, 0x33, 0x3f, 0x1f, 0xfc, 0xcd,
-	0x0b, 0x13, 0xed, 0x44, 0xd5, 0x71, 0xaa, 0x16, 0xd3, 0x8d, 0x9a, 0xa9, 0x1b, 0xb6, 0xed, 0xf8,
-	0x86, 0x6f, 0x3a, 0xb6, 0x17, 0x3a, 0x69, 0x33, 0x65, 0xc7, 0xdb, 0x72, 0x3c, 0x7d, 0xc3, 0xf0,
-	0x58, 0x18, 0x4d, 0xdf, 0x9e, 0xdd, 0x60, 0xbe, 0x31, 0xab, 0xd7, 0x8c, 0xaa, 0x69, 0x73, 0x63,
-	0xb0, 0x1d, 0x89, 0xd2, 0xd6, 0x0c, 0xd7, 0xd8, 0x12, 0x21, 0x72, 0xd1, 0x6b, 0xcf, 0x37, 0x36,
-	0x59, 0x69, 0xcb, 0xa8, 0xc1, 0xc8, 0x8b, 0xf1, 0x48, 0x8d, 0x95, 0x4b, 0xe1, 0xb0, 0xe7, 0x3b,
-	0xae, 0x51, 0x65, 0x22, 0x7f, 0x64, 0xb2, 0x61, 0x39, 0xe5, 0xcd, 0x52, 0x85, 0x19, 0x15, 0xcb,
-	0xb4, 0x59, 0xe9, 0xb6, 0xe3, 0x96, 0xca, 0x86, 0x65, 0x6d, 0x18, 0xe5, 0x4d, 0xb0, 0x3d, 0x17,
-	0xd9, 0xd6, 0xed, 0x20, 0x96, 0x69, 0x57, 0x4b, 0xe2, 0x95, 0x57, 0x32, 0x2c, 0xab, 0x14, 0xa4,
-	0x11, 0xb0, 0xce, 0x44, 0xd6, 0xe5, 0xba, 0xeb, 0x32, 0xdb, 0x2f, 0x79, 0xcc, 0xf3, 0x4c, 0xc7,
-	0x0e, 0x70, 0xb8, 0x3e, 0x58, 0x4d, 0xc4, 0x9c, 0x5c, 0xb6, 0x6d, 0x3a, 0x75, 0x2f, 0x32, 0xe3,
-	0x80, 0x44, 0xb4, 0xc9, 0x98, 0x4a, 0x14, 0x85, 0xf3, 0xe0, 0x40, 0x83, 0xbc, 0x60, 0x38, 0x1e,
-	0x19, 0x32, 0xc3, 0xb5, 0x4c, 0xe6, 0xc9, 0xf3, 0x9e, 0x48, 0x14, 0xad, 0xb9, 0x2a, 0xb9, 0x44,
-	0x55, 0xec, 0xfa, 0x16, 0x8c, 0x8c, 0x36, 0xf6, 0x4b, 0x74, 0xaa, 0xec, 0x98, 0xa2, 0x47, 0xc3,
-	0x55, 0xa7, 0xea, 0xf0, 0x7f, 0xf5, 0xe0, 0xbf, 0xf0, 0x2d, 0x1d, 0xc6, 0xe4, 0x66, 0xd0, 0xdb,
-	0x35, 0xde, 0xb7, 0x22, 0xbb, 0x5b, 0x67, 0x9e, 0x4f, 0x8b, 0xf8, 0x48, 0xd3, 0x5b, 0xaf, 0xe6,
-	0xd8, 0x1e, 0x23, 0x4b, 0x78, 0x30, 0xec, 0x6f, 0x0e, 0x9d, 0x42, 0x53, 0x07, 0xe7, 0x4e, 0xe6,
-	0xa5, 0x13, 0x2b, 0x1f, 0xba, 0x2d, 0xf7, 0x3f, 0xfa, 0x7d, 0xac, 0xa7, 0x08, 0x2e, 0x54, 0xc7,
-	0x2f, 0xf0, 0x98, 0xab, 0xcc, 0x5f, 0x0f, 0x88, 0xbd, 0x69, 0xd4, 0x20, 0x1d, 0x19, 0xc6, 0x03,
-	0xa6, 0x5d, 0x61, 0xf7, 0x78, 0xd8, 0x03, 0xc5, 0xf0, 0x81, 0xbe, 0x87, 0x73, 0xad, 0x0e, 0x80,
-	0xa4, 0x80, 0x87, 0x3c, 0x78, 0x07, 0x58, 0xc6, 0x14, 0x58, 0x84, 0x2b, 0xa0, 0x89, 0xdc, 0xa8,
-	0x01, 0x78, 0x0a, 0x96, 0x95, 0xc4, 0x73, 0x1d, 0xe3, 0x78, 0x8a, 0x43, 0xfc, 0x89, 0x7c, 0x58,
-	0xdf, 0x7c, 0x50, 0xdf, 0x7c, 0xb8, 0xba, 0xa0, 0xca, 0xf9, 0x35, 0xa3, 0xca, 0xc0, 0xb7, 0xd8,
-	0xe0, 0x49, 0xbf, 0x46, 0x40, 0xa1, 0x29, 0x87, 0x94, 0x42, 0x5f, 0x07, 0x14, 0xc8, 0x6a, 0x13,
-	0xce, 0x5e, 0x8e, 0x73, 0x32, 0x13, 0x67, 0x98, 0xbf, 0x09, 0xe8, 0x02, 0x1e, 0x8b, 0x4a, 0x5d,
-	0x63, 0x65, 0x9e, 0x70, 0x3d, 0x9c, 0x77, 0xe9, 0x3d, 0xda, 0xc5, 0xa7, 0xd4, 0x8e, 0x40, 0xf4,
-	0x16, 0x3e, 0xec, 0x25, 0xc6, 0xa0, 0xa6, 0x93, 0x2a, 0xc2, 0x09, 0x73, 0x20, 0xde, 0x12, 0x86,
-	0x9a, 0x80, 0x3b, 0xa8, 0xaf, 0x02, 0x77, 0xb7, 0x7a, 0xf9, 0x10, 0x01, 0x55, 0x69, 0xae, 0x54,
-	0xaa, 0x7d, 0x5d, 0xa0, 0xda, 0xbd, 0x5e, 0x2f, 0xe2, 0xe3, 0x9c, 0x07, 0x8f, 0x5e, 0x59, 0x17,
-	0xbb, 0xa4, 0xa8, 0x97, 0x86, 0x87, 0x82, 0xdc, 0x37, 0x8c, 0x2d, 0x06, 0xad, 0x8e, 0x9e, 0xe9,
-	0x07, 0xf8, 0x84, 0xdc, 0x15, 0xe8, 0xaf, 0xe2, 0x43, 0x5e, 0x6b, 0x97, 0x4f, 0xa7, 0x4d, 0x6b,
-	0x51, 0xc1, 0x26, 0x47, 0x72, 0x14, 0x0f, 0x3a, 0x75, 0xbf, 0x56, 0xf7, 0x39, 0xd1, 0x03, 0x45,
-	0x78, 0xa2, 0xd3, 0x78, 0x52, 0x4c, 0xb7, 0xe5, 0x60, 0xfb, 0x7b, 0x0d, 0xce, 0x84, 0xeb, 0x8e,
-	0xbb, 0x02, 0x27, 0x82, 0xd8, 0xc2, 0x1e, 0x20, 0x3c, 0x95, 0x6d, 0x0b, 0xc0, 0xef, 0xe2, 0x9c,
-	0xca, 0x06, 0x48, 0xe8, 0x0a, 0x12, 0x2a, 0x37, 0xe8, 0xa3, 0x32, 0x2c, 0x5d, 0xc2, 0xd3, 0x02,
-	0xde, 0x5b, 0xe2, 0xcc, 0x8a, 0x2a, 0x0a, 0x73, 0x2c, 0x6a, 0xca, 0xff, 0x70, 0xaf, 0x59, 0xe1,
-	0x48, 0xfa, 0x8b, 0xbd, 0x66, 0x85, 0x7e, 0x85, 0xf0, 0x4c, 0x3b, 0xde, 0x40, 0xef, 0x7d, 0xac,
-	0xa9, 0xad, 0x80, 0xe0, 0xac, 0x82, 0xa0, 0xda, 0x11, 0x28, 0xa6, 0x84, 0xa6, 0x1e, 0x90, 0x2c,
-	0x58, 0x56, 0x36, 0xc9, 0x6e, 0xad, 0xd4, 0xbf, 0x44, 0x71, 0x32, 0xb2, 0xb6, 0x59, 0x9c, 0xbe,
-	0x7f, 0xa9, 0x38, 0xdd, 0x5b, 0xd1, 0x6b, 0xf8, 0xa8, 0x98, 0x0c, 0x6b, 0x86, 0xe9, 0x9a, 0x76,
-	0xb5, 0x8d, 0xc5, 0x1c, 0x8c, 0xd5, 0x3d, 0xe6, 0x16, 0x2a, 0x15, 0x17, 0x56, 0x59, 0xf4, 0x4c,
-	0xdf, 0x8d, 0xcf, 0xea, 0x28, 0x62, 0x74, 0x6c, 0x1d, 0x88, 0x6e, 0x56, 0xfb, 0x59, 0xe0, 0xb1,
-	0x17, 0x3d, 0x83, 0xa9, 0x88, 0xbe, 0x12, 0x5e, 0xc0, 0xd6, 0xc3, 0x7b, 0xd0, 0x7a, 0x70, 0x0d,
-	0x12, 0x0b, 0xf8, 0x63, 0x84, 0x4f, 0xa7, 0x9a, 0x01, 0xa0, 0x0d, 0x7c, 0x44, 0x32, 0x0c, 0xd0,
-	0x66, 0x14, 0xd0, 0x24, 0x1e, 0xd0, 0x31, 0x59, 0x30, 0x3a, 0x81, 0xcf, 0x44, 0xf5, 0x80, 0xcb,
-	0x20, 0x8c, 0xf3, 0xf5, 0x1d, 0xdd, 0x9b, 0x3e, 0x47, 0x78, 0x3c, 0xc3, 0x10, 0x50, 0xdf, 0xc1,
-	0x23, 0x52, 0x03, 0xc0, 0x7d, 0x4e, 0x75, 0xb3, 0x92, 0xf9, 0x00, 0x72, 0x79, 0x40, 0x7a, 0x25,
-	0xc6, 0x1e, 0x71, 0xe2, 0x2d, 0xb9, 0xee, 0xb8, 0xc1, 0x44, 0x4c, 0x3f, 0xe0, 0x1b, 0x19, 0x29,
-	0xdc, 0x63, 0x46, 0x9e, 0xcc, 0x20, 0x83, 0x91, 0x34, 0xa8, 0x60, 0x24, 0x0d, 0x48, 0x6d, 0x60,
-	0x14, 0xac, 0xa4, 0x34, 0x46, 0xdd, 0xda, 0x50, 0x7e, 0x13, 0x35, 0x50, 0x27, 0xcc, 0xae, 0x41,
-	0x5f, 0x57, 0x6b, 0xd0, 0xbd, 0xcd, 0x63, 0x05, 0xb8, 0xb5, 0x60, 0x48, 0x6e, 0xcf, 0x1a, 0x1e,
-	0xe2, 0x92, 0xe3, 0x46, 0x7d, 0x0b, 0x4e, 0xa2, 0xe8, 0x99, 0x6e, 0xe2, 0x89, 0xac, 0x20, 0xdd,
-	0xdb, 0x3e, 0x56, 0x54, 0xdd, 0xf0, 0x12, 0xfd, 0x4f, 0xbb, 0xca, 0xdc, 0x03, 0xc4, 0x29, 0x41,
-	0x00, 0xf1, 0x8d, 0xe0, 0x9e, 0x1e, 0x0e, 0x3d, 0x47, 0x1b, 0xa3, 0x18, 0x74, 0x3c, 0xde, 0xd6,
-	0x5e, 0x07, 0x1d, 0x28, 0xdb, 0xfe, 0x3e, 0x45, 0xf1, 0xba, 0x95, 0xdb, 0x01, 0x3e, 0x86, 0x87,
-	0x65, 0xe3, 0x50, 0xdc, 0xb3, 0x0a, 0xac, 0x32, 0x17, 0x80, 0x2a, 0x0d, 0x47, 0x3f, 0x41, 0xf8,
-	0x18, 0xc7, 0xf3, 0x36, 0x73, 0xcd, 0xdb, 0xf7, 0x13, 0x07, 0x0d, 0xc1, 0xfd, 0x9e, 0x58, 0xeb,
-	0xfd, 0x45, 0xfe, 0x7f, 0xda, 0x01, 0x43, 0x28, 0x3e, 0x24, 0xa0, 0xf0, 0xf1, 0x3e, 0x3e, 0xde,
-	0xf4, 0xae, 0x69, 0xc2, 0xf5, 0x27, 0x26, 0xdc, 0x1b, 0x58, 0x93, 0x81, 0x81, 0x92, 0x0c, 0xe3,
-	0x81, 0x6d, 0xc3, 0x82, 0x1b, 0xd3, 0x50, 0x31, 0x7c, 0x20, 0x39, 0xfc, 0x1f, 0x67, 0x9b, 0xb9,
-	0x96, 0x51, 0xcb, 0x0d, 0xf0, 0xf7, 0xe2, 0x71, 0xee, 0xef, 0xe3, 0x78, 0x80, 0x87, 0x23, 0x1f,
-	0x21, 0x3c, 0x18, 0xaa, 0x57, 0x32, 0xad, 0xa8, 0x5c, 0xab, 0x5c, 0xd6, 0x66, 0xda, 0x31, 0x0d,
-	0xb1, 0xd1, 0xf1, 0x0f, 0x9f, 0x3c, 0xfb, 0xa2, 0x77, 0x8c, 0x9c, 0xd4, 0xc1, 0x87, 0xff, 0xd5,
-	0x13, 0x1f, 0x50, 0xc8, 0x03, 0x84, 0x87, 0x84, 0xee, 0x23, 0xf9, 0xb4, 0xf8, 0xad, 0x7a, 0x5a,
-	0xd3, 0xdb, 0xb6, 0x07, 0x50, 0x17, 0x38, 0xa8, 0x19, 0x32, 0xa5, 0x00, 0x15, 0x7d, 0xbe, 0xd1,
-	0x77, 0xf8, 0xb1, 0xb0, 0x4b, 0xbe, 0x44, 0xf8, 0xa0, 0x08, 0x53, 0xb0, 0xac, 0x74, 0x88, 0xad,
-	0x12, 0x3b, 0x1d, 0xa2, 0x44, 0x2e, 0xd3, 0x29, 0x0e, 0x91, 0x92, 0x53, 0x59, 0x10, 0xc9, 0xf7,
-	0x08, 0x1f, 0x4e, 0xca, 0x2a, 0x32, 0x9f, 0x55, 0x12, 0xb9, 0x7c, 0xd4, 0x16, 0xf6, 0xed, 0x07,
-	0x78, 0x17, 0x39, 0xde, 0x8b, 0x64, 0x56, 0x85, 0xb7, 0xe5, 0xbb, 0x57, 0x54, 0xdb, 0xef, 0x10,
-	0x3e, 0x92, 0x8c, 0x1b, 0xd4, 0x78, 0x3e, 0xab, 0x66, 0x9d, 0x70, 0x48, 0x91, 0xb3, 0x74, 0x96,
-	0x73, 0x38, 0x4b, 0xa6, 0xdb, 0xe6, 0x40, 0xbe, 0x45, 0xf8, 0xff, 0x09, 0x79, 0x48, 0xe6, 0xd2,
-	0xf2, 0xcb, 0x65, 0xa8, 0x76, 0x71, 0x5f, 0x3e, 0x80, 0xf7, 0x32, 0xc7, 0x7b, 0x89, 0xcc, 0xa5,
-	0xcd, 0x91, 0x4a, 0xfc, 0x65, 0x50, 0xdf, 0x11, 0xe7, 0xc1, 0x2e, 0xf9, 0x05, 0xa9, 0x35, 0x20,
-	0x79, 0x35, 0x63, 0x16, 0x64, 0x88, 0x51, 0xed, 0x6a, 0xc7, 0xfe, 0x6d, 0x32, 0x4b, 0xf9, 0x44,
-	0x4a, 0x9e, 0xa1, 0x34, 0x85, 0x43, 0xae, 0x65, 0x60, 0xcb, 0x14, 0x6e, 0x5a, 0xe1, 0x39, 0x22,
-	0x00, 0xbf, 0x02, 0xe7, 0xb7, 0x44, 0x16, 0x15, 0xfc, 0x52, 0x3f, 0xeb, 0xea, 0x3b, 0x66, 0x65,
-	0x97, 0xec, 0x21, 0x7c, 0x52, 0x9d, 0x29, 0x58, 0x3f, 0xd7, 0x32, 0xd6, 0xc1, 0x73, 0x32, 0x6d,
-	0x4b, 0x6e, 0xd2, 0x2b, 0x9c, 0xe9, 0x3c, 0xb9, 0xd4, 0x09, 0x53, 0xf2, 0x0d, 0xc2, 0x38, 0x16,
-	0x65, 0xe4, 0x7c, 0x46, 0xe5, 0x9b, 0x4f, 0x69, 0x2d, 0xdf, 0xae, 0x39, 0x60, 0xbd, 0xc6, 0xb1,
-	0x5e, 0x26, 0x2f, 0x2b, 0xb0, 0x56, 0x99, 0x5f, 0xaa, 0x85, 0x3e, 0x0d, 0x4b, 0x49, 0xdf, 0x11,
-	0xc7, 0xfc, 0x2e, 0xf9, 0x01, 0x49, 0xd5, 0x19, 0x59, 0xcc, 0x40, 0xa2, 0xd6, 0x85, 0xda, 0xe5,
-	0x4e, 0x5c, 0x81, 0xd0, 0x25, 0x4e, 0x28, 0x4f, 0xce, 0x29, 0x08, 0x49, 0x7f, 0x0f, 0x20, 0x3f,
-	0x22, 0x85, 0x58, 0x23, 0x4b, 0x59, 0x05, 0x4d, 0x11, 0x8b, 0xda, 0x95, 0xce, 0x9c, 0x81, 0xca,
-	0x3c, 0xa7, 0x72, 0x81, 0xe4, 0x55, 0xf7, 0x08, 0xf9, 0x8f, 0x16, 0xe4, 0x09, 0xc2, 0x23, 0xd2,
-	0x8b, 0x6a, 0x26, 0x99, 0x34, 0xad, 0x95, 0x49, 0x26, 0x55, 0x37, 0xd1, 0xab, 0x9c, 0xcc, 0x22,
-	0x59, 0x50, 0x6d, 0xdc, 0x8a, 0x5f, 0x56, 0xa2, 0x23, 0xf3, 0x27, 0x84, 0x73, 0xd2, 0x14, 0xc1,
-	0xba, 0x5f, 0xca, 0x3a, 0xff, 0x3a, 0x26, 0x96, 0x25, 0x08, 0xe9, 0x02, 0x27, 0x36, 0x4b, 0xf4,
-	0x7d, 0x12, 0x23, 0x7f, 0x22, 0x7c, 0x4c, 0xa9, 0xa6, 0x48, 0x2a, 0xa8, 0x2c, 0x25, 0xa7, 0xbd,
-	0xd2, 0xa1, 0x37, 0x70, 0x5a, 0xe5, 0x9c, 0x0a, 0xe4, 0xea, 0x3e, 0x38, 0x35, 0xec, 0xd5, 0xe2,
-	0x0e, 0xbf, 0xcb, 0x39, 0x2a, 0xf5, 0x17, 0xd9, 0x5f, 0xe1, 0x13, 0xda, 0x2f, 0x9d, 0x63, 0xa6,
-	0xe8, 0xcb, 0xe4, 0xc8, 0xf9, 0x34, 0xf3, 0xf4, 0x1a, 0x66, 0x65, 0x7c, 0xad, 0x78, 0x88, 0xe4,
-	0xf2, 0x8c, 0x64, 0x6d, 0x63, 0x29, 0xda, 0x50, 0x5b, 0xea, 0xc8, 0x17, 0xa8, 0xbd, 0xc4, 0xa9,
-	0xe9, 0xe4, 0xbc, 0x82, 0x9a, 0xfc, 0xc7, 0x49, 0xf2, 0x33, 0xc2, 0xff, 0x6d, 0x52, 0x5b, 0xe4,
-	0x42, 0x1a, 0x0a, 0x99, 0x4a, 0xd4, 0x66, 0xf7, 0xe1, 0x01, 0x68, 0x6f, 0x71, 0xb4, 0xeb, 0xe4,
-	0xa6, 0x02, 0xed, 0x36, 0xf7, 0x6a, 0x3e, 0x85, 0x1a, 0x4f, 0x20, 0x7d, 0xa7, 0x51, 0x53, 0xee,
-	0x36, 0x4c, 0xbf, 0xe5, 0xe5, 0x47, 0x7b, 0xa3, 0xe8, 0xf1, 0xde, 0x28, 0xfa, 0x63, 0x6f, 0x14,
-	0x7d, 0xf6, 0x74, 0xb4, 0xe7, 0xf1, 0xd3, 0xd1, 0x9e, 0x5f, 0x9f, 0x8e, 0xf6, 0xbc, 0x33, 0x55,
-	0x35, 0xfd, 0x3b, 0xf5, 0x8d, 0x7c, 0xd9, 0xd9, 0x6a, 0x4e, 0x7b, 0x2f, 0x4e, 0xec, 0xdf, 0xaf,
-	0x31, 0x6f, 0x63, 0x90, 0xff, 0x8a, 0x7a, 0xf1, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x52, 0x69,
-	0x15, 0xaf, 0x78, 0x1f, 0x00, 0x00,
+	// 2129 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x5a, 0x4f, 0x6c, 0x1c, 0x57,
+	0x19, 0xcf, 0xb3, 0x9d, 0xe0, 0xbc, 0x16, 0x52, 0xbd, 0xd8, 0xc5, 0x1d, 0x12, 0xdb, 0x7d, 0x89,
+	0xe3, 0x3f, 0x49, 0x76, 0xe2, 0x38, 0xb1, 0xe3, 0x38, 0x25, 0x71, 0x4c, 0xed, 0x03, 0x10, 0xb9,
+	0x6b, 0xb5, 0x52, 0x11, 0x68, 0x35, 0xde, 0x7d, 0xdd, 0x8c, 0x3c, 0xde, 0xd9, 0xcc, 0xcc, 0x9a,
+	0x58, 0x96, 0x05, 0x42, 0x02, 0x54, 0x21, 0x24, 0x10, 0x17, 0x2e, 0x3d, 0xc2, 0x8d, 0x1b, 0x42,
+	0xe2, 0x52, 0x89, 0x1e, 0xaa, 0x8a, 0x43, 0xa9, 0xd4, 0x03, 0x88, 0x03, 0x82, 0x24, 0x67, 0x4e,
+	0xdc, 0xb8, 0xa0, 0x79, 0xf3, 0xbd, 0x99, 0xdd, 0xd9, 0xf7, 0x67, 0x77, 0x3d, 0xf4, 0xb4, 0x3b,
+	0xf3, 0xbe, 0x3f, 0xbf, 0xdf, 0xf7, 0x7d, 0xef, 0xcf, 0x7c, 0x33, 0x78, 0x2c, 0x64, 0xc1, 0x81,
+	0x5b, 0x65, 0x81, 0xfd, 0xa4, 0xc5, 0x82, 0xc3, 0x52, 0x33, 0xf0, 0x23, 0x9f, 0x8c, 0x7b, 0xce,
+	0x81, 0xd3, 0x60, 0x51, 0x29, 0xfe, 0x2d, 0x09, 0x11, 0xeb, 0x42, 0xdd, 0xf7, 0xeb, 0x1e, 0xb3,
+	0x9d, 0xa6, 0x6b, 0x3b, 0x8d, 0x86, 0x1f, 0x39, 0x91, 0xeb, 0x37, 0xc2, 0x44, 0xc9, 0x5a, 0xa8,
+	0xfa, 0xe1, 0xbe, 0x1f, 0xda, 0xbb, 0x4e, 0xc8, 0x12, 0x6b, 0xf6, 0xc1, 0xe2, 0x2e, 0x8b, 0x9c,
+	0x45, 0xbb, 0xe9, 0xd4, 0xdd, 0x06, 0x17, 0x06, 0xd9, 0xf1, 0xd4, 0x6d, 0xd3, 0x09, 0x9c, 0x7d,
+	0x61, 0x62, 0x22, 0xbd, 0x1d, 0x46, 0xce, 0x1e, 0xab, 0xec, 0x3b, 0x4d, 0x18, 0x79, 0x3d, 0x1b,
+	0x69, 0xb2, 0x6a, 0x25, 0x19, 0x0e, 0x23, 0x3f, 0x70, 0xea, 0x4c, 0xf8, 0x4f, 0x45, 0x76, 0x3d,
+	0xbf, 0xba, 0x57, 0xa9, 0x31, 0xa7, 0xe6, 0xb9, 0x0d, 0x56, 0x79, 0xcf, 0x0f, 0x2a, 0x55, 0xc7,
+	0xf3, 0x76, 0x9d, 0xea, 0x1e, 0xc8, 0x5e, 0x4b, 0x65, 0x5b, 0x8d, 0xd8, 0x96, 0xdb, 0xa8, 0x57,
+	0xc4, 0xad, 0xb0, 0xe2, 0x78, 0x5e, 0x25, 0x76, 0x23, 0x60, 0x5d, 0x4e, 0xa5, 0xab, 0xad, 0x20,
+	0x60, 0x8d, 0xa8, 0x12, 0xb2, 0x30, 0x74, 0xfd, 0x46, 0x8c, 0x23, 0x88, 0x40, 0xea, 0x4a, 0xc6,
+	0x29, 0x60, 0x07, 0xae, 0xdf, 0x0a, 0x53, 0x31, 0x0e, 0x48, 0x58, 0x9b, 0xcd, 0xa8, 0xa4, 0x56,
+	0x38, 0x0f, 0x0e, 0x34, 0xf6, 0x0b, 0x82, 0x33, 0xa9, 0x20, 0x73, 0x02, 0xcf, 0x65, 0xa1, 0xdc,
+	0xef, 0x54, 0x97, 0xbd, 0xa6, 0x73, 0xb8, 0xcf, 0x1a, 0x91, 0x70, 0x78, 0x29, 0x23, 0x1b, 0xb2,
+	0x40, 0x8c, 0xe6, 0xa2, 0xb7, 0xd4, 0x16, 0x11, 0xf7, 0x49, 0x8b, 0xe5, 0xc5, 0x2a, 0x5c, 0x57,
+	0x08, 0x81, 0xd2, 0x85, 0x5c, 0xbe, 0x3a, 0x4d, 0x4e, 0xe4, 0x12, 0xd2, 0x68, 0xed, 0xc3, 0xc8,
+	0x64, 0x7b, 0xa9, 0x88, 0x22, 0xa9, 0xfa, 0xae, 0x28, 0x8f, 0xb1, 0xba, 0x5f, 0xf7, 0xf9, 0x5f,
+	0x3b, 0xfe, 0x97, 0xdc, 0xa5, 0x63, 0x98, 0xbc, 0x15, 0x97, 0xd5, 0x36, 0x2f, 0x99, 0x32, 0x7b,
+	0xd2, 0x62, 0x61, 0x44, 0xcb, 0xf8, 0x7c, 0xc7, 0xdd, 0xb0, 0xe9, 0x37, 0x42, 0x46, 0xd6, 0xf0,
+	0x99, 0xa4, 0xb4, 0x26, 0xd0, 0x34, 0x9a, 0x7b, 0xe9, 0xe6, 0xc5, 0x92, 0xb4, 0xa6, 0x4b, 0x89,
+	0xda, 0xc3, 0x91, 0x4f, 0xfe, 0x31, 0x75, 0xaa, 0x0c, 0x2a, 0xd4, 0xc6, 0x5f, 0xe5, 0x36, 0xb7,
+	0x58, 0xb4, 0x13, 0x13, 0xfb, 0xb6, 0xd3, 0x04, 0x77, 0x64, 0x0c, 0x9f, 0x76, 0x1b, 0x35, 0xf6,
+	0x94, 0x9b, 0x3d, 0x5b, 0x4e, 0x2e, 0xe8, 0xf7, 0xf0, 0x44, 0xb7, 0x02, 0x20, 0x59, 0xc7, 0xa3,
+	0x21, 0xdc, 0x03, 0x2c, 0x53, 0x0a, 0x2c, 0x42, 0x15, 0xd0, 0xa4, 0x6a, 0xd4, 0x01, 0x3c, 0xeb,
+	0x9e, 0x97, 0xc7, 0xb3, 0x89, 0x71, 0x36, 0xbb, 0xc0, 0xfe, 0x95, 0x52, 0x12, 0xdf, 0x52, 0x1c,
+	0xdf, 0x52, 0x32, 0xb1, 0x21, 0xca, 0xa5, 0x6d, 0xa7, 0xce, 0x40, 0xb7, 0xdc, 0xa6, 0x49, 0x7f,
+	0x8b, 0x80, 0x42, 0x87, 0x0f, 0x29, 0x85, 0xe1, 0x01, 0x28, 0x90, 0xad, 0x0e, 0x9c, 0x43, 0x1c,
+	0xe7, 0xac, 0x11, 0x67, 0xe2, 0xbf, 0x03, 0xe8, 0x0a, 0x9e, 0x4a, 0x43, 0xdd, 0x64, 0x55, 0xee,
+	0x70, 0x27, 0xa9, 0x3b, 0x7d, 0x8e, 0x8e, 0xf1, 0xb4, 0x5a, 0x11, 0x88, 0xbe, 0x8b, 0x5f, 0x09,
+	0x73, 0x63, 0x10, 0xd3, 0x59, 0x15, 0xe1, 0x9c, 0x38, 0x10, 0xef, 0x32, 0x43, 0x5d, 0xc0, 0x1d,
+	0xc7, 0x57, 0x81, 0xbb, 0xa8, 0x5c, 0x7e, 0x8c, 0x80, 0xaa, 0xd4, 0x97, 0x96, 0xea, 0x70, 0x01,
+	0x54, 0x8b, 0xcb, 0xf5, 0x2a, 0xfe, 0x1a, 0xe7, 0xc1, 0xad, 0xd7, 0x76, 0xc4, 0x02, 0x2d, 0xe2,
+	0x65, 0xe1, 0xd1, 0xd8, 0xf7, 0x23, 0x67, 0x9f, 0x41, 0xaa, 0xd3, 0x6b, 0xfa, 0x03, 0x7c, 0x41,
+	0xae, 0x0a, 0xf4, 0xb7, 0xf0, 0xcb, 0x61, 0x77, 0x96, 0x2f, 0xe9, 0xca, 0x5a, 0x44, 0xb0, 0x43,
+	0x91, 0xbc, 0x8a, 0xcf, 0xf8, 0xad, 0xa8, 0xd9, 0x8a, 0x38, 0xd1, 0xb3, 0x65, 0xb8, 0xa2, 0xf3,
+	0x78, 0x56, 0x94, 0xdb, 0xc3, 0x78, 0xf9, 0xfb, 0x06, 0x6c, 0x47, 0x9b, 0x7e, 0xb0, 0x01, 0x9b,
+	0x91, 0x58, 0xc2, 0x3e, 0x40, 0x78, 0xce, 0x2c, 0x0b, 0xc0, 0x9f, 0xe0, 0x09, 0x95, 0x0c, 0x90,
+	0xb0, 0x15, 0x24, 0x54, 0x6a, 0x90, 0x47, 0xa5, 0x59, 0xba, 0x86, 0xe7, 0x05, 0xbc, 0xb7, 0xc5,
+	0x76, 0x99, 0x46, 0x14, 0x6a, 0x2c, 0x4d, 0xca, 0x57, 0xf0, 0x90, 0x5b, 0xe3, 0x48, 0x46, 0xca,
+	0x43, 0x6e, 0x8d, 0xfe, 0x06, 0xe1, 0x85, 0x5e, 0xb4, 0x81, 0xde, 0xf7, 0xb1, 0xa5, 0x96, 0x02,
+	0x82, 0x8b, 0x0a, 0x82, 0x6a, 0x45, 0xa0, 0xa8, 0x31, 0x4d, 0x43, 0x20, 0xb9, 0xee, 0x79, 0x66,
+	0x92, 0x45, 0xcd, 0xd4, 0x7f, 0x8b, 0xe0, 0x18, 0xbc, 0xf6, 0x18, 0x9c, 0xe1, 0xff, 0x53, 0x70,
+	0x8a, 0x9b, 0xd1, 0xdb, 0xf8, 0x55, 0x51, 0x0c, 0xdb, 0x8e, 0x1b, 0xb8, 0x8d, 0x7a, 0x0f, 0x93,
+	0x39, 0x1e, 0x8b, 0x8f, 0x1f, 0xeb, 0xb5, 0x5a, 0x00, 0xb3, 0x2c, 0xbd, 0xa6, 0xdf, 0xcd, 0xf6,
+	0xea, 0xd4, 0x62, 0xba, 0x6d, 0x9d, 0x4d, 0x0f, 0x75, 0xfd, 0x4c, 0xf0, 0x4c, 0x8b, 0x5e, 0xc6,
+	0x54, 0x58, 0xdf, 0x48, 0xce, 0x7e, 0x3b, 0xc9, 0x21, 0x6b, 0x27, 0x3e, 0x81, 0x89, 0x09, 0xfc,
+	0x3e, 0xc2, 0x97, 0xb4, 0x62, 0x00, 0x68, 0x17, 0x9f, 0x97, 0x0c, 0x03, 0xb4, 0x05, 0x05, 0x34,
+	0x89, 0x06, 0x64, 0x4c, 0x66, 0x8c, 0x5e, 0xc1, 0x97, 0xd3, 0x78, 0xc0, 0x39, 0x14, 0xc6, 0xf9,
+	0xfc, 0x4e, 0xcf, 0x4d, 0xbf, 0x44, 0x78, 0xc6, 0x20, 0x08, 0xa8, 0x1f, 0xe3, 0x71, 0xa9, 0x00,
+	0xe0, 0xbe, 0xa6, 0x3a, 0x59, 0xc9, 0x74, 0x00, 0xb9, 0xdc, 0x20, 0xbd, 0x97, 0x61, 0x4f, 0x39,
+	0xf1, 0x94, 0x6c, 0xfa, 0x41, 0x5c, 0x88, 0xfa, 0x0d, 0xbe, 0x9d, 0x91, 0x42, 0x3d, 0x63, 0x14,
+	0xca, 0x04, 0x0c, 0x8c, 0xa4, 0x46, 0x05, 0x23, 0xa9, 0x41, 0xda, 0x00, 0x46, 0xf1, 0x4c, 0xd2,
+	0x31, 0x2a, 0x6a, 0x41, 0xf9, 0xbb, 0x88, 0x81, 0xda, 0xa1, 0x39, 0x06, 0xc3, 0x85, 0xc6, 0xa0,
+	0xb8, 0xc5, 0x63, 0x03, 0xb8, 0x75, 0x61, 0xc8, 0x2f, 0xcf, 0x16, 0x1e, 0xe5, 0x8f, 0x1c, 0x8f,
+	0x5a, 0xfb, 0xb0, 0x13, 0xa5, 0xd7, 0x74, 0x0f, 0x5f, 0x31, 0x19, 0x29, 0x6e, 0xf9, 0xd8, 0x50,
+	0x65, 0x23, 0xcc, 0xe5, 0x5f, 0x77, 0x94, 0x79, 0x0a, 0x88, 0x35, 0x46, 0x00, 0xf1, 0xa3, 0xf8,
+	0x9c, 0x9e, 0x0c, 0x9d, 0x20, 0x8d, 0xa9, 0x0d, 0x3a, 0x93, 0x2d, 0x6b, 0x6f, 0xc2, 0x23, 0xa8,
+	0x6c, 0xf9, 0xfb, 0x39, 0xca, 0xe6, 0xad, 0x5c, 0x0e, 0xf0, 0x31, 0x3c, 0x26, 0x1b, 0x87, 0xe0,
+	0x5e, 0x55, 0x60, 0x95, 0xa9, 0x00, 0x54, 0xa9, 0x39, 0xfa, 0x33, 0x84, 0x5f, 0xe3, 0x78, 0xde,
+	0x61, 0x81, 0xfb, 0xde, 0x61, 0x6e, 0xa3, 0x21, 0x78, 0x24, 0x14, 0x73, 0x7d, 0xa4, 0xcc, 0xff,
+	0xeb, 0x36, 0x18, 0x42, 0xf1, 0xcb, 0x02, 0x0a, 0x1f, 0x1f, 0xe6, 0xe3, 0x1d, 0xf7, 0x3a, 0x0a,
+	0x6e, 0x24, 0x57, 0x70, 0xdf, 0xc2, 0x96, 0x0c, 0x0c, 0x84, 0x64, 0x0c, 0x9f, 0x3e, 0x70, 0x3c,
+	0x38, 0x31, 0x8d, 0x96, 0x93, 0x0b, 0x32, 0x81, 0xbf, 0xe4, 0x1f, 0xb0, 0xc0, 0x73, 0x9a, 0x13,
+	0xa7, 0xf9, 0x7d, 0x71, 0x49, 0xb7, 0xb0, 0x9d, 0x9d, 0xa6, 0xe2, 0x07, 0xf5, 0xed, 0xe4, 0x39,
+	0x1d, 0x32, 0xf9, 0x76, 0xc8, 0x02, 0xb1, 0x7d, 0xeb, 0x57, 0xcb, 0x0f, 0x11, 0xbe, 0xd1, 0xbb,
+	0x25, 0x40, 0xfb, 0x3e, 0xc2, 0xd3, 0x2d, 0x83, 0x30, 0x64, 0x73, 0x45, 0x79, 0x0e, 0xd1, 0xab,
+	0x43, 0x66, 0x8d, 0x6e, 0xe8, 0x21, 0x44, 0x82, 0x1f, 0x9d, 0x7a, 0x8b, 0x44, 0x51, 0xab, 0xec,
+	0x4f, 0x87, 0x20, 0x76, 0x3d, 0xf9, 0xee, 0x2f, 0x76, 0xc3, 0x5f, 0x40, 0xec, 0x8a, 0x7c, 0x42,
+	0x7b, 0x3d, 0x2d, 0xa2, 0x90, 0x05, 0x9d, 0x2e, 0xf5, 0x05, 0xf8, 0x63, 0x94, 0x9d, 0xad, 0x64,
+	0xba, 0x10, 0xb6, 0x0a, 0x26, 0xad, 0xae, 0x51, 0xc8, 0xdd, 0xbc, 0x2a, 0x4e, 0x5d, 0x0a, 0x10,
+	0x19, 0x89, 0x29, 0xba, 0x07, 0x14, 0xe2, 0x5c, 0x2a, 0x29, 0x14, 0x55, 0x39, 0x9f, 0x0a, 0xd2,
+	0x0a, 0x6f, 0x06, 0xd2, 0xc3, 0x05, 0x91, 0x2e, 0xae, 0x00, 0x96, 0xf1, 0x64, 0xee, 0xcc, 0x05,
+	0x9e, 0x42, 0x7d, 0xf6, 0x0f, 0xdb, 0xda, 0x38, 0x79, 0x3d, 0x08, 0xc2, 0x3b, 0xf8, 0x5c, 0xd8,
+	0x39, 0x94, 0x06, 0x5e, 0xbb, 0xa9, 0x09, 0x69, 0xa0, 0x9f, 0x37, 0x42, 0x1f, 0x03, 0xe4, 0x6c,
+	0x3f, 0xcd, 0x43, 0x2e, 0x2a, 0xdb, 0x1f, 0xa1, 0xb6, 0xa6, 0x4f, 0x3f, 0x2c, 0x87, 0x4f, 0xcc,
+	0xb2, 0xb0, 0x0c, 0xdf, 0xfc, 0xcf, 0x0c, 0x3e, 0xcd, 0x49, 0x90, 0x9f, 0x20, 0x7c, 0x26, 0xe9,
+	0x97, 0x12, 0x55, 0x11, 0x76, 0x37, 0x68, 0xad, 0x85, 0x5e, 0x44, 0x13, 0xbf, 0x74, 0xe6, 0x47,
+	0x9f, 0xbf, 0xf8, 0xd5, 0xd0, 0x14, 0xb9, 0x68, 0x83, 0x0e, 0xff, 0xb5, 0x73, 0x6f, 0x0b, 0xc8,
+	0x07, 0x08, 0x8f, 0x8a, 0x4e, 0x23, 0x29, 0xe9, 0xec, 0x77, 0x77, 0x70, 0x2d, 0xbb, 0x67, 0x79,
+	0x00, 0x75, 0x83, 0x83, 0x5a, 0x20, 0x73, 0x0a, 0x50, 0xe9, 0xbb, 0x0a, 0xfb, 0x88, 0xd7, 0xf6,
+	0x31, 0xf9, 0x35, 0xc2, 0x2f, 0x09, 0x33, 0xeb, 0x9e, 0xa7, 0x87, 0xd8, 0xdd, 0xd4, 0xd5, 0x43,
+	0x94, 0x34, 0x68, 0xe9, 0x1c, 0x87, 0x48, 0xc9, 0xb4, 0x09, 0x22, 0xf9, 0x10, 0xe1, 0x57, 0xf2,
+	0x8d, 0x3c, 0xb2, 0x6c, 0x0a, 0x89, 0xbc, 0x61, 0x69, 0xad, 0xf4, 0xad, 0x07, 0x78, 0x57, 0x39,
+	0xde, 0x25, 0xb2, 0xa8, 0xc2, 0xdb, 0xf5, 0x92, 0x27, 0x8d, 0xed, 0x1f, 0x11, 0x3e, 0x9f, 0xb7,
+	0x1b, 0xc7, 0x78, 0xd9, 0x14, 0xb3, 0x41, 0x38, 0x68, 0x1a, 0xa8, 0x74, 0x91, 0x73, 0xb8, 0x4a,
+	0xe6, 0x7b, 0xe6, 0x40, 0xfe, 0x80, 0xf0, 0xb9, 0x5c, 0x43, 0x92, 0xdc, 0xd4, 0xf9, 0x97, 0x37,
+	0x3e, 0xad, 0xa5, 0xbe, 0x74, 0x00, 0xef, 0x5d, 0x8e, 0xf7, 0x16, 0xb9, 0xa9, 0xab, 0x91, 0x5a,
+	0xf6, 0x1a, 0xcc, 0x3e, 0x12, 0x4f, 0x20, 0xc7, 0xe4, 0xaf, 0x48, 0xdd, 0x75, 0x24, 0x5f, 0x37,
+	0x54, 0x81, 0xa1, 0xfd, 0x69, 0xdd, 0x1f, 0x58, 0xbf, 0x47, 0x66, 0x9a, 0xf7, 0x81, 0xe4, 0x05,
+	0xd2, 0xf5, 0xd4, 0xc8, 0x03, 0x03, 0x36, 0x63, 0xab, 0xd0, 0x5a, 0x3f, 0x81, 0x05, 0xe0, 0xb7,
+	0xce, 0xf9, 0xad, 0x91, 0x55, 0x05, 0x3f, 0xed, 0x3b, 0x4c, 0xfb, 0xc8, 0xad, 0x1d, 0x93, 0x67,
+	0x08, 0x5f, 0x54, 0x7b, 0x8a, 0xe7, 0xcf, 0x03, 0xc3, 0x3c, 0x38, 0x21, 0xd3, 0x9e, 0x1a, 0x9c,
+	0xf4, 0x1e, 0x67, 0xba, 0x4c, 0x6e, 0x0d, 0xc2, 0x94, 0xfc, 0x0e, 0x61, 0x9c, 0xb5, 0x01, 0xc9,
+	0x75, 0x43, 0xe4, 0x3b, 0x9f, 0x0b, 0xad, 0x52, 0xaf, 0xe2, 0x80, 0xf5, 0x01, 0xc7, 0x7a, 0x97,
+	0xdc, 0x51, 0x60, 0xad, 0xb3, 0xa8, 0xd2, 0x4c, 0x74, 0xda, 0xa6, 0x92, 0x7d, 0x24, 0x1e, 0x2c,
+	0x8f, 0xc9, 0x47, 0x48, 0xda, 0x0f, 0x24, 0xab, 0x06, 0x24, 0xea, 0x4e, 0xa4, 0x75, 0x77, 0x10,
+	0x55, 0x20, 0x74, 0x8b, 0x13, 0x2a, 0x91, 0x6b, 0x0a, 0x42, 0xd2, 0x97, 0xdf, 0xe4, 0xcf, 0x48,
+	0xd1, 0x1e, 0x24, 0x6b, 0xa6, 0x80, 0x6a, 0xda, 0x93, 0xd6, 0xbd, 0xc1, 0x94, 0x81, 0xca, 0x32,
+	0xa7, 0x72, 0x83, 0x94, 0x54, 0xe7, 0x08, 0xf9, 0x1b, 0x7a, 0xf2, 0x39, 0xc2, 0xe3, 0xd2, 0xd6,
+	0x88, 0x91, 0x8c, 0xae, 0xbb, 0x67, 0x24, 0xa3, 0xed, 0xd4, 0xd1, 0xfb, 0x9c, 0xcc, 0x2a, 0x59,
+	0x51, 0x2d, 0xdc, 0x8a, 0xcf, 0x08, 0xd2, 0x2d, 0xf3, 0x53, 0x84, 0x27, 0xa4, 0x2e, 0xe2, 0x79,
+	0xbf, 0x66, 0xda, 0xff, 0x06, 0x26, 0x66, 0x6a, 0x41, 0xd2, 0x15, 0x4e, 0x6c, 0x91, 0xd8, 0x7d,
+	0x12, 0x23, 0xff, 0x42, 0xf8, 0x35, 0x65, 0xff, 0x8e, 0x68, 0x41, 0x99, 0x7a, 0x87, 0xd6, 0x1b,
+	0x03, 0x6a, 0x03, 0xa7, 0x2d, 0xce, 0x69, 0x9d, 0xdc, 0xef, 0x83, 0x53, 0xdb, 0x5a, 0x2d, 0xba,
+	0x46, 0xc7, 0x9c, 0xa3, 0xb2, 0xe3, 0x47, 0xfa, 0x0b, 0x7c, 0xae, 0xdb, 0xa8, 0xe7, 0x68, 0x6c,
+	0x33, 0x1a, 0x39, 0x72, 0x3e, 0x9d, 0x3c, 0xc3, 0xb6, 0xaa, 0xcc, 0x8e, 0x15, 0x1f, 0x23, 0x79,
+	0x43, 0x90, 0x98, 0x96, 0x31, 0x4d, 0x37, 0xd2, 0x5a, 0x1b, 0x48, 0x17, 0xa8, 0xdd, 0xe6, 0xd4,
+	0x6c, 0x72, 0x5d, 0x41, 0x4d, 0xfe, 0x25, 0x0e, 0xf9, 0x0b, 0xc2, 0x5f, 0xee, 0xe8, 0xef, 0x91,
+	0x1b, 0x3a, 0x14, 0xb2, 0xbe, 0xa4, 0xb5, 0xd8, 0x87, 0x06, 0xa0, 0x7d, 0x97, 0xa3, 0xdd, 0x21,
+	0x6f, 0x29, 0xd0, 0x1e, 0x70, 0xad, 0xce, 0x5d, 0xa8, 0x7d, 0x07, 0xb2, 0x8f, 0xda, 0xbb, 0x98,
+	0xc7, 0xed, 0xe5, 0xf7, 0xc3, 0x21, 0x3c, 0x6d, 0x6a, 0x37, 0x91, 0x4d, 0xe3, 0xd9, 0xa6, 0xa7,
+	0xbe, 0x9c, 0xb5, 0x75, 0x62, 0x3b, 0x10, 0x90, 0x6f, 0xf2, 0x80, 0xbc, 0x49, 0x36, 0x94, 0xe7,
+	0x07, 0xf3, 0xb7, 0x4d, 0xe9, 0xb2, 0xf9, 0x5f, 0x84, 0x2f, 0x99, 0x3c, 0xc7, 0x2b, 0xe8, 0xa6,
+	0xf1, 0xdc, 0x53, 0x40, 0x14, 0xfa, 0xe8, 0x34, 0xd2, 0x0d, 0x1e, 0x85, 0x37, 0xc8, 0xda, 0x09,
+	0xa2, 0x10, 0xcf, 0x4d, 0xd2, 0xdd, 0x52, 0x22, 0x77, 0x4c, 0xa9, 0x52, 0xb5, 0xd0, 0xac, 0xd5,
+	0x01, 0x34, 0x81, 0xd0, 0x1a, 0x27, 0x74, 0x9b, 0x2c, 0xa9, 0x08, 0x49, 0xbe, 0x6b, 0x4b, 0xd3,
+	0xf8, 0x27, 0x84, 0xc7, 0xbb, 0x6d, 0xc7, 0x89, 0xbb, 0x63, 0x0a, 0xf8, 0x60, 0x5c, 0xb4, 0xad,
+	0x3d, 0xba, 0xc4, 0xb9, 0x5c, 0x27, 0x57, 0xfb, 0xe0, 0x12, 0x3f, 0xf4, 0x9e, 0xcb, 0xf5, 0x7d,
+	0xc8, 0xed, 0xde, 0x0e, 0x15, 0xb9, 0xde, 0x96, 0xb5, 0xdc, 0xaf, 0x5a, 0x9f, 0x9b, 0xb5, 0xf8,
+	0xf8, 0x30, 0x8d, 0xff, 0xef, 0x11, 0x26, 0x39, 0xa3, 0x71, 0xf0, 0x6f, 0xf7, 0xb6, 0x07, 0xf5,
+	0x05, 0x5f, 0xdd, 0x66, 0xa3, 0x36, 0x87, 0x3f, 0x4f, 0x66, 0x7b, 0x84, 0xff, 0xf0, 0xe1, 0x27,
+	0xcf, 0x26, 0xd1, 0x67, 0xcf, 0x26, 0xd1, 0x3f, 0x9f, 0x4d, 0xa2, 0x5f, 0x3c, 0x9f, 0x3c, 0xf5,
+	0xd9, 0xf3, 0xc9, 0x53, 0x7f, 0x7b, 0x3e, 0x79, 0xea, 0x3b, 0x73, 0x75, 0x37, 0x7a, 0xdc, 0xda,
+	0x2d, 0x55, 0xfd, 0xfd, 0x4e, 0x63, 0x4f, 0x33, 0x73, 0xd1, 0x61, 0x93, 0x85, 0xbb, 0x67, 0xf8,
+	0x87, 0x8b, 0x4b, 0xff, 0x0b, 0x00, 0x00, 0xff, 0xff, 0xd2, 0xa0, 0x28, 0x5c, 0x66, 0x2b, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1883,6 +2489,18 @@ type QueryClient interface {
 	EarliestSessionStart(ctx context.Context, in *QueryGetEarliestSessionStartRequest, opts ...grpc.CallOption) (*QueryGetEarliestSessionStartResponse, error)
 	// Queries a list of VerifyPairing items.
 	VerifyPairing(ctx context.Context, in *QueryVerifyPairingRequest, opts ...grpc.CallOption) (*QueryVerifyPairingResponse, error)
+	// Queries a UniquePaymentStorageUserServicer by index.
+	UniquePaymentStorageUserServicer(ctx context.Context, in *QueryGetUniquePaymentStorageUserServicerRequest, opts ...grpc.CallOption) (*QueryGetUniquePaymentStorageUserServicerResponse, error)
+	// Queries a list of UniquePaymentStorageUserServicer items.
+	UniquePaymentStorageUserServicerAll(ctx context.Context, in *QueryAllUniquePaymentStorageUserServicerRequest, opts ...grpc.CallOption) (*QueryAllUniquePaymentStorageUserServicerResponse, error)
+	// Queries a UserPaymentStorage by index.
+	UserPaymentStorage(ctx context.Context, in *QueryGetUserPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetUserPaymentStorageResponse, error)
+	// Queries a list of UserPaymentStorage items.
+	UserPaymentStorageAll(ctx context.Context, in *QueryAllUserPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllUserPaymentStorageResponse, error)
+	// Queries a SessionPayments by index.
+	SessionPayments(ctx context.Context, in *QueryGetSessionPaymentsRequest, opts ...grpc.CallOption) (*QueryGetSessionPaymentsResponse, error)
+	// Queries a list of SessionPayments items.
+	SessionPaymentsAll(ctx context.Context, in *QueryAllSessionPaymentsRequest, opts ...grpc.CallOption) (*QueryAllSessionPaymentsResponse, error)
 }
 
 type queryClient struct {
@@ -2055,6 +2673,60 @@ func (c *queryClient) VerifyPairing(ctx context.Context, in *QueryVerifyPairingR
 	return out, nil
 }
 
+func (c *queryClient) UniquePaymentStorageUserServicer(ctx context.Context, in *QueryGetUniquePaymentStorageUserServicerRequest, opts ...grpc.CallOption) (*QueryGetUniquePaymentStorageUserServicerResponse, error) {
+	out := new(QueryGetUniquePaymentStorageUserServicerResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/UniquePaymentStorageUserServicer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) UniquePaymentStorageUserServicerAll(ctx context.Context, in *QueryAllUniquePaymentStorageUserServicerRequest, opts ...grpc.CallOption) (*QueryAllUniquePaymentStorageUserServicerResponse, error) {
+	out := new(QueryAllUniquePaymentStorageUserServicerResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/UniquePaymentStorageUserServicerAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) UserPaymentStorage(ctx context.Context, in *QueryGetUserPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetUserPaymentStorageResponse, error) {
+	out := new(QueryGetUserPaymentStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/UserPaymentStorage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) UserPaymentStorageAll(ctx context.Context, in *QueryAllUserPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllUserPaymentStorageResponse, error) {
+	out := new(QueryAllUserPaymentStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/UserPaymentStorageAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) SessionPayments(ctx context.Context, in *QueryGetSessionPaymentsRequest, opts ...grpc.CallOption) (*QueryGetSessionPaymentsResponse, error) {
+	out := new(QueryGetSessionPaymentsResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/SessionPayments", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) SessionPaymentsAll(ctx context.Context, in *QueryAllSessionPaymentsRequest, opts ...grpc.CallOption) (*QueryAllSessionPaymentsResponse, error) {
+	out := new(QueryAllSessionPaymentsResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.servicer.Query/SessionPaymentsAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
@@ -2093,6 +2765,18 @@ type QueryServer interface {
 	EarliestSessionStart(context.Context, *QueryGetEarliestSessionStartRequest) (*QueryGetEarliestSessionStartResponse, error)
 	// Queries a list of VerifyPairing items.
 	VerifyPairing(context.Context, *QueryVerifyPairingRequest) (*QueryVerifyPairingResponse, error)
+	// Queries a UniquePaymentStorageUserServicer by index.
+	UniquePaymentStorageUserServicer(context.Context, *QueryGetUniquePaymentStorageUserServicerRequest) (*QueryGetUniquePaymentStorageUserServicerResponse, error)
+	// Queries a list of UniquePaymentStorageUserServicer items.
+	UniquePaymentStorageUserServicerAll(context.Context, *QueryAllUniquePaymentStorageUserServicerRequest) (*QueryAllUniquePaymentStorageUserServicerResponse, error)
+	// Queries a UserPaymentStorage by index.
+	UserPaymentStorage(context.Context, *QueryGetUserPaymentStorageRequest) (*QueryGetUserPaymentStorageResponse, error)
+	// Queries a list of UserPaymentStorage items.
+	UserPaymentStorageAll(context.Context, *QueryAllUserPaymentStorageRequest) (*QueryAllUserPaymentStorageResponse, error)
+	// Queries a SessionPayments by index.
+	SessionPayments(context.Context, *QueryGetSessionPaymentsRequest) (*QueryGetSessionPaymentsResponse, error)
+	// Queries a list of SessionPayments items.
+	SessionPaymentsAll(context.Context, *QueryAllSessionPaymentsRequest) (*QueryAllSessionPaymentsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -2152,6 +2836,24 @@ func (*UnimplementedQueryServer) EarliestSessionStart(ctx context.Context, req *
 }
 func (*UnimplementedQueryServer) VerifyPairing(ctx context.Context, req *QueryVerifyPairingRequest) (*QueryVerifyPairingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyPairing not implemented")
+}
+func (*UnimplementedQueryServer) UniquePaymentStorageUserServicer(ctx context.Context, req *QueryGetUniquePaymentStorageUserServicerRequest) (*QueryGetUniquePaymentStorageUserServicerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UniquePaymentStorageUserServicer not implemented")
+}
+func (*UnimplementedQueryServer) UniquePaymentStorageUserServicerAll(ctx context.Context, req *QueryAllUniquePaymentStorageUserServicerRequest) (*QueryAllUniquePaymentStorageUserServicerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UniquePaymentStorageUserServicerAll not implemented")
+}
+func (*UnimplementedQueryServer) UserPaymentStorage(ctx context.Context, req *QueryGetUserPaymentStorageRequest) (*QueryGetUserPaymentStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserPaymentStorage not implemented")
+}
+func (*UnimplementedQueryServer) UserPaymentStorageAll(ctx context.Context, req *QueryAllUserPaymentStorageRequest) (*QueryAllUserPaymentStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserPaymentStorageAll not implemented")
+}
+func (*UnimplementedQueryServer) SessionPayments(ctx context.Context, req *QueryGetSessionPaymentsRequest) (*QueryGetSessionPaymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SessionPayments not implemented")
+}
+func (*UnimplementedQueryServer) SessionPaymentsAll(ctx context.Context, req *QueryAllSessionPaymentsRequest) (*QueryAllSessionPaymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SessionPaymentsAll not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -2482,6 +3184,114 @@ func _Query_VerifyPairing_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_UniquePaymentStorageUserServicer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetUniquePaymentStorageUserServicerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UniquePaymentStorageUserServicer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/UniquePaymentStorageUserServicer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UniquePaymentStorageUserServicer(ctx, req.(*QueryGetUniquePaymentStorageUserServicerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_UniquePaymentStorageUserServicerAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllUniquePaymentStorageUserServicerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UniquePaymentStorageUserServicerAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/UniquePaymentStorageUserServicerAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UniquePaymentStorageUserServicerAll(ctx, req.(*QueryAllUniquePaymentStorageUserServicerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_UserPaymentStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetUserPaymentStorageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UserPaymentStorage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/UserPaymentStorage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UserPaymentStorage(ctx, req.(*QueryGetUserPaymentStorageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_UserPaymentStorageAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllUserPaymentStorageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).UserPaymentStorageAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/UserPaymentStorageAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).UserPaymentStorageAll(ctx, req.(*QueryAllUserPaymentStorageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_SessionPayments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetSessionPaymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).SessionPayments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/SessionPayments",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).SessionPayments(ctx, req.(*QueryGetSessionPaymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_SessionPaymentsAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllSessionPaymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).SessionPaymentsAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.servicer.Query/SessionPaymentsAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).SessionPaymentsAll(ctx, req.(*QueryAllSessionPaymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.servicer.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -2557,6 +3367,30 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VerifyPairing",
 			Handler:    _Query_VerifyPairing_Handler,
+		},
+		{
+			MethodName: "UniquePaymentStorageUserServicer",
+			Handler:    _Query_UniquePaymentStorageUserServicer_Handler,
+		},
+		{
+			MethodName: "UniquePaymentStorageUserServicerAll",
+			Handler:    _Query_UniquePaymentStorageUserServicerAll_Handler,
+		},
+		{
+			MethodName: "UserPaymentStorage",
+			Handler:    _Query_UserPaymentStorage_Handler,
+		},
+		{
+			MethodName: "UserPaymentStorageAll",
+			Handler:    _Query_UserPaymentStorageAll_Handler,
+		},
+		{
+			MethodName: "SessionPayments",
+			Handler:    _Query_SessionPayments_Handler,
+		},
+		{
+			MethodName: "SessionPaymentsAll",
+			Handler:    _Query_SessionPaymentsAll_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -3793,6 +4627,447 @@ func (m *QueryVerifyPairingResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Index) > 0 {
+		i -= len(m.Index)
+		copy(dAtA[i:], m.Index)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.UniquePaymentStorageUserServicer.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UniquePaymentStorageUserServicer) > 0 {
+		for iNdEx := len(m.UniquePaymentStorageUserServicer) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.UniquePaymentStorageUserServicer[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetUserPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetUserPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetUserPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Index) > 0 {
+		i -= len(m.Index)
+		copy(dAtA[i:], m.Index)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetUserPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetUserPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetUserPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.UserPaymentStorage.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllUserPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllUserPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllUserPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllUserPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllUserPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllUserPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UserPaymentStorage) > 0 {
+		for iNdEx := len(m.UserPaymentStorage) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.UserPaymentStorage[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetSessionPaymentsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetSessionPaymentsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetSessionPaymentsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Index) > 0 {
+		i -= len(m.Index)
+		copy(dAtA[i:], m.Index)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetSessionPaymentsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetSessionPaymentsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetSessionPaymentsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.SessionPayments.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllSessionPaymentsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllSessionPaymentsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllSessionPaymentsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAllSessionPaymentsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAllSessionPaymentsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAllSessionPaymentsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.SessionPayments) > 0 {
+		for iNdEx := len(m.SessionPayments) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.SessionPayments[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -4274,6 +5549,174 @@ func (m *QueryVerifyPairingResponse) Size() (n int) {
 	}
 	if m.Overlap {
 		n += 2
+	}
+	return n
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Index)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.UniquePaymentStorageUserServicer.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.UniquePaymentStorageUserServicer) > 0 {
+		for _, e := range m.UniquePaymentStorageUserServicer {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetUserPaymentStorageRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Index)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetUserPaymentStorageResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.UserPaymentStorage.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryAllUserPaymentStorageRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAllUserPaymentStorageResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.UserPaymentStorage) > 0 {
+		for _, e := range m.UserPaymentStorage {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetSessionPaymentsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Index)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetSessionPaymentsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.SessionPayments.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryAllSessionPaymentsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryAllSessionPaymentsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.SessionPayments) > 0 {
+		for _, e := range m.SessionPayments {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -7362,6 +8805,1119 @@ func (m *QueryVerifyPairingResponse) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Overlap = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetUniquePaymentStorageUserServicerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetUniquePaymentStorageUserServicerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetUniquePaymentStorageUserServicerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Index = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetUniquePaymentStorageUserServicerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetUniquePaymentStorageUserServicerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetUniquePaymentStorageUserServicerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UniquePaymentStorageUserServicer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.UniquePaymentStorageUserServicer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllUniquePaymentStorageUserServicerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllUniquePaymentStorageUserServicerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllUniquePaymentStorageUserServicerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllUniquePaymentStorageUserServicerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllUniquePaymentStorageUserServicerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllUniquePaymentStorageUserServicerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UniquePaymentStorageUserServicer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UniquePaymentStorageUserServicer = append(m.UniquePaymentStorageUserServicer, UniquePaymentStorageUserServicer{})
+			if err := m.UniquePaymentStorageUserServicer[len(m.UniquePaymentStorageUserServicer)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetUserPaymentStorageRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetUserPaymentStorageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetUserPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Index = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetUserPaymentStorageResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetUserPaymentStorageResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetUserPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserPaymentStorage", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.UserPaymentStorage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllUserPaymentStorageRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllUserPaymentStorageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllUserPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllUserPaymentStorageResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllUserPaymentStorageResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllUserPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserPaymentStorage", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserPaymentStorage = append(m.UserPaymentStorage, UserPaymentStorage{})
+			if err := m.UserPaymentStorage[len(m.UserPaymentStorage)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetSessionPaymentsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetSessionPaymentsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetSessionPaymentsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Index = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetSessionPaymentsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetSessionPaymentsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetSessionPaymentsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionPayments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.SessionPayments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllSessionPaymentsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllSessionPaymentsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllSessionPaymentsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAllSessionPaymentsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAllSessionPaymentsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAllSessionPaymentsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionPayments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SessionPayments = append(m.SessionPayments, SessionPayments{})
+			if err := m.SessionPayments[len(m.SessionPayments)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
