@@ -3,7 +3,6 @@ package relayer
 import (
 	context "context"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -12,8 +11,6 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 )
-
-var g_request_lock sync.Mutex
 
 func PortalServer(
 	ctx context.Context,
@@ -83,9 +80,7 @@ func PortalServer(
 			}
 			log.Println("in <<< ", string(msg))
 
-			g_request_lock.Lock()
-			reply, err := sendRelay(ctx, chainProxy, privKey, g_serverSpecId, string(msg), sentry.GetBlockHeight())
-			g_request_lock.Unlock()
+			reply, err := sendRelay(ctx, chainProxy, privKey, string(msg))
 			if err != nil {
 				log.Println(err)
 				break
@@ -100,11 +95,8 @@ func PortalServer(
 	}))
 
 	app.Post("/", func(c *fiber.Ctx) error {
-		g_request_lock.Lock()
-		defer g_request_lock.Unlock()
-
 		log.Println("in <<< ", string(c.Body()))
-		reply, err := sendRelay(ctx, chainProxy, privKey, g_serverSpecId, string(c.Body()), sentry.GetBlockHeight())
+		reply, err := sendRelay(ctx, chainProxy, privKey, string(c.Body()))
 		if err != nil {
 			log.Println(err)
 			return nil
