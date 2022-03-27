@@ -24,9 +24,7 @@ func sendRelay(
 	ctx context.Context,
 	cp chainproxy.ChainProxy,
 	privKey *btcec.PrivateKey,
-	specId uint64,
 	req string,
-	blockHeight int64,
 ) (*servicertypes.RelayReply, error) {
 
 	//
@@ -45,9 +43,9 @@ func sendRelay(
 			Servicer:    clientSession.Client.Acc,
 			Data:        []byte(req),
 			SessionId:   uint64(clientSession.SessionId),
-			SpecId:      uint32(specId),
+			SpecId:      uint32(cp.GetSentry().SpecId),
 			CuSum:       clientSession.CuSum,
-			BlockHeight: blockHeight,
+			BlockHeight: cp.GetSentry().GetBlockHeight(),
 		}
 
 		sig, err := signRelay(privKey, []byte(relayRequest.String()))
@@ -123,14 +121,14 @@ func TestClient(
 	// Call a few times and print results
 	for i2 := 0; i2 < 30; i2++ {
 		for i := 0; i < 10; i++ {
-			reply, err := sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_ETH_BLOCKNUMBER, sentry.GetBlockHeight())
+			reply, err := sendRelay(ctx, chainProxy, privKey, JSONRPC_ETH_BLOCKNUMBER)
 			if err != nil {
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
 				log.Println("reply", reply)
 			}
-			reply, err = sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_ETH_GETBALANCE, sentry.GetBlockHeight())
+			reply, err = sendRelay(ctx, chainProxy, privKey, JSONRPC_ETH_GETBALANCE)
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -143,7 +141,7 @@ func TestClient(
 
 	//
 	// Expected unsupported API:
-	reply, err := sendRelay(ctx, chainProxy, privKey, specId, JSONRPC_UNSUPPORTED, sentry.GetBlockHeight())
+	reply, err := sendRelay(ctx, chainProxy, privKey, JSONRPC_UNSUPPORTED)
 	if err != nil {
 		log.Println(err)
 	} else {

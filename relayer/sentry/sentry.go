@@ -42,7 +42,7 @@ type Sentry struct {
 	rpcClient           rpcclient.Client
 	specQueryClient     spectypes.QueryClient
 	servicerQueryClient servicertypes.QueryClient
-	specId              uint64
+	SpecId              uint64
 	txs                 <-chan ctypes.ResultEvent
 	isUser              bool
 	Acc                 string // account address (bech32)
@@ -131,7 +131,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		Id: s.specId,
+		Id: s.SpecId,
 	})
 	if err != nil {
 		return err
@@ -395,7 +395,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	// TODO: cache results!
 
 	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
-		Spec:         s.specId,
+		Spec:         s.SpecId,
 		UserAddr:     user,
 		ServicerAddr: s.Acc,
 		BlockNum:     uint64(s.GetBlockHeight()),
@@ -445,7 +445,7 @@ func NewSentry(
 		rpcClient:           rpcClient,
 		specQueryClient:     specQueryClient,
 		servicerQueryClient: servicerQueryClient,
-		specId:              specId,
+		SpecId:              specId,
 		isUser:              isUser,
 		Acc:                 acc,
 		newBlockCb:          newBlockCb,
