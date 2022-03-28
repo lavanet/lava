@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,6 +49,7 @@ type Sentry struct {
 	isUser              bool
 	Acc                 string // account address (bech32)
 	newBlockCb          func()
+	processPaths        bool
 	//
 	// Block storage (atomic)
 	blockHeight int64
@@ -150,7 +153,18 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	log.Println("new spec found; updating spec!")
 	serverApis := map[string]spectypes.ServiceApi{}
 	for _, api := range spec.Spec.Apis {
-		serverApis[api.Name] = api
+
+		//
+		// TODO: find a better spot for this (more optimized, precompile regex, etc)
+		if s.processPaths {
+			re := regexp.MustCompile(`{[^}]+}`)
+			processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+			processedName = regexp.QuoteMeta(processedName)
+			processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+			serverApis[processedName] = api
+		} else {
+			serverApis[api.Name] = api
+		}
 	}
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
@@ -413,6 +427,23 @@ func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
 
+func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
+	s.specMu.RLock()
+	defer s.specMu.RUnlock()
+
+	for apiName, api := range s.serverApis {
+		re, err := regexp.Compile(apiName)
+		if err != nil {
+			log.Println("error: Compile", apiName, err)
+			continue
+		}
+		if re.Match([]byte(name)) {
+			return api, true
+		}
+	}
+	return spectypes.ServiceApi{}, false
+}
+
 func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
@@ -440,6 +471,13 @@ func NewSentry(
 	servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
 
+	//
+	// process paths for terra
+	processPaths := false
+	if specId == 2 {
+		processPaths = true
+	}
+
 	return &Sentry{
 		ClientCtx:           clientCtx,
 		rpcClient:           rpcClient,
@@ -449,5 +487,6 @@ func NewSentry(
 		isUser:              isUser,
 		Acc:                 acc,
 		newBlockCb:          newBlockCb,
+		processPaths:        processPaths,
 	}
 }

@@ -46,10 +46,8 @@ func (cp *CosmosChainProxy) Start(context.Context) error {
 }
 
 func (cp *CosmosChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, error) {
-	//
-	// TODO: this will not find apis with params '{param}' in path
-	//
-	if api, ok := cp.sentry.GetSpecApiByName(path); ok {
+	path = strings.SplitN(path, "?", 2)[0]
+	if api, ok := cp.sentry.MatchSpecApiByName(path); ok {
 		if api.Status != "enabled" {
 			return nil, errors.New("api is disabled")
 		}
@@ -84,7 +82,7 @@ func (cp *CosmosChainProxy) PortalStart(ctx context.Context, privKey *btcec.Priv
 	//
 	// Catch all
 	app.Use(func(c *fiber.Ctx) error {
-		path := c.Path()
+		path := c.OriginalURL()
 
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "")
