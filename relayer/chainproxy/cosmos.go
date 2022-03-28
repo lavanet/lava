@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/sentry"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -74,7 +76,39 @@ func (cp *CosmosChainProxy) ParseMsg(path string, data []byte) (NodeMessage, err
 	return nodeMsg, nil
 }
 
-func (nm *CosmosChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+func (cp *CosmosChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+	//
+	// Setup HTTP Server
+	app := fiber.New(fiber.Config{})
+
+	//
+	// Catch all
+	app.Use(func(c *fiber.Ctx) error {
+		path := c.Path()
+
+		log.Println("in <<< ", path)
+		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		if err != nil {
+			log.Println(err)
+			//
+			// TODO: better errors
+			return c.SendString(`{"error": "unsupported api"}`)
+		}
+
+		log.Println("out >>> len", len(string(reply.Data)))
+		return c.SendString(string(reply.Data))
+	})
+
+	//
+	// TODO: add POST support
+	//app.Post("/", func(c *fiber.Ctx) error {})
+
+	//
+	// Go
+	err := app.Listen(listenAddr)
+	if err != nil {
+		log.Println(err)
+	}
 	return
 }
 

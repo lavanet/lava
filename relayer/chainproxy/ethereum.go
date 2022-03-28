@@ -99,7 +99,6 @@ func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, e
 }
 
 func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
-
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
