@@ -1,4 +1,4 @@
-package relayer
+package sentry
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,11 +44,12 @@ type Sentry struct {
 	rpcClient           rpcclient.Client
 	specQueryClient     spectypes.QueryClient
 	servicerQueryClient servicertypes.QueryClient
-	specId              uint64
+	SpecId              uint64
 	txs                 <-chan ctypes.ResultEvent
 	isUser              bool
-	acc                 string // account address (bech32)
+	Acc                 string // account address (bech32)
 	newBlockCb          func()
+	processPaths        bool
 	//
 	// Block storage (atomic)
 	blockHeight int64
@@ -78,7 +81,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	// Get
 	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
 		SpecName: s.GetSpecName(),
-		UserAddr: s.acc,
+		UserAddr: s.Acc,
 	})
 	if err != nil {
 		return err
@@ -131,7 +134,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		Id: s.specId,
+		Id: s.SpecId,
 	})
 	if err != nil {
 		return err
@@ -150,7 +153,18 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	log.Println("new spec found; updating spec!")
 	serverApis := map[string]spectypes.ServiceApi{}
 	for _, api := range spec.Spec.Apis {
-		serverApis[api.Name] = api
+
+		//
+		// TODO: find a better spot for this (more optimized, precompile regex, etc)
+		if s.processPaths {
+			re := regexp.MustCompile(`{[^}]+}`)
+			processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+			processedName = regexp.QuoteMeta(processedName)
+			processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+			serverApis[processedName] = api
+		} else {
+			serverApis[api.Name] = api
+		}
 	}
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
@@ -208,7 +222,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		}
 		found := false
 		for _, servicer := range servicers.StakeStorage.Staked {
-			if servicer.Index == s.acc {
+			if servicer.Index == s.Acc {
 				found = true
 				break
 			}
@@ -390,14 +404,14 @@ func (s *Sentry) SendRelay(
 	return reply, err
 }
 
-func (s *Sentry) isAuthorizedUser(ctx context.Context, user string) bool {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
 
-	res, err := g_sentry.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
-		Spec:         s.specId,
+	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
+		Spec:         s.SpecId,
 		UserAddr:     user,
-		ServicerAddr: s.acc,
+		ServicerAddr: s.Acc,
 		BlockNum:     uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
@@ -411,6 +425,23 @@ func (s *Sentry) isAuthorizedUser(ctx context.Context, user string) bool {
 
 func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
+}
+
+func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
+	s.specMu.RLock()
+	defer s.specMu.RUnlock()
+
+	for apiName, api := range s.serverApis {
+		re, err := regexp.Compile(apiName)
+		if err != nil {
+			log.Println("error: Compile", apiName, err)
+			continue
+		}
+		if re.Match([]byte(name)) {
+			return api, true
+		}
+	}
+	return spectypes.ServiceApi{}, false
 }
 
 func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
@@ -440,14 +471,22 @@ func NewSentry(
 	servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
 
+	//
+	// process paths for terra
+	processPaths := false
+	if specId == 2 {
+		processPaths = true
+	}
+
 	return &Sentry{
 		ClientCtx:           clientCtx,
 		rpcClient:           rpcClient,
 		specQueryClient:     specQueryClient,
 		servicerQueryClient: servicerQueryClient,
-		specId:              specId,
+		SpecId:              specId,
 		isUser:              isUser,
-		acc:                 acc,
+		Acc:                 acc,
 		newBlockCb:          newBlockCb,
+		processPaths:        processPaths,
 	}
 }

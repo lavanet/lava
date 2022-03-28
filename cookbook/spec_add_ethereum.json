@@ -6,7 +6,6 @@
       "name": "Ethereum Mainnet",
       "status": "enabled",
       "apis": [
-        
         {
           "name": "rpc_modules",
           "compute_units": "0",

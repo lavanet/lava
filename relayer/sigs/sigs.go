@@ -1,4 +1,4 @@
-package relayer
+package sigs
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
-func getKeyName(clientCtx client.Context) (string, error) {
+func GetKeyName(clientCtx client.Context) (string, error) {
 	_, name, _, err := client.GetFromFields(clientCtx.Keyring, clientCtx.From, false)
 	if err != nil {
 		return "", err
@@ -21,7 +21,7 @@ func getKeyName(clientCtx client.Context) (string, error) {
 	return name, nil
 }
 
-func getPrivKey(clientCtx client.Context, keyName string) (*btcSecp256k1.PrivateKey, error) {
+func GetPrivKey(clientCtx client.Context, keyName string) (*btcSecp256k1.PrivateKey, error) {
 	//
 	// get private key
 	armor, err := clientCtx.Keyring.ExportPrivKeyArmor(keyName, "")
@@ -41,14 +41,14 @@ func getPrivKey(clientCtx client.Context, keyName string) (*btcSecp256k1.Private
 	return priv, nil
 }
 
-func hashMsg(msgData []byte) []byte {
+func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func signRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
+func SignRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
 	//
 	// Sign
-	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, hashMsg(msgData), false)
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func signRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
 	return sig, nil
 }
 
-func recoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
+func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	//
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
@@ -72,23 +72,23 @@ func recoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 func RecoverPubKeyFromRelay(in *servicertypes.RelayRequest) (secp256k1.PubKey, error) {
 	tmp := in.Sig
 	in.Sig = []byte{}
-	hash := hashMsg([]byte(in.String()))
+	hash := HashMsg([]byte(in.String()))
 	in.Sig = tmp
 
-	pubKey, err := recoverPubKey(in.Sig, hash)
+	pubKey, err := RecoverPubKey(in.Sig, hash)
 	if err != nil {
 		return nil, err
 	}
 	return pubKey, nil
 }
 
-func recoverPubKeyFromRelayReply(in *servicertypes.RelayReply) (secp256k1.PubKey, error) {
+func RecoverPubKeyFromRelayReply(in *servicertypes.RelayReply) (secp256k1.PubKey, error) {
 	tmp := in.Sig
 	in.Sig = []byte{}
-	hash := hashMsg([]byte(in.String()))
+	hash := HashMsg([]byte(in.String()))
 	in.Sig = tmp
 
-	pubKey, err := recoverPubKey(in.Sig, hash)
+	pubKey, err := RecoverPubKey(in.Sig, hash)
 	if err != nil {
 		return nil, err
 	}

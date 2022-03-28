@@ -2,9 +2,7 @@ package relayer
 
 import (
 	context "context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -16,6 +14,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/relayer/sigs"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -23,13 +24,13 @@ import (
 )
 
 var (
-	g_conn           *Connector
 	g_privKey        *btcSecp256k1.PrivateKey
 	g_sessions       map[string]map[uint64]*RelaySession
 	g_sessions_mutex sync.Mutex
-	g_sentry         *Sentry
+	g_sentry         *sentry.Sentry
 	g_serverSpecId   uint64
 	g_txFactory      tx.Factory
+	g_chainProxy     chainproxy.ChainProxy
 )
 
 type RelaySession struct {
@@ -40,36 +41,6 @@ type RelaySession struct {
 
 type relayServer struct {
 	servicertypes.UnimplementedRelayerServer
-}
-
-type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-func (err *jsonError) Error() string {
-	if err.Message == "" {
-		return fmt.Sprintf("json-rpc error %d", err.Code)
-	}
-	return err.Message
-}
-
-func (err *jsonError) ErrorCode() int {
-	return err.Code
-}
-
-func (err *jsonError) ErrorData() interface{} {
-	return err.Data
-}
-
-type jsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
 }
 
 func askForRewards() {
@@ -83,7 +54,7 @@ func askForRewards() {
 	relays := []*servicertypes.RelayRequest{}
 	for user, userSessions := range g_sessions {
 
-		if g_sentry.isAuthorizedUser(context.Background(), user) {
+		if g_sentry.IsAuthorizedUser(context.Background(), user) {
 			// session still valid, skip this user
 			continue
 		}
@@ -105,8 +76,8 @@ func askForRewards() {
 		return
 	}
 
-	log.Println("asking for rewards", g_sentry.acc)
-	msg := servicertypes.NewMsgProofOfWork(g_sentry.acc, relays)
+	log.Println("asking for rewards", g_sentry.Acc)
+	msg := servicertypes.NewMsgProofOfWork(g_sentry.Acc, relays)
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
@@ -114,7 +85,7 @@ func askForRewards() {
 }
 
 func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
-	pubKey, err := RecoverPubKeyFromRelay(in)
+	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
 	}
@@ -123,22 +94,11 @@ func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
 }
 
 func isAuthorizedUser(ctx context.Context, userAddr string) bool {
-	return g_sentry.isAuthorizedUser(ctx, userAddr)
+	return g_sentry.IsAuthorizedUser(ctx, userAddr)
 }
 
 func isSupportedSpec(in *servicertypes.RelayRequest) bool {
 	return uint64(in.SpecId) == g_serverSpecId
-}
-
-func getSupportedApi(name string, sentry *Sentry) (*spectypes.ServiceApi, error) {
-	if api, ok := sentry.GetSpecApiByName(name); ok {
-		if api.Status != "enabled" {
-			return nil, errors.New("api is disabled")
-		}
-		return &api, nil
-	}
-
-	return nil, errors.New("api not supported")
 }
 
 func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
@@ -201,68 +161,33 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 	}
 
 	//
-	// Unmarshal request
-	var msg jsonrpcMessage
-	err = json.Unmarshal(in.Data, &msg)
+	// Parse message, check valid api, etc
+	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
 	if err != nil {
 		return nil, err
 	}
 
 	//
-	//
-	serviceApi, err := getSupportedApi(msg.Method, g_sentry)
-	if err != nil {
-		return nil, err
-	}
+	// Update session
 	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
-	updateSessionCu(relaySession, serviceApi, in)
+	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 	relaySession.Proof = in
 
 	//
-	// Get node
-	rpc, err := g_conn.GetRpc(true)
+	// Send
+	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer g_conn.ReturnRpc(rpc)
 
 	//
-	// Call our node
-	var result json.RawMessage
-	err = rpc.CallContext(ctx, &result, msg.Method, msg.Params...)
-
-	//
-	// Wrap result back to json
-	replyMsg := jsonrpcMessage{
-		Version: msg.Version,
-		ID:      msg.ID,
-	}
-	if err != nil {
-		//
-		// TODO: CallContext is limited, it does not give us the source
-		// of the error or the error code if json (we need smarter error handling)
-		replyMsg.Error = &jsonError{
-			Code:    1, // TODO
-			Message: fmt.Sprintf("%s", err),
-		}
-	} else {
-		replyMsg.Result = result
-	}
-
-	data, err := json.Marshal(replyMsg)
-	if err != nil {
-		return nil, err
-	}
-	reply := servicertypes.RelayReply{
-		Data: data,
-	}
-	sig, err := signRelay(g_privKey, []byte(reply.String()))
+	// Update signature, return reply to user
+	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
 	if err != nil {
 		return nil, err
 	}
 	reply.Sig = sig
-
-	return &reply, nil
+	return reply, nil
 }
 
 func Server(
@@ -285,7 +210,7 @@ func Server(
 
 	//
 	// Start sentry
-	sentry := NewSentry(clientCtx, specId, false, askForRewards)
+	sentry := sentry.NewSentry(clientCtx, specId, false, askForRewards)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -305,12 +230,12 @@ func Server(
 
 	//
 	// Keys
-	keyName, err := getKeyName(clientCtx)
+	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
 	}
 
-	privKey, err := getPrivKey(clientCtx, keyName)
+	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 	if err != nil {
 		log.Fatalln("error: getPrivKey", err)
 	}
@@ -320,10 +245,12 @@ func Server(
 
 	//
 	// Node
-	g_conn = NewConnector(ctx, 1, nodeUrl)
-	if g_conn == nil {
-		log.Fatalln("g_conn == nil")
+	chainProxy, err := chainproxy.GetChainProxy(specId, nodeUrl, 1, sentry)
+	if err != nil {
+		log.Fatalln("error: GetChainProxy", err)
 	}
+	chainProxy.Start(ctx)
+	g_chainProxy = chainProxy
 
 	//
 	// GRPC
