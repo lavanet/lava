@@ -76,7 +76,6 @@ func (cp *EthereumChainProxy) getSupportedApi(name string) (*spectypes.ServiceAp
 }
 
 func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
-
 	//
 	// Unmarshal request
 	var msg jsonrpcMessage

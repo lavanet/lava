@@ -56,6 +56,7 @@ func SendRelay(
 
 		relayRequest := &servicertypes.RelayRequest{
 			Servicer:    clientSession.Client.Acc,
+			ApiUrl:      url,
 			Data:        []byte(req),
 			SessionId:   uint64(clientSession.SessionId),
 			SpecId:      uint32(cp.GetSentry().SpecId),
