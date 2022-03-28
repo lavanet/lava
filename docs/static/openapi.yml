@@ -12971,24 +12971,28 @@ paths:
                     index:
                       type: string
                     usersPayments:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        uniquePaymentStorageUserServicer:
-                          type: object
-                          properties:
-                            index:
-                              type: string
-                            block:
-                              type: string
-                              format: uint64
-                        totalCU:
-                          type: string
-                          format: uint64
-                        session:
-                          type: string
-                          format: uint64
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          index:
+                            type: string
+                          uniquePaymentStorageUserServicer:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                index:
+                                  type: string
+                                block:
+                                  type: string
+                                  format: uint64
+                          totalCU:
+                            type: string
+                            format: uint64
+                          session:
+                            type: string
+                            format: uint64
               pagination:
                 type: object
                 properties:
@@ -13109,24 +13113,28 @@ paths:
                   index:
                     type: string
                   usersPayments:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      uniquePaymentStorageUserServicer:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          block:
-                            type: string
-                            format: uint64
-                      totalCU:
-                        type: string
-                        format: uint64
-                      session:
-                        type: string
-                        format: uint64
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        uniquePaymentStorageUserServicer:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index:
+                                type: string
+                              block:
+                                type: string
+                                format: uint64
+                        totalCU:
+                          type: string
+                          format: uint64
+                        session:
+                          type: string
+                          format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -14467,13 +14475,15 @@ paths:
                     index:
                       type: string
                     uniquePaymentStorageUserServicer:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        block:
-                          type: string
-                          format: uint64
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          index:
+                            type: string
+                          block:
+                            type: string
+                            format: uint64
                     totalCU:
                       type: string
                       format: uint64
@@ -14600,13 +14610,15 @@ paths:
                   index:
                     type: string
                   uniquePaymentStorageUserServicer:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      block:
-                        type: string
-                        format: uint64
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        block:
+                          type: string
+                          format: uint64
                   totalCU:
                     type: string
                     format: uint64
@@ -23017,24 +23029,28 @@ definitions:
             index:
               type: string
             usersPayments:
-              type: object
-              properties:
-                index:
-                  type: string
-                uniquePaymentStorageUserServicer:
-                  type: object
-                  properties:
-                    index:
-                      type: string
-                    block:
-                      type: string
-                      format: uint64
-                totalCU:
-                  type: string
-                  format: uint64
-                session:
-                  type: string
-                  format: uint64
+              type: array
+              items:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  uniquePaymentStorageUserServicer:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: string
+                        block:
+                          type: string
+                          format: uint64
+                  totalCU:
+                    type: string
+                    format: uint64
+                  session:
+                    type: string
+                    format: uint64
       pagination:
         type: object
         properties:
@@ -23464,13 +23480,15 @@ definitions:
             index:
               type: string
             uniquePaymentStorageUserServicer:
-              type: object
-              properties:
-                index:
-                  type: string
-                block:
-                  type: string
-                  format: uint64
+              type: array
+              items:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  block:
+                    type: string
+                    format: uint64
             totalCU:
               type: string
               format: uint64
@@ -23603,24 +23621,28 @@ definitions:
           index:
             type: string
           usersPayments:
-            type: object
-            properties:
-              index:
-                type: string
-              uniquePaymentStorageUserServicer:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  block:
-                    type: string
-                    format: uint64
-              totalCU:
-                type: string
-                format: uint64
-              session:
-                type: string
-                format: uint64
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                uniquePaymentStorageUserServicer:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      index:
+                        type: string
+                      block:
+                        type: string
+                        format: uint64
+                totalCU:
+                  type: string
+                  format: uint64
+                session:
+                  type: string
+                  format: uint64
   lavanet.lava.servicer.QueryGetSessionStorageForSpecResponse:
     type: object
     properties:
@@ -23840,13 +23862,15 @@ definitions:
           index:
             type: string
           uniquePaymentStorageUserServicer:
-            type: object
-            properties:
-              index:
-                type: string
-              block:
-                type: string
-                format: uint64
+            type: array
+            items:
+              type: object
+              properties:
+                index:
+                  type: string
+                block:
+                  type: string
+                  format: uint64
           totalCU:
             type: string
             format: uint64
@@ -24014,24 +24038,28 @@ definitions:
       index:
         type: string
       usersPayments:
-        type: object
-        properties:
-          index:
-            type: string
-          uniquePaymentStorageUserServicer:
-            type: object
-            properties:
-              index:
-                type: string
-              block:
-                type: string
-                format: uint64
-          totalCU:
-            type: string
-            format: uint64
-          session:
-            type: string
-            format: uint64
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            uniquePaymentStorageUserServicer:
+              type: array
+              items:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  block:
+                    type: string
+                    format: uint64
+            totalCU:
+              type: string
+              format: uint64
+            session:
+              type: string
+              format: uint64
   lavanet.lava.servicer.SessionStorageForSpec:
     type: object
     properties:
@@ -24269,13 +24297,15 @@ definitions:
       index:
         type: string
       uniquePaymentStorageUserServicer:
-        type: object
-        properties:
-          index:
-            type: string
-          block:
-            type: string
-            format: uint64
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            block:
+              type: string
+              format: uint64
       totalCU:
         type: string
         format: uint64

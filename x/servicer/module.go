@@ -178,6 +178,11 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	logger := am.keeper.Logger(ctx)
+	logOnErr := func(err error, failingFunc string) {
+		if err != nil {
+			logger.Error("EndBlock Func %s, Err: %s", failingFunc, err)
+		}
+	}
 
 	if am.keeper.IsSessionStart(ctx) {
 		//on session start we need to do:
@@ -192,16 +197,18 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 
 		//2.
 		am.keeper.SetCurrentSessionStart(ctx, types.CurrentSessionStart{Block: types.BlockNum{Num: uint64(ctx.BlockHeight())}})
-
 		//3.
-		am.keeper.StoreSpecStakeStorageInSession(ctx)
-
+		err := am.keeper.StoreSpecStakeStorageInSession(ctx)
+		logOnErr(err, "StoreSpecStakeStorageInSession")
 		//4.
-		am.keeper.RemoveOldSessionPayment(ctx)     //this needs to be first, it uses earliest session start
-		am.keeper.RemoveStakeStorageInSession(ctx) //this updates earliest session start
-		//5.
-		am.keeper.CheckUnstakingForCommit(ctx)
+		err = am.keeper.RemoveOldSessionPayment(ctx) //this needs to be first, it uses earliest session start
+		logOnErr(err, "RemoveOldSessionPayment")
 
+		err = am.keeper.RemoveStakeStorageInSession(ctx) //this updates earliest session start
+		logOnErr(err, "RemoveStakeStorageInSession")
+		//5.
+		err = am.keeper.CheckUnstakingForCommit(ctx)
+		logOnErr(err, "CheckUnstakingForCommit")
 		//
 		// Notify world we have a new session
 		logger.Info("New session")

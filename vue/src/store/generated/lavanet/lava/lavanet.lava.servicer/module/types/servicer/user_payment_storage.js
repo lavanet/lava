@@ -9,8 +9,8 @@ export const UserPaymentStorage = {
         if (message.index !== "") {
             writer.uint32(10).string(message.index);
         }
-        if (message.uniquePaymentStorageUserServicer !== undefined) {
-            UniquePaymentStorageUserServicer.encode(message.uniquePaymentStorageUserServicer, writer.uint32(18).fork()).ldelim();
+        for (const v of message.uniquePaymentStorageUserServicer) {
+            UniquePaymentStorageUserServicer.encode(v, writer.uint32(18).fork()).ldelim();
         }
         if (message.totalCU !== 0) {
             writer.uint32(24).uint64(message.totalCU);
@@ -24,6 +24,7 @@ export const UserPaymentStorage = {
         const reader = input instanceof Uint8Array ? new Reader(input) : input;
         let end = length === undefined ? reader.len : reader.pos + length;
         const message = { ...baseUserPaymentStorage };
+        message.uniquePaymentStorageUserServicer = [];
         while (reader.pos < end) {
             const tag = reader.uint32();
             switch (tag >>> 3) {
@@ -31,7 +32,7 @@ export const UserPaymentStorage = {
                     message.index = reader.string();
                     break;
                 case 2:
-                    message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.decode(reader, reader.uint32());
+                    message.uniquePaymentStorageUserServicer.push(UniquePaymentStorageUserServicer.decode(reader, reader.uint32()));
                     break;
                 case 3:
                     message.totalCU = longToNumber(reader.uint64());
@@ -48,6 +49,7 @@ export const UserPaymentStorage = {
     },
     fromJSON(object) {
         const message = { ...baseUserPaymentStorage };
+        message.uniquePaymentStorageUserServicer = [];
         if (object.index !== undefined && object.index !== null) {
             message.index = String(object.index);
         }
@@ -56,10 +58,9 @@ export const UserPaymentStorage = {
         }
         if (object.uniquePaymentStorageUserServicer !== undefined &&
             object.uniquePaymentStorageUserServicer !== null) {
-            message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.fromJSON(object.uniquePaymentStorageUserServicer);
-        }
-        else {
-            message.uniquePaymentStorageUserServicer = undefined;
+            for (const e of object.uniquePaymentStorageUserServicer) {
+                message.uniquePaymentStorageUserServicer.push(UniquePaymentStorageUserServicer.fromJSON(e));
+            }
         }
         if (object.totalCU !== undefined && object.totalCU !== null) {
             message.totalCU = Number(object.totalCU);
@@ -78,16 +79,19 @@ export const UserPaymentStorage = {
     toJSON(message) {
         const obj = {};
         message.index !== undefined && (obj.index = message.index);
-        message.uniquePaymentStorageUserServicer !== undefined &&
-            (obj.uniquePaymentStorageUserServicer = message.uniquePaymentStorageUserServicer
-                ? UniquePaymentStorageUserServicer.toJSON(message.uniquePaymentStorageUserServicer)
-                : undefined);
+        if (message.uniquePaymentStorageUserServicer) {
+            obj.uniquePaymentStorageUserServicer = message.uniquePaymentStorageUserServicer.map((e) => (e ? UniquePaymentStorageUserServicer.toJSON(e) : undefined));
+        }
+        else {
+            obj.uniquePaymentStorageUserServicer = [];
+        }
         message.totalCU !== undefined && (obj.totalCU = message.totalCU);
         message.session !== undefined && (obj.session = message.session);
         return obj;
     },
     fromPartial(object) {
         const message = { ...baseUserPaymentStorage };
+        message.uniquePaymentStorageUserServicer = [];
         if (object.index !== undefined && object.index !== null) {
             message.index = object.index;
         }
@@ -96,10 +100,9 @@ export const UserPaymentStorage = {
         }
         if (object.uniquePaymentStorageUserServicer !== undefined &&
             object.uniquePaymentStorageUserServicer !== null) {
-            message.uniquePaymentStorageUserServicer = UniquePaymentStorageUserServicer.fromPartial(object.uniquePaymentStorageUserServicer);
-        }
-        else {
-            message.uniquePaymentStorageUserServicer = undefined;
+            for (const e of object.uniquePaymentStorageUserServicer) {
+                message.uniquePaymentStorageUserServicer.push(UniquePaymentStorageUserServicer.fromPartial(e));
+            }
         }
         if (object.totalCU !== undefined && object.totalCU !== null) {
             message.totalCU = object.totalCU;

@@ -297,7 +297,7 @@ export interface ServicerRelayRequest {
 
 export interface ServicerSessionPayments {
   index?: string;
-  usersPayments?: ServicerUserPaymentStorage;
+  usersPayments?: ServicerUserPaymentStorage[];
 }
 
 export interface ServicerSessionStorageForSpec {
@@ -348,7 +348,7 @@ export interface ServicerUnstakingServicersAllSpecs {
 
 export interface ServicerUserPaymentStorage {
   index?: string;
-  uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer;
+  uniquePaymentStorageUserServicer?: ServicerUniquePaymentStorageUserServicer[];
 
   /** @format uint64 */
   totalCU?: string;

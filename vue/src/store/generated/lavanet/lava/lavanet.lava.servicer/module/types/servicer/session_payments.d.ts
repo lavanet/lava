@@ -3,7 +3,7 @@ import { Writer, Reader } from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.servicer";
 export interface SessionPayments {
     index: string;
-    usersPayments: UserPaymentStorage | undefined;
+    usersPayments: UserPaymentStorage[];
 }
 export declare const SessionPayments: {
     encode(message: SessionPayments, writer?: Writer): Writer;

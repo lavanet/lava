@@ -19,34 +19,33 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 	if err != nil {
 		return nil, err
 	}
-
+	errorLogAndFormat := func(errorMsg string) (*types.MsgProofOfWorkResponse, error) {
+		logger.Error(errorMsg)
+		return nil, fmt.Errorf(errorMsg)
+	}
 	for _, relay := range msg.Relays {
 
 		pubKey, err := relayer.RecoverPubKeyFromRelay(relay)
 		if err != nil {
-			logger.Error("error on proof of work, bad sig")
-			return nil, fmt.Errorf("error on proof of work, bad sig")
+			return errorLogAndFormat("error on proof of work, bad sig")
 		}
 		clientAddr, err := sdk.AccAddressFromHex(pubKey.Address().String())
 		if err != nil {
-			logger.Error("error on proof of work, bad user address")
-			return nil, fmt.Errorf("error on proof of work, bad user address")
+			return errorLogAndFormat("error on proof of work, bad user address")
 		}
 		servicerAddr, err := sdk.AccAddressFromBech32(relay.Servicer)
 		if err != nil {
-			logger.Error("servicerAddr err", err)
-			return nil, err
+			return errorLogAndFormat(fmt.Sprintf("invalid servicerAddr: %s", relay.Servicer))
 		}
 		if !servicerAddr.Equals(creator) {
-			logger.Error("error on proof of work, servicerAddr != creator")
-			return nil, fmt.Errorf("error on proof of work, servicerAddr != creator")
+			return errorLogAndFormat(fmt.Sprintf("error on proof of work, servicerAddr != creator"))
 		}
 
 		//
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecIDFoundAndActive(ctx, uint64(relay.SpecId))
 		if !ok {
-			return nil, fmt.Errorf("error on proof of work, spec specified: %d is inactive", relay.SpecId)
+			return errorLogAndFormat(fmt.Sprintf("error on proof of work, spec specified: %d is inactive", relay.SpecId))
 		}
 
 		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
@@ -59,12 +58,12 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			},
 		)
 		if err != nil {
-			return nil, fmt.Errorf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err)
+			return errorLogAndFormat(fmt.Sprintf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err))
 		}
 
 		sessionStart, overlapSessionStart, err := k.GetSessionStartForBlock(ctx, types.BlockNum{Num: uint64(relay.BlockHeight)})
 		if err != nil {
-			return nil, fmt.Errorf("error on proof of work, could not get session start for: %d err: %s", relay.BlockHeight, err)
+			return errorLogAndFormat(fmt.Sprintf("error on proof of work, could not get session start for: %d err: %s", relay.BlockHeight, err))
 		}
 		if isOverlap {
 			sessionStart = overlapSessionStart
@@ -73,11 +72,11 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 		totalCUInSessionForUser, err := k.Keeper.AddSessionPayment(ctx, *sessionStart, clientAddr, servicerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
-			return nil, err
+			return errorLogAndFormat(fmt.Sprintf("double spending detected: %s", err))
 		}
 		err = k.userKeeper.EnforceUserCUsUsageInSession(ctx, userStake, totalCUInSessionForUser)
 		if err != nil {
-			return nil, err
+			return errorLogAndFormat(fmt.Sprintf("User Enforce CU limit Error: %s", err))
 		}
 		//
 		if isValidPairing {
@@ -100,10 +99,10 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			burnAmount := sdk.Coin{Amount: amountToBurnClient, Denom: "stake"}
 			burnSucceeded, err2 := k.userKeeper.BurnUserStake(ctx, usertypes.SpecName{Name: spec.Name}, clientAddr, burnAmount, false)
 			if err2 != nil {
-				return nil, fmt.Errorf("BurnUserStake failed on user %s, amount to burn: %s, error: ", clientAddr, burnAmount, err2)
+				return errorLogAndFormat(fmt.Sprintf("BurnUserStake failed on user %s, amount to burn: %s, error: %s", clientAddr, burnAmount, err2))
 			}
 			if !burnSucceeded {
-				return nil, fmt.Errorf("BurnUserStake failed on user %s, did not find user, or insufficient funds: %s ", clientAddr, burnAmount)
+				return errorLogAndFormat(fmt.Sprintf("BurnUserStake failed on user %s, did not find user, or insufficient funds: %s ", clientAddr, burnAmount))
 			}
 
 			//
@@ -121,10 +120,9 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
 			}
 
-			//
-			// TODO: save session information to prevent replay attack
-			//
-
+			logger.Info(fmt.Sprintf("New Proof Of Work Was Accepted:\nUser: %s Burn:%s total CU in session(All Serv):%d \nServicer:%s Work Mint: %s CU:%d", clientAddr, amountToBurnClient, totalCUInSessionForUser, servicerAddr, rewardCoins, relay.CuSum))
+			eventAttributes := []sdk.Attribute{sdk.NewAttribute("client", clientAddr.String()), sdk.NewAttribute("servicer", servicerAddr.String()), sdk.NewAttribute("CU", strconv.FormatUint(relay.CuSum, 10)), sdk.NewAttribute("Mint", rewardCoins.String())}
+			ctx.EventManager().EmitEvent(sdk.NewEvent("pow_payment", eventAttributes...))
 		}
 
 	}

@@ -78,8 +78,8 @@ func (k Keeper) RemoveOldSessionPayment(ctx sdk.Context) (err error) {
 		return nil
 	}
 	//we passed the distance to earliest session block, so remove the entries
-	err := k.RemoveAllSessionPaymentsForBlock(ctx, earliestSessionBlock)
-	return err
+	err = k.RemoveAllSessionPaymentsForBlock(ctx, earliestSessionBlock.Block)
+	return
 }
 
 func (k Keeper) RemoveStakeStorageInSession(ctx sdk.Context) (err error) {

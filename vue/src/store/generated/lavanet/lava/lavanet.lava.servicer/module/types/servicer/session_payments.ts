@@ -6,7 +6,7 @@ export const protobufPackage = "lavanet.lava.servicer";
 
 export interface SessionPayments {
   index: string;
-  usersPayments: UserPaymentStorage | undefined;
+  usersPayments: UserPaymentStorage[];
 }
 
 const baseSessionPayments: object = { index: "" };
@@ -16,11 +16,8 @@ export const SessionPayments = {
     if (message.index !== "") {
       writer.uint32(10).string(message.index);
     }
-    if (message.usersPayments !== undefined) {
-      UserPaymentStorage.encode(
-        message.usersPayments,
-        writer.uint32(18).fork()
-      ).ldelim();
+    for (const v of message.usersPayments) {
+      UserPaymentStorage.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -29,6 +26,7 @@ export const SessionPayments = {
     const reader = input instanceof Uint8Array ? new Reader(input) : input;
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = { ...baseSessionPayments } as SessionPayments;
+    message.usersPayments = [];
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -36,9 +34,8 @@ export const SessionPayments = {
           message.index = reader.string();
           break;
         case 2:
-          message.usersPayments = UserPaymentStorage.decode(
-            reader,
-            reader.uint32()
+          message.usersPayments.push(
+            UserPaymentStorage.decode(reader, reader.uint32())
           );
           break;
         default:
@@ -51,15 +48,16 @@ export const SessionPayments = {
 
   fromJSON(object: any): SessionPayments {
     const message = { ...baseSessionPayments } as SessionPayments;
+    message.usersPayments = [];
     if (object.index !== undefined && object.index !== null) {
       message.index = String(object.index);
     } else {
       message.index = "";
     }
     if (object.usersPayments !== undefined && object.usersPayments !== null) {
-      message.usersPayments = UserPaymentStorage.fromJSON(object.usersPayments);
-    } else {
-      message.usersPayments = undefined;
+      for (const e of object.usersPayments) {
+        message.usersPayments.push(UserPaymentStorage.fromJSON(e));
+      }
     }
     return message;
   },
@@ -67,26 +65,28 @@ export const SessionPayments = {
   toJSON(message: SessionPayments): unknown {
     const obj: any = {};
     message.index !== undefined && (obj.index = message.index);
-    message.usersPayments !== undefined &&
-      (obj.usersPayments = message.usersPayments
-        ? UserPaymentStorage.toJSON(message.usersPayments)
-        : undefined);
+    if (message.usersPayments) {
+      obj.usersPayments = message.usersPayments.map((e) =>
+        e ? UserPaymentStorage.toJSON(e) : undefined
+      );
+    } else {
+      obj.usersPayments = [];
+    }
     return obj;
   },
 
   fromPartial(object: DeepPartial<SessionPayments>): SessionPayments {
     const message = { ...baseSessionPayments } as SessionPayments;
+    message.usersPayments = [];
     if (object.index !== undefined && object.index !== null) {
       message.index = object.index;
     } else {
       message.index = "";
     }
     if (object.usersPayments !== undefined && object.usersPayments !== null) {
-      message.usersPayments = UserPaymentStorage.fromPartial(
-        object.usersPayments
-      );
-    } else {
-      message.usersPayments = undefined;
+      for (const e of object.usersPayments) {
+        message.usersPayments.push(UserPaymentStorage.fromPartial(e));
+      }
     }
     return message;
   },

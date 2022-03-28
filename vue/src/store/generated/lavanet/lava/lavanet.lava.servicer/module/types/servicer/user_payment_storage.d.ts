@@ -3,7 +3,7 @@ import { UniquePaymentStorageUserServicer } from "../servicer/unique_payment_sto
 export declare const protobufPackage = "lavanet.lava.servicer";
 export interface UserPaymentStorage {
     index: string;
-    uniquePaymentStorageUserServicer: UniquePaymentStorageUserServicer | undefined;
+    uniquePaymentStorageUserServicer: UniquePaymentStorageUserServicer[];
     totalCU: number;
     session: number;
 }
