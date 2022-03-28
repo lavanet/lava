@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/x/servicer/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 )
@@ -25,7 +25,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 	}
 	for _, relay := range msg.Relays {
 
-		pubKey, err := relayer.RecoverPubKeyFromRelay(relay)
+		pubKey, err := sigs.RecoverPubKeyFromRelay(relay)
 		if err != nil {
 			return errorLogAndFormat("error on proof of work, bad sig")
 		}

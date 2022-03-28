@@ -1,4 +1,9 @@
-package relayer
+package chainproxy
+
+//
+// Right now this is only for Ethereum
+// TODO: make this into a proper connection pool that supports
+// the chainproxy interface
 
 import (
 	"context"

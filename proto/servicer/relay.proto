@@ -10,13 +10,14 @@ service Relayer {
 message RelayRequest {
     uint32 spec_id = 1;
     uint32 api_id = 2;
-    uint64 session_id = 3;
-    uint64 cu_sum = 4; // total compute unit used including this relay
+    string api_url = 3; // some relays have associated urls that are filled with params ('/block/{height}')
+    uint64 session_id = 4;
+    uint64 cu_sum = 5; // total compute unit used including this relay
 
-    bytes data = 5;
-    bytes sig = 6;
-    string servicer = 7;
-    int64 block_height = 8;
+    bytes data = 6;
+    bytes sig = 7;
+    string servicer = 8;
+    int64 block_height = 9;
 }
 
 message RelayReply {
