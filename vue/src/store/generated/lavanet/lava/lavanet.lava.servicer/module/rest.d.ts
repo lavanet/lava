@@ -212,6 +212,7 @@ export interface ServicerRelayRequest {
     specId?: number;
     /** @format int64 */
     apiId?: number;
+    apiUrl?: string;
     /** @format uint64 */
     sessionId?: string;
     /** @format uint64 */

@@ -24015,9 +24015,9 @@ definitions:
       apiId:
         type: integer
         format: int64
-      api_url:
+      apiUrl:
         type: string
-      session_id:
+      sessionId:
         type: string
         format: uint64
       cuSum:

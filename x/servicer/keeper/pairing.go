@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/x/servicer/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/rpc/core"
 )
 
 func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, isNew bool, block types.BlockNum) (userStakeMap *usertypes.UserStake, errorRet error) {
@@ -171,6 +172,17 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 		//list is empty
 		return
 	}
+
+	//add the session start block hash to the function to make it as unpredictable as we can
+	block_height := int64(block)
+	sessionStartBlock, err := core.Block(nil, &block_height)
+	if err != nil {
+		k.Logger(ctx).Error("Failed To Get block from tendermint core")
+	}
+	sessionBlockHash := sessionStartBlock.Block.Hash()
+	// k.Logger(ctx).Error(fmt.Sprintf("Block Hash!!!: %s", sessionBlockHash))
+	hashData = append(hashData, sessionBlockHash...)
+
 	extradata := make([]byte, 8)
 	binary.LittleEndian.PutUint64(extradata, uint64(block))
 	hashData = append(hashData, extradata...)

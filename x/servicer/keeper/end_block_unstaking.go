@@ -18,7 +18,7 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 		return nil
 	}
 	currentBlock := ctx.BlockHeight()
-	if deadline.Deadline.Num != uint64(currentBlock) { // didn't reach the first deadline
+	if deadline.Deadline.Num > uint64(currentBlock) { // didn't reach the first deadline
 		return nil
 	}
 	err := k.creditUnstakingServicersAndRemoveFromCallback(ctx, deadline.Deadline)

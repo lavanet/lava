@@ -5,6 +5,7 @@ export const protobufPackage = "lavanet.lava.servicer";
 const baseRelayRequest = {
     specId: 0,
     apiId: 0,
+    apiUrl: "",
     sessionId: 0,
     cuSum: 0,
     servicer: "",
@@ -18,23 +19,26 @@ export const RelayRequest = {
         if (message.apiId !== 0) {
             writer.uint32(16).uint32(message.apiId);
         }
+        if (message.apiUrl !== "") {
+            writer.uint32(26).string(message.apiUrl);
+        }
         if (message.sessionId !== 0) {
-            writer.uint32(24).uint64(message.sessionId);
+            writer.uint32(32).uint64(message.sessionId);
         }
         if (message.cuSum !== 0) {
-            writer.uint32(32).uint64(message.cuSum);
+            writer.uint32(40).uint64(message.cuSum);
         }
         if (message.data.length !== 0) {
-            writer.uint32(42).bytes(message.data);
+            writer.uint32(50).bytes(message.data);
         }
         if (message.sig.length !== 0) {
-            writer.uint32(50).bytes(message.sig);
+            writer.uint32(58).bytes(message.sig);
         }
         if (message.servicer !== "") {
-            writer.uint32(58).string(message.servicer);
+            writer.uint32(66).string(message.servicer);
         }
         if (message.blockHeight !== 0) {
-            writer.uint32(64).int64(message.blockHeight);
+            writer.uint32(72).int64(message.blockHeight);
         }
         return writer;
     },
@@ -52,21 +56,24 @@ export const RelayRequest = {
                     message.apiId = reader.uint32();
                     break;
                 case 3:
-                    message.sessionId = longToNumber(reader.uint64());
+                    message.apiUrl = reader.string();
                     break;
                 case 4:
-                    message.cuSum = longToNumber(reader.uint64());
+                    message.sessionId = longToNumber(reader.uint64());
                     break;
                 case 5:
-                    message.data = reader.bytes();
+                    message.cuSum = longToNumber(reader.uint64());
                     break;
                 case 6:
-                    message.sig = reader.bytes();
+                    message.data = reader.bytes();
                     break;
                 case 7:
-                    message.servicer = reader.string();
+                    message.sig = reader.bytes();
                     break;
                 case 8:
+                    message.servicer = reader.string();
+                    break;
+                case 9:
                     message.blockHeight = longToNumber(reader.int64());
                     break;
                 default:
@@ -89,6 +96,12 @@ export const RelayRequest = {
         }
         else {
             message.apiId = 0;
+        }
+        if (object.apiUrl !== undefined && object.apiUrl !== null) {
+            message.apiUrl = String(object.apiUrl);
+        }
+        else {
+            message.apiUrl = "";
         }
         if (object.sessionId !== undefined && object.sessionId !== null) {
             message.sessionId = Number(object.sessionId);
@@ -126,6 +139,7 @@ export const RelayRequest = {
         const obj = {};
         message.specId !== undefined && (obj.specId = message.specId);
         message.apiId !== undefined && (obj.apiId = message.apiId);
+        message.apiUrl !== undefined && (obj.apiUrl = message.apiUrl);
         message.sessionId !== undefined && (obj.sessionId = message.sessionId);
         message.cuSum !== undefined && (obj.cuSum = message.cuSum);
         message.data !== undefined &&
@@ -150,6 +164,12 @@ export const RelayRequest = {
         }
         else {
             message.apiId = 0;
+        }
+        if (object.apiUrl !== undefined && object.apiUrl !== null) {
+            message.apiUrl = object.apiUrl;
+        }
+        else {
+            message.apiUrl = "";
         }
         if (object.sessionId !== undefined && object.sessionId !== null) {
             message.sessionId = object.sessionId;

@@ -3,6 +3,8 @@ export declare const protobufPackage = "lavanet.lava.servicer";
 export interface RelayRequest {
     specId: number;
     apiId: number;
+    /** some relays have associated urls that are filled with params ('/block/{height}') */
+    apiUrl: string;
     sessionId: number;
     /** total compute unit used including this relay */
     cuSum: number;
