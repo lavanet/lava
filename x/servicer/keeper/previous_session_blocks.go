@@ -75,7 +75,9 @@ func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 	previousSessionBlocks, found := k.GetPreviousSessionBlocks(ctx)
 	//update with current data now, ebcause we dont know when it will change, and i didn't want to hook the param change
 	//TODO: hook the param change instead and write to this struct only when it changes
-
+	if !found {
+		panic("fail due to faulty GetPreviousSessionBlocks in keeper")
+	}
 	if previousSessionBlocks.BlocksNum != k.userKeeper.SessionBlocks(ctx) && previousSessionBlocks.ChangeBlock.Num+k.userKeeper.BlocksToSave(ctx) < currentBlock {
 		//meaning there was enough time since the last change, and we didn't store the new value yet, so we save the new value
 		previousSessionBlocks.BlocksNum = k.userKeeper.SessionBlocks(ctx)
@@ -88,9 +90,7 @@ func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 	// the difference between them should be sessionBlocks unless it was changed
 	if currentSessionStart.Block.Num+sessionBlocks != currentBlock && currentBlock > 0 {
 		//we updated sessionBlocks
-		if !found {
-			panic("fail due to faulty GetPreviousSessionBlocks in keeper")
-		}
+
 		//we save the change as the current block (that is a session start), comparisons are always for strong inequality,
 		// so all blocks that are smaller
 		//will use the session start with the previous params

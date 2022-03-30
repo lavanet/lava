@@ -208,7 +208,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		// Notify world we have a new session
 		logger.Info("New session")
 		ctx.EventManager().EmitEvent(
-			sdk.NewEvent("new_session", sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight()))),
+			sdk.NewEvent("lava_new_session", sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight()))),
 		)
 	}
 }

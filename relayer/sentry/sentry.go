@@ -185,8 +185,11 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Listen to new blocks
 	query := "tm.event = 'NewBlock'"
+	// query := "tm.event CONTAINS 'lava_'"
+	// query := "tm.event = 'TX'"
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
+		fmt.Printf("BAD: %s", err)
 		return err
 	}
 	s.txs = txs
@@ -288,7 +291,6 @@ func (s *Sentry) Start(ctx context.Context) {
 			}
 		}()
 	}
-
 	//
 	// Listen for blockchain events
 	for e := range s.txs {
@@ -301,8 +303,8 @@ func (s *Sentry) Start(ctx context.Context) {
 				go s.newBlockCb()
 			}
 
-			if _, ok := e.Events["new_session.height"]; ok {
-				fmt.Printf("New session - Height: %d \n", data.Block.Height)
+			if _, ok := e.Events["lava_new_session.height"]; ok {
+				fmt.Printf("New session: Height: %d \n", data.Block.Height)
 
 				//
 				// Update specs
@@ -318,6 +320,7 @@ func (s *Sentry) Start(ctx context.Context) {
 					log.Println("error: getPairing", err)
 				}
 			}
+
 		}
 	}
 }
