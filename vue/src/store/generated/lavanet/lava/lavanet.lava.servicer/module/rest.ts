@@ -66,12 +66,6 @@ export interface ServicerParams {
   servicersToPairCount?: string;
 
   /** @format uint64 */
-  sessionBlocks?: string;
-
-  /** @format uint64 */
-  sessionsToSave?: string;
-
-  /** @format uint64 */
   sessionBlocksOverlap?: string;
 }
 

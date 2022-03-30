@@ -66,10 +66,10 @@ func (k Keeper) GetAllSessionStorageForSpec(ctx sdk.Context) (list []types.Sessi
 }
 
 func (k Keeper) RemoveOldSessionPayment(ctx sdk.Context) (err error) {
-	if uint64(ctx.BlockHeight()) < k.BlocksToSave(ctx) {
+	if uint64(ctx.BlockHeight()) < k.userKeeper.BlocksToSave(ctx) {
 		return nil
 	}
-	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)}
+	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.userKeeper.BlocksToSave(ctx)}
 	earliestSessionBlock, found := k.GetEarliestSessionStart(ctx)
 	if !found {
 		return fmt.Errorf("keeper didn't find EarliestSessionStart")
@@ -84,10 +84,10 @@ func (k Keeper) RemoveOldSessionPayment(ctx sdk.Context) (err error) {
 
 func (k Keeper) RemoveStakeStorageInSession(ctx sdk.Context) (err error) {
 
-	if uint64(ctx.BlockHeight()) < k.BlocksToSave(ctx) {
+	if uint64(ctx.BlockHeight()) < k.userKeeper.BlocksToSave(ctx) {
 		return nil
 	}
-	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)}
+	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.userKeeper.BlocksToSave(ctx)}
 	earliestSessionBlock, found := k.GetEarliestSessionStart(ctx)
 	if !found {
 		return fmt.Errorf("keeper didn't find EarliestSessionStart")

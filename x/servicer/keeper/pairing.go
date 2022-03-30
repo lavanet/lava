@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -166,7 +165,6 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 	hashData := make([]byte, 0)
 	for _, stakedServicer := range servicersMaps {
 		stakeSum += stakedServicer.Stake.Amount.Uint64()
-		hashData = append(hashData, []byte(stakedServicer.Index)...)
 	}
 	if stakeSum == 0 {
 		//list is empty
@@ -183,10 +181,7 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 	// k.Logger(ctx).Error(fmt.Sprintf("Block Hash!!!: %s", sessionBlockHash))
 	hashData = append(hashData, sessionBlockHash...)
 
-	extradata := make([]byte, 8)
-	binary.LittleEndian.PutUint64(extradata, uint64(block))
-	hashData = append(hashData, extradata...)
-
+	//TODO: sort servicers by stake (done only once), so we statisticly go over the list less
 	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
 	for it := 0; it < int(count); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed

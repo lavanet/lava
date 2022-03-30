@@ -8,8 +8,6 @@ export interface Params {
     fraudStakeSlashingFactor: number;
     fraudSlashingAmount: number;
     servicersToPairCount: number;
-    sessionBlocks: number;
-    sessionsToSave: number;
     sessionBlocksOverlap: number;
 }
 export declare const Params: {

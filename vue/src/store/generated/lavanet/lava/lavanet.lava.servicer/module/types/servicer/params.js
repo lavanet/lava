@@ -9,8 +9,6 @@ const baseParams = {
     fraudStakeSlashingFactor: 0,
     fraudSlashingAmount: 0,
     servicersToPairCount: 0,
-    sessionBlocks: 0,
-    sessionsToSave: 0,
     sessionBlocksOverlap: 0,
 };
 export const Params = {
@@ -32,12 +30,6 @@ export const Params = {
         }
         if (message.servicersToPairCount !== 0) {
             writer.uint32(48).uint64(message.servicersToPairCount);
-        }
-        if (message.sessionBlocks !== 0) {
-            writer.uint32(56).uint64(message.sessionBlocks);
-        }
-        if (message.sessionsToSave !== 0) {
-            writer.uint32(64).uint64(message.sessionsToSave);
         }
         if (message.sessionBlocksOverlap !== 0) {
             writer.uint32(72).uint64(message.sessionBlocksOverlap);
@@ -68,12 +60,6 @@ export const Params = {
                     break;
                 case 6:
                     message.servicersToPairCount = longToNumber(reader.uint64());
-                    break;
-                case 7:
-                    message.sessionBlocks = longToNumber(reader.uint64());
-                    break;
-                case 8:
-                    message.sessionsToSave = longToNumber(reader.uint64());
                     break;
                 case 9:
                     message.sessionBlocksOverlap = longToNumber(reader.uint64());
@@ -127,18 +113,6 @@ export const Params = {
         else {
             message.servicersToPairCount = 0;
         }
-        if (object.sessionBlocks !== undefined && object.sessionBlocks !== null) {
-            message.sessionBlocks = Number(object.sessionBlocks);
-        }
-        else {
-            message.sessionBlocks = 0;
-        }
-        if (object.sessionsToSave !== undefined && object.sessionsToSave !== null) {
-            message.sessionsToSave = Number(object.sessionsToSave);
-        }
-        else {
-            message.sessionsToSave = 0;
-        }
         if (object.sessionBlocksOverlap !== undefined &&
             object.sessionBlocksOverlap !== null) {
             message.sessionBlocksOverlap = Number(object.sessionBlocksOverlap);
@@ -160,10 +134,6 @@ export const Params = {
             (obj.fraudSlashingAmount = message.fraudSlashingAmount);
         message.servicersToPairCount !== undefined &&
             (obj.servicersToPairCount = message.servicersToPairCount);
-        message.sessionBlocks !== undefined &&
-            (obj.sessionBlocks = message.sessionBlocks);
-        message.sessionsToSave !== undefined &&
-            (obj.sessionsToSave = message.sessionsToSave);
         message.sessionBlocksOverlap !== undefined &&
             (obj.sessionBlocksOverlap = message.sessionBlocksOverlap);
         return obj;
@@ -209,18 +179,6 @@ export const Params = {
         }
         else {
             message.servicersToPairCount = 0;
-        }
-        if (object.sessionBlocks !== undefined && object.sessionBlocks !== null) {
-            message.sessionBlocks = object.sessionBlocks;
-        }
-        else {
-            message.sessionBlocks = 0;
-        }
-        if (object.sessionsToSave !== undefined && object.sessionsToSave !== null) {
-            message.sessionsToSave = object.sessionsToSave;
-        }
-        else {
-            message.sessionsToSave = 0;
         }
         if (object.sessionBlocksOverlap !== undefined &&
             object.sessionBlocksOverlap !== null) {

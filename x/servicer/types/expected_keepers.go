@@ -40,4 +40,8 @@ type UserKeeper interface {
 	GetUnstakingUsersForSpec(sdk.Context, usertypes.SpecName) ([]usertypes.UserStake, []int)
 	BurnUserStake(sdk.Context, usertypes.SpecName, sdk.AccAddress, sdk.Coin, bool) (bool, error)
 	EnforceUserCUsUsageInSession(sdk.Context, *usertypes.UserStake, uint64) error
+	BlocksToSave(sdk.Context) uint64
+	SessionsToSave(ctx sdk.Context) (res uint64)
+	IsSessionStart(ctx sdk.Context) (res bool)
+	SessionBlocks(ctx sdk.Context) (res uint64)
 }

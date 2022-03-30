@@ -39,7 +39,7 @@ func (k Keeper) GetSessionBlocksAndOverlapForBlock(ctx sdk.Context, block types.
 	if !found {
 		panic("did not find previousSessionBlocks")
 	}
-	blockCycleToUse := k.SessionBlocks(ctx)
+	blockCycleToUse := k.userKeeper.SessionBlocks(ctx)
 	overlapBlocks := k.SessionBlocksOverlap(ctx)
 	if previousSessionsBlocks.ChangeBlock.Num > block.Num {
 		blockCycleToUse = previousSessionsBlocks.BlocksNum
@@ -67,7 +67,7 @@ func (k Keeper) GetSessionStartForBlock(ctx sdk.Context, block types.BlockNum) (
 func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	currentSessionStart, found := k.GetCurrentSessionStart(ctx)
-	sessionBlocks := k.SessionBlocks(ctx)
+	sessionBlocks := k.userKeeper.SessionBlocks(ctx)
 	if !found {
 		panic("fail due to faulty GetCurrentSessionStart in keeper")
 	}
@@ -76,9 +76,9 @@ func (k Keeper) HandleStoringPreviousSessionData(ctx sdk.Context) {
 	//update with current data now, ebcause we dont know when it will change, and i didn't want to hook the param change
 	//TODO: hook the param change instead and write to this struct only when it changes
 
-	if previousSessionBlocks.BlocksNum != k.SessionBlocks(ctx) && previousSessionBlocks.ChangeBlock.Num+k.BlocksToSave(ctx) < currentBlock {
+	if previousSessionBlocks.BlocksNum != k.userKeeper.SessionBlocks(ctx) && previousSessionBlocks.ChangeBlock.Num+k.userKeeper.BlocksToSave(ctx) < currentBlock {
 		//meaning there was enough time since the last change, and we didn't store the new value yet, so we save the new value
-		previousSessionBlocks.BlocksNum = k.SessionBlocks(ctx)
+		previousSessionBlocks.BlocksNum = k.userKeeper.SessionBlocks(ctx)
 		previousSessionBlocks.OverlapBlocks = k.SessionBlocksOverlap(ctx)
 		previousSessionBlocks.ChangeBlock = types.BlockNum{Num: currentBlock}
 		k.SetPreviousSessionBlocks(ctx, previousSessionBlocks)
