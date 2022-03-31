@@ -21,11 +21,11 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	if deadline.Deadline.Num > uint64(currentBlock) { // didn't reach the first deadline
 		return nil
 	}
-	err := k.creditUnstakingServicersAndRemoveFromCallback(ctx, deadline.Deadline)
+	err := k.creditUnstakingServicersAndRemoveFromCallback(ctx, uint64(currentBlock))
 	return err
 }
 
-func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, deadline types.BlockNum) error {
+func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, deadline uint64) error {
 	unstakingServicers := k.GetAllUnstakingServicersAllSpecs(ctx)
 	minDeadaline := uint64(math.MaxUint64)
 	indexesForDelete := make([]uint64, 0)
@@ -49,7 +49,7 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 
 	for idx, unstakingEntry := range unstakingServicers {
 		//A4. repeat for all entries with deadline
-		if unstakingEntry.Unstaking.Deadline.Num == deadline.Num {
+		if unstakingEntry.Unstaking.Deadline.Num <= deadline {
 			// found an entry that needs handling
 			indexesForDelete = append(indexesForDelete, uint64(idx))
 			//TODO: when this list is sorted just check the first elements until we reach future deadlines, instead of looping on it

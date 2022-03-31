@@ -79,15 +79,18 @@ func askForRewards() {
 		// no rewards to ask for
 		return
 	}
-
 	log.Println("asking for rewards", g_sentry.Acc)
 	msg := servicertypes.NewMsgProofOfWork(g_sentry.Acc, relays)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
+	for _, relay := range msg.Relays {
+		g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}})
+	}
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
 	}
+
 	//EWW, but unmarshalingJson doesn't work because keys aren't in quotes
 	transactionResult := strings.ReplaceAll(myWriter.String(), ": ", ":")
 	transactionResults := strings.Split(transactionResult, "\n")
@@ -99,9 +102,7 @@ func askForRewards() {
 		fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
 	} else {
 		fmt.Printf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String())
-
 	}
-
 }
 
 func getRelayUser(in *servicertypes.RelayRequest) (tenderbytes.HexBytes, error) {
@@ -166,10 +167,12 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 	// Checks
 	user, err := getRelayUser(in)
 	if err != nil {
+		// log.Println("Error: %s", err)
 		return nil, err
 	}
 	userAddr, err := sdk.AccAddressFromHex(user.String())
 	if err != nil {
+		// log.Println("Error: %s", err)
 		return nil, err
 	}
 
@@ -180,6 +183,7 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		return nil, errors.New("spec not supported by server")
 	}
 
+	// log.Println("server parsing message")
 	//
 	// Parse message, check valid api, etc
 	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
@@ -187,19 +191,19 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		return nil, err
 	}
 
-	//
+	// log.Println("server creating session")
 	// Update session
 	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 	relaySession.Proof = in
-
+	// log.Println("server sending to node")
 	//
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
-
+	// log.Println("server relying to user")
 	//
 	// Update signature, return reply to user
 	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
