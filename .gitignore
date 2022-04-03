@@ -5,4 +5,4 @@ release/
 .vscode/
 .DS_Store
 notes.txt
-vue/src/store/generated/
+vue/src/store/generated/*

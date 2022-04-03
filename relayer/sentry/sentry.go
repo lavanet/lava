@@ -45,6 +45,7 @@ type PaymentRequest struct {
 	CU                  uint64
 	BlockHeightDeadline int64
 	Amount              sdk.Coin
+	Client              sdk.AccAddress
 }
 
 type Sentry struct {
@@ -213,7 +214,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Listen to new blocks
 	query := "tm.event = 'NewBlock'"
-	// query := "tm.event CONTAINS 'lava_'"
 	//
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
@@ -287,12 +287,15 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 				for _, servicerAddr := range servicerAddrList {
 					if s.Acc == servicerAddr {
 						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
-						s.PaymentsMu.Lock()
-						defer s.PaymentsMu.Unlock()
 						CU := e.Events["lava_relay_payment.CU"][0]
 						paidCU, err := strconv.ParseUint(CU, 10, 64)
 						if err != nil {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+							continue
+						}
+						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][0])
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
 							continue
 						}
 						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][0])
@@ -300,21 +303,11 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
 							continue
 						}
-						currentCU := atomic.LoadUint64(&s.totalCUPaid)
-						atomic.StoreUint64(&s.totalCUPaid, currentCU+paidCU)
-						s.receivedPayments = append(s.receivedPayments, PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin})
-						found := false
-						for idx, expectedPayment := range s.expectedPayments {
-							if expectedPayment.CU == paidCU {
-								//found payment for expected payment
-								s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
-								s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
-								found = true
-								break
-							}
-						}
+						s.UpdatePaidCU(paidCU)
+						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
+						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
 						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy Need to add suppot for partial payment %s\n%s\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
+							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
 						} else {
 							fmt.Printf("SUCCESS: payment received as expected\n")
 						}
@@ -324,6 +317,44 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 
 		}
 	}
+}
+
+func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64) bool {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	for idx, expectedPayment := range s.expectedPayments {
+		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
+		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) {
+			//found payment for expected payment
+			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
+			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Sentry) GetPaidCU() uint64 {
+	return atomic.LoadUint64(&s.totalCUPaid)
+}
+
+func (s *Sentry) UpdatePaidCU(extraPaidCU uint64) {
+	//we lock because we dont want the value changing after we read it before we store
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	currentCU := atomic.LoadUint64(&s.totalCUPaid)
+	atomic.StoreUint64(&s.totalCUPaid, currentCU+extraPaidCU)
+}
+
+func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	s.receivedPayments = append(s.receivedPayments, paymentReq)
+}
+func (s *Sentry) PrintExpectedPAyments() string {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	return fmt.Sprintf("last Received: %s\n Expected: %s\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
 }
 
 func (s *Sentry) Start(ctx context.Context) {
@@ -426,6 +457,7 @@ func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 			fmt.Printf("ERROR: Identified Missing Payment for CU %d on Block %d current earliestBlockInMemory: %d\n", expectedPay.CU, expectedPay.BlockHeightDeadline, lastBlockInMemory)
 		}
 	}
+	fmt.Printf("total CU serviced: %d, total CU paid: %d\n", s.GetCUServiced(), s.GetPaidCU())
 }
 
 //expecting caller to lock
@@ -571,6 +603,22 @@ func (s *Sentry) GetBlockHeight() int64 {
 
 func (s *Sentry) SetBlockHeight(blockHeight int64) {
 	atomic.StoreInt64(&s.blockHeight, blockHeight)
+}
+
+func (s *Sentry) GetCUServiced() uint64 {
+	return atomic.LoadUint64(&s.totalCUServiced)
+}
+
+func (s *Sentry) SetCUServiced(CU uint64) {
+	atomic.StoreUint64(&s.totalCUServiced, CU)
+}
+
+func (s *Sentry) UpdateCUServiced(CU uint64) {
+	//we lock because we dont want the value changing after we read it before we store
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	currentCU := atomic.LoadUint64(&s.totalCUServiced)
+	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
 }
 
 func NewSentry(

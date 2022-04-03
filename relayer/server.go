@@ -67,9 +67,16 @@ func askForRewards() {
 		// TODO: we can come up with a better locking mechanism
 		for k, sess := range userSessions {
 			sess.Lock.Lock()
-			relays = append(relays, sess.Proof)
+			relay := sess.Proof
+			relays = append(relays, relay)
 			delete(userSessions, k)
 			sess.Lock.Unlock()
+			userAccAddr, err := sdk.AccAddressFromBech32(user)
+			if err != nil {
+				log.Println("invalid user address: %s", user)
+			}
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
 		if len(userSessions) == 0 {
 			delete(g_sessions, user)
@@ -83,9 +90,6 @@ func askForRewards() {
 	msg := servicertypes.NewMsgProofOfWork(g_sentry.Acc, relays)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
-	for _, relay := range msg.Relays {
-		g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}})
-	}
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
@@ -175,7 +179,7 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		// log.Println("Error: %s", err)
 		return nil, err
 	}
-
+	//TODO: cache this client, no need to run the query every time
 	if !isAuthorizedUser(ctx, userAddr.String()) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
@@ -183,7 +187,6 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		return nil, errors.New("spec not supported by server")
 	}
 
-	// log.Println("server parsing message")
 	//
 	// Parse message, check valid api, etc
 	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
@@ -191,20 +194,17 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		return nil, err
 	}
 
-	// log.Println("server creating session")
 	// Update session
 	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 	relaySession.Proof = in
-	// log.Println("server sending to node")
-	//
+
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
-	// log.Println("server relying to user")
-	//
+
 	// Update signature, return reply to user
 	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
 	if err != nil {
