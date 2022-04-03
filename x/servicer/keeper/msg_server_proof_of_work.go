@@ -120,11 +120,10 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
 			}
 
-			logger.Info(fmt.Sprintf("New Proof Of Work Was Accepted:\nUser: %s Burn:%s total CU in session(All Serv):%d \nServicer:%s Work Mint: %s CU:%d", clientAddr, amountToBurnClient, totalCUInSessionForUser, servicerAddr, rewardCoins, relay.CuSum))
+			logger.Info(fmt.Sprintf("New Proof Of Work Was Accepted:\nBlock:%d, for claim on block %d\nUser: %s Burn:%s total CU in session(All Serv):%d \nServicer:%s Work Mint: %s CU:%d as overlap: %t", ctx.BlockHeight(), relay.BlockHeight, clientAddr, amountToBurnClient, totalCUInSessionForUser, servicerAddr, rewardCoins, relay.CuSum, isOverlap))
 			eventAttributes := []sdk.Attribute{sdk.NewAttribute("client", clientAddr.String()), sdk.NewAttribute("servicer", servicerAddr.String()), sdk.NewAttribute("CU", strconv.FormatUint(relay.CuSum, 10)), sdk.NewAttribute("Mint", rewardCoins.String())}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("pow_payment", eventAttributes...))
+			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_relay_payment", eventAttributes...))
 		}
-
 	}
 
 	return &types.MsgProofOfWorkResponse{}, nil

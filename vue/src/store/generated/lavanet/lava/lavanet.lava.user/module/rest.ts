@@ -51,6 +51,12 @@ export interface UserParams {
 
   /** @format uint64 */
   fraudSlashingAmount?: string;
+
+  /** @format uint64 */
+  sessionBlocks?: string;
+
+  /** @format uint64 */
+  sessionsToSave?: string;
 }
 
 export interface UserQueryAllSpecStakeStorageResponse {

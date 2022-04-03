@@ -13,6 +13,8 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.UnstakeHoldBlocks(ctx),
 		k.FraudStakeSlashingFactor(ctx),
 		k.FraudSlashingAmount(ctx),
+		k.SessionBlocks(ctx),
+		k.SessionsToSave(ctx),
 	)
 }
 
@@ -63,4 +65,29 @@ func (k Keeper) FraudStakeSlashingFactor(ctx sdk.Context) (res uint64) {
 func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyFraudSlashingAmount, &res)
 	return
+}
+
+// SessionBlocks returns the SessionBlocks param
+func (k Keeper) SessionBlocks(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeySessionBlocks, &res)
+	return
+}
+
+// return the next session start
+func (k Keeper) IsSessionStart(ctx sdk.Context) (res bool) {
+	blocksCycle := k.SessionBlocks(ctx)
+	currentBlock := uint64(ctx.BlockHeight())
+	//current block modulu blocks cycle returns how many block in the current session we are, if its 0 we are at session start
+	return (currentBlock % blocksCycle) == 0
+}
+
+// SessionsToSave returns the SessionsToSave param
+func (k Keeper) SessionsToSave(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeySessionsToSave, &res)
+	return
+}
+
+func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
+	blocksToSave := k.SessionsToSave(ctx) * k.SessionBlocks(ctx)
+	return blocksToSave
 }

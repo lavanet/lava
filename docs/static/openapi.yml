@@ -12876,12 +12876,6 @@ paths:
                   servicersToPairCount:
                     type: string
                     format: uint64
-                  sessionBlocks:
-                    type: string
-                    format: uint64
-                  sessionsToSave:
-                    type: string
-                    format: uint64
                   sessionBlocksOverlap:
                     type: string
                     format: uint64
@@ -14769,6 +14763,12 @@ paths:
                     type: string
                     format: uint64
                   fraudSlashingAmount:
+                    type: string
+                    format: uint64
+                  sessionBlocks:
+                    type: string
+                    format: uint64
+                  sessionsToSave:
                     type: string
                     format: uint64
             description: >-
@@ -22993,12 +22993,6 @@ definitions:
       servicersToPairCount:
         type: string
         format: uint64
-      sessionBlocks:
-        type: string
-        format: uint64
-      sessionsToSave:
-        type: string
-        format: uint64
       sessionBlocksOverlap:
         type: string
         format: uint64
@@ -23902,12 +23896,6 @@ definitions:
           servicersToPairCount:
             type: string
             format: uint64
-          sessionBlocks:
-            type: string
-            format: uint64
-          sessionsToSave:
-            type: string
-            format: uint64
           sessionBlocksOverlap:
             type: string
             format: uint64
@@ -24015,9 +24003,9 @@ definitions:
       apiId:
         type: integer
         format: int64
-      api_url:
+      apiUrl:
         type: string
-      session_id:
+      sessionId:
         type: string
         format: uint64
       cuSum:
@@ -24349,6 +24337,12 @@ definitions:
         type: string
         format: uint64
       fraudSlashingAmount:
+        type: string
+        format: uint64
+      sessionBlocks:
+        type: string
+        format: uint64
+      sessionsToSave:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
@@ -24746,6 +24740,12 @@ definitions:
             type: string
             format: uint64
           fraudSlashingAmount:
+            type: string
+            format: uint64
+          sessionBlocks:
+            type: string
+            format: uint64
+          sessionsToSave:
             type: string
             format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.

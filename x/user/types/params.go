@@ -39,6 +39,18 @@ var (
 	DefaultFraudSlashingAmount uint64 = 0
 )
 
+var (
+	KeySessionBlocks = []byte("SessionBlocks")
+	// DefaultSessionBlocks uint64 = 200
+	DefaultSessionBlocks uint64 = 20
+)
+
+var (
+	KeySessionsToSave = []byte("SessionsToSave")
+	// DefaultSessionsToSave uint64 = 100
+	DefaultSessionsToSave uint64 = 10
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -51,6 +63,8 @@ func NewParams(
 	unstakeHoldBlocks uint64,
 	fraudStakeSlashingFactor uint64,
 	fraudSlashingAmount uint64,
+	sessionBlocks uint64,
+	sessionsToSave uint64,
 ) Params {
 	return Params{
 		MinStake:                 minStake,
@@ -58,6 +72,8 @@ func NewParams(
 		UnstakeHoldBlocks:        unstakeHoldBlocks,
 		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
 		FraudSlashingAmount:      fraudSlashingAmount,
+		SessionBlocks:            sessionBlocks,
+		SessionsToSave:           sessionsToSave,
 	}
 }
 
@@ -69,6 +85,8 @@ func DefaultParams() Params {
 		DefaultUnstakeHoldBlocks,
 		DefaultFraudStakeSlashingFactor,
 		DefaultFraudSlashingAmount,
+		DefaultSessionBlocks,
+		DefaultSessionsToSave,
 	)
 }
 
@@ -80,6 +98,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyUnstakeHoldBlocks, &p.UnstakeHoldBlocks, validateUnstakeHoldBlocks),
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
+		paramtypes.NewParamSetPair(KeySessionBlocks, &p.SessionBlocks, validateSessionBlocks),
+		paramtypes.NewParamSetPair(KeySessionsToSave, &p.SessionsToSave, validateSessionsToSave),
 	}
 }
 
@@ -104,7 +124,12 @@ func (p Params) Validate() error {
 	if err := validateFraudSlashingAmount(p.FraudSlashingAmount); err != nil {
 		return err
 	}
-
+	if err := validateSessionBlocks(p.SessionBlocks); err != nil {
+		return err
+	}
+	if err := validateSessionsToSave(p.SessionsToSave); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -175,6 +200,28 @@ func validateFraudSlashingAmount(v interface{}) error {
 
 	// TODO implement validation
 	_ = fraudSlashingAmount
+
+	return nil
+}
+
+// validateSessionBlocks validates the SessionBlocks param
+func validateSessionBlocks(v interface{}) error {
+	sessionBlocks, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = sessionBlocks
+
+	return nil
+}
+
+// validateSessionsToSave validates the SessionsToSave param
+func validateSessionsToSave(v interface{}) error {
+	sessionsToSave, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+	_ = sessionsToSave
 
 	return nil
 }

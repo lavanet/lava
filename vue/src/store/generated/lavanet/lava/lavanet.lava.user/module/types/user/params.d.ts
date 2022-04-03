@@ -7,6 +7,8 @@ export interface Params {
     unstakeHoldBlocks: number;
     fraudStakeSlashingFactor: number;
     fraudSlashingAmount: number;
+    sessionBlocks: number;
+    sessionsToSave: number;
 }
 export declare const Params: {
     encode(message: Params, writer?: Writer): Writer;

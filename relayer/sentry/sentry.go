@@ -8,12 +8,14 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -39,18 +41,35 @@ type RelayerClientWrapper struct {
 	Sessions     map[int64]*ClientSession
 }
 
+type PaymentRequest struct {
+	CU                  uint64
+	BlockHeightDeadline int64
+	Amount              sdk.Coin
+	Client              sdk.AccAddress
+}
+
 type Sentry struct {
-	ClientCtx           client.Context
-	rpcClient           rpcclient.Client
-	specQueryClient     spectypes.QueryClient
-	servicerQueryClient servicertypes.QueryClient
-	SpecId              uint64
-	txs                 <-chan ctypes.ResultEvent
-	isUser              bool
-	Acc                 string // account address (bech32)
-	newBlockCb          func()
-	processPaths        bool
+	ClientCtx            client.Context
+	rpcClient            rpcclient.Client
+	specQueryClient      spectypes.QueryClient
+	servicerQueryClient  servicertypes.QueryClient
+	SpecId               uint64
+	NewTransactionEvents <-chan ctypes.ResultEvent
+	NewBlockEvents       <-chan ctypes.ResultEvent
+	isUser               bool
+	Acc                  string // account address (bech32)
+	newBlockCb           func()
+	processPaths         bool
 	//
+	// expected payments storage
+	PaymentsMu       sync.RWMutex
+	expectedPayments []PaymentRequest
+	receivedPayments []PaymentRequest
+	totalCUServiced  uint64
+	totalCUPaid      uint64
+
+	// server Blocks To Save (atomic)
+	earliestSavedBlock uint64
 	// Block storage (atomic)
 	blockHeight int64
 
@@ -68,6 +87,16 @@ type Sentry struct {
 	pairing          []*RelayerClientWrapper
 	pairingPurgeLock sync.Mutex
 	pairingPurge     []*RelayerClientWrapper
+}
+
+func (s *Sentry) getEarliestSession(ctx context.Context) error {
+	res, err := s.servicerQueryClient.EarliestSessionStart(ctx, &servicertypes.QueryGetEarliestSessionStartRequest{})
+	if err != nil {
+		return err
+	}
+	earliestBlock := res.EarliestSessionStart.Block.Num
+	atomic.StoreUint64(&s.earliestSavedBlock, earliestBlock)
+	return nil
 }
 
 func (s *Sentry) getPairing(ctx context.Context) error {
@@ -185,12 +214,21 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Listen to new blocks
 	query := "tm.event = 'NewBlock'"
+	//
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
+		fmt.Printf("BAD: %s", err)
 		return err
 	}
-	s.txs = txs
+	s.NewBlockEvents = txs
 
+	query = "tm.event = 'Tx'"
+	txs, err = s.rpcClient.Subscribe(ctx, "test-client", query)
+	if err != nil {
+		fmt.Printf("BAD: %s", err)
+		return err
+	}
+	s.NewTransactionEvents = txs
 	//
 	// Get spec for the first time
 	err = s.getSpec(ctx)
@@ -239,8 +277,92 @@ func removeFromSlice(s []int, i int) []int {
 	return s[:len(s)-1]
 }
 
+func (s *Sentry) ListenForTXEvents(ctx context.Context) {
+	for e := range s.NewTransactionEvents {
+
+		switch data := e.Data.(type) {
+		case tenderminttypes.EventDataTx:
+			//got new TX event
+			if servicerAddrList, ok := e.Events["lava_relay_payment.servicer"]; ok {
+				for _, servicerAddr := range servicerAddrList {
+					if s.Acc == servicerAddr {
+						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
+						CU := e.Events["lava_relay_payment.CU"][0]
+						paidCU, err := strconv.ParseUint(CU, 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+							continue
+						}
+						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][0])
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
+							continue
+						}
+						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][0])
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
+							continue
+						}
+						s.UpdatePaidCU(paidCU)
+						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
+						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
+						if !found {
+							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
+						} else {
+							fmt.Printf("SUCCESS: payment received as expected\n")
+						}
+					}
+				}
+			}
+
+		}
+	}
+}
+
+func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64) bool {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	for idx, expectedPayment := range s.expectedPayments {
+		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
+		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) {
+			//found payment for expected payment
+			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
+			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Sentry) GetPaidCU() uint64 {
+	return atomic.LoadUint64(&s.totalCUPaid)
+}
+
+func (s *Sentry) UpdatePaidCU(extraPaidCU uint64) {
+	//we lock because we dont want the value changing after we read it before we store
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	currentCU := atomic.LoadUint64(&s.totalCUPaid)
+	atomic.StoreUint64(&s.totalCUPaid, currentCU+extraPaidCU)
+}
+
+func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	s.receivedPayments = append(s.receivedPayments, paymentReq)
+}
+func (s *Sentry) PrintExpectedPAyments() string {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	return fmt.Sprintf("last Received: %s\n Expected: %s\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
+}
+
 func (s *Sentry) Start(ctx context.Context) {
 
+	if !s.isUser {
+		//listen for transactions for proof of relay payment
+		go s.ListenForTXEvents(ctx)
+	}
 	//
 	// Purge finished sessions
 	if s.isUser {
@@ -288,21 +410,21 @@ func (s *Sentry) Start(ctx context.Context) {
 			}
 		}()
 	}
-
 	//
 	// Listen for blockchain events
-	for e := range s.txs {
+	for e := range s.NewBlockEvents {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataNewBlock:
 			//
 			// Update block
 			s.SetBlockHeight(data.Block.Height)
+
 			if s.newBlockCb != nil {
 				go s.newBlockCb()
 			}
 
-			if _, ok := e.Events["new_session.height"]; ok {
-				fmt.Printf("New session - Height: %d \n", data.Block.Height)
+			if _, ok := e.Events["lava_new_session.height"]; ok {
+				fmt.Printf("New session: Height: %d \n", data.Block.Height)
 
 				//
 				// Update specs
@@ -311,6 +433,11 @@ func (s *Sentry) Start(ctx context.Context) {
 					log.Println("error: getSpec", err)
 				}
 
+				//update expected payments deadline, and log missing payments
+				s.getEarliestSession(ctx)
+				if !s.isUser {
+					s.IdentifyMissingPayments(ctx)
+				}
 				//
 				// Update pairing
 				err = s.getPairing(ctx)
@@ -318,8 +445,28 @@ func (s *Sentry) Start(ctx context.Context) {
 					log.Println("error: getPairing", err)
 				}
 			}
+
 		}
 	}
+}
+
+func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
+	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
+	s.PaymentsMu.RLock()
+	defer s.PaymentsMu.RUnlock()
+	for _, expectedPay := range s.expectedPayments {
+		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
+			fmt.Printf("ERROR: Identified Missing Payment for CU %d on Block %d current earliestBlockInMemory: %d\n", expectedPay.CU, expectedPay.BlockHeightDeadline, lastBlockInMemory)
+		}
+	}
+	fmt.Printf("total CU serviced: %d, total CU paid: %d\n", s.GetCUServiced(), s.GetPaidCU())
+}
+
+//expecting caller to lock
+func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	s.expectedPayments = append(s.expectedPayments, expectedPay)
 }
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*servicertypes.RelayerClient, error) {
@@ -458,6 +605,22 @@ func (s *Sentry) GetBlockHeight() int64 {
 
 func (s *Sentry) SetBlockHeight(blockHeight int64) {
 	atomic.StoreInt64(&s.blockHeight, blockHeight)
+}
+
+func (s *Sentry) GetCUServiced() uint64 {
+	return atomic.LoadUint64(&s.totalCUServiced)
+}
+
+func (s *Sentry) SetCUServiced(CU uint64) {
+	atomic.StoreUint64(&s.totalCUServiced, CU)
+}
+
+func (s *Sentry) UpdateCUServiced(CU uint64) {
+	//we lock because we dont want the value changing after we read it before we store
+	s.PaymentsMu.Lock()
+	defer s.PaymentsMu.Unlock()
+	currentCU := atomic.LoadUint64(&s.totalCUServiced)
+	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
 }
 
 func NewSentry(

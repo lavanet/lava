@@ -8,6 +8,8 @@ const baseParams = {
     unstakeHoldBlocks: 0,
     fraudStakeSlashingFactor: 0,
     fraudSlashingAmount: 0,
+    sessionBlocks: 0,
+    sessionsToSave: 0,
 };
 export const Params = {
     encode(message, writer = Writer.create()) {
@@ -25,6 +27,12 @@ export const Params = {
         }
         if (message.fraudSlashingAmount !== 0) {
             writer.uint32(40).uint64(message.fraudSlashingAmount);
+        }
+        if (message.sessionBlocks !== 0) {
+            writer.uint32(48).uint64(message.sessionBlocks);
+        }
+        if (message.sessionsToSave !== 0) {
+            writer.uint32(56).uint64(message.sessionsToSave);
         }
         return writer;
     },
@@ -49,6 +57,12 @@ export const Params = {
                     break;
                 case 5:
                     message.fraudSlashingAmount = longToNumber(reader.uint64());
+                    break;
+                case 6:
+                    message.sessionBlocks = longToNumber(reader.uint64());
+                    break;
+                case 7:
+                    message.sessionsToSave = longToNumber(reader.uint64());
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -92,6 +106,18 @@ export const Params = {
         else {
             message.fraudSlashingAmount = 0;
         }
+        if (object.sessionBlocks !== undefined && object.sessionBlocks !== null) {
+            message.sessionBlocks = Number(object.sessionBlocks);
+        }
+        else {
+            message.sessionBlocks = 0;
+        }
+        if (object.sessionsToSave !== undefined && object.sessionsToSave !== null) {
+            message.sessionsToSave = Number(object.sessionsToSave);
+        }
+        else {
+            message.sessionsToSave = 0;
+        }
         return message;
     },
     toJSON(message) {
@@ -104,6 +130,10 @@ export const Params = {
             (obj.fraudStakeSlashingFactor = message.fraudStakeSlashingFactor);
         message.fraudSlashingAmount !== undefined &&
             (obj.fraudSlashingAmount = message.fraudSlashingAmount);
+        message.sessionBlocks !== undefined &&
+            (obj.sessionBlocks = message.sessionBlocks);
+        message.sessionsToSave !== undefined &&
+            (obj.sessionsToSave = message.sessionsToSave);
         return obj;
     },
     fromPartial(object) {
@@ -140,6 +170,18 @@ export const Params = {
         }
         else {
             message.fraudSlashingAmount = 0;
+        }
+        if (object.sessionBlocks !== undefined && object.sessionBlocks !== null) {
+            message.sessionBlocks = object.sessionBlocks;
+        }
+        else {
+            message.sessionBlocks = 0;
+        }
+        if (object.sessionsToSave !== undefined && object.sessionsToSave !== null) {
+            message.sessionsToSave = object.sessionsToSave;
+        }
+        else {
+            message.sessionsToSave = 0;
         }
         return message;
     },

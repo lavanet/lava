@@ -71,6 +71,12 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(userParams.FraudSlashingAmount))
 		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeySessionBlocks), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(userParams.SessionBlocks))
+		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeySessionsToSave), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(userParams.SessionsToSave))
+		}),
 	}
 }
 

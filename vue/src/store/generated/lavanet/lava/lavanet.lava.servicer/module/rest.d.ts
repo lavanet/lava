@@ -40,10 +40,6 @@ export interface ServicerParams {
     /** @format uint64 */
     servicersToPairCount?: string;
     /** @format uint64 */
-    sessionBlocks?: string;
-    /** @format uint64 */
-    sessionsToSave?: string;
-    /** @format uint64 */
     sessionBlocksOverlap?: string;
 }
 export interface ServicerPreviousSessionBlocks {
@@ -212,6 +208,7 @@ export interface ServicerRelayRequest {
     specId?: number;
     /** @format int64 */
     apiId?: number;
+    apiUrl?: string;
     /** @format uint64 */
     sessionId?: string;
     /** @format uint64 */

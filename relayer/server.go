@@ -1,12 +1,16 @@
 package relayer
 
 import (
+	gobytes "bytes"
 	context "context"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,7 +23,7 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	servicertypes "github.com/lavanet/lava/x/servicer/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/tendermint/tendermint/libs/bytes"
+	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
 
@@ -63,9 +67,16 @@ func askForRewards() {
 		// TODO: we can come up with a better locking mechanism
 		for k, sess := range userSessions {
 			sess.Lock.Lock()
-			relays = append(relays, sess.Proof)
+			relay := sess.Proof
+			relays = append(relays, relay)
 			delete(userSessions, k)
 			sess.Lock.Unlock()
+			userAccAddr, err := sdk.AccAddressFromBech32(user)
+			if err != nil {
+				log.Println("invalid user address: %s", user)
+			}
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
 		if len(userSessions) == 0 {
 			delete(g_sessions, user)
@@ -75,16 +86,30 @@ func askForRewards() {
 		// no rewards to ask for
 		return
 	}
-
 	log.Println("asking for rewards", g_sentry.Acc)
 	msg := servicertypes.NewMsgProofOfWork(g_sentry.Acc, relays)
+	myWriter := gobytes.Buffer{}
+	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
 	}
+
+	//EWW, but unmarshalingJson doesn't work because keys aren't in quotes
+	transactionResult := strings.ReplaceAll(myWriter.String(), ": ", ":")
+	transactionResults := strings.Split(transactionResult, "\n")
+	returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
+	if err != nil {
+		fmt.Printf("ERR: %s", err)
+	}
+	if returnCode != 0 {
+		fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
+	} else {
+		fmt.Printf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String())
+	}
 }
 
-func getRelayUser(in *servicertypes.RelayRequest) (bytes.HexBytes, error) {
+func getRelayUser(in *servicertypes.RelayRequest) (tenderbytes.HexBytes, error) {
 	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
@@ -146,13 +171,15 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 	// Checks
 	user, err := getRelayUser(in)
 	if err != nil {
+		// log.Println("Error: %s", err)
 		return nil, err
 	}
 	userAddr, err := sdk.AccAddressFromHex(user.String())
 	if err != nil {
+		// log.Println("Error: %s", err)
 		return nil, err
 	}
-
+	//TODO: cache this client, no need to run the query every time
 	if !isAuthorizedUser(ctx, userAddr.String()) {
 		return nil, errors.New("user not authorized or bad signature")
 	}
@@ -167,20 +194,17 @@ func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest)
 		return nil, err
 	}
 
-	//
 	// Update session
 	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 	relaySession.Proof = in
 
-	//
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	//
 	// Update signature, return reply to user
 	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
 	if err != nil {

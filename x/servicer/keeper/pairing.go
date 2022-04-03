@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/lavanet/lava/x/servicer/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/rpc/core"
 )
 
 func (k Keeper) verifyPairingData(ctx sdk.Context, specID uint64, clientAddress sdk.AccAddress, isNew bool, block types.BlockNum) (userStakeMap *usertypes.UserStake, errorRet error) {
@@ -165,16 +165,23 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 	hashData := make([]byte, 0)
 	for _, stakedServicer := range servicersMaps {
 		stakeSum += stakedServicer.Stake.Amount.Uint64()
-		hashData = append(hashData, []byte(stakedServicer.Index)...)
 	}
 	if stakeSum == 0 {
 		//list is empty
 		return
 	}
-	extradata := make([]byte, 8)
-	binary.LittleEndian.PutUint64(extradata, uint64(block))
-	hashData = append(hashData, extradata...)
 
+	//add the session start block hash to the function to make it as unpredictable as we can
+	block_height := int64(block)
+	sessionStartBlock, err := core.Block(nil, &block_height)
+	if err != nil {
+		k.Logger(ctx).Error("Failed To Get block from tendermint core")
+	}
+	sessionBlockHash := sessionStartBlock.Block.Hash()
+	// k.Logger(ctx).Error(fmt.Sprintf("Block Hash!!!: %s", sessionBlockHash))
+	hashData = append(hashData, sessionBlockHash...)
+
+	//TODO: sort servicers by stake (done only once), so we statisticly go over the list less
 	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
 	for it := 0; it < int(count); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed

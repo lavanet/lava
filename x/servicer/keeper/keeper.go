@@ -52,3 +52,8 @@ func NewKeeper(
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
+
+//give module access to the function without giving it access to user keeper
+func (k Keeper) IsSessionStart(ctx sdk.Context) (res bool) {
+	return k.userKeeper.IsSessionStart(ctx)
+}
