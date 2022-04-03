@@ -435,7 +435,9 @@ func (s *Sentry) Start(ctx context.Context) {
 
 				//update expected payments deadline, and log missing payments
 				s.getEarliestSession(ctx)
-				s.IdentifyMissingPayments(ctx)
+				if !s.isUser {
+					s.IdentifyMissingPayments(ctx)
+				}
 				//
 				// Update pairing
 				err = s.getPairing(ctx)
