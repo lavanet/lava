@@ -360,10 +360,11 @@ func New(
 		//
 		// user defined
 		AddRoute(specmoduletypes.ProposalsRouterKey, spec.NewSpecProposalsHandler(app.SpecKeeper)).
+		// copied the code from param and changed the handler to enable functionality
+		AddRoute(paramproposal.RouterKey, spec.NewParamChangeProposalHandler(app.ParamsKeeper)).
 
 		//
 		// default
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))

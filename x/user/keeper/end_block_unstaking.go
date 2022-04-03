@@ -62,7 +62,8 @@ func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadl
 			if !valid {
 				panic(fmt.Sprintf("error unstaking : %s", err))
 			}
-
+			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", receiverAddr.String()), sdk.NewAttribute("stake", unstakingEntry.Unstaking.Stake.String())}
+			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_commit", eventAttributes...))
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
 			entryDeadline := unstakingEntry.Unstaking.Deadline.Num
