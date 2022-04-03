@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/user/types"
@@ -75,6 +76,8 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 					userStake.Stake = msg.Amount
 					userStake.Deadline = blockDeadline
 					entryExists = true
+					eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
+					ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_stake_update", eventAttributes...))
 					break
 				}
 				return nil, errors.New("can't increase deadline for existing User")
@@ -100,6 +103,8 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 			Stake:    msg.Amount,
 			Deadline: blockDeadline,
 		})
+		eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
+		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_stake_new", eventAttributes...))
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 	_ = ctx

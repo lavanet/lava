@@ -62,6 +62,8 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 			if !valid {
 				panic(fmt.Sprintf("error unstaking : %s", err))
 			}
+			eventAttributes := []sdk.Attribute{sdk.NewAttribute("servicer", receiverAddr.String()), sdk.NewAttribute("stake", unstakingEntry.Unstaking.Stake.String())}
+			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_servicer_unstake_commit", eventAttributes...))
 
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block

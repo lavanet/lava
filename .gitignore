@@ -6,3 +6,13 @@ release/
 .DS_Store
 notes.txt
 vue/src/store/generated/*
+vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/index.js
+vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/index.ts
+vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.d.ts
+vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.js
+vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.ts
+vue/src/store/generated/lavanet/lava/lavanet.lava.user/index.js
+vue/src/store/generated/lavanet/lava/lavanet.lava.user/index.ts
+vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.d.ts
+vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.js
+vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.ts

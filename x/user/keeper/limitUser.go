@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -87,6 +88,9 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 			stakeStorage.StakedUsers[idx] = stakeStorage.StakedUsers[len(stakeStorage.StakedUsers)-1] // replace the element at delete index with the last one
 			stakeStorage.StakedUsers = stakeStorage.StakedUsers[:len(stakeStorage.StakedUsers)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
+
+			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", unstakingUser), sdk.NewAttribute("deadline", strconv.FormatUint(stakedUser.Deadline.Num, 10)), sdk.NewAttribute("stake", stakedUser.Stake.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(deadline.Num, 10))}
+			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_schedule", eventAttributes...))
 			break
 		}
 	}
