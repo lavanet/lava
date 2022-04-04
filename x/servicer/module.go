@@ -16,6 +16,7 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/servicer/client/cli"
 	"github.com/lavanet/lava/x/servicer/keeper"
 	"github.com/lavanet/lava/x/servicer/types"
@@ -206,10 +207,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		logOnErr(err, "CheckUnstakingForCommit")
 		//
 		// Notify world we have a new session
-		logger.Info("New session")
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent("lava_new_session", sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight()))),
-		)
+		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
+		utils.LogLavaEvent(ctx, logger, "new_session", details, "New Block Epoch Started")
 	}
 }
 

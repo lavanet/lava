@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/user/types"
 )
 
@@ -49,6 +50,7 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 		return fmt.Errorf("can't unstake empty specStakeStorage for spec name: %s", specName.Name)
 	}
 	stakeStorage := specStakeStorage.StakeStorage
+	logger := k.Logger(ctx)
 	found_staked_entry := false
 	//TODO: improve the finding logic and the way Staked is saved looping a list is slow and bad
 	for idx, stakedUser := range stakeStorage.StakedUsers {
@@ -89,8 +91,8 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 			stakeStorage.StakedUsers = stakeStorage.StakedUsers[:len(stakeStorage.StakedUsers)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
 
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", unstakingUser), sdk.NewAttribute("deadline", strconv.FormatUint(stakedUser.Deadline.Num, 10)), sdk.NewAttribute("stake", stakedUser.Stake.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(deadline.Num, 10))}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_schedule", eventAttributes...))
+			details := map[string]string{"user": unstakingUser, "deadline": strconv.FormatUint(stakedUser.Deadline.Num, 10), "stake": stakedUser.Stake.String(), "requestedDeadline": strconv.FormatUint(deadline.Num, 10)}
+			utils.LogLavaEvent(ctx, logger, "lava_user_unstake_schedule", details, "Scheduling Unstaking for User")
 			break
 		}
 	}

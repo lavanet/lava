@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/servicer/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 )
@@ -120,9 +121,8 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
 			}
 
-			logger.Info(fmt.Sprintf("New Proof Of Work Was Accepted:\nBlock:%d, for claim on block %d\nUser: %s Burn:%s total CU in session(All Serv):%d \nServicer:%s Work Mint: %s CU:%d as overlap: %t", ctx.BlockHeight(), relay.BlockHeight, clientAddr, amountToBurnClient, totalCUInSessionForUser, servicerAddr, rewardCoins, relay.CuSum, isOverlap))
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("client", clientAddr.String()), sdk.NewAttribute("servicer", servicerAddr.String()), sdk.NewAttribute("CU", strconv.FormatUint(relay.CuSum, 10)), sdk.NewAttribute("Mint", rewardCoins.String())}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_relay_payment", eventAttributes...))
+			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInSession": string(totalCUInSessionForUser), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+			utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 		}
 	}
 

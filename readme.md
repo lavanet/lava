@@ -4,7 +4,7 @@
 ## Get started
 
 * install starport on your computer from the starport repository: https://docs.starport.com/guide/install.html
-* install Go Version 1.16 or newer, follow the go installation instructions: https://go.dev/doc/install
+* install Go Version 1.18 , follow the go installation instructions: https://go.dev/doc/install
 * make sure you set your go environment properly: https://go.dev/doc/gopath_code#GOPATH
 * checkout the repository, you might need a personal token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
 
@@ -41,15 +41,6 @@ git push origin v0.1
 ```
 
 After a draft release is created, make your final changes from the release page and publish it.
-
-### Install
-To install the latest version of your blockchain node's binary, execute the following command on your machine:
-
-```
-curl https://get.starport.com/lavanet/lava@latest! | sudo bash
-```
-`lavanet/lava` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
-
 ## Learn more
 
 - [Starport](https://starport.com)
@@ -57,3 +48,11 @@ curl https://get.starport.com/lavanet/lava@latest! | sudo bash
 - [Starport docs](https://docs.starport.com)
 - [Cosmos SDK docs](https://docs.cosmos.network)
 - [Developer Chat](https://discord.gg/H6wGTY8sxw)
+
+# running the chain
+* during dev your chain is running locally with a single validator
+* when compiling a binary called: "lavad", is created by starport on your $GOPATH (and if you configured go environment properly,
+    it should be ~/go/bin/lavad)
+* you can interact with the binary to send transactions and queries
+* ./init_chain_commands.sh has examples on how to set up an initial chain with 5 servicers and 1 user,
+    for basic testing of pairing on ethereum mainnet, you can run it or have a look at the commands to learn more

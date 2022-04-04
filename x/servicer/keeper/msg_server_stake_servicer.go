@@ -7,12 +7,13 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/servicer/types"
 )
 
 func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServicer) (*types.MsgStakeServicerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	logger := k.Logger(ctx)
 	specName := msg.Spec
 	err := specName.ValidateBasic() //TODO: basic validation, we dont want to read the entire spec list here
 	if err != nil {
@@ -84,8 +85,8 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 					storageMap.Deadline = blockDeadline
 					storageMap.OperatorAddresses = msg.OperatorAddresses
 					entryExists = true
-					eventAttributes := []sdk.Attribute{sdk.NewAttribute("servicer", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
-					ctx.EventManager().EmitEvent(sdk.NewEvent("lava_servicer_stake_update", eventAttributes...))
+					details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+					utils.LogLavaEvent(ctx, logger, "servicer_stake_update", details, "Changing Staked Servicer")
 					break
 				}
 				return nil, errors.New("can't increase deadline for existing servicer")
@@ -111,8 +112,9 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 			Deadline:          blockDeadline,
 			OperatorAddresses: msg.OperatorAddresses,
 		})
-		eventAttributes := []sdk.Attribute{sdk.NewAttribute("servicer", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
-		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_servicer_stake_new", eventAttributes...))
+
+		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		utils.LogLavaEvent(ctx, logger, "servicer_stake_new", details, "Adding Staked Servicer")
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 	return &types.MsgStakeServicerResponse{}, nil

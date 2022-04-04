@@ -7,12 +7,14 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/user/types"
 )
 
 func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*types.MsgStakeUserResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	logger := k.Keeper.Logger(ctx)
 	specName := msg.Spec
 	err := specName.ValidateBasic() //TODO: basic validation, we dont want to read the entire spec list here
 	if err != nil {
@@ -76,8 +78,9 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 					userStake.Stake = msg.Amount
 					userStake.Deadline = blockDeadline
 					entryExists = true
-					eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
-					ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_stake_update", eventAttributes...))
+					details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+					utils.LogLavaEvent(ctx, logger, "user_stake_update", details, "Existing Staked User modified")
+
 					break
 				}
 				return nil, errors.New("can't increase deadline for existing User")
@@ -103,8 +106,8 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 			Stake:    msg.Amount,
 			Deadline: blockDeadline,
 		})
-		eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", senderAddr.String()), sdk.NewAttribute("deadline", strconv.FormatUint(blockDeadline.Num, 10)), sdk.NewAttribute("stake", msg.Amount.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
-		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_stake_new", eventAttributes...))
+		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		utils.LogLavaEvent(ctx, logger, "user_stake_new", details, "Adding Staked User")
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 	_ = ctx

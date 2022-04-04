@@ -5,6 +5,7 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/user/types"
 	"github.com/rs/zerolog/log"
 )
@@ -26,6 +27,7 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 }
 
 func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadline uint64) error {
+	logger := k.Logger(ctx)
 	unstakingUsers := k.GetAllUnstakingUsersAllSpecs(ctx)
 	minDeadaline := uint64(math.MaxUint64)
 	indexesForDelete := make([]uint64, 0)
@@ -62,8 +64,10 @@ func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadl
 			if !valid {
 				panic(fmt.Sprintf("error unstaking : %s", err))
 			}
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", receiverAddr.String()), sdk.NewAttribute("stake", unstakingEntry.Unstaking.Stake.String())}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_commit", eventAttributes...))
+
+			details := map[string]string{"user": receiverAddr.String(), "stake": unstakingEntry.Unstaking.Stake.String()}
+			utils.LogLavaEvent(ctx, logger, "user_unstake_commit", details, "Unstaking User Commit")
+
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
 			entryDeadline := unstakingEntry.Unstaking.Deadline.Num

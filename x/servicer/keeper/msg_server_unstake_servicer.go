@@ -7,12 +7,13 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/servicer/types"
 )
 
 func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeServicer) (*types.MsgUnstakeServicerResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	logger := k.Logger(ctx)
 	specName := msg.Spec
 	err := specName.ValidateBasic() //TODO: basic validation, we dont want to read the entire spec list here
 	if err != nil {
@@ -71,8 +72,9 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 			stakeStorage.Staked[idx] = stakeStorage.Staked[len(stakeStorage.Staked)-1] // replace the element at delete index with the last one
 			stakeStorage.Staked = stakeStorage.Staked[:len(stakeStorage.Staked)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("servicer", msg.Creator), sdk.NewAttribute("deadline", strconv.FormatUint(storageMap.Deadline.Num, 10)), sdk.NewAttribute("stake", storageMap.Stake.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(msg.Deadline.Num, 10))}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_servicer_unstake_schedule", eventAttributes...))
+
+			details := map[string]string{"servicer": msg.Creator, "deadline": strconv.FormatUint(storageMap.Deadline.Num, 10), "stake": storageMap.Stake.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			utils.LogLavaEvent(ctx, logger, "servicer_unstake_schedule", details, "Unstaking Servicer Entry")
 			break
 		}
 	}
