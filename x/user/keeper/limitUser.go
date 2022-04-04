@@ -45,12 +45,13 @@ func (k Keeper) LimitUserPairingsAndMarkForPenalty(ctx sdk.Context, userStake *t
 
 func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingUser string, deadline types.BlockNum) error {
 	specStakeStorage, found := k.GetSpecStakeStorage(ctx, specName.Name)
+	logger := k.Logger(ctx)
 	if !found {
 		// the spec storage is empty
-		return fmt.Errorf("can't unstake empty specStakeStorage for spec name: %s", specName.Name)
+		details := map[string]string{"spec": specName.Name}
+		return utils.LavaError(ctx, logger, "user_unstake_spec", details, "can't unstake empty specStakeStorage for spec name")
 	}
 	stakeStorage := specStakeStorage.StakeStorage
-	logger := k.Logger(ctx)
 	found_staked_entry := false
 	//TODO: improve the finding logic and the way Staked is saved looping a list is slow and bad
 	for idx, stakedUser := range stakeStorage.StakedUsers {
@@ -97,7 +98,8 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 		}
 	}
 	if !found_staked_entry {
-		return fmt.Errorf("can't unstake User, stake entry not found for address: %s", unstakingUser)
+		details := map[string]string{"user": unstakingUser}
+		return utils.LavaError(ctx, logger, "user_unstake_entry", details, "can't unstake User, stake entry not found for address")
 	}
 	k.SetSpecStakeStorage(ctx, specStakeStorage)
 	return nil

@@ -2,8 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,13 +15,13 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 	specName := msg.Spec
 	err := specName.ValidateBasic() //TODO: basic validation, we dont want to read the entire spec list here
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaError(ctx, logger, "unstake_servicer_spec", map[string]string{"spec": "specName.Name"}, "spec name isnt valid")
 	}
 
 	// we can unstake disabled specs, but not missing ones
 	_, found, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, specName.Name)
 	if !found {
-		return nil, errors.New("spec not found, can't unstake")
+		return nil, utils.LavaError(ctx, logger, "unstake_servicer_spec", map[string]string{"spec": "specName.Name"}, "spec not found")
 	}
 	// receiverAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	// if err != nil {
@@ -32,7 +30,7 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 	specStakeStorage, found := k.Keeper.GetSpecStakeStorage(ctx, specName.Name)
 	if !found {
 		// the spec storage is empty
-		return nil, fmt.Errorf("can't unstake empty specStakeStorage for spec name: %s", specName.Name)
+		return nil, utils.LavaError(ctx, logger, "unstake_servicer_spec", map[string]string{"spec": "specName.Name"}, "can't unstake empty spec")
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	found_staked_entry := false
@@ -62,6 +60,7 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 			k.Keeper.AppendUnstakingServicersAllSpecs(ctx, unstakingServicerAllSpecs)
 			currentDeadline, found := k.GetBlockDeadlineForCallback(ctx)
 			if !found {
+				utils.LavaError(ctx, logger, "unstake_servicer", map[string]string{"error": "GetBlockDeadlineForCallback"}, "GetBlockDeadlineForCallback Error")
 				panic("didn't find single variable BlockDeadlineForCallback")
 			}
 			if currentDeadline.Deadline.Num == 0 || currentDeadline.Deadline.Num > storageMap.Deadline.Num {
@@ -79,7 +78,8 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 		}
 	}
 	if !found_staked_entry {
-		return nil, fmt.Errorf("can't unstake servicer, stake entry not found for address: %s", msg.Creator)
+		details := map[string]string{"servicer": msg.Creator}
+		return nil, utils.LavaError(ctx, logger, "unstake_servicer", details, "can't unstake servicer, stake entry not found for address")
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 

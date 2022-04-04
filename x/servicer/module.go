@@ -177,7 +177,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	logger := am.keeper.Logger(ctx)
 	logOnErr := func(err error, failingFunc string) {
 		if err != nil {
-			logger.Error("EndBlock Func %s, Err: %s", failingFunc, err)
+			attrs := map[string]string{"Error:": err.Error()}
+			utils.LavaError(ctx, logger, "new_session", attrs, failingFunc)
 		}
 	}
 	if am.keeper.IsSessionStart(ctx) {
