@@ -27,12 +27,12 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 	}
 	//if we get here, the spec is active and supported
 	if msg.Amount.IsLT(k.Keeper.GetMinStake(ctx)) {
-		details := map[string]string{"user": msg.Creator, "stake": msg.Amount.String(), "minStake": k.Keeper.GetMinStake(ctx).String()}
+		details := map[string]string{"spec": specName.Name, "user": msg.Creator, "stake": msg.Amount.String(), "minStake": k.Keeper.GetMinStake(ctx).String()}
 		return nil, utils.LavaError(ctx, logger, "stake_user_amount", details, "invalid user address")
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		details := map[string]string{"user": msg.Creator, "error": err.Error()}
+		details := map[string]string{"spec": specName.Name, "user": msg.Creator, "error": err.Error()}
 		return nil, utils.LavaError(ctx, logger, "stake_user_addr", details, "invalid user address")
 	}
 	//define the function here for later use
@@ -69,7 +69,7 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 	for _, userStake := range stakeStorage.StakedUsers {
 		if userStake.Index == msg.Creator {
 			// already exists
-			details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			details := map[string]string{"spec": specName.Name, "user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 			if userStake.Stake.IsLT(msg.Amount) {
 				// increasing stake is allowed
 				if userStake.Deadline.Num >= blockDeadline {
@@ -77,8 +77,8 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(userStake.Stake))
 					if !valid {
 						details["error"] = err.Error()
-						details["needed_stake"] = msg.Amount.Sub(userStake.Stake).String()
-						return nil, utils.LavaError(ctx, logger, "stake_user_amount", details, "insufficient funds to pay for difference in stake")
+						details["neededStake"] = msg.Amount.Sub(userStake.Stake).String()
+						return nil, utils.LavaError(ctx, logger, "stake_user_modify_amount", details, "insufficient funds to pay for difference in stake")
 					}
 					userStake.Stake = msg.Amount
 					userStake.Deadline = types.BlockNum{Num: blockDeadline}
@@ -89,6 +89,7 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 				}
 				return nil, utils.LavaError(ctx, logger, "stake_user_deadline", details, "can't increase deadline for existing user")
 			}
+			details["existingStake"] = userStake.Stake.String()
 			return nil, utils.LavaError(ctx, logger, "stake_user_stake", details, "can't decrease stake for existing User")
 		}
 	}
@@ -99,12 +100,12 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 		if blockDeadline <= uint64(ctx.BlockHeight())+1 {
 			blockDeadline = uint64(ctx.BlockHeight()) + 1
 		}
-		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		details := map[string]string{"spec": specName.Name, "user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			details["error"] = err.Error()
-			return nil, utils.LavaError(ctx, logger, "stake_user_amount", details, "insufficient amount to pay for stake")
+			return nil, utils.LavaError(ctx, logger, "stake_user_new_amount", details, "insufficient amount to pay for stake")
 		}
 
 		stakeStorage.StakedUsers = append(stakeStorage.StakedUsers, types.UserStake{

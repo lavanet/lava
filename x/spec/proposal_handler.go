@@ -68,7 +68,7 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
-		details := map[string]string{"specName": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
+		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
 		//
 		// Verify 'name' is unique
 		existingSpecs := k.GetAllSpec(ctx)
@@ -91,7 +91,7 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
 
-		details := map[string]string{"specName": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
+		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
 		//
 		// Find by name
 		existingSpecs := k.GetAllSpec(ctx)

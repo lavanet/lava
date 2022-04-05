@@ -60,7 +60,7 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 			k.Keeper.AppendUnstakingServicersAllSpecs(ctx, unstakingServicerAllSpecs)
 			currentDeadline, found := k.GetBlockDeadlineForCallback(ctx)
 			if !found {
-				utils.LavaError(ctx, logger, "unstake_servicer", map[string]string{"error": "GetBlockDeadlineForCallback"}, "GetBlockDeadlineForCallback Error")
+				utils.LavaError(ctx, logger, "unstake_servicer_storage", map[string]string{"error": "GetBlockDeadlineForCallback"}, "GetBlockDeadlineForCallback Error")
 				panic("didn't find single variable BlockDeadlineForCallback")
 			}
 			if currentDeadline.Deadline.Num == 0 || currentDeadline.Deadline.Num > storageMap.Deadline.Num {
@@ -72,14 +72,14 @@ func (k msgServer) UnstakeServicer(goCtx context.Context, msg *types.MsgUnstakeS
 			stakeStorage.Staked = stakeStorage.Staked[:len(stakeStorage.Staked)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
 
-			details := map[string]string{"servicer": msg.Creator, "deadline": strconv.FormatUint(storageMap.Deadline.Num, 10), "stake": storageMap.Stake.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			details := map[string]string{"spec": specName.Name, "servicer": msg.Creator, "deadline": strconv.FormatUint(storageMap.Deadline.Num, 10), "stake": storageMap.Stake.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 			utils.LogLavaEvent(ctx, logger, "servicer_unstake_schedule", details, "Unstaking Servicer Entry")
 			break
 		}
 	}
 	if !found_staked_entry {
-		details := map[string]string{"servicer": msg.Creator}
-		return nil, utils.LavaError(ctx, logger, "unstake_servicer", details, "can't unstake servicer, stake entry not found for address")
+		details := map[string]string{"servicer": msg.Creator, "spec": specName.Name}
+		return nil, utils.LavaError(ctx, logger, "unstake_servicer_entry", details, "can't unstake servicer, stake entry not found for address")
 	}
 	k.Keeper.SetSpecStakeStorage(ctx, specStakeStorage)
 

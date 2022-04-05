@@ -92,13 +92,13 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 			stakeStorage.StakedUsers = stakeStorage.StakedUsers[:len(stakeStorage.StakedUsers)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
 
-			details := map[string]string{"user": unstakingUser, "deadline": strconv.FormatUint(stakedUser.Deadline.Num, 10), "stake": stakedUser.Stake.String(), "requestedDeadline": strconv.FormatUint(deadline.Num, 10)}
+			details := map[string]string{"spec": specName.Name, "user": unstakingUser, "deadline": strconv.FormatUint(stakedUser.Deadline.Num, 10), "stake": stakedUser.Stake.String(), "requestedDeadline": strconv.FormatUint(deadline.Num, 10)}
 			utils.LogLavaEvent(ctx, logger, "lava_user_unstake_schedule", details, "Scheduling Unstaking for User")
 			break
 		}
 	}
 	if !found_staked_entry {
-		details := map[string]string{"user": unstakingUser}
+		details := map[string]string{"user": unstakingUser, "spec": specName.Name}
 		return utils.LavaError(ctx, logger, "user_unstake_entry", details, "can't unstake User, stake entry not found for address")
 	}
 	k.SetSpecStakeStorage(ctx, specStakeStorage)

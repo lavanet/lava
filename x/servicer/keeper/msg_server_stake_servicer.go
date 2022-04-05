@@ -26,8 +26,8 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 	//if we get here, the spec is active and supported
 	if msg.Amount.IsLT(k.Keeper.GetMinStake(ctx)) {
-		details := map[string]string{"servicer": msg.Creator, "stake": msg.Amount.String(), "minStake": k.Keeper.GetMinStake(ctx).String()}
-		return nil, utils.LavaError(ctx, logger, "stake_servicer_amount", details, "invalid servicer address")
+		details := map[string]string{"spec": specName.Name, "servicer": msg.Creator, "stake": msg.Amount.String(), "minStake": k.Keeper.GetMinStake(ctx).String()}
+		return nil, utils.LavaError(ctx, logger, "stake_servicer_amount", details, "insufficient servicer stake amount")
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -76,7 +76,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	for _, storageMap := range stakeStorage.Staked {
 		if storageMap.Index == msg.Creator {
 			// already exists
-			details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			details := map[string]string{"spec": specName.Name, "servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 			if storageMap.Stake.IsLT(msg.Amount) {
 				// increasing stake is allowed
 				if storageMap.Deadline.Num >= blockDeadline {
@@ -84,8 +84,8 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(storageMap.Stake))
 					if !valid {
 						details["error"] = err.Error()
-						details["needed_stake"] = msg.Amount.Sub(storageMap.Stake).String()
-						return nil, utils.LavaError(ctx, logger, "stake_servicer_amount", details, "insufficient funds to pay for difference in stake")
+						details["neededStake"] = msg.Amount.Sub(storageMap.Stake).String()
+						return nil, utils.LavaError(ctx, logger, "stake_servicer_update_amount", details, "insufficient funds to pay for difference in stake")
 					}
 					storageMap.Stake = msg.Amount
 					storageMap.Deadline = &types.BlockNum{Num: blockDeadline}
@@ -98,6 +98,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 
 				return nil, utils.LavaError(ctx, logger, "stake_servicer_deadline", details, "can't increase deadline for existing servicer")
 			}
+			details["existingStake"] = storageMap.Stake.String()
 			return nil, utils.LavaError(ctx, logger, "stake_servicer_stake", details, "can't decrease stake for existing servicer")
 		}
 	}
@@ -111,7 +112,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			details["error"] = err.Error()
-			return nil, utils.LavaError(ctx, logger, "stake_servicer_amount", details, "insufficient amount to pay for stake")
+			return nil, utils.LavaError(ctx, logger, "stake_servicer_new_amount", details, "insufficient amount to pay for stake")
 		}
 
 		stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{
