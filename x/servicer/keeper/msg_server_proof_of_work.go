@@ -80,7 +80,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 		err = k.userKeeper.EnforceUserCUsUsageInSession(ctx, userStake, totalCUInSessionForUser)
 		if err != nil {
 			//TODO: maybe give servicer money but burn user, colluding?
-			details := map[string]string{"session": strconv.FormatUint(sessionStart.Num, 10), "client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInSession": string(totalCUInSessionForUser)}
+			details := map[string]string{"session": strconv.FormatUint(sessionStart.Num, 10), "client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInSession": strconv.FormatUint(totalCUInSessionForUser, 10)}
 			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
 		}
 		//
@@ -94,7 +94,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			reward := sdk.NewIntFromUint64(uintReward)
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
 
-			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInSession": string(totalCUInSessionForUser), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInSession": strconv.FormatUint(totalCUInSessionForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the servicer
 			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
 			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))

@@ -64,15 +64,15 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	entryExists := false
-	blockDeadline := msg.Deadline
+	blockDeadline := msg.Deadline.Num
 	//TODO: improve the finding logic and the way its saved looping a list is slow and bad
 	for _, userStake := range stakeStorage.StakedUsers {
 		if userStake.Index == msg.Creator {
 			// already exists
-			details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 			if userStake.Stake.IsLT(msg.Amount) {
 				// increasing stake is allowed
-				if userStake.Deadline.Num >= blockDeadline.Num {
+				if userStake.Deadline.Num >= blockDeadline {
 					//lowering the deadline is allowed
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(userStake.Stake))
 					if !valid {
@@ -81,7 +81,7 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 						return nil, utils.LavaError(ctx, logger, "stake_user_amount", details, "insufficient funds to pay for difference in stake")
 					}
 					userStake.Stake = msg.Amount
-					userStake.Deadline = blockDeadline
+					userStake.Deadline = types.BlockNum{Num: blockDeadline}
 					entryExists = true
 					utils.LogLavaEvent(ctx, logger, "user_stake_update", details, "Existing Staked User modified")
 
@@ -96,10 +96,10 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 		// User isn't staked so add him
 
 		// staking takes effect from the next block
-		if blockDeadline.Num <= uint64(ctx.BlockHeight())+1 {
-			blockDeadline.Num = uint64(ctx.BlockHeight()) + 1
+		if blockDeadline <= uint64(ctx.BlockHeight())+1 {
+			blockDeadline = uint64(ctx.BlockHeight()) + 1
 		}
-		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
@@ -110,7 +110,7 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 		stakeStorage.StakedUsers = append(stakeStorage.StakedUsers, types.UserStake{
 			Index:    msg.Creator,
 			Stake:    msg.Amount,
-			Deadline: blockDeadline,
+			Deadline: types.BlockNum{Num: blockDeadline},
 		})
 		utils.LogLavaEvent(ctx, logger, "user_stake_new", details, "Adding Staked User")
 	}

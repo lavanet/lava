@@ -70,16 +70,16 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	entryExists := false
-	blockDeadline := msg.Deadline
+	blockDeadline := msg.Deadline.Num
 
 	//TODO: improve the finding logic and the way its saved looping a list is slow and bad
 	for _, storageMap := range stakeStorage.Staked {
 		if storageMap.Index == msg.Creator {
 			// already exists
-			details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+			details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 			if storageMap.Stake.IsLT(msg.Amount) {
 				// increasing stake is allowed
-				if storageMap.Deadline.Num >= blockDeadline.Num {
+				if storageMap.Deadline.Num >= blockDeadline {
 					//lowering the deadline is allowed
 					valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount.Sub(storageMap.Stake))
 					if !valid {
@@ -88,7 +88,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 						return nil, utils.LavaError(ctx, logger, "stake_servicer_amount", details, "insufficient funds to pay for difference in stake")
 					}
 					storageMap.Stake = msg.Amount
-					storageMap.Deadline = blockDeadline
+					storageMap.Deadline = &types.BlockNum{Num: blockDeadline}
 					storageMap.OperatorAddresses = msg.OperatorAddresses
 					entryExists = true
 
@@ -104,10 +104,10 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	if !entryExists {
 		// servicer isn't staked so add him
 		// new staking takes effect from the next block
-		if blockDeadline.Num <= uint64(ctx.BlockHeight())+1 {
-			blockDeadline.Num = uint64(ctx.BlockHeight()) + 1
+		if blockDeadline <= uint64(ctx.BlockHeight())+1 {
+			blockDeadline = uint64(ctx.BlockHeight()) + 1
 		}
-		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			details["error"] = err.Error()
@@ -117,7 +117,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		stakeStorage.Staked = append(stakeStorage.Staked, types.StakeMap{
 			Index:             msg.Creator,
 			Stake:             msg.Amount,
-			Deadline:          blockDeadline,
+			Deadline:          &types.BlockNum{Num: blockDeadline},
 			OperatorAddresses: msg.OperatorAddresses,
 		})
 
