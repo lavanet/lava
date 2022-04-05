@@ -108,7 +108,7 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 		if blockDeadline <= uint64(ctx.BlockHeight())+1 {
 			blockDeadline = uint64(ctx.BlockHeight()) + 1
 		}
-		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
+		details := map[string]string{"spec": specName.Name, "servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			details["error"] = err.Error()
