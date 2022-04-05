@@ -94,12 +94,12 @@ func (k msgServer) StakeUser(goCtx context.Context, msg *types.MsgStakeUser) (*t
 	}
 	if !entryExists {
 		// User isn't staked so add him
-		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 
 		// staking takes effect from the next block
 		if blockDeadline.Num <= uint64(ctx.BlockHeight())+1 {
 			blockDeadline.Num = uint64(ctx.BlockHeight()) + 1
 		}
+		details := map[string]string{"user": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {

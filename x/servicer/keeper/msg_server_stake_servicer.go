@@ -103,11 +103,11 @@ func (k msgServer) StakeServicer(goCtx context.Context, msg *types.MsgStakeServi
 	}
 	if !entryExists {
 		// servicer isn't staked so add him
-		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 		// new staking takes effect from the next block
 		if blockDeadline.Num <= uint64(ctx.BlockHeight())+1 {
 			blockDeadline.Num = uint64(ctx.BlockHeight()) + 1
 		}
+		details := map[string]string{"servicer": senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline.Num, 10), "stake": msg.Amount.String(), "requestedDeadline": strconv.FormatUint(msg.Deadline.Num, 10)}
 		valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, msg.Amount)
 		if !valid {
 			details["error"] = err.Error()
