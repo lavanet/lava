@@ -3,8 +3,10 @@ package keeper
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/user/types"
 	"github.com/rs/zerolog/log"
 )
@@ -26,8 +28,9 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 }
 
 func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadline uint64) error {
+	logger := k.Logger(ctx)
 	unstakingUsers := k.GetAllUnstakingUsersAllSpecs(ctx)
-	minDeadaline := uint64(math.MaxUint64)
+	minDeadline := uint64(math.MaxUint64)
 	indexesForDelete := make([]uint64, 0)
 	//handlng an entry needs a few things done:
 	//A2. remove the entry from UnstakingUsersAllSpecs
@@ -59,16 +62,18 @@ func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadl
 
 			//A3. transfer stake money to the User account
 			valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Unstaking.Stake)
+			details := map[string]string{"spec": unstakingEntry.SpecStakeStorage.Index, "user": receiverAddr.String(), "stake": unstakingEntry.Unstaking.Stake.String()}
 			if !valid {
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "user_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
 				panic(fmt.Sprintf("error unstaking : %s", err))
 			}
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", receiverAddr.String()), sdk.NewAttribute("stake", unstakingEntry.Unstaking.Stake.String())}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_commit", eventAttributes...))
+			utils.LogLavaEvent(ctx, logger, "user_unstake_commit", details, "Unstaking User Commit")
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
 			entryDeadline := unstakingEntry.Unstaking.Deadline.Num
-			if entryDeadline < minDeadaline {
-				minDeadaline = entryDeadline
+			if entryDeadline < minDeadline {
+				minDeadline = entryDeadline
 			}
 		}
 	}
@@ -85,10 +90,12 @@ func (k Keeper) creditUnstakingUsersAndRemoveFromCallback(ctx sdk.Context, deadl
 	} else {
 		// still some deadlines to go over, so set the closest one
 		// and check sanity that deadlines are in the future
-		if minDeadaline < uint64(ctx.BlockHeight()) || minDeadaline == uint64(math.MaxUint64) {
-			panic(fmt.Sprintf("trying to set invalid next deadline! %d block height: %d unstaking count: %d, deleted indexes: %d \n unstaking Users: %s, length: %d\n", minDeadaline, uint64(ctx.BlockHeight()), k.GetUnstakingUsersAllSpecsCount(ctx), len(indexesForDelete), k.GetAllUnstakingUsersAllSpecs(ctx), len(k.GetAllUnstakingUsersAllSpecs(ctx))))
+		if minDeadline < uint64(ctx.BlockHeight()) || minDeadline == uint64(math.MaxUint64) {
+			details := map[string]string{"minDeadline": strconv.FormatUint(minDeadline, 10), "height": strconv.FormatInt(ctx.BlockHeight(), 10), "unstakingCount": strconv.FormatUint(k.GetUnstakingUsersAllSpecsCount(ctx), 10), "deletedIndexes": strconv.FormatInt(int64(len(indexesForDelete)), 10)}
+			utils.LavaError(ctx, logger, "user_unstaking_deadline", details, "trying to set invalid next deadline! ")
+			panic(fmt.Sprintf("PANIC minDeadline: %s \n unstaking Users: %s, length: %d\n", details, k.GetAllUnstakingUsersAllSpecs(ctx), len(k.GetAllUnstakingUsersAllSpecs(ctx))))
 		}
-		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: minDeadaline}})
+		k.SetBlockDeadlineForCallback(ctx, types.BlockDeadlineForCallback{Deadline: types.BlockNum{Num: minDeadline}})
 	}
 	return nil
 }

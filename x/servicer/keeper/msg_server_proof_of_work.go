@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/servicer/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 )
@@ -19,33 +20,32 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 	if err != nil {
 		return nil, err
 	}
-	errorLogAndFormat := func(errorMsg string) (*types.MsgProofOfWorkResponse, error) {
-		logger.Error(errorMsg)
-		return nil, fmt.Errorf(errorMsg)
+	errorLogAndFormat := func(name string, attrs map[string]string, details string) (*types.MsgProofOfWorkResponse, error) {
+		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
 	for _, relay := range msg.Relays {
 
 		pubKey, err := sigs.RecoverPubKeyFromRelay(relay)
 		if err != nil {
-			return errorLogAndFormat("error on proof of work, bad sig")
+			return errorLogAndFormat("relay_proof_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
 		clientAddr, err := sdk.AccAddressFromHex(pubKey.Address().String())
 		if err != nil {
-			return errorLogAndFormat("error on proof of work, bad user address")
+			return errorLogAndFormat("relay_proof_user_addr", map[string]string{"user": pubKey.Address().String()}, "invalid user address in relay msg")
 		}
 		servicerAddr, err := sdk.AccAddressFromBech32(relay.Servicer)
 		if err != nil {
-			return errorLogAndFormat(fmt.Sprintf("invalid servicerAddr: %s", relay.Servicer))
+			return errorLogAndFormat("relay_proof_addr", map[string]string{"servicer": relay.Servicer, "creator": msg.Creator}, "invalid servicer address in relay msg")
 		}
 		if !servicerAddr.Equals(creator) {
-			return errorLogAndFormat(fmt.Sprintf("error on proof of work, servicerAddr != creator"))
+			return errorLogAndFormat("relay_proof_addr", map[string]string{"servicer": relay.Servicer, "creator": msg.Creator}, "invalid servicer address in relay msg, creator and signed servicer mismatch")
 		}
 
 		//
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecIDFoundAndActive(ctx, uint64(relay.SpecId))
 		if !ok {
-			return errorLogAndFormat(fmt.Sprintf("error on proof of work, spec specified: %d is inactive", relay.SpecId))
+			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.SpecId)}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
@@ -58,12 +58,14 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			},
 		)
 		if err != nil {
-			return errorLogAndFormat(fmt.Sprintf("error on pairing for addresses : %s and %s, block %d, err: %s", clientAddr, servicerAddr, relay.BlockHeight, err))
+			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error()}
+			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing on proof of relay")
 		}
 
 		sessionStart, overlapSessionStart, err := k.GetSessionStartForBlock(ctx, types.BlockNum{Num: uint64(relay.BlockHeight)})
 		if err != nil {
-			return errorLogAndFormat(fmt.Sprintf("error on proof of work, could not get session start for: %d err: %s", relay.BlockHeight, err))
+			details := map[string]string{"height": strconv.FormatInt(relay.BlockHeight, 10), "error": err.Error()}
+			return errorLogAndFormat("relay_proof_session", details, "invalid session start for block")
 		}
 		if isOverlap {
 			sessionStart = overlapSessionStart
@@ -72,11 +74,14 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 		totalCUInSessionForUser, err := k.Keeper.AddSessionPayment(ctx, *sessionStart, clientAddr, servicerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
-			return errorLogAndFormat(fmt.Sprintf("double spending detected: %s", err))
+			details := map[string]string{"session": strconv.FormatUint(sessionStart.Num, 10), "client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
+			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
 		err = k.userKeeper.EnforceUserCUsUsageInSession(ctx, userStake, totalCUInSessionForUser)
 		if err != nil {
-			return errorLogAndFormat(fmt.Sprintf("User Enforce CU limit Error: %s", err))
+			//TODO: maybe give servicer money but burn user, colluding?
+			details := map[string]string{"session": strconv.FormatUint(sessionStart.Num, 10), "client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInSession": strconv.FormatUint(totalCUInSessionForUser, 10)}
+			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
 		}
 		//
 		if isValidPairing {
@@ -89,40 +94,49 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			reward := sdk.NewIntFromUint64(uintReward)
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
 
+			details := map[string]string{"chainID": fmt.Sprintf("%d", relay.SpecId), "client": clientAddr.String(), "servicer": servicerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInSession": strconv.FormatUint(totalCUInSessionForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the servicer
 			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
 			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
 			spec, found := k.specKeeper.GetSpec(ctx, uint64(relay.SpecId))
 			if !found {
+				details["chainID"] = strconv.FormatUint(uint64(relay.SpecId), 10)
+				errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %d", relay.SpecId))
 			}
 			burnAmount := sdk.Coin{Amount: amountToBurnClient, Denom: "stake"}
 			burnSucceeded, err2 := k.userKeeper.BurnUserStake(ctx, usertypes.SpecName{Name: spec.Name}, clientAddr, burnAmount, false)
 			if err2 != nil {
-				return errorLogAndFormat(fmt.Sprintf("BurnUserStake failed on user %s, amount to burn: %s, error: %s", clientAddr, burnAmount, err2))
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = err2.Error()
+				return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user")
 			}
 			if !burnSucceeded {
-				return errorLogAndFormat(fmt.Sprintf("BurnUserStake failed on user %s, did not find user, or insufficient funds: %s ", clientAddr, burnAmount))
+				details["amountToBurn"] = burnAmount.String()
+				details["error"] = "insufficient funds or didn't find user"
+				return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
 			}
 
 			//
 			// Mint to module
 			err := k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
 			if err != nil {
-				logger.Error("MintCoins", "err", err)
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
 				panic(fmt.Sprintf("module failed to mint coins to give to servicer: %s", err))
 			}
 			//
 			// Send to servicer
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, servicerAddr, rewardCoins)
 			if err != nil {
-				logger.Error("SendCoinsFromModuleToAccount", "err", err, "servicerAddr", servicerAddr)
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
 				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
 			}
-
-			logger.Info(fmt.Sprintf("New Proof Of Work Was Accepted:\nBlock:%d, for claim on block %d\nUser: %s Burn:%s total CU in session(All Serv):%d \nServicer:%s Work Mint: %s CU:%d as overlap: %t", ctx.BlockHeight(), relay.BlockHeight, clientAddr, amountToBurnClient, totalCUInSessionForUser, servicerAddr, rewardCoins, relay.CuSum, isOverlap))
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("client", clientAddr.String()), sdk.NewAttribute("servicer", servicerAddr.String()), sdk.NewAttribute("CU", strconv.FormatUint(relay.CuSum, 10)), sdk.NewAttribute("Mint", rewardCoins.String())}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_relay_payment", eventAttributes...))
+			utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
+		} else {
+			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "error": "pairing result doesn't include servicer"}
+			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing claim on proof of relay")
 		}
 	}
 

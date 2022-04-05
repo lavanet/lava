@@ -8,3 +8,6 @@ lavad tx servicer stake-servicer "Ethereum Mainnet" 2000stake 0 "127.0.0.1:2223"
 lavad tx servicer stake-servicer "Ethereum Mainnet" 2000stake 0 "127.0.0.1:2224" -y --from servicer4
 lavad tx servicer stake-servicer "Ethereum Mainnet" 2000stake 0 "127.0.0.1:2225" -y --from servicer5
 lavad tx user stake-user "Ethereum Mainnet" 2000stake 0 -y --from user1
+echo "---------------Queries------------------"
+lavad query servicer staked-servicers "Ethereum Mainnet"
+lavad query user staked-users "Ethereum Mainnet"

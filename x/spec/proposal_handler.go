@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
@@ -10,6 +9,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 )
@@ -34,17 +34,14 @@ func handleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 		if !ok {
 			return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, c.Subspace)
 		}
-
-		k.Logger(ctx).Info(
-			fmt.Sprintf("attempt to set new parameter value; key: %s, value: %s", c.Key, c.Value),
-		)
-
+		logger := k.Logger(ctx)
+		details := map[string]string{"param": c.Key, "value": c.Value}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
-			return sdkerrors.Wrapf(paramproposal.ErrSettingParameter, "key: %s, value: %s, err: %s", c.Key, c.Value, err.Error())
+			details["error"] = err.Error()
+			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
 		}
 		//TODO: set param change callbacks here
-		eventAttributes := []sdk.Attribute{sdk.NewAttribute("param", c.Key), sdk.NewAttribute("value", c.Value)}
-		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_param_change", eventAttributes...))
+		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")
 	}
 
 	return nil
@@ -69,32 +66,32 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 }
 
 func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
+	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
-
+		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
 		//
 		// Verify 'name' is unique
 		existingSpecs := k.GetAllSpec(ctx)
 		for _, existingSpec := range existingSpecs {
 			if existingSpec.Name == spec.Name {
-				return sdkerrors.Wrapf(types.ErrDuplicateSpecName, "found duplicate spec name; name: %s", spec.Name)
+				return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
 			}
 		}
-		k.Logger(ctx).Info(
-			fmt.Sprintf("attempt to add new spec; name: %s", spec.Name),
-		)
+
 		k.AppendSpec(ctx, spec)
 		//TODO: add api types once its implemented to the event
-		eventAttributes := []sdk.Attribute{sdk.NewAttribute("specName", spec.Name), sdk.NewAttribute("status", spec.Status),
-			sdk.NewAttribute("chainID", strconv.FormatUint(spec.Id, 10))}
-		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_spec_add", eventAttributes...))
+
+		utils.LogLavaEvent(ctx, logger, "spec_add", details, "Gov Proposal Accepted Spec Added")
 	}
 
 	return nil
 }
 
 func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecModifyProposal) error {
+	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
 
+		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
 		//
 		// Find by name
 		existingSpecs := k.GetAllSpec(ctx)
@@ -106,19 +103,12 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 			}
 		}
 		if foundSpecI < 0 {
-			return sdkerrors.Wrapf(types.ErrSpecNotFound, "spec to modify not found; name: %s", spec.Name)
+			return utils.LavaError(ctx, logger, "spec_modify_missing", details, "spec to modify not found")
 		}
 		spec.Id = uint64(foundSpecI)
 
-		//
-		// Set new spec
-		k.Logger(ctx).Info(
-			fmt.Sprintf("attempt to set new spec; name: %s", spec.Name),
-		)
 		k.SetSpec(ctx, spec)
-		eventAttributes := []sdk.Attribute{sdk.NewAttribute("specName", spec.Name), sdk.NewAttribute("status", spec.Status),
-			sdk.NewAttribute("chainID", strconv.FormatUint(spec.Id, 10))}
-		ctx.EventManager().EmitEvent(sdk.NewEvent("lava_spec_modify", eventAttributes...))
+		utils.LogLavaEvent(ctx, logger, "spec_modify", details, "Gov Proposal Accepted Spec Modified")
 	}
 
 	return nil

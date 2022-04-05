@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/user/types"
 )
 
@@ -44,9 +45,11 @@ func (k Keeper) LimitUserPairingsAndMarkForPenalty(ctx sdk.Context, userStake *t
 
 func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingUser string, deadline types.BlockNum) error {
 	specStakeStorage, found := k.GetSpecStakeStorage(ctx, specName.Name)
+	logger := k.Logger(ctx)
 	if !found {
 		// the spec storage is empty
-		return fmt.Errorf("can't unstake empty specStakeStorage for spec name: %s", specName.Name)
+		details := map[string]string{"spec": specName.Name}
+		return utils.LavaError(ctx, logger, "user_unstake_spec", details, "can't unstake empty specStakeStorage for spec name")
 	}
 	stakeStorage := specStakeStorage.StakeStorage
 	found_staked_entry := false
@@ -89,13 +92,14 @@ func (k Keeper) UnstakeUser(ctx sdk.Context, specName types.SpecName, unstakingU
 			stakeStorage.StakedUsers = stakeStorage.StakedUsers[:len(stakeStorage.StakedUsers)-1]     // remove last element
 			//should be unique so there's no reason to keep iterating
 
-			eventAttributes := []sdk.Attribute{sdk.NewAttribute("user", unstakingUser), sdk.NewAttribute("deadline", strconv.FormatUint(stakedUser.Deadline.Num, 10)), sdk.NewAttribute("stake", stakedUser.Stake.String()), sdk.NewAttribute("requestedDeadline", strconv.FormatUint(deadline.Num, 10))}
-			ctx.EventManager().EmitEvent(sdk.NewEvent("lava_user_unstake_schedule", eventAttributes...))
+			details := map[string]string{"spec": specName.Name, "user": unstakingUser, "deadline": strconv.FormatUint(stakedUser.Deadline.Num, 10), "stake": stakedUser.Stake.String(), "requestedDeadline": strconv.FormatUint(deadline.Num, 10)}
+			utils.LogLavaEvent(ctx, logger, "lava_user_unstake_schedule", details, "Scheduling Unstaking for User")
 			break
 		}
 	}
 	if !found_staked_entry {
-		return fmt.Errorf("can't unstake User, stake entry not found for address: %s", unstakingUser)
+		details := map[string]string{"user": unstakingUser, "spec": specName.Name}
+		return utils.LavaError(ctx, logger, "user_unstake_entry", details, "can't unstake User, stake entry not found for address")
 	}
 	k.SetSpecStakeStorage(ctx, specStakeStorage)
 	return nil
