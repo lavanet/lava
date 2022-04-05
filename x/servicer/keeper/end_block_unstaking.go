@@ -62,7 +62,7 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 
 			//A3. transfer stake money to the servicer account
 			valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Unstaking.Stake)
-			details := map[string]string{"servicer": receiverAddr.String(), "stake": unstakingEntry.Unstaking.Stake.String()}
+			details := map[string]string{"spec": unstakingEntry.SpecStakeStorage.Index, "servicer": receiverAddr.String(), "stake": unstakingEntry.Unstaking.Stake.String()}
 			if !valid {
 				details["error"] = err.Error()
 				utils.LavaError(ctx, logger, "servicer_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
@@ -92,7 +92,7 @@ func (k Keeper) creditUnstakingServicersAndRemoveFromCallback(ctx sdk.Context, d
 		// still some deadlines to go over, so set the closest one
 		// and check sanity that deadlines are in the future
 		if minDeadline < uint64(ctx.BlockHeight()) || minDeadline == uint64(math.MaxUint64) {
-			details := map[string]string{"minDeadline": strconv.FormatUint(minDeadline, 10), "block height": strconv.FormatInt(ctx.BlockHeight(), 10), "unstaking count": strconv.FormatUint(k.GetUnstakingServicersAllSpecsCount(ctx), 10), "deleted indexes": string(len(indexesForDelete))}
+			details := map[string]string{"minDeadline": strconv.FormatUint(minDeadline, 10), "height": strconv.FormatInt(ctx.BlockHeight(), 10), "unstakingCount": strconv.FormatUint(k.GetUnstakingServicersAllSpecsCount(ctx), 10), "deletedIndexes": fmt.Sprint(len(indexesForDelete))}
 			utils.LavaError(ctx, logger, "servicer_unstaking_deadline", details, "trying to set invalid next deadline! ")
 			panic(fmt.Sprintf("PANIC servicer_unstaking minDeadline: %s \n unstaking servicers: %s, length: %d\n", details, k.GetAllUnstakingServicersAllSpecs(ctx), len(k.GetAllUnstakingServicersAllSpecs(ctx))))
 		}

@@ -177,7 +177,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	logger := am.keeper.Logger(ctx)
 	logOnErr := func(err error, failingFunc string) {
 		if err != nil {
-			attrs := map[string]string{"Error:": err.Error()}
+			attrs := map[string]string{"error": err.Error()}
 			utils.LavaError(ctx, logger, "new_session", attrs, failingFunc)
 		}
 	}
