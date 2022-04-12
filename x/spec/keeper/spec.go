@@ -140,3 +140,12 @@ func GetSpecIDBytes(id uint64) []byte {
 func GetSpecIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
+
+func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
+	//TODO: make this with an iterator
+	allSpecs := k.GetAllSpec(ctx)
+	for _, spec := range allSpecs {
+		chainIDs = append(chainIDs, spec.Name)
+	}
+	return
+}

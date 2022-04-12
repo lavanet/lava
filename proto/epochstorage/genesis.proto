@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+import "gogoproto/gogo.proto";
+import "epochstorage/params.proto";
+import "epochstorage/stake_storage.proto";
+import "epochstorage/epoch_details.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+
+// GenesisState defines the epochstorage module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated StakeStorage stakeStorageList = 2 [(gogoproto.nullable) = false];
+  EpochDetails epochDetails = 3;
+  // this line is used by starport scaffolding # genesis/proto/state
+}

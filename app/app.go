@@ -91,6 +91,9 @@ import (
 	"github.com/tendermint/starport/starport/pkg/openapiconsole"
 
 	"github.com/lavanet/lava/docs"
+	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
+	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
 	servicermodule "github.com/lavanet/lava/x/servicer"
 	servicermodulekeeper "github.com/lavanet/lava/x/servicer/keeper"
 	servicermoduletypes "github.com/lavanet/lava/x/servicer/types"
@@ -159,20 +162,22 @@ var (
 		specmodule.AppModuleBasic{},
 		servicermodule.AppModuleBasic{},
 		usermodule.AppModuleBasic{},
+		epochstoragemodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		servicermoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		usermoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:         nil,
+		distrtypes.ModuleName:              nil,
+		minttypes.ModuleName:               {authtypes.Minter},
+		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                {authtypes.Burner},
+		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
+		servicermoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		usermoduletypes.ModuleName:         {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -235,6 +240,8 @@ type App struct {
 	ServicerKeeper servicermodulekeeper.Keeper
 
 	UserKeeper usermodulekeeper.Keeper
+
+	EpochstorageKeeper epochstoragemodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -274,6 +281,7 @@ func New(
 		specmoduletypes.StoreKey,
 		servicermoduletypes.StoreKey,
 		usermoduletypes.StoreKey,
+		epochstoragemoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -415,6 +423,18 @@ func New(
 	)
 	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper, app.UserKeeper)
 
+	app.EpochstorageKeeper = *epochstoragemodulekeeper.NewKeeper(
+		appCodec,
+		keys[epochstoragemoduletypes.StoreKey],
+		keys[epochstoragemoduletypes.MemStoreKey],
+		app.GetSubspace(epochstoragemoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+	)
+	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -456,6 +476,7 @@ func New(
 		specModule,
 		servicerModule,
 		userModule,
+		epochstorageModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -467,10 +488,11 @@ func New(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		feegrant.ModuleName,
+		epochstoragemoduletypes.ModuleName,
 		servicermoduletypes.ModuleName, usermoduletypes.ModuleName,
 	)
 
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, epochstoragemoduletypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -494,6 +516,7 @@ func New(
 		specmoduletypes.ModuleName,
 		servicermoduletypes.ModuleName,
 		usermoduletypes.ModuleName,
+		epochstoragemoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -519,6 +542,7 @@ func New(
 		specModule,
 		servicerModule,
 		userModule,
+		epochstorageModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -709,6 +733,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(servicermoduletypes.ModuleName)
 	paramsKeeper.Subspace(usermoduletypes.ModuleName)
+	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

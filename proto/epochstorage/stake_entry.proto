@@ -1,0 +1,16 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+import "epochstorage/endpoint.proto"; 
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message StakeEntry {
+  
+  cosmos.base.v1beta1.Coin stake = 1 [(gogoproto.nullable) = false]; 
+  string address = 2; 
+  uint64 deadline = 3; 
+  repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
+  uint64 geolocation = 5; 
+}
