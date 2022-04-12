@@ -133,6 +133,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
 				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, servicerAddr))
 			}
+			details["clientFee"] = burnAmount.String()
 			utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 		} else {
 			details := map[string]string{"client": clientAddr.String(), "servicer": servicerAddr.String(), "error": "pairing result doesn't include servicer"}

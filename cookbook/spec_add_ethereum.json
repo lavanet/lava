@@ -8,32 +8,32 @@
       "apis": [
         {
           "name": "rpc_modules",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
           "name": "net_version",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
           "name": "eth_chainId",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
           "name": "eth_syncing",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
           "name": "eth_protocolVersion",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
           "name": "net_listening",
-          "compute_units": "0",
+          "compute_units": "1",
           "status": "enabled"
         },
         {
