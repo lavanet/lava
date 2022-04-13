@@ -35,7 +35,7 @@ utils.LavaError()
 
 Module | Event name | type | description | attr name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute |
 ------ | ---------- | ---- | ----------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
-Servicer | ERR_new_session | NewBlock | sent upon an error on session parameters update | error | the error that occured
+Servicer | ERR_new_epoch | NewBlock | sent upon an error on session parameters update | error | the error that occured
 Servicer | ERR_servicer_unstaking_credit | NewBlock | sent upon an error in crediting a servicer after unstake deadline was reached | spec | the spec name | error | the error that occured | servicer | unstaking servicer address | stake | the stake that needs to be credited
 Servicer | ERR_servicer_unstaking_deadline | NewBlock | sent upon an error in setting a new deadline for unstaking callback  | minDeadline | the callback we are trying to set | height | the block we are currently at | unstakingCount | the number of unstaking servicers | deletedIndexes | the amount of unstaking servicers we credited already
 Servicer | ERR_relay_proof_sig | Tx | sent upon an error in recovery of the public key of a client in relay proof  | sig | the data that was parsing the key

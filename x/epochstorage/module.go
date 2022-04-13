@@ -20,6 +20,8 @@ import (
 	"github.com/lavanet/lava/x/epochstorage/client/cli"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
+	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	usertypes "github.com/lavanet/lava/x/user/types"
 )
 
 var (
@@ -181,17 +183,20 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 		am.keeper.SetEpochDetailsStart(ctx, block)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, "servicer")
+		am.keeper.StoreEpochStakeStorage(ctx, block, servicertypes.ModuleName)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, "user")
+		am.keeper.StoreEpochStakeStorage(ctx, block, usertypes.ModuleName)
+		// Notify world we have a new session
+		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
+		logger := am.keeper.Logger(ctx)
+		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "New Block Epoch Started")
 	}
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	//TODO: handle case of param change during the block
-	if am.keeper.IsEpochStart(ctx) {
+	if am.keeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight()) {
 		logger := am.keeper.Logger(ctx)
 		logOnErr := func(err error, failingFunc string) {
 			if err != nil {
@@ -199,10 +204,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 				utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
 			}
 		}
-		err := am.keeper.RemoveOldEpochData(ctx, "servicer")
+		err := am.keeper.RemoveOldEpochData(ctx, servicertypes.ModuleName)
 		logOnErr(err, "RemoveOldEpochData servicer")
 
-		err = am.keeper.RemoveOldEpochData(ctx, "user")
+		err = am.keeper.RemoveOldEpochData(ctx, usertypes.ModuleName)
 		logOnErr(err, "RemoveOldEpochData user")
 
 		am.keeper.UpdateEarliestEpochstart(ctx)

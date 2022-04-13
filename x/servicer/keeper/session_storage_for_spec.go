@@ -66,19 +66,16 @@ func (k Keeper) GetAllSessionStorageForSpec(ctx sdk.Context) (list []types.Sessi
 }
 
 func (k Keeper) RemoveOldSessionPayment(ctx sdk.Context) (err error) {
-	if uint64(ctx.BlockHeight()) < k.userKeeper.BlocksToSave(ctx) {
+	if uint64(ctx.BlockHeight()) < k.epochStorageKeeper.BlocksToSave(ctx) {
 		return nil
 	}
-	block := types.BlockNum{Num: uint64(ctx.BlockHeight()) - k.userKeeper.BlocksToSave(ctx)}
-	earliestSessionBlock, found := k.GetEarliestSessionStart(ctx)
-	if !found {
-		return fmt.Errorf("keeper didn't find EarliestSessionStart")
-	}
-	if earliestSessionBlock.Block.Num > block.Num {
+	block := uint64(ctx.BlockHeight()) - k.epochStorageKeeper.BlocksToSave(ctx)
+	earliestSessionBlock := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
+	if earliestSessionBlock > block {
 		return nil
 	}
 	//we passed the distance to earliest session block, so remove the entries
-	err = k.RemoveAllSessionPaymentsForBlock(ctx, earliestSessionBlock.Block)
+	err = k.RemoveAllSessionPaymentsForBlock(ctx, earliestSessionBlock)
 	return
 }
 

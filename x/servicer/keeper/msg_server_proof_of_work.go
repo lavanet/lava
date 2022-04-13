@@ -71,7 +71,7 @@ func (k msgServer) ProofOfWork(goCtx context.Context, msg *types.MsgProofOfWork)
 			sessionStart = overlapSessionStart
 		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInSessionForUser, err := k.Keeper.AddSessionPayment(ctx, *sessionStart, clientAddr, servicerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInSessionForUser, err := k.Keeper.AddSessionPayment(ctx, sessionStart.Num, clientAddr, servicerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
 			details := map[string]string{"session": strconv.FormatUint(sessionStart.Num, 10), "client": clientAddr.String(), "servicer": servicerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}

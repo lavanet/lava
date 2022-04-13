@@ -63,13 +63,13 @@ func (k Keeper) GetAllUniquePaymentStorageUserServicer(ctx sdk.Context) (list []
 }
 
 func (k Keeper) AddUniquePaymentStorageUserServicer(ctx sdk.Context,
-	block types.BlockNum, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) (bool, *types.UniquePaymentStorageUserServicer) {
+	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) (bool, *types.UniquePaymentStorageUserServicer) {
 	key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
 	entry, found := k.GetUniquePaymentStorageUserServicer(ctx, key)
 	if found {
 		return false, &entry
 	}
-	entry = types.UniquePaymentStorageUserServicer{Index: key, Block: block.Num}
+	entry = types.UniquePaymentStorageUserServicer{Index: key, Block: block}
 	k.SetUniquePaymentStorageUserServicer(ctx, entry)
 	return true, &entry
 }

@@ -3,6 +3,7 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	usertypes "github.com/lavanet/lava/x/user/types"
 )
@@ -44,4 +45,21 @@ type UserKeeper interface {
 	SessionsToSave(ctx sdk.Context) (res uint64)
 	IsSessionStart(ctx sdk.Context) (res bool)
 	SessionBlocks(ctx sdk.Context) (res uint64)
+}
+
+type EpochStorageKeeper interface {
+	// Methods imported from bank should be defined here
+	GetEpochStart(ctx sdk.Context) uint64
+	GetEarliestEpochStart(ctx sdk.Context) uint64
+	UnstakeHoldBlocks(ctx sdk.Context) (res uint64)
+	IsEpochStart(ctx sdk.Context) (res bool)
+	BlocksToSave(ctx sdk.Context) (res uint64)
+	PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []epochstoragetypes.StakeEntry)
+	AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry epochstoragetypes.StakeEntry)
+	GetStakeStorageUnstake(ctx sdk.Context, storageType string) (epochstoragetypes.StakeStorage, bool)
+	ModifyStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry)
+	RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64)
+	StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
 }

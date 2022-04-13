@@ -423,7 +423,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				go s.newBlockCb()
 			}
 
-			if _, ok := e.Events["lava_new_session.height"]; ok {
+			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New session: Height: %d \n", data.Block.Height)
 
 				//

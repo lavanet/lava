@@ -13,4 +13,5 @@ message StakeEntry {
   uint64 deadline = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
   uint64 geolocation = 5; 
+  string chain = 6;
 }

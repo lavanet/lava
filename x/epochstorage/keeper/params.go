@@ -39,7 +39,7 @@ func (k Keeper) EpochsToSave(ctx sdk.Context) (res uint64) {
 
 // EpochBlocks returns the EpochBlocks param
 func (k Keeper) GetEpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	//TODO: make sure they param wasn't changed from the current value and that block
+	//TODO: modify to support param change
 	k.paramstore.Get(ctx, types.KeyEpochBlocks, &res)
 	return
 }

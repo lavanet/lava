@@ -178,38 +178,21 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	logOnErr := func(err error, failingFunc string) {
 		if err != nil {
 			attrs := map[string]string{"error": err.Error()}
-			utils.LavaError(ctx, logger, "new_session", attrs, failingFunc)
+			utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
 		}
 	}
-	if am.keeper.IsSessionStart(ctx) {
+	if am.keeper.IsEpochStart(ctx) {
 		//on session start we need to do:
-		//1. update param change (previousSessionBlocks) if change detected
-		//2. update session start
-		//3. update the SpecStakeStorage in sessionStorageForSpec
-		//4. remove old sessionStorageForSpec, old sessionPayments
-		//5. unstake any unstaking servicers
+		// 1. remove old session payments
+		// 2. unstake any unstaking servicers
 
-		//1. !!! must be before SetCurrentSessionStart, it counts on the fact it wasn't updated yet
-		am.keeper.HandleStoringPreviousSessionData(ctx)
-
-		//2.
-		am.keeper.SetCurrentSessionStart(ctx, types.CurrentSessionStart{Block: types.BlockNum{Num: uint64(ctx.BlockHeight())}})
-		//3.
-		err := am.keeper.StoreSpecStakeStorageInSession(ctx)
-		logOnErr(err, "StoreSpecStakeStorageInSession")
-		//4.
-		err = am.keeper.RemoveOldSessionPayment(ctx) //this needs to be first, it uses earliest session start
+		//1.
+		err := am.keeper.RemoveOldSessionPayment(ctx) //this needs to be first, it uses earliest session start
 		logOnErr(err, "RemoveOldSessionPayment")
 
-		err = am.keeper.RemoveStakeStorageInSession(ctx) //this updates earliest session start
-		logOnErr(err, "RemoveStakeStorageInSession")
-		//5.
+		//2.
 		err = am.keeper.CheckUnstakingForCommit(ctx)
 		logOnErr(err, "CheckUnstakingForCommit")
-		//
-		// Notify world we have a new session
-		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
-		utils.LogLavaEvent(ctx, logger, "new_session", details, "New Block Epoch Started")
 	}
 }
 

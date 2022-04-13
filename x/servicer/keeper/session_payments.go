@@ -65,16 +65,16 @@ func (k Keeper) GetAllSessionPayments(ctx sdk.Context) (list []types.SessionPaym
 	return
 }
 
-func (k Keeper) GetSessionPaymentsFromBlock(ctx sdk.Context, session types.BlockNum) (sessionPayment types.SessionPayments, found bool, key string) {
-	key = strconv.FormatUint(session.Num, 16)
+func (k Keeper) GetSessionPaymentsFromBlock(ctx sdk.Context, session uint64) (sessionPayment types.SessionPayments, found bool, key string) {
+	key = strconv.FormatUint(session, 16)
 	sessionPayment, found = k.GetSessionPayments(ctx, key)
 	return
 }
 
-func (k Keeper) AddSessionPayment(ctx sdk.Context, session types.BlockNum, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
+func (k Keeper) AddSessionPayment(ctx sdk.Context, session uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	userPaymentStorage, err := k.AddUserPaymentInSession(ctx, session, userAddress, servicerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, fmt.Errorf("could not add session payment: %s,%s,%s,%d error: %s", userAddress, servicerAddress, uniqueIdentifier, session.Num, err)
+		return 0, fmt.Errorf("could not add session payment: %s,%s,%s,%d error: %s", userAddress, servicerAddress, uniqueIdentifier, session, err)
 	}
 
 	sessionPayments, found, key := k.GetSessionPaymentsFromBlock(ctx, session)
@@ -87,7 +87,7 @@ func (k Keeper) AddSessionPayment(ctx sdk.Context, session types.BlockNum, userA
 	return userPaymentStorage.TotalCU, nil
 }
 
-func (k Keeper) RemoveAllSessionPaymentsForBlock(ctx sdk.Context, blockForDelete types.BlockNum) error {
+func (k Keeper) RemoveAllSessionPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) error {
 	//remove the old sessions
 	sessionPayments, found, key := k.GetSessionPaymentsFromBlock(ctx, blockForDelete)
 	if !found {
@@ -99,7 +99,7 @@ func (k Keeper) RemoveAllSessionPaymentsForBlock(ctx sdk.Context, blockForDelete
 		uniquePaymentStoragesCliSer := userPaymentStorage.UniquePaymentStorageUserServicer
 		for _, uniquePaymentStorageCliSer := range uniquePaymentStoragesCliSer {
 			//validate its an old entry, for sanity
-			if uniquePaymentStorageCliSer.Block > blockForDelete.Num {
+			if uniquePaymentStorageCliSer.Block > blockForDelete {
 				errMsg := "trying to delete a new entry in session payments for block"
 				k.Logger(ctx).Error(errMsg)
 				panic(errMsg)

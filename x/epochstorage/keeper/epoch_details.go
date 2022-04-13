@@ -40,6 +40,14 @@ func (k Keeper) SetEpochDetailsStart(ctx sdk.Context, block uint64) {
 	k.SetEpochDetails(ctx, details)
 }
 
+func (k Keeper) GetEpochStart(ctx sdk.Context) uint64 {
+	details, found := k.GetEpochDetails(ctx)
+	if !found {
+		panic("did not find EpochDetails")
+	}
+	return details.StartBlock
+}
+
 func (k Keeper) GetEarliestEpochStart(ctx sdk.Context) uint64 {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {

@@ -65,9 +65,9 @@ func (k Keeper) GetAllUserPaymentStorage(ctx sdk.Context) (list []types.UserPaym
 	return
 }
 
-func (k Keeper) AddUserPaymentInSession(ctx sdk.Context, session types.BlockNum, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.UserPaymentStorage, err error) {
+func (k Keeper) AddUserPaymentInSession(ctx sdk.Context, session uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.UserPaymentStorage, err error) {
 	//key is session+user
-	key := strconv.FormatUint(session.Num, 16) + userAddress.String()
+	key := strconv.FormatUint(session, 16) + userAddress.String()
 	isUnique, uniquePaymentStorageUserServicerEntryAddr := k.AddUniquePaymentStorageUserServicer(ctx, session, userAddress, servicerAddress, uniqueIdentifier)
 	if !isUnique {
 		//tried to use an existing identifier!
@@ -76,7 +76,7 @@ func (k Keeper) AddUserPaymentInSession(ctx sdk.Context, session types.BlockNum,
 	userPaymentStorageInSession, found := k.GetUserPaymentStorage(ctx, key)
 	if !found {
 		// is new entry
-		userPaymentStorageInSession = types.UserPaymentStorage{Index: key, UniquePaymentStorageUserServicer: []*types.UniquePaymentStorageUserServicer{uniquePaymentStorageUserServicerEntryAddr}, TotalCU: usedCU, Session: session.Num}
+		userPaymentStorageInSession = types.UserPaymentStorage{Index: key, UniquePaymentStorageUserServicer: []*types.UniquePaymentStorageUserServicer{uniquePaymentStorageUserServicerEntryAddr}, TotalCU: usedCU, Session: session}
 	} else {
 		userPaymentStorageInSession.UniquePaymentStorageUserServicer = append(userPaymentStorageInSession.UniquePaymentStorageUserServicer, uniquePaymentStorageUserServicerEntryAddr)
 		userPaymentStorageInSession.TotalCU += usedCU

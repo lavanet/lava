@@ -18,11 +18,12 @@ type (
 		memKey     sdk.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper     types.BankKeeper
-		accountKeeper  types.AccountKeeper
-		evidenceKeeper types.EvidenceKeeper
-		specKeeper     types.SpecKeeper
-		userKeeper     types.UserKeeper
+		bankKeeper         types.BankKeeper
+		accountKeeper      types.AccountKeeper
+		evidenceKeeper     types.EvidenceKeeper
+		specKeeper         types.SpecKeeper
+		userKeeper         types.UserKeeper
+		epochStorageKeeper types.EpochStorageKeeper
 	}
 )
 
@@ -32,7 +33,7 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, evidenceKeeper types.EvidenceKeeper, specKeeper types.SpecKeeper, userKeeper types.UserKeeper,
+	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, evidenceKeeper types.EvidenceKeeper, specKeeper types.SpecKeeper, userKeeper types.UserKeeper, epochStorageKeeper types.EpochStorageKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -45,7 +46,7 @@ func NewKeeper(
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, evidenceKeeper: evidenceKeeper, specKeeper: specKeeper, userKeeper: userKeeper,
+		bankKeeper: bankKeeper, accountKeeper: accountKeeper, evidenceKeeper: evidenceKeeper, specKeeper: specKeeper, userKeeper: userKeeper, epochStorageKeeper: epochStorageKeeper,
 	}
 }
 
@@ -53,7 +54,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-//give module access to the function without giving it access to user keeper
-func (k Keeper) IsSessionStart(ctx sdk.Context) (res bool) {
-	return k.userKeeper.IsSessionStart(ctx)
+//we dont want to do the calculation here too, epochStorage keeper did it
+func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
+	return k.epochStorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
 }

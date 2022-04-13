@@ -397,6 +397,18 @@ func New(
 		&stakingKeeper, govRouter,
 	)
 
+	app.EpochstorageKeeper = *epochstoragemodulekeeper.NewKeeper(
+		appCodec,
+		keys[epochstoragemoduletypes.StoreKey],
+		keys[epochstoragemoduletypes.MemStoreKey],
+		app.GetSubspace(epochstoragemoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+	)
+	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.UserKeeper = *usermodulekeeper.NewKeeper(
 		appCodec,
 		keys[usermoduletypes.StoreKey],
@@ -420,20 +432,9 @@ func New(
 		app.EvidenceKeeper,
 		app.SpecKeeper,
 		app.UserKeeper,
+		app.EpochstorageKeeper,
 	)
 	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper, app.UserKeeper)
-
-	app.EpochstorageKeeper = *epochstoragemodulekeeper.NewKeeper(
-		appCodec,
-		keys[epochstoragemoduletypes.StoreKey],
-		keys[epochstoragemoduletypes.MemStoreKey],
-		app.GetSubspace(epochstoragemoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.SpecKeeper,
-	)
-	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

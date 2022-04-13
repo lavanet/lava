@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -99,25 +100,206 @@ func (k Keeper) stakeStorageKey(storageType string, block uint64, chainID string
 	return storageType + strconv.FormatUint(block, 10) + chainID
 }
 
-func (k Keeper) stakeStorageKeyTemp(storageType string, chainID string) string {
-	return storageType + chainID
-}
-
 func (k Keeper) RemoveStakeStorageByBlockAndChain(ctx sdk.Context, storageType string, block uint64, chainID string) {
 	key := k.stakeStorageKey(storageType, block, chainID)
 	k.RemoveStakeStorage(ctx, key)
 }
 
-//used to get the latest
-func (k Keeper) GetStakeStorageTemp(ctx sdk.Context, storageType string, chainID string) (types.StakeStorage, bool) {
-	return k.GetStakeStorage(ctx, k.stakeStorageKeyTemp(storageType, chainID))
+// -------------------------------------------------- current staking list --------------------------------------------
+
+func (k Keeper) stakeStorageKeyCurrent(storageType string, chainID string) string {
+	return storageType + chainID
 }
 
+//used to get the latest
+func (k Keeper) GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (types.StakeStorage, bool) {
+	return k.GetStakeStorage(ctx, k.stakeStorageKeyCurrent(storageType, chainID))
+}
+
+func (k Keeper) SetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string, stakeStorage types.StakeStorage) {
+	stakeStorage.Index = k.stakeStorageKeyCurrent(storageType, chainID)
+	k.SetStakeStorage(ctx, stakeStorage)
+}
+
+func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (index uint64, found bool) {
+	// the following finds the address of stakeEntry and returns it
+	entries := stakeStorage.StakeEntries
+	for idx, entry := range entries {
+		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
+		if err != nil {
+			panic("invalid account address inside StakeStorage: " + entry.Address)
+		}
+		if entryAddr.Equals(address) {
+			// found the right thing
+			index = uint64(idx)
+			found = true
+			// remove from the stakeStorage, i checked it supports idx == length-1
+			return
+		}
+	}
+	return 0, false
+}
+
+func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
+	if !found {
+		return types.StakeEntry{}, false, 0
+	}
+	// the following finds the address of stakeEntry and returns it
+	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
+	if !found {
+		return types.StakeEntry{}, false, 0
+	}
+	// found the right thing
+	value = stakeStorage.StakeEntries[idx]
+	found = true
+	index = idx
+	return
+}
+
+func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64) {
+	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
+	if !found {
+		return
+	}
+	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
+	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
+	return
+}
+
+func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
+	//this stake storage entries are sorted by stake amount
+	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
+	var entries = []types.StakeEntry{}
+	if !found {
+		entries = []types.StakeEntry{stakeEntry}
+		//create a new one
+		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(storageType, chainID), StakeEntries: entries}
+	} else {
+		// the following code inserts stakeEntry into the existing entries by stake
+		entries = stakeStorage.StakeEntries
+		//sort func needs to return true if the inserted entry is less than the existing entry
+		sortFunc := func(i int) bool {
+			return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+		}
+		//returns the smallest index in which the sort func is true
+		index := sort.Search(len(entries), sortFunc)
+		if index < len(entries) {
+			entries = append(entries[:index+1], entries[index:]...)
+			entries[index] = stakeEntry
+		} else {
+			//put in the end
+			entries = append(entries, stakeEntry)
+		}
+	}
+	stakeStorage.StakeEntries = entries
+	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
+}
+
+func (k Keeper) ModifyStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
+	//this stake storage entries are sorted by stake amount
+	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
+	if !found {
+		panic("called modify when there is no stakeStorage")
+	}
+	// remove the given index, then store the new entry in the sorted list at the right place
+	entries := append(stakeStorage.StakeEntries[:removeIndex], stakeStorage.StakeEntries[removeIndex+1:]...)
+	// the following code inserts stakeEntry into the existing entries by stake
+	//sort func needs to return true if the inserted entry is less than the existing entry
+	sortFunc := func(i int) bool {
+		return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+	}
+	//returns the smallest index in which the sort func is true
+	index := sort.Search(len(entries), sortFunc)
+	if index < len(entries) {
+		entries = append(entries[:index+1], entries[index:]...)
+		entries[index] = stakeEntry
+	} else {
+		panic("called modify but didn't find the entry")
+	}
+	stakeStorage.StakeEntries = entries
+	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
+}
+
+// -------------------------------------------------- unstaking list --------------------------------------------
+
+func (k Keeper) stakeStorageKeyUnstake(storageType string) string {
+	return storageType + "Unstake"
+}
+
+//used to get the unstaking entries
+func (k Keeper) GetStakeStorageUnstake(ctx sdk.Context, storageType string) (types.StakeStorage, bool) {
+	return k.GetStakeStorage(ctx, k.stakeStorageKeyUnstake(storageType))
+}
+
+func (k Keeper) SetStakeStorageUnstake(ctx sdk.Context, storageType string, stakeStorage types.StakeStorage) {
+	stakeStorage.Index = k.stakeStorageKeyUnstake(storageType)
+	k.SetStakeStorage(ctx, stakeStorage)
+}
+
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) {
+	//this stake storage entries are sorted by deadline
+	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
+	entries := []types.StakeEntry{}
+	if !found {
+		entries = []types.StakeEntry{stakeEntry}
+		//create a new one
+		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyUnstake(storageType), StakeEntries: entries}
+	} else {
+		// the following code inserts stakeEntry into the existing entries by deadline
+		entries = stakeStorage.StakeEntries
+		//sort func needs to return true if the inserted entry is less than the existing entry
+		sortFunc := func(i int) bool {
+			return stakeEntry.Deadline <= entries[i].Deadline
+		}
+		//returns the smallest index in which the sort func is true
+		index := sort.Search(len(entries), sortFunc)
+		if index < len(entries) {
+			entries = append(entries[:index+1], entries[index:]...)
+			entries[index] = stakeEntry
+		} else {
+			//put in the end
+			entries = append(entries, stakeEntry)
+		}
+	}
+	stakeStorage.StakeEntries = entries
+	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
+}
+
+//Returns the unstaking Entry if its deadline is lower than the provided block
+func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []types.StakeEntry) {
+	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
+	if !found {
+		return nil
+	}
+	found_idx := -1
+	// the unstaking is a sorted list so just chekcing until an entry deadline is too big
+	for idx, entry := range stakeStorage.StakeEntries {
+		if entry.Deadline <= block {
+			// found an enrty that its deadline is less equal to the wanted block number
+			value = append(value, entry)
+			// remove from the unstaking stakeStorage everything before this index
+			found_idx = idx
+		} else {
+			//no need to keep iterating the sorted list
+			break
+		}
+	}
+	if found_idx >= 0 {
+		stakeStorage.StakeEntries = stakeStorage.StakeEntries[found_idx+1:]
+		k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
+		return
+	}
+	return nil
+}
+
+// ------------------------------------------------
+
+// takes the current stake storage and puts it in epoch storage
 func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageType string) {
-	// takes the temporary stake storage and puts it in epoch storage
 	allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	for _, chainID := range allChainIDs {
-		tmpStorage, found := k.GetStakeStorageTemp(ctx, storageType, chainID)
+		tmpStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 		if !found {
 			//no storage for this spec yet
 			continue
