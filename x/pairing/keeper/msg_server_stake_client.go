@@ -10,8 +10,8 @@ import (
 func (k msgServer) StakeClient(goCtx context.Context, msg *types.MsgStakeClient) (*types.MsgStakeClientResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Handling the message
-	_ = ctx
+	//stakes a new client entry
+	err := k.Keeper.StakeNewEntry(ctx, false, msg.Creator, msg.ChainID, msg.Amount, nil, msg.Geolocation)
 
-	return &types.MsgStakeClientResponse{}, nil
+	return &types.MsgStakeClientResponse{}, err
 }

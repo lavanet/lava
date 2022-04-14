@@ -9,9 +9,6 @@ import (
 
 func (k msgServer) UnstakeProvider(goCtx context.Context, msg *types.MsgUnstakeProvider) (*types.MsgUnstakeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// TODO: Handling the message
-	_ = ctx
-
-	return &types.MsgUnstakeProviderResponse{}, nil
+	err := k.Keeper.UnstakeEntry(ctx, true, msg.ChainID, msg.Creator)
+	return &types.MsgUnstakeProviderResponse{}, err
 }
