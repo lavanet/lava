@@ -12,31 +12,31 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyMinStakeProvider = []byte("MinStakeProvider")
 	// TODO: Determine the default value
-	DefaultMinStakeProvider uint64 = 0
+	DefaultMinStakeProvider uint64 = 1000
 )
 
 var (
 	KeyMinStakeClient = []byte("MinStakeClient")
 	// TODO: Determine the default value
-	DefaultMinStakeClient uint64 = 0
+	DefaultMinStakeClient uint64 = 100
 )
 
 var (
 	KeyMintCoinsPerCU = []byte("MintCoinsPerCU")
 	// TODO: Determine the default value
-	DefaultMintCoinsPerCU string = "mint_coins_per_cu"
+	DefaultMintCoinsPerCU string = "0.1"
 )
 
 var (
 	KeyBurnCoinsPerCU = []byte("BurnCoinsPerCU")
 	// TODO: Determine the default value
-	DefaultBurnCoinsPerCU string = "burn_coins_per_cu"
+	DefaultBurnCoinsPerCU string = "0.05"
 )
 
 var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
 	// TODO: Determine the default value
-	DefaultFraudStakeSlashingFactor string = "fraud_stake_slashing_factor"
+	DefaultFraudStakeSlashingFactor string = "0.0"
 )
 
 var (
@@ -48,13 +48,13 @@ var (
 var (
 	KeyServicersToPairCount = []byte("ServicersToPairCount")
 	// TODO: Determine the default value
-	DefaultServicersToPairCount uint64 = 0
+	DefaultServicersToPairCount uint64 = 2
 )
 
 var (
 	KeyEpochBlocksOverlap = []byte("EpochBlocksOverlap")
 	// TODO: Determine the default value
-	DefaultEpochBlocksOverlap uint64 = 0
+	DefaultEpochBlocksOverlap uint64 = 5
 )
 
 // ParamKeyTable the param key table for launch module

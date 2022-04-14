@@ -9,6 +9,43 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
+func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error {
+	logger := k.Logger(ctx)
+	stake_type := func() string {
+		if provider {
+			return epochstoragetypes.ProviderKey
+		}
+		return epochstoragetypes.ClientKey
+	}
+	//TODO: validate chainID basic validation
+
+	// we can unstake disabled specs, but not missing ones
+	_, found, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	if !found {
+		return utils.LavaError(ctx, logger, "unstake_spec_missing", map[string]string{"spec": chainID}, "trying to unstake an entry on missing spec")
+	}
+	senderAddr, err := sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		details := map[string]string{stake_type(): creator, "error": err.Error()}
+		return utils.LavaError(ctx, logger, "unstake_"+stake_type()+"_addr", details, "invalid "+stake_type()+" address")
+	}
+
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, stake_type(), chainID, senderAddr)
+	if !entryExists {
+		details := map[string]string{stake_type(): creator, "spec": chainID}
+		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
+	}
+	k.epochStorageKeeper.RemoveStakeEntry(ctx, stake_type(), chainID, indexInStakeStorage)
+	blockHeight := uint64(ctx.BlockHeight())
+	existingEntry.Deadline = blockHeight + k.epochStorageKeeper.BlocksToSave(ctx)
+	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx)
+	if existingEntry.Deadline < holdBlocks {
+		existingEntry.Deadline = holdBlocks
+	}
+	k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
+	return nil
+}
+
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	//this pops all the entries that had their deadline pass
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, types.ModuleName, uint64(ctx.BlockHeight()))

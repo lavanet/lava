@@ -30,9 +30,23 @@ func (k Keeper) MinStakeProvider(ctx sdk.Context) (res uint64) {
 	return
 }
 
+func (k Keeper) GetMinStakeProvider(ctx sdk.Context) (res sdk.Coin) {
+	var val uint64
+	k.paramstore.Get(ctx, types.KeyMinStakeProvider, &val)
+	res = sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(val)}
+	return
+}
+
 // MinStakeClient returns the MinStakeClient param
 func (k Keeper) MinStakeClient(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyMinStakeClient, &res)
+	return
+}
+
+func (k Keeper) GetMinStakeClient(ctx sdk.Context) (res sdk.Coin) {
+	var val uint64
+	k.paramstore.Get(ctx, types.KeyMinStakeClient, &val)
+	res = sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(val)}
 	return
 }
 

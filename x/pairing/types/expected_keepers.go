@@ -4,10 +4,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
+	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool, uint64)
+	IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool)
+	GetSpec(ctx sdk.Context, id uint64) (val spectypes.Spec, found bool)
 }
 
 type EpochstorageKeeper interface {

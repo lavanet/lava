@@ -20,8 +20,6 @@ import (
 	"github.com/lavanet/lava/x/epochstorage/client/cli"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
-	usertypes "github.com/lavanet/lava/x/user/types"
 )
 
 var (
@@ -183,9 +181,9 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 		am.keeper.SetEpochDetailsStart(ctx, block)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, servicertypes.ModuleName)
+		am.keeper.StoreEpochStakeStorage(ctx, block, types.ProviderKey)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, usertypes.ModuleName)
+		am.keeper.StoreEpochStakeStorage(ctx, block, types.ClientKey)
 		// Notify world we have a new session
 		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
 		logger := am.keeper.Logger(ctx)
@@ -204,11 +202,11 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 				utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
 			}
 		}
-		err := am.keeper.RemoveOldEpochData(ctx, servicertypes.ModuleName)
-		logOnErr(err, "RemoveOldEpochData servicer")
+		err := am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
+		logOnErr(err, "RemoveOldEpochData "+types.ProviderKey)
 
-		err = am.keeper.RemoveOldEpochData(ctx, usertypes.ModuleName)
-		logOnErr(err, "RemoveOldEpochData user")
+		err = am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
+		logOnErr(err, "RemoveOldEpochData "+types.ClientKey)
 
 		am.keeper.UpdateEarliestEpochstart(ctx)
 	}

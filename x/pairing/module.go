@@ -181,7 +181,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		// 2. unstake any unstaking servicers
 
 		//1.
-		err := am.keeper.RemoveOldEpochPayment(ctx) //this needs to be first, it uses earliest session start
+		err := am.keeper.RemoveOldEpochPayment(ctx)
 		logOnErr(err, "RemoveOldEpochPayment")
 
 		//2.

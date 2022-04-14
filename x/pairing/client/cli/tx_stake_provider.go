@@ -29,14 +29,18 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 			tmpArg := strings.Fields(args[2])
-			argEndpoints := []*epochstoragetypes.Endpoint{}
+			argEndpoints := []epochstoragetypes.Endpoint{}
 			for _, endpointStr := range tmpArg {
 				splitted := strings.Split(endpointStr, ",")
-				if len(splitted) != 2 {
-					return fmt.Errorf("invalid argument format in endpoints, must be: IP:PORT,useType IP:PORT,useType ...")
+				if len(splitted) != 3 {
+					return fmt.Errorf("invalid argument format in endpoints, must be: IP:PORT,useType,geolocation IP:PORT,useType,geolocation ...")
 				}
-				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1]}
-				argEndpoints = append(argEndpoints, &endpoint)
+				geoloc, err := strconv.ParseUint(splitted[3], 10, 64)
+				if err != nil {
+					return fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
+				}
+				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
+				argEndpoints = append(argEndpoints, endpoint)
 			}
 			argGeolocation, err := cast.ToUint64E(args[3])
 			if err != nil {
