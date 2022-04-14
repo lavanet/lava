@@ -1,0 +1,173 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "pairing/params.proto";
+import "pairing/epoch_payments.proto";
+// this line is used by starport scaffolding # 1
+import "pairing/client_payment_storage.proto";
+import "pairing/unique_payment_storage_client_provider.proto";
+import "epochstorage/stake_entry.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/params";
+  }
+  // Queries a list of Providers items.
+	rpc Providers(QueryProvidersRequest) returns (QueryProvidersResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
+	}
+
+// Queries a list of Clients items.
+	rpc Clients(QueryClientsRequest) returns (QueryClientsResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/clients/{chainID}";
+	}
+
+// Queries a list of GetPairing items.
+	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
+	}
+
+// Queries a list of VerifyPairing items.
+	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
+	}
+
+// Queries a UniquePaymentStorageClientProvider by index.
+	rpc UniquePaymentStorageClientProvider(QueryGetUniquePaymentStorageClientProviderRequest) returns (QueryGetUniquePaymentStorageClientProviderResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}";
+	}
+
+	// Queries a list of UniquePaymentStorageClientProvider items.
+	rpc UniquePaymentStorageClientProviderAll(QueryAllUniquePaymentStorageClientProviderRequest) returns (QueryAllUniquePaymentStorageClientProviderResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider";
+	}
+
+// Queries a ClientPaymentStorage by index.
+	rpc ClientPaymentStorage(QueryGetClientPaymentStorageRequest) returns (QueryGetClientPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/client_payment_storage/{index}";
+	}
+
+	// Queries a list of ClientPaymentStorage items.
+	rpc ClientPaymentStorageAll(QueryAllClientPaymentStorageRequest) returns (QueryAllClientPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/client_payment_storage";
+	}
+
+// Queries a EpochPayments by index.
+	rpc EpochPayments(QueryGetEpochPaymentsRequest) returns (QueryGetEpochPaymentsResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments/{index}";
+	}
+
+	// Queries a list of EpochPayments items.
+	rpc EpochPaymentsAll(QueryAllEpochPaymentsRequest) returns (QueryAllEpochPaymentsResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryProvidersRequest {
+  string chainID = 1;
+}
+
+message QueryProvidersResponse {
+}
+
+message QueryClientsRequest {
+  string chainID = 1;
+}
+
+message QueryClientsResponse {
+}
+
+message QueryGetPairingRequest {
+  string chainID = 1;
+  string client = 2;
+}
+
+message QueryGetPairingResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry providers = 1;
+}
+
+message QueryVerifyPairingRequest {
+  string chainID = 1;
+  string client = 2;
+  string provider = 3;
+  uint64 block = 4;
+}
+
+message QueryVerifyPairingResponse {
+  bool valid = 1;
+  bool overlap = 2;
+}
+
+message QueryGetUniquePaymentStorageClientProviderRequest {
+	  string index = 1;
+
+}
+
+message QueryGetUniquePaymentStorageClientProviderResponse {
+	UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllUniquePaymentStorageClientProviderRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllUniquePaymentStorageClientProviderResponse {
+	repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetClientPaymentStorageRequest {
+	  string index = 1;
+
+}
+
+message QueryGetClientPaymentStorageResponse {
+	ClientPaymentStorage clientPaymentStorage = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllClientPaymentStorageRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllClientPaymentStorageResponse {
+	repeated ClientPaymentStorage clientPaymentStorage = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetEpochPaymentsRequest {
+	  string index = 1;
+
+}
+
+message QueryGetEpochPaymentsResponse {
+	EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllEpochPaymentsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllEpochPaymentsResponse {
+	repeated EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// this line is used by starport scaffolding # 3

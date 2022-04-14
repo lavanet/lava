@@ -1,0 +1,20 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+import "gogoproto/gogo.proto";
+import "pairing/params.proto";
+import "pairing/unique_payment_storage_client_provider.proto";
+import "pairing/client_payment_storage.proto";
+import "pairing/epoch_payments.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// GenesisState defines the pairing module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProviderList = 2 [(gogoproto.nullable) = false];
+  repeated ClientPaymentStorage clientPaymentStorageList = 3 [(gogoproto.nullable) = false];
+  repeated EpochPayments epochPaymentsList = 4 [(gogoproto.nullable) = false];
+  // this line is used by starport scaffolding # genesis/proto/state
+}

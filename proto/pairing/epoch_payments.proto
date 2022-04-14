@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+import "pairing/client_payment_storage.proto"; 
+
+message EpochPayments {
+  string index = 1; 
+  repeated ClientPaymentStorage clientsPayments = 2; 
+  
+}
+

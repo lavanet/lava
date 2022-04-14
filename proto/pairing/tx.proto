@@ -1,0 +1,66 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+// this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "epochstorage/endpoint.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// Msg defines the Msg service.
+service Msg {
+      rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
+  rpc StakeClient(MsgStakeClient) returns (MsgStakeClientResponse);
+  rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
+  rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
+  rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgStakeProvider {
+  string creator = 1;
+  string chainID = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.Endpoint endpoints = 4;
+  uint64 geolocation = 5;
+}
+
+message MsgStakeProviderResponse {
+}
+
+message MsgStakeClient {
+  string creator = 1;
+  string chainID = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  uint64 geolocation = 4;
+}
+
+message MsgStakeClientResponse {
+}
+
+message MsgUnstakeProvider {
+  string creator = 1;
+  string chainID = 2;
+}
+
+message MsgUnstakeProviderResponse {
+}
+
+message MsgUnstakeClient {
+  string creator = 1;
+  string chainID = 2;
+}
+
+message MsgUnstakeClientResponse {
+}
+
+message MsgRelayPayment {
+  string creator = 1;
+  string chainID = 2;
+}
+
+message MsgRelayPaymentResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message
