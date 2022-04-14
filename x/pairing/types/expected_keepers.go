@@ -30,6 +30,7 @@ type EpochstorageKeeper interface {
 	RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64)
 	StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
+	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, previousEntries []epochstoragetypes.StakeEntry, found bool)
 }
 
 type AccountKeeper interface {

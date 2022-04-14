@@ -306,5 +306,15 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 		}
 		newStorage := tmpStorage.Copy()
 		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
+		k.SetStakeStorage(ctx, newStorage)
 	}
+}
+
+func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, previousEntries []types.StakeEntry, found bool) {
+	key := k.stakeStorageKey(storageType, block, chainID)
+	stakeStorage, found := k.GetStakeStorage(ctx, key)
+	if !found {
+		return nil, false
+	}
+	return stakeStorage.StakeEntries, true
 }

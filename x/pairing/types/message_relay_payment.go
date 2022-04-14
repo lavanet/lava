@@ -9,10 +9,10 @@ const TypeMsgRelayPayment = "relay_payment"
 
 var _ sdk.Msg = &MsgRelayPayment{}
 
-func NewMsgRelayPayment(creator string, chainID string) *MsgRelayPayment {
+func NewMsgRelayPayment(creator string, relays []*RelayRequest) *MsgRelayPayment {
 	return &MsgRelayPayment{
 		Creator: creator,
-		ChainID: chainID,
+		Relays:  relays,
 	}
 }
 

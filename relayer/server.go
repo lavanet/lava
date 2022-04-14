@@ -21,7 +21,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
@@ -32,7 +32,7 @@ var (
 	g_sessions       map[string]map[uint64]*RelaySession
 	g_sessions_mutex sync.Mutex
 	g_sentry         *sentry.Sentry
-	g_serverSpecId   uint64
+	g_serverChainID  string
 	g_txFactory      tx.Factory
 	g_chainProxy     chainproxy.ChainProxy
 )
@@ -40,11 +40,11 @@ var (
 type RelaySession struct {
 	CuSum uint64
 	Lock  sync.Mutex
-	Proof *servicertypes.RelayRequest // saves last relay request of a session as proof
+	Proof *pairingtypes.RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
-	servicertypes.UnimplementedRelayerServer
+	pairingtypes.UnimplementedRelayerServer
 }
 
 func askForRewards() {
@@ -55,7 +55,7 @@ func askForRewards() {
 		log.Println("active sessions", g_sessions)
 	}
 
-	relays := []*servicertypes.RelayRequest{}
+	relays := []*pairingtypes.RelayRequest{}
 	for user, userSessions := range g_sessions {
 
 		if g_sentry.IsAuthorizedUser(context.Background(), user) {
@@ -87,7 +87,7 @@ func askForRewards() {
 		return
 	}
 	log.Println("asking for rewards", g_sentry.Acc)
-	msg := servicertypes.NewMsgProofOfWork(g_sentry.Acc, relays)
+	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
@@ -109,7 +109,7 @@ func askForRewards() {
 	}
 }
 
-func getRelayUser(in *servicertypes.RelayRequest) (tenderbytes.HexBytes, error) {
+func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
 	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
 	if err != nil {
 		return nil, err
@@ -122,8 +122,8 @@ func isAuthorizedUser(ctx context.Context, userAddr string) bool {
 	return g_sentry.IsAuthorizedUser(ctx, userAddr)
 }
 
-func isSupportedSpec(in *servicertypes.RelayRequest) bool {
-	return uint64(in.SpecId) == g_serverSpecId
+func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
+	return in.ChainID == g_serverChainID
 }
 
 func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
@@ -142,7 +142,7 @@ func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
 	return userSessions[sessionId]
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *servicertypes.RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
@@ -164,7 +164,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *s
 	return nil
 }
 
-func (s *relayServer) Relay(ctx context.Context, in *servicertypes.RelayRequest) (*servicertypes.RelayReply, error) {
+func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
@@ -220,7 +220,7 @@ func Server(
 	txFactory tx.Factory,
 	listenAddr string,
 	nodeUrl string,
-	specId uint64,
+	ChainID string,
 ) {
 	//
 	// ctrl+c
@@ -234,7 +234,7 @@ func Server(
 
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, specId, false, askForRewards)
+	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -245,7 +245,7 @@ func Server(
 	}
 	g_sentry = sentry
 	g_sessions = map[string]map[uint64]*RelaySession{}
-	g_serverSpecId = specId
+	g_serverChainID = ChainID
 	g_txFactory = txFactory
 
 	//
@@ -269,7 +269,7 @@ func Server(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(specId, nodeUrl, 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy(ChainID, nodeUrl, 1, sentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
@@ -296,7 +296,7 @@ func Server(
 	}()
 
 	Server := &relayServer{}
-	servicertypes.RegisterRelayerServer(s, Server)
+	pairingtypes.RegisterRelayerServer(s, Server)
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

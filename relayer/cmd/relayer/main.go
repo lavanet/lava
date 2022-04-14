@@ -31,7 +31,7 @@ func main() {
 	)
 
 	var cmdServer = &cobra.Command{
-		Use:   "server [listen-ip] [listen-port] [node-url] [node-spec-id]",
+		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id]",
 		Short: "server",
 		Long:  `server`,
 		Args:  cobra.ExactArgs(4),
@@ -52,21 +52,21 @@ func main() {
 				return err
 			}
 
-			specId, err := strconv.Atoi(args[3])
+			chainID := args[3]
 			if err != nil {
 				return err
 			}
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], uint64(specId))
+			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], chainID)
 
 			return nil
 		},
 	}
 
 	var cmdPortalServer = &cobra.Command{
-		Use:   "portal_server [listen-ip] [listen-port] [relayer-spec-id]",
+		Use:   "portal_server [listen-ip] [listen-port] [relayer-chain-id]",
 		Short: "portal server",
 		Long:  `portal server`,
 		Args:  cobra.ExactArgs(3),
@@ -81,21 +81,18 @@ func main() {
 				return err
 			}
 
-			specId, err := strconv.Atoi(args[2])
-			if err != nil {
-				return err
-			}
+			chainID := args[2]
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, listenAddr, uint64(specId))
+			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID)
 
 			return nil
 		},
 	}
 
 	var cmdTestClient = &cobra.Command{
-		Use:   "test_client [spec-id]",
+		Use:   "test_client [chain-id]",
 		Short: "test client",
 		Long:  `test client`,
 		Args:  cobra.ExactArgs(1),
@@ -105,13 +102,13 @@ func main() {
 				return err
 			}
 
-			specId, err := strconv.Atoi(args[0])
+			chainID := args[0]
 			if err != nil {
 				return err
 			}
 
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, uint64(specId))
+			relayer.TestClient(ctx, clientCtx, chainID)
 
 			return nil
 		},

@@ -18,7 +18,7 @@ func CmdRelayPayment() *cobra.Command {
 		Short: "Broadcast message relayPayment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argChainID := args[0]
+			// argChainID := args[0]
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -27,7 +27,7 @@ func CmdRelayPayment() *cobra.Command {
 
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
-				argChainID,
+				[]*types.RelayRequest{},
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

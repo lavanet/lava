@@ -86,6 +86,7 @@ message QueryProvidersRequest {
 }
 
 message QueryProvidersResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1;
 }
 
 message QueryClientsRequest {

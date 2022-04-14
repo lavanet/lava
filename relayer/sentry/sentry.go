@@ -16,7 +16,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -33,7 +34,7 @@ type ClientSession struct {
 }
 
 type RelayerClientWrapper struct {
-	Client *servicertypes.RelayerClient
+	Client *pairingtypes.RelayerClient
 	Acc    string
 	Addr   string
 
@@ -49,17 +50,18 @@ type PaymentRequest struct {
 }
 
 type Sentry struct {
-	ClientCtx            client.Context
-	rpcClient            rpcclient.Client
-	specQueryClient      spectypes.QueryClient
-	servicerQueryClient  servicertypes.QueryClient
-	SpecId               uint64
-	NewTransactionEvents <-chan ctypes.ResultEvent
-	NewBlockEvents       <-chan ctypes.ResultEvent
-	isUser               bool
-	Acc                  string // account address (bech32)
-	newBlockCb           func()
-	processPaths         bool
+	ClientCtx               client.Context
+	rpcClient               rpcclient.Client
+	specQueryClient         spectypes.QueryClient
+	servicerQueryClient     pairingtypes.QueryClient
+	epochStorageQueryClient epochstoragetypes.QueryClient
+	ChainID                 string
+	NewTransactionEvents    <-chan ctypes.ResultEvent
+	NewBlockEvents          <-chan ctypes.ResultEvent
+	isUser                  bool
+	Acc                     string // account address (bech32)
+	newBlockCb              func()
+	processPaths            bool
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -90,11 +92,11 @@ type Sentry struct {
 }
 
 func (s *Sentry) getEarliestSession(ctx context.Context) error {
-	res, err := s.servicerQueryClient.EarliestSessionStart(ctx, &servicertypes.QueryGetEarliestSessionStartRequest{})
+	res, err := s.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
 	if err != nil {
 		return err
 	}
-	earliestBlock := res.EarliestSessionStart.Block.Num
+	earliestBlock := res.EpochDetails.EarliestStart
 	atomic.StoreUint64(&s.earliestSavedBlock, earliestBlock)
 	return nil
 }
@@ -108,15 +110,15 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 
 	//
 	// Get
-	res, err := s.servicerQueryClient.GetPairing(ctx, &servicertypes.QueryGetPairingRequest{
-		SpecName: s.GetSpecName(),
-		UserAddr: s.Acc,
+	res, err := s.servicerQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
+		ChainID: s.GetSpecName(),
+		Client:  s.Acc,
 	})
 	if err != nil {
 		return err
 	}
-	servicers := res.GetServicers()
-	if servicers == nil || len(servicers.Staked) == 0 {
+	servicers := res.GetProviders()
+	if servicers == nil || len(servicers) == 0 {
 		return errors.New("no servicers found")
 	}
 
@@ -131,20 +133,20 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	//
 	// Set
 	pairing := []*RelayerClientWrapper{}
-	for _, servicer := range servicers.Staked {
+	for _, servicer := range servicers {
 		//
 		// Sanity
-		servicerAddrs := servicer.GetOperatorAddresses()
-		if servicerAddrs == nil || len(servicerAddrs) == 0 {
-			log.Println("servicerAddrs == nil || len(servicerAddrs) == 0")
+		servicerEndpoints := servicer.GetEndpoints()
+		if servicerEndpoints == nil || len(servicerEndpoints) == 0 {
+			log.Println("servicerEndpoints == nil || len(servicerEndpoints) == 0")
 			continue
 		}
 
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:      servicer.Index,
-			Addr:     servicerAddrs[0],
+			Acc:      servicer.Address,
+			Addr:     servicerEndpoints[0].IPPORT,
 			Sessions: map[int64]*ClientSession{},
 		})
 	}
@@ -162,8 +164,8 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
-	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		Id: s.SpecId,
+	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+		ChainID: s.ChainID,
 	})
 	if err != nil {
 		return err
@@ -246,21 +248,15 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Sanity
 	if !s.isUser {
-		servicers, err := s.servicerQueryClient.StakedServicers(ctx, &servicertypes.QueryStakedServicersRequest{
-			SpecName: s.GetSpecName(),
+		servicers, err := s.servicerQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
+			ChainID: s.GetSpecName(),
 		})
 		if err != nil {
 			return err
 		}
-		if servicers.GetStakeStorage() == nil {
-			return errors.New("no stake storage")
-		}
-		if servicers.StakeStorage.GetStaked() == nil {
-			return errors.New("no staked")
-		}
 		found := false
-		for _, servicer := range servicers.StakeStorage.Staked {
-			if servicer.Index == s.Acc {
+		for _, servicer := range servicers.GetStakeEntry() {
+			if servicer.Address == s.Acc {
 				found = true
 				break
 			}
@@ -469,7 +465,7 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 	s.expectedPayments = append(s.expectedPayments, expectedPay)
 }
 
-func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*servicertypes.RelayerClient, error) {
+func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 
 	/*connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()*/
@@ -479,7 +475,7 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*servicerty
 	}
 	/*defer conn.Close()*/
 
-	c := servicertypes.NewRelayerClient(conn)
+	c := pairingtypes.NewRelayerClient(conn)
 	return &c, nil
 }
 
@@ -507,8 +503,8 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb func(clientSession *ClientSession) (*servicertypes.RelayReply, error),
-) (*servicertypes.RelayReply, error) {
+	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, error),
+) (*pairingtypes.RelayReply, error) {
 
 	s.pairingMu.RLock()
 
@@ -555,11 +551,11 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
 
-	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &servicertypes.QueryVerifyPairingRequest{
-		Spec:         s.SpecId,
-		UserAddr:     user,
-		ServicerAddr: s.Acc,
-		BlockNum:     uint64(s.GetBlockHeight()),
+	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+		ChainID:  s.ChainID,
+		Client:   user,
+		Provider: s.Acc,
+		Block:    uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
 		return false
@@ -625,19 +621,19 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 
 func NewSentry(
 	clientCtx client.Context,
-	specId uint64,
+	chainID string,
 	isUser bool,
 	newBlockCb func(),
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	servicerQueryClient := servicertypes.NewQueryClient(clientCtx)
+	servicerQueryClient := pairingtypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
 
 	//
 	// process paths for terra
 	processPaths := false
-	if specId == 2 {
+	if chainID == "Terra Columbus-5 mainnet" {
 		processPaths = true
 	}
 
@@ -646,7 +642,7 @@ func NewSentry(
 		rpcClient:           rpcClient,
 		specQueryClient:     specQueryClient,
 		servicerQueryClient: servicerQueryClient,
-		SpecId:              specId,
+		ChainID:             chainID,
 		isUser:              isUser,
 		Acc:                 acc,
 		newBlockCb:          newBlockCb,

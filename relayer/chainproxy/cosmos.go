@@ -13,7 +13,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/sentry"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -114,7 +114,7 @@ func (nm *CosmosMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *CosmosMessage) Send(ctx context.Context) (*servicertypes.RelayReply, error) {
+func (nm *CosmosMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
 		Timeout: time.Second * 2, // Timeout after 2 seconds
 	}
@@ -141,7 +141,7 @@ func (nm *CosmosMessage) Send(ctx context.Context) (*servicertypes.RelayReply, e
 		return nil, err
 	}
 
-	reply := &servicertypes.RelayReply{
+	reply := &pairingtypes.RelayReply{
 		Data: body,
 	}
 	return reply, nil
