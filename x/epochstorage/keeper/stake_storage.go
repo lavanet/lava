@@ -202,6 +202,7 @@ func (k Keeper) ModifyStakeEntry(ctx sdk.Context, storageType string, chainID st
 	if !found {
 		panic("called modify when there is no stakeStorage")
 	}
+	//TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := append(stakeStorage.StakeEntries[:removeIndex], stakeStorage.StakeEntries[removeIndex+1:]...)
 	// the following code inserts stakeEntry into the existing entries by stake
@@ -310,7 +311,7 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 	}
 }
 
-func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, previousEntries []types.StakeEntry, found bool) {
+func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
 	key := k.stakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)
 	if !found {

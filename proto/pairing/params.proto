@@ -11,9 +11,21 @@ message Params {
   
   uint64 minStakeProvider = 1 [(gogoproto.moretags) = "yaml:\"min_stake_provider\""];
   uint64 minStakeClient = 2 [(gogoproto.moretags) = "yaml:\"min_stake_client\""];
-  string mintCoinsPerCU = 3 [(gogoproto.moretags) = "yaml:\"mint_coins_per_cu\""];
-  string burnCoinsPerCU = 4 [(gogoproto.moretags) = "yaml:\"burn_coins_per_cu\""];
-  string fraudStakeSlashingFactor = 5 [(gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\""];
+  string mintCoinsPerCU = 3 [
+    (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string burnCoinsPerCU = 4 [
+    (gogoproto.moretags) = "yaml:\"burn_coins_per_cu\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string fraudStakeSlashingFactor = 5 [
+    (gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
   uint64 fraudSlashingAmount = 6 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
   uint64 servicersToPairCount = 7 [(gogoproto.moretags) = "yaml:\"servicers_to_pair_count\""];
   uint64 epochBlocksOverlap = 8 [(gogoproto.moretags) = "yaml:\"epoch_blocks_overlap\""];

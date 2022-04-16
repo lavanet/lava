@@ -79,6 +79,11 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 				details["neededStake"] = amount.Sub(existingEntry.Stake).String()
 				return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_update_amount", details, "insufficient funds to pay for difference in stake")
 			}
+			//
+			//TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
+			// then we need to change the Copy of StoreEpochStakeStorage to copy of the pointers only
+			// must also change the unstaking to create a new entry entirely
+
 			//paid the difference to module
 			existingEntry.Stake = amount
 			//we dont change deadlines and chain once they are set, if they need to change, unstake first

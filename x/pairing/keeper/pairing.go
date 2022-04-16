@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/rpc/core"
 )
@@ -66,11 +65,11 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	if !found {
 		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
 	}
-	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch)
+	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID)
 	return
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, servicerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, errorRet error) {
 	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
 	userStake, err := k.verifyPairingData(ctx, chainID, clientAddress, false, block)
 	if err != nil {
@@ -78,34 +77,35 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 		return false, false, nil, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
-	stakeStorage, previousOverlappingStakeStorage, err := k.GetSpecStakeStorageInSessionStorageForSpec(ctx, block, spec.Name)
-	if err != nil {
-		return false, false, nil, err
+	providerStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, block, epochstoragetypes.ProviderKey, chainID)
+	if !found {
+		return false, false, nil, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", block, chainID)
 	}
-	sessionStart, overlappingBlock, err := k.GetSessionStartForBlock(ctx, block)
-	if err != nil {
-		return false, false, nil, err
-	}
-	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, stakeStorage, clientAddress, *sessionStart)
+	epochStart, blockInEpoch := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID)
 	if errorRet != nil {
 		return false, false, nil, errorRet
 	}
 	for _, possibleAddr := range validAddresses {
-		if possibleAddr.Equals(servicerAddress) {
+		if possibleAddr.Equals(providerAddress) {
 			return true, false, userStake, nil
 		}
 	}
-	if previousOverlappingStakeStorage != nil {
-		if overlappingBlock == nil {
-			panic("no overlapping block but has overlapping stakeStorage")
+	//if overlap blocks is X then this is an overlap block if the residue, i.e blockInEpoch, is X-1 or lower
+	if blockInEpoch < k.EpochBlocksOverlap(ctx) {
+		//this is a block that can have overlap
+		previousEpochBlock := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
+		previousProviderStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, previousEpochBlock, epochstoragetypes.ProviderKey, chainID)
+		if !found {
+			return false, false, nil, fmt.Errorf("could not get previous provider epoch stake entries for: %d previous: %d, %s", block, previousEpochBlock, chainID)
 		}
-		_, validAddressesOverlap, errorRet := k.calculatePairingForClient(ctx, previousOverlappingStakeStorage, clientAddress, *overlappingBlock)
+		_, validAddressesOverlap, errorRet := k.calculatePairingForClient(ctx, previousProviderStakeEntries, clientAddress, previousEpochBlock, chainID)
 		if errorRet != nil {
 			return false, false, nil, errorRet
 		}
 		//check overlap addresses from previous session
 		for _, possibleAddr := range validAddressesOverlap {
-			if possibleAddr.Equals(servicerAddress) {
+			if possibleAddr.Equals(providerAddress) {
 				return true, true, userStake, nil
 			}
 		}
@@ -113,41 +113,42 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	return false, false, userStake, nil
 }
 
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, sessionStartBlock types.BlockNum) (validServicers []types.StakeMap, addrList []sdk.AccAddress, err error) {
-	if sessionStartBlock.Num > uint64(ctx.BlockHeight()) {
+func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, epochStartBlock uint64, chainID string) (validProviders []epochstoragetypes.StakeEntry, addrList []sdk.AccAddress, err error) {
+	if epochStartBlock > uint64(ctx.BlockHeight()) {
 		k.Logger(ctx).Error("\ninvalid session start\n")
-		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", sessionStartBlock.Num, uint64(ctx.BlockHeight())))
+		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
 	}
-	stakedServicers := stakedStorage.Staked
-	//create a list of valid servicers (deadline reached)
-	for _, stakeMap := range stakedServicers {
-		if stakeMap.Deadline.Num > uint64(ctx.BlockHeight()) {
-			//servicer deadline wasn't reached yet
+
+	//create a list of valid providers (deadline reached)
+	for _, stakeEntry := range providers {
+		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
+			//provider deadline wasn't reached yet
 			continue
 		}
-		validServicers = append(validServicers, stakeMap)
+		//TODO: take geolocation into account
+		validProviders = append(validProviders, stakeEntry)
 	}
 
-	//calculates a hash and randomly chooses the servicers
-	validServicers = k.returnSubsetOfServicersByStake(ctx, validServicers, k.ServicersToPairCount(ctx), sessionStartBlock.Num)
+	//calculates a hash and randomly chooses the providers
+	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, k.ServicersToPairCount(ctx), epochStartBlock, chainID)
 
-	for _, stakeMap := range validServicers {
-		servicerAddress := stakeMap.Index
-		servicerAccAddr, err := sdk.AccAddressFromBech32(servicerAddress)
+	for _, stakeEntry := range validProviders {
+		providerAddress := stakeEntry.Address
+		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
 		if err != nil {
-			panic(fmt.Sprintf("invalid servicer address saved in keeper %s, err: %s", servicerAddress, err))
+			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
 		}
-		addrList = append(addrList, servicerAccAddr)
+		addrList = append(addrList, providerAccAddr)
 	}
-	return validServicers, addrList, nil
+	return validProviders, addrList, nil
 }
 
-//this function randomly chooses count servicers by weight
-func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []types.StakeMap, count uint64, block uint64) (returnedServicers []types.StakeMap) {
+//this function randomly chooses count providers by weight
+func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
 	var stakeSum uint64 = 0
 	hashData := make([]byte, 0)
-	for _, stakedServicer := range servicersMaps {
-		stakeSum += stakedServicer.Stake.Amount.Uint64()
+	for _, stakedProvider := range providersMaps {
+		stakeSum += stakedProvider.Stake.Amount.Uint64()
 	}
 	if stakeSum == 0 {
 		//list is empty
@@ -156,15 +157,14 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 
 	//add the session start block hash to the function to make it as unpredictable as we can
 	block_height := int64(block)
-	sessionStartBlock, err := core.Block(nil, &block_height)
+	epochStartBlock, err := core.Block(nil, &block_height)
 	if err != nil {
 		k.Logger(ctx).Error("Failed To Get block from tendermint core")
 	}
-	sessionBlockHash := sessionStartBlock.Block.Hash()
-	// k.Logger(ctx).Error(fmt.Sprintf("Block Hash!!!: %s", sessionBlockHash))
+	sessionBlockHash := epochStartBlock.Block.Hash()
 	hashData = append(hashData, sessionBlockHash...)
+	hashData = append(hashData, chainID...) // to make this pairing unique per chainID
 
-	//TODO: sort servicers by stake (done only once), so we statisticly go over the list less
 	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
 	for it := 0; it < int(count); it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
@@ -172,24 +172,24 @@ func (k Keeper) returnSubsetOfServicersByStake(ctx sdk.Context, servicersMaps []
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.ModRaw(int64(stakeSum)).Uint64()
 		var newStakeSum uint64 = 0
-		for idx, stakedServicer := range servicersMaps {
+		for idx, stakedProvider := range providersMaps {
 			if indexToSkip[idx] {
 				//this is an index we added
 				continue
 			}
-			newStakeSum += stakedServicer.Stake.Amount.Uint64()
+			newStakeSum += stakedProvider.Stake.Amount.Uint64()
 			if modRes < newStakeSum {
-				//we hit our chosen servicer
-				returnedServicers = append(returnedServicers, stakedServicer)
-				stakeSum -= stakedServicer.Stake.Amount.Uint64() //we remove this servicer from the random pool, so the sum is lower now
+				//we hit our chosen provider
+				returnedProviders = append(returnedProviders, stakedProvider)
+				stakeSum -= stakedProvider.Stake.Amount.Uint64() //we remove this provider from the random pool, so the sum is lower now
 				indexToSkip[idx] = true
 				break
 			}
 		}
-		if uint64(len(returnedServicers)) >= count {
-			return returnedServicers
+		if uint64(len(returnedProviders)) >= count {
+			return returnedProviders
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
-	return returnedServicers
+	return returnedProviders
 }

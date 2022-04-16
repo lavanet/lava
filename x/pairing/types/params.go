@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -10,33 +11,29 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMinStakeProvider = []byte("MinStakeProvider")
-	// TODO: Determine the default value
+	KeyMinStakeProvider            = []byte("MinStakeProvider")
 	DefaultMinStakeProvider uint64 = 1000
 )
 
 var (
-	KeyMinStakeClient = []byte("MinStakeClient")
-	// TODO: Determine the default value
+	KeyMinStakeClient            = []byte("MinStakeClient")
 	DefaultMinStakeClient uint64 = 100
 )
 
 var (
-	KeyMintCoinsPerCU = []byte("MintCoinsPerCU")
-	// TODO: Determine the default value
-	DefaultMintCoinsPerCU string = "0.1"
+	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
+	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) //0.1
 )
 
 var (
-	KeyBurnCoinsPerCU = []byte("BurnCoinsPerCU")
-	// TODO: Determine the default value
-	DefaultBurnCoinsPerCU string = "0.05"
+	KeyBurnCoinsPerCU             = []byte("BurnCoinsPerCU")
+	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
 )
 
 var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
 	// TODO: Determine the default value
-	DefaultFraudStakeSlashingFactor string = "0.0"
+	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) //0
 )
 
 var (
@@ -66,9 +63,9 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(
 	minStakeProvider uint64,
 	minStakeClient uint64,
-	mintCoinsPerCU string,
-	burnCoinsPerCU string,
-	fraudStakeSlashingFactor string,
+	mintCoinsPerCU sdk.Dec,
+	burnCoinsPerCU sdk.Dec,
+	fraudStakeSlashingFactor sdk.Dec,
 	fraudSlashingAmount uint64,
 	servicersToPairCount uint64,
 	epochBlocksOverlap uint64,
