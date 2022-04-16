@@ -98,7 +98,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				panic(fmt.Sprintf("failed to get spec for index: %d", relay.ChainID))
 			}
 			burnAmount := sdk.Coin{Amount: amountToBurnClient, Denom: "stake"}
-			burnSucceeded, err2 := k.userKeeper.BurnUserStake(ctx, usertypes.SpecName{Name: spec.Name}, clientAddr, burnAmount, false)
+			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Name, clientAddr, burnAmount, false)
 			if err2 != nil {
 				details["amountToBurn"] = burnAmount.String()
 				details["error"] = err2.Error()
