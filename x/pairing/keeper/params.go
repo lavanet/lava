@@ -51,19 +51,19 @@ func (k Keeper) GetMinStakeClient(ctx sdk.Context) (res sdk.Coin) {
 }
 
 // MintCoinsPerCU returns the MintCoinsPerCU param
-func (k Keeper) MintCoinsPerCU(ctx sdk.Context) (res string) {
+func (k Keeper) MintCoinsPerCU(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyMintCoinsPerCU, &res)
 	return
 }
 
 // BurnCoinsPerCU returns the BurnCoinsPerCU param
-func (k Keeper) BurnCoinsPerCU(ctx sdk.Context) (res string) {
+func (k Keeper) BurnCoinsPerCU(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyBurnCoinsPerCU, &res)
 	return
 }
 
 // FraudStakeSlashingFactor returns the FraudStakeSlashingFactor param
-func (k Keeper) FraudStakeSlashingFactor(ctx sdk.Context) (res string) {
+func (k Keeper) FraudStakeSlashingFactor(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyFraudStakeSlashingFactor, &res)
 	return
 }

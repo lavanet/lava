@@ -79,7 +79,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		//
 		if isValidPairing {
 			//pairing is valid, we can pay servicer for work
-			uintReward := uint64(float64(relay.CuSum) * k.Keeper.GetCoinsPerCU(ctx))
+			uintReward := uint64(float64(relay.CuSum) * k.Keeper.MintCoinsPerCU(ctx))
 			if uintReward == 0 {
 				continue
 			}
