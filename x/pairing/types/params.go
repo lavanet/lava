@@ -181,7 +181,7 @@ func validateMinStakeClient(v interface{}) error {
 
 // validateMintCoinsPerCU validates the MintCoinsPerCU param
 func validateMintCoinsPerCU(v interface{}) error {
-	mintCoinsPerCU, ok := v.(string)
+	mintCoinsPerCU, ok := v.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
@@ -194,7 +194,7 @@ func validateMintCoinsPerCU(v interface{}) error {
 
 // validateBurnCoinsPerCU validates the BurnCoinsPerCU param
 func validateBurnCoinsPerCU(v interface{}) error {
-	burnCoinsPerCU, ok := v.(string)
+	burnCoinsPerCU, ok := v.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
@@ -207,7 +207,7 @@ func validateBurnCoinsPerCU(v interface{}) error {
 
 // validateFraudStakeSlashingFactor validates the FraudStakeSlashingFactor param
 func validateFraudStakeSlashingFactor(v interface{}) error {
-	fraudStakeSlashingFactor, ok := v.(string)
+	fraudStakeSlashingFactor, ok := v.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}

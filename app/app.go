@@ -93,9 +93,9 @@ import (
 	"github.com/lavanet/lava/docs"
 	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	pairingmodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingmodule "github.com/lavanet/lava/x/pairing"
+	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	servicermodule "github.com/lavanet/lava/x/servicer"
 	servicermodulekeeper "github.com/lavanet/lava/x/servicer/keeper"
@@ -289,6 +289,7 @@ func New(
 		servicermoduletypes.StoreKey,
 		usermoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
+		pairingmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -416,6 +417,18 @@ func New(
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(appCodec,
+		keys[usermoduletypes.StoreKey],
+		keys[usermoduletypes.MemStoreKey],
+		app.GetSubspace(usermoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		app.EpochstorageKeeper)
+
+	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.UserKeeper = *usermodulekeeper.NewKeeper(
 		appCodec,
 		keys[usermoduletypes.StoreKey],
@@ -485,6 +498,7 @@ func New(
 		servicerModule,
 		userModule,
 		epochstorageModule,
+		pairingModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -496,7 +510,7 @@ func New(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		feegrant.ModuleName,
-		epochstoragemoduletypes.ModuleName,
+		epochstoragemoduletypes.ModuleName, pairingmoduletypes.ModuleName,
 		servicermoduletypes.ModuleName, usermoduletypes.ModuleName,
 	)
 
@@ -525,6 +539,7 @@ func New(
 		servicermoduletypes.ModuleName,
 		usermoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		pairingmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -551,6 +566,7 @@ func New(
 		servicerModule,
 		userModule,
 		epochstorageModule,
+		pairingModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -742,6 +758,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(servicermoduletypes.ModuleName)
 	paramsKeeper.Subspace(usermoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
+	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
