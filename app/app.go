@@ -93,7 +93,10 @@ import (
 	"github.com/lavanet/lava/docs"
 	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	pairingmodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingmodule "github.com/lavanet/lava/x/pairing"
+	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	servicermodule "github.com/lavanet/lava/x/servicer"
 	servicermodulekeeper "github.com/lavanet/lava/x/servicer/keeper"
 	servicermoduletypes "github.com/lavanet/lava/x/servicer/types"
@@ -163,6 +166,7 @@ var (
 		servicermodule.AppModuleBasic{},
 		usermodule.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
+		pairingmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -178,6 +182,7 @@ var (
 		servicermoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		usermoduletypes.ModuleName:         {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -242,6 +247,8 @@ type App struct {
 	UserKeeper usermodulekeeper.Keeper
 
 	EpochstorageKeeper epochstoragemodulekeeper.Keeper
+
+	PairingKeeper pairingmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
