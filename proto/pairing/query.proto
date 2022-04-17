@@ -86,7 +86,8 @@ message QueryProvidersRequest {
 }
 
 message QueryProvidersResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1;
+	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
+	string output =2;
 }
 
 message QueryClientsRequest {
@@ -94,6 +95,8 @@ message QueryClientsRequest {
 }
 
 message QueryClientsResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
+	string output =2;
 }
 
 message QueryGetPairingRequest {
@@ -102,7 +105,7 @@ message QueryGetPairingRequest {
 }
 
 message QueryGetPairingResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry providers = 1;
+	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryVerifyPairingRequest {

@@ -8,7 +8,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-func (k Keeper) EnforceClientCUsUsageInSession(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry, totalCU uint64) error {
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry, totalCU uint64) error {
 	var allowedCU uint64 = 0
 	type stakeToCU struct {
 		stake sdk.Coin

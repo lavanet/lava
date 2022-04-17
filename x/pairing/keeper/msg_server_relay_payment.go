@@ -42,7 +42,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		//
 		// TODO: add support for spec changes
-		ok, _, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
+		ok, _, specId := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
 			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID)}, "invalid spec ID specified in proof")
 		}
@@ -67,10 +67,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		totalCUInEpochForUser, err := k.Keeper.AddEpochPayment(ctx, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
-			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.EpochId, 16)}
+			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
-		err = k.EnforceUserCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUser)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUser)
 		if err != nil {
 			//TODO: maybe give servicer money but burn user, colluding?
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10)}
@@ -79,25 +79,23 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		//
 		if isValidPairing {
 			//pairing is valid, we can pay servicer for work
-			uintReward := uint64(float64(relay.CuSum) * k.Keeper.MintCoinsPerCU(ctx))
-			if uintReward == 0 {
+			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
+			if reward.IsZero() {
 				continue
 			}
-
-			reward := sdk.NewIntFromUint64(uintReward)
-			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward}}
+			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 
 			details := map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the servicer
-			clientBurn := k.Keeper.userKeeper.GetCoinsPerCU(ctx)
-			amountToBurnClient := sdk.NewIntFromUint64(uint64(float64(relay.CuSum) * clientBurn))
-			spec, found := k.specKeeper.GetSpec(ctx, uint64(relay.ChainID))
+			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
+			spec, found := k.specKeeper.GetSpec(ctx, specId)
 			if !found {
-				details["chainID"] = strconv.FormatUint(uint64(relay.ChainID), 10)
+				details["chainID"] = relay.ChainID
+				details["specID"] = strconv.FormatUint(specId, 10)
 				errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
-				panic(fmt.Sprintf("failed to get spec for index: %d", relay.ChainID))
+				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-			burnAmount := sdk.Coin{Amount: amountToBurnClient, Denom: "stake"}
+			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
 			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Name, clientAddr, burnAmount, false)
 			if err2 != nil {
 				details["amountToBurn"] = burnAmount.String()
