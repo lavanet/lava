@@ -12,19 +12,19 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyUnstakeHoldBlocks = []byte("UnstakeHoldBlocks")
 	// TODO: Determine the default value
-	DefaultUnstakeHoldBlocks uint64 = 0
+	DefaultUnstakeHoldBlocks uint64 = 210
 )
 
 var (
 	KeyEpochBlocks = []byte("EpochBlocks")
 	// TODO: Determine the default value
-	DefaultEpochBlocks uint64 = 0
+	DefaultEpochBlocks uint64 = 20
 )
 
 var (
 	KeyEpochsToSave = []byte("EpochsToSave")
 	// TODO: Determine the default value
-	DefaultEpochsToSave uint64 = 0
+	DefaultEpochsToSave uint64 = 10
 )
 
 // ParamKeyTable the param key table for launch module
