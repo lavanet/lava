@@ -176,7 +176,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		}
 	}
 	if am.keeper.IsEpochStart(ctx) {
-		utils.LavaError(ctx, logger, "new_epoch_pairing", map[string]string{}, "new epoch yay")
 		//on session start we need to do:
 		// 1. remove old session payments
 		// 2. unstake any unstaking providers

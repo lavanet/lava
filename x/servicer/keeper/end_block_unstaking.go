@@ -11,13 +11,14 @@ import (
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	//this pops all the entries that had their deadline pass
-	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, types.ModuleName, uint64(ctx.BlockHeight()))
-	if unstakingEntriesToCredit == nil {
-		//no entries to handle
-		return nil
-	}
-	err := k.creditUnstakingServicers(ctx, unstakingEntriesToCredit)
-	return err
+	// unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, types.ModuleName, uint64(ctx.BlockHeight()))
+	// if unstakingEntriesToCredit == nil {
+	// 	//no entries to handle
+	// 	return nil
+	// }
+	// err := k.creditUnstakingServicers(ctx, unstakingEntriesToCredit)
+	// return err
+	return nil
 }
 
 func (k Keeper) creditUnstakingServicers(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) error {
