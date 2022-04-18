@@ -173,7 +173,11 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.ModRaw(int64(stakeSum)).Uint64()
 		var newStakeSum uint64 = 0
-		for idx, stakedProvider := range providersMaps {
+		//we loop the servicers list form the end because the list is sorted, biggest is last,
+		// and statistically this will have less iterations
+
+		for idx := len(providersMaps) - 1; idx >= 0; idx-- {
+			stakedProvider := providersMaps[idx]
 			if indexToSkip[idx] {
 				//this is an index we added
 				continue
