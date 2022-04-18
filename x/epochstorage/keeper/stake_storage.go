@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -314,11 +315,13 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []types.StakeEntry) {
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	if !found {
+		utils.LavaError(ctx, k.Logger(ctx), "stakeStorageUnstake", map[string]string{}, "stakeStorageUnstake Emptry!")
 		return nil
 	}
 	found_idx := -1
 	// the unstaking is a sorted list so just chekcing until an entry deadline is too big
 	for idx, entry := range stakeStorage.StakeEntries {
+		utils.LavaError(ctx, k.Logger(ctx), "check", map[string]string{"entry": entry.String(), "block": strconv.FormatUint(block, 10)}, "checking unstake entry")
 		if entry.Deadline <= block {
 			// found an enrty that its deadline is less equal to the wanted block number
 			value = append(value, entry)
