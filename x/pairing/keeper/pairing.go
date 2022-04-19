@@ -70,18 +70,19 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, errorRet error) {
+	epochStart, blockInEpoch := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
 	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
-	userStake, err := k.verifyPairingData(ctx, chainID, clientAddress, false, block)
+	userStake, err := k.verifyPairingData(ctx, chainID, clientAddress, false, epochStart)
 	if err != nil {
 		//user is not valid for pairing
 		return false, false, nil, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
-	providerStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, block, epochstoragetypes.ProviderKey, chainID)
+	providerStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epochStart, epochstoragetypes.ProviderKey, chainID)
 	if !found {
-		return false, false, nil, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", block, chainID)
+		return false, false, nil, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", epochStart, chainID)
 	}
-	epochStart, blockInEpoch := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+
 	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID)
 	if errorRet != nil {
 		return false, false, nil, errorRet

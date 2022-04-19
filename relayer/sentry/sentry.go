@@ -53,7 +53,7 @@ type Sentry struct {
 	ClientCtx               client.Context
 	rpcClient               rpcclient.Client
 	specQueryClient         spectypes.QueryClient
-	servicerQueryClient     pairingtypes.QueryClient
+	pairingQueryClient      pairingtypes.QueryClient
 	epochStorageQueryClient epochstoragetypes.QueryClient
 	ChainID                 string
 	NewTransactionEvents    <-chan ctypes.ResultEvent
@@ -96,7 +96,7 @@ func (s *Sentry) getEarliestSession(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	earliestBlock := res.EpochDetails.EarliestStart
+	earliestBlock := res.GetEpochDetails().EarliestStart
 	atomic.StoreUint64(&s.earliestSavedBlock, earliestBlock)
 	return nil
 }
@@ -110,7 +110,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 
 	//
 	// Get
-	res, err := s.servicerQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
+	res, err := s.pairingQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
 		ChainID: s.GetSpecName(),
 		Client:  s.Acc,
 	})
@@ -248,7 +248,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Sanity
 	if !s.isUser {
-		servicers, err := s.servicerQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
+		servicers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
 			ChainID: s.GetSpecName(),
 		})
 		if err != nil {
@@ -279,7 +279,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
-			if servicerAddrList, ok := e.Events["lava_relay_payment.servicer"]; ok {
+			if servicerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
 				for _, servicerAddr := range servicerAddrList {
 					if s.Acc == servicerAddr {
 						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
@@ -551,7 +551,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
 
-	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   user,
 		Provider: s.Acc,
@@ -627,7 +627,8 @@ func NewSentry(
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	servicerQueryClient := pairingtypes.NewQueryClient(clientCtx)
+	pairingQueryClient := pairingtypes.NewQueryClient(clientCtx)
+	epochStorageQueryClient := epochstoragetypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
 
 	//
@@ -638,14 +639,15 @@ func NewSentry(
 	}
 
 	return &Sentry{
-		ClientCtx:           clientCtx,
-		rpcClient:           rpcClient,
-		specQueryClient:     specQueryClient,
-		servicerQueryClient: servicerQueryClient,
-		ChainID:             chainID,
-		isUser:              isUser,
-		Acc:                 acc,
-		newBlockCb:          newBlockCb,
-		processPaths:        processPaths,
+		ClientCtx:               clientCtx,
+		rpcClient:               rpcClient,
+		specQueryClient:         specQueryClient,
+		pairingQueryClient:      pairingQueryClient,
+		epochStorageQueryClient: epochStorageQueryClient,
+		ChainID:                 chainID,
+		isUser:                  isUser,
+		Acc:                     acc,
+		newBlockCb:              newBlockCb,
+		processPaths:            processPaths,
 	}
 }
