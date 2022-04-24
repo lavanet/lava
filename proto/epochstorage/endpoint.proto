@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+
+message Endpoint {
+  
+  string iPPORT = 1; 
+  string useType = 2;
+  uint64 geolocation = 3; 
+}

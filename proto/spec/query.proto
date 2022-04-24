@@ -26,6 +26,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/spec/spec";
 	}
 
+// Queries a list of Chain items.
+	rpc Chain(QueryChainRequest) returns (QueryChainResponse) {
+		option (google.api.http).get = "/lavanet/lava/spec/chain/{chainID}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -53,6 +58,14 @@ message QueryAllSpecRequest {
 message QueryAllSpecResponse {
 	repeated Spec Spec = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryChainRequest {
+  string chainID = 1;
+}
+
+message QueryChainResponse {
+  Spec spec = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

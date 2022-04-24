@@ -70,11 +70,11 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 func TestClient(
 	ctx context.Context,
 	clientCtx client.Context,
-	specId uint64,
+	chainID string,
 ) {
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, specId, true, nil)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -86,7 +86,7 @@ func TestClient(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(specId, "", 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy(chainID, "", 1, sentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
@@ -109,10 +109,10 @@ func TestClient(
 
 	//
 	// Run tests
-	switch specId {
-	case 0, 1:
+	switch chainID {
+	case "Ethereum Mainnet", "Ethereum Rinkeby":
 		ethTests(ctx, chainProxy, privKey)
-	case 2:
+	case "Terra Columbus-5 mainnet":
 		terraTests(ctx, chainProxy, privKey)
 	}
 }

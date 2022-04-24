@@ -5,8 +5,8 @@
 
 # Events Description:
 
-Module | Event name | type | description | attr name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute |
------- | ---------- | ---- | ----------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
+Module | Event name | type | description | attr name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute |name | attribute | name | attribute |
+------ | ---------- | ---- | ----------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
 User | lava_user_stake_new | Tx | sent upon successful stake of a new user | spec | spec name | user | staked user address | deadline | the block height in which the user can start getting pairings | stake | the stake deposited by the user | requestedDeadline | the deadline the user requested
 User | lava_user_stake_update | Tx | sent upon successful update of an existing user stake | spec | spec name | user | staked user address | deadline | the block height in which the user can start getting pairings | stake | the stake deposited by the user | requestedDeadline | the deadline the user requested
 User | lava_user_unstake_schedule | Tx | sent upon successful registration for unstaking | spec | spec name | user | unstaked user address requested | deadline | the block height in which the user will be fully unstaked | stake | the stake that will be claimed by the user | requestedDeadline | the deadline the user requested for unstaking
@@ -15,7 +15,7 @@ Servicer | lava_servicer_stake_new | Tx | sent upon successful stake of a new se
 Servicer | lava_servicer_stake_update | Tx | sent upon successful update of an existing servicer stake | spec | the spec name | servicer | staked servicer address | deadline | the block height in which the servicer can start getting pairings | stake | the stake deposited by the servicer | requestedDeadline | the deadline the servicer requested
 Servicer | lava_servicer_unstake_schedule | Tx | sent upon successful registration for unstaking | spec | the spec name | servicer | unstaked servicer address requested | deadline | the block height in which the servicer will be fully unstaked | stake | the stake that will be claimed by the servicer | requestedDeadline | the deadline the servicer requested for unstaking
 Servicer | lava_servicer_unstake_commit | NewBlock | sent upon the commit of a registered unstake request | spec | the spec name | servicer | unstaked servicer address requested | stake | the stake that will be claimed by the servicer 
-Servicer | lava_relay_payment | Tx | sent upon the successful payment for a relay batch | chainID | the ID of the chain | client | the client that requested the relay | servicer |  the servicer that got paid for his work | CU | the compute units delivered | Mint | the coins minted for the servicer | totalCUInSession | the total CU used by the client in all of the session | isOverlap | true/false for overlap between sessions
+Servicer | lava_relay_payment | Tx | sent upon the successful payment for a relay batch | chainID | the ID of the chain | client | the client that requested the relay | servicer |  the servicer that got paid for his work | CU | the compute units delivered | Mint | the coins minted for the servicer | totalCUInSession | the total CU used by the client in all of the session |clientFee | payment by user | isOverlap | true/false for overlap between sessions
 Gov | lava_param_change | Tx | sent upon the successful change of a param by GOV | param | the param name to be changed | value | the new value
 Spec | lava_spec_add | Tx | sent upon adding a spec proposal passed and performed | spec | the spec name | status | the spec status | chainID | the spec chain ID
 Spec | lava_spec_modify | Tx | sent upon modifying an existing spec proposal passed and performed | spec | the spec name | status | the spec status | chainID | the spec chain ID
@@ -35,7 +35,7 @@ utils.LavaError()
 
 Module | Event name | type | description | attr name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute | name | attribute |
 ------ | ---------- | ---- | ----------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
-Servicer | ERR_new_session | NewBlock | sent upon an error on session parameters update | error | the error that occured
+Servicer | ERR_new_epoch | NewBlock | sent upon an error on session parameters update | error | the error that occured
 Servicer | ERR_servicer_unstaking_credit | NewBlock | sent upon an error in crediting a servicer after unstake deadline was reached | spec | the spec name | error | the error that occured | servicer | unstaking servicer address | stake | the stake that needs to be credited
 Servicer | ERR_servicer_unstaking_deadline | NewBlock | sent upon an error in setting a new deadline for unstaking callback  | minDeadline | the callback we are trying to set | height | the block we are currently at | unstakingCount | the number of unstaking servicers | deletedIndexes | the amount of unstaking servicers we credited already
 Servicer | ERR_relay_proof_sig | Tx | sent upon an error in recovery of the public key of a client in relay proof  | sig | the data that was parsing the key

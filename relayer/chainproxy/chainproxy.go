@@ -8,13 +8,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
-	Send(ctx context.Context) (*servicertypes.RelayReply, error)
+	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
 }
 
 type ChainProxy interface {
@@ -24,14 +24,14 @@ type ChainProxy interface {
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 }
 
-func GetChainProxy(specId uint64, nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
-	switch specId {
-	case 0, 1:
+func GetChainProxy(chainID string, nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
+	switch chainID {
+	case "Ethereum Mainnet", "Ethereum Rinkeby":
 		return NewEthereumChainProxy(nodeUrl, nConns, sentry), nil
-	case 2:
+	case "Terra Columbus-5 mainnet":
 		return NewCosmosChainProxy(nodeUrl, sentry), nil
 	}
-	return nil, fmt.Errorf("chain proxy for chain id (%d) not found", specId)
+	return nil, fmt.Errorf("chain proxy for chain id (%d) not found", chainID)
 }
 
 func SendRelay(
@@ -40,7 +40,7 @@ func SendRelay(
 	privKey *btcec.PrivateKey,
 	url string,
 	req string,
-) (*servicertypes.RelayReply, error) {
+) (*pairingtypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
@@ -51,15 +51,15 @@ func SendRelay(
 
 	//
 	//
-	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*servicertypes.RelayReply, error) {
+	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
 		clientSession.CuSum += nodeMsg.GetServiceApi().ComputeUnits
 
-		relayRequest := &servicertypes.RelayRequest{
-			Servicer:    clientSession.Client.Acc,
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:    clientSession.Client.Acc,
 			ApiUrl:      url,
 			Data:        []byte(req),
 			SessionId:   uint64(clientSession.SessionId),
-			SpecId:      uint32(cp.GetSentry().SpecId),
+			ChainID:     cp.GetSentry().ChainID,
 			CuSum:       clientSession.CuSum,
 			BlockHeight: cp.GetSentry().GetBlockHeight(),
 		}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -69,7 +69,7 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	return (secp256k1.PubKey)(pk), nil
 }
 
-func RecoverPubKeyFromRelay(in *servicertypes.RelayRequest) (secp256k1.PubKey, error) {
+func RecoverPubKeyFromRelay(in *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
 	tmp := in.Sig
 	in.Sig = []byte{}
 	hash := HashMsg([]byte(in.String()))
@@ -82,7 +82,7 @@ func RecoverPubKeyFromRelay(in *servicertypes.RelayRequest) (secp256k1.PubKey, e
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromRelayReply(in *servicertypes.RelayReply) (secp256k1.PubKey, error) {
+func RecoverPubKeyFromRelayReply(in *pairingtypes.RelayReply) (secp256k1.PubKey, error) {
 	tmp := in.Sig
 	in.Sig = []byte{}
 	hash := HashMsg([]byte(in.String()))

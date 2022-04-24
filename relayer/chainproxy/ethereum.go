@@ -11,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/sentry"
-	servicertypes "github.com/lavanet/lava/x/servicer/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -165,7 +165,7 @@ func (nm *EthereumMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *EthereumMessage) Send(ctx context.Context) (*servicertypes.RelayReply, error) {
+func (nm *EthereumMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	//
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
@@ -201,7 +201,7 @@ func (nm *EthereumMessage) Send(ctx context.Context) (*servicertypes.RelayReply,
 	if err != nil {
 		return nil, err
 	}
-	reply := &servicertypes.RelayReply{
+	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 	return reply, nil

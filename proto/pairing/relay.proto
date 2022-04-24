@@ -1,0 +1,26 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+service Relayer {
+    rpc Relay (RelayRequest) returns (RelayReply) {}
+}
+
+message RelayRequest {
+    string chainID = 1;
+    uint32 api_id = 2;
+    string api_url = 3; // some relays have associated urls that are filled with params ('/block/{height}')
+    uint64 session_id = 4;
+    uint64 cu_sum = 5; // total compute unit used including this relay
+
+    bytes data = 6;
+    bytes sig = 7;
+    string provider = 8;
+    int64 block_height = 9;
+}
+
+message RelayReply {
+    bytes data = 1;
+    bytes sig = 2;
+}
