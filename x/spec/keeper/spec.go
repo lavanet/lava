@@ -46,7 +46,6 @@ func (k Keeper) AppendSpec(
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
 	appendedValue := k.cdc.MustMarshal(&spec)
 	store.Set(GetSpecIDBytes(spec.Id), appendedValue)
-
 	// Update spec count
 	k.SetSpecCount(ctx, count+1)
 
@@ -105,7 +104,7 @@ func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bo
 		var val types.Spec
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.Name == specName {
-			if val.Status == "enabled" {
+			if val.Status {
 				return true, true, val.Id
 			}
 			// specs are unique, theres no reason to keep iterating
@@ -122,7 +121,7 @@ func (k Keeper) IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool) 
 	if !found {
 		return false, false
 	}
-	if val.Status == "enabled" {
+	if val.Status {
 		return true, true
 	}
 	// spec is found but disabled

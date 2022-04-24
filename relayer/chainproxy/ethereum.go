@@ -66,7 +66,7 @@ func (cp *EthereumChainProxy) Start(ctx context.Context) error {
 
 func (cp *EthereumChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
 	if api, ok := cp.sentry.GetSpecApiByName(name); ok {
-		if api.Status != "enabled" {
+		if !api.Status {
 			return nil, errors.New("api is disabled")
 		}
 		return &api, nil

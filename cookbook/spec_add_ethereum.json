@@ -4,293 +4,635 @@
   "specs": [
     {
       "name": "Ethereum Mainnet",
-      "status": "enabled",
+      "status": true,
       "apis": [
         {
           "name": "rpc_modules",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "net_version",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_chainId",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_syncing",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_protocolVersion",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "net_listening",
           "compute_units": "1",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_uninstallFilter",
           "compute_units": "10",
-          "status": "disabled"
+          "status": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_accounts",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_blockNumber",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_subscribe",
           "compute_units": "10",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_unsubscribe",
           "compute_units": "10",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_feeHistory",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_maxPriorityFeePerGas",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_createAccessList",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getTransactionReceipt",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getUncleByBlockHashAndIndex",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getUncleByBlockNumberAndIndex",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getTransactionByBlockHashAndIndex",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getTransactionByBlockNumberAndIndex",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getUncleCountByBlockHash",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getUncleCountByBlockNumber",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "web3_clientVersion",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "web3_sha3",
           "compute_units": "15",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getBlockByNumber",
           "compute_units": "16",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getStorageAt",
           "compute_units": "17",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getTransactionByHash",
           "compute_units": "17",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_get",
           "compute_units": "17",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "alchemy_getTokenAllowance",
           "compute_units": "19",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_gasPrice",
           "compute_units": "19",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getBalance",
           "compute_units": "19",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getCode",
           "compute_units": "19",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getFilterChanges",
           "compute_units": "20",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_newBlockFilter",
           "compute_units": "20",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_newFilter",
           "compute_units": "20",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_newPendingTransactionFilter",
           "compute_units": "20",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getBlockTransactionCountByHash",
           "compute_units": "20",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getBlockTransactionCountByNumber",
           "compute_units": "20",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getProof",
           "compute_units": "21",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getBlockByHash",
           "compute_units": "21",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_block",
           "compute_units": "24",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getTransactionCount",
           "compute_units": "26",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_call",
           "compute_units": "26",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_transaction",
           "compute_units": "26",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getFilterLogs",
           "compute_units": "75",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_getLogs",
           "compute_units": "75",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_call",
           "compute_units": "75",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_callMany",
           "compute_units": "75",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_rawTransaction",
           "compute_units": "75",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_filter",
           "compute_units": "75",
-          "status": "disabled"
+          "status": false,
+           "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_estimateGas",
           "compute_units": "87",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_sendRawTransaction",
           "compute_units": "250",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "debug_traceTransaction",
           "compute_units": "309",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_replayTransaction",
           "compute_units": "2983",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "trace_replayBlockTransactions",
           "compute_units": "2983",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         }
       ]
     },
     {
       "name": "Ethereum Rinkeby",
-      "status": "enabled",
+      "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] ,
       "apis": [
         {
           "name": "eth_getBalance",
           "compute_units": "10",
-          "status": "enabled"
+          "status": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         },
         {
           "name": "eth_codeAt",
           "compute_units": "20",
-          "status": "disabled"
+          "status": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get"
+            }
+          ] 
         }
       ]
     }

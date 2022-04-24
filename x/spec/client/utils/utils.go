@@ -8,15 +8,21 @@ import (
 )
 
 type (
+	ApiInterfaceJSON struct {
+		Interface string `json:"interface" yaml:"interface"`
+		Type      string `json:"type" yaml:"type"`
+	}
+
 	ApiJSON struct {
-		Name         string `json:"name" yaml:"name"`
-		ComputeUnits uint   `json:"compute_units" yaml:"compute_units"`
-		Status       string `json:"status" yaml:"status"`
+		Name          string             `json:"name" yaml:"name"`
+		ComputeUnits  uint               `json:"compute_units" yaml:"compute_units"`
+		Status        bool               `json:"status" yaml:"status"`
+		ApiInterfaces []ApiInterfaceJSON `json:"apiInterfaces" yaml:"apiInterfaces"`
 	}
 
 	SpecJSON struct {
 		Name   string    `json:"name" yaml:"name"`
-		Status string    `json:"status" yaml:"status"`
+		Status bool      `json:"status" yaml:"status"`
 		Apis   []ApiJSON `json:"apis" yaml:"apis"`
 	}
 
@@ -35,11 +41,14 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 		apis := []types.ServiceApi{}
 		for _, api := range spec.Apis {
 			apis = append(apis, types.ServiceApi{
-				Name:         api.Name,
-				ComputeUnits: uint64(api.ComputeUnits),
-				Status:       api.Status,
+				Name:          api.Name,
+				ComputeUnits:  uint64(api.ComputeUnits),
+				Status:        api.Status,
+				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
 			})
+
 		}
+
 		ret = append(ret, types.Spec{
 			Name:   spec.Name,
 			Status: spec.Status,
@@ -63,4 +72,13 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Spec
 	}
 
 	return proposal, nil
+}
+
+func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
+
+	for _, apiinterface := range apiinterfacesJSON {
+		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type})
+	}
+
+	return
 }

@@ -12,6 +12,6 @@ message Spec {
   uint64 id = 1;
   string name = 2; 
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
-  string status = 4; 
+  bool status = 4; 
   
 }

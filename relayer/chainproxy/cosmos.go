@@ -48,7 +48,7 @@ func (cp *CosmosChainProxy) Start(context.Context) error {
 func (cp *CosmosChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, error) {
 	path = strings.SplitN(path, "?", 2)[0]
 	if api, ok := cp.sentry.MatchSpecApiByName(path); ok {
-		if api.Status != "enabled" {
+		if !api.Status {
 			return nil, errors.New("api is disabled")
 		}
 		return &api, nil
