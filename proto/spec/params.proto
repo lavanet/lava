@@ -8,5 +8,5 @@ option go_package = "github.com/lavanet/lava/x/spec/types";
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
-  
+  uint64 geolocationCount  = 1 [(gogoproto.moretags) = "yaml:\"geolocation_count\""];
 }

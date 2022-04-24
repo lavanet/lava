@@ -1,8 +1,15 @@
 package types
 
 import (
+	fmt "fmt"
+
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
+)
+
+var (
+	KeyGeolocationCount            = []byte("GeolocationCount")
+	DefaultGeolocationCount uint64 = 8
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
@@ -13,22 +20,27 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams() Params {
-	return Params{}
+func NewParams(geolocationCount uint64) Params {
+	return Params{GeolocationCount: geolocationCount}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams()
+	return NewParams(DefaultGeolocationCount)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{}
+	return paramtypes.ParamSetPairs{
+		paramtypes.NewParamSetPair(KeyGeolocationCount, &p.GeolocationCount, validateGeolocationCount),
+	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
+	if err := validateGeolocationCount(p.GeolocationCount); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -36,4 +48,16 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
+}
+
+func validateGeolocationCount(v interface{}) error {
+	geolocationCount, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = geolocationCount
+
+	return nil
 }
