@@ -34,10 +34,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
-			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid servicer address in relay msg")
+			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
 		}
 		if !providerAddr.Equals(creator) {
-			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid servicer address in relay msg, creator and signed servicer mismatch")
+			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg, creator and signed provider mismatch")
 		}
 
 		//
@@ -72,13 +72,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUser)
 		if err != nil {
-			//TODO: maybe give servicer money but burn user, colluding?
+			//TODO: maybe give provider money but burn user, colluding?
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10)}
 			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
 		}
 		//
 		if isValidPairing {
-			//pairing is valid, we can pay servicer for work
+			//pairing is valid, we can pay provider for work
 			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 			if reward.IsZero() {
 				continue
@@ -86,7 +86,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 
 			details := map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
-			//first check we can burn user before we give money to the servicer
+			//first check we can burn user before we give money to the provider
 			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 			spec, found := k.specKeeper.GetSpec(ctx, specId)
 			if !found {
@@ -114,20 +114,20 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			if err != nil {
 				details["error"] = err.Error()
 				utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
-				panic(fmt.Sprintf("module failed to mint coins to give to servicer: %s", err))
+				panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
 			}
 			//
-			// Send to servicer
+			// Send to provider
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
 			if err != nil {
 				details["error"] = err.Error()
 				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
-				panic(fmt.Sprintf("failed to transfer minted new coins to servicer, %s account: %s", err, providerAddr))
+				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
 			}
 			details["clientFee"] = burnAmount.String()
 			utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 		} else {
-			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": "pairing result doesn't include servicer"}
+			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": "pairing result doesn't include provider"}
 			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing claim on proof of relay")
 		}
 	}
