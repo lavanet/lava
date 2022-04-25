@@ -24,10 +24,10 @@ func TestGenesisState_Validate(t *testing.T) {
 
 				SpecList: []types.Spec{
 					{
-						Id: 0,
+						Index: "0",
 					},
 					{
-						Id: 1,
+						Index: "1",
 					},
 				},
 				SpecCount: 2,
@@ -40,10 +40,10 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				SpecList: []types.Spec{
 					{
-						Id: 0,
+						Index: "0",
 					},
 					{
-						Id: 0,
+						Index: "0",
 					},
 				},
 			},
@@ -54,7 +54,7 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				SpecList: []types.Spec{
 					{
-						Id: 1,
+						Index: "1",
 					},
 				},
 				SpecCount: 0,

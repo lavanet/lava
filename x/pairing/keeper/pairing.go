@@ -15,7 +15,7 @@ import (
 func (k Keeper) verifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, isNew bool, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
 	logger := k.Logger(ctx)
 	//TODO: add support for spec changes
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
 		return nil, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}

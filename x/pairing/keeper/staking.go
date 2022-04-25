@@ -22,7 +22,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	//TODO: basic validation for chain ID
 	specChainID := chainID
 
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
 	if !foundAndActive {
 		details := map[string]string{"spec": specChainID}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_spec", details, "spec not found or not active")

@@ -20,7 +20,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	//TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
-	_, found, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	_, found := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
 		return utils.LavaError(ctx, logger, "unstake_spec_missing", map[string]string{"spec": chainID}, "trying to unstake an entry on missing spec")
 	}

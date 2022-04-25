@@ -4,12 +4,12 @@
     "specs": [
       {
         "name": "Ethereum Mainnet",
-        "status": "enabled",
+        "enabled": true,
         "apis": [
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": false,
+                "enabled": false,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",
@@ -20,7 +20,7 @@
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": true,
+                "enabled": true,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",
@@ -31,7 +31,7 @@
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": true,
+                "enabled": true,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",
@@ -43,12 +43,12 @@
       },
       {
         "name": "Ethereum Rinkeby",
-        "status": "enabled",
+        "enabled": true,
         "apis": [
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": false,
+                "enabled": false,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",
@@ -59,7 +59,7 @@
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": true,
+                "enabled": true,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",
@@ -70,7 +70,7 @@
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": true,
+                "enabled": true,
                 "apiInterfaces": [
                   {
                     "interface": "grpc",

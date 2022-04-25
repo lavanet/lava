@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -12,8 +11,8 @@ import (
 
 func CmdListSpec() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-spec",
-		Short: "list all spec",
+		Use:   "list-Spec",
+		Short: "list all Spec",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 
@@ -45,21 +44,18 @@ func CmdListSpec() *cobra.Command {
 
 func CmdShowSpec() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-spec [id]",
-		Short: "shows a spec",
+		Use:   "show-Spec [index]",
+		Short: "shows a Spec",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			id, err := strconv.ParseUint(args[0], 10, 64)
-			if err != nil {
-				return err
-			}
+			argIndex := args[0]
 
 			params := &types.QueryGetSpecRequest{
-				Id: id,
+				Index: argIndex,
 			}
 
 			res, err := queryClient.Spec(context.Background(), params)

@@ -8,77 +8,49 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
-// GetSpecCount get the total number of spec
-func (k Keeper) GetSpecCount(ctx sdk.Context) uint64 {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.SpecCountKey)
-	bz := store.Get(byteKey)
-
-	// Count doesn't exist: no element
-	if bz == nil {
-		return 0
-	}
-
-	// Parse bytes
-	return binary.BigEndian.Uint64(bz)
+// SetSpec set a specific Spec in the store from its index
+func (k Keeper) SetSpec(ctx sdk.Context, Spec types.Spec) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
+	b := k.cdc.MustMarshal(&Spec)
+	store.Set(types.SpecKey(
+		Spec.Index,
+	), b)
 }
 
-// SetSpecCount set the total number of spec
-func (k Keeper) SetSpecCount(ctx sdk.Context, count uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.SpecCountKey)
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, count)
-	store.Set(byteKey, bz)
-}
-
-// AppendSpec appends a spec in the store with a new id and update the count
-func (k Keeper) AppendSpec(
+// GetSpec returns a Spec from its index
+func (k Keeper) GetSpec(
 	ctx sdk.Context,
-	spec types.Spec,
-) uint64 {
-	// Create the spec
-	count := k.GetSpecCount(ctx)
+	index string,
 
-	// Set the ID of the appended value
-	spec.Id = count
+) (val types.Spec, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
-	appendedValue := k.cdc.MustMarshal(&spec)
-	store.Set(GetSpecIDBytes(spec.Id), appendedValue)
-	// Update spec count
-	k.SetSpecCount(ctx, count+1)
-
-	return count
-}
-
-// SetSpec set a specific spec in the store
-func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
-	b := k.cdc.MustMarshal(&spec)
-	store.Set(GetSpecIDBytes(spec.Id), b)
-}
-
-// GetSpec returns a spec from its id
-func (k Keeper) GetSpec(ctx sdk.Context, id uint64) (val types.Spec, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
-	b := store.Get(GetSpecIDBytes(id))
+	b := store.Get(types.SpecKey(
+		index,
+	))
 	if b == nil {
 		return val, false
 	}
+
 	k.cdc.MustUnmarshal(b, &val)
 	return val, true
 }
 
-// RemoveSpec removes a spec from the store
-func (k Keeper) RemoveSpec(ctx sdk.Context, id uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
-	store.Delete(GetSpecIDBytes(id))
+// RemoveSpec removes a Spec from the store
+func (k Keeper) RemoveSpec(
+	ctx sdk.Context,
+	index string,
+
+) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
+	store.Delete(types.SpecKey(
+		index,
+	))
 }
 
-// GetAllSpec returns all spec
+// GetAllSpec returns all Spec
 func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
@@ -94,38 +66,14 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 
 //returns whether a spec name is a valid spec in the consensus
 //first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool, uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKey))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
 
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var val types.Spec
-		k.cdc.MustUnmarshal(iterator.Value(), &val)
-		if val.Name == specName {
-			if val.Status {
-				return true, true, val.Id
-			}
-			// specs are unique, theres no reason to keep iterating
-			return false, true, val.Id
-		}
+	spec, found := k.GetSpec(ctx, chainID)
+	foundAndActive = false
+	if found {
+		foundAndActive = spec.Enabled
 	}
-	return false, false, 0
-}
-
-//returns whether a spec id is a valid spec in the consensus
-//first return value is found and active, second argument is found only
-func (k Keeper) IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool) {
-	val, found := k.GetSpec(ctx, id)
-	if !found {
-		return false, false
-	}
-	if val.Status {
-		return true, true
-	}
-	// spec is found but disabled
-	return false, true
+	return
 }
 
 // GetSpecIDBytes returns the byte representation of the ID
@@ -151,14 +99,11 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 
 func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (ExpectedInterfaces map[string]bool) {
 	ExpectedInterfaces = make(map[string]bool)
-	foundAndActive, _, id := k.IsSpecFoundAndActive(ctx, chainID)
-	if foundAndActive {
-		spec, found := k.GetSpec(ctx, id)
-		if found {
-			for _, api := range spec.Apis {
-				for _, apiInterface := range api.ApiInterfaces {
-					ExpectedInterfaces[apiInterface.Interface] = true
-				}
+	spec, found := k.GetSpec(ctx, chainID)
+	if found && spec.Enabled {
+		for _, api := range spec.Apis {
+			for _, apiInterface := range api.ApiInterfaces {
+				ExpectedInterfaces[apiInterface.Interface] = true
 			}
 		}
 	}

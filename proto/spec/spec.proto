@@ -9,9 +9,8 @@ import "gogoproto/gogo.proto";
 import "spec/service_api.proto"; 
 
 message Spec {
-  uint64 id = 1;
+  string index = 1; 
   string name = 2; 
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
-  bool status = 4; 
-  
+  bool enabled = 4;   
 }

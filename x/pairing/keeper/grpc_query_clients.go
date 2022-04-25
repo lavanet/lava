@@ -22,7 +22,7 @@ func (k Keeper) Clients(goCtx context.Context, req *types.QueryClientsRequest) (
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ClientKey)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}

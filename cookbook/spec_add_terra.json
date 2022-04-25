@@ -4,12 +4,12 @@
     "specs": [
         {
             "name": "Terra Columbus-5 mainnet",
-            "status": true,
+            "enabled": true,
             "apis": [
                 {
                     "name": "/node_info",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -24,7 +24,7 @@
                 {
                     "name": "/syncing",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -39,7 +39,7 @@
                 {
                     "name": "/blocks/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -54,7 +54,7 @@
                 {
                     "name": "/blocks/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -69,7 +69,7 @@
                 {
                     "name": "/validatorsets/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -84,7 +84,7 @@
                 {
                     "name": "/validatorsets/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -99,7 +99,7 @@
                 {
                     "name": "/txs/{hash}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -114,7 +114,7 @@
                 {
                     "name": "/txs",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -129,7 +129,7 @@
                 {
                     "name": "/txs/encode",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -144,7 +144,7 @@
                 {
                     "name": "/txs/decode",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -159,7 +159,7 @@
                 {
                     "name": "/txs/estimate_fee",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -174,7 +174,7 @@
                 {
                     "name": "/bank/balances/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -189,7 +189,7 @@
                 {
                     "name": "/bank/accounts/{address}/transfers",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -204,7 +204,7 @@
                 {
                     "name": "/bank/total",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -219,7 +219,7 @@
                 {
                     "name": "/bank/total/{denomination}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -234,7 +234,7 @@
                 {
                     "name": "/auth/accounts/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -249,7 +249,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -264,7 +264,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -279,7 +279,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -294,7 +294,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -309,7 +309,7 @@
                 {
                     "name": "/staking/redelegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -324,7 +324,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/redelegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -339,7 +339,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -354,7 +354,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -369,7 +369,7 @@
                 {
                     "name": "/staking/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -384,7 +384,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -399,7 +399,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}/delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -414,7 +414,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -429,7 +429,7 @@
                 {
                     "name": "/staking/pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -444,7 +444,7 @@
                 {
                     "name": "/staking/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -459,7 +459,7 @@
                 {
                     "name": "/slashing/signing_infos",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -474,7 +474,7 @@
                 {
                     "name": "/slashing/validators/{validatorAddr}/unjail",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -489,7 +489,7 @@
                 {
                     "name": "/slashing/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -504,7 +504,7 @@
                 {
                     "name": "/gov/proposals",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -519,7 +519,7 @@
                 {
                     "name": "/gov/proposals/param_change",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -534,7 +534,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -549,7 +549,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/proposer",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -564,7 +564,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/deposits",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -579,7 +579,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -594,7 +594,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/votes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -609,7 +609,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/votes/{voter}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -624,7 +624,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/tally",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -639,7 +639,7 @@
                 {
                     "name": "/gov/parameters/deposit",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -654,7 +654,7 @@
                 {
                     "name": "/gov/parameters/tallying",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -669,7 +669,7 @@
                 {
                     "name": "/gov/parameters/voting",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -684,7 +684,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -699,7 +699,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -714,7 +714,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -729,7 +729,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -744,7 +744,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -759,7 +759,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}/rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -774,7 +774,7 @@
                 {
                     "name": "/distribution/community_pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -789,7 +789,7 @@
                 {
                     "name": "/distribution/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -804,7 +804,7 @@
                 {
                     "name": "/minting/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -819,7 +819,7 @@
                 {
                     "name": "/minting/inflation",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -834,7 +834,7 @@
                 {
                     "name": "/minting/annual-provisions",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -849,7 +849,7 @@
                 {
                     "name": "/market/swap",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -864,7 +864,7 @@
                 {
                     "name": "/market/terra_pool_delta",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -879,7 +879,7 @@
                 {
                     "name": "/market/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -894,7 +894,7 @@
                 {
                     "name": "/oracle/denoms/{denom}/exchange_rate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -909,7 +909,7 @@
                 {
                     "name": "/oracle/denoms/exchange_rates",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -924,7 +924,7 @@
                 {
                     "name": "/oracle/denoms/actives",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -939,7 +939,7 @@
                 {
                     "name": "/oracle/voters/{validator}/feeder",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -954,7 +954,7 @@
                 {
                     "name": "/oracle/voters/{validator}/miss",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -969,7 +969,7 @@
                 {
                     "name": "/oracle/voters/{validator}/aggregate_prevote",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -984,7 +984,7 @@
                 {
                     "name": "/oracle/voters/{validator}/aggregate_vote",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -999,7 +999,7 @@
                 {
                     "name": "/oracle/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1014,7 +1014,7 @@
                 {
                     "name": "/treasury/tax_rate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1029,7 +1029,7 @@
                 {
                     "name": "/treasury/tax_cap/{denom}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1044,7 +1044,7 @@
                 {
                     "name": "/treasury/tax_caps",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1059,7 +1059,7 @@
                 {
                     "name": "/treasury/reward_weight",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1074,7 +1074,7 @@
                 {
                     "name": "/treasury/tax_proceeds",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1089,7 +1089,7 @@
                 {
                     "name": "/treasury/seigniorage_proceeds",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1104,7 +1104,7 @@
                 {
                     "name": "/treasury/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1119,7 +1119,7 @@
                 {
                     "name": "/treasury/indicators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1134,7 +1134,7 @@
                 {
                     "name": "/wasm/codes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1149,7 +1149,7 @@
                 {
                     "name": "/wasm/codes/{codeID}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1164,7 +1164,7 @@
                 {
                     "name": "/wasm/codes/{codeID}/migrate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1179,7 +1179,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1194,7 +1194,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}/migrate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1209,7 +1209,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}/admin/update",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1224,7 +1224,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}/admin/clear",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1239,7 +1239,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}/store",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1254,7 +1254,7 @@
                 {
                     "name": "/wasm/contracts/{contractAddress}/store/raw",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1269,7 +1269,7 @@
                 {
                     "name": "/wasm/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1284,7 +1284,7 @@
                 {
                     "name": "/cosmos/auth/v1beta1/accounts",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1299,7 +1299,7 @@
                 {
                     "name": "/cosmos/auth/v1beta1/accounts/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1314,7 +1314,7 @@
                 {
                     "name": "/cosmos/auth/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1329,7 +1329,7 @@
                 {
                     "name": "/cosmos/authz/v1beta1/grants",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1344,7 +1344,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/balances/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1359,7 +1359,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1374,7 +1374,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/denoms_metadata",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1389,7 +1389,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1404,7 +1404,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1419,7 +1419,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/supply",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1434,7 +1434,7 @@
                 {
                     "name": "/cosmos/bank/v1beta1/supply/{denom}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1449,7 +1449,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1464,7 +1464,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1479,7 +1479,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/node_info",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1494,7 +1494,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/syncing",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1509,7 +1509,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1524,7 +1524,7 @@
                 {
                     "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1539,7 +1539,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/community_pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1554,7 +1554,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1569,7 +1569,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1584,7 +1584,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1599,7 +1599,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1614,7 +1614,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1629,7 +1629,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1644,7 +1644,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1659,7 +1659,7 @@
                 {
                     "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1674,7 +1674,7 @@
                 {
                     "name": "/cosmos/evidence/v1beta1/evidence",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1689,7 +1689,7 @@
                 {
                     "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1704,7 +1704,7 @@
                 {
                     "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1719,7 +1719,7 @@
                 {
                     "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1734,7 +1734,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/params/{params_type}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1749,7 +1749,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1764,7 +1764,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1779,7 +1779,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1794,7 +1794,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1809,7 +1809,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1824,7 +1824,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1839,7 +1839,7 @@
                 {
                     "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1854,7 +1854,7 @@
                 {
                     "name": "/cosmos/mint/v1beta1/annual_provisions",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1869,7 +1869,7 @@
                 {
                     "name": "/cosmos/mint/v1beta1/inflation",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1884,7 +1884,7 @@
                 {
                     "name": "/cosmos/mint/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1899,7 +1899,7 @@
                 {
                     "name": "/cosmos/params/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1914,7 +1914,7 @@
                 {
                     "name": "/cosmos/slashing/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1929,7 +1929,7 @@
                 {
                     "name": "/cosmos/slashing/v1beta1/signing_infos",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1944,7 +1944,7 @@
                 {
                     "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1959,7 +1959,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1974,7 +1974,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -1989,7 +1989,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2004,7 +2004,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2019,7 +2019,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2034,7 +2034,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/historical_info/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2049,7 +2049,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2064,7 +2064,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2079,7 +2079,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2094,7 +2094,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2109,7 +2109,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2124,7 +2124,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2139,7 +2139,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2154,7 +2154,7 @@
                 {
                     "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2169,7 +2169,7 @@
                 {
                     "name": "/cosmos/tx/v1beta1/simulate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2184,7 +2184,7 @@
                 {
                     "name": "/cosmos/tx/v1beta1/txs",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2199,7 +2199,7 @@
                 {
                     "name": "/cosmos/tx/v1beta1/txs/{hash}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2214,7 +2214,7 @@
                 {
                     "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2229,7 +2229,7 @@
                 {
                     "name": "/cosmos/upgrade/v1beta1/current_plan",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2244,7 +2244,7 @@
                 {
                     "name": "/cosmos/upgrade/v1beta1/module_versions",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2259,7 +2259,7 @@
                 {
                     "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2274,7 +2274,7 @@
                 {
                     "name": "/terra/tx/v1beta1/compute_tax",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2289,7 +2289,7 @@
                 {
                     "name": "/terra/market/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2304,7 +2304,7 @@
                 {
                     "name": "/terra/market/v1beta1/swap",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2319,7 +2319,7 @@
                 {
                     "name": "/terra/market/v1beta1/terra_pool_delta",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2334,7 +2334,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/actives",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2349,7 +2349,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/exchange_rates",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2364,7 +2364,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/tobin_taxes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2379,7 +2379,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/vote_targets",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2394,7 +2394,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/{denom}/exchange_rate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2409,7 +2409,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/denoms/{denom}/tobin_tax",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2424,7 +2424,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2439,7 +2439,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/valdiators/{validator_addr}/aggregate_vote",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2454,7 +2454,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/validators/aggregate_prevotes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2469,7 +2469,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/validators/aggregate_votes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2484,7 +2484,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/validators/{validator_addr}/aggregate_prevote",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2499,7 +2499,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/validators/{validator_addr}/feeder",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2514,7 +2514,7 @@
                 {
                     "name": "/terra/oracle/v1beta1/validators/{validator_addr}/miss",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2529,7 +2529,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/indicators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2544,7 +2544,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2559,7 +2559,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/reward_weight",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2574,7 +2574,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/seigniorage_proceeds",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2589,7 +2589,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/tax_caps",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2604,7 +2604,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/tax_caps/{denom}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2619,7 +2619,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/tax_proceeds",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2634,7 +2634,7 @@
                 {
                     "name": "/terra/treasury/v1beta1/tax_rate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2649,7 +2649,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/codes/{code_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2664,7 +2664,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/codes/{code_id}/byte_code",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2679,7 +2679,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/contracts/{contract_address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2694,7 +2694,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2709,7 +2709,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store/raw",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2724,7 +2724,7 @@
                 {
                     "name": "/terra/wasm/v1beta1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2739,7 +2739,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2754,7 +2754,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2769,7 +2769,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2784,7 +2784,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2799,7 +2799,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2814,7 +2814,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2829,7 +2829,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2844,7 +2844,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2859,7 +2859,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2874,7 +2874,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2889,7 +2889,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2904,7 +2904,7 @@
                 {
                     "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2919,7 +2919,7 @@
                 {
                     "name": "/ibc/core/channel/v1/connections/{connection}/channels",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2934,7 +2934,7 @@
                 {
                     "name": "/ibc/client/v1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2949,7 +2949,7 @@
                 {
                     "name": "/ibc/core/client/v1/client_states",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2964,7 +2964,7 @@
                 {
                     "name": "/ibc/core/client/v1/client_states/{client_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2977,9 +2977,9 @@
                     ] 
                 },
                 {
-                    "name": "/ibc/core/client/v1/client_status/{client_id}",
+                    "name": "/ibc/core/client/v1/client_enabled/{client_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -2994,7 +2994,7 @@
                 {
                     "name": "/ibc/core/client/v1/consensus_states/{client_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3009,7 +3009,7 @@
                 {
                     "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3024,7 +3024,7 @@
                 {
                     "name": "/ibc/core/client/v1/upgraded_client_states",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3039,7 +3039,7 @@
                 {
                     "name": "/ibc/core/client/v1/upgraded_consensus_states",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3054,7 +3054,7 @@
                 {
                     "name": "/ibc/core/connection/v1/client_connections/{client_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3069,7 +3069,7 @@
                 {
                     "name": "/ibc/core/connection/v1/connections",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3084,7 +3084,7 @@
                 {
                     "name": "/ibc/core/connection/v1/connections/{connection_id}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3099,7 +3099,7 @@
                 {
                     "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3114,7 +3114,7 @@
                 {
                     "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3129,7 +3129,7 @@
                 {
                     "name": "/ibc/apps/transfer/v1/denom_traces",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3144,7 +3144,7 @@
                 {
                     "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3159,7 +3159,7 @@
                 {
                     "name": "/ibc/apps/transfer/v1/params",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3175,12 +3175,12 @@
         },
         {
             "name": "Terra Bombay-12 testnet",
-            "status": true,
+            "enabled": true,
             "apis": [
                 {
                     "name": "/node_info",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3195,7 +3195,7 @@
                 {
                     "name": "/syncing",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3210,7 +3210,7 @@
                 {
                     "name": "/blocks/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3225,7 +3225,7 @@
                 {
                     "name": "/blocks/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3240,7 +3240,7 @@
                 {
                     "name": "/validatorsets/latest",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3255,7 +3255,7 @@
                 {
                     "name": "/validatorsets/{height}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3270,7 +3270,7 @@
                 {
                     "name": "/txs/{hash}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3285,7 +3285,7 @@
                 {
                     "name": "/txs",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3300,7 +3300,7 @@
                 {
                     "name": "/txs/encode",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3315,7 +3315,7 @@
                 {
                     "name": "/txs/decode",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3330,7 +3330,7 @@
                 {
                     "name": "/txs/estimate_fee",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3345,7 +3345,7 @@
                 {
                     "name": "/bank/balances/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3360,7 +3360,7 @@
                 {
                     "name": "/bank/accounts/{address}/transfers",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3375,7 +3375,7 @@
                 {
                     "name": "/bank/total",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3390,7 +3390,7 @@
                 {
                     "name": "/bank/total/{denomination}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3405,7 +3405,7 @@
                 {
                     "name": "/auth/accounts/{address}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3420,7 +3420,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3435,7 +3435,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3450,7 +3450,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3465,7 +3465,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3480,7 +3480,7 @@
                 {
                     "name": "/staking/redelegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3495,7 +3495,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/redelegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3510,7 +3510,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3525,7 +3525,7 @@
                 {
                     "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3540,7 +3540,7 @@
                 {
                     "name": "/staking/validators",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3555,7 +3555,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3570,7 +3570,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}/delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3585,7 +3585,7 @@
                 {
                     "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3600,7 +3600,7 @@
                 {
                     "name": "/staking/pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3615,7 +3615,7 @@
                 {
                     "name": "/staking/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3630,7 +3630,7 @@
                 {
                     "name": "/slashing/signing_infos",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3645,7 +3645,7 @@
                 {
                     "name": "/slashing/validators/{validatorAddr}/unjail",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3660,7 +3660,7 @@
                 {
                     "name": "/slashing/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3675,7 +3675,7 @@
                 {
                     "name": "/gov/proposals",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3690,7 +3690,7 @@
                 {
                     "name": "/gov/proposals/param_change",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3705,7 +3705,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3720,7 +3720,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/proposer",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3735,7 +3735,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/deposits",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3750,7 +3750,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3765,7 +3765,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/votes",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3780,7 +3780,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/votes/{voter}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3795,7 +3795,7 @@
                 {
                     "name": "/gov/proposals/{proposalId}/tally",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3810,7 +3810,7 @@
                 {
                     "name": "/gov/parameters/deposit",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3825,7 +3825,7 @@
                 {
                     "name": "/gov/parameters/tallying",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3840,7 +3840,7 @@
                 {
                     "name": "/gov/parameters/voting",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3855,7 +3855,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3870,7 +3870,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3885,7 +3885,7 @@
                 {
                     "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3900,7 +3900,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3915,7 +3915,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3930,7 +3930,7 @@
                 {
                     "name": "/distribution/validators/{validatorAddr}/rewards",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3945,7 +3945,7 @@
                 {
                     "name": "/distribution/community_pool",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3960,7 +3960,7 @@
                 {
                     "name": "/distribution/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3975,7 +3975,7 @@
                 {
                     "name": "/minting/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -3990,7 +3990,7 @@
                 {
                     "name": "/minting/inflation",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4005,7 +4005,7 @@
                 {
                     "name": "/minting/annual-provisions",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4020,7 +4020,7 @@
                 {
                     "name": "/market/swap",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4035,7 +4035,7 @@
                 {
                     "name": "/market/terra_pool_delta",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4050,7 +4050,7 @@
                 {
                     "name": "/market/parameters",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4065,7 +4065,7 @@
                 {
                     "name": "/oracle/denoms/{denom}/exchange_rate",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4080,7 +4080,7 @@
                 {
                     "name": "/oracle/denoms/exchange_rates",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4095,7 +4095,7 @@
                 {
                     "name": "/oracle/denoms/actives",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4110,7 +4110,7 @@
                 {
                     "name": "/oracle/voters/{validator}/feeder",
                     "compute_units": "10",
-                    "status": true,
+                    "enabled": true,
                     "apiInterfaces": [
                       {
                         "interface": "grpc",
@@ -4125,7 +4125,7 @@
                 {
                   "name": "/oracle/voters/{validator}/miss",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4136,7 +4136,7 @@
                 {
                   "name": "/oracle/voters/{validator}/aggregate_prevote",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4147,7 +4147,7 @@
                 {
                   "name": "/oracle/voters/{validator}/aggregate_vote",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4158,7 +4158,7 @@
                 {
                   "name": "/oracle/parameters",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4169,7 +4169,7 @@
                 {
                   "name": "/treasury/tax_rate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4180,7 +4180,7 @@
                 {
                   "name": "/treasury/tax_cap/{denom}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4191,7 +4191,7 @@
                 {
                   "name": "/treasury/tax_caps",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4202,7 +4202,7 @@
                 {
                   "name": "/treasury/reward_weight",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4213,7 +4213,7 @@
                 {
                   "name": "/treasury/tax_proceeds",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4224,7 +4224,7 @@
                 {
                   "name": "/treasury/seigniorage_proceeds",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4235,7 +4235,7 @@
                 {
                   "name": "/treasury/parameters",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4246,7 +4246,7 @@
                 {
                   "name": "/treasury/indicators",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4257,7 +4257,7 @@
                 {
                   "name": "/wasm/codes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4268,7 +4268,7 @@
                 {
                   "name": "/wasm/codes/{codeID}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4279,7 +4279,7 @@
                 {
                   "name": "/wasm/codes/{codeID}/migrate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4290,7 +4290,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4301,7 +4301,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}/migrate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4312,7 +4312,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}/admin/update",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4323,7 +4323,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}/admin/clear",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4334,7 +4334,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}/store",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4345,7 +4345,7 @@
                 {
                   "name": "/wasm/contracts/{contractAddress}/store/raw",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4356,7 +4356,7 @@
                 {
                   "name": "/wasm/parameters",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4367,7 +4367,7 @@
                 {
                   "name": "/cosmos/auth/v1beta1/accounts",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4378,7 +4378,7 @@
                 {
                   "name": "/cosmos/auth/v1beta1/accounts/{address}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4389,7 +4389,7 @@
                 {
                   "name": "/cosmos/auth/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4400,7 +4400,7 @@
                 {
                   "name": "/cosmos/authz/v1beta1/grants",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4411,7 +4411,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/balances/{address}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4422,7 +4422,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4433,7 +4433,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/denoms_metadata",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4444,7 +4444,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4455,7 +4455,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4466,7 +4466,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/supply",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4477,7 +4477,7 @@
                 {
                   "name": "/cosmos/bank/v1beta1/supply/{denom}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4488,7 +4488,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4499,7 +4499,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4510,7 +4510,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/node_info",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4521,7 +4521,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/syncing",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4532,7 +4532,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4543,7 +4543,7 @@
                 {
                   "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4554,7 +4554,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/community_pool",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4565,7 +4565,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4576,7 +4576,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4587,7 +4587,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4598,7 +4598,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4609,7 +4609,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4620,7 +4620,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4631,7 +4631,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4642,7 +4642,7 @@
                 {
                   "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4653,7 +4653,7 @@
                 {
                   "name": "/cosmos/evidence/v1beta1/evidence",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4664,7 +4664,7 @@
                 {
                   "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4675,7 +4675,7 @@
                 {
                   "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4686,7 +4686,7 @@
                 {
                   "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4697,7 +4697,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/params/{params_type}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4708,7 +4708,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4719,7 +4719,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4730,7 +4730,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4741,7 +4741,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4752,7 +4752,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4763,7 +4763,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4774,7 +4774,7 @@
                 {
                   "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4785,7 +4785,7 @@
                 {
                   "name": "/cosmos/mint/v1beta1/annual_provisions",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4796,7 +4796,7 @@
                 {
                   "name": "/cosmos/mint/v1beta1/inflation",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4807,7 +4807,7 @@
                 {
                   "name": "/cosmos/mint/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4818,7 +4818,7 @@
                 {
                   "name": "/cosmos/params/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4829,7 +4829,7 @@
                 {
                   "name": "/cosmos/slashing/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4840,7 +4840,7 @@
                 {
                   "name": "/cosmos/slashing/v1beta1/signing_infos",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4851,7 +4851,7 @@
                 {
                   "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4862,7 +4862,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4873,7 +4873,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4884,7 +4884,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4895,7 +4895,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4906,7 +4906,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4917,7 +4917,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/historical_info/{height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4928,7 +4928,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4939,7 +4939,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/pool",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4950,7 +4950,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4961,7 +4961,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4972,7 +4972,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4983,7 +4983,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -4994,7 +4994,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5005,7 +5005,7 @@
                 {
                   "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5016,7 +5016,7 @@
                 {
                   "name": "/cosmos/tx/v1beta1/simulate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5027,7 +5027,7 @@
                 {
                   "name": "/cosmos/tx/v1beta1/txs",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5038,7 +5038,7 @@
                 {
                   "name": "/cosmos/tx/v1beta1/txs/{hash}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5049,7 +5049,7 @@
                 {
                   "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5060,7 +5060,7 @@
                 {
                   "name": "/cosmos/upgrade/v1beta1/current_plan",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5071,7 +5071,7 @@
                 {
                   "name": "/cosmos/upgrade/v1beta1/module_versions",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5082,7 +5082,7 @@
                 {
                   "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5093,7 +5093,7 @@
                 {
                   "name": "/terra/tx/v1beta1/compute_tax",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5104,7 +5104,7 @@
                 {
                   "name": "/terra/market/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5115,7 +5115,7 @@
                 {
                   "name": "/terra/market/v1beta1/swap",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5126,7 +5126,7 @@
                 {
                   "name": "/terra/market/v1beta1/terra_pool_delta",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5137,7 +5137,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/actives",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5148,7 +5148,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/exchange_rates",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5159,7 +5159,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/tobin_taxes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5170,7 +5170,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/vote_targets",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5181,7 +5181,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/{denom}/exchange_rate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5192,7 +5192,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/denoms/{denom}/tobin_tax",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5203,7 +5203,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5214,7 +5214,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/valdiators/{validator_addr}/aggregate_vote",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5225,7 +5225,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/validators/aggregate_prevotes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5236,7 +5236,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/validators/aggregate_votes",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5247,7 +5247,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/validators/{validator_addr}/aggregate_prevote",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5258,7 +5258,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/validators/{validator_addr}/feeder",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5269,7 +5269,7 @@
                 {
                   "name": "/terra/oracle/v1beta1/validators/{validator_addr}/miss",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5280,7 +5280,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/indicators",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5291,7 +5291,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5302,7 +5302,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/reward_weight",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5313,7 +5313,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/seigniorage_proceeds",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5324,7 +5324,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/tax_caps",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5335,7 +5335,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/tax_caps/{denom}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5346,7 +5346,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/tax_proceeds",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5357,7 +5357,7 @@
                 {
                   "name": "/terra/treasury/v1beta1/tax_rate",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5368,7 +5368,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/codes/{code_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5379,7 +5379,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/codes/{code_id}/byte_code",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5390,7 +5390,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/contracts/{contract_address}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5401,7 +5401,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5412,7 +5412,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store/raw",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5423,7 +5423,7 @@
                 {
                   "name": "/terra/wasm/v1beta1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5434,7 +5434,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5445,7 +5445,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5456,7 +5456,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5467,7 +5467,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5478,7 +5478,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5489,7 +5489,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5500,7 +5500,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5511,7 +5511,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5522,7 +5522,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5533,7 +5533,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5544,7 +5544,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5555,7 +5555,7 @@
                 {
                   "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5566,7 +5566,7 @@
                 {
                   "name": "/ibc/core/channel/v1/connections/{connection}/channels",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5577,7 +5577,7 @@
                 {
                   "name": "/ibc/client/v1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5588,7 +5588,7 @@
                 {
                   "name": "/ibc/core/client/v1/client_states",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5599,7 +5599,7 @@
                 {
                   "name": "/ibc/core/client/v1/client_states/{client_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5608,9 +5608,9 @@
                   ] 
                 },
                 {
-                  "name": "/ibc/core/client/v1/client_status/{client_id}",
+                  "name": "/ibc/core/client/v1/client_enabled/{client_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5621,7 +5621,7 @@
                 {
                   "name": "/ibc/core/client/v1/consensus_states/{client_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5632,7 +5632,7 @@
                 {
                   "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5643,7 +5643,7 @@
                 {
                   "name": "/ibc/core/client/v1/upgraded_client_states",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5654,7 +5654,7 @@
                 {
                   "name": "/ibc/core/client/v1/upgraded_consensus_states",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5665,7 +5665,7 @@
                 {
                   "name": "/ibc/core/connection/v1/client_connections/{client_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5676,7 +5676,7 @@
                 {
                   "name": "/ibc/core/connection/v1/connections",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5687,7 +5687,7 @@
                 {
                   "name": "/ibc/core/connection/v1/connections/{connection_id}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5698,7 +5698,7 @@
                 {
                   "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5709,7 +5709,7 @@
                 {
                   "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5720,7 +5720,7 @@
                 {
                   "name": "/ibc/apps/transfer/v1/denom_traces",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5731,7 +5731,7 @@
                 {
                   "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",
@@ -5742,7 +5742,7 @@
                 {
                   "name": "/ibc/apps/transfer/v1/params",
                   "compute_units": "10",
-                  "status": true,
+                  "enabled": true,
                   "apiInterfaces": [
                     {
                       "interface": "grpc",

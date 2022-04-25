@@ -16,14 +16,14 @@ type (
 	ApiJSON struct {
 		Name          string             `json:"name" yaml:"name"`
 		ComputeUnits  uint               `json:"compute_units" yaml:"compute_units"`
-		Status        bool               `json:"status" yaml:"status"`
+		Enabled       bool               `json:"enabled" yaml:"enabled"`
 		ApiInterfaces []ApiInterfaceJSON `json:"apiInterfaces" yaml:"apiInterfaces"`
 	}
 
 	SpecJSON struct {
-		Name   string    `json:"name" yaml:"name"`
-		Status bool      `json:"status" yaml:"status"`
-		Apis   []ApiJSON `json:"apis" yaml:"apis"`
+		Name    string    `json:"name" yaml:"name"`
+		Enabled bool      `json:"enabled" yaml:"enabled"`
+		Apis    []ApiJSON `json:"apis" yaml:"apis"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -43,16 +43,17 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			apis = append(apis, types.ServiceApi{
 				Name:          api.Name,
 				ComputeUnits:  uint64(api.ComputeUnits),
-				Status:        api.Status,
+				Enabled:       api.Enabled,
 				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
 			})
 
 		}
 
 		ret = append(ret, types.Spec{
-			Name:   spec.Name,
-			Status: spec.Status,
-			Apis:   apis,
+			Index:   spec.Name,
+			Name:    spec.Name,
+			Enabled: spec.Enabled,
+			Apis:    apis,
 		})
 	}
 	return ret

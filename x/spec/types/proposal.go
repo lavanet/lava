@@ -32,12 +32,12 @@ func stringSpec(spec Spec, b strings.Builder) strings.Builder {
 
 	b.WriteString(fmt.Sprintf(`    Spec:
 	Name: %s, Status: %s, Apis: %d
-`, spec.Name, spec.Status, len(spec.Apis)))
+`, spec.Name, spec.Enabled, len(spec.Apis)))
 
 	for _, api := range spec.Apis {
 		b.WriteString(fmt.Sprintf(`        Api:
 		      Name: %s, Status: %s, ComputeUntis: %d
-		`, api.Name, api.Status, api.ComputeUnits))
+		`, api.Name, api.Enabled, api.ComputeUnits))
 	}
 
 	return b
