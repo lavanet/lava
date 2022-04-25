@@ -135,8 +135,6 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		}
 	}
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), "GeoLocationDebug", map[string]string{}, fmt.Sprintf("yaarom test %+v", geolocMap))
-
 	for _, endpoint := range endpoints {
 		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
 		if geolocMap[key] {
