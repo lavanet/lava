@@ -32,7 +32,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})
 			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address)
 			if err != nil {
-				return true, fmt.Errorf("error unstaking user after burn: %s , error:", clientEntry, err)
+				return true, fmt.Errorf("error unstaking user after burn: %s , error: %s", clientEntry, err)
 			}
 		}
 		return true, nil

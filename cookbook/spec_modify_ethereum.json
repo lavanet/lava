@@ -9,17 +9,35 @@
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": "disabled"
+                "status": false,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             },
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": "enabled"
+                "status": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             },
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": "enabled"
+                "status": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             }
         ]
       },
@@ -30,17 +48,35 @@
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": "disabled"
+                "status": false,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             },
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": "enabled"
+                "status": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             },
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": "enabled"
+                "status": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "grpc",
+                    "type": "get"
+                  }
+                ] 
             }
         ]
       }

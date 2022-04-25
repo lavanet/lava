@@ -148,3 +148,19 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 	}
 	return
 }
+
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (ExpectedInterfaces map[string]bool) {
+	ExpectedInterfaces = make(map[string]bool)
+	foundAndActive, _, id := k.IsSpecFoundAndActive(ctx, chainID)
+	if foundAndActive {
+		spec, found := k.GetSpec(ctx, id)
+		if found {
+			for _, api := range spec.Apis {
+				for _, apiInterface := range api.ApiInterfaces {
+					ExpectedInterfaces[apiInterface.Interface] = true
+				}
+			}
+		}
+	}
+	return
+}

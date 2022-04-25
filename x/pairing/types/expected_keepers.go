@@ -13,6 +13,7 @@ type SpecKeeper interface {
 	IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool)
 	GetSpec(ctx sdk.Context, id uint64) (val spectypes.Spec, found bool)
 	GeolocationCount(ctx sdk.Context) uint64
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) map[string]bool
 }
 
 type EpochstorageKeeper interface {
