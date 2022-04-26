@@ -23,8 +23,3 @@ const (
 func KeyPrefix(p string) []byte {
 	return []byte(p)
 }
-
-const (
-	SpecKey      = "Spec-value-"
-	SpecCountKey = "Spec-count-"
-)

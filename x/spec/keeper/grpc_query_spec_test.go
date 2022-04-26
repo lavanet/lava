@@ -1,10 +1,10 @@
 package keeper_test
 
 import (
+	"strconv"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -14,6 +14,9 @@ import (
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/spec/types"
 )
+
+// Prevent strconv unused error
+var _ = strconv.IntSize
 
 func TestSpecQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.SpecKeeper(t)
@@ -26,19 +29,25 @@ func TestSpecQuerySingle(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "First",
-			request:  &types.QueryGetSpecRequest{Id: msgs[0].Id},
+			desc: "First",
+			request: &types.QueryGetSpecRequest{
+				Index: msgs[0].Index,
+			},
 			response: &types.QueryGetSpecResponse{Spec: msgs[0]},
 		},
 		{
-			desc:     "Second",
-			request:  &types.QueryGetSpecRequest{Id: msgs[1].Id},
+			desc: "Second",
+			request: &types.QueryGetSpecRequest{
+				Index: msgs[1].Index,
+			},
 			response: &types.QueryGetSpecResponse{Spec: msgs[1]},
 		},
 		{
-			desc:    "KeyNotFound",
-			request: &types.QueryGetSpecRequest{Id: uint64(len(msgs))},
-			err:     sdkerrors.ErrKeyNotFound,
+			desc: "KeyNotFound",
+			request: &types.QueryGetSpecRequest{
+				Index: strconv.Itoa(100000),
+			},
+			err: status.Error(codes.InvalidArgument, "not found"),
 		},
 		{
 			desc: "InvalidRequest",

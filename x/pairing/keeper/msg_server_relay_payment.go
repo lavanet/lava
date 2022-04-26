@@ -42,7 +42,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		//
 		// TODO: add support for spec changes
-		ok, _, specId := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
+		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
 			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID)}, "invalid spec ID specified in proof")
 		}
@@ -88,10 +88,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details := map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the provider
 			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
-			spec, found := k.specKeeper.GetSpec(ctx, specId)
+			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
 			if !found {
 				details["chainID"] = relay.ChainID
-				details["specID"] = strconv.FormatUint(specId, 10)
 				errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}

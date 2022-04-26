@@ -20,16 +20,14 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	// Check for duplicated ID in spec
-	specIdMap := make(map[uint64]bool)
-	specCount := gs.GetSpecCount()
+	SpecIndexMap := make(map[string]struct{})
+
 	for _, elem := range gs.SpecList {
-		if _, ok := specIdMap[elem.Id]; ok {
-			return fmt.Errorf("duplicated id for spec")
+		index := string(SpecKey(elem.Index))
+		if _, ok := SpecIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for Spec")
 		}
-		if elem.Id >= specCount {
-			return fmt.Errorf("spec id should be lower or equal than the last id")
-		}
-		specIdMap[elem.Id] = true
+		SpecIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

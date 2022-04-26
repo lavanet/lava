@@ -22,7 +22,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	//TODO: basic validation for chain ID
 	specChainID := chainID
 
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
 	if !foundAndActive {
 		details := map[string]string{"spec": specChainID}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_spec", details, "spec not found or not active")
@@ -119,28 +119,29 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {
-	// TODO: expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx,chainID)
-	expectedInterfaces := "grpc"
+	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID)
 	geolocMap := map[string]bool{} //TODO: turn this into spectypes.ApiInterface
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 	geolocKey := func(intefaceName string, geolocation uint64) string {
-		return expectedInterfaces + "_" + strconv.FormatUint(geolocation, 10)
+		return intefaceName + "_" + strconv.FormatUint(geolocation, 10)
 	}
 	for idx := uint64(0); idx < geolocations; idx++ {
 		//geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
-			//TODO: when apiInterface is a list loop on it here
-			geolocMap[geolocKey(expectedInterfaces, geolocZone)] = true
+			for expectedApiInterface, _ := range expectedInterfaces {
+				geolocMap[geolocKey(expectedApiInterface, geolocZone)] = true
+			}
 		}
 	}
+
 	for _, endpoint := range endpoints {
-		key := geolocKey(endpoint.IPPORT, endpoint.Geolocation)
+		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
 		if geolocMap[key] {
 			//interface is implemented and expected
 			delete(geolocMap, key) // remove this from expected implementations
 		} else {
-			return fmt.Errorf("servicer implemented in api interfaces that are not in the spec: %s, current expected: %s", key, geolocMap)
+			return fmt.Errorf("servicer implemented in api interfaces that are not in the spec: %s, current expected: %+v", key, geolocMap)
 		}
 	}
 	if len(geolocMap) == 0 {
