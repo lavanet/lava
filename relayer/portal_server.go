@@ -16,10 +16,11 @@ func PortalServer(
 	clientCtx client.Context,
 	listenAddr string,
 	chainID string,
+	apiInterface string,
 ) {
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, chainID, true, nil)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -33,7 +34,7 @@ func PortalServer(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(chainID, "", 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}

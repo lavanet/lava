@@ -3,7 +3,7 @@
     "description": "Adding new specification support for relaying Ethereum data on Lava",
     "specs": [
       {
-        "chainid": "Ethereum Mainnet",
+        "chainid": "ETH1",
         "name": "Ethereum Mainnet",
         "enabled": true,
         "apis": [

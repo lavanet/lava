@@ -61,7 +61,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
-	processPaths            bool
+	ApiInterface            string
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -181,20 +181,27 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	//
 	// Update
-	log.Println("new spec found; updating spec!")
+
+	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
 	for _, api := range spec.Spec.Apis {
 
 		//
 		// TODO: find a better spot for this (more optimized, precompile regex, etc)
-		if s.processPaths {
-			re := regexp.MustCompile(`{[^}]+}`)
-			processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-			processedName = regexp.QuoteMeta(processedName)
-			processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-			serverApis[processedName] = api
-		} else {
-			serverApis[api.Name] = api
+		for _, apiInterface := range api.ApiInterfaces {
+			if apiInterface.Type != s.ApiInterface {
+				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+				continue
+			}
+			if apiInterface.Interface == "rest" {
+				re := regexp.MustCompile(`{[^}]+}`)
+				processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+				processedName = regexp.QuoteMeta(processedName)
+				processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+				serverApis[processedName] = api
+			} else {
+				serverApis[api.Name] = api
+			}
 		}
 	}
 	s.specMu.Lock()
@@ -573,7 +580,7 @@ func (s *Sentry) GetSpecName() string {
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
-
+	//TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
@@ -624,19 +631,13 @@ func NewSentry(
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
+	apiInterface string,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
 	pairingQueryClient := pairingtypes.NewQueryClient(clientCtx)
 	epochStorageQueryClient := epochstoragetypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
-
-	//
-	// process paths for terra
-	processPaths := false
-	if chainID == "Terra Columbus-5 mainnet" {
-		processPaths = true
-	}
 
 	return &Sentry{
 		ClientCtx:               clientCtx,
@@ -648,6 +649,6 @@ func NewSentry(
 		isUser:                  isUser,
 		Acc:                     acc,
 		newBlockCb:              newBlockCb,
-		processPaths:            processPaths,
+		ApiInterface:            apiInterface,
 	}
 }
