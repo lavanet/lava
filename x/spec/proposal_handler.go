@@ -14,6 +14,8 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
+const minCU = 1
+
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
 func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
@@ -77,6 +79,13 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 			return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
 		}
 
+		for _, api := range spec.Apis {
+			if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
+				details["api"] = api.Name
+				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
+			}
+		}
+
 		k.SetSpec(ctx, spec)
 		//TODO: add api types once its implemented to the event
 
@@ -97,6 +106,13 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 
 		if !found {
 			return utils.LavaError(ctx, logger, "spec_modify_missing", details, "spec to modify not found")
+		}
+
+		for _, api := range spec.Apis {
+			if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
+				details["api"] = api.Name
+				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
+			}
 		}
 
 		k.SetSpec(ctx, spec)
