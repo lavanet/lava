@@ -71,11 +71,10 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Verify 'name' is unique
-		existingSpecs := k.GetAllSpec(ctx)
-		for _, existingSpec := range existingSpecs {
-			if existingSpec.Name == spec.Name {
-				return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
-			}
+		_, found := k.GetSpec(ctx, spec.Index)
+
+		if found {
+			return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
 		}
 
 		k.SetSpec(ctx, spec)

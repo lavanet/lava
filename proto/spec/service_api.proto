@@ -17,4 +17,5 @@ message ServiceApi {
 message ApiInterface {
   string interface = 1;
   string type = 2;
+  uint64 extraComputeUnits = 3; 
 }

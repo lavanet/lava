@@ -3,6 +3,7 @@
   "description": "Adding new specification support for relaying Ethereum data on Lava",
   "specs": [
     {
+      "chainid": "Ethereum Mainnet",
       "name": "Ethereum Mainnet",
       "enabled": true,
       "apis": [
@@ -12,8 +13,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -23,8 +25,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -34,8 +37,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -45,8 +49,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -56,8 +61,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -67,8 +73,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -78,8 +85,9 @@
           "enabled": false,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -89,8 +97,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -100,8 +109,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -111,8 +121,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -122,8 +133,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -133,8 +145,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -144,8 +157,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -155,8 +169,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -166,8 +181,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -177,8 +193,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -188,8 +205,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -199,8 +217,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -210,8 +229,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -221,8 +241,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -232,8 +253,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -243,8 +265,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -254,8 +277,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -265,8 +289,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -276,8 +301,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -287,8 +313,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -298,8 +325,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -309,8 +337,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -320,8 +349,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -331,8 +361,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -342,8 +373,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -353,8 +385,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -364,8 +397,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -375,8 +409,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -386,8 +421,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -397,8 +433,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -408,8 +445,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -419,8 +457,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -430,8 +469,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -441,8 +481,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -452,8 +493,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -463,8 +505,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -474,8 +517,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -485,8 +529,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -496,8 +541,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -507,8 +553,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -518,8 +565,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -529,8 +577,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -540,8 +589,9 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -551,8 +601,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -562,8 +613,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -573,8 +625,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -584,8 +637,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -595,20 +649,23 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         }
       ]
     },
     {
+      "chainid": "Ethereum Rinkeby",
       "name": "Ethereum Rinkeby",
       "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] ,
       "apis": [
@@ -618,8 +675,9 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         },
@@ -629,8 +687,9 @@
           "enabled": false,
           "apiInterfaces": [
             {
-              "interface": "grpc",
-              "type": "get"
+              "interface": "json-rpc",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ] 
         }

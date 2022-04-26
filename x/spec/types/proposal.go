@@ -31,12 +31,12 @@ func checkSpecProposal(spec Spec) error {
 func stringSpec(spec Spec, b strings.Builder) strings.Builder {
 
 	b.WriteString(fmt.Sprintf(`    Spec:
-	Name: %s, Status: %s, Apis: %d
+	Name: %s, Enabled: %s, Apis: %d
 `, spec.Name, spec.Enabled, len(spec.Apis)))
 
 	for _, api := range spec.Apis {
 		b.WriteString(fmt.Sprintf(`        Api:
-		      Name: %s, Status: %s, ComputeUntis: %d
+		      Name: %s, Enabled: %s, ComputeUntis: %d
 		`, api.Name, api.Enabled, api.ComputeUnits))
 	}
 

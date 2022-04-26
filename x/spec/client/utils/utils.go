@@ -9,8 +9,9 @@ import (
 
 type (
 	ApiInterfaceJSON struct {
-		Interface string `json:"interface" yaml:"interface"`
-		Type      string `json:"type" yaml:"type"`
+		Interface         string `json:"interface" yaml:"interface"`
+		Type              string `json:"type" yaml:"type"`
+		ExtraComputeUnits uint   `json:"extra_compute_units" yaml:"extra_compute_units"`
 	}
 
 	ApiJSON struct {
@@ -21,6 +22,7 @@ type (
 	}
 
 	SpecJSON struct {
+		ChainID string    `json:"chainid" yaml:"chainid"`
 		Name    string    `json:"name" yaml:"name"`
 		Enabled bool      `json:"enabled" yaml:"enabled"`
 		Apis    []ApiJSON `json:"apis" yaml:"apis"`
@@ -50,7 +52,7 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 		}
 
 		ret = append(ret, types.Spec{
-			Index:   spec.Name,
+			Index:   spec.ChainID,
 			Name:    spec.Name,
 			Enabled: spec.Enabled,
 			Apis:    apis,
@@ -78,7 +80,7 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Spec
 func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
 
 	for _, apiinterface := range apiinterfacesJSON {
-		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type})
+		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type, ExtraComputeUnits: uint64(apiinterface.ExtraComputeUnits)})
 	}
 
 	return
