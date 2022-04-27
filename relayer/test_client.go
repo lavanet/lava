@@ -19,6 +19,8 @@ const (
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
+	JSONRPC_TERRA_BLOCKNUMBER     = `{"jsonrpc":"2.0","method":"block","params":[],"id":1}`
+	JSONRPC_TERRA_VALIDATORS      = `{"jsonrpc":"2.0","method":"validators","params":[],"id":2}`
 )
 
 func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
@@ -55,16 +57,36 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 	}
 }
 
-func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
-	for i := 0; i < 10; i++ {
-		reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
-		if err != nil {
-			log.Println(err)
-		} else {
-			reply.Sig = nil // for nicer prints
-			log.Println("reply", reply)
+func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) {
+	if apiInterface == "rest" {
+		for i := 0; i < 10; i++ {
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+			}
+		}
+	} else {
+		for i := 0; i < 10; i++ {
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_BLOCKNUMBER)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply JSONRPC_TERRA_BLOCKNUMBER", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_VALIDATORS)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply JSONRPC_TERRA_VALIDATORS", reply)
+			}
 		}
 	}
+
 }
 
 func TestClient(
@@ -114,6 +136,6 @@ func TestClient(
 	case "ETH1", "ETH4":
 		ethTests(ctx, chainProxy, privKey)
 	case "COS1":
-		terraTests(ctx, chainProxy, privKey)
+		terraTests(ctx, chainProxy, privKey, apiInterface)
 	}
 }

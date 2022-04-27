@@ -16,7 +16,7 @@
           }]
         },
         {
-          "name": "/abci_query?",
+          "name": "/abci_query",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -26,7 +26,7 @@
           }]
         },
         {
-          "name": "/block?",
+          "name": "/block",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -36,7 +36,7 @@
           }]
         },
         {
-          "name": "/block_by_hash?",
+          "name": "/block_by_hash",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -46,7 +46,7 @@
           }]
         },
         {
-          "name": "/block_results?",
+          "name": "/block_results",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -56,7 +56,7 @@
           }]
         },
         {
-          "name": "/block_search?",
+          "name": "/block_search",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -76,7 +76,7 @@
           }]
         },
         {
-          "name": "/broadcast_evidence?",
+          "name": "/broadcast_evidence",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -86,7 +86,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_async?",
+          "name": "/broadcast_tx_async",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -96,7 +96,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_commit?",
+          "name": "/broadcast_tx_commit",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -106,7 +106,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_sync?",
+          "name": "/broadcast_tx_sync",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -116,7 +116,7 @@
           }]
         },
         {
-          "name": "/check_tx?",
+          "name": "/check_tx",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -126,7 +126,7 @@
           }]
         },
         {
-          "name": "/commit?",
+          "name": "/commit",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -136,7 +136,7 @@
           }]
         },
         {
-          "name": "/consensus_params?",
+          "name": "/consensus_params",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -146,7 +146,7 @@
           }]
         },
         {
-          "name": "/consensus_state?",
+          "name": "/consensus_state",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -156,7 +156,7 @@
           }]
         },
         {
-          "name": "/dump_consensus_state?",
+          "name": "/dump_consensus_state",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -166,7 +166,7 @@
           }]
         },
         {
-          "name": "/genesis?",
+          "name": "/genesis",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -176,7 +176,7 @@
           }]
         },
         {
-          "name": "/genesis_chunked?",
+          "name": "/genesis_chunked",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -186,7 +186,7 @@
           }]
         },
         {
-          "name": "/health?",
+          "name": "/health",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -196,7 +196,7 @@
           }]
         },
         {
-          "name": "/net_info?",
+          "name": "/net_info",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -206,7 +206,7 @@
           }]
         },
         {
-          "name": "/num_unconfirmed_txs?",
+          "name": "/num_unconfirmed_txs",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -216,7 +216,7 @@
           }]
         },
         {
-          "name": "/status?",
+          "name": "/status",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -226,7 +226,7 @@
           }]
         },
         {
-          "name": "/subscribe?",
+          "name": "/subscribe",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -236,7 +236,7 @@
           }]
         },
         {
-          "name": "/tx?",
+          "name": "/tx",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -246,7 +246,7 @@
           }]
         },
         {
-          "name": "/tx_search?",
+          "name": "/tx_search",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -256,7 +256,7 @@
           }]
         },
         {
-          "name": "/unconfirmed_txs?",
+          "name": "/unconfirmed_txs",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -266,7 +266,7 @@
           }]
         },
         {
-          "name": "/unsubscribe?",
+          "name": "/unsubscribe",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -276,7 +276,7 @@
           }]
         },
         {
-          "name": "/unsubscribe_all?",
+          "name": "/unsubscribe_all",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -286,7 +286,7 @@
           }]
         },
         {
-          "name": "/validators?",
+          "name": "/validators",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2422,7 +2422,7 @@
           }]
         },
         {
-          "name": "/abci_query?",
+          "name": "/abci_query",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2432,7 +2432,7 @@
           }]
         },
         {
-          "name": "/block?",
+          "name": "/block",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2442,7 +2442,7 @@
           }]
         },
         {
-          "name": "/block_by_hash?",
+          "name": "/block_by_hash",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2452,7 +2452,7 @@
           }]
         },
         {
-          "name": "/block_results?",
+          "name": "/block_results",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2462,7 +2462,7 @@
           }]
         },
         {
-          "name": "/block_search?",
+          "name": "/block_search",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2482,7 +2482,7 @@
           }]
         },
         {
-          "name": "/broadcast_evidence?",
+          "name": "/broadcast_evidence",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2492,7 +2492,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_async?",
+          "name": "/broadcast_tx_async",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2502,7 +2502,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_commit?",
+          "name": "/broadcast_tx_commit",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2512,7 +2512,7 @@
           }]
         },
         {
-          "name": "/broadcast_tx_sync?",
+          "name": "/broadcast_tx_sync",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2522,7 +2522,7 @@
           }]
         },
         {
-          "name": "/check_tx?",
+          "name": "/check_tx",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2532,7 +2532,7 @@
           }]
         },
         {
-          "name": "/commit?",
+          "name": "/commit",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2542,7 +2542,7 @@
           }]
         },
         {
-          "name": "/consensus_params?",
+          "name": "/consensus_params",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2552,7 +2552,7 @@
           }]
         },
         {
-          "name": "/consensus_state?",
+          "name": "/consensus_state",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2562,7 +2562,7 @@
           }]
         },
         {
-          "name": "/dump_consensus_state?",
+          "name": "/dump_consensus_state",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2572,7 +2572,7 @@
           }]
         },
         {
-          "name": "/genesis?",
+          "name": "/genesis",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2582,7 +2582,7 @@
           }]
         },
         {
-          "name": "/genesis_chunked?",
+          "name": "/genesis_chunked",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2592,7 +2592,7 @@
           }]
         },
         {
-          "name": "/health?",
+          "name": "/health",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2602,7 +2602,7 @@
           }]
         },
         {
-          "name": "/net_info?",
+          "name": "/net_info",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2612,7 +2612,7 @@
           }]
         },
         {
-          "name": "/num_unconfirmed_txs?",
+          "name": "/num_unconfirmed_txs",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2622,7 +2622,7 @@
           }]
         },
         {
-          "name": "/status?",
+          "name": "/status",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2632,7 +2632,7 @@
           }]
         },
         {
-          "name": "/subscribe?",
+          "name": "/subscribe",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2642,7 +2642,7 @@
           }]
         },
         {
-          "name": "/tx?",
+          "name": "/tx",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2652,7 +2652,7 @@
           }]
         },
         {
-          "name": "/tx_search?",
+          "name": "/tx_search",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2662,7 +2662,7 @@
           }]
         },
         {
-          "name": "/unconfirmed_txs?",
+          "name": "/unconfirmed_txs",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2672,7 +2672,7 @@
           }]
         },
         {
-          "name": "/unsubscribe?",
+          "name": "/unsubscribe",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2682,7 +2682,7 @@
           }]
         },
         {
-          "name": "/unsubscribe_all?",
+          "name": "/unsubscribe_all",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2692,7 +2692,7 @@
           }]
         },
         {
-          "name": "/validators?",
+          "name": "/validators",
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
