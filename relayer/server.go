@@ -251,7 +251,7 @@ func Server(
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName(), "api Interface", apiInterface)
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName(), "chainID", sentry.GetChainID(), "api Interface", apiInterface)
 
 	//
 	// Keys

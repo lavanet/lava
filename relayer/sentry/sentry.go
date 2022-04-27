@@ -111,7 +111,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	//
 	// Get
 	res, err := s.pairingQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
-		ChainID: s.GetSpecName(),
+		ChainID: s.GetChainID(),
 		Client:  s.Acc,
 	})
 	if err != nil {
@@ -256,7 +256,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	// Sanity
 	if !s.isUser {
 		servicers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
-			ChainID: s.GetSpecName(),
+			ChainID: s.GetChainID(),
 		})
 		if err != nil {
 			return err
@@ -269,7 +269,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 			}
 		}
 		if !found {
-			return errors.New("servicer not staked")
+			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
 		}
 	}
 	return nil
@@ -575,6 +575,10 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 
 func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
+}
+
+func (s *Sentry) GetChainID() string {
+	return s.serverSpec.Index
 }
 
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
