@@ -11,6 +11,9 @@ func checkSpecProposal(spec Spec) error {
 	if len(strings.TrimSpace(spec.Name)) == 0 {
 		return sdkerrors.Wrap(ErrBlankSpecName, "spec name cannot be blank")
 	}
+	if len(strings.TrimSpace(spec.Index)) == 0 {
+		return sdkerrors.Wrap(ErrBlankSpecName, "spec index cannot be blank")
+	}
 	if len(spec.Apis) == 0 {
 		return sdkerrors.Wrap(ErrEmptyApis, "api list cannot be empty")
 	}
@@ -23,6 +26,9 @@ func checkSpecProposal(spec Spec) error {
 		if _, ok := checkUnique[api.Name]; ok {
 			return sdkerrors.Wrap(ErrDuplicateApiName, "api name must be unique")
 		}
+		if len(api.ApiInterfaces) == 0 {
+			return sdkerrors.Wrap(ErrDuplicateApiName, "api interface cannot be empty")
+		}
 		checkUnique[api.Name] = true
 	}
 	return nil
@@ -30,9 +36,9 @@ func checkSpecProposal(spec Spec) error {
 
 func stringSpec(spec Spec, b strings.Builder) strings.Builder {
 
-	b.WriteString(fmt.Sprintf(`    Spec:
-	Name: %s, Enabled: %s, Apis: %d
-`, spec.Name, spec.Enabled, len(spec.Apis)))
+	b.WriteString(fmt.Sprintf(`    Spec name:
+	Name: %s, Spec index: %s, Enabled: %s, Apis: %d
+`, spec.Name, spec.Index, spec.Enabled, len(spec.Apis)))
 
 	for _, api := range spec.Apis {
 		b.WriteString(fmt.Sprintf(`        Api:

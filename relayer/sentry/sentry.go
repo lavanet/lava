@@ -189,7 +189,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 		//
 		// TODO: find a better spot for this (more optimized, precompile regex, etc)
 		for _, apiInterface := range api.ApiInterfaces {
-			if apiInterface.Type != s.ApiInterface {
+			if apiInterface.Interface != s.ApiInterface {
 				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
 				continue
 			}
