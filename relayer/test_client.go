@@ -19,8 +19,8 @@ const (
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
-	JSONRPC_TERRA_BLOCKNUMBER     = `{"jsonrpc":"2.0","method":"block","params":[],"id":1}`
-	JSONRPC_TERRA_VALIDATORS      = `{"jsonrpc":"2.0","method":"validators","params":[],"id":2}`
+	JSONRPC_TERRA_STATUS          = `{"jsonrpc":"2.0","method":"status","params":[],"id":1}`
+	JSONRPC_TERRA_HEALTH          = `{"jsonrpc":"2.0","method":"health","params":[],"id":2}`
 )
 
 func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
@@ -70,19 +70,19 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 		}
 	} else {
 		for i := 0; i < 10; i++ {
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_BLOCKNUMBER)
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS)
 			if err != nil {
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
-				log.Println("reply JSONRPC_TERRA_BLOCKNUMBER", reply)
+				log.Println("reply JSONRPC_TERRA_STATUS", reply)
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_VALIDATORS)
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
 			if err != nil {
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
-				log.Println("reply JSONRPC_TERRA_VALIDATORS", reply)
+				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
 			}
 		}
 	}
