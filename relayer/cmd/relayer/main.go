@@ -31,10 +31,10 @@ func main() {
 	)
 
 	var cmdServer = &cobra.Command{
-		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id]",
+		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id] [api-interface]",
 		Short: "server",
 		Long:  `server`,
-		Args:  cobra.ExactArgs(4),
+		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -53,23 +53,22 @@ func main() {
 			}
 
 			chainID := args[3]
-			if err != nil {
-				return err
-			}
+
+			apiInterface := args[4]
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], chainID)
+			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], chainID, apiInterface)
 
 			return nil
 		},
 	}
 
 	var cmdPortalServer = &cobra.Command{
-		Use:   "portal_server [listen-ip] [listen-port] [relayer-chain-id]",
+		Use:   "portal_server [listen-ip] [listen-port] [relayer-chain-id] [api-interface]",
 		Short: "portal server",
 		Long:  `portal server`,
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -82,20 +81,21 @@ func main() {
 			}
 
 			chainID := args[2]
+			apiInterface := args[3]
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID)
+			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface)
 
 			return nil
 		},
 	}
 
 	var cmdTestClient = &cobra.Command{
-		Use:   "test_client [chain-id]",
+		Use:   "test_client [chain-id] [api-interface]",
 		Short: "test client",
 		Long:  `test client`,
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -103,12 +103,11 @@ func main() {
 			}
 
 			chainID := args[0]
-			if err != nil {
-				return err
-			}
+
+			apiInterface := args[1]
 
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, chainID)
+			relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
 
 			return nil
 		},

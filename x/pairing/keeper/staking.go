@@ -148,5 +148,5 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		//all interfaces and geolocations were implemented
 		return nil
 	}
-	return fmt.Errorf("not all expected interfaces are implemented for all geolocations: %s, missing implementation count: %d", geolocMap, len(geolocMap))
+	return fmt.Errorf("not all expected interfaces are implemented for all geolocations: %+v, missing implementation count: %d", geolocMap, len(geolocMap))
 }

@@ -3,7 +3,7 @@
   "description": "Adding new specification support for relaying Ethereum data on Lava",
   "specs": [
     {
-      "chainid": "Ethereum Mainnet",
+      "chainid": "ETH1",
       "name": "Ethereum Mainnet",
       "enabled": true,
       "apis": [
@@ -13,7 +13,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -25,7 +25,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -37,7 +37,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -49,7 +49,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -61,7 +61,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -73,7 +73,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -85,7 +85,7 @@
           "enabled": false,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -97,7 +97,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -109,7 +109,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -121,7 +121,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -133,7 +133,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -145,7 +145,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -157,7 +157,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -169,7 +169,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -181,7 +181,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -193,7 +193,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -205,7 +205,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -217,7 +217,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -229,7 +229,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -241,7 +241,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -253,7 +253,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -265,7 +265,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -277,7 +277,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -289,7 +289,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -301,7 +301,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -313,7 +313,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -325,7 +325,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -337,7 +337,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -349,7 +349,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -361,7 +361,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -373,7 +373,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -385,7 +385,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -397,7 +397,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -409,7 +409,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -421,7 +421,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -433,7 +433,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -445,7 +445,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -457,7 +457,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -469,7 +469,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -481,7 +481,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -493,7 +493,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -505,7 +505,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -517,7 +517,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -529,7 +529,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -541,7 +541,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -553,7 +553,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -565,7 +565,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -577,7 +577,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -589,7 +589,7 @@
           "enabled": false,
            "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -601,7 +601,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -613,7 +613,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -625,7 +625,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -637,7 +637,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -649,7 +649,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -658,12 +658,12 @@
       ]
     },
     {
-      "chainid": "Ethereum Rinkeby",
+      "chainid": "ETH4",
       "name": "Ethereum Rinkeby",
       "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -675,7 +675,7 @@
           "enabled": true,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
@@ -687,7 +687,7 @@
           "enabled": false,
           "apiInterfaces": [
             {
-              "interface": "json-rpc",
+              "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }

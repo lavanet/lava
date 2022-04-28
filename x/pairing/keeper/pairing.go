@@ -38,7 +38,7 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, chainID string, clientAddress
 		if clientAddr.Equals(clientAddress) {
 			if clientStakeEntry.Deadline > block {
 				//client is not valid for new pairings yet, or was jailed
-				return nil, fmt.Errorf("found staked user %s, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
+				return nil, fmt.Errorf("found staked user %+v, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
 			}
 			verifiedUser = true
 			clientStakeEntryRet = &clientStakeEntry

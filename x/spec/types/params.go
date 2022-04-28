@@ -12,6 +12,11 @@ var (
 	DefaultGeolocationCount uint64 = 8
 )
 
+var (
+	KeyMaxCU            = []byte("MaxCU")
+	DefaultMaxCU uint64 = 10000
+)
+
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 // ParamKeyTable the param key table for launch module
@@ -20,19 +25,20 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(geolocationCount uint64) Params {
-	return Params{GeolocationCount: geolocationCount}
+func NewParams(geolocationCount uint64, maxCU uint64) Params {
+	return Params{GeolocationCount: geolocationCount, MaxCU: maxCU}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultGeolocationCount)
+	return NewParams(DefaultGeolocationCount, DefaultMaxCU)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyGeolocationCount, &p.GeolocationCount, validateGeolocationCount),
+		paramtypes.NewParamSetPair(KeyMaxCU, &p.MaxCU, validateMaxCU),
 	}
 }
 
@@ -41,6 +47,11 @@ func (p Params) Validate() error {
 	if err := validateGeolocationCount(p.GeolocationCount); err != nil {
 		return err
 	}
+
+	if err := validateMaxCU(p.MaxCU); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -58,6 +69,18 @@ func validateGeolocationCount(v interface{}) error {
 
 	// TODO implement validation
 	_ = geolocationCount
+
+	return nil
+}
+
+func validateMaxCU(v interface{}) error {
+	maxCU, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = maxCU
 
 	return nil
 }

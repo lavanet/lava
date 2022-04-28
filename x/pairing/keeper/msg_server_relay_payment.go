@@ -44,7 +44,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
-			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID)}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%s", relay.ChainID)}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
@@ -85,7 +85,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 
-			details := map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+			details := map[string]string{"chainID": fmt.Sprintf("%s", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the provider
 			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
@@ -95,7 +95,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
 			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
-			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Name, clientAddr, burnAmount, false)
+			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
 			if err2 != nil {
 				details["amountToBurn"] = burnAmount.String()
 				details["error"] = err2.Error()
