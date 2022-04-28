@@ -62,7 +62,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
 			if err != nil {
-				log.Println(err)
+				log.Println("1:" + err.Error())
 			} else {
 				reply.Sig = nil // for nicer prints
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)

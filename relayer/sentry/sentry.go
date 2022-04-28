@@ -142,11 +142,22 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			continue
 		}
 
+		relevantEndpoints := []epochstoragetypes.Endpoint{}
+		for _, endpoint := range servicerEndpoints {
+			//only take into account endpoints that use the same api interface
+			if endpoint.UseType == s.ApiInterface {
+				relevantEndpoints = append(relevantEndpoints, endpoint)
+			}
+		}
+		if len(relevantEndpoints) == 0 {
+			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
+			continue
+		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
 			Acc:      servicer.Address,
-			Addr:     servicerEndpoints[0].IPPORT,
+			Addr:     relevantEndpoints[0].IPPORT,
 			Sessions: map[int64]*ClientSession{},
 		})
 	}
@@ -357,7 +368,7 @@ func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
 func (s *Sentry) PrintExpectedPAyments() string {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
-	return fmt.Sprintf("last Received: %s\n Expected: %s\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
+	return fmt.Sprintf("last Received: %v\n Expected: %v\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
 }
 
 func (s *Sentry) Start(ctx context.Context) {

@@ -3,7 +3,7 @@ package chainproxy
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -49,12 +49,11 @@ func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 	path = strings.SplitN(path, "?", 2)[0]
 	if api, ok := cp.sentry.MatchSpecApiByName(path); ok {
 		if !api.Enabled {
-			return nil, errors.New("api is disabled")
+			return nil, fmt.Errorf("REST Api is disabled %s ", path)
 		}
 		return &api, nil
 	}
-
-	return nil, errors.New("api not supported")
+	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
 func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
