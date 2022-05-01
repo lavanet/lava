@@ -15,20 +15,23 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 		cu    uint64
 	}
 	//TODO: create param dictionary for max CU per session per stake and compare it to totalCU
-	// stakeToMaxCUMap := k.GetStakeToMaxCUInSessionMap(ctx)
-	stakeToMaxCUMap := []stakeToCU{}
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(0)}, cu: 5000})
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(500)}, cu: 15000})
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(2000)}, cu: 50000})
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(5000)}, cu: 250000})
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(100000)}, cu: 500000})
-	stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(9999900000)}, cu: 9999999999})
+	stakeToMaxCUMap := k.StakeRangeToCUList(ctx).List
+	// stakeToMaxCUMap := []stakeToCU{}
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(0)}, cu: 5000})
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(500)}, cu: 15000})
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(2000)}, cu: 50000})
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(5000)}, cu: 250000})
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(100000)}, cu: 500000})
+	// stakeToMaxCUMap = append(stakeToMaxCUMap, stakeToCU{stake: sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(9999900000)}, cu: 9999999999})
 	for _, stakeToCU := range stakeToMaxCUMap {
-		if clientEntry.Stake.IsGTE(stakeToCU.stake) {
-			allowedCU = stakeToCU.cu
+		if stakeToCU.LowerStake <= clientEntry.Stake.Amount.Uint64() && clientEntry.Stake.Amount.Uint64() <= stakeToCU.UpperStake {
+			allowedCU = stakeToCU.ComputeUnits
 		} else {
 			break
 		}
+	}
+	if allowedCU == 0 {
+		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
 	if totalCU > allowedCU {
 		k.LimitClientPairingsAndMarkForPenalty(ctx, clientEntry)

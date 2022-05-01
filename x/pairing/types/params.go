@@ -54,6 +54,17 @@ var (
 	DefaultEpochBlocksOverlap uint64 = 5
 )
 
+var (
+	KeyStakeRangeToCUList = []byte("StakeRangeToCUList")
+	// TODO: Determine the default value
+	DefaultStakeRangeToCUList StakeRangeToCUList = StakeRangeToCUList{List: []*StakeRangeToCU{{0, 500, 5000},
+		{501, 2000, 15000},
+		{2001, 5000, 50000},
+		{5001, 10000, 250000},
+		{10001, 99999999, 500000},
+	}}
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -69,6 +80,7 @@ func NewParams(
 	fraudSlashingAmount uint64,
 	servicersToPairCount uint64,
 	epochBlocksOverlap uint64,
+	stakeRangeToCUList StakeRangeToCUList,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -79,6 +91,7 @@ func NewParams(
 		FraudSlashingAmount:      fraudSlashingAmount,
 		ServicersToPairCount:     servicersToPairCount,
 		EpochBlocksOverlap:       epochBlocksOverlap,
+		StakeRangeToCUList:       stakeRangeToCUList,
 	}
 }
 
@@ -93,6 +106,7 @@ func DefaultParams() Params {
 		DefaultFraudSlashingAmount,
 		DefaultServicersToPairCount,
 		DefaultEpochBlocksOverlap,
+		DefaultStakeRangeToCUList,
 	)
 }
 
@@ -107,6 +121,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
 		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
 		paramtypes.NewParamSetPair(KeyEpochBlocksOverlap, &p.EpochBlocksOverlap, validateEpochBlocksOverlap),
+		paramtypes.NewParamSetPair(KeyStakeRangeToCUList, &p.StakeRangeToCUList, validateStakeRangeToCUList),
 	}
 }
 
@@ -141,6 +156,10 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateEpochBlocksOverlap(p.EpochBlocksOverlap); err != nil {
+		return err
+	}
+
+	if err := validateStakeRangeToCUList(p.StakeRangeToCUList); err != nil {
 		return err
 	}
 
@@ -247,6 +266,19 @@ func validateServicersToPairCount(v interface{}) error {
 // validateEpochBlocksOverlap validates the EpochBlocksOverlap param
 func validateEpochBlocksOverlap(v interface{}) error {
 	epochBlocksOverlap, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = epochBlocksOverlap
+
+	return nil
+}
+
+// validateStakeRangeToCUList validates the StakeRangeToCUList param
+func validateStakeRangeToCUList(v interface{}) error {
+	epochBlocksOverlap, ok := v.(StakeRangeToCUList)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
