@@ -8,7 +8,6 @@ import "epochstorage/params.proto";
 import "epochstorage/stake_storage.proto";
 import "epochstorage/epoch_details.proto";
 // this line is used by starport scaffolding # 1
-import "epochstorage/stake_entry.proto";
 
 option go_package = "github.com/lavanet/lava/x/epochstorage/types";
 
