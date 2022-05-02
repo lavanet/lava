@@ -62,15 +62,15 @@ func request_Query_Spec_0(ctx context.Context, marshaler runtime.Marshaler, clie
 		_   = err
 	)
 
-	val, ok = pathParams["id"]
+	val, ok = pathParams["index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "index")
 	}
 
-	protoReq.Id, err = runtime.Uint64(val)
+	protoReq.Index, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "index", err)
 	}
 
 	msg, err := client.Spec(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -89,15 +89,15 @@ func local_request_Query_Spec_0(ctx context.Context, marshaler runtime.Marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["id"]
+	val, ok = pathParams["index"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "index")
 	}
 
-	protoReq.Id, err = runtime.Uint64(val)
+	protoReq.Index, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "index", err)
 	}
 
 	msg, err := server.Spec(ctx, &protoReq)
@@ -420,7 +420,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "spec", "params"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_Spec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"lavanet", "lava", "spec", "id"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Spec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"lavanet", "lava", "spec", "index"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_SpecAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 2}, []string{"lavanet", "lava", "spec"}, "", runtime.AssumeColonVerbOpt(true)))
 

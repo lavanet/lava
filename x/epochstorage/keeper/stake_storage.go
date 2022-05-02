@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -85,14 +86,21 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err err
 }
 
 func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
-	block := uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	if earliestEpochBlock > block {
+	currentBlock := uint64(ctx.BlockHeight())
+	blocksToSave := k.BlocksToSave(ctx)
+	if currentBlock <= blocksToSave {
 		return
 	}
+	block := currentBlock - blocksToSave
+	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	if earliestEpochBlock >= block {
+		return
+	}
+	logger := k.Logger(ctx)
 	//now update the earliest session start
 	epochBlocks := k.GetEpochBlocks(ctx, earliestEpochBlock)
 	earliestEpochBlock += epochBlocks
+	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }
 
@@ -314,6 +322,7 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []types.StakeEntry) {
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	if !found {
+		// utils.LavaError(ctx, k.Logger(ctx), "emptyStakeStorage", map[string]string{"storageType": storageType}, "stakeStorageUnstake Empty!")
 		return nil
 	}
 	found_idx := -1

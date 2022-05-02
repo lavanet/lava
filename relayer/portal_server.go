@@ -2,6 +2,7 @@ package relayer
 
 import (
 	context "context"
+	"fmt"
 	"log"
 	"time"
 
@@ -16,10 +17,11 @@ func PortalServer(
 	clientCtx client.Context,
 	listenAddr string,
 	chainID string,
+	apiInterface string,
 ) {
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, chainID, true, nil)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -33,14 +35,14 @@ func PortalServer(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(chainID, "", 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
 
 	//
 	// Set up a connection to the server.
-	log.Println("PortalServer")
+	log.Println(fmt.Sprintf("PortalServer %s", apiInterface))
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)

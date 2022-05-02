@@ -97,17 +97,11 @@ import (
 	pairingmodule "github.com/lavanet/lava/x/pairing"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
-	servicermodule "github.com/lavanet/lava/x/servicer"
-	servicermodulekeeper "github.com/lavanet/lava/x/servicer/keeper"
-	servicermoduletypes "github.com/lavanet/lava/x/servicer/types"
 	"github.com/lavanet/lava/x/spec"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
-	usermodule "github.com/lavanet/lava/x/user"
-	usermodulekeeper "github.com/lavanet/lava/x/user/keeper"
-	usermoduletypes "github.com/lavanet/lava/x/user/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -163,8 +157,6 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		specmodule.AppModuleBasic{},
-		servicermodule.AppModuleBasic{},
-		usermodule.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
@@ -179,8 +171,6 @@ var (
 		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                {authtypes.Burner},
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
-		servicermoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		usermoduletypes.ModuleName:         {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
@@ -242,10 +232,6 @@ type App struct {
 
 	SpecKeeper specmodulekeeper.Keeper
 
-	ServicerKeeper servicermodulekeeper.Keeper
-
-	UserKeeper usermodulekeeper.Keeper
-
 	EpochstorageKeeper epochstoragemodulekeeper.Keeper
 
 	PairingKeeper pairingmodulekeeper.Keeper
@@ -286,8 +272,6 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
-		servicermoduletypes.StoreKey,
-		usermoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
@@ -417,34 +401,6 @@ func New(
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
-	app.UserKeeper = *usermodulekeeper.NewKeeper(
-		appCodec,
-		keys[usermoduletypes.StoreKey],
-		keys[usermoduletypes.MemStoreKey],
-		app.GetSubspace(usermoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.SpecKeeper,
-	)
-	userModule := usermodule.NewAppModule(appCodec, app.UserKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.ServicerKeeper = *servicermodulekeeper.NewKeeper(
-		appCodec,
-		keys[servicermoduletypes.StoreKey],
-		keys[servicermoduletypes.MemStoreKey],
-		app.GetSubspace(servicermoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.EvidenceKeeper,
-		app.SpecKeeper,
-		app.UserKeeper,
-		app.EpochstorageKeeper,
-		app.PairingKeeper,
-	)
-	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper, app.UserKeeper)
-
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
 		appCodec,
 		keys[pairingmoduletypes.StoreKey],
@@ -497,8 +453,6 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		specModule,
-		servicerModule,
-		userModule,
 		epochstorageModule,
 		pairingModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -513,7 +467,7 @@ func New(
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		feegrant.ModuleName,
 		epochstoragemoduletypes.ModuleName,
-		servicermoduletypes.ModuleName, usermoduletypes.ModuleName, pairingmoduletypes.ModuleName,
+		pairingmoduletypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, epochstoragemoduletypes.ModuleName)
@@ -538,8 +492,6 @@ func New(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
-		servicermoduletypes.ModuleName,
-		usermoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
@@ -565,8 +517,6 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		specModule,
-		servicerModule,
-		userModule,
 		epochstorageModule,
 		pairingModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -757,8 +707,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
-	paramsKeeper.Subspace(servicermoduletypes.ModuleName)
-	paramsKeeper.Subspace(usermoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace

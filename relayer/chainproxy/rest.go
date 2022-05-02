@@ -3,7 +3,7 @@ package chainproxy
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,54 +17,53 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-type CosmosMessage struct {
-	cp         *CosmosChainProxy
+type RestMessage struct {
+	cp         *RestChainProxy
 	serviceApi *spectypes.ServiceApi
 	path       string
 	msg        []byte
 }
 
-type CosmosChainProxy struct {
+type RestChainProxy struct {
 	nodeUrl string
 	sentry  *sentry.Sentry
 }
 
-func NewCosmosChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
+func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
-	return &CosmosChainProxy{
+	return &RestChainProxy{
 		nodeUrl: nodeUrl,
 		sentry:  sentry,
 	}
 }
 
-func (cp *CosmosChainProxy) GetSentry() *sentry.Sentry {
+func (cp *RestChainProxy) GetSentry() *sentry.Sentry {
 	return cp.sentry
 }
 
-func (cp *CosmosChainProxy) Start(context.Context) error {
+func (cp *RestChainProxy) Start(context.Context) error {
 	return nil
 }
 
-func (cp *CosmosChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, error) {
+func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, error) {
 	path = strings.SplitN(path, "?", 2)[0]
 	if api, ok := cp.sentry.MatchSpecApiByName(path); ok {
-		if api.Status != "enabled" {
-			return nil, errors.New("api is disabled")
+		if !api.Enabled {
+			return nil, fmt.Errorf("REST Api is disabled %s ", path)
 		}
 		return &api, nil
 	}
-
-	return nil, errors.New("api not supported")
+	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
-func (cp *CosmosChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
+func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := &CosmosMessage{
+	nodeMsg := &RestMessage{
 		cp:         cp,
 		serviceApi: serviceApi,
 		path:       path,
@@ -74,7 +73,7 @@ func (cp *CosmosChainProxy) ParseMsg(path string, data []byte) (NodeMessage, err
 	return nodeMsg, nil
 }
 
-func (cp *CosmosChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
@@ -110,11 +109,11 @@ func (cp *CosmosChainProxy) PortalStart(ctx context.Context, privKey *btcec.Priv
 	return
 }
 
-func (nm *CosmosMessage) GetServiceApi() *spectypes.ServiceApi {
+func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *CosmosMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
 		Timeout: time.Second * 2, // Timeout after 2 seconds
 	}

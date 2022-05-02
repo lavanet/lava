@@ -5,12 +5,12 @@ import "encoding/binary"
 var _ binary.ByteOrder
 
 const (
-	// StakeMapKeyPrefix is the prefix to retrieve all StakeMap
-	StakeMapKeyPrefix = "StakeMap/value/"
+	// SpecKeyPrefix is the prefix to retrieve all Spec
+	SpecKeyPrefix = "Spec/value/"
 )
 
-// StakeMapKey returns the store key to retrieve a StakeMap from the index fields
-func StakeMapKey(
+// SpecKey returns the store key to retrieve a Spec from the index fields
+func SpecKey(
 	index string,
 ) []byte {
 	var key []byte

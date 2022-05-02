@@ -22,11 +22,11 @@ func (k Keeper) Clients(goCtx context.Context, req *types.QueryClientsRequest) (
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ClientKey)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	outputStr := fmt.Sprintf("Staked Clients Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Clients:\n%s\nUnstaking Clients:\n%s\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeStorage.StakeEntries, unstakingStakeStorage.StakeEntries)
+	outputStr := fmt.Sprintf("Staked Clients Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Clients:\n%v\nUnstaking Clients:\n%v\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeStorage.StakeEntries, unstakingStakeStorage.StakeEntries)
 	return &types.QueryClientsResponse{StakeEntry: stakeStorage.StakeEntries, Output: outputStr}, nil
 }

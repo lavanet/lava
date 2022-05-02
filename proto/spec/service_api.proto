@@ -10,5 +10,12 @@ message ServiceApi {
   
   string name = 1; 
   uint64 computeUnits = 2; 
-  string status = 3; 
+  bool enabled = 3; 
+  repeated ApiInterface apiInterfaces = 4 [(gogoproto.nullable) = false]; 
+}
+
+message ApiInterface {
+  string interface = 1;
+  string type = 2;
+  uint64 extraComputeUnits = 3; 
 }

@@ -8,16 +8,24 @@ import (
 )
 
 type (
+	ApiInterfaceJSON struct {
+		Interface         string `json:"interface" yaml:"interface"`
+		Type              string `json:"type" yaml:"type"`
+		ExtraComputeUnits uint   `json:"extra_compute_units" yaml:"extra_compute_units"`
+	}
+
 	ApiJSON struct {
-		Name         string `json:"name" yaml:"name"`
-		ComputeUnits uint   `json:"compute_units" yaml:"compute_units"`
-		Status       string `json:"status" yaml:"status"`
+		Name          string             `json:"name" yaml:"name"`
+		ComputeUnits  uint               `json:"compute_units" yaml:"compute_units"`
+		Enabled       bool               `json:"enabled" yaml:"enabled"`
+		ApiInterfaces []ApiInterfaceJSON `json:"apiInterfaces" yaml:"apiInterfaces"`
 	}
 
 	SpecJSON struct {
-		Name   string    `json:"name" yaml:"name"`
-		Status string    `json:"status" yaml:"status"`
-		Apis   []ApiJSON `json:"apis" yaml:"apis"`
+		ChainID string    `json:"chainid" yaml:"chainid"`
+		Name    string    `json:"name" yaml:"name"`
+		Enabled bool      `json:"enabled" yaml:"enabled"`
+		Apis    []ApiJSON `json:"apis" yaml:"apis"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -35,15 +43,19 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 		apis := []types.ServiceApi{}
 		for _, api := range spec.Apis {
 			apis = append(apis, types.ServiceApi{
-				Name:         api.Name,
-				ComputeUnits: uint64(api.ComputeUnits),
-				Status:       api.Status,
+				Name:          api.Name,
+				ComputeUnits:  uint64(api.ComputeUnits),
+				Enabled:       api.Enabled,
+				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
 			})
+
 		}
+
 		ret = append(ret, types.Spec{
-			Name:   spec.Name,
-			Status: spec.Status,
-			Apis:   apis,
+			Index:   spec.ChainID,
+			Name:    spec.Name,
+			Enabled: spec.Enabled,
+			Apis:    apis,
 		})
 	}
 	return ret
@@ -63,4 +75,13 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Spec
 	}
 
 	return proposal, nil
+}
+
+func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
+
+	for _, apiinterface := range apiinterfacesJSON {
+		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type, ExtraComputeUnits: uint64(apiinterface.ExtraComputeUnits)})
+	}
+
+	return
 }

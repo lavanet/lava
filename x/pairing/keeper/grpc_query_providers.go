@@ -22,12 +22,12 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ProviderKey)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
 	}
-	outputStr := fmt.Sprintf("Staked Providers Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Providers:\n%s\nUnstaking Providers:\n%s\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeStorage.StakeEntries, unstakingStakeStorage.StakeEntries)
+	outputStr := fmt.Sprintf("Staked Providers Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Providers:\n%v\nUnstaking Providers:\n%v\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeStorage.StakeEntries, unstakingStakeStorage.StakeEntries)
 
 	return &types.QueryProvidersResponse{StakeEntry: stakeStorage.StakeEntries, Output: outputStr}, nil
 }

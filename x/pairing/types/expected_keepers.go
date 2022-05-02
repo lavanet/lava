@@ -9,9 +9,10 @@ import (
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
-	IsSpecFoundAndActive(ctx sdk.Context, specName string) (bool, bool, uint64)
-	IsSpecIDFoundAndActive(ctx sdk.Context, id uint64) (bool, bool)
-	GetSpec(ctx sdk.Context, id uint64) (val spectypes.Spec, found bool)
+	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool)
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
+	GeolocationCount(ctx sdk.Context) uint64
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) map[string]bool
 }
 
 type EpochstorageKeeper interface {

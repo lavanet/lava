@@ -24,14 +24,14 @@ type ChainProxy interface {
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 }
 
-func GetChainProxy(chainID string, nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
-	switch chainID {
-	case "Ethereum Mainnet", "Ethereum Rinkeby":
-		return NewEthereumChainProxy(nodeUrl, nConns, sentry), nil
-	case "Terra Columbus-5 mainnet":
-		return NewCosmosChainProxy(nodeUrl, sentry), nil
+func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
+	switch sentry.ApiInterface {
+	case "jsonrpc":
+		return NewJrpcChainProxy(nodeUrl, nConns, sentry), nil
+	case "rest":
+		return NewRestChainProxy(nodeUrl, sentry), nil
 	}
-	return nil, fmt.Errorf("chain proxy for chain id (%d) not found", chainID)
+	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
 
 func SendRelay(

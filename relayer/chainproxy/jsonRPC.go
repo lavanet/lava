@@ -30,32 +30,32 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-type EthereumMessage struct {
-	cp         *EthereumChainProxy
+type JrpcMessage struct {
+	cp         *JrpcChainProxy
 	serviceApi *spectypes.ServiceApi
 	msg        *jsonrpcMessage
 }
 
-type EthereumChainProxy struct {
+type JrpcChainProxy struct {
 	conn    *Connector
 	nConns  uint
 	nodeUrl string
 	sentry  *sentry.Sentry
 }
 
-func NewEthereumChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
-	return &EthereumChainProxy{
+func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
+	return &JrpcChainProxy{
 		nodeUrl: nodeUrl,
 		nConns:  nConns,
 		sentry:  sentry,
 	}
 }
 
-func (cp *EthereumChainProxy) GetSentry() *sentry.Sentry {
+func (cp *JrpcChainProxy) GetSentry() *sentry.Sentry {
 	return cp.sentry
 }
 
-func (cp *EthereumChainProxy) Start(ctx context.Context) error {
+func (cp *JrpcChainProxy) Start(ctx context.Context) error {
 	cp.conn = NewConnector(ctx, cp.nConns, cp.nodeUrl)
 	if cp.conn == nil {
 		return errors.New("g_conn == nil")
@@ -64,9 +64,9 @@ func (cp *EthereumChainProxy) Start(ctx context.Context) error {
 	return nil
 }
 
-func (cp *EthereumChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
+func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
 	if api, ok := cp.sentry.GetSpecApiByName(name); ok {
-		if api.Status != "enabled" {
+		if !api.Enabled {
 			return nil, errors.New("api is disabled")
 		}
 		return &api, nil
@@ -75,7 +75,7 @@ func (cp *EthereumChainProxy) getSupportedApi(name string) (*spectypes.ServiceAp
 	return nil, errors.New("api not supported")
 }
 
-func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
+func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 	//
 	// Unmarshal request
 	var msg jsonrpcMessage
@@ -85,12 +85,12 @@ func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, e
 	}
 
 	//
-	// Check api is supported an save it in nodeMsg
+	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := &EthereumMessage{
+	nodeMsg := &JrpcMessage{
 		cp:         cp,
 		serviceApi: serviceApi,
 		msg:        &msg,
@@ -98,7 +98,7 @@ func (cp *EthereumChainProxy) ParseMsg(path string, data []byte) (NodeMessage, e
 	return nodeMsg, nil
 }
 
-func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
@@ -161,11 +161,11 @@ func (cp *EthereumChainProxy) PortalStart(ctx context.Context, privKey *btcec.Pr
 	return
 }
 
-func (nm *EthereumMessage) GetServiceApi() *spectypes.ServiceApi {
+func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *EthereumMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	//
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)

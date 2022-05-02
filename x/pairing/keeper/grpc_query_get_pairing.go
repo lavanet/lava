@@ -24,7 +24,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, fmt.Errorf("invalid creator address %s error: %s", req.Client, err)
 	}
 
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	//TODO: handle spec changes
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")

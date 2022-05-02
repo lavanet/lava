@@ -6,6 +6,11 @@
       "subspace": "staking",
       "key": "MaxValidators",
       "value": 100
+    },
+    {
+      "subspace": "spec",
+      "key": "MaxCU",
+      "value": "100"
     }
   ],
   "deposit": "10000000stake"

@@ -5,7 +5,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
@@ -17,19 +16,19 @@ func (k Keeper) SpecAll(c context.Context, req *types.QueryAllSpecRequest) (*typ
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	var specs []types.Spec
+	var Specs []types.Spec
 	ctx := sdk.UnwrapSDKContext(c)
 
 	store := ctx.KVStore(k.storeKey)
-	specStore := prefix.NewStore(store, types.KeyPrefix(types.SpecKey))
+	SpecStore := prefix.NewStore(store, types.KeyPrefix(types.SpecKeyPrefix))
 
-	pageRes, err := query.Paginate(specStore, req.Pagination, func(key []byte, value []byte) error {
-		var spec types.Spec
-		if err := k.cdc.Unmarshal(value, &spec); err != nil {
+	pageRes, err := query.Paginate(SpecStore, req.Pagination, func(key []byte, value []byte) error {
+		var Spec types.Spec
+		if err := k.cdc.Unmarshal(value, &Spec); err != nil {
 			return err
 		}
 
-		specs = append(specs, spec)
+		Specs = append(Specs, Spec)
 		return nil
 	})
 
@@ -37,19 +36,22 @@ func (k Keeper) SpecAll(c context.Context, req *types.QueryAllSpecRequest) (*typ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.QueryAllSpecResponse{Spec: specs, Pagination: pageRes}, nil
+	return &types.QueryAllSpecResponse{Spec: Specs, Pagination: pageRes}, nil
 }
 
 func (k Keeper) Spec(c context.Context, req *types.QueryGetSpecRequest) (*types.QueryGetSpecResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
-
 	ctx := sdk.UnwrapSDKContext(c)
-	spec, found := k.GetSpec(ctx, req.Id)
+
+	val, found := k.GetSpec(
+		ctx,
+		req.Index,
+	)
 	if !found {
-		return nil, sdkerrors.ErrKeyNotFound
+		return nil, status.Error(codes.InvalidArgument, "not found")
 	}
 
-	return &types.QueryGetSpecResponse{Spec: spec}, nil
+	return &types.QueryGetSpecResponse{Spec: val}, nil
 }

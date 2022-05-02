@@ -20,7 +20,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	//TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
-	_, found, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	_, found := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
 		return utils.LavaError(ctx, logger, "unstake_spec_missing", map[string]string{"spec": chainID}, "trying to unstake an entry on missing spec")
 	}
@@ -48,17 +48,32 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	//this pops all the entries that had their deadline pass
-	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, types.ModuleName, uint64(ctx.BlockHeight()))
-	if unstakingEntriesToCredit == nil {
-		//no entries to handle
-		return nil
+	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ProviderKey, uint64(ctx.BlockHeight()))
+	if unstakingEntriesToCredit != nil {
+		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) //true for providers
+		if err != nil {
+			panic(err.Error())
+		}
 	}
-	err := k.creditUnstakingProviders(ctx, unstakingEntriesToCredit)
-	return err
+	//no providers entries to handle, check clients
+	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ClientKey, uint64(ctx.BlockHeight()))
+	if unstakingEntriesToCredit != nil {
+		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) //false for clients
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return nil
 }
 
-func (k Keeper) creditUnstakingProviders(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) error {
+func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesToUnstake []epochstoragetypes.StakeEntry) error {
 	logger := k.Logger(ctx)
+	stake_type := func() string {
+		if provider {
+			return epochstoragetypes.ProviderKey
+		}
+		return epochstoragetypes.ClientKey
+	}
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), "stake")
 		if moduleBalance.IsLT(neededAmount) {
@@ -71,7 +86,7 @@ func (k Keeper) creditUnstakingProviders(ctx sdk.Context, entriesToUnstake []epo
 		return true, nil
 	}
 	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{"spec": unstakingEntry.Chain, "servicer": unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
+		details := map[string]string{"spec": unstakingEntry.Chain, stake_type(): unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
 		if unstakingEntry.Deadline <= uint64(ctx.BlockHeight()) {
 			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
@@ -79,13 +94,13 @@ func (k Keeper) creditUnstakingProviders(ctx sdk.Context, entriesToUnstake []epo
 			valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
 			if !valid {
 				details["error"] = err.Error()
-				utils.LavaError(ctx, logger, "servicer_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
+				utils.LavaError(ctx, logger, stake_type()+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
 				panic(fmt.Sprintf("error unstaking : %s", err))
 			}
-			utils.LogLavaEvent(ctx, logger, "servicer_unstake_commit", details, "Unstaking Providers Commit")
+			utils.LogLavaEvent(ctx, logger, stake_type()+"_unstake_commit", details, "Unstaking Providers Commit")
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
-			utils.LavaError(ctx, logger, "servicer_unstaking", details, "trying to unstake a servicer while its deadline wasn't reached")
+			utils.LavaError(ctx, logger, stake_type()+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
 		}
 	}
 	return nil

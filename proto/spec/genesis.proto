@@ -4,6 +4,7 @@ package lavanet.lava.spec;
 import "gogoproto/gogo.proto";
 import "spec/params.proto";
 import "spec/spec.proto";
+
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/spec/types";

@@ -53,7 +53,7 @@ type Sentry struct {
 	ClientCtx               client.Context
 	rpcClient               rpcclient.Client
 	specQueryClient         spectypes.QueryClient
-	servicerQueryClient     pairingtypes.QueryClient
+	pairingQueryClient      pairingtypes.QueryClient
 	epochStorageQueryClient epochstoragetypes.QueryClient
 	ChainID                 string
 	NewTransactionEvents    <-chan ctypes.ResultEvent
@@ -61,7 +61,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
-	processPaths            bool
+	ApiInterface            string
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -96,7 +96,7 @@ func (s *Sentry) getEarliestSession(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	earliestBlock := res.EpochDetails.EarliestStart
+	earliestBlock := res.GetEpochDetails().EarliestStart
 	atomic.StoreUint64(&s.earliestSavedBlock, earliestBlock)
 	return nil
 }
@@ -110,8 +110,8 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 
 	//
 	// Get
-	res, err := s.servicerQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
-		ChainID: s.GetSpecName(),
+	res, err := s.pairingQueryClient.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
+		ChainID: s.GetChainID(),
 		Client:  s.Acc,
 	})
 	if err != nil {
@@ -142,11 +142,22 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			continue
 		}
 
+		relevantEndpoints := []epochstoragetypes.Endpoint{}
+		for _, endpoint := range servicerEndpoints {
+			//only take into account endpoints that use the same api interface
+			if endpoint.UseType == s.ApiInterface {
+				relevantEndpoints = append(relevantEndpoints, endpoint)
+			}
+		}
+		if len(relevantEndpoints) == 0 {
+			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
+			continue
+		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
 			Acc:      servicer.Address,
-			Addr:     servicerEndpoints[0].IPPORT,
+			Addr:     relevantEndpoints[0].IPPORT,
 			Sessions: map[int64]*ClientSession{},
 		})
 	}
@@ -181,20 +192,27 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	//
 	// Update
-	log.Println("new spec found; updating spec!")
+
+	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
 	for _, api := range spec.Spec.Apis {
 
 		//
 		// TODO: find a better spot for this (more optimized, precompile regex, etc)
-		if s.processPaths {
-			re := regexp.MustCompile(`{[^}]+}`)
-			processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-			processedName = regexp.QuoteMeta(processedName)
-			processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-			serverApis[processedName] = api
-		} else {
-			serverApis[api.Name] = api
+		for _, apiInterface := range api.ApiInterfaces {
+			if apiInterface.Interface != s.ApiInterface {
+				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+				continue
+			}
+			if apiInterface.Interface == "rest" {
+				re := regexp.MustCompile(`{[^}]+}`)
+				processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+				processedName = regexp.QuoteMeta(processedName)
+				processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+				serverApis[processedName] = api
+			} else {
+				serverApis[api.Name] = api
+			}
 		}
 	}
 	s.specMu.Lock()
@@ -248,8 +266,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Sanity
 	if !s.isUser {
-		servicers, err := s.servicerQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
-			ChainID: s.GetSpecName(),
+		servicers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
+			ChainID: s.GetChainID(),
 		})
 		if err != nil {
 			return err
@@ -262,7 +280,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 			}
 		}
 		if !found {
-			return errors.New("servicer not staked")
+			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
 		}
 	}
 	return nil
@@ -279,7 +297,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
-			if servicerAddrList, ok := e.Events["lava_relay_payment.servicer"]; ok {
+			if servicerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
 				for _, servicerAddr := range servicerAddrList {
 					if s.Acc == servicerAddr {
 						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
@@ -350,7 +368,7 @@ func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
 func (s *Sentry) PrintExpectedPAyments() string {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
-	return fmt.Sprintf("last Received: %s\n Expected: %s\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
+	return fmt.Sprintf("last Received: %v\n Expected: %v\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
 }
 
 func (s *Sentry) Start(ctx context.Context) {
@@ -551,7 +569,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 	//
 	// TODO: cache results!
 
-	res, err := s.servicerQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   user,
 		Provider: s.Acc,
@@ -570,10 +588,14 @@ func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
 
+func (s *Sentry) GetChainID() string {
+	return s.serverSpec.Index
+}
+
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
-
+	//TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
@@ -624,28 +646,24 @@ func NewSentry(
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
+	apiInterface string,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	servicerQueryClient := pairingtypes.NewQueryClient(clientCtx)
+	pairingQueryClient := pairingtypes.NewQueryClient(clientCtx)
+	epochStorageQueryClient := epochstoragetypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
 
-	//
-	// process paths for terra
-	processPaths := false
-	if chainID == "Terra Columbus-5 mainnet" {
-		processPaths = true
-	}
-
 	return &Sentry{
-		ClientCtx:           clientCtx,
-		rpcClient:           rpcClient,
-		specQueryClient:     specQueryClient,
-		servicerQueryClient: servicerQueryClient,
-		ChainID:             chainID,
-		isUser:              isUser,
-		Acc:                 acc,
-		newBlockCb:          newBlockCb,
-		processPaths:        processPaths,
+		ClientCtx:               clientCtx,
+		rpcClient:               rpcClient,
+		specQueryClient:         specQueryClient,
+		pairingQueryClient:      pairingQueryClient,
+		epochStorageQueryClient: epochStorageQueryClient,
+		ChainID:                 chainID,
+		isUser:                  isUser,
+		Acc:                     acc,
+		newBlockCb:              newBlockCb,
+		ApiInterface:            apiInterface,
 	}
 }

@@ -17,7 +17,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 	if found {
 		if clientEntry.Stake.IsLT(burnAmount) {
 			if failBurnOnLeftover {
-				return false, fmt.Errorf("couldn't burn coins for user: %s, because insufficient stake to burn: %s", clientEntry, burnAmount)
+				return false, fmt.Errorf("couldn't burn coins for user: %v, because insufficient stake to burn: %s", clientEntry, burnAmount)
 			}
 			burnAmount.Amount = clientEntry.Stake.Amount
 		}
@@ -32,7 +32,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})
 			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address)
 			if err != nil {
-				return true, fmt.Errorf("error unstaking user after burn: %s , error:", clientEntry, err)
+				return true, fmt.Errorf("error unstaking user after burn: %v , error: %s", clientEntry, err)
 			}
 		}
 		return true, nil
@@ -50,7 +50,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		}
 		if clientEntry.Stake.IsLT(burnAmount) {
 			if failBurnOnLeftover {
-				return false, fmt.Errorf("couldn't burn coins for user: %s, because insufficient stake to burn: %s", clientEntry, burnAmount)
+				return false, fmt.Errorf("couldn't burn coins for user: %v, because insufficient stake to burn: %s", clientEntry, burnAmount)
 			}
 			burnAmount.Amount = clientEntry.Stake.Amount
 		}

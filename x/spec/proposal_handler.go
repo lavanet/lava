@@ -14,6 +14,8 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
+const minCU = 1
+
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
 func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
@@ -68,17 +70,23 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
-		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
+		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Verify 'name' is unique
-		existingSpecs := k.GetAllSpec(ctx)
-		for _, existingSpec := range existingSpecs {
-			if existingSpec.Name == spec.Name {
-				return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
+		_, found := k.GetSpec(ctx, spec.Index)
+
+		if found {
+			return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
+		}
+
+		for _, api := range spec.Apis {
+			if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
+				details["api"] = api.Name
+				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
 			}
 		}
 
-		k.AppendSpec(ctx, spec)
+		k.SetSpec(ctx, spec)
 		//TODO: add api types once its implemented to the event
 
 		utils.LogLavaEvent(ctx, logger, "spec_add", details, "Gov Proposal Accepted Spec Added")
@@ -91,21 +99,21 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
 
-		details := map[string]string{"spec": spec.Name, "status": spec.Status, "chainID": strconv.FormatUint(spec.Id, 10)}
+		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Find by name
-		existingSpecs := k.GetAllSpec(ctx)
-		foundSpecI := -1
-		for i, existingSpec := range existingSpecs {
-			if existingSpec.Name == spec.Name {
-				foundSpecI = i
-				break
-			}
-		}
-		if foundSpecI < 0 {
+		_, found := k.GetSpec(ctx, spec.Index)
+
+		if !found {
 			return utils.LavaError(ctx, logger, "spec_modify_missing", details, "spec to modify not found")
 		}
-		spec.Id = uint64(foundSpecI)
+
+		for _, api := range spec.Apis {
+			if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
+				details["api"] = api.Name
+				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
+			}
+		}
 
 		k.SetSpec(ctx, spec)
 		utils.LogLavaEvent(ctx, logger, "spec_modify", details, "Gov Proposal Accepted Spec Modified")

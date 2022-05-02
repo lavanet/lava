@@ -3,44 +3,88 @@
     "description": "Adding new specification support for relaying Ethereum data on Lava",
     "specs": [
       {
+        "chainid": "ETH1",
         "name": "Ethereum Mainnet",
-        "status": "enabled",
+        "enabled": true,
         "apis": [
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": "disabled"
+                "enabled": false,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             },
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": "enabled"
+                "enabled": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             },
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": "enabled"
+                "enabled": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             }
         ]
       },
       {
+        "chainid": "Ethereum Rinkeby",
         "name": "Ethereum Rinkeby",
-        "status": "enabled",
+        "enabled": true,
         "apis": [
             {
                 "name": "eth_getBalance",
                 "compute_units": "20",
-                "status": "disabled"
+                "enabled": false,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             },
             {
                 "name": "eth_codeAt",
                 "compute_units": "30",
-                "status": "enabled"
+                "enabled": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             },
             {
                 "name": "eth_blockNumber",
                 "compute_units": "10",
-                "status": "enabled"
+                "enabled": true,
+                "apiInterfaces": [
+                  {
+                    "interface": "jsonrpc",
+                    "type": "get",
+                    "extra_compute_units": "0"
+                  }
+                ] 
             }
         ]
       }

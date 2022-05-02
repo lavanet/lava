@@ -73,7 +73,7 @@ func askForRewards() {
 			sess.Lock.Unlock()
 			userAccAddr, err := sdk.AccAddressFromBech32(user)
 			if err != nil {
-				log.Println("invalid user address: %s", user)
+				log.Println(fmt.Sprintf("invalid user address: %s\n", user))
 			}
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
@@ -221,6 +221,7 @@ func Server(
 	listenAddr string,
 	nodeUrl string,
 	ChainID string,
+	apiInterface string,
 ) {
 	//
 	// ctrl+c
@@ -234,7 +235,7 @@ func Server(
 
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards)
+	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -250,7 +251,7 @@ func Server(
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName())
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName(), "chainID", sentry.GetChainID(), "api Interface", apiInterface)
 
 	//
 	// Keys
@@ -269,7 +270,7 @@ func Server(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(ChainID, nodeUrl, 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, sentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}

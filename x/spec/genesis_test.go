@@ -16,13 +16,14 @@ func TestGenesis(t *testing.T) {
 
 		SpecList: []types.Spec{
 			{
-				Id: 0,
+				Index: "0",
 			},
 			{
-				Id: 1,
+				Index: "1",
 			},
 		},
 		SpecCount: 2,
+
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
