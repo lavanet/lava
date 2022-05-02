@@ -18,6 +18,7 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 			break
 		}
 	}
+	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
 	if allowedCU == 0 {
 		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
