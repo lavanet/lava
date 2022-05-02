@@ -64,7 +64,8 @@ func (k Keeper) GetAllUniquePaymentStorageUserServicer(ctx sdk.Context) (list []
 
 func (k Keeper) AddUniquePaymentStorageUserServicer(ctx sdk.Context,
 	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) (bool, *types.UniquePaymentStorageUserServicer) {
-	key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
+	// key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
+	key := k.pairingKeeper.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
 	entry, found := k.GetUniquePaymentStorageUserServicer(ctx, key)
 	if found {
 		return false, &entry

@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -64,7 +65,8 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 
 func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
 	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) (bool, *types.UniquePaymentStorageClientProvider) {
-	key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
+	// DONE: created key making funcs
+	key := k.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
@@ -72,4 +74,21 @@ func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
 	entry = types.UniquePaymentStorageClientProvider{Index: key, Block: block}
 	k.SetUniquePaymentStorageClientProvider(ctx, entry)
 	return true, &entry
+}
+
+// DONE: extracted to servicer with pariringKeeper
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) string {
+	// details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
+	key := userAddress.String() + "." + servicerAddress.String() + "." + uniqueIdentifier
+	details := map[string]string{}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), "lava_EncodeUniquePaymentKey", details, "!!!!! New Payment Key "+key)
+	return key
+}
+
+//TODO: get actual ids [:]
+func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
+	userAddress := key[:]
+	servicerAddress := key[:]
+	uniqueIdentifier := key[:]
+	return userAddress, servicerAddress, uniqueIdentifier
 }

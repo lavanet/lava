@@ -441,6 +441,7 @@ func New(
 		app.SpecKeeper,
 		app.UserKeeper,
 		app.EpochstorageKeeper,
+		app.PairingKeeper,
 	)
 	servicerModule := servicermodule.NewAppModule(appCodec, app.ServicerKeeper, app.AccountKeeper, app.BankKeeper, app.SpecKeeper, app.UserKeeper)
 

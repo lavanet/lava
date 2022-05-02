@@ -24,6 +24,7 @@ type (
 		specKeeper         types.SpecKeeper
 		userKeeper         types.UserKeeper
 		epochStorageKeeper types.EpochStorageKeeper
+		pairingKeeper      types.PairingKeeper
 	}
 )
 
@@ -33,7 +34,7 @@ func NewKeeper(
 	memKey sdk.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, evidenceKeeper types.EvidenceKeeper, specKeeper types.SpecKeeper, userKeeper types.UserKeeper, epochStorageKeeper types.EpochStorageKeeper,
+	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, evidenceKeeper types.EvidenceKeeper, specKeeper types.SpecKeeper, userKeeper types.UserKeeper, epochStorageKeeper types.EpochStorageKeeper, pairingKeeper types.PairingKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -46,7 +47,7 @@ func NewKeeper(
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, evidenceKeeper: evidenceKeeper, specKeeper: specKeeper, userKeeper: userKeeper, epochStorageKeeper: epochStorageKeeper,
+		bankKeeper: bankKeeper, accountKeeper: accountKeeper, evidenceKeeper: evidenceKeeper, specKeeper: specKeeper, userKeeper: userKeeper, epochStorageKeeper: epochStorageKeeper, pairingKeeper: pairingKeeper,
 	}
 }
 

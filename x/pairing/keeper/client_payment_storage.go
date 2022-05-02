@@ -65,13 +65,13 @@ func (k Keeper) GetAllClientPaymentStorage(ctx sdk.Context) (list []types.Client
 	return
 }
 
-func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, err error) {
+func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, uniqueKey *types.UniquePaymentStorageClientProvider, err error) {
 	//key is epoch+user
 	key := strconv.FormatUint(epoch, 16) + userAddress.String()
 	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, epoch, userAddress, servicerAddress, uniqueIdentifier)
 	if !isUnique {
 		//tried to use an existing identifier!
-		return nil, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
+		return nil, nil, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
 	}
 	userPaymentStorageInEpoch, found := k.GetClientPaymentStorage(ctx, key)
 	if !found {
@@ -79,8 +79,9 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddre
 		userPaymentStorageInEpoch = types.ClientPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, TotalCU: usedCU, Epoch: epoch}
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
+		// TODO: Add used CU to specific provider : in unique or sum of unique
 		userPaymentStorageInEpoch.TotalCU += usedCU
 	}
 	k.SetClientPaymentStorage(ctx, userPaymentStorageInEpoch)
-	return &userPaymentStorageInEpoch, nil
+	return &userPaymentStorageInEpoch, uniquePaymentStorageClientProviderEntryAddr, nil
 }

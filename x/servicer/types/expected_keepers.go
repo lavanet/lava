@@ -63,3 +63,8 @@ type EpochStorageKeeper interface {
 	StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
 }
+
+type PairingKeeper interface {
+	EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) string
+	DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string)
+}
