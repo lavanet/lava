@@ -1,0 +1,13 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message StakeToMaxCUList {
+    repeated StakeToMaxCU List = 1;
+  }
+
+message StakeToMaxCU {
+    uint64 StakeThreshold = 1;
+    uint64 MaxComputeUnits = 2;
+  }

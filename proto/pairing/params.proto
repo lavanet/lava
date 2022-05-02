@@ -29,9 +29,9 @@ message Params {
   uint64 fraudSlashingAmount = 6 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
   uint64 servicersToPairCount = 7 [(gogoproto.moretags) = "yaml:\"servicers_to_pair_count\""];
   uint64 epochBlocksOverlap = 8 [(gogoproto.moretags) = "yaml:\"epoch_blocks_overlap\""];
-  string StakeRangeToCUList = 9 [
+  string stakeToMaxCUList = 9 [
     (gogoproto.moretags) = "yaml:\"stake_to_computeunits_list\"",
-    (gogoproto.customtype) = "StakeRangeToCUList",
+    (gogoproto.customtype) = "StakeToMaxCUList",
     (gogoproto.nullable)   = false
     ];
 }

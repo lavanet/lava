@@ -13169,7 +13169,7 @@ paths:
                   epochBlocksOverlap:
                     type: string
                     format: uint64
-                  StakeRangeToCUList:
+                  stakeToMaxCUList:
                     type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
@@ -20972,7 +20972,7 @@ definitions:
       epochBlocksOverlap:
         type: string
         format: uint64
-      StakeRangeToCUList:
+      stakeToMaxCUList:
         type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
@@ -21308,7 +21308,7 @@ definitions:
           epochBlocksOverlap:
             type: string
             format: uint64
-          StakeRangeToCUList:
+          stakeToMaxCUList:
             type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
