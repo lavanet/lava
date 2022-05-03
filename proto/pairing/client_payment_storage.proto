@@ -9,6 +9,5 @@ message ClientPaymentStorage {
   repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 2; 
   uint64 totalCU = 3; 
   uint64 epoch = 4; 
-  
 }
 

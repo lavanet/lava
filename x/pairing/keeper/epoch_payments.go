@@ -86,19 +86,20 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 func (k Keeper) AddEpochPayment(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
-	userPaymentStorage, err := k.AddClientPaymentInEpoch(ctx, epoch, userAddress, servicerAddress, usedCU, uniqueIdentifier)
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, epoch, userAddress, servicerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
 		return 0, fmt.Errorf("could not add epoch payment: %s,%s,%s,%d error: %s", userAddress, servicerAddress, uniqueIdentifier, epoch, err)
 	}
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 	if !found {
-		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentStorage}}
+		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentProviderStorage}}
 	} else {
-		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentStorage)
+		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
 	}
 	k.SetEpochPayments(ctx, epochPayments)
-	return userPaymentStorage.TotalCU, nil
+	// paymentKey := k.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
+	return usedCUProviderTotal, nil
 }
 
 func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) error {
@@ -113,6 +114,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 		uniquePaymentStoragesCliPro := userPaymentStorage.UniquePaymentStorageClientProvider
 		for _, uniquePaymentStorageCliPro := range uniquePaymentStoragesCliPro {
 			//validate its an old entry, for sanity
+			// if userPaymentStorage.Epoch > blockForDelete {
 			if uniquePaymentStorageCliPro.Block > blockForDelete {
 				errMsg := "trying to delete a new entry in epoch payments for block"
 				k.Logger(ctx).Error(errMsg)
