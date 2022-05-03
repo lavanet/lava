@@ -20920,6 +20920,9 @@ definitions:
             block:
               type: string
               format: uint64
+            usedCU:
+              type: string
+              format: uint64
       totalCU:
         type: string
         format: uint64
@@ -20946,6 +20949,9 @@ definitions:
                   index:
                     type: string
                   block:
+                    type: string
+                    format: uint64
+                  usedCU:
                     type: string
                     format: uint64
             totalCU:
@@ -21009,6 +21015,9 @@ definitions:
                   block:
                     type: string
                     format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
             totalCU:
               type: string
               format: uint64
@@ -21067,6 +21076,9 @@ definitions:
                         block:
                           type: string
                           format: uint64
+                        usedCU:
+                          type: string
+                          format: uint64
                   totalCU:
                     type: string
                     format: uint64
@@ -21109,6 +21121,9 @@ definitions:
             index:
               type: string
             block:
+              type: string
+              format: uint64
+            usedCU:
               type: string
               format: uint64
       pagination:
@@ -21201,6 +21216,9 @@ definitions:
                 block:
                   type: string
                   format: uint64
+                usedCU:
+                  type: string
+                  format: uint64
           totalCU:
             type: string
             format: uint64
@@ -21230,6 +21248,9 @@ definitions:
                       index:
                         type: string
                       block:
+                        type: string
+                        format: uint64
+                      usedCU:
                         type: string
                         format: uint64
                 totalCU:
@@ -21292,6 +21313,9 @@ definitions:
           index:
             type: string
           block:
+            type: string
+            format: uint64
+          usedCU:
             type: string
             format: uint64
   lavanet.lava.pairing.QueryParamsResponse:
@@ -21419,5 +21443,8 @@ definitions:
       index:
         type: string
       block:
+        type: string
+        format: uint64
+      usedCU:
         type: string
         format: uint64

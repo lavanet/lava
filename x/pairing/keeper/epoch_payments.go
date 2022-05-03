@@ -86,7 +86,7 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 func (k Keeper) AddEpochPayment(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
-	userPaymentProviderStorage, uniquePaymentStorageClientProviderEntryAddr, err := k.AddClientPaymentInEpoch(ctx, epoch, userAddress, servicerAddress, usedCU, uniqueIdentifier)
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, epoch, userAddress, servicerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
 		return 0, fmt.Errorf("could not add epoch payment: %s,%s,%s,%d error: %s", userAddress, servicerAddress, uniqueIdentifier, epoch, err)
 	}
@@ -99,7 +99,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, epoch uint64, userAddress sdk.A
 	}
 	k.SetEpochPayments(ctx, epochPayments)
 	// paymentKey := k.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
-	return uniquePaymentStorageClientProviderEntryAddr.UsedCU, nil
+	return usedCUProviderTotal, nil
 }
 
 func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) error {
