@@ -64,7 +64,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
 		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
-		// k.Logger(ctx).Error("!!!!!! RelayPayment A+  !!!!!!")
 
 		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
@@ -81,8 +80,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 		//
 		if isValidPairing {
-			// k.Logger(ctx).Error("!!!!!! isValidParing !!!!!!")
-
 			//pairing is valid, we can pay servicer for work
 			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 			if reward.IsZero() {
@@ -100,7 +97,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
 			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
-			// k.Logger(ctx).Error("!!!!!!!!!!!!" + spec.Index)
 			// burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Name, clientAddr, burnAmount, false)
 			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
 			if err2 != nil {
