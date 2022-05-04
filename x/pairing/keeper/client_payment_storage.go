@@ -83,14 +83,23 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddre
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
 		// sums up usedCU for this client and this servicer over this epoch
-		for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
-			_, servicer, _ := k.DecodeUniquePaymentKey(ctx, paymentInEpoch.Index)
-			if servicerAddress.String() == servicer {
-				usedCUProviderTotal += paymentInEpoch.UsedCU
-			}
-		}
+		usedCUProviderTotal = k.GetTotalUsedCUForProviderEpoch(ctx, servicerAddress, userPaymentStorageInEpoch)
+		// #O uncomment the next line to see that relayValidateCU is working
+		// k.Logger(ctx).Error("!!! usedCU " + strconv.FormatUint(usedCU, 10) + " ::: totalCU for serviser " + strconv.FormatUint(usedCUProviderTotal, 10))
 		userPaymentStorageInEpoch.TotalCU += usedCU
 	}
 	k.SetClientPaymentStorage(ctx, userPaymentStorageInEpoch)
 	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
+}
+
+func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, servicerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64) {
+	usedCUProviderTotal = 0
+	for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
+		_, servicer, _ := k.DecodeUniquePaymentKey(ctx, paymentInEpoch.Index)
+		if servicerAddress.String() == servicer {
+			usedCUProviderTotal += paymentInEpoch.UsedCU
+		}
+	}
+
+	return usedCUProviderTotal
 }

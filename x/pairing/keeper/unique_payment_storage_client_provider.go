@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -67,23 +66,17 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 
 func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
 	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (bool, *types.UniquePaymentStorageClientProvider) {
-	// DONE: created key making funcs
 	key := k.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
 	}
-	// DONE Saving usedCU in uniquePayment
 	entry = types.UniquePaymentStorageClientProvider{Index: key, Block: block, UsedCU: usedCU}
-	k.Logger(ctx).Error(" !!! USEDCU !!! " + strconv.FormatUint(usedCU, 10) + " :::")
-
 	k.SetUniquePaymentStorageClientProvider(ctx, entry)
 	return true, &entry
 }
 
-// DONE: extracted to servicer with pariringKeeper
 func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) string {
-	// DONE: check length of adressess == 45 + 45 = 90
 	if len(userAddress.String()) != 45 {
 		panic(fmt.Sprintf("invalid userAddress found! len(%s) != 45 == %s", userAddress.String(), len(userAddress.String())))
 	} else if len(servicerAddress.String()) != 45 {
@@ -98,7 +91,6 @@ func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStora
 	return servicer
 }
 
-// DONE: get actual ids [:]
 func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
 	userAddress := key[:45]
 	servicerAddress := key[45:90]
