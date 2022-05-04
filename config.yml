@@ -38,4 +38,4 @@ genesis:
   app_state:
     gov:
       voting_params:
-        voting_period: "20s"
+        voting_period: "3s"
