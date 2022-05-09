@@ -12604,9 +12604,6 @@ paths:
                           usedCU:
                             type: string
                             format: uint64
-                    totalCU:
-                      type: string
-                      format: uint64
                     epoch:
                       type: string
                       format: uint64
@@ -12742,9 +12739,6 @@ paths:
                         usedCU:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -12889,9 +12883,6 @@ paths:
                                 usedCU:
                                   type: string
                                   format: uint64
-                          totalCU:
-                            type: string
-                            format: uint64
                           epoch:
                             type: string
                             format: uint64
@@ -13034,9 +13025,6 @@ paths:
                               usedCU:
                                 type: string
                                 format: uint64
-                        totalCU:
-                          type: string
-                          format: uint64
                         epoch:
                           type: string
                           format: uint64
@@ -20925,9 +20913,6 @@ definitions:
             usedCU:
               type: string
               format: uint64
-      totalCU:
-        type: string
-        format: uint64
       epoch:
         type: string
         format: uint64
@@ -20956,9 +20941,6 @@ definitions:
                   usedCU:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
             epoch:
               type: string
               format: uint64
@@ -21022,9 +21004,6 @@ definitions:
                   usedCU:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
             epoch:
               type: string
               format: uint64
@@ -21083,9 +21062,6 @@ definitions:
                         usedCU:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -21223,9 +21199,6 @@ definitions:
                 usedCU:
                   type: string
                   format: uint64
-          totalCU:
-            type: string
-            format: uint64
           epoch:
             type: string
             format: uint64
@@ -21257,9 +21230,6 @@ definitions:
                       usedCU:
                         type: string
                         format: uint64
-                totalCU:
-                  type: string
-                  format: uint64
                 epoch:
                   type: string
                   format: uint64
