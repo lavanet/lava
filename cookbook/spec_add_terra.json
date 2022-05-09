@@ -10,7 +10,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -20,7 +20,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -30,7 +30,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -40,7 +40,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -50,7 +50,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -60,7 +60,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -70,7 +70,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -80,7 +80,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -90,7 +90,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -100,7 +100,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -110,7 +110,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -120,7 +120,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -130,7 +130,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -140,7 +140,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -150,7 +150,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -160,7 +160,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -170,7 +170,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -180,7 +180,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -190,7 +190,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -200,7 +200,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -210,7 +210,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -220,7 +220,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -230,7 +230,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -240,7 +240,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -250,7 +250,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -260,7 +260,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -270,7 +270,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -280,7 +280,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -290,7 +290,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2416,7 +2416,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2426,7 +2426,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2436,7 +2436,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2446,7 +2446,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2456,7 +2456,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2466,7 +2466,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2476,7 +2476,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2486,7 +2486,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2496,7 +2496,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2506,7 +2506,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2516,7 +2516,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2526,7 +2526,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2536,7 +2536,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2546,7 +2546,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2556,7 +2556,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2566,7 +2566,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2576,7 +2576,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2586,7 +2586,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2596,7 +2596,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2606,7 +2606,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2616,7 +2616,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2626,7 +2626,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2636,7 +2636,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2646,7 +2646,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2656,7 +2656,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2666,7 +2666,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2676,7 +2676,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2686,7 +2686,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
@@ -2696,7 +2696,7 @@
           "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
-            "interface": "jsonrpc",
+            "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
           }]
