@@ -65,8 +65,8 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 }
 
 func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
-	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (bool, *types.UniquePaymentStorageClientProvider) {
-	key := k.EncodeUniquePaymentKey(ctx, userAddress, servicerAddress, uniqueIdentifier)
+	block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (bool, *types.UniquePaymentStorageClientProvider) {
+	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
@@ -76,24 +76,30 @@ func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
 	return true, &entry
 }
 
-func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) string {
-	if len(userAddress.String()) != 45 {
-		panic(fmt.Sprintf("invalid userAddress found! len(%s) != 45 == %s", userAddress.String(), len(userAddress.String())))
-	} else if len(servicerAddress.String()) != 45 {
-		panic(fmt.Sprintf("invalid servicerAddress found! len(%s) != 45 == %s", servicerAddress.String(), len(servicerAddress.String())))
-	}
-	key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
-	return key
-}
-
 func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) string {
-	_, servicer, _ := k.DecodeUniquePaymentKey(ctx, uniquePaymentStorageClientProvider.Index)
-	return servicer
+	_, provider, _ := k.DecodeUniquePaymentKey(ctx, uniquePaymentStorageClientProvider.Index)
+	return provider
 }
 
+func addressLengths() (int, int) {
+	adrLengthUser, adrLengthProvider := 45, 45
+	return adrLengthUser, adrLengthProvider
+}
 func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
-	userAddress := key[:45]
-	servicerAddress := key[45:90]
-	uniqueIdentifier := key[90:]
-	return userAddress, servicerAddress, uniqueIdentifier
+	adrLengthUser, adrLengthProvider := addressLengths()
+	userAddress := key[:adrLengthUser]
+	providerAddress := key[adrLengthUser : adrLengthUser+adrLengthProvider]
+	uniqueIdentifier := key[adrLengthUser+adrLengthProvider:]
+	return userAddress, providerAddress, uniqueIdentifier
+}
+
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string) string {
+	adrLengthUser, adrLengthProvider := addressLengths()
+	if len(userAddress.String()) != adrLengthUser {
+		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %s == %s", userAddress.String(), adrLengthUser, len(userAddress.String())))
+	} else if len(providerAddress.String()) != adrLengthProvider {
+		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %s == %s", providerAddress.String(), adrLengthProvider, len(providerAddress.String())))
+	}
+	key := userAddress.String() + providerAddress.String() + uniqueIdentifier
+	return key
 }

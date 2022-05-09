@@ -8,7 +8,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry, totalCU uint64) error {
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry, totalCUInEpochForUserProvider uint64) error {
 	var allowedCU uint64 = 0
 	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
 
@@ -22,9 +22,9 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 	if allowedCU == 0 {
 		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
-	if totalCU > allowedCU {
+	if totalCUInEpochForUserProvider > allowedCU {
 		k.LimitClientPairingsAndMarkForPenalty(ctx, clientEntry)
-		return fmt.Errorf("user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCU)
+		return fmt.Errorf("user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCUInEpochForUserProvider)
 	}
 
 	return nil
