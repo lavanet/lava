@@ -97,11 +97,10 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddre
 func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
 	usedCUProviderTotal = 0
 	for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
-		_, provider, _ := k.DecodeUniquePaymentKey(ctx, paymentInEpoch.Index)
-		provider = k.GetProviderFromUniquePayment(ctx, *paymentInEpoch)
+		provider := k.GetProviderFromUniquePayment(ctx, *paymentInEpoch)
 		providerAddr, err := sdk.AccAddressFromBech32(provider)
 		if err != nil {
-			return 0, fmt.Errorf("invalid provider address: %s\n", providerAddress)
+			return 0, fmt.Errorf("invalid provider address: %s", providerAddress)
 		}
 		if providerAddr.Equals(providerAddress) {
 			usedCUProviderTotal += paymentInEpoch.UsedCU

@@ -98,9 +98,9 @@ func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, str
 func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string) string {
 	adrLengthUser, adrLengthProvider := addressLengths()
 	if len(userAddress.String()) != adrLengthUser {
-		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %s == %s", userAddress.String(), adrLengthUser, len(userAddress.String())))
+		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %d == %d", userAddress.String(), adrLengthUser, len(userAddress.String())))
 	} else if len(providerAddress.String()) != adrLengthProvider {
-		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %s == %s", providerAddress.String(), adrLengthProvider, len(providerAddress.String())))
+		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %d == %d", providerAddress.String(), adrLengthProvider, len(providerAddress.String())))
 	}
 	key := userAddress.String() + providerAddress.String() + uniqueIdentifier
 	return key
