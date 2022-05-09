@@ -9,15 +9,8 @@ import (
 )
 
 func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry, totalCU uint64) error {
-	var allowedCU uint64 = 0
-	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
+	var allowedCU = k.ClientMaxCU(ctx, clientEntry)
 
-	for _, stakeToCU := range stakeToMaxCUMap {
-		if stakeToCU.StakeThreshold <= clientEntry.Stake.Amount.Uint64() {
-			allowedCU = stakeToCU.MaxComputeUnits
-			break
-		}
-	}
 	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
 	if allowedCU == 0 {
 		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
@@ -32,4 +25,17 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 
 func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) {
 	//TODO: jail user, and count problems
+}
+
+func (k Keeper) ClientMaxCU(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) uint64 {
+	var allowedCU uint64 = 0
+	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
+
+	for _, stakeToCU := range stakeToMaxCUMap {
+		if stakeToCU.StakeThreshold <= clientEntry.Stake.Amount.Uint64() {
+			allowedCU = stakeToCU.MaxComputeUnits
+			break
+		}
+	}
+	return allowedCU
 }

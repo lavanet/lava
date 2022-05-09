@@ -52,7 +52,7 @@ func SendRelay(
 	//
 	//
 	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
-		if clientSession.Client.UsedComputeUnits+nodeMsg.GetServiceApi().ComputeUnits > 50000 {
+		if clientSession.Client.UsedComputeUnits+nodeMsg.GetServiceApi().ComputeUnits > clientSession.Client.MaxComputeUnits {
 			return nil, fmt.Errorf("used all the available compute units")
 		}
 
