@@ -33,6 +33,10 @@ type EpochstorageKeeper interface {
 	AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry)
 	RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64)
 	StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	////////////
+	//TODO: add StakeEntryByAddressFromStorage - needs sdk.StakeStorage
+	// StakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage sdk.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	////////////
 	UnstakeEntryByAddress(ctx sdk.Context, storageType string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
 	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, found bool)
