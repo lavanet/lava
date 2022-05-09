@@ -156,7 +156,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			continue
 		}
 
-		maxcuRes, err := s.pairingQueryClient.UserMaxCU(ctx, &pairingtypes.queryUserMaxCURequest{ChainID: servicer.Chain, Address: s.Acc})
+		maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: servicer.Chain, Address: s.Acc})
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			Acc:             servicer.Address,
 			Addr:            relevantEndpoints[0].IPPORT,
 			Sessions:        map[int64]*ClientSession{},
-			MaxComputeUnits: maxcuRes.MaxCU,
+			MaxComputeUnits: maxcuRes.MaxCu,
 		})
 	}
 	s.pairingMu.Lock()

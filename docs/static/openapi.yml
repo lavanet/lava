@@ -13440,6 +13440,48 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/pairing/user_max_cu/{address}/{chainID}':
+    get:
+      summary: Queries a list of UserMaxCu items.
+      operationId: LavanetLavaPairingUserMaxCu
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              maxCu:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: address
+          in: path
+          required: true
+          type: string
+        - name: chainID
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   '/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}':
     get:
       summary: Queries a list of VerifyPairing items.
@@ -21358,6 +21400,12 @@ definitions:
               type: string
       output:
         type: string
+  lavanet.lava.pairing.QueryUserMaxCuResponse:
+    type: object
+    properties:
+      maxCu:
+        type: string
+        format: uint64
   lavanet.lava.pairing.QueryVerifyPairingResponse:
     type: object
     properties:
