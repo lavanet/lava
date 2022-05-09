@@ -82,9 +82,11 @@ func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStora
 }
 
 func addressLengths() (int, int) {
-	adrLengthUser, adrLengthProvider := 45, 45
+	//TODO: Get these values from AccAddress somehow and remove AdrLengthUser and AdrLengthProvider from pairing/types/key_unique_payment_storage_client_provider
+	adrLengthUser, adrLengthProvider := types.AdrLengthUser, types.AdrLengthProvider
 	return adrLengthUser, adrLengthProvider
 }
+
 func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
 	adrLengthUser, adrLengthProvider := addressLengths()
 	userAddress := key[:adrLengthUser]

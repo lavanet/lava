@@ -83,7 +83,10 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddre
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
 		// sums up usedCU for this client and this provider over this epoch
-		usedCUProviderTotal = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
+		usedCUProviderTotal, err = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to add user payment. could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
+		}
 		// #O uncomment the next line to see that relayValidateCU is working
 		// k.Logger(ctx).Error("!!! usedCU " + strconv.FormatUint(usedCU, 10) + " ::: totalCU for serviser " + strconv.FormatUint(usedCUProviderTotal, 10))
 	}
@@ -91,15 +94,19 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddre
 	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
 }
 
-func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64) {
+func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
 	usedCUProviderTotal = 0
 	for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
 		_, provider, _ := k.DecodeUniquePaymentKey(ctx, paymentInEpoch.Index)
-		providerAddr, _ := sdk.AccAddressFromBech32(provider)
+		provider = k.GetProviderFromUniquePayment(ctx, *paymentInEpoch)
+		providerAddr, err := sdk.AccAddressFromBech32(provider)
+		if err != nil {
+			return 0, fmt.Errorf("invalid provider address: %s\n", providerAddress)
+		}
 		if providerAddr.Equals(providerAddress) {
 			usedCUProviderTotal += paymentInEpoch.UsedCU
 		}
 	}
 
-	return usedCUProviderTotal
+	return usedCUProviderTotal, nil
 }
