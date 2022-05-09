@@ -98,7 +98,6 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, epoch uint64, userAddress sdk.A
 		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
 	}
 	k.SetEpochPayments(ctx, epochPayments)
-	// paymentKey := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier)
 	return usedCUProviderTotal, nil
 }
 
