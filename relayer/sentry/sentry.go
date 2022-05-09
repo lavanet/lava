@@ -38,8 +38,9 @@ type RelayerClientWrapper struct {
 	Acc    string
 	Addr   string
 
-	SessionsLock sync.Mutex
-	Sessions     map[int64]*ClientSession
+	SessionsLock     sync.Mutex
+	Sessions         map[int64]*ClientSession
+	UsedComputeUnits uint64
 }
 
 type PaymentRequest struct {
@@ -195,23 +196,27 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
-	for _, api := range spec.Spec.Apis {
-
-		//
-		// TODO: find a better spot for this (more optimized, precompile regex, etc)
-		for _, apiInterface := range api.ApiInterfaces {
-			if apiInterface.Interface != s.ApiInterface {
-				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+	if spec.Spec.Enabled {
+		for _, api := range spec.Spec.Apis {
+			if !api.Enabled {
 				continue
 			}
-			if apiInterface.Interface == "rest" {
-				re := regexp.MustCompile(`{[^}]+}`)
-				processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-				processedName = regexp.QuoteMeta(processedName)
-				processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-				serverApis[processedName] = api
-			} else {
-				serverApis[api.Name] = api
+			//
+			// TODO: find a better spot for this (more optimized, precompile regex, etc)
+			for _, apiInterface := range api.ApiInterfaces {
+				if apiInterface.Interface != s.ApiInterface {
+					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					continue
+				}
+				if apiInterface.Interface == "rest" {
+					re := regexp.MustCompile(`{[^}]+}`)
+					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+					processedName = regexp.QuoteMeta(processedName)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					serverApis[processedName] = api
+				} else {
+					serverApis[api.Name] = api
+				}
 			}
 		}
 	}
