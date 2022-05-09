@@ -7,7 +7,6 @@ import "pairing/unique_payment_storage_client_provider.proto";
 message ClientPaymentStorage {
   string index = 1; 
   repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 2; 
-  uint64 totalCU = 3; 
-  uint64 epoch = 4; 
+  uint64 epoch = 3; 
 }
 
