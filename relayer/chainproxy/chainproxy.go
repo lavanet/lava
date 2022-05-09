@@ -52,12 +52,11 @@ func SendRelay(
 	//
 	//
 	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
-		if clientSession.Client.UsedComputeUnits+nodeMsg.GetServiceApi().ComputeUnits > clientSession.Client.MaxComputeUnits {
-			return nil, fmt.Errorf("used all the available compute units")
-		}
 
-		clientSession.CuSum += nodeMsg.GetServiceApi().ComputeUnits
-		clientSession.Client.UsedComputeUnits += nodeMsg.GetServiceApi().ComputeUnits
+		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
+		if err != nil {
+			return nil, err
+		}
 
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:    clientSession.Client.Acc,
@@ -96,4 +95,18 @@ func SendRelay(
 	})
 
 	return reply, err
+}
+
+func CheckComputeUnits(clientSession *sentry.ClientSession, apuCu uint64) error {
+	clientSession.Client.SessionsLock.Lock()
+	defer clientSession.Client.SessionsLock.Unlock()
+
+	if clientSession.Client.UsedComputeUnits+apuCu > clientSession.Client.MaxComputeUnits {
+		return fmt.Errorf("used all the available compute units")
+	}
+
+	clientSession.CuSum += apuCu
+	clientSession.Client.UsedComputeUnits += apuCu
+
+	return nil
 }
