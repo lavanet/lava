@@ -40,6 +40,7 @@ type RelayerClientWrapper struct {
 
 	SessionsLock     sync.Mutex
 	Sessions         map[int64]*ClientSession
+	MaxComputeUnits  uint64
 	UsedComputeUnits uint64
 }
 
@@ -154,12 +155,18 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
 			continue
 		}
+
+		maxcuRes, err := s.pairingQueryClient.UserMaxCU(ctx, &pairingtypes.queryUserMaxCURequest{ChainID: servicer.Chain, Address: s.Acc})
+		if err != nil {
+			return err
+		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:      servicer.Address,
-			Addr:     relevantEndpoints[0].IPPORT,
-			Sessions: map[int64]*ClientSession{},
+			Acc:             servicer.Address,
+			Addr:            relevantEndpoints[0].IPPORT,
+			Sessions:        map[int64]*ClientSession{},
+			MaxComputeUnits: maxcuRes.MaxCU,
 		})
 	}
 	s.pairingMu.Lock()
