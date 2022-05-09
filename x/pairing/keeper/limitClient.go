@@ -13,15 +13,17 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
 
 	for _, stakeToCU := range stakeToMaxCUMap {
-		if stakeToCU.StakeThreshold <= clientEntry.Stake.Amount.Uint64() {
+		if clientEntry.Stake.IsGTE(stakeToCU.StakeThreshold) {
 			allowedCU = stakeToCU.MaxComputeUnits
+		} else {
 			break
 		}
 	}
-	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
+
 	if allowedCU == 0 {
-		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
+		panic(fmt.Sprintf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
 	}
+	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
 	if totalCUInEpochForUserProvider > allowedCU {
 		k.LimitClientPairingsAndMarkForPenalty(ctx, clientEntry)
 		return fmt.Errorf("user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCUInEpochForUserProvider)
