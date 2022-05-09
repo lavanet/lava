@@ -13,7 +13,7 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, clientEntry *epoch
 	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
 
 	for _, stakeToCU := range stakeToMaxCUMap {
-		if clientEntry.Stake.IsGTE(stakeToCU.StakeThreshold) {
+		if stakeToCU.StakeThreshold.IsGTE(clientEntry.Stake) {
 			allowedCU = stakeToCU.MaxComputeUnits
 		} else {
 			break
