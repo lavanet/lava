@@ -21,6 +21,8 @@ const (
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
 	JSONRPC_TERRA_STATUS          = `{"jsonrpc":"2.0","method":"status","params":[],"id":1}`
 	JSONRPC_TERRA_HEALTH          = `{"jsonrpc":"2.0","method":"health","params":[],"id":2}`
+	URIRPC_TERRA_STATUS           = `status?`
+	URIRPC_TERRA_HEALTH           = `health`
 )
 
 func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
@@ -68,7 +70,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
 			}
 		}
-	} else {
+	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS)
 			if err != nil {
@@ -84,7 +86,23 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				reply.Sig = nil // for nicer prints
 				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
 			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply URIRPC_TERRA_STATUS", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply URIRPC_TERRA_HEALTH", reply)
+			}
 		}
+	} else {
+		log.Println("ERROR: not supported apiInterface: ", apiInterface)
 	}
 
 }
