@@ -50,9 +50,38 @@ func getMaxCULimitsPercentage() (float64, float64) {
 	return slashLimitP, unpayLimitP
 }
 
+//#o
+// gets chainID, clientAddress, and epoch
+// returns epochstoragetypes.StakeEntry which allowedCU can be calculated from, for the selected epoch
+func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, clientAddr string, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error) {
+	if true { //code for getting clientStakeEntry
+		userStakedEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ClientKey, chainID)
+		// loop over stake entries
+		if found {
+			for _, clientStakeEntry := range userStakedEntries {
+				clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
+				if err != nil {
+					panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
+				}
+				if clientAddr.Equals(clientAddr) {
+					// if clientStakeEntry.Deadline > block {
+					// 	//client is not valid for new pairings yet, or was jailed
+					// 	return nil, fmt.Errorf("found staked user %+v, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
+					// }
+					// print(found)
+					// verifiedUser = true
+					entry = &clientStakeEntry
+					break
+				}
+			}
+		}
+	}
+	return
+}
+
 func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clientAddr string, providerAddr sdk.AccAddress) (overusedSumTotalP float64, overusedSumProviderP float64, err error) {
 	//TODO: Caching will save a lot of time...
-	//#omer
+	//#o
 	epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
 	// for every epoch in memory
@@ -71,7 +100,16 @@ func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clie
 				uniquePaymentStoragesClientProvider := userPaymentStorage.UniquePaymentStorageClientProvider
 				for _, uniquePaymentStorageClientProvider := range uniquePaymentStoragesClientProvider {
 					// get current stake - clientStakeEntry (epoch)
-					var allowedCU uint64 = 1.0
+
+					currentStakeEntry, stakeErr := k.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epoch)
+					if stakeErr != nil {
+						// ? how do i handle no data about stake ? do i get the prev stake ?
+					}
+					allowedCU, allowedCUErr := k.GetAllowedCU(ctx, currentStakeEntry)
+					if allowedCUErr != nil {
+						panic(fmt.Sprintf("Could not find allowedCU for client %s , epoch %s, entry %s", clientAddr, epoch, currentStakeEntry))
+						// ? how do i handle no data about stake ? do i get the prev stake ?
+					}
 					// get allowedCU (currentStake)
 					var overusedPercent float64 = 0.0
 					var providersCount float64 = 0.0 // Get from param
@@ -91,27 +129,6 @@ func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clie
 				}
 			}
 		}
-		if false { //code for getting clientStakeEntry
-			userStakedEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ClientKey, chainID)
-			// loop over stake entries
-			for _, clientStakeEntry := range userStakedEntries {
-				clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
-				if err != nil {
-					panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
-				}
-				if clientAddr.Equals(clientAddr) {
-					// if clientStakeEntry.Deadline > block {
-					// 	//client is not valid for new pairings yet, or was jailed
-					// 	return nil, fmt.Errorf("found staked user %+v, but his deadline %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.Deadline, block)
-					// }
-					print(found)
-					// verifiedUser = true
-					// clientStakeEntryRet = &clientStakeEntry
-					break
-				}
-			}
-		}
-
 		epochBlocks := k.epochStorageKeeper.GetEpochBlocks(ctx, epoch)
 		epoch += epochBlocks
 	}
