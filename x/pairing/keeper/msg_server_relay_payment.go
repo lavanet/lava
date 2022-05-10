@@ -65,7 +65,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
 
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}

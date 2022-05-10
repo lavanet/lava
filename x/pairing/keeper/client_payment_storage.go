@@ -65,14 +65,13 @@ func (k Keeper) GetAllClientPaymentStorage(ctx sdk.Context) (list []types.Client
 	return
 }
 
-func (k Keeper) GetClientPaymentStorageKey(ctx sdk.Context, epoch uint64, clientAddr sdk.AccAddress) string {
-	//TODO: add chainID
-	return strconv.FormatUint(epoch, 16) + clientAddr.String()
+func (k Keeper) GetClientPaymentStorageKey(ctx sdk.Context, chainID string, epoch uint64, clientAddr sdk.AccAddress) string {
+	return chainID + "_" + strconv.FormatUint(epoch, 16) + "_" + clientAddr.String()
 }
 
-func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, usedCUProviderTotal uint64, err error) {
+func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, usedCUProviderTotal uint64, err error) {
 	//key is epoch+user
-	key := k.GetClientPaymentStorageKey(ctx, epoch, userAddress)
+	key := k.GetClientPaymentStorageKey(ctx, chainID, epoch, userAddress)
 	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
 		//tried to use an existing identifier!

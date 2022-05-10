@@ -58,7 +58,7 @@ func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clie
 	// for every epoch in memory
 	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
 		// get epochPayments for this client
-		clientPaymentStorage, found := k.GetClientPaymentStorage(ctx, k.GetClientPaymentStorageKey(ctx, epoch, sdk.AccAddress(clientAddr)))
+		clientPaymentStorage, found := k.GetClientPaymentStorage(ctx, k.GetClientPaymentStorageKey(ctx, chainID, epoch, sdk.AccAddress(clientAddr)))
 		if !found { // no payments this epoch, continue + advance epoch
 			continue
 		}

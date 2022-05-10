@@ -85,8 +85,8 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 	return
 }
 
-func (k Keeper) AddEpochPayment(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
-	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
+func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
 		return 0, fmt.Errorf("could not add epoch payment: %s,%s,%s,%d error: %s", userAddress, providerAddress, uniqueIdentifier, epoch, err)
 	}
