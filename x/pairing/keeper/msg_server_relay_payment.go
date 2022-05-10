@@ -71,7 +71,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
-		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUserProvider, providerAddr)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, userStake, totalCUInEpochForUserProvider, providerAddr)
 		if err != nil {
 			//TODO: maybe give provider money but burn user, colluding?
 			//TODO: display correct totalCU and usedCU for provider
