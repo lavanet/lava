@@ -87,11 +87,14 @@ func addressLengths() (int, int) {
 	return adrLengthUser, adrLengthProvider
 }
 
+//TODO: refactor! either by depending on sdk.AccAddress.Bytes() or xxx_provider_client_uid where xxx is the length of the providerAddress
 func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
 	adrLengthUser, adrLengthProvider := addressLengths()
+
 	userAddress := key[:adrLengthUser]
 	providerAddress := key[adrLengthUser : adrLengthUser+adrLengthProvider]
 	uniqueIdentifier := key[adrLengthUser+adrLengthProvider:]
+
 	return userAddress, providerAddress, uniqueIdentifier
 }
 
