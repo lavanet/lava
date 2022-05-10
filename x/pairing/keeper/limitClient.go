@@ -50,7 +50,7 @@ func getMaxCULimitsPercentage() (float64, float64) {
 	return slashLimitP, unpayLimitP
 }
 
-//#o
+//#O
 // gets chainID, clientAddress, and epoch
 // returns epochstoragetypes.StakeEntry which allowedCU can be calculated from, for the selected epoch
 func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, clientAddr string, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error) {
@@ -81,7 +81,7 @@ func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, cli
 
 func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clientAddr string, providerAddr sdk.AccAddress) (overusedSumTotalP float64, overusedSumProviderP float64, err error) {
 	//TODO: Caching will save a lot of time...
-	//#o
+	//#O
 	epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
 	// for every epoch in memory
