@@ -16,6 +16,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.FraudSlashingAmount(ctx),
 		k.ServicersToPairCount(ctx),
 		k.EpochBlocksOverlap(ctx),
+		k.StakeToMaxCUList(ctx),
 	)
 }
 
@@ -83,5 +84,11 @@ func (k Keeper) ServicersToPairCount(ctx sdk.Context) (res uint64) {
 // EpochBlocksOverlap returns the EpochBlocksOverlap param
 func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyEpochBlocksOverlap, &res)
+	return
+}
+
+// EpochBlocksOverlap returns the EpochBlocksOverlap param
+func (k Keeper) StakeToMaxCUList(ctx sdk.Context) (res types.StakeToMaxCUList) {
+	k.paramstore.Get(ctx, types.KeyStakeToMaxCUList, &res)
 	return
 }

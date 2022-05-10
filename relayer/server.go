@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -91,6 +92,15 @@ func askForRewards() {
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+
+	doubleSendTest := false
+	if doubleSendTest { // wait between 0.5-1.5 seconds and resend tx for testing purposes
+		n := rand.Float32() // n will be between 0 and 10
+		fmt.Printf("Sleeping %d seconds...\n", n)
+		time.Sleep(time.Duration(n*1+0.5) * time.Second)
+		fmt.Println("Done")
+		err = tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	}
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
 	}

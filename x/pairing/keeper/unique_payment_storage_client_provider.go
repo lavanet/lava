@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -63,13 +65,43 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 }
 
 func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
-	block uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, uniqueIdentifier string) (bool, *types.UniquePaymentStorageClientProvider) {
-	key := userAddress.String() + servicerAddress.String() + uniqueIdentifier
+	block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (bool, *types.UniquePaymentStorageClientProvider) {
+	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
 	}
-	entry = types.UniquePaymentStorageClientProvider{Index: key, Block: block}
+	entry = types.UniquePaymentStorageClientProvider{Index: key, Block: block, UsedCU: usedCU}
 	k.SetUniquePaymentStorageClientProvider(ctx, entry)
 	return true, &entry
+}
+
+func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) string {
+	_, provider, _ := k.DecodeUniquePaymentKey(ctx, uniquePaymentStorageClientProvider.Index)
+	return provider
+}
+
+func addressLengths() (int, int) {
+	//TODO: Get these values from AccAddress somehow and remove AdrLengthUser and AdrLengthProvider from pairing/types/key_unique_payment_storage_client_provider
+	adrLengthUser, adrLengthProvider := types.AdrLengthUser, types.AdrLengthProvider
+	return adrLengthUser, adrLengthProvider
+}
+
+func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
+	adrLengthUser, adrLengthProvider := addressLengths()
+	userAddress := key[:adrLengthUser]
+	providerAddress := key[adrLengthUser : adrLengthUser+adrLengthProvider]
+	uniqueIdentifier := key[adrLengthUser+adrLengthProvider:]
+	return userAddress, providerAddress, uniqueIdentifier
+}
+
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string) string {
+	adrLengthUser, adrLengthProvider := addressLengths()
+	if len(userAddress.String()) != adrLengthUser {
+		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %s == %s", userAddress.String(), adrLengthUser, len(userAddress.String())))
+	} else if len(providerAddress.String()) != adrLengthProvider {
+		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %s == %s", providerAddress.String(), adrLengthProvider, len(providerAddress.String())))
+	}
+	key := userAddress.String() + providerAddress.String() + uniqueIdentifier
+	return key
 }

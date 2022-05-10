@@ -44,7 +44,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
-			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%s", relay.ChainID)}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID)}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
@@ -64,16 +64,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
 		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUser, err := k.Keeper.AddEpochPayment(ctx, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
-		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUser)
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, userStake, totalCUInEpochForUserProvider)
 		if err != nil {
 			//TODO: maybe give provider money but burn user, colluding?
-			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10)}
+			//TODO: display correct totalCU and usedCU for provider
+			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10)}
 			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
 		}
 		//
@@ -85,7 +87,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 
-			details := map[string]string{"chainID": fmt.Sprintf("%s", relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUser, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+			details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 			//first check we can burn user before we give money to the provider
 			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+message StakeToMaxCUList {
+    repeated StakeToMaxCU List = 1  [(gogoproto.nullable) = false];
+  }
+
+message StakeToMaxCU {
+  cosmos.base.v1beta1.Coin StakeThreshold = 1[(gogoproto.nullable) = false];
+  uint64 MaxComputeUnits = 2;
+  }

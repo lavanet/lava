@@ -11,6 +11,20 @@
       "subspace": "spec",
       "key": "MaxCU",
       "value": "100"
+    },
+    {
+      "subspace": "pairing",
+      "key": "StakeToMaxCUList",
+      "value": [
+        {
+          "StakeThreshold" : 100,
+          "MaxComputeUnits" : 100
+        },
+        {
+          "StakeThreshold" : 200,
+          "MaxComputeUnits" : 100
+        }
+      ]
     }
   ],
   "deposit": "10000000stake"

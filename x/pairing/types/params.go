@@ -54,6 +54,20 @@ var (
 	DefaultEpochBlocksOverlap uint64 = 5
 )
 
+var (
+	KeyStakeToMaxCUList = []byte("StakeToMaxCUList")
+	// TODO: Determine the default value
+	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
+
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(0)}, 5000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(500)}, 15000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(2000)}, 50000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(5000)}, 250000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(100000)}, 500000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(9999900000)}, 9999999999},
+	}}
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -69,6 +83,7 @@ func NewParams(
 	fraudSlashingAmount uint64,
 	servicersToPairCount uint64,
 	epochBlocksOverlap uint64,
+	stakeToMaxCUList StakeToMaxCUList,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -79,6 +94,7 @@ func NewParams(
 		FraudSlashingAmount:      fraudSlashingAmount,
 		ServicersToPairCount:     servicersToPairCount,
 		EpochBlocksOverlap:       epochBlocksOverlap,
+		StakeToMaxCUList:         stakeToMaxCUList,
 	}
 }
 
@@ -93,6 +109,7 @@ func DefaultParams() Params {
 		DefaultFraudSlashingAmount,
 		DefaultServicersToPairCount,
 		DefaultEpochBlocksOverlap,
+		DefaultStakeToMaxCUList,
 	)
 }
 
@@ -107,6 +124,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
 		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
 		paramtypes.NewParamSetPair(KeyEpochBlocksOverlap, &p.EpochBlocksOverlap, validateEpochBlocksOverlap),
+		paramtypes.NewParamSetPair(KeyStakeToMaxCUList, &p.StakeToMaxCUList, validateStakeToMaxCUList),
 	}
 }
 
@@ -141,6 +159,10 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateEpochBlocksOverlap(p.EpochBlocksOverlap); err != nil {
+		return err
+	}
+
+	if err := validateStakeToMaxCUList(p.StakeToMaxCUList); err != nil {
 		return err
 	}
 
@@ -253,6 +275,25 @@ func validateEpochBlocksOverlap(v interface{}) error {
 
 	// TODO implement validation
 	_ = epochBlocksOverlap
+
+	return nil
+}
+
+// validateStakeToMaxCUList validates the StakeToMaxCUList param
+func validateStakeToMaxCUList(v interface{}) error {
+	stakeToMaxCUList, ok := v.(StakeToMaxCUList)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	for i, stakeToMaxCU := range stakeToMaxCUList.List {
+		if i > 0 {
+			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
+				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
+				return fmt.Errorf("invalid parameter order: %T", v)
+			}
+		}
+	}
 
 	return nil
 }

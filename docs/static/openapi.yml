@@ -12601,9 +12601,9 @@ paths:
                           block:
                             type: string
                             format: uint64
-                    totalCU:
-                      type: string
-                      format: uint64
+                          usedCU:
+                            type: string
+                            format: uint64
                     epoch:
                       type: string
                       format: uint64
@@ -12736,9 +12736,9 @@ paths:
                         block:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
+                        usedCU:
+                          type: string
+                          format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -12880,9 +12880,9 @@ paths:
                                 block:
                                   type: string
                                   format: uint64
-                          totalCU:
-                            type: string
-                            format: uint64
+                                usedCU:
+                                  type: string
+                                  format: uint64
                           epoch:
                             type: string
                             format: uint64
@@ -13022,9 +13022,9 @@ paths:
                               block:
                                 type: string
                                 format: uint64
-                        totalCU:
-                          type: string
-                          format: uint64
+                              usedCU:
+                                type: string
+                                format: uint64
                         epoch:
                           type: string
                           format: uint64
@@ -13169,6 +13169,8 @@ paths:
                   epochBlocksOverlap:
                     type: string
                     format: uint64
+                  stakeToMaxCUList:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -13291,6 +13293,9 @@ paths:
                     block:
                       type: string
                       format: uint64
+                    usedCU:
+                      type: string
+                      format: uint64
               pagination:
                 type: object
                 properties:
@@ -13411,6 +13416,9 @@ paths:
                   index:
                     type: string
                   block:
+                    type: string
+                    format: uint64
+                  usedCU:
                     type: string
                     format: uint64
         default:
@@ -20902,9 +20910,9 @@ definitions:
             block:
               type: string
               format: uint64
-      totalCU:
-        type: string
-        format: uint64
+            usedCU:
+              type: string
+              format: uint64
       epoch:
         type: string
         format: uint64
@@ -20930,9 +20938,9 @@ definitions:
                   block:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
             epoch:
               type: string
               format: uint64
@@ -20970,6 +20978,8 @@ definitions:
       epochBlocksOverlap:
         type: string
         format: uint64
+      stakeToMaxCUList:
+        type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
@@ -20991,9 +21001,9 @@ definitions:
                   block:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
             epoch:
               type: string
               format: uint64
@@ -21049,9 +21059,9 @@ definitions:
                         block:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
+                        usedCU:
+                          type: string
+                          format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -21091,6 +21101,9 @@ definitions:
             index:
               type: string
             block:
+              type: string
+              format: uint64
+            usedCU:
               type: string
               format: uint64
       pagination:
@@ -21183,9 +21196,9 @@ definitions:
                 block:
                   type: string
                   format: uint64
-          totalCU:
-            type: string
-            format: uint64
+                usedCU:
+                  type: string
+                  format: uint64
           epoch:
             type: string
             format: uint64
@@ -21214,9 +21227,9 @@ definitions:
                       block:
                         type: string
                         format: uint64
-                totalCU:
-                  type: string
-                  format: uint64
+                      usedCU:
+                        type: string
+                        format: uint64
                 epoch:
                   type: string
                   format: uint64
@@ -21276,6 +21289,9 @@ definitions:
           block:
             type: string
             format: uint64
+          usedCU:
+            type: string
+            format: uint64
   lavanet.lava.pairing.QueryParamsResponse:
     type: object
     properties:
@@ -21304,6 +21320,8 @@ definitions:
           epochBlocksOverlap:
             type: string
             format: uint64
+          stakeToMaxCUList:
+            type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -21401,5 +21419,8 @@ definitions:
       index:
         type: string
       block:
+        type: string
+        format: uint64
+      usedCU:
         type: string
         format: uint64
