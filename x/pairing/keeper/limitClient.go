@@ -34,7 +34,9 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, chainID string, cl
 	}
 
 	if allowedCU == 0 {
-		panic(fmt.Sprintf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
+		// k.Logger(ctx).Error("!!!! bbbbbbxxxxxx !!!!!!!!!")
+		return fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
+		// panic(fmt.Sprintf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
 	}
 	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
 	if totalCUInEpochForUserProvider > allowedCU {
@@ -100,24 +102,32 @@ func (k Keeper) GetOverusedCUSumPercentage(ctx sdk.Context, chainID string, clie
 }
 
 func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, chainID string, clientEntry *epochstoragetypes.StakeEntry, totalCUInEpochForUserProvider uint64, allowedCU uint64, providerAddr sdk.AccAddress) error {
-	overused := totalCUInEpochForUserProvider - allowedCU
-	overusedP := float64(overused / allowedCU)
-	slashLimitP, unpayLimitP := getMaxCULimitsPercentage()
-	overusedSumProviderP, overusedSumTotalP, err := k.GetOverusedCUSumPercentage(ctx, chainID, clientEntry, providerAddr)
-	if err != nil {
-		panic(fmt.Sprintf("user %s, could not calculate overusedCU from memory: %s", clientEntry, clientEntry.Stake.Amount))
-	}
+	implementationFinished := false
+	if !implementationFinished {
 
-	if overusedSumTotalP+overusedP > slashLimitP || overusedSumProviderP+overusedP > slashLimitP/float64(k.ServicersToPairCount(ctx)) {
-		k.SlashUser(ctx, clientEntry.Address)
-	}
+		k.Logger(ctx).Error("lava_LimitClientPairingsAndMarkForPenalty not fully implemented")
+		return fmt.Errorf("lava_LimitClientPairingsAndMarkForPenalty not paying provider")
+	} else {
 
-	if overusedSumTotalP+overusedP < unpayLimitP && overusedSumProviderP+overusedP < unpayLimitP/float64(k.ServicersToPairCount(ctx)) {
-		// overuse is under the limit - will allow provider to get payment
-		return nil
+		overused := totalCUInEpochForUserProvider - allowedCU
+		overusedP := float64(overused / allowedCU)
+		slashLimitP, unpayLimitP := getMaxCULimitsPercentage()
+		overusedSumProviderP, overusedSumTotalP, err := k.GetOverusedCUSumPercentage(ctx, chainID, clientEntry, providerAddr)
+		if err != nil {
+			panic(fmt.Sprintf("user %s, could not calculate overusedCU from memory: %s", clientEntry, clientEntry.Stake.Amount))
+		}
+
+		if overusedSumTotalP+overusedP > slashLimitP || overusedSumProviderP+overusedP > slashLimitP/float64(k.ServicersToPairCount(ctx)) {
+			k.SlashUser(ctx, clientEntry.Address)
+		}
+
+		if overusedSumTotalP+overusedP < unpayLimitP && overusedSumProviderP+overusedP < unpayLimitP/float64(k.ServicersToPairCount(ctx)) {
+			// overuse is under the limit - will allow provider to get payment
+			return nil
+		}
+		// overused is not over the slashLimit, but over the unpayLimit - not paying provider
+		return fmt.Errorf("user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCUInEpochForUserProvider)
 	}
-	// overused is not over the slashLimit, but over the unpayLimit - not paying provider
-	return fmt.Errorf("user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCUInEpochForUserProvider)
 }
 
 func (k Keeper) SlashUser(ctx sdk.Context, clientAddr string) {
