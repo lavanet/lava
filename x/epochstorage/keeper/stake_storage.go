@@ -148,6 +148,18 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	return 0, false
 }
 
+func (k Keeper) StakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
+	if !found {
+		return types.StakeEntry{}, false, 0
+	}
+	// found the right thing
+	value = stakeStorage.StakeEntries[idx]
+	found = true
+	index = idx
+	return
+}
+
 func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {

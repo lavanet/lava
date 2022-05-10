@@ -269,7 +269,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	//
-	// Get pairing for the first time
+	// Get pairing for the first time, for clients
 	err = s.getPairing(ctx)
 	if err != nil {
 		return err
@@ -460,6 +460,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 
 				//update expected payments deadline, and log missing payments
+				//TODO: make this from the event lava_earliest_epoch instead
 				s.getEarliestSession(ctx)
 				if !s.isUser {
 					s.IdentifyMissingPayments(ctx)

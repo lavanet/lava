@@ -65,22 +65,48 @@ func (k Keeper) GetAllClientPaymentStorage(ctx sdk.Context) (list []types.Client
 	return
 }
 
-func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, servicerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, err error) {
+func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, usedCUProviderTotal uint64, err error) {
 	//key is epoch+user
 	key := strconv.FormatUint(epoch, 16) + userAddress.String()
-	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, epoch, userAddress, servicerAddress, uniqueIdentifier)
+	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
 		//tried to use an existing identifier!
-		return nil, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
+		// #O If you want to check that relayValidateCU is working you will need to do uncomment the next line and comment the return line. You will also need to set doubleSendTest := true in server.go
+		// uniquePaymentStorageClientProviderEntryAddr.Index = uniquePaymentStorageClientProviderEntryAddr.Index[:len(uniquePaymentStorageClientProviderEntryAddr.Index)-3] + "xxx" // this is to bypass this error
+		return nil, 0, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
 	}
 	userPaymentStorageInEpoch, found := k.GetClientPaymentStorage(ctx, key)
 	if !found {
 		// is new entry
-		userPaymentStorageInEpoch = types.ClientPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, TotalCU: usedCU, Epoch: epoch}
+		userPaymentStorageInEpoch = types.ClientPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, Epoch: epoch}
+		usedCUProviderTotal = usedCU
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
-		userPaymentStorageInEpoch.TotalCU += usedCU
+		// sums up usedCU for this client and this provider over this epoch
+		usedCUProviderTotal, err = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to add user payment. could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
+		}
+		// #O uncomment the next line to see that relayValidateCU is working
+		// k.Logger(ctx).Error("!!! usedCU " + strconv.FormatUint(usedCU, 10) + " ::: totalCU for serviser " + strconv.FormatUint(usedCUProviderTotal, 10))
 	}
 	k.SetClientPaymentStorage(ctx, userPaymentStorageInEpoch)
-	return &userPaymentStorageInEpoch, nil
+	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
+}
+
+func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
+	usedCUProviderTotal = 0
+	for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
+		_, provider, _ := k.DecodeUniquePaymentKey(ctx, paymentInEpoch.Index)
+		provider = k.GetProviderFromUniquePayment(ctx, *paymentInEpoch)
+		providerAddr, err := sdk.AccAddressFromBech32(provider)
+		if err != nil {
+			return 0, fmt.Errorf("invalid provider address: %s\n", providerAddress)
+		}
+		if providerAddr.Equals(providerAddress) {
+			usedCUProviderTotal += paymentInEpoch.UsedCU
+		}
+	}
+
+	return usedCUProviderTotal, nil
 }

@@ -28,6 +28,8 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainPro
 	switch sentry.ApiInterface {
 	case "jsonrpc":
 		return NewJrpcChainProxy(nodeUrl, nConns, sentry), nil
+	case "tendermintrpc":
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry), nil
 	case "rest":
 		return NewRestChainProxy(nodeUrl, sentry), nil
 	}

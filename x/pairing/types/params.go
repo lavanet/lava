@@ -57,13 +57,14 @@ var (
 var (
 	KeyStakeToMaxCUList = []byte("StakeToMaxCUList")
 	// TODO: Determine the default value
-	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []*StakeToMaxCU{
-		{0, 5000},
-		{500, 15000},
-		{2000, 50000},
-		{5000, 250000},
-		{100000, 500000},
-		{9999900000, 9999999999},
+	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
+
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(0)}, 5000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(500)}, 15000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(2000)}, 50000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(5000)}, 250000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(100000)}, 500000},
+		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(9999900000)}, 9999999999},
 	}}
 )
 
@@ -287,7 +288,7 @@ func validateStakeToMaxCUList(v interface{}) error {
 
 	for i, stakeToMaxCU := range stakeToMaxCUList.List {
 		if i > 0 {
-			if stakeToMaxCU.StakeThreshold <= stakeToMaxCUList.List[i-1].StakeThreshold ||
+			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
 				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
 				return fmt.Errorf("invalid parameter order: %T", v)
 			}

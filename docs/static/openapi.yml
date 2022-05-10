@@ -12601,9 +12601,9 @@ paths:
                           block:
                             type: string
                             format: uint64
-                    totalCU:
-                      type: string
-                      format: uint64
+                          usedCU:
+                            type: string
+                            format: uint64
                     epoch:
                       type: string
                       format: uint64
@@ -12736,9 +12736,9 @@ paths:
                         block:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
+                        usedCU:
+                          type: string
+                          format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -12880,9 +12880,9 @@ paths:
                                 block:
                                   type: string
                                   format: uint64
-                          totalCU:
-                            type: string
-                            format: uint64
+                                usedCU:
+                                  type: string
+                                  format: uint64
                           epoch:
                             type: string
                             format: uint64
@@ -13022,9 +13022,9 @@ paths:
                               block:
                                 type: string
                                 format: uint64
-                        totalCU:
-                          type: string
-                          format: uint64
+                              usedCU:
+                                type: string
+                                format: uint64
                         epoch:
                           type: string
                           format: uint64
@@ -13293,6 +13293,9 @@ paths:
                     block:
                       type: string
                       format: uint64
+                    usedCU:
+                      type: string
+                      format: uint64
               pagination:
                 type: object
                 properties:
@@ -13413,6 +13416,9 @@ paths:
                   index:
                     type: string
                   block:
+                    type: string
+                    format: uint64
+                  usedCU:
                     type: string
                     format: uint64
         default:
@@ -20946,9 +20952,9 @@ definitions:
             block:
               type: string
               format: uint64
-      totalCU:
-        type: string
-        format: uint64
+            usedCU:
+              type: string
+              format: uint64
       epoch:
         type: string
         format: uint64
@@ -20974,9 +20980,9 @@ definitions:
                   block:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
             epoch:
               type: string
               format: uint64
@@ -21037,9 +21043,9 @@ definitions:
                   block:
                     type: string
                     format: uint64
-            totalCU:
-              type: string
-              format: uint64
+                  usedCU:
+                    type: string
+                    format: uint64
             epoch:
               type: string
               format: uint64
@@ -21095,9 +21101,9 @@ definitions:
                         block:
                           type: string
                           format: uint64
-                  totalCU:
-                    type: string
-                    format: uint64
+                        usedCU:
+                          type: string
+                          format: uint64
                   epoch:
                     type: string
                     format: uint64
@@ -21137,6 +21143,9 @@ definitions:
             index:
               type: string
             block:
+              type: string
+              format: uint64
+            usedCU:
               type: string
               format: uint64
       pagination:
@@ -21229,9 +21238,9 @@ definitions:
                 block:
                   type: string
                   format: uint64
-          totalCU:
-            type: string
-            format: uint64
+                usedCU:
+                  type: string
+                  format: uint64
           epoch:
             type: string
             format: uint64
@@ -21260,9 +21269,9 @@ definitions:
                       block:
                         type: string
                         format: uint64
-                totalCU:
-                  type: string
-                  format: uint64
+                      usedCU:
+                        type: string
+                        format: uint64
                 epoch:
                   type: string
                   format: uint64
@@ -21320,6 +21329,9 @@ definitions:
           index:
             type: string
           block:
+            type: string
+            format: uint64
+          usedCU:
             type: string
             format: uint64
   lavanet.lava.pairing.QueryParamsResponse:
@@ -21455,5 +21467,8 @@ definitions:
       index:
         type: string
       block:
+        type: string
+        format: uint64
+      usedCU:
         type: string
         format: uint64
