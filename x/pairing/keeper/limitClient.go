@@ -31,12 +31,12 @@ func (k Keeper) ClientMaxCU(ctx sdk.Context, clientEntry *epochstoragetypes.Stak
 	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
 
 	for _, stakeToCU := range stakeToMaxCUMap {
-		if stakeToCU.StakeThreshold <= clientEntry.Stake.Amount.Uint64() {
+		if stakeToCU.StakeThreshold.IsGTE(clientEntry.Stake) {
 			allowedCU = stakeToCU.MaxComputeUnits
+		} else {
 			break
 		}
 	}
-
 	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
 
 	return allowedCU
