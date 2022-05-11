@@ -30,7 +30,7 @@ import (
 
 var (
 	g_privKey        *btcSecp256k1.PrivateKey
-	g_sessions       map[string]map[uint64]*RelaySession
+	g_sessions       map[string]UserSessions
 	g_sessions_mutex sync.Mutex
 	g_sentry         *sentry.Sentry
 	g_serverChainID  string
@@ -38,10 +38,17 @@ var (
 	g_chainProxy     chainproxy.ChainProxy
 )
 
+type UserSessions struct {
+	UsedComputeUnits uint64
+	MaxComputeUnits  uint64
+	Sessions         map[uint64]*RelaySession
+}
 type RelaySession struct {
-	CuSum uint64
-	Lock  sync.Mutex
-	Proof *pairingtypes.RelayRequest // saves last relay request of a session as proof
+	userSessionsParent *UserSessions
+	CuSum              uint64
+	UniqueIdentifier   uint64
+	Lock               sync.Mutex
+	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 }
 
 type relayServer struct {
@@ -66,11 +73,11 @@ func askForRewards() {
 
 		//
 		// TODO: we can come up with a better locking mechanism
-		for k, sess := range userSessions {
+		for k, sess := range userSessions.Sessions {
 			sess.Lock.Lock()
 			relay := sess.Proof
 			relays = append(relays, relay)
-			delete(userSessions, k)
+			delete(userSessions.Sessions, k)
 			sess.Lock.Unlock()
 			userAccAddr, err := sdk.AccAddressFromBech32(user)
 			if err != nil {
@@ -79,7 +86,7 @@ func askForRewards() {
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
-		if len(userSessions) == 0 {
+		if len(userSessions.Sessions) == 0 {
 			delete(g_sessions, user)
 		}
 	}
@@ -141,15 +148,15 @@ func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		g_sessions[userAddr] = map[uint64]*RelaySession{}
+		g_sessions[userAddr] = UserSessions{UsedComputeUnits: 0, Sessions: map[uint64]*RelaySession{}}
 	}
 
 	userSessions := g_sessions[userAddr]
-	if _, ok := userSessions[sessionId]; !ok {
-		userSessions[sessionId] = &RelaySession{}
+	if _, ok := userSessions.Sessions[sessionId]; !ok {
+		userSessions.Sessions[sessionId] = &RelaySession{}
 	}
 
-	return userSessions[sessionId]
+	return userSessions.Sessions[sessionId]
 }
 
 func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
@@ -207,6 +214,8 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	// Update session
 	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
+
+	//todo: yarom add check of CU
 	relaySession.Proof = in
 
 	// Send
@@ -255,7 +264,7 @@ func Server(
 		time.Sleep(1 * time.Second)
 	}
 	g_sentry = sentry
-	g_sessions = map[string]map[uint64]*RelaySession{}
+	g_sessions = map[string]UserSessions{}
 	g_serverChainID = ChainID
 	g_txFactory = txFactory
 
