@@ -143,17 +143,21 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-func getOrCreateSession(userAddr string, sessionId uint64) *RelaySession {
+func getOrCreateSession(ctx context.Context, userAddr string, sessionId uint64) *RelaySession {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		g_sessions[userAddr] = UserSessions{UsedComputeUnits: 0, Sessions: map[uint64]*RelaySession{}}
+		//TODO yarom get maxCU
+		//maxcuRes, err := g_sentry.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: servicer.Chain, Address: s.Acc})
+		maxcuRes := g_sentry.GetMaxCUForUser(ctx, userAddr)
+
+		g_sessions[userAddr] = UserSessions{UsedComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}}
 	}
 
 	userSessions := g_sessions[userAddr]
 	if _, ok := userSessions.Sessions[sessionId]; !ok {
-		userSessions.Sessions[sessionId] = &RelaySession{}
+		userSessions.Sessions[sessionId] = &RelaySession{userSessionsParent: &userSessions}
 	}
 
 	return userSessions.Sessions[sessionId]
@@ -173,7 +177,11 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *p
 	if sess.CuSum+serviceApi.ComputeUnits != in.CuSum {
 		return errors.New("bad cu sum")
 	}
+	if sess.userSessionsParent.UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.MaxComputeUnits {
+		return errors.New("client cu overflow")
+	}
 
+	sess.userSessionsParent.UsedComputeUnits = sess.userSessionsParent.UsedComputeUnits + serviceApi.ComputeUnits
 	sess.CuSum = in.CuSum
 
 	// TODO:
@@ -212,10 +220,11 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	}
 
 	// Update session
-	relaySession := getOrCreateSession(userAddr.String(), in.SessionId)
+	relaySession := getOrCreateSession(ctx, userAddr.String(), in.SessionId)
 	updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 
 	//todo: yarom add check of CU
+
 	relaySession.Proof = in
 
 	// Send

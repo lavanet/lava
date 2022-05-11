@@ -662,6 +662,11 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
 }
 
+func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) uint64 {
+	maxcuRes, _ := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: chainID, Address: address})
+	return maxcuRes.MaxCu
+}
+
 func NewSentry(
 	clientCtx client.Context,
 	chainID string,
