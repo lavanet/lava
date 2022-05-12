@@ -511,6 +511,10 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
+
+	s.pairingMu.RLock()
+
+	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
 		return nil, -1, errors.New("no pairings available")
 	}
@@ -521,15 +525,17 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	wrap := s.pairing[index]
 
 	if wrap.Client == nil {
+		wrap.SessionsLock.Lock()
+		defer wrap.SessionsLock.Unlock()
 		//
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
+
 			return nil, -1, err
 		}
 		wrap.Client = conn
 	}
-
 	return wrap, index, nil
 }
 
@@ -537,9 +543,6 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, error),
 ) (*pairingtypes.RelayReply, error) {
-
-	s.pairingMu.RLock()
-
 	//
 	// Get pairing
 	wrap, index, err := s._findPairing(ctx)
@@ -553,6 +556,7 @@ func (s *Sentry) SendRelay(
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
+		//try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
 			if session.Lock.TryLock() {
 				return session
@@ -569,21 +573,27 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}()
 
-	s.pairingMu.RUnlock()
-
 	//
 	// call user
-	defer clientSession.Lock.Unlock()
+	defer clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 	reply, err := cb(clientSession)
 
 	//error using this provider
 	if err != nil {
-		//move to purge list
-		s.pairingPurge = append(s.pairingPurge, wrap)
-		s.pairing[index] = s.pairing[len(s.pairing)-1]
-		s.pairing = s.pairing[:len(s.pairing)-1]
+		s.movePairingEntryToPurge(wrap, index)
 	}
 	return reply, err
+}
+
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+	s.pairingMu.Lock()
+	s.pairingPurgeLock.Lock()
+	defer s.pairingMu.Unlock()
+	defer s.pairingPurgeLock.Unlock()
+	//move to purge list
+	s.pairingPurge = append(s.pairingPurge, wrap)
+	s.pairing[index] = s.pairing[len(s.pairing)-1]
+	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
 func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {

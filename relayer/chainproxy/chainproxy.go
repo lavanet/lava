@@ -54,7 +54,7 @@ func SendRelay(
 	//
 	//
 	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
-
+		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
 		if err != nil {
 			return nil, err
@@ -102,9 +102,6 @@ func SendRelay(
 func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
 	clientSession.Client.SessionsLock.Lock()
 	defer clientSession.Client.SessionsLock.Unlock()
-
-	clientSession.Lock.Lock()
-	defer clientSession.Lock.Unlock()
 
 	if clientSession.Client.UsedComputeUnits+apiCu > clientSession.Client.MaxComputeUnits {
 		return fmt.Errorf("used all the available compute units")
