@@ -510,9 +510,9 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 	return &c, nil
 }
 
-func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error, int) {
+func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
 	if len(s.pairing) == 0 {
-		return nil, errors.New("no pairings available"), -1
+		return nil, -1, errors.New("no pairings available")
 	}
 
 	//
@@ -525,12 +525,12 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
-			return nil, err, -1
+			return nil, -1, err
 		}
 		wrap.Client = conn
 	}
 
-	return wrap, nil, index
+	return wrap, index, nil
 }
 
 func (s *Sentry) SendRelay(
@@ -542,7 +542,7 @@ func (s *Sentry) SendRelay(
 
 	//
 	// Get pairing
-	wrap, err, index := s._findPairing(ctx)
+	wrap, index, err := s._findPairing(ctx)
 	if err != nil {
 		return nil, err
 	}
