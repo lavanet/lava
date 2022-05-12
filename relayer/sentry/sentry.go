@@ -38,8 +38,10 @@ type RelayerClientWrapper struct {
 	Acc    string
 	Addr   string
 
-	SessionsLock sync.Mutex
-	Sessions     map[int64]*ClientSession
+	SessionsLock     sync.Mutex
+	Sessions         map[int64]*ClientSession
+	MaxComputeUnits  uint64
+	UsedComputeUnits uint64
 }
 
 type PaymentRequest struct {
@@ -153,12 +155,18 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
 			continue
 		}
+
+		maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: servicer.Chain, Address: s.Acc})
+		if err != nil {
+			return err
+		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:      servicer.Address,
-			Addr:     relevantEndpoints[0].IPPORT,
-			Sessions: map[int64]*ClientSession{},
+			Acc:             servicer.Address,
+			Addr:            relevantEndpoints[0].IPPORT,
+			Sessions:        map[int64]*ClientSession{},
+			MaxComputeUnits: maxcuRes.MaxCu,
 		})
 	}
 	s.pairingMu.Lock()
@@ -195,23 +203,27 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
-	for _, api := range spec.Spec.Apis {
-
-		//
-		// TODO: find a better spot for this (more optimized, precompile regex, etc)
-		for _, apiInterface := range api.ApiInterfaces {
-			if apiInterface.Interface != s.ApiInterface {
-				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+	if spec.Spec.Enabled {
+		for _, api := range spec.Spec.Apis {
+			if !api.Enabled {
 				continue
 			}
-			if apiInterface.Interface == "rest" {
-				re := regexp.MustCompile(`{[^}]+}`)
-				processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-				processedName = regexp.QuoteMeta(processedName)
-				processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-				serverApis[processedName] = api
-			} else {
-				serverApis[api.Name] = api
+			//
+			// TODO: find a better spot for this (more optimized, precompile regex, etc)
+			for _, apiInterface := range api.ApiInterfaces {
+				if apiInterface.Interface != s.ApiInterface {
+					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					continue
+				}
+				if apiInterface.Interface == "rest" {
+					re := regexp.MustCompile(`{[^}]+}`)
+					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+					processedName = regexp.QuoteMeta(processedName)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					serverApis[processedName] = api
+				} else {
+					serverApis[api.Name] = api
+				}
 			}
 		}
 	}
@@ -498,26 +510,27 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 	return &c, nil
 }
 
-func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error) {
+func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
 	if len(s.pairing) == 0 {
-		return nil, errors.New("no pairings available")
+		return nil, -1, errors.New("no pairings available")
 	}
 
 	//
 	// TODO: this should be weighetd
-	wrap := s.pairing[rand.Intn(len(s.pairing))]
+	index := rand.Intn(len(s.pairing))
+	wrap := s.pairing[index]
 
 	if wrap.Client == nil {
 		//
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
-			return nil, err
+			return nil, -1, err
 		}
 		wrap.Client = conn
 	}
 
-	return wrap, nil
+	return wrap, index, nil
 }
 
 func (s *Sentry) SendRelay(
@@ -529,7 +542,7 @@ func (s *Sentry) SendRelay(
 
 	//
 	// Get pairing
-	wrap, err := s._findPairing(ctx)
+	wrap, index, err := s._findPairing(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -563,6 +576,13 @@ func (s *Sentry) SendRelay(
 	defer clientSession.Lock.Unlock()
 	reply, err := cb(clientSession)
 
+	//error using this provider
+	if err != nil {
+		//move to purge list
+		s.pairingPurge = append(s.pairingPurge, wrap)
+		s.pairing[index] = s.pairing[len(s.pairing)-1]
+		s.pairing = s.pairing[:len(s.pairing)-1]
+	}
 	return reply, err
 }
 
