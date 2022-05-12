@@ -313,29 +313,31 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 				for _, servicerAddr := range servicerAddrList {
 					if s.Acc == servicerAddr {
 						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
-						CU := e.Events["lava_relay_payment.CU"][0]
-						paidCU, err := strconv.ParseUint(CU, 10, 64)
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
-							continue
-						}
-						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][0])
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
-							continue
-						}
-						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][0])
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
-							continue
-						}
-						s.UpdatePaidCU(paidCU)
-						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
-						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
-						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
-						} else {
-							fmt.Printf("SUCCESS: payment received as expected\n")
+						for idx, _ := range e.Events["lava_relay_payment.CU"] {
+							CU := e.Events["lava_relay_payment.CU"][idx]
+							paidCU, err := strconv.ParseUint(CU, 10, 64)
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+								continue
+							}
+							clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
+								continue
+							}
+							coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
+								continue
+							}
+							s.UpdatePaidCU(paidCU)
+							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
+							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
+							if !found {
+								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
+							} else {
+								fmt.Printf("SUCCESS: payment received as expected\n")
+							}
 						}
 					}
 				}
@@ -511,6 +513,10 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
+
+	s.pairingMu.RLock()
+
+	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
 		return nil, -1, errors.New("no pairings available")
 	}
@@ -521,15 +527,17 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	wrap := s.pairing[index]
 
 	if wrap.Client == nil {
+		wrap.SessionsLock.Lock()
+		defer wrap.SessionsLock.Unlock()
 		//
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
+
 			return nil, -1, err
 		}
 		wrap.Client = conn
 	}
-
 	return wrap, index, nil
 }
 
@@ -537,9 +545,6 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, error),
 ) (*pairingtypes.RelayReply, error) {
-
-	s.pairingMu.RLock()
-
 	//
 	// Get pairing
 	wrap, index, err := s._findPairing(ctx)
@@ -553,6 +558,7 @@ func (s *Sentry) SendRelay(
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
+		//try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
 			if session.Lock.TryLock() {
 				return session
@@ -569,24 +575,30 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}()
 
-	s.pairingMu.RUnlock()
-
 	//
 	// call user
-	defer clientSession.Lock.Unlock()
+	defer clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 	reply, err := cb(clientSession)
 
 	//error using this provider
 	if err != nil {
-		//move to purge list
-		s.pairingPurge = append(s.pairingPurge, wrap)
-		s.pairing[index] = s.pairing[len(s.pairing)-1]
-		s.pairing = s.pairing[:len(s.pairing)-1]
+		s.movePairingEntryToPurge(wrap, index)
 	}
 	return reply, err
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+	s.pairingMu.Lock()
+	s.pairingPurgeLock.Lock()
+	defer s.pairingMu.Unlock()
+	defer s.pairingPurgeLock.Unlock()
+	//move to purge list
+	s.pairingPurge = append(s.pairingPurge, wrap)
+	s.pairing[index] = s.pairing[len(s.pairing)-1]
+	s.pairing = s.pairing[:len(s.pairing)-1]
+}
+
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {
 	//
 	// TODO: cache results!
 
@@ -597,12 +609,12 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 		Block:    uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
-		return false
+		return false, err
 	}
 	if res.Valid {
-		return true
+		return true, nil
 	}
-	return false
+	return false, fmt.Errorf("invalid pairing with user CurrentBlock: %d", s.GetBlockHeight())
 }
 
 func (s *Sentry) GetSpecName() string {
