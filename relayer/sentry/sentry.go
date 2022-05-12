@@ -313,29 +313,31 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 				for _, servicerAddr := range servicerAddrList {
 					if s.Acc == servicerAddr {
 						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
-						CU := e.Events["lava_relay_payment.CU"][0]
-						paidCU, err := strconv.ParseUint(CU, 10, 64)
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
-							continue
-						}
-						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][0])
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
-							continue
-						}
-						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][0])
-						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
-							continue
-						}
-						s.UpdatePaidCU(paidCU)
-						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
-						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
-						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
-						} else {
-							fmt.Printf("SUCCESS: payment received as expected\n")
+						for idx, _ := range e.Events["lava_relay_payment.CU"] {
+							CU := e.Events["lava_relay_payment.CU"][idx]
+							paidCU, err := strconv.ParseUint(CU, 10, 64)
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+								continue
+							}
+							clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
+								continue
+							}
+							coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
+							if err != nil {
+								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
+								continue
+							}
+							s.UpdatePaidCU(paidCU)
+							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
+							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
+							if !found {
+								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
+							} else {
+								fmt.Printf("SUCCESS: payment received as expected\n")
+							}
 						}
 					}
 				}
