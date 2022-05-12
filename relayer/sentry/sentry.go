@@ -566,7 +566,7 @@ func (s *Sentry) SendRelay(
 	return reply, err
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {
 	//
 	// TODO: cache results!
 
@@ -577,12 +577,12 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 		Block:    uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
-		return false
+		return false, err
 	}
 	if res.Valid {
-		return true
+		return true, nil
 	}
-	return false
+	return false, fmt.Errorf("invalid pairing with user CurrentBlock: %d", s.GetBlockHeight())
 }
 
 func (s *Sentry) GetSpecName() string {
