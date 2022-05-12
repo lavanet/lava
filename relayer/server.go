@@ -69,8 +69,8 @@ func askForRewards() {
 
 	relays := []*pairingtypes.RelayRequest{}
 	for user, userSessions := range g_sessions {
-
-		if g_sentry.IsAuthorizedUser(context.Background(), user) {
+		validuser, _ := g_sentry.IsAuthorizedUser(context.Background(), user)
+		if validuser {
 			// session still valid, skip this user
 			continue
 		}
@@ -139,7 +139,7 @@ func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
 	return pubKey.Address(), nil
 }
 
-func isAuthorizedUser(ctx context.Context, userAddr string) bool {
+func isAuthorizedUser(ctx context.Context, userAddr string) (bool, error) {
 	return g_sentry.IsAuthorizedUser(ctx, userAddr)
 }
 
@@ -207,8 +207,9 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 		return nil, err
 	}
 	//TODO: cache this client, no need to run the query every time
-	if !isAuthorizedUser(ctx, userAddr.String()) {
-		return nil, errors.New("user not authorized or bad signature")
+	validUser, err := isAuthorizedUser(ctx, userAddr.String())
+	if !validUser {
+		return nil, fmt.Errorf("user not authorized or bad signature, err: %s", err)
 	}
 	if !isSupportedSpec(in) {
 		return nil, errors.New("spec not supported by server")
@@ -278,6 +279,7 @@ func Server(
 	g_sentry = sentry
 	g_sessions = map[string]*UserSessions{}
 	g_serverChainID = ChainID
+	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
 
 	//
