@@ -99,16 +99,19 @@ func SendRelay(
 	return reply, err
 }
 
-func CheckComputeUnits(clientSession *sentry.ClientSession, apuCu uint64) error {
+func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
 	clientSession.Client.SessionsLock.Lock()
 	defer clientSession.Client.SessionsLock.Unlock()
 
-	if clientSession.Client.UsedComputeUnits+apuCu > clientSession.Client.MaxComputeUnits {
+	clientSession.Lock.Lock()
+	defer clientSession.Lock.Unlock()
+
+	if clientSession.Client.UsedComputeUnits+apiCu > clientSession.Client.MaxComputeUnits {
 		return fmt.Errorf("used all the available compute units")
 	}
 
-	clientSession.CuSum += apuCu
-	clientSession.Client.UsedComputeUnits += apuCu
+	clientSession.CuSum += apiCu
+	clientSession.Client.UsedComputeUnits += apiCu
 
 	return nil
 }
