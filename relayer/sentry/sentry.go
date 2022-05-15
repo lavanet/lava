@@ -671,7 +671,6 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUServiced)
-	fmt.Printf("currentCU %d + CU %d = %d \n", currentCU, CU, currentCU+CU)
 	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
 }
 
