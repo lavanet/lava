@@ -15,7 +15,7 @@ import (
 const (
 	JSONRPC_ETH_BLOCKNUMBER                     = `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`
 	JSONRPC_ETH_GETBALANCE                      = `{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8", "latest"],"id":77}`
-	JSONRPC_ETH_TRACE_RAPLAY_BLOCK_TRANSACTIONS = `{"jsonrpc":"2.0","method":"trace_replayBlockTransactions","params":["latest", "trace"],"id":1}`
+	JSONRPC_ETH_TRACE_REPLAY_BLOCK_TRANSACTIONS = `{"jsonrpc":"2.0","method":"trace_replayBlockTransactions","params":["latest", "trace"],"id":1}`
 	JSONRPC_UNSUPPORTED                         = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"

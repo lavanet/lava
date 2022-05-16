@@ -147,12 +147,16 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) *RelaySession {
+func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		maxcuRes := g_sentry.GetMaxCUForUser(ctx, userAddr, req.ChainID)
+		maxcuRes, err := g_sentry.GetMaxCUForUser(ctx, userAddr, req.ChainID)
+		if err != nil {
+			return nil, errors.New("failed to get the Max allowed compute units for the user")
+		}
+
 		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}}
 		log.Println("new user sessions " + strconv.FormatUint(maxcuRes, 10))
 	}
@@ -162,7 +166,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr]}
 	}
 
-	return userSessions.Sessions[req.SessionId]
+	return userSessions.Sessions[req.SessionId], nil
 }
 
 func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
@@ -223,7 +227,11 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	}
 
 	// Update session
-	relaySession := getOrCreateSession(ctx, userAddr.String(), in)
+	relaySession, err := getOrCreateSession(ctx, userAddr.String(), in)
+	if err != nil {
+		return nil, err
+	}
+
 	err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
 	if err != nil {
 		return nil, err
