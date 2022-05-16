@@ -156,7 +156,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			continue
 		}
 
-		maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: servicer.Chain, Address: s.Acc})
+		maxcu, err := s.GetMaxCUForUser(ctx, s.Acc, servicer.Chain)
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			Acc:             servicer.Address,
 			Addr:            relevantEndpoints[0].IPPORT,
 			Sessions:        map[int64]*ClientSession{},
-			MaxComputeUnits: maxcuRes.MaxCu,
+			MaxComputeUnits: maxcu,
 		})
 	}
 	s.pairingMu.Lock()
@@ -310,35 +310,35 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
 			if servicerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
-				for _, servicerAddr := range servicerAddrList {
-					if s.Acc == servicerAddr {
-						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
-						for idx, _ := range e.Events["lava_relay_payment.CU"] {
-							CU := e.Events["lava_relay_payment.CU"][idx]
-							paidCU, err := strconv.ParseUint(CU, 10, 64)
-							if err != nil {
-								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
-								continue
-							}
-							clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
-							if err != nil {
-								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
-								continue
-							}
-							coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
-							if err != nil {
-								fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
-								continue
-							}
-							s.UpdatePaidCU(paidCU)
-							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
-							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
-							if !found {
-								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
-							} else {
-								fmt.Printf("SUCCESS: payment received as expected\n")
-							}
+				for idx, servicerAddr := range servicerAddrList {
+					if s.Acc == servicerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
+						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"][idx], e.Events["lava_relay_payment.CU"][idx])
+
+						CU := e.Events["lava_relay_payment.CU"][idx]
+						paidCU, err := strconv.ParseUint(CU, 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+							continue
 						}
+						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
+							continue
+						}
+						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
+							continue
+						}
+						s.UpdatePaidCU(paidCU)
+						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
+						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
+						if !found {
+							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
+						} else {
+							fmt.Printf("SUCCESS: payment received as expected\n")
+						}
+
 					}
 				}
 			}
@@ -672,6 +672,15 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUServiced)
 	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
+}
+
+func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (uint64, error) {
+	maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: chainID, Address: address})
+	if err != nil {
+		return 0, err
+	}
+
+	return maxcuRes.GetMaxCu(), err
 }
 
 func NewSentry(
