@@ -680,11 +680,7 @@ func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID st
 		return 0, err
 	}
 
-	if maxcuRes != nil {
-		return 0, fmt.Errorf("maxCU query failed")
-	}
-
-	return maxcuRes.MaxCu, err
+	return maxcuRes.GetMaxCu(), err
 }
 
 func NewSentry(
