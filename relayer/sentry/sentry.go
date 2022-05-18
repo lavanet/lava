@@ -38,8 +38,10 @@ type RelayerClientWrapper struct {
 	Acc    string
 	Addr   string
 
-	SessionsLock sync.Mutex
-	Sessions     map[int64]*ClientSession
+	SessionsLock     sync.Mutex
+	Sessions         map[int64]*ClientSession
+	MaxComputeUnits  uint64
+	UsedComputeUnits uint64
 }
 
 type PaymentRequest struct {
@@ -153,12 +155,18 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
 			continue
 		}
+
+		maxcu, err := s.GetMaxCUForUser(ctx, s.Acc, servicer.Chain)
+		if err != nil {
+			return err
+		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:      servicer.Address,
-			Addr:     relevantEndpoints[0].IPPORT,
-			Sessions: map[int64]*ClientSession{},
+			Acc:             servicer.Address,
+			Addr:            relevantEndpoints[0].IPPORT,
+			Sessions:        map[int64]*ClientSession{},
+			MaxComputeUnits: maxcu,
 		})
 	}
 	s.pairingMu.Lock()
@@ -195,23 +203,27 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
-	for _, api := range spec.Spec.Apis {
-
-		//
-		// TODO: find a better spot for this (more optimized, precompile regex, etc)
-		for _, apiInterface := range api.ApiInterfaces {
-			if apiInterface.Interface != s.ApiInterface {
-				//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+	if spec.Spec.Enabled {
+		for _, api := range spec.Spec.Apis {
+			if !api.Enabled {
 				continue
 			}
-			if apiInterface.Interface == "rest" {
-				re := regexp.MustCompile(`{[^}]+}`)
-				processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-				processedName = regexp.QuoteMeta(processedName)
-				processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-				serverApis[processedName] = api
-			} else {
-				serverApis[api.Name] = api
+			//
+			// TODO: find a better spot for this (more optimized, precompile regex, etc)
+			for _, apiInterface := range api.ApiInterfaces {
+				if apiInterface.Interface != s.ApiInterface {
+					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					continue
+				}
+				if apiInterface.Interface == "rest" {
+					re := regexp.MustCompile(`{[^}]+}`)
+					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+					processedName = regexp.QuoteMeta(processedName)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					serverApis[processedName] = api
+				} else {
+					serverApis[api.Name] = api
+				}
 			}
 		}
 	}
@@ -298,21 +310,22 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
 			if servicerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
-				for _, servicerAddr := range servicerAddrList {
-					if s.Acc == servicerAddr {
-						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"], e.Events["lava_relay_payment.CU"])
-						CU := e.Events["lava_relay_payment.CU"][0]
+				for idx, servicerAddr := range servicerAddrList {
+					if s.Acc == servicerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
+						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"][idx], e.Events["lava_relay_payment.CU"][idx])
+
+						CU := e.Events["lava_relay_payment.CU"][idx]
 						paidCU, err := strconv.ParseUint(CU, 10, 64)
 						if err != nil {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
 							continue
 						}
-						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][0])
+						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
 						if err != nil {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
 							continue
 						}
-						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][0])
+						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
 						if err != nil {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
 							continue
@@ -325,6 +338,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 						} else {
 							fmt.Printf("SUCCESS: payment received as expected\n")
 						}
+
 					}
 				}
 			}
@@ -498,38 +512,42 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 	return &c, nil
 }
 
-func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, error) {
+func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
+
+	s.pairingMu.RLock()
+
+	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
-		return nil, errors.New("no pairings available")
+		return nil, -1, errors.New("no pairings available")
 	}
 
 	//
 	// TODO: this should be weighetd
-	wrap := s.pairing[rand.Intn(len(s.pairing))]
+	index := rand.Intn(len(s.pairing))
+	wrap := s.pairing[index]
 
 	if wrap.Client == nil {
+		wrap.SessionsLock.Lock()
+		defer wrap.SessionsLock.Unlock()
 		//
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
-			return nil, err
+
+			return nil, -1, err
 		}
 		wrap.Client = conn
 	}
-
-	return wrap, nil
+	return wrap, index, nil
 }
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, error),
 ) (*pairingtypes.RelayReply, error) {
-
-	s.pairingMu.RLock()
-
 	//
 	// Get pairing
-	wrap, err := s._findPairing(ctx)
+	wrap, index, err := s._findPairing(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -540,6 +558,7 @@ func (s *Sentry) SendRelay(
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
+		//try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
 			if session.Lock.TryLock() {
 				return session
@@ -556,17 +575,30 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}()
 
-	s.pairingMu.RUnlock()
-
 	//
 	// call user
-	defer clientSession.Lock.Unlock()
+	defer clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 	reply, err := cb(clientSession)
 
+	//error using this provider
+	if err != nil {
+		s.movePairingEntryToPurge(wrap, index)
+	}
 	return reply, err
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+	s.pairingMu.Lock()
+	s.pairingPurgeLock.Lock()
+	defer s.pairingMu.Unlock()
+	defer s.pairingPurgeLock.Unlock()
+	//move to purge list
+	s.pairingPurge = append(s.pairingPurge, wrap)
+	s.pairing[index] = s.pairing[len(s.pairing)-1]
+	s.pairing = s.pairing[:len(s.pairing)-1]
+}
+
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {
 	//
 	// TODO: cache results!
 
@@ -577,12 +609,12 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) bool {
 		Block:    uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
-		return false
+		return false, err
 	}
 	if res.Valid {
-		return true
+		return true, nil
 	}
-	return false
+	return false, fmt.Errorf("invalid pairing with user CurrentBlock: %d", s.GetBlockHeight())
 }
 
 func (s *Sentry) GetSpecName() string {
@@ -640,6 +672,15 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUServiced)
 	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
+}
+
+func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (uint64, error) {
+	maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: chainID, Address: address})
+	if err != nil {
+		return 0, err
+	}
+
+	return maxcuRes.GetMaxCu(), err
 }
 
 func NewSentry(

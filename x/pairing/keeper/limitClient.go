@@ -68,14 +68,11 @@ type ClientProviderOverusedCUPercent struct {
 
 func (k Keeper) GetEpochClientProviderUsedCUMap(ctx sdk.Context, clientPaymentStorage types.ClientPaymentStorage) (clientOverusedCUMap ClientUsedCU, err error) {
 	clientOverusedCUMap = ClientUsedCU{0, make(map[string]uint64)}
-
 	// for every unique payment of client for this epoch
 	uniquePaymentStoragesClientProviderList := clientPaymentStorage.UniquePaymentStorageClientProvider
 	for _, uniquePaymentStorageClientProvider := range uniquePaymentStoragesClientProviderList {
 		paymentProviderAddr := k.GetProviderFromUniquePayment(ctx, *uniquePaymentStorageClientProvider)
-
 		clientOverusedCUMap.TotalOverused += uniquePaymentStorageClientProvider.UsedCU
-
 		if _, ok := clientOverusedCUMap.Providers[paymentProviderAddr]; ok {
 			clientOverusedCUMap.Providers[paymentProviderAddr] += uniquePaymentStorageClientProvider.UsedCU
 		} else {
@@ -183,4 +180,14 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, chainID st
 
 func (k Keeper) SlashUser(ctx sdk.Context, clientAddr string) {
 	//TODO: jail user, and count problems
+}
+
+func (k Keeper) ClientMaxCUProvider(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) uint64 {
+	allowedCU, err := k.GetAllowedCU(ctx, clientEntry)
+	if err != nil {
+		panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
+	}
+	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
+
+	return allowedCU
 }
