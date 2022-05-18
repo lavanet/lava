@@ -66,6 +66,7 @@ func (k Keeper) GetAllClientPaymentStorage(ctx sdk.Context) (list []types.Client
 }
 
 func (k Keeper) GetClientPaymentStorageKey(ctx sdk.Context, chainID string, epoch uint64, clientAddr sdk.AccAddress) string {
+	// return strconv.FormatUint(epoch, 16) + clientAddr.String()
 	return chainID + "_" + strconv.FormatUint(epoch, 16) + "_" + clientAddr.String()
 }
 
