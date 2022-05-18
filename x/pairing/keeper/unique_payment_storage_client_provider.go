@@ -79,8 +79,7 @@ func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID s
 func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) string {
 	key := uniquePaymentStorageClientProvider.Index
 	providerAdrLengh := charToAsciiNumber(rune(key[0]))
-	key = key[1:]
-	provider := key[:providerAdrLengh]
+	provider := key[1 : providerAdrLengh+1]
 	return provider
 }
 
