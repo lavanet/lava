@@ -71,9 +71,9 @@ func (k Keeper) GetClientPaymentStorageKey(ctx sdk.Context, chainID string, epoc
 }
 
 func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ClientPaymentStorage, usedCUProviderTotal uint64, err error) {
-	//key is epoch+user
+	//key is chainID+_+epoch+_+user
 	key := k.GetClientPaymentStorageKey(ctx, chainID, epoch, userAddress)
-	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
+	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
 		//tried to use an existing identifier!
 		// #O If you want to check that relayValidateCU is working you will need to do uncomment the next line and comment the return line. You will also need to set doubleSendTest := true in server.go

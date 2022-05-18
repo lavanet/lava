@@ -7,8 +7,8 @@ var _ binary.ByteOrder
 const (
 	// UniquePaymentStorageClientProviderKeyPrefix is the prefix to retrieve all UniquePaymentStorageClientProvider
 	UniquePaymentStorageClientProviderKeyPrefix = "UniquePaymentStorageClientProvider/value/"
-	AdrLengthUser                               = 45
-	AdrLengthProvider                           = 45
+	MaxAdrLengthUser                            = 255
+	MaxAdrLengthProvider                        = 255
 )
 
 // UniquePaymentStorageClientProviderKey returns the store key to retrieve a UniquePaymentStorageClientProvider from the index fields
