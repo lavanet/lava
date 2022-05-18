@@ -29,5 +29,9 @@ func (k Keeper) UserMaxCu(goCtx context.Context, req *types.QueryUserMaxCuReques
 		return nil, status.Error(codes.Unavailable, "stake not found for addr: "+req.Address+", chainID: "+req.ChainID)
 	}
 
-	return &types.QueryUserMaxCuResponse{MaxCu: k.ClientMaxCUProvider(ctx, &existingEntry)}, nil
+	maxCU, err := k.ClientMaxCUProvider(ctx, &existingEntry)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryUserMaxCuResponse{MaxCu: maxCU}, nil
 }

@@ -66,7 +66,6 @@ func (k Keeper) GetAllClientPaymentStorage(ctx sdk.Context) (list []types.Client
 }
 
 func (k Keeper) GetClientPaymentStorageKey(ctx sdk.Context, chainID string, epoch uint64, clientAddr sdk.AccAddress) string {
-	// return strconv.FormatUint(epoch, 16) + clientAddr.String()
 	return chainID + "_" + strconv.FormatUint(epoch, 16) + "_" + clientAddr.String()
 }
 
@@ -90,7 +89,7 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 		// sums up usedCU for this client and this provider over this epoch
 		usedCUProviderTotal, err = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to add user payment. could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
+			return nil, 0, fmt.Errorf("failed to add user payment! could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
 		}
 		// #O uncomment the next line to see that relayValidateCU is working
 		// k.Logger(ctx).Error("!!! usedCU " + strconv.FormatUint(usedCU, 10) + " ::: totalCU for serviser " + strconv.FormatUint(usedCUProviderTotal, 10))
@@ -101,16 +100,13 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 
 func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
 	usedCUProviderTotal = 0
-	for _, paymentInEpoch := range userPaymentStorageInEpoch.UniquePaymentStorageClientProvider {
-		provider := k.GetProviderFromUniquePayment(ctx, *paymentInEpoch)
-		providerAddr, err := sdk.AccAddressFromBech32(provider)
-		if err != nil {
-			return 0, fmt.Errorf("invalid provider address: %s", providerAddress)
+	usedCUMap, err := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
+	if err != nil {
+		if _, ok := usedCUMap.Providers[providerAddress.String()]; ok {
+			return usedCUMap.Providers[providerAddress.String()], nil
 		}
-		if providerAddr.Equals(providerAddress) {
-			usedCUProviderTotal += paymentInEpoch.UsedCU
-		}
+		return 0, fmt.Errorf("provider address: %s not in found! (in usedCUMap)", providerAddress)
 	}
+	return 0, err
 
-	return usedCUProviderTotal, nil
 }
