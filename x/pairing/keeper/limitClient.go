@@ -147,8 +147,7 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, relay *typ
 	}
 	overusedSumTotalPercent := clientOverusedCU.TotalOverusedPercent
 	overusedSumProviderPercent := clientOverusedCU.OverusedPercentProvider
-	providerCount := float64(k.ServicersToPairCount(ctx))
-	if overusedSumTotalPercent > slashLimitPercent || overusedSumProviderPercent > slashLimitPercent/providerCount {
+	if overusedSumTotalPercent > slashLimitPercent || overusedSumProviderPercent > slashLimitPercent {
 		k.SlashUser(ctx, clientEntry.Address)
 		utils.LogLavaEvent(ctx, logger, "lava_slash_user", map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
 			"relay.CuSum":                strconv.FormatUint(relay.CuSum, 10),
@@ -156,11 +155,9 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, relay *typ
 			"overusedSumProviderPercent": strconv.FormatFloat(overusedSumProviderPercent, 'f', 6, 64),
 			"slashLimitPercent":          strconv.FormatFloat(slashLimitPercent, 'f', 6, 64)},
 			"overuse is above the slashLimit - slashing user - not paying provider")
-		// return uint64(0), fmt.Errorf("slashing user - user %s bypassed allowed CU %d by using: %d", clientEntry, allowedCU, totalCUInEpochForUserProvider)
 		return uint64(0), nil
-		// return nil
 	}
-	if overusedSumTotalPercent < unpayLimitPercent && overusedSumProviderPercent < unpayLimitPercent/providerCount {
+	if overusedSumTotalPercent < unpayLimitPercent && overusedSumProviderPercent < unpayLimitPercent {
 		// overuse is under the limit - will allow provider to get payment
 		// ? maybe needs to pay the allowedCU but not pay for overuse ?
 		utils.LogLavaEvent(ctx, logger, "lava_slash_user", map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
