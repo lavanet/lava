@@ -43,9 +43,10 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relay *types.Relay
 	return relay.CuSum, nil
 }
 
-func getMaxCULimitsPercentage() (float64, float64) {
-	// TODO: Get from param
-	slashLimitP, unpayLimitP := 0.2, 0.1 // 20% , 10%
+func (k Keeper) getMaxCULimitsPercentage(ctx sdk.Context) (float64, float64) {
+	unpayLimitP := float64(k.UnpayLimit(ctx)) / float64(k.LimitDivisor(ctx))
+	slashLimitP := float64(k.SlashLimit(ctx)) / float64(k.LimitDivisor(ctx))
+	// current defaults - slashLimitP, unpayLimitP := 0.2, 0.1 // 20% , 10%
 	return slashLimitP, unpayLimitP
 }
 
@@ -148,7 +149,7 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, relay *types.RelayRequest, clientEntry *epochstoragetypes.StakeEntry, clientAddr sdk.AccAddress, totalCUInEpochForUserProvider uint64, allowedCU uint64, allowedCUProvider uint64, providerAddr sdk.AccAddress) (amountToPay uint64, err error) {
 	logger := k.Logger(ctx)
 	chainID := relay.ChainID
-	slashLimitPercent, unpayLimitPercent := getMaxCULimitsPercentage()
+	slashLimitPercent, unpayLimitPercent := k.getMaxCULimitsPercentage(ctx)
 	// clientOverusedCU, err := k.getOverusedCUPercentageAllEpochs(ctx, chainID, sdk.AccAddress(clientEntry.Address), providerAddr)
 	clientOverusedCU, err := k.getOverusedCUPercentageAllEpochs(ctx, chainID, clientAddr, providerAddr)
 	if err != nil {

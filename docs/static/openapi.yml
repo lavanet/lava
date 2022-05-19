@@ -13171,6 +13171,15 @@ paths:
                     format: uint64
                   stakeToMaxCUList:
                     type: string
+                  unpayLimit:
+                    type: string
+                    format: uint64
+                  slashLimit:
+                    type: string
+                    format: uint64
+                  limitDivisor:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -21022,6 +21031,15 @@ definitions:
         format: uint64
       stakeToMaxCUList:
         type: string
+      unpayLimit:
+        type: string
+        format: uint64
+      slashLimit:
+        type: string
+        format: uint64
+      limitDivisor:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
@@ -21364,6 +21382,15 @@ definitions:
             format: uint64
           stakeToMaxCUList:
             type: string
+          unpayLimit:
+            type: string
+            format: uint64
+          slashLimit:
+            type: string
+            format: uint64
+          limitDivisor:
+            type: string
+            format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object

@@ -34,4 +34,7 @@ message Params {
     (gogoproto.customtype) = "StakeToMaxCUList",
     (gogoproto.nullable)   = false
     ];
+  uint64 unpayLimit = 10 [(gogoproto.moretags) = "yaml:\"unpay_limit\""];
+  uint64 slashLimit = 11 [(gogoproto.moretags) = "yaml:\"slash_limit\""];
+  uint64 limitDivisor = 12 [(gogoproto.moretags) = "yaml:\"limit_divisor\""];
 }

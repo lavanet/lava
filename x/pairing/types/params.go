@@ -68,6 +68,19 @@ var (
 	}}
 )
 
+var (
+	KeyUnpayLimit            = []byte("UnpayLimit")
+	DefaultUnpayLimit uint64 = 10 // out of 100
+)
+var (
+	KeySlashLimit            = []byte("SlashLimit")
+	DefaultSlashLimit uint64 = 20 // out of 100
+)
+var (
+	KeyLimitDivisor            = []byte("LimitDivisor")
+	DefaultLimitDivisor uint64 = 100
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -84,6 +97,9 @@ func NewParams(
 	servicersToPairCount uint64,
 	epochBlocksOverlap uint64,
 	stakeToMaxCUList StakeToMaxCUList,
+	unpayLimit uint64,
+	slashLimit uint64,
+	limitDivisor uint64,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -95,6 +111,9 @@ func NewParams(
 		ServicersToPairCount:     servicersToPairCount,
 		EpochBlocksOverlap:       epochBlocksOverlap,
 		StakeToMaxCUList:         stakeToMaxCUList,
+		UnpayLimit:               unpayLimit,
+		SlashLimit:               slashLimit,
+		LimitDivisor:             limitDivisor,
 	}
 }
 
@@ -110,6 +129,9 @@ func DefaultParams() Params {
 		DefaultServicersToPairCount,
 		DefaultEpochBlocksOverlap,
 		DefaultStakeToMaxCUList,
+		DefaultUnpayLimit,
+		DefaultSlashLimit,
+		DefaultLimitDivisor,
 	)
 }
 
