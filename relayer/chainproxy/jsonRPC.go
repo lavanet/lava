@@ -31,9 +31,10 @@ type jsonrpcMessage struct {
 }
 
 type JrpcMessage struct {
-	cp         *JrpcChainProxy
-	serviceApi *spectypes.ServiceApi
-	msg        *jsonrpcMessage
+	cp             *JrpcChainProxy
+	serviceApi     *spectypes.ServiceApi
+	msg            *jsonrpcMessage
+	requestedBlock int64
 }
 
 type JrpcChainProxy struct {
@@ -163,6 +164,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
+}
+
+func (nm *JrpcMessage) RequestedBlock() int64 {
+	return nm.requestedBlock
 }
 
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {

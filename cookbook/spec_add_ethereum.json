@@ -9,7 +9,8 @@
       "apis": [
         {
           "name": "rpc_modules",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -21,7 +22,8 @@
         },
         {
           "name": "net_version",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -33,7 +35,8 @@
         },
         {
           "name": "eth_chainId",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -45,7 +48,8 @@
         },
         {
           "name": "eth_syncing",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -57,7 +61,8 @@
         },
         {
           "name": "eth_protocolVersion",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -69,7 +74,8 @@
         },
         {
           "name": "net_listening",
-          "compute_units": "1",
+          "block_param":"-1",
+					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -81,7 +87,8 @@
         },
         {
           "name": "eth_uninstallFilter",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": false,
           "apiInterfaces": [
             {
@@ -93,7 +100,8 @@
         },
         {
           "name": "eth_accounts",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -105,7 +113,8 @@
         },
         {
           "name": "eth_blockNumber",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -117,7 +126,8 @@
         },
         {
           "name": "eth_subscribe",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -129,7 +139,8 @@
         },
         {
           "name": "eth_unsubscribe",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -141,7 +152,8 @@
         },
         {
           "name": "eth_feeHistory",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -153,7 +165,8 @@
         },
         {
           "name": "eth_maxPriorityFeePerGas",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -165,7 +178,8 @@
         },
         {
           "name": "eth_createAccessList",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -177,7 +191,8 @@
         },
         {
           "name": "eth_getTransactionReceipt",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -189,7 +204,8 @@
         },
         {
           "name": "eth_getUncleByBlockHashAndIndex",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -201,7 +217,8 @@
         },
         {
           "name": "eth_getUncleByBlockNumberAndIndex",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -213,7 +230,8 @@
         },
         {
           "name": "eth_getTransactionByBlockHashAndIndex",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -225,7 +243,8 @@
         },
         {
           "name": "eth_getTransactionByBlockNumberAndIndex",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -237,7 +256,8 @@
         },
         {
           "name": "eth_getUncleCountByBlockHash",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -249,7 +269,8 @@
         },
         {
           "name": "eth_getUncleCountByBlockNumber",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -261,7 +282,8 @@
         },
         {
           "name": "web3_clientVersion",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -273,7 +295,8 @@
         },
         {
           "name": "web3_sha3",
-          "compute_units": "15",
+          "block_param":"-1",
+					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -285,7 +308,8 @@
         },
         {
           "name": "eth_getBlockByNumber",
-          "compute_units": "16",
+          "block_param":"-1",
+					"compute_units": "16",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -297,7 +321,8 @@
         },
         {
           "name": "eth_getStorageAt",
-          "compute_units": "17",
+          "block_param":"-1",
+					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -309,7 +334,8 @@
         },
         {
           "name": "eth_getTransactionByHash",
-          "compute_units": "17",
+          "block_param":"-1",
+					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -321,7 +347,8 @@
         },
         {
           "name": "trace_get",
-          "compute_units": "17",
+          "block_param":"-1",
+					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -333,7 +360,8 @@
         },
         {
           "name": "alchemy_getTokenAllowance",
-          "compute_units": "19",
+          "block_param":"-1",
+					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -345,7 +373,8 @@
         },
         {
           "name": "eth_gasPrice",
-          "compute_units": "19",
+          "block_param":"-1",
+					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -357,7 +386,8 @@
         },
         {
           "name": "eth_getBalance",
-          "compute_units": "19",
+          "block_param":"-1",
+					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -369,7 +399,8 @@
         },
         {
           "name": "eth_getCode",
-          "compute_units": "19",
+          "block_param":"-1",
+					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -381,7 +412,8 @@
         },
         {
           "name": "eth_getFilterChanges",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -393,7 +425,8 @@
         },
         {
           "name": "eth_newBlockFilter",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -405,7 +438,8 @@
         },
         {
           "name": "eth_newFilter",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -417,7 +451,8 @@
         },
         {
           "name": "eth_newPendingTransactionFilter",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -429,7 +464,8 @@
         },
         {
           "name": "eth_getBlockTransactionCountByHash",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -441,7 +477,8 @@
         },
         {
           "name": "eth_getBlockTransactionCountByNumber",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -453,7 +490,8 @@
         },
         {
           "name": "eth_getProof",
-          "compute_units": "21",
+          "block_param":"-1",
+					"compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -465,7 +503,8 @@
         },
         {
           "name": "eth_getBlockByHash",
-          "compute_units": "21",
+          "block_param":"-1",
+					"compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -477,7 +516,8 @@
         },
         {
           "name": "trace_block",
-          "compute_units": "24",
+          "block_param":"-1",
+					"compute_units": "24",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -489,7 +529,8 @@
         },
         {
           "name": "eth_getTransactionCount",
-          "compute_units": "26",
+          "block_param":"-1",
+					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -501,7 +542,8 @@
         },
         {
           "name": "eth_call",
-          "compute_units": "26",
+          "block_param":"-1",
+					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -513,7 +555,8 @@
         },
         {
           "name": "trace_transaction",
-          "compute_units": "26",
+          "block_param":"-1",
+					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -525,7 +568,8 @@
         },
         {
           "name": "eth_getFilterLogs",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -537,7 +581,8 @@
         },
         {
           "name": "eth_getLogs",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -549,7 +594,8 @@
         },
         {
           "name": "trace_call",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -561,7 +607,8 @@
         },
         {
           "name": "trace_callMany",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -573,7 +620,8 @@
         },
         {
           "name": "trace_rawTransaction",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -585,7 +633,8 @@
         },
         {
           "name": "trace_filter",
-          "compute_units": "75",
+          "block_param":"-1",
+					"compute_units": "75",
           "enabled": false,
            "apiInterfaces": [
             {
@@ -597,7 +646,8 @@
         },
         {
           "name": "eth_estimateGas",
-          "compute_units": "87",
+          "block_param":"-1",
+					"compute_units": "87",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -609,7 +659,8 @@
         },
         {
           "name": "eth_sendRawTransaction",
-          "compute_units": "250",
+          "block_param":"-1",
+					"compute_units": "250",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -621,7 +672,8 @@
         },
         {
           "name": "debug_traceTransaction",
-          "compute_units": "309",
+          "block_param":"-1",
+					"compute_units": "309",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -633,7 +685,8 @@
         },
         {
           "name": "trace_replayTransaction",
-          "compute_units": "2983",
+          "block_param":"-1",
+					"compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -645,7 +698,8 @@
         },
         {
           "name": "trace_replayBlockTransactions",
-          "compute_units": "2983",
+          "block_param":"-1",
+					"compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -671,7 +725,8 @@
       "apis": [
         {
           "name": "eth_getBalance",
-          "compute_units": "10",
+          "block_param":"-1",
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -683,7 +738,8 @@
         },
         {
           "name": "eth_codeAt",
-          "compute_units": "20",
+          "block_param":"-1",
+					"compute_units": "20",
           "enabled": false,
           "apiInterfaces": [
             {

@@ -9,9 +9,10 @@ import "gogoproto/gogo.proto";
 message ServiceApi {
   
   string name = 1; 
-  uint64 computeUnits = 2; 
-  bool enabled = 3; 
-  repeated ApiInterface apiInterfaces = 4 [(gogoproto.nullable) = false]; 
+  int64 blockParam = 2;
+  uint64 computeUnits = 3; 
+  bool enabled = 4; 
+  repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
 }
 
 message ApiInterface {

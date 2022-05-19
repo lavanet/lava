@@ -2,6 +2,7 @@ package relayer
 
 import (
 	context "context"
+	"fmt"
 	"log"
 	"time"
 
@@ -131,8 +132,8 @@ func TestClient(
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
+	fmt.Printf("using VRF Public Key: %s\n", pk.String())
 	_ = sk
-	_ = pk
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)

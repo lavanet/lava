@@ -15,6 +15,7 @@ import (
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
+	RequestedBlock() int64
 }
 
 type ChainProxy interface {
@@ -61,13 +62,15 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:    clientSession.Client.Acc,
-			ApiUrl:      url,
-			Data:        []byte(req),
-			SessionId:   uint64(clientSession.SessionId),
-			ChainID:     cp.GetSentry().ChainID,
-			CuSum:       clientSession.CuSum,
-			BlockHeight: cp.GetSentry().GetBlockHeight(),
+			Provider:     clientSession.Client.Acc,
+			ApiUrl:       url,
+			Data:         []byte(req),
+			SessionId:    uint64(clientSession.SessionId),
+			ChainID:      cp.GetSentry().ChainID,
+			CuSum:        clientSession.CuSum,
+			BlockHeight:  cp.GetSentry().GetBlockHeight(),
+			RelayNum:     clientSession.RelayNum,
+			RequestBlock: nodeMsg.RequestedBlock(),
 		}
 
 		sig, err := sigs.SignRelay(privKey, []byte(relayRequest.String()))
@@ -109,6 +112,6 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 
 	clientSession.CuSum += apiCu
 	clientSession.Client.UsedComputeUnits += apiCu
-
+	clientSession.RelayNum += 1
 	return nil
 }

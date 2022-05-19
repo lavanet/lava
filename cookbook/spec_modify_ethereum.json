@@ -1,93 +1,99 @@
 {
-    "title": "Add Specs: Ethereum",
-    "description": "Adding new specification support for relaying Ethereum data on Lava",
-    "specs": [
-      {
-        "chainid": "ETH1",
-        "name": "Ethereum Mainnet",
-        "enabled": true,
-        "apis": [
-            {
-                "name": "eth_getBalance",
-                "compute_units": "20",
-                "enabled": false,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            },
-            {
-                "name": "eth_codeAt",
-                "compute_units": "30",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            },
-            {
-                "name": "eth_blockNumber",
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            }
-        ]
-      },
-      {
-        "chainid": "Ethereum Rinkeby",
-        "name": "Ethereum Rinkeby",
-        "enabled": true,
-        "apis": [
-            {
-                "name": "eth_getBalance",
-                "compute_units": "20",
-                "enabled": false,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            },
-            {
-                "name": "eth_codeAt",
-                "compute_units": "30",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            },
-            {
-                "name": "eth_blockNumber",
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "jsonrpc",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ] 
-            }
-        ]
-      }
-    ],
-    "deposit": "10000000stake"
+  "title": "Add Specs: Ethereum",
+  "description": "Adding new specification support for relaying Ethereum data on Lava",
+  "specs": [
+    {
+      "chainid": "ETH1",
+      "name": "Ethereum Mainnet",
+      "enabled": true,
+      "apis": [
+          {
+              "name": "eth_getBalance",
+              "block_param":"-1",
+							"compute_units": "20",
+              "enabled": false,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          },
+          {
+              "name": "eth_codeAt",
+              "block_param":"-1",
+							"compute_units": "30",
+              "enabled": true,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          },
+          {
+              "name": "eth_blockNumber",
+              "block_param":"-1",
+							"compute_units": "10",
+              "enabled": true,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          }
+      ]
+    },
+    {
+      "chainid": "Ethereum Rinkeby",
+      "name": "Ethereum Rinkeby",
+      "enabled": true,
+      "apis": [
+          {
+              "name": "eth_getBalance",
+              "block_param":"-1",
+							"compute_units": "20",
+              "enabled": false,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          },
+          {
+              "name": "eth_codeAt",
+              "block_param":"-1",
+							"compute_units": "30",
+              "enabled": true,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          },
+          {
+              "name": "eth_blockNumber",
+              "block_param":"-1",
+							"compute_units": "10",
+              "enabled": true,
+              "apiInterfaces": [
+                {
+                  "interface": "jsonrpc",
+                  "type": "get",
+                  "extra_compute_units": "0"
+                }
+              ] 
+          }
+      ]
+    }
+  ],
+  "deposit": "10000000stake"
   }

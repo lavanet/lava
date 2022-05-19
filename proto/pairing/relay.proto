@@ -18,9 +18,17 @@ message RelayRequest {
     bytes sig = 7;
     string provider = 8;
     int64 block_height = 9;
+    uint64 relay_num = 10;
+    int64 request_block = 11;
 }
 
 message RelayReply {
     bytes data = 1;
     bytes sig = 2;
+    bytes query_hash = 3;
+    bytes data_hash = 4;
+    uint32 nonce = 5;
+    bytes sig_hashes = 6;
+    int64 latest_block = 7;
+    bytes finalized_blocks_hashes = 8;
 }

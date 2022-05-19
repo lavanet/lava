@@ -18,10 +18,11 @@ import (
 )
 
 type RestMessage struct {
-	cp         *RestChainProxy
-	serviceApi *spectypes.ServiceApi
-	path       string
-	msg        []byte
+	cp             *RestChainProxy
+	serviceApi     *spectypes.ServiceApi
+	path           string
+	msg            []byte
+	requestedBlock int64
 }
 
 type RestChainProxy struct {
@@ -107,6 +108,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		log.Println(err)
 	}
 	return
+}
+
+func (nm *RestMessage) RequestedBlock() int64 {
+	return nm.requestedBlock
 }
 
 func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {

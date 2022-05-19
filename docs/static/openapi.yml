@@ -21448,6 +21448,24 @@ definitions:
       sig:
         type: string
         format: byte
+      queryHash:
+        type: string
+        format: byte
+      dataHash:
+        type: string
+        format: byte
+      nonce:
+        type: integer
+        format: int64
+      sigHashes:
+        type: string
+        format: byte
+      latestBlock:
+        type: string
+        format: int64
+      finalizedBlocksHashes:
+        type: string
+        format: byte
   lavanet.lava.pairing.RelayRequest:
     type: object
     properties:
@@ -21473,6 +21491,12 @@ definitions:
       provider:
         type: string
       blockHeight:
+        type: string
+        format: int64
+      relayNum:
+        type: string
+        format: uint64
+      requestBlock:
         type: string
         format: int64
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:

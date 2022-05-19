@@ -28,15 +28,17 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type RelayRequest struct {
-	ChainID     string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	ApiId       uint32 `protobuf:"varint,2,opt,name=api_id,json=apiId,proto3" json:"api_id,omitempty"`
-	ApiUrl      string `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
-	SessionId   uint64 `protobuf:"varint,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	CuSum       uint64 `protobuf:"varint,5,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
-	Data        []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	Sig         []byte `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
-	Provider    string `protobuf:"bytes,8,opt,name=provider,proto3" json:"provider,omitempty"`
-	BlockHeight int64  `protobuf:"varint,9,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	ChainID      string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	ApiId        uint32 `protobuf:"varint,2,opt,name=api_id,json=apiId,proto3" json:"api_id,omitempty"`
+	ApiUrl       string `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
+	SessionId    uint64 `protobuf:"varint,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	CuSum        uint64 `protobuf:"varint,5,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
+	Data         []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	Sig          []byte `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
+	Provider     string `protobuf:"bytes,8,opt,name=provider,proto3" json:"provider,omitempty"`
+	BlockHeight  int64  `protobuf:"varint,9,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	RelayNum     uint64 `protobuf:"varint,10,opt,name=relay_num,json=relayNum,proto3" json:"relay_num,omitempty"`
+	RequestBlock int64  `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
 }
 
 func (m *RelayRequest) Reset()         { *m = RelayRequest{} }
@@ -135,9 +137,29 @@ func (m *RelayRequest) GetBlockHeight() int64 {
 	return 0
 }
 
+func (m *RelayRequest) GetRelayNum() uint64 {
+	if m != nil {
+		return m.RelayNum
+	}
+	return 0
+}
+
+func (m *RelayRequest) GetRequestBlock() int64 {
+	if m != nil {
+		return m.RequestBlock
+	}
+	return 0
+}
+
 type RelayReply struct {
-	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Sig  []byte `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
+	Data                  []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Sig                   []byte `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
+	QueryHash             []byte `protobuf:"bytes,3,opt,name=query_hash,json=queryHash,proto3" json:"query_hash,omitempty"`
+	DataHash              []byte `protobuf:"bytes,4,opt,name=data_hash,json=dataHash,proto3" json:"data_hash,omitempty"`
+	Nonce                 uint32 `protobuf:"varint,5,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	SigHashes             []byte `protobuf:"bytes,6,opt,name=sig_hashes,json=sigHashes,proto3" json:"sig_hashes,omitempty"`
+	LatestBlock           int64  `protobuf:"varint,7,opt,name=latest_block,json=latestBlock,proto3" json:"latest_block,omitempty"`
+	FinalizedBlocksHashes []byte `protobuf:"bytes,8,opt,name=finalized_blocks_hashes,json=finalizedBlocksHashes,proto3" json:"finalized_blocks_hashes,omitempty"`
 }
 
 func (m *RelayReply) Reset()         { *m = RelayReply{} }
@@ -187,6 +209,48 @@ func (m *RelayReply) GetSig() []byte {
 	return nil
 }
 
+func (m *RelayReply) GetQueryHash() []byte {
+	if m != nil {
+		return m.QueryHash
+	}
+	return nil
+}
+
+func (m *RelayReply) GetDataHash() []byte {
+	if m != nil {
+		return m.DataHash
+	}
+	return nil
+}
+
+func (m *RelayReply) GetNonce() uint32 {
+	if m != nil {
+		return m.Nonce
+	}
+	return 0
+}
+
+func (m *RelayReply) GetSigHashes() []byte {
+	if m != nil {
+		return m.SigHashes
+	}
+	return nil
+}
+
+func (m *RelayReply) GetLatestBlock() int64 {
+	if m != nil {
+		return m.LatestBlock
+	}
+	return 0
+}
+
+func (m *RelayReply) GetFinalizedBlocksHashes() []byte {
+	if m != nil {
+		return m.FinalizedBlocksHashes
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*RelayRequest)(nil), "lavanet.lava.pairing.RelayRequest")
 	proto.RegisterType((*RelayReply)(nil), "lavanet.lava.pairing.RelayReply")
@@ -195,29 +259,37 @@ func init() {
 func init() { proto.RegisterFile("pairing/relay.proto", fileDescriptor_10cd1bfeb9978acf) }
 
 var fileDescriptor_10cd1bfeb9978acf = []byte{
-	// 350 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x51, 0xc1, 0x4a, 0xeb, 0x40,
-	0x14, 0xcd, 0xb4, 0x4d, 0xd3, 0xde, 0xd7, 0x07, 0x8f, 0x79, 0xef, 0xe1, 0x50, 0x30, 0xc4, 0x6c,
-	0xcc, 0x2a, 0x81, 0xfa, 0x05, 0x8a, 0x0b, 0xbb, 0x12, 0x22, 0x6e, 0xba, 0x29, 0xd3, 0x64, 0x48,
-	0x06, 0xd3, 0x64, 0x9c, 0x64, 0x8a, 0xf9, 0x0b, 0x3f, 0xcb, 0x65, 0x97, 0x2e, 0xa5, 0xfd, 0x04,
-	0x7f, 0x40, 0x66, 0x48, 0x8b, 0xa0, 0xb8, 0xba, 0xe7, 0x9e, 0x39, 0xe7, 0x1e, 0xe6, 0x5e, 0xf8,
-	0x2b, 0x28, 0x97, 0xbc, 0xcc, 0x22, 0xc9, 0x0a, 0xda, 0x86, 0x42, 0x56, 0x4d, 0x85, 0xff, 0x15,
-	0x74, 0x43, 0x4b, 0xd6, 0x84, 0xba, 0x86, 0x9d, 0xc2, 0x7f, 0x47, 0x30, 0x89, 0xb5, 0x2a, 0x66,
-	0x8f, 0x8a, 0xd5, 0x0d, 0x26, 0xe0, 0x24, 0x39, 0xe5, 0xe5, 0xfc, 0x9a, 0x20, 0x0f, 0x05, 0xe3,
-	0xf8, 0xd0, 0xe2, 0xff, 0x30, 0xa4, 0x82, 0x2f, 0x79, 0x4a, 0x7a, 0x1e, 0x0a, 0x7e, 0xc7, 0x36,
-	0x15, 0x7c, 0x9e, 0xe2, 0x13, 0x70, 0x34, 0xad, 0x64, 0x41, 0xfa, 0xc6, 0xa0, 0x55, 0xf7, 0xb2,
-	0xc0, 0xa7, 0x00, 0x35, 0xab, 0x6b, 0x5e, 0x95, 0xda, 0x33, 0xf0, 0x50, 0x30, 0x88, 0xc7, 0x1d,
-	0x33, 0x4f, 0xf5, 0xb8, 0x44, 0x2d, 0x6b, 0xb5, 0x26, 0xb6, 0x79, 0xb2, 0x13, 0x75, 0xa7, 0xd6,
-	0x18, 0xc3, 0x20, 0xa5, 0x0d, 0x25, 0x43, 0x0f, 0x05, 0x93, 0xd8, 0x60, 0xfc, 0x07, 0xfa, 0x35,
-	0xcf, 0x88, 0x63, 0x28, 0x0d, 0xf1, 0x14, 0x46, 0x42, 0x56, 0x1b, 0x9e, 0x32, 0x49, 0x46, 0x26,
-	0xf5, 0xd8, 0xe3, 0x33, 0x98, 0xac, 0x8a, 0x2a, 0x79, 0x58, 0xe6, 0x8c, 0x67, 0x79, 0x43, 0xc6,
-	0x1e, 0x0a, 0xfa, 0xf1, 0x2f, 0xc3, 0xdd, 0x18, 0xca, 0x9f, 0x01, 0x74, 0x9f, 0x16, 0x45, 0x7b,
-	0x8c, 0x44, 0x5f, 0x23, 0x7b, 0xc7, 0xc8, 0xd9, 0x02, 0x1c, 0xe3, 0x61, 0x12, 0xdf, 0x82, 0x6d,
-	0x20, 0xf6, 0xc3, 0xef, 0x96, 0x1a, 0x7e, 0x5e, 0xe8, 0xd4, 0xfb, 0x51, 0x23, 0x8a, 0xd6, 0xb7,
-	0xae, 0x2e, 0x5f, 0x76, 0x2e, 0xda, 0xee, 0x5c, 0xf4, 0xb6, 0x73, 0xd1, 0xf3, 0xde, 0xb5, 0xb6,
-	0x7b, 0xd7, 0x7a, 0xdd, 0xbb, 0xd6, 0xe2, 0x3c, 0xe3, 0x4d, 0xae, 0x56, 0x61, 0x52, 0xad, 0xa3,
-	0x6e, 0x8e, 0xa9, 0xd1, 0x53, 0x74, 0x38, 0x72, 0xd3, 0x0a, 0x56, 0xaf, 0x86, 0xe6, 0xca, 0x17,
-	0x1f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xf9, 0x05, 0x56, 0x46, 0xfc, 0x01, 0x00, 0x00,
+	// 478 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xcd, 0x6e, 0xd4, 0x30,
+	0x10, 0xc7, 0xd7, 0xdd, 0xcf, 0x4c, 0x77, 0x25, 0x64, 0x5a, 0xd5, 0x2a, 0x6a, 0x14, 0x96, 0x03,
+	0x39, 0x65, 0x25, 0x90, 0xb8, 0x53, 0x71, 0xd8, 0xbd, 0x80, 0x14, 0xc4, 0xa5, 0x97, 0xc8, 0x9b,
+	0x98, 0xc4, 0x22, 0x5f, 0xb5, 0xe3, 0x8a, 0xf0, 0x14, 0xbc, 0x0c, 0xef, 0xc0, 0xb1, 0x47, 0x8e,
+	0x68, 0xf7, 0x3d, 0x10, 0xf2, 0x24, 0xbb, 0x45, 0x02, 0x71, 0xb2, 0xfd, 0x9b, 0x99, 0xbf, 0x67,
+	0xfe, 0x1a, 0x78, 0x5c, 0x73, 0xa9, 0x64, 0x99, 0xae, 0x94, 0xc8, 0x79, 0x1b, 0xd4, 0xaa, 0x6a,
+	0x2a, 0x7a, 0x96, 0xf3, 0x3b, 0x5e, 0x8a, 0x26, 0xb0, 0x67, 0xd0, 0x67, 0x2c, 0xbf, 0x9d, 0xc0,
+	0x3c, 0xb4, 0x59, 0xa1, 0xb8, 0x35, 0x42, 0x37, 0x94, 0xc1, 0x34, 0xce, 0xb8, 0x2c, 0x37, 0x6f,
+	0x18, 0xf1, 0x88, 0xef, 0x84, 0x87, 0x27, 0x3d, 0x87, 0x09, 0xaf, 0x65, 0x24, 0x13, 0x76, 0xe2,
+	0x11, 0x7f, 0x11, 0x8e, 0x79, 0x2d, 0x37, 0x09, 0xbd, 0x80, 0xa9, 0xc5, 0x46, 0xe5, 0x6c, 0x88,
+	0x05, 0x36, 0xeb, 0x83, 0xca, 0xe9, 0x15, 0x80, 0x16, 0x5a, 0xcb, 0xaa, 0xb4, 0x35, 0x23, 0x8f,
+	0xf8, 0xa3, 0xd0, 0xe9, 0xc9, 0x26, 0xb1, 0x72, 0xb1, 0x89, 0xb4, 0x29, 0xd8, 0x18, 0x43, 0xe3,
+	0xd8, 0xbc, 0x37, 0x05, 0xa5, 0x30, 0x4a, 0x78, 0xc3, 0xd9, 0xc4, 0x23, 0xfe, 0x3c, 0xc4, 0x3b,
+	0x7d, 0x04, 0x43, 0x2d, 0x53, 0x36, 0x45, 0x64, 0xaf, 0xf4, 0x12, 0x66, 0xb5, 0xaa, 0xee, 0x64,
+	0x22, 0x14, 0x9b, 0xe1, 0xaf, 0xc7, 0x37, 0x7d, 0x0a, 0xf3, 0x6d, 0x5e, 0xc5, 0x9f, 0xa2, 0x4c,
+	0xc8, 0x34, 0x6b, 0x98, 0xe3, 0x11, 0x7f, 0x18, 0x9e, 0x22, 0x5b, 0x23, 0xa2, 0x4f, 0xc0, 0x41,
+	0x6b, 0xa2, 0xd2, 0x14, 0x0c, 0xf0, 0xfb, 0x19, 0x82, 0xb7, 0xa6, 0xa0, 0xcf, 0x60, 0xa1, 0x3a,
+	0x33, 0x22, 0xac, 0x61, 0xa7, 0x28, 0x30, 0xef, 0xe1, 0xb5, 0x65, 0xcb, 0x5f, 0x04, 0xa0, 0xf7,
+	0xad, 0xce, 0xdb, 0x63, 0xd7, 0xe4, 0xef, 0xae, 0x4f, 0x1e, 0xba, 0xbe, 0x02, 0xb8, 0x35, 0x42,
+	0xb5, 0x51, 0xc6, 0x75, 0x86, 0x6e, 0xcd, 0x43, 0x07, 0xc9, 0x9a, 0xeb, 0xcc, 0x76, 0x65, 0x0b,
+	0xbb, 0xe8, 0x08, 0xa3, 0x33, 0x0b, 0x30, 0x78, 0x06, 0xe3, 0xb2, 0x2a, 0x63, 0x81, 0x6e, 0x2d,
+	0xc2, 0xee, 0x81, 0x1e, 0xcb, 0x14, 0x2b, 0x84, 0xee, 0x3d, 0x73, 0xb4, 0x4c, 0xd7, 0x08, 0xac,
+	0x15, 0x39, 0x6f, 0x1e, 0x26, 0x99, 0x76, 0x56, 0x74, 0x0c, 0x07, 0xa1, 0xaf, 0xe0, 0xe2, 0xa3,
+	0x2c, 0x79, 0x2e, 0xbf, 0x88, 0xa4, 0xcb, 0xd2, 0x07, 0xb9, 0x19, 0xca, 0x9d, 0x1f, 0xc3, 0x58,
+	0xa0, 0x3b, 0xe9, 0x17, 0x37, 0x30, 0xc5, 0xf9, 0x85, 0xa2, 0xef, 0x60, 0x8c, 0x57, 0xba, 0x0c,
+	0xfe, 0xb5, 0x63, 0xc1, 0x9f, 0xfb, 0x75, 0xe9, 0xfd, 0x37, 0xa7, 0xce, 0xdb, 0xe5, 0xe0, 0xfa,
+	0xf5, 0xf7, 0x9d, 0x4b, 0xee, 0x77, 0x2e, 0xf9, 0xb9, 0x73, 0xc9, 0xd7, 0xbd, 0x3b, 0xb8, 0xdf,
+	0xbb, 0x83, 0x1f, 0x7b, 0x77, 0x70, 0xf3, 0x3c, 0x95, 0x4d, 0x66, 0xb6, 0x41, 0x5c, 0x15, 0xab,
+	0x5e, 0x07, 0xcf, 0xd5, 0xe7, 0xd5, 0x61, 0xe7, 0x9b, 0xb6, 0x16, 0x7a, 0x3b, 0xc1, 0xa5, 0x7f,
+	0xf9, 0x3b, 0x00, 0x00, 0xff, 0xff, 0xe7, 0xe3, 0x4b, 0x2a, 0x0b, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -320,6 +392,16 @@ func (m *RelayRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.RequestBlock != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.RequestBlock))
+		i--
+		dAtA[i] = 0x58
+	}
+	if m.RelayNum != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.RelayNum))
+		i--
+		dAtA[i] = 0x50
+	}
 	if m.BlockHeight != 0 {
 		i = encodeVarintRelay(dAtA, i, uint64(m.BlockHeight))
 		i--
@@ -398,6 +480,44 @@ func (m *RelayReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.FinalizedBlocksHashes) > 0 {
+		i -= len(m.FinalizedBlocksHashes)
+		copy(dAtA[i:], m.FinalizedBlocksHashes)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.FinalizedBlocksHashes)))
+		i--
+		dAtA[i] = 0x42
+	}
+	if m.LatestBlock != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.LatestBlock))
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.SigHashes) > 0 {
+		i -= len(m.SigHashes)
+		copy(dAtA[i:], m.SigHashes)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.SigHashes)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.Nonce != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.Nonce))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.DataHash) > 0 {
+		i -= len(m.DataHash)
+		copy(dAtA[i:], m.DataHash)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.DataHash)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.QueryHash) > 0 {
+		i -= len(m.QueryHash)
+		copy(dAtA[i:], m.QueryHash)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.QueryHash)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.Sig) > 0 {
 		i -= len(m.Sig)
 		copy(dAtA[i:], m.Sig)
@@ -464,6 +584,12 @@ func (m *RelayRequest) Size() (n int) {
 	if m.BlockHeight != 0 {
 		n += 1 + sovRelay(uint64(m.BlockHeight))
 	}
+	if m.RelayNum != 0 {
+		n += 1 + sovRelay(uint64(m.RelayNum))
+	}
+	if m.RequestBlock != 0 {
+		n += 1 + sovRelay(uint64(m.RequestBlock))
+	}
 	return n
 }
 
@@ -478,6 +604,28 @@ func (m *RelayReply) Size() (n int) {
 		n += 1 + l + sovRelay(uint64(l))
 	}
 	l = len(m.Sig)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.QueryHash)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.DataHash)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.Nonce != 0 {
+		n += 1 + sovRelay(uint64(m.Nonce))
+	}
+	l = len(m.SigHashes)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.LatestBlock != 0 {
+		n += 1 + sovRelay(uint64(m.LatestBlock))
+	}
+	l = len(m.FinalizedBlocksHashes)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
@@ -759,6 +907,44 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RelayNum", wireType)
+			}
+			m.RelayNum = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RelayNum |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestBlock", wireType)
+			}
+			m.RequestBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RequestBlock |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRelay(dAtA[iNdEx:])
@@ -875,6 +1061,180 @@ func (m *RelayReply) Unmarshal(dAtA []byte) error {
 			m.Sig = append(m.Sig[:0], dAtA[iNdEx:postIndex]...)
 			if m.Sig == nil {
 				m.Sig = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.QueryHash = append(m.QueryHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.QueryHash == nil {
+				m.QueryHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DataHash = append(m.DataHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.DataHash == nil {
+				m.DataHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nonce", wireType)
+			}
+			m.Nonce = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Nonce |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SigHashes", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SigHashes = append(m.SigHashes[:0], dAtA[iNdEx:postIndex]...)
+			if m.SigHashes == nil {
+				m.SigHashes = []byte{}
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LatestBlock", wireType)
+			}
+			m.LatestBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LatestBlock |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FinalizedBlocksHashes", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FinalizedBlocksHashes = append(m.FinalizedBlocksHashes[:0], dAtA[iNdEx:postIndex]...)
+			if m.FinalizedBlocksHashes == nil {
+				m.FinalizedBlocksHashes = []byte{}
 			}
 			iNdEx = postIndex
 		default:

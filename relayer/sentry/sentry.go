@@ -31,6 +31,7 @@ type ClientSession struct {
 	SessionId int64
 	Client    *RelayerClientWrapper
 	Lock      sync.Mutex
+	RelayNum  uint64
 }
 
 type RelayerClientWrapper struct {
