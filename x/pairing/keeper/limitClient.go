@@ -71,12 +71,12 @@ func (k Keeper) GetAllowedCUClientEpoch(ctx sdk.Context, chainID string, epoch u
 	// get current stake of client for this epoch
 	currentStakeEntry, stakeErr := k.epochStorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epoch)
 	if stakeErr != nil {
-		panic(fmt.Sprintf("Got payment but not stake - epoch %d for client %s, chainID %s ", epoch, clientAddr, chainID))
+		return 0, stakeErr
 	}
 	// get allowed of client for this epoch
 	allowedCU, allowedCUErr := k.GetAllowedCU(ctx, currentStakeEntry)
 	if allowedCUErr != nil {
-		panic(fmt.Sprintf("Could not find allowedCU for client %s , epoch %d, stakeEntry %s", clientAddr, epoch, currentStakeEntry))
+		return 0, allowedCUErr
 	}
 	return
 }
@@ -94,6 +94,9 @@ func maxF(x float64, y float64) float64 {
 	return y
 }
 func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedCUMap types.ClientUsedCU, allowedCU uint64, providerAddr sdk.AccAddress) (float64, float64) {
+	if allowedCU <= 0 {
+		panic(fmt.Sprintf("lava_GetOverusedFromUsedCU was called with %d allowedCU", allowedCU))
+	}
 	overusedProviderPercent := float64(0.0)
 	totalOverusedPercent := float64(clientProvidersEpochUsedCUMap.TotalOverused / allowedCU)
 	if usedCU, exist := clientProvidersEpochUsedCUMap.Providers[providerAddr.String()]; exist {
@@ -118,13 +121,13 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 			continue
 		}
 		clientProvidersEpochUsedCUMap, errPaymentStorage := k.GetEpochClientProviderUsedCUMap(ctx, clientPaymentStorage)
-		if errPaymentStorage != nil {
-			fmt.Errorf("could not GetEpochClientProviderUsedCUMap this epoch %d, chainID %s for client %s clientPaymentStorage.Index %s", epoch, chainID, clientAddr, clientPaymentStorage.Index)
+		if errPaymentStorage != nil || clientProvidersEpochUsedCUMap.TotalOverused == 0 {
+			// no payments this epoch - continue
 			continue
 		}
 		allowedCU, allowedCUErr := k.GetAllowedCUClientEpoch(ctx, chainID, epoch, clientAddr)
-		if allowedCUErr != nil {
-			fmt.Errorf("could not find allowedCU this epoch %d, chainID %s for client %s", epoch, chainID, clientAddr)
+		if allowedCUErr != nil || allowedCU == 0 {
+			// user has no stake this epoch - continue
 			continue
 		}
 		totalOverusedPercent, providerOverusedPercent := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)

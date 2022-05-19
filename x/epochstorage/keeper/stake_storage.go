@@ -395,8 +395,7 @@ func (k Keeper) GetStakeStorageEpoch(ctx sdk.Context, block uint64, storageType 
 func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
 	stakeStorage, found := k.GetStakeStorageEpoch(ctx, epoch, types.ClientKey, chainID)
 	if !found {
-		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s ", epoch, chainID)
-
+		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s client %s", epoch, chainID, selectedClient.String())
 	}
 	clientStakeEntry, found, _ := k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, selectedClient)
 	if !found {
