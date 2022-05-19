@@ -1,8 +1,8 @@
 package types
 
 type ClientUsedCU struct {
-	TotalOverused uint64
-	Providers     map[string]uint64
+	TotalUsed uint64
+	Providers map[string]uint64
 }
 
 type ClientProviderOverusedCUPercent struct {
