@@ -191,6 +191,7 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, relay *typ
 		"overuse is above the unpayLimit - paying provider only ")
 
 	// #o please advise if this is the correct way to get the epoch
+	// #o and did you mean the payment's epoch or the latest epoch # please advise on correct way to get latestEpcoh (future - lctx.LatestEpoch)
 	epoch := k.epochStorageKeeper.GetEpochBlocks(ctx, uint64(relay.BlockHeight))
 	clientUsedEpoch, usedCUerr := k.GetEpochClientUsedCUMap(ctx, chainID, epoch, clientAddr)
 	if usedCUerr != nil || clientUsedEpoch.TotalUsed == 0 {
