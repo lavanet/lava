@@ -12819,6 +12819,8 @@ paths:
                       format: uint64
                     chain:
                       type: string
+                    vrfpk:
+                      type: string
               output:
                 type: string
         default:
@@ -13105,6 +13107,8 @@ paths:
                       format: uint64
                     chain:
                       type: string
+                    vrfpk:
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -13245,6 +13249,8 @@ paths:
                       type: string
                       format: uint64
                     chain:
+                      type: string
+                    vrfpk:
                       type: string
               output:
                 type: string
@@ -20937,6 +20943,8 @@ definitions:
         format: uint64
       chain:
         type: string
+      vrfpk:
+        type: string
   lavanet.lava.pairing.ClientPaymentStorage:
     type: object
     properties:
@@ -21218,6 +21226,8 @@ definitions:
               format: uint64
             chain:
               type: string
+            vrfpk:
+              type: string
       output:
         type: string
   lavanet.lava.pairing.QueryGetClientPaymentStorageResponse:
@@ -21320,6 +21330,8 @@ definitions:
               format: uint64
             chain:
               type: string
+            vrfpk:
+              type: string
   lavanet.lava.pairing.QueryGetUniquePaymentStorageClientProviderResponse:
     type: object
     properties:
@@ -21409,6 +21421,8 @@ definitions:
               type: string
               format: uint64
             chain:
+              type: string
+            vrfpk:
               type: string
       output:
         type: string

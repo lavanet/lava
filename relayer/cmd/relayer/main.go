@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
 	"github.com/spf13/cobra"
@@ -107,8 +106,9 @@ func main() {
 			apiInterface := args[1]
 
 			ctx := context.Background()
-			relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
-
+			if false {
+				relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
+			}
 			return nil
 		},
 	}

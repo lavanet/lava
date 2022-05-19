@@ -25,6 +25,7 @@ lavad tx pairing stake-client "COS1" 200000stake 1 -y --from user2
 echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
+echo "---------------Setup Providers------------------"
 killall screen
 screen -d -m -S providers zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
 screen -S providers -X screen -t win1 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2"
@@ -37,6 +38,7 @@ screen -S providers -X screen -t win5 -X zsh -c "source ~/.zshrc; cd ~/go/lava; 
 screen -S providers -X screen -t win6 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2241 http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/rpc/ COS1 tendermintrpc --from servicer1"
 screen -S providers -X screen -t win7 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/rpc/ COS1 tendermintrpc --from servicer2"
 screen -S providers -X screen -t win8 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/rpc/ COS1 tendermintrpc --from servicer3"
+echo "---------------Setup Gateways------------------"
 screen -d -m -S portals zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3334 COS1 rest --from user2"
 screen -S portals -X screen -t win11 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3335 COS1 tendermintrpc --from user2"

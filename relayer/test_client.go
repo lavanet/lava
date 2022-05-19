@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -126,6 +127,12 @@ func TestClient(
 		time.Sleep(1 * time.Second)
 	}
 
+	sk, pk, err := utils.GetOrCreateVRFKey(clientCtx)
+	if err != nil {
+		log.Fatalln("error: GetOrCreateVRFKey", err)
+	}
+	_ = sk
+	_ = pk
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)
