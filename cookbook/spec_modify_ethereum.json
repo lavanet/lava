@@ -9,7 +9,10 @@
       "apis": [
           {
               "name": "eth_getBalance",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "20",
               "enabled": false,
               "apiInterfaces": [
@@ -22,7 +25,10 @@
           },
           {
               "name": "eth_codeAt",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "30",
               "enabled": true,
               "apiInterfaces": [
@@ -35,7 +41,10 @@
           },
           {
               "name": "eth_blockNumber",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "10",
               "enabled": true,
               "apiInterfaces": [
@@ -55,7 +64,10 @@
       "apis": [
           {
               "name": "eth_getBalance",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "20",
               "enabled": false,
               "apiInterfaces": [
@@ -68,7 +80,10 @@
           },
           {
               "name": "eth_codeAt",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "30",
               "enabled": true,
               "apiInterfaces": [
@@ -81,7 +96,10 @@
           },
           {
               "name": "eth_blockNumber",
-              "block_param":"-1",
+              "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 							"compute_units": "10",
               "enabled": true,
               "apiInterfaces": [

@@ -9,7 +9,10 @@
       "apis": [
         {
           "name": "rpc_modules",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -22,7 +25,10 @@
         },
         {
           "name": "net_version",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -35,7 +41,10 @@
         },
         {
           "name": "eth_chainId",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -48,7 +57,10 @@
         },
         {
           "name": "eth_syncing",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -61,7 +73,10 @@
         },
         {
           "name": "eth_protocolVersion",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -74,7 +89,10 @@
         },
         {
           "name": "net_listening",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
@@ -87,7 +105,10 @@
         },
         {
           "name": "eth_uninstallFilter",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": false,
           "apiInterfaces": [
@@ -100,7 +121,10 @@
         },
         {
           "name": "eth_accounts",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -113,7 +137,10 @@
         },
         {
           "name": "eth_blockNumber",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -126,7 +153,10 @@
         },
         {
           "name": "eth_subscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": false,
            "apiInterfaces": [
@@ -139,7 +169,10 @@
         },
         {
           "name": "eth_unsubscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": false,
            "apiInterfaces": [
@@ -152,7 +185,10 @@
         },
         {
           "name": "eth_feeHistory",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -165,7 +201,10 @@
         },
         {
           "name": "eth_maxPriorityFeePerGas",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -178,7 +217,10 @@
         },
         {
           "name": "eth_createAccessList",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -191,7 +233,10 @@
         },
         {
           "name": "eth_getTransactionReceipt",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -204,7 +249,10 @@
         },
         {
           "name": "eth_getUncleByBlockHashAndIndex",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -217,7 +265,10 @@
         },
         {
           "name": "eth_getUncleByBlockNumberAndIndex",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -230,7 +281,10 @@
         },
         {
           "name": "eth_getTransactionByBlockHashAndIndex",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -243,7 +297,10 @@
         },
         {
           "name": "eth_getTransactionByBlockNumberAndIndex",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -256,7 +313,10 @@
         },
         {
           "name": "eth_getUncleCountByBlockHash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -269,7 +329,10 @@
         },
         {
           "name": "eth_getUncleCountByBlockNumber",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -282,7 +345,10 @@
         },
         {
           "name": "web3_clientVersion",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -295,7 +361,10 @@
         },
         {
           "name": "web3_sha3",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
@@ -308,7 +377,10 @@
         },
         {
           "name": "eth_getBlockByNumber",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "16",
           "enabled": true,
           "apiInterfaces": [
@@ -321,7 +393,10 @@
         },
         {
           "name": "eth_getStorageAt",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
@@ -334,7 +409,10 @@
         },
         {
           "name": "eth_getTransactionByHash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
@@ -347,7 +425,10 @@
         },
         {
           "name": "trace_get",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
@@ -360,7 +441,10 @@
         },
         {
           "name": "alchemy_getTokenAllowance",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
@@ -373,7 +457,10 @@
         },
         {
           "name": "eth_gasPrice",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
@@ -386,7 +473,10 @@
         },
         {
           "name": "eth_getBalance",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
@@ -399,7 +489,10 @@
         },
         {
           "name": "eth_getCode",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
@@ -412,7 +505,10 @@
         },
         {
           "name": "eth_getFilterChanges",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
@@ -425,7 +521,10 @@
         },
         {
           "name": "eth_newBlockFilter",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
@@ -438,7 +537,10 @@
         },
         {
           "name": "eth_newFilter",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
@@ -451,7 +553,10 @@
         },
         {
           "name": "eth_newPendingTransactionFilter",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": false,
            "apiInterfaces": [
@@ -464,7 +569,10 @@
         },
         {
           "name": "eth_getBlockTransactionCountByHash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
@@ -477,7 +585,10 @@
         },
         {
           "name": "eth_getBlockTransactionCountByNumber",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
@@ -490,7 +601,10 @@
         },
         {
           "name": "eth_getProof",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
@@ -503,7 +617,10 @@
         },
         {
           "name": "eth_getBlockByHash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
@@ -516,7 +633,10 @@
         },
         {
           "name": "trace_block",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "24",
           "enabled": true,
           "apiInterfaces": [
@@ -529,7 +649,10 @@
         },
         {
           "name": "eth_getTransactionCount",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
@@ -542,7 +665,10 @@
         },
         {
           "name": "eth_call",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
@@ -555,7 +681,10 @@
         },
         {
           "name": "trace_transaction",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
@@ -568,7 +697,10 @@
         },
         {
           "name": "eth_getFilterLogs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": false,
            "apiInterfaces": [
@@ -581,7 +713,10 @@
         },
         {
           "name": "eth_getLogs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
@@ -594,7 +729,10 @@
         },
         {
           "name": "trace_call",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
@@ -607,7 +745,10 @@
         },
         {
           "name": "trace_callMany",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
@@ -620,7 +761,10 @@
         },
         {
           "name": "trace_rawTransaction",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
@@ -633,7 +777,10 @@
         },
         {
           "name": "trace_filter",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "75",
           "enabled": false,
            "apiInterfaces": [
@@ -646,7 +793,10 @@
         },
         {
           "name": "eth_estimateGas",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "87",
           "enabled": true,
           "apiInterfaces": [
@@ -659,7 +809,10 @@
         },
         {
           "name": "eth_sendRawTransaction",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "250",
           "enabled": true,
           "apiInterfaces": [
@@ -672,7 +825,10 @@
         },
         {
           "name": "debug_traceTransaction",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "309",
           "enabled": true,
           "apiInterfaces": [
@@ -685,7 +841,10 @@
         },
         {
           "name": "trace_replayTransaction",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
@@ -698,7 +857,10 @@
         },
         {
           "name": "trace_replayBlockTransactions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
@@ -725,7 +887,10 @@
       "apis": [
         {
           "name": "eth_getBalance",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
@@ -738,7 +903,10 @@
         },
         {
           "name": "eth_codeAt",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "20",
           "enabled": false,
           "apiInterfaces": [

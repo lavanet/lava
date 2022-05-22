@@ -18,6 +18,9 @@ const (
 
 func VerifyVRF(vrfpk string) error {
 	//everything is okay
+	if vrfpk == "" {
+		return fmt.Errorf("can't stake with an empty vrf pk bech32 string")
+	}
 	return nil
 }
 

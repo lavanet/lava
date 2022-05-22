@@ -7,9 +7,8 @@ option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 
 message ServiceApi {
-  
   string name = 1; 
-  int64 blockParam = 2;
+  BlockParser blockParsing = 2;
   uint64 computeUnits = 3; 
   bool enabled = 4; 
   repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
@@ -19,4 +18,15 @@ message ApiInterface {
   string interface = 1;
   string type = 2;
   uint64 extraComputeUnits = 3; 
+}
+
+message BlockParser {
+  repeated string parserArg = 1;
+  PARSER_FUNC parserFunc = 2;
+}
+
+enum PARSER_FUNC{
+  EMPTY = 0;
+  PARSE_PARAM_BY_ARG = 1;
+  PARSE_PARAM_CANONICAL = 2;
 }

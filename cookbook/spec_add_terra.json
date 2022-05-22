@@ -7,7 +7,10 @@
       "enabled": true,
       "apis": [{
           "name": "abci_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -18,7 +21,10 @@
         },
         {
           "name": "abci_query",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -29,7 +35,10 @@
         },
         {
           "name": "block",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -40,7 +49,10 @@
         },
         {
           "name": "block_by_hash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -51,7 +63,10 @@
         },
         {
           "name": "block_results",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -62,7 +77,10 @@
         },
         {
           "name": "block_search",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -73,7 +91,10 @@
         },
         {
           "name": "blockchain",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -84,7 +105,10 @@
         },
         {
           "name": "broadcast_evidence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -95,7 +119,10 @@
         },
         {
           "name": "broadcast_tx_async",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -106,7 +133,10 @@
         },
         {
           "name": "broadcast_tx_commit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -117,7 +147,10 @@
         },
         {
           "name": "broadcast_tx_sync",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -128,7 +161,10 @@
         },
         {
           "name": "check_tx",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -139,7 +175,10 @@
         },
         {
           "name": "commit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -150,7 +189,10 @@
         },
         {
           "name": "consensus_params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -161,7 +203,10 @@
         },
         {
           "name": "consensus_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -172,7 +217,10 @@
         },
         {
           "name": "dump_consensus_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -183,7 +231,10 @@
         },
         {
           "name": "genesis",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -194,7 +245,10 @@
         },
         {
           "name": "genesis_chunked",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -205,7 +259,10 @@
         },
         {
           "name": "health",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -216,7 +273,10 @@
         },
         {
           "name": "net_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -227,7 +287,10 @@
         },
         {
           "name": "num_unconfirmed_txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -238,7 +301,10 @@
         },
         {
           "name": "status",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -249,7 +315,10 @@
         },
         {
           "name": "subscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -260,7 +329,10 @@
         },
         {
           "name": "tx",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -271,7 +343,10 @@
         },
         {
           "name": "tx_search",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -282,7 +357,10 @@
         },
         {
           "name": "unconfirmed_txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -293,7 +371,10 @@
         },
         {
           "name": "unsubscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -304,7 +385,10 @@
         },
         {
           "name": "unsubscribe_all",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -315,7 +399,10 @@
         },
         {
           "name": "validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -326,7 +413,10 @@
         },
         {
           "name": "/node_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -337,7 +427,10 @@
         },
         {
           "name": "/syncing",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -348,7 +441,10 @@
         },
         {
           "name": "/blocks/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -359,7 +455,10 @@
         },
         {
           "name": "/blocks/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -370,7 +469,10 @@
         },
         {
           "name": "/validatorsets/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -381,7 +483,10 @@
         },
         {
           "name": "/validatorsets/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -392,7 +497,10 @@
         },
         {
           "name": "/txs/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -403,7 +511,10 @@
         },
         {
           "name": "/txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -414,7 +525,10 @@
         },
         {
           "name": "/txs/encode",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -425,7 +539,10 @@
         },
         {
           "name": "/txs/decode",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -436,7 +553,10 @@
         },
         {
           "name": "/txs/estimate_fee",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -447,7 +567,10 @@
         },
         {
           "name": "/bank/balances/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -458,7 +581,10 @@
         },
         {
           "name": "/bank/accounts/{address}/transfers",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -469,7 +595,10 @@
         },
         {
           "name": "/bank/total",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -480,7 +609,10 @@
         },
         {
           "name": "/bank/total/{denomination}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -491,7 +623,10 @@
         },
         {
           "name": "/auth/accounts/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -502,7 +637,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -513,7 +651,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -524,7 +665,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -535,7 +679,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -546,7 +693,10 @@
         },
         {
           "name": "/staking/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -557,7 +707,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -568,7 +721,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -579,7 +735,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -590,7 +749,10 @@
         },
         {
           "name": "/staking/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -601,7 +763,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -612,7 +777,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -623,7 +791,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -634,7 +805,10 @@
         },
         {
           "name": "/staking/pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -645,7 +819,10 @@
         },
         {
           "name": "/staking/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -656,7 +833,10 @@
         },
         {
           "name": "/slashing/signing_infos",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -667,7 +847,10 @@
         },
         {
           "name": "/slashing/validators/{validatorAddr}/unjail",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -678,7 +861,10 @@
         },
         {
           "name": "/slashing/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -689,7 +875,10 @@
         },
         {
           "name": "/gov/proposals",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -700,7 +889,10 @@
         },
         {
           "name": "/gov/proposals/param_change",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -711,7 +903,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -722,7 +917,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/proposer",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -733,7 +931,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/deposits",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -744,7 +945,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -755,7 +959,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -766,7 +973,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/votes/{voter}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -777,7 +987,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/tally",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -788,7 +1001,10 @@
         },
         {
           "name": "/gov/parameters/deposit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -799,7 +1015,10 @@
         },
         {
           "name": "/gov/parameters/tallying",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -810,7 +1029,10 @@
         },
         {
           "name": "/gov/parameters/voting",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -821,7 +1043,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -832,7 +1057,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -843,7 +1071,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -854,7 +1085,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -865,7 +1099,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -876,7 +1113,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -887,7 +1127,10 @@
         },
         {
           "name": "/distribution/community_pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -898,7 +1141,10 @@
         },
         {
           "name": "/distribution/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -909,7 +1155,10 @@
         },
         {
           "name": "/minting/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -920,7 +1169,10 @@
         },
         {
           "name": "/minting/inflation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -931,7 +1183,10 @@
         },
         {
           "name": "/minting/annual-provisions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -942,7 +1197,10 @@
         },
         {
           "name": "/market/swap",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -953,7 +1211,10 @@
         },
         {
           "name": "/market/terra_pool_delta",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -964,7 +1225,10 @@
         },
         {
           "name": "/market/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -975,7 +1239,10 @@
         },
         {
           "name": "/oracle/denoms/{denom}/exchange_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -986,7 +1253,10 @@
         },
         {
           "name": "/oracle/denoms/exchange_rates",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -997,7 +1267,10 @@
         },
         {
           "name": "/oracle/denoms/actives",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1008,7 +1281,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/feeder",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1019,7 +1295,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/miss",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1030,7 +1309,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/aggregate_prevote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1041,7 +1323,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/aggregate_vote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1052,7 +1337,10 @@
         },
         {
           "name": "/oracle/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1063,7 +1351,10 @@
         },
         {
           "name": "/treasury/tax_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1074,7 +1365,10 @@
         },
         {
           "name": "/treasury/tax_cap/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1085,7 +1379,10 @@
         },
         {
           "name": "/treasury/tax_caps",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1096,7 +1393,10 @@
         },
         {
           "name": "/treasury/reward_weight",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1107,7 +1407,10 @@
         },
         {
           "name": "/treasury/tax_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1118,7 +1421,10 @@
         },
         {
           "name": "/treasury/seigniorage_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1129,7 +1435,10 @@
         },
         {
           "name": "/treasury/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1140,7 +1449,10 @@
         },
         {
           "name": "/treasury/indicators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1151,7 +1463,10 @@
         },
         {
           "name": "/wasm/codes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1162,7 +1477,10 @@
         },
         {
           "name": "/wasm/codes/{codeID}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1173,7 +1491,10 @@
         },
         {
           "name": "/wasm/codes/{codeID}/migrate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1184,7 +1505,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1195,7 +1519,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/migrate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1206,7 +1533,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/admin/update",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1217,7 +1547,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/admin/clear",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1228,7 +1561,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/store",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1239,7 +1575,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/store/raw",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1250,7 +1589,10 @@
         },
         {
           "name": "/wasm/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1261,7 +1603,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/accounts",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1272,7 +1617,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/accounts/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1283,7 +1631,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1294,7 +1645,10 @@
         },
         {
           "name": "/cosmos/authz/v1beta1/grants",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1305,7 +1659,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/balances/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1316,7 +1673,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1327,7 +1687,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1338,7 +1701,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1349,7 +1715,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1360,7 +1729,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/supply",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1371,7 +1743,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/supply/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1382,7 +1757,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1393,7 +1771,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1404,7 +1785,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/node_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1415,7 +1799,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/syncing",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1426,7 +1813,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1437,7 +1827,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1448,7 +1841,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/community_pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1459,7 +1855,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1470,7 +1869,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1481,7 +1883,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1492,7 +1897,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1503,7 +1911,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1514,7 +1925,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1525,7 +1939,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1536,7 +1953,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1547,7 +1967,10 @@
         },
         {
           "name": "/cosmos/evidence/v1beta1/evidence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1558,7 +1981,10 @@
         },
         {
           "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1569,7 +1995,10 @@
         },
         {
           "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1580,7 +2009,10 @@
         },
         {
           "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1591,7 +2023,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/params/{params_type}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1602,7 +2037,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1613,7 +2051,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1624,7 +2065,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1635,7 +2079,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1646,7 +2093,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1657,7 +2107,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1668,7 +2121,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1679,7 +2135,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/annual_provisions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1690,7 +2149,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/inflation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1701,7 +2163,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1712,7 +2177,10 @@
         },
         {
           "name": "/cosmos/params/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1723,7 +2191,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1734,7 +2205,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1745,7 +2219,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1756,7 +2233,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1767,7 +2247,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1778,7 +2261,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1789,7 +2275,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1800,7 +2289,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1811,7 +2303,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/historical_info/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1822,7 +2317,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1833,7 +2331,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1844,7 +2345,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1855,7 +2359,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1866,7 +2373,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1877,7 +2387,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1888,7 +2401,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1899,7 +2415,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1910,7 +2429,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/simulate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1921,7 +2443,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1932,7 +2457,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/txs/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1943,7 +2471,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1954,7 +2485,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/current_plan",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1965,7 +2499,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/module_versions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1976,7 +2513,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1987,7 +2527,10 @@
         },
         {
           "name": "/terra/tx/v1beta1/compute_tax",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -1998,7 +2541,10 @@
         },
         {
           "name": "/terra/market/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2009,7 +2555,10 @@
         },
         {
           "name": "/terra/market/v1beta1/swap",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2020,7 +2569,10 @@
         },
         {
           "name": "/terra/market/v1beta1/terra_pool_delta",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2031,7 +2583,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/actives",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2042,7 +2597,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/exchange_rates",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2053,7 +2611,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/tobin_taxes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2064,7 +2625,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/vote_targets",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2075,7 +2639,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/{denom}/exchange_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2086,7 +2653,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/{denom}/tobin_tax",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2097,7 +2667,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2108,7 +2681,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/valdiators/{validator_addr}/aggregate_vote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2119,7 +2695,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/aggregate_prevotes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2130,7 +2709,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/aggregate_votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2141,7 +2723,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/aggregate_prevote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2152,7 +2737,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/feeder",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2163,7 +2751,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/miss",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2174,7 +2765,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/indicators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2185,7 +2779,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2196,7 +2793,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/reward_weight",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2207,7 +2807,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/seigniorage_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2218,7 +2821,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_caps",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2229,7 +2835,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_caps/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2240,7 +2849,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2251,7 +2863,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2262,7 +2877,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/codes/{code_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2273,7 +2891,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/codes/{code_id}/byte_code",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2284,7 +2905,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2295,7 +2919,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2306,7 +2933,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store/raw",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2317,7 +2947,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2328,7 +2961,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2339,7 +2975,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2350,7 +2989,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2361,7 +3003,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2372,7 +3017,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2383,7 +3031,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2394,7 +3045,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2405,7 +3059,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2416,7 +3073,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2427,7 +3087,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2438,7 +3101,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2449,7 +3115,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2460,7 +3129,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/connections/{connection}/channels",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2471,7 +3143,10 @@
         },
         {
           "name": "/ibc/client/v1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2482,7 +3157,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2493,7 +3171,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_states/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2504,7 +3185,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_enabled/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2515,7 +3199,10 @@
         },
         {
           "name": "/ibc/core/client/v1/consensus_states/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2526,7 +3213,10 @@
         },
         {
           "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2537,7 +3227,10 @@
         },
         {
           "name": "/ibc/core/client/v1/upgraded_client_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2548,7 +3241,10 @@
         },
         {
           "name": "/ibc/core/client/v1/upgraded_consensus_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2559,7 +3255,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/client_connections/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2570,7 +3269,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2581,7 +3283,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2592,7 +3297,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2603,7 +3311,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2614,7 +3325,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/denom_traces",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2625,7 +3339,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2636,7 +3353,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2653,7 +3373,10 @@
       "enabled": true,
       "apis": [{
           "name": "/abci_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2664,7 +3387,10 @@
         },
         {
           "name": "/abci_query",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2675,7 +3401,10 @@
         },
         {
           "name": "/block",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2686,7 +3415,10 @@
         },
         {
           "name": "/block_by_hash",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2697,7 +3429,10 @@
         },
         {
           "name": "/block_results",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2708,7 +3443,10 @@
         },
         {
           "name": "/block_search",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2719,7 +3457,10 @@
         },
         {
           "name": "/blockchain",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2730,7 +3471,10 @@
         },
         {
           "name": "/broadcast_evidence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2741,7 +3485,10 @@
         },
         {
           "name": "/broadcast_tx_async",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2752,7 +3499,10 @@
         },
         {
           "name": "/broadcast_tx_commit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2763,7 +3513,10 @@
         },
         {
           "name": "/broadcast_tx_sync",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2774,7 +3527,10 @@
         },
         {
           "name": "/check_tx",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2785,7 +3541,10 @@
         },
         {
           "name": "/commit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2796,7 +3555,10 @@
         },
         {
           "name": "/consensus_params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2807,7 +3569,10 @@
         },
         {
           "name": "/consensus_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2818,7 +3583,10 @@
         },
         {
           "name": "/dump_consensus_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2829,7 +3597,10 @@
         },
         {
           "name": "/genesis",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2840,7 +3611,10 @@
         },
         {
           "name": "/genesis_chunked",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2851,7 +3625,10 @@
         },
         {
           "name": "/health",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2862,7 +3639,10 @@
         },
         {
           "name": "/net_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2873,7 +3653,10 @@
         },
         {
           "name": "/num_unconfirmed_txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2884,7 +3667,10 @@
         },
         {
           "name": "/status",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2895,7 +3681,10 @@
         },
         {
           "name": "/subscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2906,7 +3695,10 @@
         },
         {
           "name": "/tx",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2917,7 +3709,10 @@
         },
         {
           "name": "/tx_search",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2928,7 +3723,10 @@
         },
         {
           "name": "/unconfirmed_txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2939,7 +3737,10 @@
         },
         {
           "name": "/unsubscribe",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2950,7 +3751,10 @@
         },
         {
           "name": "/unsubscribe_all",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2961,7 +3765,10 @@
         },
         {
           "name": "/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2972,7 +3779,10 @@
         },
         {
           "name": "/node_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2983,7 +3793,10 @@
         },
         {
           "name": "/syncing",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -2994,7 +3807,10 @@
         },
         {
           "name": "/blocks/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3005,7 +3821,10 @@
         },
         {
           "name": "/blocks/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3016,7 +3835,10 @@
         },
         {
           "name": "/validatorsets/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3027,7 +3849,10 @@
         },
         {
           "name": "/validatorsets/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3038,7 +3863,10 @@
         },
         {
           "name": "/txs/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3049,7 +3877,10 @@
         },
         {
           "name": "/txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3060,7 +3891,10 @@
         },
         {
           "name": "/txs/encode",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3071,7 +3905,10 @@
         },
         {
           "name": "/txs/decode",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3082,7 +3919,10 @@
         },
         {
           "name": "/txs/estimate_fee",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3093,7 +3933,10 @@
         },
         {
           "name": "/bank/balances/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3104,7 +3947,10 @@
         },
         {
           "name": "/bank/accounts/{address}/transfers",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3115,7 +3961,10 @@
         },
         {
           "name": "/bank/total",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3126,7 +3975,10 @@
         },
         {
           "name": "/bank/total/{denomination}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3137,7 +3989,10 @@
         },
         {
           "name": "/auth/accounts/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3148,7 +4003,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3159,7 +4017,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3170,7 +4031,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3181,7 +4045,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3192,7 +4059,10 @@
         },
         {
           "name": "/staking/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3203,7 +4073,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3214,7 +4087,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3225,7 +4101,10 @@
         },
         {
           "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3236,7 +4115,10 @@
         },
         {
           "name": "/staking/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3247,7 +4129,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3258,7 +4143,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3269,7 +4157,10 @@
         },
         {
           "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3280,7 +4171,10 @@
         },
         {
           "name": "/staking/pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3291,7 +4185,10 @@
         },
         {
           "name": "/staking/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3302,7 +4199,10 @@
         },
         {
           "name": "/slashing/signing_infos",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3313,7 +4213,10 @@
         },
         {
           "name": "/slashing/validators/{validatorAddr}/unjail",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3324,7 +4227,10 @@
         },
         {
           "name": "/slashing/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3335,7 +4241,10 @@
         },
         {
           "name": "/gov/proposals",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3346,7 +4255,10 @@
         },
         {
           "name": "/gov/proposals/param_change",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3357,7 +4269,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3368,7 +4283,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/proposer",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3379,7 +4297,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/deposits",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3390,7 +4311,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3401,7 +4325,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3412,7 +4339,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/votes/{voter}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3423,7 +4353,10 @@
         },
         {
           "name": "/gov/proposals/{proposalId}/tally",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3434,7 +4367,10 @@
         },
         {
           "name": "/gov/parameters/deposit",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3445,7 +4381,10 @@
         },
         {
           "name": "/gov/parameters/tallying",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3456,7 +4395,10 @@
         },
         {
           "name": "/gov/parameters/voting",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3467,7 +4409,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3478,7 +4423,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3489,7 +4437,10 @@
         },
         {
           "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3500,7 +4451,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3511,7 +4465,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3522,7 +4479,10 @@
         },
         {
           "name": "/distribution/validators/{validatorAddr}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3533,7 +4493,10 @@
         },
         {
           "name": "/distribution/community_pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3544,7 +4507,10 @@
         },
         {
           "name": "/distribution/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3555,7 +4521,10 @@
         },
         {
           "name": "/minting/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3566,7 +4535,10 @@
         },
         {
           "name": "/minting/inflation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3577,7 +4549,10 @@
         },
         {
           "name": "/minting/annual-provisions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3588,7 +4563,10 @@
         },
         {
           "name": "/market/swap",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3599,7 +4577,10 @@
         },
         {
           "name": "/market/terra_pool_delta",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3610,7 +4591,10 @@
         },
         {
           "name": "/market/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3621,7 +4605,10 @@
         },
         {
           "name": "/oracle/denoms/{denom}/exchange_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3632,7 +4619,10 @@
         },
         {
           "name": "/oracle/denoms/exchange_rates",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3643,7 +4633,10 @@
         },
         {
           "name": "/oracle/denoms/actives",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3654,7 +4647,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/feeder",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3665,7 +4661,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/miss",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3675,7 +4674,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/aggregate_prevote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3685,7 +4687,10 @@
         },
         {
           "name": "/oracle/voters/{validator}/aggregate_vote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3695,7 +4700,10 @@
         },
         {
           "name": "/oracle/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3705,7 +4713,10 @@
         },
         {
           "name": "/treasury/tax_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3715,7 +4726,10 @@
         },
         {
           "name": "/treasury/tax_cap/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3725,7 +4739,10 @@
         },
         {
           "name": "/treasury/tax_caps",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3735,7 +4752,10 @@
         },
         {
           "name": "/treasury/reward_weight",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3745,7 +4765,10 @@
         },
         {
           "name": "/treasury/tax_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3755,7 +4778,10 @@
         },
         {
           "name": "/treasury/seigniorage_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3765,7 +4791,10 @@
         },
         {
           "name": "/treasury/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3775,7 +4804,10 @@
         },
         {
           "name": "/treasury/indicators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3785,7 +4817,10 @@
         },
         {
           "name": "/wasm/codes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3795,7 +4830,10 @@
         },
         {
           "name": "/wasm/codes/{codeID}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3805,7 +4843,10 @@
         },
         {
           "name": "/wasm/codes/{codeID}/migrate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3815,7 +4856,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3825,7 +4869,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/migrate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3835,7 +4882,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/admin/update",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3845,7 +4895,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/admin/clear",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3855,7 +4908,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/store",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3865,7 +4921,10 @@
         },
         {
           "name": "/wasm/contracts/{contractAddress}/store/raw",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3875,7 +4934,10 @@
         },
         {
           "name": "/wasm/parameters",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3885,7 +4947,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/accounts",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3895,7 +4960,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/accounts/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3905,7 +4973,10 @@
         },
         {
           "name": "/cosmos/auth/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3915,7 +4986,10 @@
         },
         {
           "name": "/cosmos/authz/v1beta1/grants",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3925,7 +4999,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/balances/{address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3935,7 +5012,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3945,7 +5025,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3955,7 +5038,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3965,7 +5051,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3975,7 +5064,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/supply",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3985,7 +5077,10 @@
         },
         {
           "name": "/cosmos/bank/v1beta1/supply/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -3995,7 +5090,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4005,7 +5103,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4015,7 +5116,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/node_info",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4025,7 +5129,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/syncing",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4035,7 +5142,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4045,7 +5155,10 @@
         },
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4055,7 +5168,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/community_pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4065,7 +5181,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4075,7 +5194,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4085,7 +5207,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4095,7 +5220,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4105,7 +5233,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4115,7 +5246,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4125,7 +5259,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4135,7 +5272,10 @@
         },
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4145,7 +5285,10 @@
         },
         {
           "name": "/cosmos/evidence/v1beta1/evidence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4155,7 +5298,10 @@
         },
         {
           "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4165,7 +5311,10 @@
         },
         {
           "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4175,7 +5324,10 @@
         },
         {
           "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4185,7 +5337,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/params/{params_type}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4195,7 +5350,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4205,7 +5363,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4215,7 +5376,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4225,7 +5389,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4235,7 +5402,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4245,7 +5415,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4255,7 +5428,10 @@
         },
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4265,7 +5441,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/annual_provisions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4275,7 +5454,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/inflation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4285,7 +5467,10 @@
         },
         {
           "name": "/cosmos/mint/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4295,7 +5480,10 @@
         },
         {
           "name": "/cosmos/params/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4305,7 +5493,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4315,7 +5506,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4325,7 +5519,10 @@
         },
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4335,7 +5532,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4345,7 +5545,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4355,7 +5558,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4365,7 +5571,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4375,7 +5584,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4385,7 +5597,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/historical_info/{height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4395,7 +5610,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4405,7 +5623,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/pool",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4415,7 +5636,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4425,7 +5649,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4435,7 +5662,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4445,7 +5675,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4455,7 +5688,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4465,7 +5701,10 @@
         },
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4475,7 +5714,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/simulate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4485,7 +5727,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/txs",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4495,7 +5740,10 @@
         },
         {
           "name": "/cosmos/tx/v1beta1/txs/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4505,7 +5753,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4515,7 +5766,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/current_plan",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4525,7 +5779,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/module_versions",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4535,7 +5792,10 @@
         },
         {
           "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4545,7 +5805,10 @@
         },
         {
           "name": "/terra/tx/v1beta1/compute_tax",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4555,7 +5818,10 @@
         },
         {
           "name": "/terra/market/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4565,7 +5831,10 @@
         },
         {
           "name": "/terra/market/v1beta1/swap",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4575,7 +5844,10 @@
         },
         {
           "name": "/terra/market/v1beta1/terra_pool_delta",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4585,7 +5857,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/actives",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4595,7 +5870,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/exchange_rates",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4605,7 +5883,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/tobin_taxes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4615,7 +5896,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/vote_targets",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4625,7 +5909,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/{denom}/exchange_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4635,7 +5922,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/denoms/{denom}/tobin_tax",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4645,7 +5935,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4655,7 +5948,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/valdiators/{validator_addr}/aggregate_vote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4665,7 +5961,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/aggregate_prevotes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4675,7 +5974,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/aggregate_votes",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4685,7 +5987,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/aggregate_prevote",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4695,7 +6000,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/feeder",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4705,7 +6013,10 @@
         },
         {
           "name": "/terra/oracle/v1beta1/validators/{validator_addr}/miss",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4715,7 +6026,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/indicators",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4725,7 +6039,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4735,7 +6052,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/reward_weight",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4745,7 +6065,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/seigniorage_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4755,7 +6078,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_caps",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4765,7 +6091,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_caps/{denom}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4775,7 +6104,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_proceeds",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4785,7 +6117,10 @@
         },
         {
           "name": "/terra/treasury/v1beta1/tax_rate",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4795,7 +6130,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/codes/{code_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4805,7 +6143,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/codes/{code_id}/byte_code",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4815,7 +6156,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4825,7 +6169,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4835,7 +6182,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/contracts/{contract_address}/store/raw",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4845,7 +6195,10 @@
         },
         {
           "name": "/terra/wasm/v1beta1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4855,7 +6208,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4865,7 +6221,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4875,7 +6234,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4885,7 +6247,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4895,7 +6260,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4905,7 +6273,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4915,7 +6286,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4925,7 +6299,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4935,7 +6312,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4945,7 +6325,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4955,7 +6338,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4965,7 +6351,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4975,7 +6364,10 @@
         },
         {
           "name": "/ibc/core/channel/v1/connections/{connection}/channels",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4985,7 +6377,10 @@
         },
         {
           "name": "/ibc/client/v1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -4995,7 +6390,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5005,7 +6403,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_states/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5015,7 +6416,10 @@
         },
         {
           "name": "/ibc/core/client/v1/client_enabled/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5025,7 +6429,10 @@
         },
         {
           "name": "/ibc/core/client/v1/consensus_states/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5035,7 +6442,10 @@
         },
         {
           "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5045,7 +6455,10 @@
         },
         {
           "name": "/ibc/core/client/v1/upgraded_client_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5055,7 +6468,10 @@
         },
         {
           "name": "/ibc/core/client/v1/upgraded_consensus_states",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5065,7 +6481,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/client_connections/{client_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5075,7 +6494,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5085,7 +6507,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5095,7 +6520,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5105,7 +6533,10 @@
         },
         {
           "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5115,7 +6546,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/denom_traces",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5125,7 +6559,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{
@@ -5135,7 +6572,10 @@
         },
         {
           "name": "/ibc/apps/transfer/v1/params",
-          "block_param":"-1",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
 					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [{

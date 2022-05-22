@@ -466,7 +466,7 @@ func New(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		feegrant.ModuleName,
-		epochstoragemoduletypes.ModuleName,
+		epochstoragemoduletypes.ModuleName, // epochStyorage new block must come before pairing for proper epoch handling
 		pairingmoduletypes.ModuleName,
 	)
 
@@ -492,7 +492,7 @@ func New(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
-		epochstoragemoduletypes.ModuleName,
+		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		pairingmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)

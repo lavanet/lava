@@ -19,7 +19,7 @@ type (
 		ComputeUnits  uint               `json:"compute_units" yaml:"compute_units"`
 		Enabled       bool               `json:"enabled" yaml:"enabled"`
 		ApiInterfaces []ApiInterfaceJSON `json:"apiInterfaces" yaml:"apiInterfaces"`
-		BlockParam    int                `json:"block_param" yaml:"block_param"`
+		BlockParsing  types.BlockParser  `json:"block_parser" yaml:"block_parser"`
 	}
 
 	SpecJSON struct {
@@ -48,7 +48,7 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 				ComputeUnits:  uint64(api.ComputeUnits),
 				Enabled:       api.Enabled,
 				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
-				BlockParam:    int64(api.BlockParam),
+				BlockParsing:  &api.BlockParsing,
 			})
 		}
 
