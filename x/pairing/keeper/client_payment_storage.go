@@ -102,11 +102,10 @@ func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress 
 	usedCUProviderTotal = 0
 	usedCUMap, err := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
 	if err != nil {
-		if _, ok := usedCUMap.Providers[providerAddress.String()]; ok {
-			return usedCUMap.Providers[providerAddress.String()], nil
-		}
-		return 0, fmt.Errorf("provider address: %s not in found! (in usedCUMap)", providerAddress)
+		return 0, err
 	}
-	return 0, err
-
+	if usedProvider, ok := usedCUMap.Providers[providerAddress.String()]; ok {
+		return usedProvider, nil
+	}
+	return 0, nil
 }

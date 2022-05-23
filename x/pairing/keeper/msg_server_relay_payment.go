@@ -70,7 +70,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
-		ammountToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay, userStake, clientAddr, totalCUInEpochForUserProvider, providerAddr)
+		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay, userStake, clientAddr, totalCUInEpochForUserProvider, providerAddr)
 		if err != nil {
 			//TODO: maybe give provider money but burn user, colluding?
 			//TODO: display correct totalCU and usedCU for provider
@@ -80,14 +80,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"provider":                      providerAddr.String(),
 				"error":                         err.Error(),
 				"CU":                            strconv.FormatUint(relay.CuSum, 10),
-				"ammountToPay":                  strconv.FormatUint(ammountToPay, 10),
+				"cuToPay":                       strconv.FormatUint(cuToPay, 10),
 				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10)}
 			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
+		}
+		if cuToPay > relay.CuSum {
+			// [?] what sould happen ? event, error, or panic ?
+			// event + error ?
 		}
 		//
 		if isValidPairing {
 			//pairing is valid, we can pay provider for work
-			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(ammountToPay))
+			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 			if reward.IsZero() {
 				continue

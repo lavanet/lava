@@ -379,13 +379,13 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 func (k Keeper) GetNextEpoch(ctx sdk.Context, epoch uint64) uint64 {
 	epochBlocks := k.GetEpochBlocks(ctx, epoch)
 	if epochBlocks == 0 {
-		panic("epochBlocks == 0")
+		panic(fmt.Errorf("lava_get_epoch_blocks_error epochBlocks == 0"))
 	}
 	epoch += epochBlocks
 	return epoch
 }
 
-func (k Keeper) GetStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
+func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
 	key := k.stakeStorageKey(storageType, block, chainID)
 	return k.GetStakeStorage(ctx, key)
 }
@@ -393,7 +393,7 @@ func (k Keeper) GetStakeStorageEpoch(ctx sdk.Context, block uint64, storageType 
 // gets chainID, clientAddress, and epoch
 // returns epochstoragetypes.StakeEntry which is needed to calculate allowedCU, for the selected epoch
 func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
-	stakeStorage, found := k.GetStakeStorageEpoch(ctx, epoch, types.ClientKey, chainID)
+	stakeStorage, found := k.getStakeStorageEpoch(ctx, epoch, types.ClientKey, chainID)
 	if !found {
 		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s client %s", epoch, chainID, selectedClient.String())
 	}
