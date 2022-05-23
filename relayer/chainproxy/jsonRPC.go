@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -52,6 +53,14 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 	}
 }
 
+func (cp jsonrpcMessage) GetParams() []interface{} {
+	return cp.Params
+}
+
+func (cp jsonrpcMessage) ParseBlock(inp string) (int64, error) {
+	return parser.ParseDefaultBlockParameter(inp)
+}
+
 func (cp *JrpcChainProxy) GetSentry() *sentry.Sentry {
 	return cp.sentry
 }
@@ -84,17 +93,21 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error
 	if err != nil {
 		return nil, err
 	}
-
 	//
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
 		return nil, err
 	}
+	requestedBlock, err := parser.Parse(msg, serviceApi.BlockParsing)
+	if err != nil {
+		return nil, err
+	}
 	nodeMsg := &JrpcMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		msg:        &msg,
+		cp:             cp,
+		serviceApi:     serviceApi,
+		msg:            &msg,
+		requestedBlock: requestedBlock,
 	}
 	return nodeMsg, nil
 }

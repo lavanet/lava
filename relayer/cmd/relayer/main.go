@@ -106,9 +106,9 @@ func main() {
 			apiInterface := args[1]
 
 			ctx := context.Background()
-			if false {
-				relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
-			}
+
+			relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
+
 			return nil
 		},
 	}

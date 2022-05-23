@@ -24,6 +24,262 @@
           ] 
         },
         {
+          "name": "shh_post",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_version",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_hasIdentity",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_newIdentity",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_newGroup",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_addToGroup",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_newFilter",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_uninstallFilter",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_getFilterChanges",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "shh_getMessages",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "db_putString",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "db_putHex",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "db_getHex",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "db_getString",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_submitWork",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_submitHashrate",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
           "name": "net_version",
           "block_parsing": {
 						"parserArg": [""],
@@ -88,7 +344,71 @@
           ] 
         },
         {
+          "name": "eth_mining",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_hashrate",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_coinbase",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
           "name": "net_listening",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "net_peerCount",
           "block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
@@ -248,6 +568,70 @@
           ] 
         },
         {
+          "name": "eth_getCompilers",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_getWork",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_compileSolidity",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_compileLLL",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
           "name": "eth_getUncleByBlockHashAndIndex",
           "block_parsing": {
 						"parserArg": [""],
@@ -266,8 +650,8 @@
         {
           "name": "eth_getUncleByBlockNumberAndIndex",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "15",
           "enabled": true,
@@ -298,8 +682,8 @@
         {
           "name": "eth_getTransactionByBlockNumberAndIndex",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "15",
           "enabled": true,
@@ -330,8 +714,8 @@
         {
           "name": "eth_getUncleCountByBlockNumber",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "15",
           "enabled": true,
@@ -378,8 +762,8 @@
         {
           "name": "eth_getBlockByNumber",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "16",
           "enabled": true,
@@ -394,8 +778,8 @@
         {
           "name": "eth_getStorageAt",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["2"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "17",
           "enabled": true,
@@ -474,8 +858,8 @@
         {
           "name": "eth_getBalance",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["1"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "19",
           "enabled": true,
@@ -490,10 +874,58 @@
         {
           "name": "eth_getCode",
           "block_parsing": {
+						"parserArg": ["1"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
+					},
+					"compute_units": "19",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_sign",
+          "block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
-					"compute_units": "19",
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_signTransaction",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ] 
+        },
+        {
+          "name": "eth_sendTransaction",
+          "block_parsing": {
+						"parserArg": [""],
+						"parserFunc": "EMPTY"
+					},
+					"compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -510,7 +942,7 @@
 						"parserFunc": "EMPTY"
 					},
 					"compute_units": "20",
-          "enabled": false,
+          "enabled": true,
            "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -526,7 +958,7 @@
 						"parserFunc": "EMPTY"
 					},
 					"compute_units": "20",
-          "enabled": false,
+          "enabled": true,
            "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -538,11 +970,11 @@
         {
           "name": "eth_newFilter",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0","toBlock"],
+						"parserFunc": "PARSE_PARAM_CANONICAL"
 					},
 					"compute_units": "20",
-          "enabled": false,
+          "enabled": true,
            "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -558,7 +990,7 @@
 						"parserFunc": "EMPTY"
 					},
 					"compute_units": "20",
-          "enabled": false,
+          "enabled": true,
            "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -586,8 +1018,8 @@
         {
           "name": "eth_getBlockTransactionCountByNumber",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "20",
           "enabled": true,
@@ -650,8 +1082,8 @@
         {
           "name": "eth_getTransactionCount",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["1"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "26",
           "enabled": true,
@@ -666,8 +1098,8 @@
         {
           "name": "eth_call",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["1"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "26",
           "enabled": true,
@@ -714,8 +1146,8 @@
         {
           "name": "eth_getLogs",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["0","toBlock"],
+						"parserFunc": "PARSE_PARAM_CANONICAL"
 					},
 					"compute_units": "75",
           "enabled": true,
@@ -877,19 +1309,12 @@
       "chainid": "ETH4",
       "name": "Ethereum Rinkeby",
       "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ] ,
       "apis": [
         {
           "name": "eth_getBalance",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["1"],
+						"parserFunc": "PARSE_PARAM_BY_ARG"
 					},
 					"compute_units": "10",
           "enabled": true,

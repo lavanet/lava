@@ -21448,22 +21448,16 @@ definitions:
       sig:
         type: string
         format: byte
-      queryHash:
-        type: string
-        format: byte
-      dataHash:
-        type: string
-        format: byte
       nonce:
         type: integer
         format: int64
-      sigHashes:
-        type: string
-        format: byte
       latestBlock:
         type: string
         format: int64
       finalizedBlocksHashes:
+        type: string
+        format: byte
+      sigBlocks:
         type: string
         format: byte
   lavanet.lava.pairing.RelayRequest:

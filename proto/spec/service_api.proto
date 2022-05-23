@@ -8,7 +8,7 @@ import "gogoproto/gogo.proto";
 
 message ServiceApi {
   string name = 1; 
-  BlockParser blockParsing = 2;
+  BlockParser blockParsing = 2 [(gogoproto.nullable) = false];
   uint64 computeUnits = 3; 
   bool enabled = 4; 
   repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
