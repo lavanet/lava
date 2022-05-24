@@ -75,8 +75,6 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
 		//tried to use an existing identifier!
-		// #O If you want to check that relayValidateCU is working you will need to do uncomment the next line and comment the return line. You will also need to set doubleSendTest := true in server.go
-		// uniquePaymentStorageClientProviderEntryAddr.Index = uniquePaymentStorageClientProviderEntryAddr.Index[:len(uniquePaymentStorageClientProviderEntryAddr.Index)-3] + "xxx" // this is to bypass this error
 		return nil, 0, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
 	}
 	userPaymentStorageInEpoch, found := k.GetClientPaymentStorage(ctx, key)
