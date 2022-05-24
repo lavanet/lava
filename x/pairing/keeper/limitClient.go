@@ -80,20 +80,12 @@ func (k Keeper) GetAllowedCUClientEpoch(ctx sdk.Context, chainID string, epoch u
 }
 
 func maxU(x uint64, y uint64) uint64 {
-	if x > y {
-		return x
-	}
-	return y
+	return uint64(math.Max(float64(x), float64(y)))
 }
-func maxF(x float64, y float64) float64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedCUMap types.ClientUsedCU, allowedCU uint64, providerAddr sdk.AccAddress) (float64, float64) {
+
+func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedCUMap types.ClientUsedCU, allowedCU uint64, providerAddr sdk.AccAddress) (float64, float64, error) {
 	if allowedCU <= 0 {
-		panic(fmt.Sprintf("lava_GetOverusedFromUsedCU was called with %d allowedCU", allowedCU))
+		return 0, 0, fmt.Errorf("lava_GetOverusedFromUsedCU was called with %d allowedCU", allowedCU)
 	}
 	overusedProviderPercent := float64(0.0)
 	totalOverusedPercent := float64(clientProvidersEpochUsedCUMap.TotalUsed / allowedCU)
@@ -103,40 +95,48 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 		overusedCU := maxU(0, usedCU-allowedCUProvider)
 		overusedProviderPercent = float64(overusedCU / allowedCUProvider)
 	}
-	return totalOverusedPercent, overusedProviderPercent
+	return totalOverusedPercent, overusedProviderPercent, nil
 }
 
 func (k Keeper) GetEpochClientUsedCUMap(ctx sdk.Context, chainID string, epoch uint64, clientAddr sdk.AccAddress) (types.ClientUsedCU, error) {
 	clientStoragePaymentKeyEpoch := k.GetClientPaymentStorageKey(ctx, chainID, epoch, clientAddr)
 	clientPaymentStorage, found := k.GetClientPaymentStorage(ctx, clientStoragePaymentKeyEpoch)
-	if !found { // no payments this epoch, continue + advance epoch
-		return types.ClientUsedCU{0.0, make(map[string]uint64)}, fmt.Errorf("lava_clientPaymentStorage_not_found for client %s chainID %s epoch %d", clientAddr.String(), chainID, epoch)
+	if found { // no payments this epoch, continue + advance epoch
+		clientProvidersEpochUsedCUMap, errPaymentStorage := k.GetEpochClientProviderUsedCUMap(ctx, clientPaymentStorage)
+		return clientProvidersEpochUsedCUMap, errPaymentStorage
 	}
-	clientProvidersEpochUsedCUMap, errPaymentStorage := k.GetEpochClientProviderUsedCUMap(ctx, clientPaymentStorage)
-	return clientProvidersEpochUsedCUMap, errPaymentStorage
+	return types.ClientUsedCU{0.0, make(map[string]uint64)}, nil
 }
 
-func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedCUPercent types.ClientProviderOverusedCUPercent, err error) {
+func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedPercentMap types.ClientProviderOverusedCUPercent, err error) {
 	//TODO: Caching will save a lot of time...
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
-	clientProviderOverusedPercentMap := types.ClientProviderOverusedCUPercent{0.0, 0.0}
+	clientProviderOverusedPercentMap = types.ClientProviderOverusedCUPercent{0.0, 0.0}
 
 	// for every epoch in memory
 	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
 		// get epochPayments for this client
 
 		clientProvidersEpochUsedCUMap, errPaymentStorage := k.GetEpochClientUsedCUMap(ctx, chainID, epoch, clientAddr)
-		if errPaymentStorage != nil || clientProvidersEpochUsedCUMap.TotalUsed == 0 {
+		if errPaymentStorage != nil {
+			return clientProviderOverusedPercentMap, errPaymentStorage
+		} else if clientProvidersEpochUsedCUMap.TotalUsed == 0 {
 			// no payments this epoch - continue
 			continue
 		}
 		allowedCU, allowedCUErr := k.GetAllowedCUClientEpoch(ctx, chainID, epoch, clientAddr)
-		if allowedCUErr != nil || allowedCU == 0 {
+		if allowedCUErr != nil {
+			err = allowedCUErr
+			return
+		} else if allowedCU == 0 {
 			// user has no stake this epoch - continue
 			continue
 		}
-		totalOverusedPercent, providerOverusedPercent := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)
-
+		totalOverusedPercent, providerOverusedPercent, overusedErr := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)
+		if overusedErr != nil {
+			err = overusedErr
+			return
+		}
 		clientProviderOverusedPercentMap.TotalOverusedPercent += totalOverusedPercent
 		clientProviderOverusedPercentMap.OverusedPercentProvider += providerOverusedPercent
 		// clientProviderOverusedPercentMap.TotalUsed += providerOverusedPercent
@@ -158,7 +158,8 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 		utils.LavaError(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
 			"relay.CuSum":  strconv.FormatUint(CuSum, 10),
 			"clientAddr":   clientAddr.String(),
-			"providerAddr": providerAddr.String()},
+			"providerAddr": providerAddr.String(),
+			"error":        err.Error()},
 			fmt.Sprintf("user %s, could not calculate overusedCU from memory: %s", clientAddr.String(), clientStakeAmount))
 		return 0, fmt.Errorf("user %s, could not calculate overusedCU from memory: %s", clientAddr.String(), clientStakeAmount)
 	}
