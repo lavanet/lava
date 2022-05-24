@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -84,9 +85,7 @@ func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStora
 }
 
 func maxAddressLengths() (int, int) {
-	//TODO: Get these values from AccAddress somehow and remove AdrLengthUser and AdrLengthProvider from pairing/types/key_unique_payment_storage_client_provider
-	adrLengthUser, adrLengthProvider := types.MaxAdrLengthUser, types.MaxAdrLengthProvider
-	return adrLengthUser, adrLengthProvider
+	return address.MaxAddrLen, address.MaxAddrLen
 }
 
 func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
