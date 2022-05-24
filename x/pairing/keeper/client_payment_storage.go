@@ -96,10 +96,7 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 
 func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
 	usedCUProviderTotal = 0
-	usedCUMap, err := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
-	if err != nil {
-		return 0, err
-	}
+	usedCUMap, _ := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
 	if usedProvider, ok := usedCUMap.Providers[providerAddress.String()]; ok {
 		return usedProvider, nil
 	}

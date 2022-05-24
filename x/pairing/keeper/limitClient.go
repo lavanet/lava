@@ -84,7 +84,7 @@ func maxU(x uint64, y uint64) uint64 {
 }
 
 func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedCUMap types.ClientUsedCU, allowedCU uint64, providerAddr sdk.AccAddress) (float64, float64, error) {
-	if allowedCU <= 0 {
+	if allowedCU == 0 {
 		return 0, 0, fmt.Errorf("lava_GetOverusedFromUsedCU was called with %d allowedCU", allowedCU)
 	}
 	overusedProviderPercent := float64(0.0)
@@ -105,13 +105,13 @@ func (k Keeper) GetEpochClientUsedCUMap(ctx sdk.Context, chainID string, epoch u
 		clientProvidersEpochUsedCUMap, errPaymentStorage := k.GetEpochClientProviderUsedCUMap(ctx, clientPaymentStorage)
 		return clientProvidersEpochUsedCUMap, errPaymentStorage
 	}
-	return types.ClientUsedCU{0.0, make(map[string]uint64)}, nil
+	return types.ClientUsedCU{0, make(map[string]uint64)}, nil
 }
 
-func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedPercentMap types.ClientProviderOverusedCUPercent, err error) {
+func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedPercentMap *types.ClientProviderOverusedCUPercent, err error) {
 	//TODO: Caching will save a lot of time...
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
-	clientProviderOverusedPercentMap = types.ClientProviderOverusedCUPercent{0.0, 0.0}
+	clientProviderOverusedPercentMap = &types.ClientProviderOverusedCUPercent{0.0, 0.0}
 
 	// for every epoch in memory
 	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
@@ -126,16 +126,14 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 		}
 		allowedCU, allowedCUErr := k.GetAllowedCUClientEpoch(ctx, chainID, epoch, clientAddr)
 		if allowedCUErr != nil {
-			err = allowedCUErr
-			return
+			return nil, allowedCUErr
 		} else if allowedCU == 0 {
 			// user has no stake this epoch - continue
 			continue
 		}
 		totalOverusedPercent, providerOverusedPercent, overusedErr := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)
 		if overusedErr != nil {
-			err = overusedErr
-			return
+			return nil, overusedErr
 		}
 		clientProviderOverusedPercentMap.TotalOverusedPercent += totalOverusedPercent
 		clientProviderOverusedPercentMap.OverusedPercentProvider += providerOverusedPercent
