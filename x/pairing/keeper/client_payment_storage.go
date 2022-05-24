@@ -89,8 +89,6 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to add user payment! could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
 		}
-		// #O uncomment the next line to see that relayValidateCU is working
-		// k.Logger(ctx).Error("!!! usedCU " + strconv.FormatUint(usedCU, 10) + " ::: totalCU for serviser " + strconv.FormatUint(usedCUProviderTotal, 10))
 	}
 	k.SetClientPaymentStorage(ctx, userPaymentStorageInEpoch)
 	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
