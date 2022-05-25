@@ -44,7 +44,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
-			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": fmt.Sprintf("%d", relay.ChainID)}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
 		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(

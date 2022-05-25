@@ -50,6 +50,9 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	blocksCycle := k.EpochBlocks(ctx)
 	currentBlock := uint64(ctx.BlockHeight())
 	//current block modulu blocks cycle returns how many block in the current epoch we are, if its 0 we are at epoch start
+	if blocksCycle == 0 {
+		return false
+	}
 	return (currentBlock % blocksCycle) == 0
 }
 
