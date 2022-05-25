@@ -1,0 +1,2822 @@
+{
+  "title": "Add Specs: Terra",
+  "description": "Adding new specification support for relaying Terra data on Lava",
+  "specs": [{
+      "chainid": "COS3",
+      "name": "osmosis mainnet",
+      "enabled": true,
+      "apis": [{
+          "name": "abci_info",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "abci_query",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "block",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "block_by_hash",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "block_results",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "block_search",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "blockchain",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "broadcast_evidence",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "broadcast_tx_async",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "broadcast_tx_commit",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "broadcast_tx_sync",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "check_tx",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "commit",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "consensus_params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "consensus_state",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "dump_consensus_state",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "genesis",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "genesis_chunked",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "health",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "net_info",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "num_unconfirmed_txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "status",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "subscribe",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "tx",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "tx_search",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "unconfirmed_txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "unsubscribe",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "unsubscribe_all",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "tendermintrpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/node_info",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/syncing",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/blocks/latest",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/blocks/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/validatorsets/latest",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/validatorsets/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/txs/{hash}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/txs/encode",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/txs/decode",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/bank/balances/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/bank/accounts/{address}/transfers",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/bank/total",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/bank/total/{denomination}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/auth/accounts/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/redelegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/redelegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/validators/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/validators/{validatorAddr}/delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/staking/parameters",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/slashing/signing_infos",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/slashing/validators/{validatorAddr}/unjail",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/slashing/parameters",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/param_change",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/proposer",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/deposits",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/deposits",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/votes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/votes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/votes/{voter}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/proposals/{proposalId}/tally",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/parameters/deposit",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/parameters/tallying",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/gov/parameters/voting",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/validators/{validatorAddr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/validators/{validatorAddr}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/validators/{validatorAddr}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/community_pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/distribution/parameters",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/minting/parameters",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/minting/inflation",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/minting/annual-provisions",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/auth/v1beta1/accounts",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/auth/v1beta1/accounts/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/auth/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/balances/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/denom_owners/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/denoms_metadata",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/supply",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/supply/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/community_pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/evidence/v1beta1/evidence",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/params/{params_type}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/mint/v1beta1/annual_provisions",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/mint/v1beta1/inflation",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/mint/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/params/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/signing_infos",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/historical_info/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/current_plan",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/module_versions",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/authz/v1beta1/grants",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/node_info",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/syncing",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/tx/v1beta1/simulate",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/tx/v1beta1/txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/tx/v1beta1/txs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/tx/v1beta1/txs/{hash}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/num_pools",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools/{poolId}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools/{poolId}/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools/{poolId}/prices",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools/{poolId}/tokens",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/pools/{poolId}/total_share",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/total_liquidity",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/{poolId}/estimate/swap_exact_amount_in",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/gamm/v1beta1/{poolId}/estimate/swap_exact_amount_out",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/epochs/v1beta1/current_epoch",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/epochs/v1beta1/epochs",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/pool-incentives/v1beta1/distr_info",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/pool-incentives/v1beta1/gauge-ids/{pool_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/pool-incentives/v1beta1/incentivized_pools",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/pool-incentives/v1beta1/lockable_durations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/pool-incentives/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_coins/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_pasttime/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_unlockable_coins/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_unlocked_before_time/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/account_unlocking_coins/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/locked_by_id/{lock_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/module_balance",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/lockup/v1beta1/module_locked_amount",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/active_gauges",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/gauge_by_id/{id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/gauges",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/module_distributed_coins",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/module_to_distribute_coins",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/rewards_est/{owner}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/incentives/v1beta1/upcoming_gauges",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/claim/v1beta1/claim_record/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/claim/v1beta1/claimable_for_action/{address}/{action}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/claim/v1beta1/module_account_balance",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/claim/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/claim/v1beta1/total_claimable/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/mint/v1beta1/epoch_provisions",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/osmosis/mint/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/auth/v1beta1/accounts/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/auth/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/balances/{address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/denoms_metadata",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/supply",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/bank/v1beta1/supply/{denom}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/community_pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/evidence/v1beta1/evidence",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/params/{params_type}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/params/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/signing_infos",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/historical_info/{height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/pool",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/current_plan",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/client_state",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/next_sequence",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/channel/v1beta1/connections/{connection}/channels",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/client/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/client/v1beta1/client_states",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/client/v1beta1/client_states/{client_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/client/v1beta1/consensus_states/{client_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/client/v1beta1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/connection/v1beta1/client_connections/{client_id}s",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/connection/v1beta1/connections",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/connection/v1beta1/connections/{connection_id}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/connection/v1beta1/connections/{connection_id}/client_state",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/core/connection/v1beta1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/applications/transfer/v1beta1/denom_traces",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/applications/transfer/v1beta1/denom_traces/{hash}",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        },
+        {
+          "name": "/ibc/applications/transfer/v1beta1/params",
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [{
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }]
+        }
+      ]
+    }
+  ],
+  "deposit": "10000000stake"
+}
