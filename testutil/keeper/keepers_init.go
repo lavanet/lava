@@ -31,13 +31,13 @@ type Keepers struct {
 	AccountKeeper mockAccountKeeper
 }
 
-type servers struct {
+type Servers struct {
 	EpochServer   epochtypes.MsgServer
 	SpecServer    spectypes.MsgServer
 	PairingServer types.MsgServer
 }
 
-func InitAllKeepers(t testing.TB) (*servers, *Keepers, context.Context) {
+func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 
@@ -96,10 +96,51 @@ func InitAllKeepers(t testing.TB) (*servers, *Keepers, context.Context) {
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochtypes.DefaultParams())
 
-	ss := servers{}
+	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
+}
+
+func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
+	block := uint64(unwrapedCtx.BlockHeight() + 1)
+	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
+
+	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+
+	return sdk.WrapSDKContext(unwrapedCtx)
+}
+
+func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
+	nextEpochBlockNum := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
+	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(nextEpochBlockNum))
+
+	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	return sdk.WrapSDKContext(unwrapedCtx)
+}
+
+func NewBlock(ctx context.Context, ks *Keepers) {
+	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
+		unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+		block := uint64(unwrapedCtx.BlockHeight())
+
+		//begin block
+		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ProviderKey)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ClientKey)
+
+		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
+		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
+
+		//end block
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ProviderKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ClientKey)
+		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
+	}
 }

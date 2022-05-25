@@ -151,12 +151,12 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 //this function randomly chooses count providers by weight
 func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
-	var stakeSum uint64 = 0
+	var stakeSum sdk.Coin = sdk.NewCoin("stake", sdk.NewInt(0))
 	hashData := make([]byte, 0)
 	for _, stakedProvider := range providersMaps {
-		stakeSum += stakedProvider.Stake.Amount.Uint64()
+		stakeSum = stakeSum.Add(stakedProvider.Stake)
 	}
-	if stakeSum == 0 {
+	if stakeSum.IsZero() {
 		//list is empty
 		return
 	}
@@ -176,8 +176,9 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntNum := new(big.Int).SetBytes(hash)
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
-		modRes := hashAsNumber.ModRaw(int64(stakeSum)).Uint64()
-		var newStakeSum uint64 = 0
+		modRes := hashAsNumber.Mod(stakeSum.Amount)
+
+		var newStakeSum = sdk.NewCoin("stake", sdk.NewInt(0))
 		//we loop the servicers list form the end because the list is sorted, biggest is last,
 		// and statistically this will have less iterations
 
@@ -187,17 +188,20 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []
 				//this is an index we added
 				continue
 			}
-			newStakeSum += stakedProvider.Stake.Amount.Uint64()
-			if modRes < newStakeSum {
+			newStakeSum = newStakeSum.Add(stakedProvider.Stake)
+			if modRes.LT(newStakeSum.Amount) {
 				//we hit our chosen provider
 				returnedProviders = append(returnedProviders, stakedProvider)
-				stakeSum -= stakedProvider.Stake.Amount.Uint64() //we remove this provider from the random pool, so the sum is lower now
+				stakeSum = stakeSum.Sub(stakedProvider.Stake) //we remove this provider from the random pool, so the sum is lower now
 				indexToSkip[idx] = true
 				break
 			}
 		}
 		if uint64(len(returnedProviders)) >= count {
 			return returnedProviders
+		}
+		if stakeSum.IsZero() {
+			break
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}

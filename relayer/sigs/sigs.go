@@ -11,6 +11,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -191,4 +192,11 @@ func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.Relay
 		return nil, err
 	}
 	return pubKey, nil
+}
+
+func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
+	secretKey, _ = btcSecp256k1.NewPrivateKey(btcSecp256k1.S256())
+	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
+	addr, _ = sdk.AccAddressFromHex(publicBytes.Address().String())
+	return
 }

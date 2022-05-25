@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	tenderminttypes "github.com/tendermint/tendermint/types"
 )
 
 //account keeper mock
@@ -82,5 +83,54 @@ func (k *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts s
 
 func (k *mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
 	k.balance[addr.String()] = amounts
+	return nil
+}
+
+type MockBlockStore struct {
+	height int64
+}
+
+func (b *MockBlockStore) SetHeight(height int64) {
+	b.height = height
+}
+
+func (b *MockBlockStore) Base() int64 {
+	return 0
+}
+func (b *MockBlockStore) Height() int64 {
+	return b.height
+}
+func (b *MockBlockStore) Size() int64 {
+	return 0
+}
+
+func (b *MockBlockStore) LoadBaseMeta() *tenderminttypes.BlockMeta {
+	return nil
+}
+func (b *MockBlockStore) LoadBlockMeta(height int64) *tenderminttypes.BlockMeta {
+	return &tenderminttypes.BlockMeta{}
+}
+func (b *MockBlockStore) LoadBlock(height int64) *tenderminttypes.Block {
+	return &tenderminttypes.Block{}
+}
+
+func (b *MockBlockStore) SaveBlock(block *tenderminttypes.Block, blockParts *tenderminttypes.PartSet, seenCommit *tenderminttypes.Commit) {
+}
+
+func (b *MockBlockStore) PruneBlocks(height int64) (uint64, error) {
+	return 0, nil
+}
+
+func (b *MockBlockStore) LoadBlockByHash(hash []byte) *tenderminttypes.Block {
+	return nil
+}
+func (b *MockBlockStore) LoadBlockPart(height int64, index int) *tenderminttypes.Part {
+	return nil
+}
+
+func (b *MockBlockStore) LoadBlockCommit(height int64) *tenderminttypes.Commit {
+	return nil
+}
+func (b *MockBlockStore) LoadSeenCommit(height int64) *tenderminttypes.Commit {
 	return nil
 }
