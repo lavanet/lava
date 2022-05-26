@@ -72,13 +72,6 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				reply.Sig = nil // for nicer prints
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST)
-			if err != nil {
-				log.Println("1:" + err.Error())
-			} else {
-				reply.Sig = nil // for nicer prints
-				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
-			}
 		}
 	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 10; i++ {
@@ -121,6 +114,13 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 	if apiInterface == "rest" {
 		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
+			if err != nil {
+				log.Println("1:" + err.Error())
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST)
 			if err != nil {
 				log.Println("1:" + err.Error())
 			} else {
