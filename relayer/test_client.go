@@ -20,6 +20,8 @@ const (
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
+	OSMOSIS_NUM_POOLS_URL_REST    = "/osmosis/gamm/v1beta1/num_pools"
+	OSMOSIS_NUM_POOLS_DATA_REST   = ``
 	JSONRPC_TERRA_STATUS          = `{"jsonrpc":"2.0","method":"status","params":[],"id":1}`
 	JSONRPC_TERRA_HEALTH          = `{"jsonrpc":"2.0","method":"health","params":[],"id":2}`
 	URIRPC_TERRA_STATUS           = `status?`
@@ -61,6 +63,61 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 }
 
 func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) {
+	if apiInterface == "rest" {
+		for i := 0; i < 10; i++ {
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
+			if err != nil {
+				log.Println("1:" + err.Error())
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST)
+			if err != nil {
+				log.Println("1:" + err.Error())
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+			}
+		}
+	} else if apiInterface == "tendermintrpc" {
+		for i := 0; i < 10; i++ {
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply JSONRPC_TERRA_STATUS", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply URIRPC_TERRA_STATUS", reply)
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				log.Println("reply URIRPC_TERRA_HEALTH", reply)
+			}
+		}
+	} else {
+		log.Println("ERROR: not supported apiInterface: ", apiInterface)
+	}
+
+}
+
+func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) {
 	if apiInterface == "rest" {
 		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
@@ -156,5 +213,7 @@ func TestClient(
 		ethTests(ctx, chainProxy, privKey)
 	case "COS1":
 		terraTests(ctx, chainProxy, privKey, apiInterface)
+	case "COS3":
+		osmosisTests(ctx, chainProxy, privKey, apiInterface)
 	}
 }
