@@ -247,7 +247,7 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	}
 
 	// Update signature, return reply to user
-	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
+	sig, err := sigs.SignRelayResponse(g_privKey, reply, in)
 	if err != nil {
 		return nil, err
 	}

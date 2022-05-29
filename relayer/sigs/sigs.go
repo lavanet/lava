@@ -1,6 +1,7 @@
 package sigs
 
 import (
+	"encoding/binary"
 	"errors"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -56,6 +57,23 @@ func SignRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
 	return sig, nil
 }
 
+func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+	//
+	queryHash := HashMsg([]byte(relayReq.String()))
+	data_hash := HashMsg(relayResponse.Data)
+	nonceBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
+	dataToSign := append(data_hash, queryHash...)
+	dataToSign = append(dataToSign, nonceBytes...)
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
 func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	//
 	// Recover public key from signature
@@ -82,13 +100,15 @@ func RecoverPubKeyFromRelay(in *pairingtypes.RelayRequest) (secp256k1.PubKey, er
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromRelayReply(in *pairingtypes.RelayReply) (secp256k1.PubKey, error) {
-	tmp := in.Sig
-	in.Sig = []byte{}
-	hash := HashMsg([]byte(in.String()))
-	in.Sig = tmp
-
-	pubKey, err := RecoverPubKey(in.Sig, hash)
+func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	// relay reply signature signs: sign the data hash+query hash+nonce
+	queryHash := HashMsg([]byte(relayReq.String()))
+	data_hash := HashMsg(relayResponse.Data)
+	nonceBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
+	dataToSign := append(data_hash, queryHash...)
+	dataToSign = append(dataToSign, nonceBytes...)
+	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
 	if err != nil {
 		return nil, err
 	}

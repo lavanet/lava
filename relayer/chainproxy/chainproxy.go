@@ -84,7 +84,7 @@ func SendRelay(
 		if err != nil {
 			return nil, err
 		}
-		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply)
+		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 		if err != nil {
 			return nil, err
 		}
