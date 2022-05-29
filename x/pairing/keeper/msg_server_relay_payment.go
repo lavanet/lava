@@ -70,7 +70,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
 		}
-		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay, userStake, clientAddr, totalCUInEpochForUserProvider, providerAddr)
+		allowedCU, err := k.GetAllowedCU(ctx, userStake)
+		if err != nil {
+			panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientAddr, userStake.Stake.Amount.Int64()))
+		}
+		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, relay.CuSum, relay.BlockHeight, allowedCU, userStake.Stake.Amount, clientAddr, totalCUInEpochForUserProvider, providerAddr)
 		if err != nil {
 			//TODO: maybe give provider money but burn user, colluding?
 			//TODO: display correct totalCU and usedCU for provider
@@ -85,8 +89,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
 		}
 		if cuToPay > relay.CuSum {
-			// [?] what sould happen ? event, error, or panic ?
-			// event + error ?
+			panic("cuToPay should never be higher than relay.CuSum")
 		}
 		//
 		if isValidPairing {
