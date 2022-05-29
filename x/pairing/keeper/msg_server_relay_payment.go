@@ -57,7 +57,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
 			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing on proof of relay")
 		}
-
+		if !isValidPairing {
+			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": "pairing result doesn't include provider"}
+			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing claim on proof of relay")
+		}
 		epochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
 		if isOverlap {
 			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
@@ -74,7 +77,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientAddr, userStake.Stake.Amount.Int64()))
 		}
-		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, relay.CuSum, relay.BlockHeight, allowedCU, userStake.Stake.Amount, clientAddr, totalCUInEpochForUserProvider, providerAddr)
+		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, relay.CuSum, relay.BlockHeight, allowedCU, clientAddr, totalCUInEpochForUserProvider, providerAddr, epochStart)
 		if err != nil {
 			//TODO: maybe give provider money but burn user, colluding?
 			//TODO: display correct totalCU and usedCU for provider
@@ -92,58 +95,55 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			panic("cuToPay should never be higher than relay.CuSum")
 		}
 		//
-		if isValidPairing {
-			//pairing is valid, we can pay provider for work
-			reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
-			rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
-			if reward.IsZero() {
-				continue
-			}
 
-			details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
-			//first check we can burn user before we give money to the provider
-			amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
-			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
-			if !found {
-				details["chainID"] = relay.ChainID
-				errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
-				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
-			}
-			burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
-			burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
-			if err2 != nil {
-				details["amountToBurn"] = burnAmount.String()
-				details["error"] = err2.Error()
-				return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user")
-			}
-			if !burnSucceeded {
-				details["amountToBurn"] = burnAmount.String()
-				details["error"] = "insufficient funds or didn't find user"
-				return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
-			}
-
-			//
-			// Mint to module
-			err := k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-			if err != nil {
-				details["error"] = err.Error()
-				utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
-				panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
-			}
-			//
-			// Send to provider
-			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
-			if err != nil {
-				details["error"] = err.Error()
-				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
-				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
-			}
-			details["clientFee"] = burnAmount.String()
-			utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
-		} else {
-			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": "pairing result doesn't include provider"}
-			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing claim on proof of relay")
+		//pairing is valid, we can pay provider for work
+		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
+		if reward.IsZero() {
+			continue
 		}
+
+		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+		//first check we can burn user before we give money to the provider
+		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
+		spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+		if !found {
+			details["chainID"] = relay.ChainID
+			errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
+			panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
+		}
+		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
+		burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
+		if err2 != nil {
+			details["amountToBurn"] = burnAmount.String()
+			details["error"] = err2.Error()
+			return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user")
+		}
+		if !burnSucceeded {
+			details["amountToBurn"] = burnAmount.String()
+			details["error"] = "insufficient funds or didn't find user"
+			return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+		}
+
+		//
+		// Mint to module
+		err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
+		if err != nil {
+			details["error"] = err.Error()
+			utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
+			panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
+		}
+		//
+		// Send to provider
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
+		if err != nil {
+			details["error"] = err.Error()
+			utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
+			panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+		}
+		details["clientFee"] = burnAmount.String()
+		utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
+
 	}
 	return &types.MsgRelayPaymentResponse{}, nil
 }
