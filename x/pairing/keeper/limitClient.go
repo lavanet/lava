@@ -79,9 +79,16 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 	totalOverusedPercent := float64(clientProvidersEpochUsedCUMap.TotalUsed / allowedCU)
 	if usedCU, exist := clientProvidersEpochUsedCUMap.Providers[providerAddr.String()]; exist {
 		// TODO: ServicersToPairCount needs epoch !
-		allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
-		overusedCU := sdk.MaxUint(sdk.ZeroUint(), sdk.NewUint(usedCU-allowedCUProvider))
-		overusedProviderPercent = float64(overusedCU.Uint64() / allowedCUProvider)
+		if k.ServicersToPairCount(ctx) > 0 {
+			allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
+			if allowedCUProvider > 0 {
+				overusedCU := sdk.ZeroUint()
+				if usedCU > allowedCUProvider {
+					overusedCU = sdk.MaxUint(sdk.ZeroUint(), sdk.NewUint(usedCU-allowedCUProvider))
+				}
+				overusedProviderPercent = float64(overusedCU.Uint64() / allowedCUProvider)
+			}
+		}
 	}
 	return totalOverusedPercent, overusedProviderPercent, nil
 }
