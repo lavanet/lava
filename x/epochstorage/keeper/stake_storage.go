@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -148,7 +149,7 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	return 0, false
 }
 
-func (k Keeper) StakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
 	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
 	if !found {
 		return types.StakeEntry{}, false, 0
@@ -373,6 +374,35 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
 		k.SetStakeStorage(ctx, newStorage)
 	}
+}
+
+func (k Keeper) GetNextEpoch(ctx sdk.Context, epoch uint64) uint64 {
+	epochBlocks := k.GetEpochBlocks(ctx, epoch)
+	if epochBlocks == 0 {
+		panic(fmt.Errorf("lava_get_epoch_blocks_error epochBlocks == 0"))
+	}
+	epoch += epochBlocks
+	return epoch
+}
+
+func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
+	key := k.stakeStorageKey(storageType, block, chainID)
+	return k.GetStakeStorage(ctx, key)
+}
+
+// gets chainID, clientAddress, and epoch
+// returns epochstoragetypes.StakeEntry which is needed to calculate allowedCU, for the selected epoch
+func (k Keeper) GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
+	stakeStorage, found := k.getStakeStorageEpoch(ctx, epoch, types.ClientKey, chainID)
+	if !found {
+		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s client %s", epoch, chainID, selectedClient.String())
+	}
+	clientStakeEntry, found, _ := k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, selectedClient)
+	if !found {
+		return nil, fmt.Errorf("could not find stakeEntry - epoch %d for client %s, chainID %s", epoch, selectedClient.String(), chainID)
+	}
+	entry = &clientStakeEntry
+	return
 }
 
 func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {

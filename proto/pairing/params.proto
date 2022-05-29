@@ -34,4 +34,14 @@ message Params {
     (gogoproto.customtype) = "StakeToMaxCUList",
     (gogoproto.nullable)   = false
     ];
+  string unpayLimit = 10 [
+    (gogoproto.moretags) = "yaml:\"unpay_limit\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string slashLimit   = 11 [
+    (gogoproto.moretags) = "yaml:\"slash_limit\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
 }

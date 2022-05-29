@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -64,9 +65,9 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 	return
 }
 
-func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
-	block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (bool, *types.UniquePaymentStorageClientProvider) {
-	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier)
+func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string,
+	block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
+	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier, chainID)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
@@ -77,31 +78,33 @@ func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context,
 }
 
 func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) string {
-	_, provider, _ := k.DecodeUniquePaymentKey(ctx, uniquePaymentStorageClientProvider.Index)
+	key := uniquePaymentStorageClientProvider.Index
+	providerAdrLengh := charToAsciiNumber(rune(key[0]))
+	provider := key[1 : providerAdrLengh+1]
 	return provider
 }
 
-func addressLengths() (int, int) {
-	//TODO: Get these values from AccAddress somehow and remove AdrLengthUser and AdrLengthProvider from pairing/types/key_unique_payment_storage_client_provider
-	adrLengthUser, adrLengthProvider := types.AdrLengthUser, types.AdrLengthProvider
-	return adrLengthUser, adrLengthProvider
+func maxAddressLengths() (int, int) {
+	return address.MaxAddrLen, address.MaxAddrLen
 }
 
-func (k Keeper) DecodeUniquePaymentKey(ctx sdk.Context, key string) (string, string, string) {
-	adrLengthUser, adrLengthProvider := addressLengths()
-	userAddress := key[:adrLengthUser]
-	providerAddress := key[adrLengthUser : adrLengthUser+adrLengthProvider]
-	uniqueIdentifier := key[adrLengthUser+adrLengthProvider:]
-	return userAddress, providerAddress, uniqueIdentifier
-}
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
+	maxAdrLengthUser, maxAdrLengthProvider := maxAddressLengths()
+	providerLength, clientLength := len(providerAddress.String()), len(userAddress.String())
+	if providerLength > maxAdrLengthProvider {
+		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %d == %d", providerAddress.String(), maxAdrLengthProvider, len(providerAddress.String())))
 
-func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string) string {
-	adrLengthUser, adrLengthProvider := addressLengths()
-	if len(userAddress.String()) != adrLengthUser {
-		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %s == %s", userAddress.String(), adrLengthUser, len(userAddress.String())))
-	} else if len(providerAddress.String()) != adrLengthProvider {
-		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %s == %s", providerAddress.String(), adrLengthProvider, len(providerAddress.String())))
+	} else if clientLength > maxAdrLengthUser {
+		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %d == %d", userAddress.String(), maxAdrLengthUser, len(userAddress.String())))
 	}
-	key := userAddress.String() + providerAddress.String() + uniqueIdentifier
+	leadingChar := asciiNumberToChar(providerLength)
+	key := string(leadingChar) + providerAddress.String() + userAddress.String() + uniqueIdentifier + chainID
 	return key
+}
+
+func charToAsciiNumber(char rune) int {
+	return int(char)
+}
+func asciiNumberToChar(asciiNum int) rune {
+	return rune(asciiNum)
 }
