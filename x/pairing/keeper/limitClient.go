@@ -26,28 +26,20 @@ func (k Keeper) GetAllowedCU(ctx sdk.Context, entry *epochstoragetypes.StakeEntr
 	return allowedCU, nil
 }
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relay *types.RelayRequest, clientEntry *epochstoragetypes.StakeEntry, clientAddr sdk.AccAddress, totalCUInEpochForUserProvider uint64, providerAddr sdk.AccAddress) (ammountToPay uint64, err error) {
-	allowedCU, err := k.GetAllowedCU(ctx, clientEntry)
-	if err != nil {
-		panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
-	}
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, ChainID string, CuSum uint64, blockHeight int64, allowedCU uint64, clientStakeAmount sdk.Int, clientAddr sdk.AccAddress, totalCUInEpochForUserProvider uint64, providerAddr sdk.AccAddress) (ammountToPay uint64, err error) {
 	if allowedCU == 0 {
-		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
-		// panic(fmt.Sprintf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64()))
+		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientAddr, clientStakeAmount.Int64())
 	}
 	allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
 	if totalCUInEpochForUserProvider > allowedCUProvider {
-		return k.LimitClientPairingsAndMarkForPenalty(ctx, clientAddr, relay.ChainID, relay.CuSum, clientEntry.Stake.Amount, relay.BlockHeight, totalCUInEpochForUserProvider, allowedCU, allowedCUProvider, providerAddr)
+		return k.LimitClientPairingsAndMarkForPenalty(ctx, clientAddr, ChainID, CuSum, clientStakeAmount, blockHeight, totalCUInEpochForUserProvider, allowedCU, allowedCUProvider, providerAddr)
 	}
 
-	return relay.CuSum, nil
+	return CuSum, nil
 }
 
-func (k Keeper) getMaxCULimitsPercentage(ctx sdk.Context) (float64, float64) {
-	unpayLimitP := float64(k.UnpayLimit(ctx)) / float64(k.LimitDivisor(ctx))
-	slashLimitP := float64(k.SlashLimit(ctx)) / float64(k.LimitDivisor(ctx))
-	// current defaults - slashLimitP, unpayLimitP := 0.2, 0.1 // 20% , 10%
-	return slashLimitP, unpayLimitP
+func (k Keeper) getMaxCULimitsPercentage(ctx sdk.Context) (sdk.Dec, sdk.Dec) {
+	return k.SlashLimit(ctx), k.UnpayLimit(ctx)
 }
 
 func (k Keeper) GetEpochClientProviderUsedCUMap(ctx sdk.Context, clientPaymentStorage types.ClientPaymentStorage) (clientUsedCUMap types.ClientUsedCU, err error) {
@@ -79,10 +71,6 @@ func (k Keeper) GetAllowedCUClientEpoch(ctx sdk.Context, chainID string, epoch u
 	return
 }
 
-func maxU(x uint64, y uint64) uint64 {
-	return uint64(math.Max(float64(x), float64(y)))
-}
-
 func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedCUMap types.ClientUsedCU, allowedCU uint64, providerAddr sdk.AccAddress) (float64, float64, error) {
 	if allowedCU == 0 {
 		return 0, 0, fmt.Errorf("lava_GetOverusedFromUsedCU was called with %d allowedCU", allowedCU)
@@ -92,8 +80,8 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 	if usedCU, exist := clientProvidersEpochUsedCUMap.Providers[providerAddr.String()]; exist {
 		// TODO: ServicersToPairCount needs epoch !
 		allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
-		overusedCU := maxU(0, usedCU-allowedCUProvider)
-		overusedProviderPercent = float64(overusedCU / allowedCUProvider)
+		overusedCU := sdk.MaxUint(sdk.ZeroUint(), sdk.NewUint(usedCU-allowedCUProvider))
+		overusedProviderPercent = float64(overusedCU.Uint64() / allowedCUProvider)
 	}
 	return totalOverusedPercent, overusedProviderPercent, nil
 }
@@ -108,10 +96,10 @@ func (k Keeper) GetEpochClientUsedCUMap(ctx sdk.Context, chainID string, epoch u
 	return types.ClientUsedCU{0, make(map[string]uint64)}, nil
 }
 
-func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedPercentMap *types.ClientProviderOverusedCUPercent, err error) {
+func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string, clientAddr sdk.AccAddress, providerAddr sdk.AccAddress) (clientProviderOverusedPercentMap types.ClientProviderOverusedCUPercent, err error) {
 	//TODO: Caching will save a lot of time...
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
-	clientProviderOverusedPercentMap = &types.ClientProviderOverusedCUPercent{0.0, 0.0}
+	clientProviderOverusedPercentMap = types.ClientProviderOverusedCUPercent{0.0, 0.0}
 
 	// for every epoch in memory
 	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
@@ -126,18 +114,17 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 		}
 		allowedCU, allowedCUErr := k.GetAllowedCUClientEpoch(ctx, chainID, epoch, clientAddr)
 		if allowedCUErr != nil {
-			return nil, allowedCUErr
+			return clientProviderOverusedPercentMap, allowedCUErr
 		} else if allowedCU == 0 {
 			// user has no stake this epoch - continue
 			continue
 		}
 		totalOverusedPercent, providerOverusedPercent, overusedErr := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)
 		if overusedErr != nil {
-			return nil, overusedErr
+			return clientProviderOverusedPercentMap, overusedErr
 		}
 		clientProviderOverusedPercentMap.TotalOverusedPercent += totalOverusedPercent
 		clientProviderOverusedPercentMap.OverusedPercentProvider += providerOverusedPercent
-		// clientProviderOverusedPercentMap.TotalUsed += providerOverusedPercent
 
 		epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch)
 	}
@@ -163,26 +150,25 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	}
 	overusedSumTotalPercent := clientOverusedCU.TotalOverusedPercent
 	overusedSumProviderPercent := clientOverusedCU.OverusedPercentProvider
-	if overusedSumTotalPercent > slashLimitPercent || overusedSumProviderPercent > slashLimitPercent {
+	if overusedSumTotalPercent > slashLimitPercent.MustFloat64() || overusedSumProviderPercent > slashLimitPercent.MustFloat64() {
 		k.SlashUser(ctx, clientAddr)
 		eventType = "lava_slash_user"
 		utils.LogLavaEvent(ctx, logger, "lava_slash_user", map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
 			"relay.CuSum":                strconv.FormatUint(CuSum, 10),
 			"overusedSumTotalPercent":    strconv.FormatFloat(overusedSumTotalPercent, 'f', 6, 64),
 			"overusedSumProviderPercent": strconv.FormatFloat(overusedSumProviderPercent, 'f', 6, 64),
-			"slashLimitPercent":          strconv.FormatFloat(slashLimitPercent, 'f', 6, 64)},
+			"slashLimitPercent":          slashLimitPercent.String()},
 			"overuse is above the slashLimit - slashing user - not paying provider")
 		return uint64(0), nil
 	}
-	if overusedSumTotalPercent < unpayLimitPercent && overusedSumProviderPercent < unpayLimitPercent {
+	if overusedSumTotalPercent < unpayLimitPercent.MustFloat64() && overusedSumProviderPercent < unpayLimitPercent.MustFloat64() {
 		// overuse is under the limit - will allow provider to get payment
-		// ? maybe needs to pay the allowedCU but not pay for overuse ?
 		eventType = "lava_client_overused"
 		utils.LogLavaEvent(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
 			"relay.CuSum":                strconv.FormatUint(CuSum, 10),
 			"overusedSumTotalPercent":    strconv.FormatFloat(overusedSumTotalPercent, 'f', 6, 64),
 			"overusedSumProviderPercent": strconv.FormatFloat(overusedSumProviderPercent, 'f', 6, 64),
-			"unpayLimitPercent":          strconv.FormatFloat(unpayLimitPercent, 'f', 6, 64)},
+			"unpayLimitPercent":          unpayLimitPercent.String()},
 			"overuse is under the unpayLimit - paying provider")
 		return CuSum, nil
 	}
@@ -200,14 +186,16 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	}
 	eventType = "lava_client_overused_unpay"
 	// overused over the unpayLimit (under slashLimit) - paying provider upto the unpayLimit
+	finalPay := uint64(math.Floor(float64(allowedCU)*unpayLimitPercent.MustFloat64())) - clientUsedEpoch.TotalUsed + CuSum
 	utils.LogLavaEvent(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(k.epochStorageKeeper.GetEpochStart(ctx), 10),
 		"relay.CuSum":                strconv.FormatUint(CuSum, 10),
 		"overusedSumTotalPercent":    strconv.FormatFloat(overusedSumTotalPercent, 'f', 6, 64),
 		"overusedSumProviderPercent": strconv.FormatFloat(overusedSumProviderPercent, 'f', 6, 64),
-		"unpayLimitPercent":          strconv.FormatFloat(unpayLimitPercent, 'f', 6, 64)},
+		"finalPay":                   strconv.FormatFloat(float64(finalPay), 'f', 6, 64),
+		"unpayLimitPercent":          unpayLimitPercent.String()},
 		"overuse is above the unpayLimit - paying provider upto the unpayLimit ")
 
-	return uint64(math.Floor(float64(allowedCU)*1.1)) - clientUsedEpoch.TotalUsed + CuSum, nil
+	return finalPay, nil
 }
 
 func (k Keeper) SlashUser(ctx sdk.Context, clientAddr sdk.AccAddress) {

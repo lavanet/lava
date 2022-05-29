@@ -19,7 +19,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.StakeToMaxCUList(ctx),
 		k.UnpayLimit(ctx),
 		k.SlashLimit(ctx),
-		k.LimitDivisor(ctx),
 	)
 }
 
@@ -97,15 +96,11 @@ func (k Keeper) StakeToMaxCUList(ctx sdk.Context) (res types.StakeToMaxCUList) {
 }
 
 // EpochBlocksOverlap returns the EpochBlocksOverlap param
-func (k Keeper) UnpayLimit(ctx sdk.Context) (res uint64) {
+func (k Keeper) UnpayLimit(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyUnpayLimit, &res)
 	return
 }
-func (k Keeper) SlashLimit(ctx sdk.Context) (res uint64) {
+func (k Keeper) SlashLimit(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeySlashLimit, &res)
-	return
-}
-func (k Keeper) LimitDivisor(ctx sdk.Context) (res uint64) {
-	k.paramstore.Get(ctx, types.KeyLimitDivisor, &res)
 	return
 }
