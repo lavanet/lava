@@ -84,7 +84,7 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 			if allowedCUProvider > 0 {
 				overusedCU := sdk.ZeroUint()
 				if usedCU > allowedCUProvider {
-					overusedCU = sdk.MaxUint(sdk.ZeroUint(), sdk.NewUint(usedCU-allowedCUProvider))
+					overusedCU = sdk.NewUint(usedCU - allowedCUProvider)
 				}
 				overusedProviderPercent = float64(overusedCU.Uint64() / allowedCUProvider)
 			}
