@@ -126,8 +126,6 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 		}
 		clientProviderOverusedPercentMap.TotalOverusedPercent += totalOverusedPercent
 		clientProviderOverusedPercentMap.OverusedPercentProvider += providerOverusedPercent
-
-		epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch)
 	}
 	return clientProviderOverusedPercentMap, nil
 }
@@ -185,7 +183,7 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	}
 	eventType = "lava_client_overused_unpay"
 	// overused over the unpayLimit (under slashLimit) - paying provider upto the unpayLimit
-	usedBefore := clientUsedEpoch.TotalUsed - CuSum //because we already added CUSum when w added the epoch payment
+	usedBefore := clientUsedEpoch.TotalUsed - CuSum //because we already added CUSum when we added the epoch payment
 	payLimit := uint64(math.Floor(float64(allowedCU) * unpayLimitPercent.MustFloat64()))
 	finalPay := payLimit - usedBefore
 	utils.LogLavaEvent(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(epochStart, 10),
