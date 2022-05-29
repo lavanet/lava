@@ -104,6 +104,8 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 	epochLast := k.epochStorageKeeper.GetEpochStart(ctx)
 	clientProviderOverusedPercentMap = types.ClientProviderOverusedCUPercent{TotalOverusedPercent: 0.0, OverusedPercentProvider: 0.0}
 
+	epochs_participated := 0.0
+	epochs_participated_provider := 0.0
 	// for every epoch in memory
 	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
 		// get epochPayments for this client
@@ -120,12 +122,20 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 			// user has no stake this epoch - continue
 			continue
 		}
-		totalOverusedPercent, providerOverusedPercent, overusedErr := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr)
+		totalOverusedPercent, providerOverusedPercent, overusedErr := k.GetOverusedFromUsedCU(ctx, clientProvidersEpochUsedCUMap, allowedCU, providerAddr) //returns overused in a specific epoch
 		if overusedErr != nil {
 			return clientProviderOverusedPercentMap, overusedErr
 		}
 		clientProviderOverusedPercentMap.TotalOverusedPercent += totalOverusedPercent
 		clientProviderOverusedPercentMap.OverusedPercentProvider += providerOverusedPercent
+		epochs_participated += 1 // we average total usage between all epochs that had any usage
+		if clientProvidersEpochUsedCUMap.Providers[providerAddr.String()] > 0 {
+			epochs_participated_provider += 1 //we only avergae the provider usage with other epochs with same provider
+		}
+	}
+	if epochs_participated > 0 {
+		clientProviderOverusedPercentMap.TotalOverusedPercent = clientProviderOverusedPercentMap.TotalOverusedPercent / epochs_participated //we average the usage accross all participated epochs
+		clientProviderOverusedPercentMap.OverusedPercentProvider = clientProviderOverusedPercentMap.OverusedPercentProvider / epochs_participated_provider
 	}
 	return clientProviderOverusedPercentMap, nil
 }
