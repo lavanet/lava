@@ -13,24 +13,24 @@ func test(x string) string {
 	return "++++++++++++++++++++++++NICE " + x
 }
 
-func test_found_pass(line string) (bool, string, error) {
+func test_found_passX(line string) (bool, string, error) {
 	return true, line, nil
 }
 
-func test_ERR_client_entries_pairing(line string) (bool, string, error) {
+func test_ERR_client_entries_pairingX(line string) (bool, string, error) {
 	return false, line, fmt.Errorf("ERR_client_entries_pairing should't happen")
 }
-func test_start(line string) (bool, string, error) {
+func test_startX(line string) (bool, string, error) {
 	return true, line, fmt.Errorf("🔄 is expected")
 }
 
-type Event struct {
+type EventX struct {
 	id      string      `json:"id"`
 	content string      `json:"content"`
 	parent  string      `json:"parent"`
 	extra   interface{} `json:"extra,omitempty"`
 }
-type TestResult struct {
+type TestResultX struct {
 	eventID string `json:"eventID"`
 	// event   Event  `json:"eventID"`
 	found  bool   `json:"eventID"`
@@ -39,7 +39,7 @@ type TestResult struct {
 	err    error  `json:"err"`
 }
 
-func finishedTests(expectedEvents []string, results map[string][]TestResult) bool {
+func finishedTestsX(expectedEvents []string, results map[string][]TestResult) bool {
 	for _, eventID := range expectedEvents {
 		if _, ok := results[eventID]; !ok {
 			return false
@@ -151,7 +151,7 @@ func fullflow() {
 		if err == io.EOF {
 			break
 		}
-		if finishedTests(expectedEvents, results) || (strict && failed) {
+		if finishedTestsX(expectedEvents, results) || (strict && failed) {
 			break
 		}
 		//TODO: Set time out
@@ -196,7 +196,7 @@ func fullflow() {
 
 	// TODO: exit cleanly
 }
-func printTestResult(res TestResult) {
+func printTestResultX(res TestResult) {
 	status := "FAILED"
 	err := res.err
 	if res.passed {
@@ -219,7 +219,7 @@ func printTestResult(res TestResult) {
 }
 
 //simple_pipe.go
-func main() {
+func mainB() {
 	fullflow()
 	// nBytes, nChunks := int64(0), int64(0)
 	// buf := make([]byte, 0, 4*1024)
