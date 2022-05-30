@@ -9,11 +9,13 @@ import (
 	"strings"
 )
 
-func mainX() {
+func main() {
 	r := bufio.NewReader(os.Stdin)
 	for {
 		line, err := r.ReadString('\n')
 		if strings.Contains(line, "STARPORT]") || strings.Contains(line, "!") || strings.Contains(line, "lava_") || strings.Contains(line, "ERR_") {
+			fmt.Println(string("!!! lava !!! ") + string(line))
+		} else {
 			fmt.Println(string("!!! nice !!! ") + string(line))
 		}
 		// num += 1
