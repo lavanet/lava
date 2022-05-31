@@ -102,6 +102,8 @@ func tests() map[string](func(string) (bool, string, error)) {
 // [-] github actions CI/CD
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
+	t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
+	t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
 	// Test Configs
 	nodeTest := Test{
 		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},
@@ -123,7 +125,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	states := []State{}
 	results := map[string][]TestResult{}
 	// homepath := getHomePath() + "go/lava/"
-	homepath := "/go/lava/"
+	// homepath := "/go/lava/"
+	homepath := ""
 	t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
 
 	// Test Flow
@@ -131,7 +134,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		stateID:  "starport",
 		homepath: homepath,
 		// cmd:          "killall starport; cd " + homepath + " && starport chain serve -v -r ",
-		cmd:          "killall starport; cd " + homepath + " && starport chain serve -v -r ",
+		cmd:          "killall starport; starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
 		test:         nodeTest,
