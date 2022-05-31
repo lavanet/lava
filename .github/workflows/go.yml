@@ -48,6 +48,10 @@ jobs:
       run: export GOPATH=$GOPATH:`pwd`
     - name: export gopath
       run:  export GOPATH=/home/runner/work/lava/lava:$GOPATH
+    - name: export gopath
+      run:  export PATH=$PATH:$(go env GOPATH)/bin
+    - name: export gopath
+      run:  export GOPATH=$(go env GOPATH)
     - name: go env
       run:  go env
     # - name: PATH
