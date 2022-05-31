@@ -43,7 +43,7 @@ RUN tree
 RUN apt install less grep -y
 RUN ls -l /root/
 # RUN cd /root/go/lava && timeout 100 ignite chain serve -r -v | less
-RUN cd /bin/go/lava && ignite chain build | less
+RUN cd lava && ignite chain build
 RUN export LAVA=/bin/go/lava
 # RUN cd /go/lava && starport chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
