@@ -1,5 +1,5 @@
 #Download base image ubuntu 20.04
-FROM ubuntu:20.04
+FROM golang:1.18.2
 LABEL version="0.1"
 LABEL description="This is custom Docker Image for \
     Lava Go Test"
@@ -11,10 +11,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update
 RUN apt install wget -y
 RUN pwd
-RUN wget https://go.dev/dl/go1.18.2.linux-amd64.tar.gz -O go1.18.2.linux-amd64.tar.gz
-RUN tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
+RUN apt install apt-utils -y
+# RUN wget https://go.dev/dl/go1.18.2.linux-amd64.tar.gz -O go1.18.2.linux-amd64.tar.gz
+# RUN tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
+RUN echo `pwd`
+RUN ls -l
 RUN export PATH=$PATH:/usr/local/go/bin
 RUN export PATH=$PATH:$(go env GOPATH)/bin
+RUN export PATH=$PATH:/usr/local
 RUN export GOPATH=$(go env GOPATH)
 RUN go version
 RUN curl https://get.ignite.com/cli! | bash
