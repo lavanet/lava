@@ -3,6 +3,7 @@ name: Go Test1
 # on: [push, pull_request]
 on: [push]
 
+
 jobs:
   go:
     runs-on: ubuntu-latest
@@ -13,8 +14,8 @@ jobs:
         go-version: 1.18.2
     - name: ls usr 
       run: ls -l /home/runner/work/lava/lava
-    - name: docker build 
-      run: docker build -t lava-docker .
+    # - name: docker build 
+    #   run: docker build -t lava-docker .
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
     - name: starport install
@@ -25,14 +26,36 @@ jobs:
       run:  pwd && ls -l
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
+    - name: export
+      run: export PATH=$PATH:/go/bin
+    - name: export
+      run: export PATH=$PATH:/go
+    - name: export
+      run: export PATH=$PATH:$(go env GOPATH)/bin
+    - name: export
+      run: export PATH=$PATH:/usr/local
+    - name: export
+      run: export PATH=$PATH:/go/lava
+    - name: export
+      run: export PATH=$PATH:`pwd`
+    - name: export
+      run: export GOPATH=$(go env GOPATH)
+    - name: export
+      run: export GOPATH=$GOPATH:/go
+    - name: export
+      run: export GOPATH=$GOPATH:/go/lava
+    - name: export
+      run: export GOPATH=$GOPATH:`pwd`
     - name: export gopath
-      run:  export GOPATH=/home/runner/work/:$GOPATH
+      run:  export GOPATH=/home/runner/work/lava/lava:$GOPATH
     - name: go env
       run:  go env
     # - name: PATH
     #   run:  export PATH=$PATH:`pwd`:
-    - name: node
-      run: cd ~/go/lava; starport chain serve -v -r
+    - name: ignite build
+      run: cd ~/go/lava; ignite chain build
+    # - name: node
+    #   run: cd ~/go/lava; starport chain serve -v -r
     - name: test
       run: cd ~/go/lava; go test ./testutil/e2e/ -v
 
