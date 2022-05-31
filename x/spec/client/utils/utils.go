@@ -23,10 +23,11 @@ type (
 	}
 
 	SpecJSON struct {
-		ChainID string    `json:"chainid" yaml:"chainid"`
-		Name    string    `json:"name" yaml:"name"`
-		Enabled bool      `json:"enabled" yaml:"enabled"`
-		Apis    []ApiJSON `json:"apis" yaml:"apis"`
+		ChainID              string    `json:"chainid" yaml:"chainid"`
+		Name                 string    `json:"name" yaml:"name"`
+		Enabled              bool      `json:"enabled" yaml:"enabled"`
+		Apis                 []ApiJSON `json:"apis" yaml:"apis"`
+		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"enabled"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -52,10 +53,11 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			})
 		}
 		ret = append(ret, types.Spec{
-			Index:   spec.ChainID,
-			Name:    spec.Name,
-			Enabled: spec.Enabled,
-			Apis:    apis,
+			Index:                spec.ChainID,
+			Name:                 spec.Name,
+			Enabled:              spec.Enabled,
+			Apis:                 apis,
+			ReliabilityThreshold: spec.ReliabilityThreshold,
 		})
 	}
 	return ret

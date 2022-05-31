@@ -132,7 +132,7 @@ func askForRewards() {
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
-	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
+	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
 	if err != nil {
 		return nil, err
 	}
@@ -196,12 +196,12 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *p
 	return nil
 }
 
-func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
 	// Checks
-	user, err := getRelayUser(in)
+	user, err := getRelayUser(request)
 	if err != nil {
 		// log.Println("Error: %s", err)
 		return nil, err
@@ -216,29 +216,33 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	if !validUser {
 		return nil, fmt.Errorf("user not authorized or bad signature, err: %s", err)
 	}
-	if !isSupportedSpec(in) {
+	if !isSupportedSpec(request) {
 		return nil, errors.New("spec not supported by server")
 	}
 
 	//
 	// Parse message, check valid api, etc
-	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
+	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update session
-	relaySession, err := getOrCreateSession(ctx, userAddr.String(), in)
+	relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
 	if err != nil {
 		return nil, err
 	}
 
-	err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
+	if request.DataReliability != nil {
+		return nil, fmt.Errorf("not implemented data reliability handling")
+	}
+
+	err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
 	if err != nil {
 		return nil, err
 	}
 
-	relaySession.Proof = in
+	relaySession.Proof = request
 
 	// Send
 	reply, err := nodeMsg.Send(ctx)
@@ -246,12 +250,22 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 		return nil, err
 	}
 
+	//update relay request requestedBlock to the provided one in case it was arbitrary
+	sentry.UpdateRequestedBlock(request, reply)
+
 	// Update signature, return reply to user
-	sig, err := sigs.SignRelayResponse(g_privKey, reply, in)
+	sig, err := sigs.SignRelayResponse(g_privKey, reply, request)
 	if err != nil {
 		return nil, err
 	}
 	reply.Sig = sig
+
+	sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, request)
+	if err != nil {
+		return nil, err
+	}
+	reply.SigBlocks = sigBlocks
+
 	return reply, nil
 }
 
@@ -276,7 +290,7 @@ func Server(
 
 	//
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface)
+	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil)
 	err := sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

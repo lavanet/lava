@@ -8,6 +8,8 @@ import (
 	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
 const (
@@ -15,6 +17,29 @@ const (
 	pk_vrf_prefix = "vrf-pk-"
 	sk_vrf_prefix = "vrf-sk-"
 )
+
+func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey) ([]byte, []byte) {
+	vrfData0, vrfData1 := FormatDataForVrf(request, response)
+	return vrf_sk.Compute(vrfData0), vrf_sk.Compute(vrfData1)
+}
+
+func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
+	relayReq.CuSum = 0
+	relayReq.Provider = ""
+	relayReq.RelayNum = 0
+	relayReq.SessionId = 0
+	relayReq.Sig = nil
+	queryHash = tendermintcrypto.Sha256([]byte(relayReq.String()))
+	return
+}
+
+func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) (data0 []byte, data1 []byte) {
+	//vrf is calculated on: query hash, relayer signature and 0/1 byte
+	queryHash := CalculateQueryHash(*request)
+	data0 = bytes.Join([][]byte{queryHash, response.Sig, []uint8{0}}, nil)
+	data1 = bytes.Join([][]byte{queryHash, response.Sig, []uint8{1}}, nil)
+	return
+}
 
 func VerifyVRF(vrfpk string) error {
 	//everything is okay

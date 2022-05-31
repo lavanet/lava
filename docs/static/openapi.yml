@@ -21505,6 +21505,26 @@ definitions:
       requestBlock:
         type: string
         format: int64
+      DataReliability:
+        type: object
+        properties:
+          differentiator:
+            type: boolean
+          vrfProof:
+            type: string
+            format: byte
+          providerSig:
+            type: string
+            format: byte
+          allDataHash:
+            type: string
+            format: byte
+          queryHash:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -21516,3 +21536,23 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.pairing.VRFData:
+    type: object
+    properties:
+      differentiator:
+        type: boolean
+      vrfProof:
+        type: string
+        format: byte
+      providerSig:
+        type: string
+        format: byte
+      allDataHash:
+        type: string
+        format: byte
+      queryHash:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte

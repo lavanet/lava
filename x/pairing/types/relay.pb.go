@@ -28,17 +28,18 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type RelayRequest struct {
-	ChainID      string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	ApiId        uint32 `protobuf:"varint,2,opt,name=api_id,json=apiId,proto3" json:"api_id,omitempty"`
-	ApiUrl       string `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
-	SessionId    uint64 `protobuf:"varint,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	CuSum        uint64 `protobuf:"varint,5,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
-	Data         []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	Sig          []byte `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
-	Provider     string `protobuf:"bytes,8,opt,name=provider,proto3" json:"provider,omitempty"`
-	BlockHeight  int64  `protobuf:"varint,9,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	RelayNum     uint64 `protobuf:"varint,10,opt,name=relay_num,json=relayNum,proto3" json:"relay_num,omitempty"`
-	RequestBlock int64  `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+	ChainID         string   `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	ApiId           uint32   `protobuf:"varint,2,opt,name=api_id,json=apiId,proto3" json:"api_id,omitempty"`
+	ApiUrl          string   `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
+	SessionId       uint64   `protobuf:"varint,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	CuSum           uint64   `protobuf:"varint,5,opt,name=cu_sum,json=cuSum,proto3" json:"cu_sum,omitempty"`
+	Data            []byte   `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	Sig             []byte   `protobuf:"bytes,7,opt,name=sig,proto3" json:"sig,omitempty"`
+	Provider        string   `protobuf:"bytes,8,opt,name=provider,proto3" json:"provider,omitempty"`
+	BlockHeight     int64    `protobuf:"varint,9,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
+	RelayNum        uint64   `protobuf:"varint,10,opt,name=relay_num,json=relayNum,proto3" json:"relay_num,omitempty"`
+	RequestBlock    int64    `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+	DataReliability *VRFData `protobuf:"bytes,12,opt,name=DataReliability,proto3" json:"DataReliability,omitempty"`
 }
 
 func (m *RelayRequest) Reset()         { *m = RelayRequest{} }
@@ -151,6 +152,13 @@ func (m *RelayRequest) GetRequestBlock() int64 {
 	return 0
 }
 
+func (m *RelayRequest) GetDataReliability() *VRFData {
+	if m != nil {
+		return m.DataReliability
+	}
+	return nil
+}
+
 type RelayReply struct {
 	Data                  []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	Sig                   []byte `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
@@ -235,44 +243,136 @@ func (m *RelayReply) GetSigBlocks() []byte {
 	return nil
 }
 
+type VRFData struct {
+	Differentiator bool   `protobuf:"varint,1,opt,name=differentiator,proto3" json:"differentiator,omitempty"`
+	VrfProof       []byte `protobuf:"bytes,2,opt,name=vrf_proof,json=vrfProof,proto3" json:"vrf_proof,omitempty"`
+	ProviderSig    []byte `protobuf:"bytes,3,opt,name=provider_sig,json=providerSig,proto3" json:"provider_sig,omitempty"`
+	AllDataHash    []byte `protobuf:"bytes,4,opt,name=allDataHash,proto3" json:"allDataHash,omitempty"`
+	QueryHash      []byte `protobuf:"bytes,5,opt,name=queryHash,proto3" json:"queryHash,omitempty"`
+	Sig            []byte `protobuf:"bytes,6,opt,name=sig,proto3" json:"sig,omitempty"`
+}
+
+func (m *VRFData) Reset()         { *m = VRFData{} }
+func (m *VRFData) String() string { return proto.CompactTextString(m) }
+func (*VRFData) ProtoMessage()    {}
+func (*VRFData) Descriptor() ([]byte, []int) {
+	return fileDescriptor_10cd1bfeb9978acf, []int{2}
+}
+func (m *VRFData) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VRFData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VRFData.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VRFData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VRFData.Merge(m, src)
+}
+func (m *VRFData) XXX_Size() int {
+	return m.Size()
+}
+func (m *VRFData) XXX_DiscardUnknown() {
+	xxx_messageInfo_VRFData.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VRFData proto.InternalMessageInfo
+
+func (m *VRFData) GetDifferentiator() bool {
+	if m != nil {
+		return m.Differentiator
+	}
+	return false
+}
+
+func (m *VRFData) GetVrfProof() []byte {
+	if m != nil {
+		return m.VrfProof
+	}
+	return nil
+}
+
+func (m *VRFData) GetProviderSig() []byte {
+	if m != nil {
+		return m.ProviderSig
+	}
+	return nil
+}
+
+func (m *VRFData) GetAllDataHash() []byte {
+	if m != nil {
+		return m.AllDataHash
+	}
+	return nil
+}
+
+func (m *VRFData) GetQueryHash() []byte {
+	if m != nil {
+		return m.QueryHash
+	}
+	return nil
+}
+
+func (m *VRFData) GetSig() []byte {
+	if m != nil {
+		return m.Sig
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*RelayRequest)(nil), "lavanet.lava.pairing.RelayRequest")
 	proto.RegisterType((*RelayReply)(nil), "lavanet.lava.pairing.RelayReply")
+	proto.RegisterType((*VRFData)(nil), "lavanet.lava.pairing.VRFData")
 }
 
 func init() { proto.RegisterFile("pairing/relay.proto", fileDescriptor_10cd1bfeb9978acf) }
 
 var fileDescriptor_10cd1bfeb9978acf = []byte{
-	// 453 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x52, 0xbd, 0x8e, 0xd3, 0x40,
-	0x10, 0xce, 0x26, 0x71, 0x12, 0xcf, 0x39, 0x12, 0x5a, 0xee, 0x74, 0xab, 0x43, 0x58, 0x26, 0x14,
-	0xb8, 0x72, 0x24, 0x90, 0xe8, 0x39, 0x51, 0x5c, 0x1a, 0x90, 0x8c, 0x68, 0xae, 0xb1, 0x36, 0xf6,
-	0x62, 0xaf, 0xf0, 0x1f, 0xbb, 0xde, 0x13, 0xe1, 0x29, 0x78, 0x19, 0x5e, 0x80, 0x8a, 0xf2, 0x4a,
-	0x4a, 0x94, 0xbc, 0x08, 0xda, 0xb1, 0x2f, 0x87, 0x04, 0xa2, 0xda, 0x99, 0x6f, 0xbe, 0x99, 0xf9,
-	0xfc, 0x79, 0xe0, 0x61, 0xcb, 0xa5, 0x92, 0x75, 0xbe, 0x56, 0xa2, 0xe4, 0xbb, 0xa8, 0x55, 0x4d,
-	0xd7, 0xd0, 0xd3, 0x92, 0xdf, 0xf0, 0x5a, 0x74, 0x91, 0x7d, 0xa3, 0x81, 0xb1, 0xfa, 0x36, 0x06,
-	0x2f, 0xb6, 0xac, 0x58, 0x7c, 0x32, 0x42, 0x77, 0x94, 0xc1, 0x3c, 0x2d, 0xb8, 0xac, 0x37, 0xaf,
-	0x19, 0x09, 0x48, 0xe8, 0xc6, 0x77, 0x29, 0x3d, 0x83, 0x19, 0x6f, 0x65, 0x22, 0x33, 0x36, 0x0e,
-	0x48, 0xb8, 0x8c, 0x1d, 0xde, 0xca, 0x4d, 0x46, 0xcf, 0x61, 0x6e, 0x61, 0xa3, 0x4a, 0x36, 0xc1,
-	0x06, 0xcb, 0x7a, 0xaf, 0x4a, 0xfa, 0x18, 0x40, 0x0b, 0xad, 0x65, 0x53, 0xdb, 0x9e, 0x69, 0x40,
-	0xc2, 0x69, 0xec, 0x0e, 0xc8, 0x26, 0xb3, 0xe3, 0x52, 0x93, 0x68, 0x53, 0x31, 0x07, 0x4b, 0x4e,
-	0x6a, 0xde, 0x99, 0x8a, 0x52, 0x98, 0x66, 0xbc, 0xe3, 0x6c, 0x16, 0x90, 0xd0, 0x8b, 0x31, 0xa6,
-	0x0f, 0x60, 0xa2, 0x65, 0xce, 0xe6, 0x08, 0xd9, 0x90, 0x5e, 0xc0, 0xa2, 0x55, 0xcd, 0x8d, 0xcc,
-	0x84, 0x62, 0x0b, 0xdc, 0x7a, 0xcc, 0xe9, 0x13, 0xf0, 0xb6, 0x65, 0x93, 0x7e, 0x4c, 0x0a, 0x21,
-	0xf3, 0xa2, 0x63, 0x6e, 0x40, 0xc2, 0x49, 0x7c, 0x82, 0xd8, 0x15, 0x42, 0xf4, 0x11, 0xb8, 0x68,
-	0x4d, 0x52, 0x9b, 0x8a, 0x01, 0xae, 0x5f, 0x20, 0xf0, 0xc6, 0x54, 0xf4, 0x29, 0x2c, 0x55, 0x6f,
-	0x46, 0x82, 0x3d, 0xec, 0x04, 0x07, 0x78, 0x03, 0x78, 0x69, 0xb1, 0xd5, 0x77, 0x02, 0x30, 0xf8,
-	0xd6, 0x96, 0xbb, 0xa3, 0x6a, 0xf2, 0xb7, 0xea, 0xf1, 0xbd, 0xea, 0x53, 0x70, 0xea, 0xa6, 0x4e,
-	0x05, 0x1a, 0xb5, 0x8c, 0xfb, 0xc4, 0xea, 0x2d, 0x79, 0x77, 0xbf, 0x6e, 0xda, 0xeb, 0xed, 0x31,
-	0xdc, 0x46, 0x5f, 0xc2, 0xf9, 0x07, 0x59, 0xf3, 0x52, 0x7e, 0x11, 0x59, 0xcf, 0xd2, 0x49, 0xc1,
-	0x75, 0x21, 0x34, 0x9a, 0xe7, 0xc5, 0x67, 0xc7, 0x32, 0x36, 0xe8, 0x2b, 0x2c, 0xe2, 0x2f, 0x90,
-	0xf9, 0xd0, 0x31, 0x58, 0xea, 0x6a, 0x99, 0xf7, 0xa4, 0xe7, 0xd7, 0x30, 0xc7, 0x6f, 0x10, 0x8a,
-	0xbe, 0x05, 0x07, 0x43, 0xba, 0x8a, 0xfe, 0x75, 0x27, 0xd1, 0x9f, 0x37, 0x72, 0x11, 0xfc, 0x97,
-	0xd3, 0x96, 0xbb, 0xd5, 0xe8, 0xf2, 0xd5, 0x8f, 0xbd, 0x4f, 0x6e, 0xf7, 0x3e, 0xf9, 0xb5, 0xf7,
-	0xc9, 0xd7, 0x83, 0x3f, 0xba, 0x3d, 0xf8, 0xa3, 0x9f, 0x07, 0x7f, 0x74, 0xfd, 0x2c, 0x97, 0x5d,
-	0x61, 0xb6, 0x51, 0xda, 0x54, 0xeb, 0x61, 0x0e, 0xbe, 0xeb, 0xcf, 0xeb, 0xbb, 0xbb, 0xed, 0x76,
-	0xad, 0xd0, 0xdb, 0x19, 0x1e, 0xee, 0x8b, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x5e, 0xcf, 0xa7,
-	0xc4, 0xcf, 0x02, 0x00, 0x00,
+	// 572 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x93, 0x4f, 0x6f, 0x13, 0x3d,
+	0x10, 0xc6, 0xe3, 0xe6, 0xff, 0x64, 0xfb, 0xbe, 0xc8, 0xb4, 0xaa, 0x55, 0x68, 0xb4, 0x04, 0x09,
+	0x72, 0x4a, 0xa4, 0x22, 0x71, 0xa7, 0xaa, 0xa0, 0xbd, 0x00, 0x72, 0x05, 0x87, 0x5e, 0x56, 0x4e,
+	0xd6, 0xd9, 0x58, 0x38, 0xbb, 0x5b, 0xdb, 0x1b, 0x11, 0x3e, 0x05, 0x9f, 0x09, 0x2e, 0x1c, 0x7b,
+	0xe4, 0x88, 0xda, 0xef, 0x81, 0x90, 0x67, 0x37, 0x69, 0x55, 0x2a, 0x4e, 0xf6, 0xfc, 0x66, 0xc6,
+	0xf6, 0x33, 0x8f, 0x0c, 0x0f, 0x73, 0xa1, 0x8c, 0x4a, 0x93, 0xb1, 0x91, 0x5a, 0xac, 0x46, 0xb9,
+	0xc9, 0x5c, 0x46, 0x77, 0xb4, 0x58, 0x8a, 0x54, 0xba, 0x91, 0x5f, 0x47, 0x55, 0xc5, 0xe0, 0xf7,
+	0x16, 0x04, 0xdc, 0x57, 0x71, 0x79, 0x51, 0x48, 0xeb, 0x28, 0x83, 0xf6, 0x74, 0x2e, 0x54, 0x7a,
+	0x7a, 0xcc, 0x48, 0x48, 0x86, 0x5d, 0xbe, 0x0e, 0xe9, 0x2e, 0xb4, 0x44, 0xae, 0x22, 0x15, 0xb3,
+	0xad, 0x90, 0x0c, 0xb7, 0x79, 0x53, 0xe4, 0xea, 0x34, 0xa6, 0x7b, 0xd0, 0xf6, 0xb8, 0x30, 0x9a,
+	0xd5, 0xb1, 0xc1, 0x57, 0x7d, 0x30, 0x9a, 0x1e, 0x00, 0x58, 0x69, 0xad, 0xca, 0x52, 0xdf, 0xd3,
+	0x08, 0xc9, 0xb0, 0xc1, 0xbb, 0x15, 0x39, 0x8d, 0xfd, 0x71, 0xd3, 0x22, 0xb2, 0xc5, 0x82, 0x35,
+	0x31, 0xd5, 0x9c, 0x16, 0x67, 0xc5, 0x82, 0x52, 0x68, 0xc4, 0xc2, 0x09, 0xd6, 0x0a, 0xc9, 0x30,
+	0xe0, 0xb8, 0xa7, 0x0f, 0xa0, 0x6e, 0x55, 0xc2, 0xda, 0x88, 0xfc, 0x96, 0xee, 0x43, 0x27, 0x37,
+	0xd9, 0x52, 0xc5, 0xd2, 0xb0, 0x0e, 0xde, 0xba, 0x89, 0xe9, 0x13, 0x08, 0x26, 0x3a, 0x9b, 0x7e,
+	0x8a, 0xe6, 0x52, 0x25, 0x73, 0xc7, 0xba, 0x21, 0x19, 0xd6, 0x79, 0x0f, 0xd9, 0x09, 0x22, 0xfa,
+	0x08, 0xba, 0x38, 0x9a, 0x28, 0x2d, 0x16, 0x0c, 0xf0, 0xfa, 0x0e, 0x82, 0xb7, 0xc5, 0x82, 0x3e,
+	0x85, 0x6d, 0x53, 0x0e, 0x23, 0xc2, 0x1e, 0xd6, 0xc3, 0x03, 0x82, 0x0a, 0x1e, 0x79, 0x46, 0xdf,
+	0xc0, 0xff, 0xc7, 0xc2, 0x09, 0x2e, 0xb5, 0x12, 0x13, 0xa5, 0x95, 0x5b, 0xb1, 0x20, 0x24, 0xc3,
+	0xde, 0xe1, 0xc1, 0xe8, 0xbe, 0x39, 0x8f, 0x3e, 0xf2, 0xd7, 0x58, 0x7f, 0xb7, 0x6b, 0xf0, 0x8d,
+	0x00, 0x54, 0x06, 0xe4, 0x7a, 0xb5, 0x91, 0x4f, 0xfe, 0x96, 0xbf, 0x75, 0x23, 0x7f, 0x07, 0x9a,
+	0x69, 0x96, 0x4e, 0x25, 0x4e, 0x7c, 0x9b, 0x97, 0x81, 0x17, 0xae, 0x85, 0xbb, 0x79, 0x77, 0xa3,
+	0x14, 0x5e, 0xb2, 0xf2, 0xd9, 0x2f, 0x61, 0x6f, 0xa6, 0x52, 0xa1, 0xd5, 0x17, 0x19, 0x97, 0x55,
+	0x36, 0x9a, 0x0b, 0x3b, 0x97, 0x16, 0x5d, 0x08, 0xf8, 0xee, 0x26, 0x8d, 0x0d, 0xf6, 0x04, 0x93,
+	0xe8, 0xa5, 0x4a, 0xaa, 0x8e, 0xca, 0x9b, 0xae, 0x55, 0x49, 0x59, 0x34, 0xf8, 0x4e, 0xa0, 0x5d,
+	0x29, 0xa4, 0xcf, 0xe0, 0xbf, 0x58, 0xcd, 0x66, 0xd2, 0xc8, 0xd4, 0x29, 0xe1, 0x32, 0x83, 0x5a,
+	0x3a, 0xfc, 0x0e, 0xf5, 0x1e, 0x2c, 0xcd, 0x2c, 0xca, 0x4d, 0x96, 0xcd, 0x2a, 0x6d, 0x9d, 0xa5,
+	0x99, 0xbd, 0xf7, 0xb1, 0x97, 0xb2, 0xf6, 0x33, 0xf2, 0xda, 0xeb, 0x98, 0xef, 0xad, 0xd9, 0x99,
+	0x4a, 0x68, 0x08, 0x3d, 0xa1, 0xb5, 0xbf, 0xd2, 0xbf, 0x11, 0xc5, 0x06, 0xfc, 0x36, 0xa2, 0x8f,
+	0xa1, 0x7b, 0x51, 0x48, 0xb3, 0xc2, 0x7c, 0x29, 0xef, 0x06, 0xac, 0xa7, 0xda, 0xda, 0x4c, 0xf5,
+	0xf0, 0x1c, 0xda, 0xe8, 0x84, 0x34, 0xf4, 0x1d, 0x34, 0x71, 0x4b, 0x07, 0xf7, 0xdb, 0x79, 0xfb,
+	0xcb, 0xec, 0x87, 0xff, 0xac, 0xc9, 0xf5, 0x6a, 0x50, 0x3b, 0x7a, 0xf5, 0xe3, 0xaa, 0x4f, 0x2e,
+	0xaf, 0xfa, 0xe4, 0xd7, 0x55, 0x9f, 0x7c, 0xbd, 0xee, 0xd7, 0x2e, 0xaf, 0xfb, 0xb5, 0x9f, 0xd7,
+	0xfd, 0xda, 0xf9, 0xf3, 0x44, 0xb9, 0x79, 0x31, 0x19, 0x4d, 0xb3, 0xc5, 0xb8, 0x3a, 0x07, 0xd7,
+	0xf1, 0xe7, 0xf1, 0xfa, 0x1b, 0xbb, 0x55, 0x2e, 0xed, 0xa4, 0x85, 0xff, 0xf8, 0xc5, 0x9f, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0xd7, 0x53, 0xd8, 0x9f, 0xde, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -375,6 +475,18 @@ func (m *RelayRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DataReliability != nil {
+		{
+			size, err := m.DataReliability.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x62
+	}
 	if m.RequestBlock != 0 {
 		i = encodeVarintRelay(dAtA, i, uint64(m.RequestBlock))
 		i--
@@ -504,6 +616,74 @@ func (m *RelayReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *VRFData) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VRFData) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VRFData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Sig) > 0 {
+		i -= len(m.Sig)
+		copy(dAtA[i:], m.Sig)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Sig)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.QueryHash) > 0 {
+		i -= len(m.QueryHash)
+		copy(dAtA[i:], m.QueryHash)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.QueryHash)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.AllDataHash) > 0 {
+		i -= len(m.AllDataHash)
+		copy(dAtA[i:], m.AllDataHash)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.AllDataHash)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ProviderSig) > 0 {
+		i -= len(m.ProviderSig)
+		copy(dAtA[i:], m.ProviderSig)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.ProviderSig)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.VrfProof) > 0 {
+		i -= len(m.VrfProof)
+		copy(dAtA[i:], m.VrfProof)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.VrfProof)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Differentiator {
+		i--
+		if m.Differentiator {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintRelay(dAtA []byte, offset int, v uint64) int {
 	offset -= sovRelay(v)
 	base := offset
@@ -559,6 +739,10 @@ func (m *RelayRequest) Size() (n int) {
 	if m.RequestBlock != 0 {
 		n += 1 + sovRelay(uint64(m.RequestBlock))
 	}
+	if m.DataReliability != nil {
+		l = m.DataReliability.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
 	return n
 }
 
@@ -587,6 +771,38 @@ func (m *RelayReply) Size() (n int) {
 		n += 1 + l + sovRelay(uint64(l))
 	}
 	l = len(m.SigBlocks)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	return n
+}
+
+func (m *VRFData) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Differentiator {
+		n += 2
+	}
+	l = len(m.VrfProof)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.ProviderSig)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.AllDataHash)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.QueryHash)
+	if l > 0 {
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	l = len(m.Sig)
 	if l > 0 {
 		n += 1 + l + sovRelay(uint64(l))
 	}
@@ -906,6 +1122,42 @@ func (m *RelayRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataReliability", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DataReliability == nil {
+				m.DataReliability = &VRFData{}
+			}
+			if err := m.DataReliability.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRelay(dAtA[iNdEx:])
@@ -1128,6 +1380,246 @@ func (m *RelayReply) Unmarshal(dAtA []byte) error {
 			m.SigBlocks = append(m.SigBlocks[:0], dAtA[iNdEx:postIndex]...)
 			if m.SigBlocks == nil {
 				m.SigBlocks = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VRFData) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VRFData: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VRFData: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Differentiator", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Differentiator = bool(v != 0)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VrfProof", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VrfProof = append(m.VrfProof[:0], dAtA[iNdEx:postIndex]...)
+			if m.VrfProof == nil {
+				m.VrfProof = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderSig", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderSig = append(m.ProviderSig[:0], dAtA[iNdEx:postIndex]...)
+			if m.ProviderSig == nil {
+				m.ProviderSig = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllDataHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AllDataHash = append(m.AllDataHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.AllDataHash == nil {
+				m.AllDataHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.QueryHash = append(m.QueryHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.QueryHash == nil {
+				m.QueryHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sig", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sig = append(m.Sig[:0], dAtA[iNdEx:postIndex]...)
+			if m.Sig == nil {
+				m.Sig = []byte{}
 			}
 			iNdEx = postIndex
 		default:

@@ -42,6 +42,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_ETH_BLOCKNUMBER", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE)
@@ -49,6 +50,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_ETH_GETBALANCE", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_NEWFILTER)
@@ -56,6 +58,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_ETH_NEWFILTER", reply)
 			}
 		}
@@ -69,6 +72,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 		log.Println(err)
 	} else {
 		reply.Sig = nil // for nicer prints
+		reply.SigBlocks = nil
 		log.Println("reply", reply)
 	}
 }
@@ -81,6 +85,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println("1:" + err.Error())
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
 			}
 		}
@@ -91,6 +96,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_TERRA_STATUS", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
@@ -98,6 +104,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
@@ -105,6 +112,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply URIRPC_TERRA_STATUS", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
@@ -112,6 +120,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply URIRPC_TERRA_HEALTH", reply)
 			}
 		}
@@ -129,6 +138,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println("1:" + err.Error())
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST)
@@ -136,6 +146,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println("1:" + err.Error())
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
 			}
 		}
@@ -146,6 +157,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_TERRA_STATUS", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
@@ -153,6 +165,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
@@ -160,6 +173,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply URIRPC_TERRA_STATUS", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
@@ -167,6 +181,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				log.Println(err)
 			} else {
 				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
 				log.Println("reply URIRPC_TERRA_HEALTH", reply)
 			}
 		}
@@ -183,9 +198,13 @@ func TestClient(
 	apiInterface string,
 ) {
 	//
+	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
+	if err != nil {
+		log.Fatalln("error: GetOrCreateVRFKey", err)
+	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface)
-	err := sentry.Init(ctx)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface, sk)
+	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
@@ -194,12 +213,6 @@ func TestClient(
 		time.Sleep(1 * time.Second)
 	}
 
-	sk, pk, err := utils.GetOrCreateVRFKey(clientCtx)
-	if err != nil {
-		log.Fatalln("error: GetOrCreateVRFKey", err)
-	}
-	fmt.Printf("using VRF Public Key: %s\n", pk.String())
-	_ = sk
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)

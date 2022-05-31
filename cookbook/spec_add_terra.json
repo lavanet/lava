@@ -5,6 +5,7 @@
       "chainid": "COS1",
       "name": "Terra Columbus-5 mainnet",
       "enabled": true,
+      "reliability_threshold" : 268435455,
       "apis": [{
           "name": "abci_info",
           "block_parsing": {
@@ -3371,6 +3372,7 @@
       "chainid": "COS2",
       "name": "Terra Bombay-12 testnet",
       "enabled": true,
+      "reliability_threshold" : 268435455,
       "apis": [{
           "name": "/abci_info",
           "block_parsing": {

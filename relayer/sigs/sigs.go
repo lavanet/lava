@@ -1,11 +1,13 @@
 package sigs
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -46,8 +48,8 @@ func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func SignRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
-	//
+func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) ([]byte, error) {
+	msgData := []byte(vrfData.String())
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
 	if err != nil {
@@ -57,14 +59,61 @@ func SignRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
 	return sig, nil
 }
 
-func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelayRequest) ([]byte, error) {
 	//
-	queryHash := HashMsg([]byte(relayReq.String()))
-	data_hash := HashMsg(relayResponse.Data)
+	request.DataReliability = nil //its not a part of the signature, its a separate part
+	msgData := []byte(request.String())
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+func AllDataHash(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (data_hash []byte) {
 	nonceBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
-	dataToSign := append(data_hash, queryHash...)
-	dataToSign = append(dataToSign, nonceBytes...)
+	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.Data, nonceBytes, []byte(relayReq.String())}, nil))
+	return
+}
+
+func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
+	// sign the data hash+query hash+nonce
+	queryHash := utils.CalculateQueryHash(*relayReq)
+	data_hash := AllDataHash(relayResponse, relayReq)
+	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	return
+}
+
+func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
+	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+	latestBlockBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(relayResponse.LatestBlock))
+	sessionIdBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(sessionIdBytes, relayReq.SessionId)
+	blockHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(relayReq.BlockHeight))
+	relayNumBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(relayNumBytes, uint64(relayReq.RelayNum))
+	dataToSign = bytes.Join([][]byte{latestBlockBytes, relayResponse.FinalizedBlocksHashes, sessionIdBytes, blockHeightBytes, relayNumBytes}, nil)
+	return
+}
+
+func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq)
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
 	if err != nil {
@@ -87,13 +136,12 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	return (secp256k1.PubKey)(pk), nil
 }
 
-func RecoverPubKeyFromRelay(in *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	tmp := in.Sig
+func RecoverPubKeyFromRelay(in pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	signature := in.Sig
 	in.Sig = []byte{}
+	in.DataReliability = nil
 	hash := HashMsg([]byte(in.String()))
-	in.Sig = tmp
-
-	pubKey, err := RecoverPubKey(in.Sig, hash)
+	pubKey, err := RecoverPubKey(signature, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +149,16 @@ func RecoverPubKeyFromRelay(in *pairingtypes.RelayRequest) (secp256k1.PubKey, er
 }
 
 func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	// relay reply signature signs: sign the data hash+query hash+nonce
-	queryHash := HashMsg([]byte(relayReq.String()))
-	data_hash := HashMsg(relayResponse.Data)
-	nonceBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
-	dataToSign := append(data_hash, queryHash...)
-	dataToSign = append(dataToSign, nonceBytes...)
+	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq)
 	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
 	if err != nil {
 		return nil, err

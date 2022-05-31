@@ -5,6 +5,7 @@
       "chainid": "COS3",
       "name": "osmosis mainnet",
       "enabled": true,
+      "reliability_threshold" : 268435455,
       "apis": [{
           "name": "abci_info",
           "block_parsing": {

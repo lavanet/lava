@@ -3,6 +3,7 @@ package sentry
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
@@ -14,8 +15,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -90,8 +95,11 @@ type Sentry struct {
 	pairingMu        sync.RWMutex
 	pairingHash      []byte
 	pairing          []*RelayerClientWrapper
+	pairingAddresses []string
 	pairingPurgeLock sync.Mutex
 	pairingPurge     []*RelayerClientWrapper
+	VrfSkMu          sync.Mutex
+	VrfSk            vrf.PrivateKey
 }
 
 func (s *Sentry) getEarliestSession(ctx context.Context) error {
@@ -136,6 +144,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	//
 	// Set
 	pairing := []*RelayerClientWrapper{}
+	pairingAddresses := []string{} //this object will not be mutated for vrf calculations
 	for _, servicer := range servicers {
 		//
 		// Sanity
@@ -169,6 +178,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			Sessions:        map[int64]*ClientSession{},
 			MaxComputeUnits: maxcu,
 		})
+		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
@@ -176,6 +186,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	defer s.pairingPurgeLock.Unlock()
 	s.pairingPurge = append(s.pairingPurge, s.pairing...) // append old connections to purge list
 	s.pairing = pairing                                   // replace with new connections
+	s.pairingAddresses = pairingAddresses
 	log.Println("update pairing list!", pairing)
 
 	return nil
@@ -513,6 +524,34 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 	return &c, nil
 }
 
+func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerClientWrapper, int, error) {
+
+	s.pairingMu.RLock()
+	defer s.pairingMu.RUnlock()
+	if len(s.pairing) == 0 {
+		return nil, -1, errors.New("no pairings available")
+	}
+	//
+	for index, wrap := range s.pairing {
+		if wrap.Addr != address {
+			continue
+		}
+		if wrap.Client == nil {
+			wrap.SessionsLock.Lock()
+			defer wrap.SessionsLock.Unlock()
+			//
+			// TODO: we should retry with another addr
+			conn, err := s.connectRawClient(ctx, wrap.Addr)
+			if err != nil {
+				return nil, -1, err
+			}
+			wrap.Client = conn
+		}
+		return wrap, index, nil
+	}
+	return nil, -1, fmt.Errorf("did not find requested address")
+}
+
 func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
 
 	s.pairingMu.RLock()
@@ -523,7 +562,6 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	}
 
 	//
-	// TODO: this should be weighetd
 	index := rand.Intn(len(s.pairing))
 	wrap := s.pairing[index]
 
@@ -542,9 +580,36 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	return wrap, index, nil
 }
 
+func (s *Sentry) DataReliabilityAddress(vrf0 []byte, vrf1 []byte) (address0 string, address1 string) {
+	// check for the VRF thresholds and if holds true send a relay to the provider
+	s.specMu.RLock()
+	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
+	s.specMu.RUnlock()
+	getAddressForVrf := func(vrf []byte) (address string) {
+		vrf_num := binary.LittleEndian.Uint32(vrf)
+		if vrf_num <= reliabilityThreshold {
+			// need to send relay with VRF
+			s.pairingMu.RLock()
+			modulo := uint32(len(s.pairingAddresses))
+			index := vrf_num % modulo
+			address = s.pairingAddresses[index]
+			s.pairingMu.RUnlock()
+		}
+		return
+	}
+	address0 = getAddressForVrf(vrf0)
+	address1 = getAddressForVrf(vrf1)
+	if address0 == address1 {
+		//can't have both with the same provider
+		address1 = ""
+	}
+	return
+}
+
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, error),
+	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
@@ -554,8 +619,7 @@ func (s *Sentry) SendRelay(
 	}
 
 	//
-	// Get or create session and lock it
-	clientSession := func() *ClientSession {
+	getClientSessionFromWrap := func(wrap *RelayerClientWrapper) *ClientSession {
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
@@ -574,18 +638,74 @@ func (s *Sentry) SendRelay(
 		wrap.Sessions[clientSession.SessionId] = clientSession
 
 		return clientSession
-	}()
+	}
+	// Get or create session and lock it
+	clientSession := getClientSessionFromWrap(wrap)
 
 	//
 	// call user
-	defer clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-	reply, err := cb(clientSession)
-
+	reply, request, err := cb(clientSession)
 	//error using this provider
 	if err != nil {
 		s.movePairingEntryToPurge(wrap, index)
+		return reply, err
 	}
-	return reply, err
+
+	providerAcc := clientSession.Client.Acc
+	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+
+	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+		// handle data reliability
+		s.VrfSkMu.Lock()
+		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
+		s.VrfSkMu.Unlock()
+		address0, address1 := s.DataReliabilityAddress(vrfRes0, vrfRes1)
+		sendReliabilityRelay := func(address string, differentiator bool, vrfProof []byte) error {
+			if address != "" && address != providerAcc {
+				wrap, index, err := s.specificPairing(ctx, address)
+				if err != nil {
+					// failed to get clientWrapper for this address, skip reliability
+					log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
+				} else {
+					dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
+						VrfProof:    vrfProof,
+						ProviderSig: reply.Sig,
+						AllDataHash: sigs.AllDataHash(reply, request),
+						QueryHash:   nil, //calculated from query body anyway, this field is for the consensus payment
+						Sig:         nil, //calculated in the callback
+					}
+					clientSession = getClientSessionFromWrap(wrap)
+					_, _, err = cb_reliability(clientSession, dataReliability)
+					if err != nil {
+						log.Println("error: Could not send reliability relay to provider: ", address, err)
+						s.movePairingEntryToPurge(wrap, index)
+					}
+				}
+				return err
+			}
+			return nil
+		}
+
+		go sendReliabilityRelay(address0, false, vrfRes0)
+		go sendReliabilityRelay(address1, true, vrfRes1)
+	}
+	return reply, nil
+}
+
+func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool {
+	//TODO: implement this for the chain, make a method for spec to verify this on chain?
+	switch requestedBlock {
+	case parser.NOT_APPLICABLE:
+		return false
+	default:
+		//TODO: load this from spec
+		//TODO: regard earliest block from spec
+		finalization_criteria := int64(7)
+		if requestedBlock <= latestBlock-finalization_criteria {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
@@ -690,6 +810,7 @@ func NewSentry(
 	isUser bool,
 	newBlockCb func(),
 	apiInterface string,
+	vrf_sk vrf.PrivateKey,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -708,5 +829,16 @@ func NewSentry(
 		Acc:                     acc,
 		newBlockCb:              newBlockCb,
 		ApiInterface:            apiInterface,
+		VrfSk:                   vrf_sk,
+	}
+}
+
+func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
+	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
+	switch request.RequestBlock {
+	case parser.LATEST_BLOCK:
+		request.RequestBlock = response.LatestBlock
+	case parser.EARLIEST_BLOCK:
+		request.RequestBlock = parser.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
 }

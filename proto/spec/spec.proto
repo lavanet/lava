@@ -12,5 +12,6 @@ message Spec {
   string index = 1; 
   string name = 2; 
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
-  bool enabled = 4;   
+  bool enabled = 4;
+  uint32 reliabilityThreshold = 5;
 }

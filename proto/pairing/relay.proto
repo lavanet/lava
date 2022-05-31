@@ -20,6 +20,8 @@ message RelayRequest {
     int64 block_height = 9;
     uint64 relay_num = 10;
     int64 request_block = 11;
+
+    VRFData DataReliability = 12;
 }
 
 message RelayReply {
@@ -29,4 +31,13 @@ message RelayReply {
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
     bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+}
+
+message VRFData {
+    bool differentiator = 1;
+    bytes vrf_proof =2;
+    bytes provider_sig = 3;
+    bytes allDataHash = 4;
+    bytes queryHash = 5; //we only need it for payment later
+    bytes sig =6;
 }

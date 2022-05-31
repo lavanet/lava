@@ -24,7 +24,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, relay := range msg.Relays {
 
-		pubKey, err := sigs.RecoverPubKeyFromRelay(relay)
+		pubKey, err := sigs.RecoverPubKeyFromRelay(*relay)
 		if err != nil {
 			return errorLogAndFormat("relay_proof_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}

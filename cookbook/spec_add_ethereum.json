@@ -6,6 +6,7 @@
       "chainid": "ETH1",
       "name": "Ethereum Mainnet",
       "enabled": true,
+      "reliability_threshold" : 268435455,
       "apis": [
         {
           "name": "rpc_modules",
@@ -1309,6 +1310,7 @@
       "chainid": "ETH4",
       "name": "Ethereum Rinkeby",
       "enabled": true,
+      "reliability_threshold" : 268435455,
       "apis": [
         {
           "name": "eth_getBalance",

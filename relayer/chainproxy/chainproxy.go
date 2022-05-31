@@ -52,52 +52,102 @@ func SendRelay(
 		return nil, err
 	}
 
-	//
-	//
-	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
+	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:     clientSession.Client.Acc,
-			ApiUrl:       url,
-			Data:         []byte(req),
-			SessionId:    uint64(clientSession.SessionId),
-			ChainID:      cp.GetSentry().ChainID,
-			CuSum:        clientSession.CuSum,
-			BlockHeight:  cp.GetSentry().GetBlockHeight(),
-			RelayNum:     clientSession.RelayNum,
-			RequestBlock: nodeMsg.RequestedBlock(),
+			Provider:        clientSession.Client.Acc,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(clientSession.SessionId),
+			ChainID:         cp.GetSentry().ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     cp.GetSentry().GetBlockHeight(),
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    nodeMsg.RequestedBlock(),
+			DataReliability: nil,
 		}
 
-		sig, err := sigs.SignRelay(privKey, []byte(relayRequest.String()))
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		relayRequest.Sig = sig
 
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
+		//update relay request requestedBlock to the provided one in case it was arbitrary
+		sentry.UpdateRequestedBlock(relayRequest, reply)
+
 		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
+			return nil, nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
+		}
+		return reply, relayRequest, nil
+	}
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+		//client session is locked here
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:        clientSession.Client.Acc,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(clientSession.SessionId),
+			ChainID:         cp.GetSentry().ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     cp.GetSentry().GetBlockHeight(),
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    nodeMsg.RequestedBlock(),
+			DataReliability: dataReliability,
 		}
 
-		return reply, nil
-	})
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.Sig = sig
+
+		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.DataReliability.Sig = sig
+
+		c := *clientSession.Client.Client
+		reply, err := c.Relay(ctx, relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+		if err != nil {
+			return nil, nil, err
+		}
+		if serverAddr.String() != clientSession.Client.Acc {
+			return nil, nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
+		}
+		return reply, relayRequest, nil
+	}
+	//
+	//
+	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability)
 
 	return reply, err
 }
