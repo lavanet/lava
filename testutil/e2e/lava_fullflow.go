@@ -215,7 +215,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		delete(results, key)
 	}
 	fmt.Println(string("================================================="))
-	if *failed {
+	if *failed && t != nil {
 		t.Errorf(" ::: Test Failed ::: ")
 		t.FailNow()
 	}
