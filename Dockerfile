@@ -25,8 +25,11 @@ RUN curl https://get.ignite.com/cli! | bash
 RUN ignite version
 RUN curl https://get.starport.network/starport@v0.19.2! | bash
 RUN starport version
-
-
-RUN apt install -y nginx php-fpm supervisor && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt clean
+RUN pwd
+RUN ls -l
+RUN which go
+RUN mkdir ~/go
+RUN cd ~/go
+ADD . .
+RUN pwd
+RUN ls -l
