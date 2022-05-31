@@ -48,3 +48,4 @@ RUN export LAVA=/bin/go/lava
 # RUN cd /go/lava && starport chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
 LABEL name="Lava Docker"
+WORKDIR /go/lava
