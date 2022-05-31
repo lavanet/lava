@@ -1,5 +1,6 @@
 #Download base image ubuntu 20.04
 FROM golang:1.18.2
+ADD /home/runner/work/lava/lava/. /root/go/lava/.
 LABEL version="0.1"
 LABEL description="This is custom Docker Image for \
     Lava Go Test"
@@ -33,7 +34,6 @@ RUN apt install tree -y
 RUN cd ~/go
 RUN mkdir /bin/go
 RUN mkdir /bin/go/lava
-ADD /home/runner/work/lava/lava/. /root/go/lava/.
 # ADD . /bin/go/lava
 RUN pwd
 RUN tree
