@@ -20,7 +20,7 @@ jobs:
     - name: home
       run:  pwd && ls -l
     - name: cp lava
-      run:  cp ~/work/lava/lava ~/go/lava 
+      run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export gopath
       run:  export GOPATH=/home/runner/work/:$GOPATH
     - name: go env
