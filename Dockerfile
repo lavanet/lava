@@ -33,7 +33,7 @@ RUN apt install tree -y
 RUN cd ~/go
 RUN mkdir /bin/go
 RUN mkdir /bin/go/lava
-ADD /home/runner/work/lava/lava /root/go/lava
+ADD /home/runner/work/lava/lava/. /root/go/lava/.
 # ADD . /bin/go/lava
 RUN pwd
 RUN tree
