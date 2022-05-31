@@ -22,9 +22,10 @@ RUN apt install apt-utils -y
 # RUN tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
 RUN echo `pwd`
 RUN ls -l
-RUN export PATH=$PATH:/usr/local/go/bin
+RUN export PATH=$PATH:/go/bin
 RUN export PATH=$PATH:$(go env GOPATH)/bin
 RUN export PATH=$PATH:/usr/local
+RUN export PATH=$PATH:/go/lava
 RUN export GOPATH=$(go env GOPATH)
 RUN go version
 RUN curl https://get.ignite.com/cli! | bash
