@@ -125,6 +125,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	results := map[string][]TestResult{}
 	// homepath := getHomePath() + "go/lava/"
 	homepath := "/home/runner/work/lava/lava/"
+	t.Logf("!!!!!!!!!!!! PRE !!!!!!!!!!!!!!!")
 
 	// Test Flow
 	node := LogProcess(CMD{
@@ -138,6 +139,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		dep:          nil,
 		failed:       failed,
 		requireAlive: true}, t, &states)
+	t.Logf("!!!!!!!!!!!! PRO !!!!!!!!!!!!!!!")
+
 	await(node, "node reset", node_reset, "awating for node reset to proceed...")
 	await(node, "node connected", node_ready, "awating for node api to proceed...")
 	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
