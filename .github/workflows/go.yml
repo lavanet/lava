@@ -17,6 +17,8 @@ jobs:
       run: curl https://get.starport.network/starport@v0.19.2! | bash
     - name: starport version
       run:  starport version
+    - name: home
+      run:  pwd && ls -l
     - name: node
       run: cd /home/runner/work/lava/lava/ && starport chain serve -v -r
     - name: test
