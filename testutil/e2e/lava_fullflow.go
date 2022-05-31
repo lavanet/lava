@@ -135,8 +135,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	node := LogProcess(CMD{
 		stateID:  "starport",
 		homepath: homepath,
-		cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r ",
-		// cmd:          "killall starport; starport chain serve -v -r ",
+		// cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r ",
+		cmd:          "killall starport; starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
 		test:         nodeTest,
