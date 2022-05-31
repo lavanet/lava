@@ -9,6 +9,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update Ubuntu Software repository
 RUN apt update
+RUN echo `pwd`
+RUN ls -l
 ADD /home/runner/work/lava/lava /root/go/lava
 RUN apt install wget -y
 RUN pwd
