@@ -1,6 +1,5 @@
 #Download base image ubuntu 20.04
 FROM golang:1.18.2
-ADD /home/runner/work/lava/lava/. /root/go/lava/.
 LABEL version="0.1"
 LABEL description="This is custom Docker Image for \
     Lava Go Test"
@@ -10,6 +9,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update Ubuntu Software repository
 RUN apt update
+ADD /home/runner/work/lava/lava/. /root/go/lava/.
 RUN apt install wget -y
 RUN pwd
 RUN apt install apt-utils -y
