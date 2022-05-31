@@ -9,7 +9,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update Ubuntu Software repository
 RUN apt update
-ADD /home/runner/work/lava/lava/. /root/go/lava/.
+ADD /home/runner/work/lava/lava /root/go/lava
 RUN apt install wget -y
 RUN pwd
 RUN apt install apt-utils -y
