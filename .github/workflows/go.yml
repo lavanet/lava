@@ -19,12 +19,14 @@ jobs:
       run:  starport version
     - name: home
       run:  pwd && ls -l
+    - name: export gopath
+      run:  export GOPATH=/home/runner/work/:$GOPATH
     - name: go env
       run:  go env
     # - name: PATH
     #   run:  export PATH=$PATH:`pwd`:
     - name: node
-      run: starport chain serve -v -r
+      run: echo pwd; starport chain serve -v -r
     - name: test
       run: go test ./testutil/e2e/ -v
 
