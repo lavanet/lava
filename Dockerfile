@@ -23,17 +23,18 @@ RUN apt install apt-utils -y
 RUN echo `pwd`
 RUN ls -l
 
-ENV PATH    ="${PATH}:/go/bin"
-ENV PATH    ="${PATH}:/go"
-ENV PATH    ="${PATH}:/usr/local"
 ENV PATH    ="${PATH}:/go/lava"
-ENV PATH    ="${PATH}:`pwd`"
-ENV PATH    ="${PATH}:$(go env GOPATH)/bin"
-ENV GOPATH  ="${GOPATH}:/go"
-ENV GOPATH  ="${GOPATH}:/go/bin"
-ENV GOPATH  ="${GOPATH}:/go/lava"
-ENV GOPATH  ="${GOPATH}:`pwd`"
-ENV GOPATH  ="${GOPATH}:$(go env GOPATH)"
+ENV PATH    ="${PATH}:/go/bin"
+ENV PATH    ="${PATH}:/bin"
+ENV PATH    ="${PATH}:/go"
+# ENV PATH    ="${PATH}:/usr/local"
+# ENV PATH    ="${PATH}:`pwd`"
+# ENV PATH    ="${PATH}:$(go env GOPATH)/bin"
+# ENV GOPATH  ="${GOPATH}:/go"
+# ENV GOPATH  ="${GOPATH}:/go/bin"
+# ENV GOPATH  ="${GOPATH}:/go/lava"
+# ENV GOPATH  ="${GOPATH}:`pwd`"
+# ENV GOPATH  ="${GOPATH}:$(go env GOPATH)"
 RUN go version
 RUN curl https://get.ignite.com/cli! | bash
 RUN ignite version
