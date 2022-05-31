@@ -1,6 +1,7 @@
 name: Go Test1
 
-on: [push, pull_request]
+# on: [push, pull_request]
+on: [push]
 
 jobs:
   go:
@@ -16,5 +17,9 @@ jobs:
       run: curl https://get.starport.network/starport@v0.19.2! | bash
     - name: starport version
       run:  starport version
+    - name: node
+      run: cd /home/runner/work/lava/lava/ && starport chain serve -v -r
     - name: test
       run: go test ./testutil/e2e/ -v
+
+  

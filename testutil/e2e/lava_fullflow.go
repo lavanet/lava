@@ -139,9 +139,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		dep:          nil,
 		failed:       failed,
 		requireAlive: true}, t, &states)
-	t.Logf("!!!!!!!!!!!! PRO !!!!!!!!!!!!!!!")
 
 	await(node, "node reset", node_reset, "awating for node reset to proceed...")
+	t.Logf("!!!!!!!!!!!! PRO !!!!!!!!!!!!!!!")
 	await(node, "node connected", node_ready, "awating for node api to proceed...")
 	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
 	// sleep(2, failed)
