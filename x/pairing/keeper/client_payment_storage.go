@@ -85,23 +85,17 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
 		// sums up usedCU for this client and this provider over this epoch
-		usedCUProviderTotal, err = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to add user payment! could not GetTotalUsedCUForProviderEpoch client: %s provider: %s", userAddress.String(), providerAddress.String())
-		}
+		usedCUProviderTotal = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
 	}
 	k.SetClientPaymentStorage(ctx, userPaymentStorageInEpoch)
 	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
 }
 
-func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64, err error) {
+func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ClientPaymentStorage) (usedCUProviderTotal uint64) {
 	usedCUProviderTotal = 0
-	usedCUMap, err := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
-	if err != nil {
-		return 0, err
-	}
+	usedCUMap := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
 	if usedProvider, ok := usedCUMap.Providers[providerAddress.String()]; ok {
-		return usedProvider, nil
+		return usedProvider
 	}
-	return 0, nil
+	return 0
 }
