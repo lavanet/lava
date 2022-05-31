@@ -1,0 +1,20 @@
+name: Go Test1
+
+on: [push, pull_request]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.2
+    - name: ignite install
+      run: curl https://get.ignite.com/cli! | bash
+    - name: starport install
+      run: curl https://get.starport.network/starport@v0.19.2! | bash
+    - name: starport version
+      run:  starport version
+    - name: test
+      run: go test ./testutil/e2e/ -v
