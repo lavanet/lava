@@ -102,7 +102,6 @@ func tests() map[string](func(string) (bool, string, error)) {
 // [-] github actions CI/CD
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
-	t.Logf("!!!!!!!!!!!! STARTED TEST !!!!!!!!!!!!!!!")
 	// Test Configs
 	nodeTest := Test{
 		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},
@@ -124,14 +123,14 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	states := []State{}
 	results := map[string][]TestResult{}
 	// homepath := getHomePath() + "go/lava/"
-	homepath := "/home/runner/work/lava/lava/"
-	t.Logf("!!!!!!!!!!!! PRE !!!!!!!!!!!!!!!")
+	homepath := getHomePath() + "go/lava/"
+	t.Logf("!!!!!!!!!!!! HOME !!!!!!!!!!!!!!! %s", homepath)
 
 	// Test Flow
 	node := LogProcess(CMD{
 		stateID:      "starport",
 		homepath:     homepath,
-		cmd:          "killall starport; cd /home/runner/work/lava/lava/ && starport chain serve -v -r ",
+		cmd:          "killall starport; cd " + homepath + " && starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
 		test:         nodeTest,
@@ -139,9 +138,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		dep:          nil,
 		failed:       failed,
 		requireAlive: true}, t, &states)
-
 	await(node, "node reset", node_reset, "awating for node reset to proceed...")
-	t.Logf("!!!!!!!!!!!! PRO !!!!!!!!!!!!!!!")
 	await(node, "node connected", node_ready, "awating for node api to proceed...")
 	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
 	// sleep(2, failed)
@@ -149,7 +146,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	init := LogProcess(CMD{
 		stateID:      "init",
 		homepath:     homepath,
-		cmd:          "cd /home/runner/work/lava/lava/ && ./init_chain_commands.sh",
+		cmd:          "./init_chain_commands.sh",
 		filter:       []string{"raw_log", "Error", "error", "panic"},
 		testing:      true,
 		test:         initTest,
@@ -164,7 +161,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	client := LogProcess(CMD{
 		stateID:      "client",
 		homepath:     homepath,
-		cmd:          "go run cd /home/runner/work/lava/lava/relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+		cmd:          "go run /home/magic/go/lava/relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 		filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 		testing:      true,
 		test:         clientTest,

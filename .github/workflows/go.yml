@@ -19,6 +19,8 @@ jobs:
       run:  starport version
     - name: home
       run:  pwd && ls -l
+    - name: mv lava
+      run:  mv ~/work/lava/lava ~/go/lava 
     - name: export gopath
       run:  export GOPATH=/home/runner/work/:$GOPATH
     - name: go env
@@ -26,8 +28,8 @@ jobs:
     # - name: PATH
     #   run:  export PATH=$PATH:`pwd`:
     - name: node
-      run: echo pwd; starport chain serve -v -r
+      run: cd ~/go/lava; starport chain serve -v -r
     - name: test
-      run: go test ./testutil/e2e/ -v
+      run: cd ~/go/lava; go test ./testutil/e2e/ -v
 
   
