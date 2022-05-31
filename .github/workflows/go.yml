@@ -12,6 +12,7 @@ jobs:
       with:
         go-version: 1.18.2
     - name: docker build 
+      run: ls -l /usr/bin/git/
       run: docker build -t lava-docker .
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
