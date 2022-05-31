@@ -11,8 +11,9 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
-    - name: docker build 
+    - name: ls usr 
       run: ls -l /usr/bin/git/
+    - name: docker build 
       run: docker build -t lava-docker .
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
