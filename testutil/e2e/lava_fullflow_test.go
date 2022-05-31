@@ -5,7 +5,7 @@ import (
 )
 
 func TestFullflow(t *testing.T) {
-	finalresults, err := FullFlowTest(t)
+	finalresults, err := FullFlowTestX(t)
 	if err != nil {
 		t.Errorf("expected no error but got %v", err)
 	}
@@ -24,4 +24,8 @@ func TestFullflow(t *testing.T) {
 			t.Fail()
 		}
 	}
+}
+
+func FullFlowTestX(t *testing.T) ([]TestResult, error) {
+	return FullFlowTest(t)
 }

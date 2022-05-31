@@ -124,16 +124,18 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	// homepath := getHomePath() + "go/lava/"
-	// homepath := "/go/lava/"
-	homepath := ""
+	// homepath := getHomePath() + "go/lava/" //local
+	homepath := "/go/lava/"
+	// homepath := "/home/magic/go/lava/" //local
+	// homepath := "~/go/lava/"
+	// homepath := ""
 	t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
 
 	// Test Flow
 	node := LogProcess(CMD{
 		stateID:  "starport",
 		homepath: homepath,
-		// cmd:          "killall starport; cd " + homepath + " && starport chain serve -v -r ",
+		// cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r ",
 		cmd:          "killall starport; starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
@@ -163,9 +165,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	sleep(2, failed)
 
 	client := LogProcess(CMD{
-		stateID:      "client",
-		homepath:     homepath,
-		cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+		stateID:  "client",
+		homepath: homepath,
+		// cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+		cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 		filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 		testing:      true,
 		test:         clientTest,

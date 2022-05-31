@@ -22,11 +22,18 @@ RUN apt install apt-utils -y
 # RUN tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
 RUN echo `pwd`
 RUN ls -l
-RUN export PATH=$PATH:/go/bin
-RUN export PATH=$PATH:$(go env GOPATH)/bin
-RUN export PATH=$PATH:/usr/local
-RUN export PATH=$PATH:/go/lava
-RUN export GOPATH=$(go env GOPATH)
+
+ENV PATH    ="${PATH}:/go/bin"
+ENV PATH    ="${PATH}:/go"
+ENV PATH    ="${PATH}:/usr/local"
+ENV PATH    ="${PATH}:/go/lava"
+ENV PATH    ="${PATH}:`pwd`"
+ENV PATH    ="${PATH}:$(go env GOPATH)/bin"
+ENV GOPATH  ="${GOPATH}:/go"
+ENV GOPATH  ="${GOPATH}:/go/bin"
+ENV GOPATH  ="${GOPATH}:/go/lava"
+ENV GOPATH  ="${GOPATH}:`pwd`"
+ENV GOPATH  ="${GOPATH}:$(go env GOPATH)"
 RUN go version
 RUN curl https://get.ignite.com/cli! | bash
 RUN ignite version
@@ -46,7 +53,7 @@ RUN apt install less grep -y
 RUN ls -l /root/
 # RUN cd /root/go/lava && timeout 100 ignite chain serve -r -v | less
 RUN ignite chain build
-RUN export LAVA=/bin/go/lava
+ENV LAVA=/bin/go/lava
 # RUN cd /go/lava && starport chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
 LABEL name="Lava Docker"
