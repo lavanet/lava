@@ -14,6 +14,7 @@ RUN echo `pwd`
 RUN ls -l
 RUN mkdir lava
 ADD . lava/.
+WORKDIR /go/lava
 RUN apt install wget -y
 RUN pwd
 RUN apt install apt-utils -y
@@ -48,4 +49,3 @@ RUN export LAVA=/bin/go/lava
 # RUN cd /go/lava && starport chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
 LABEL name="Lava Docker"
-WORKDIR /go/lava
