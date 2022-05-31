@@ -1,0 +1,1704 @@
+gas estimate: 724875
+code: 0
+codespace: ""
+data: 0A2B0A252F636F736D6F732E676F762E763162657461312E4D73675375626D697450726F706F73616C12020801
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2MwLzE=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: YWZ4Z1paMU9aUkpURitMd0JxZSs2MXdxcElFTFBIOG9hc3hKQUlLdVVCOVhJaGZTVmhKKzRkbDR2TjZUVUpSd0xlbHVOc1ZzcVpjRDJFYlA4QmVtQUE9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: L2Nvc21vcy5nb3YudjFiZXRhMS5Nc2dTdWJtaXRQcm9wb3NhbA==
+  type: message
+- attributes:
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: MQ==
+  type: submit_proposal
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMTBkMDd5MjY1Z21tdXZ0NHowdzlhdzg4MGpuc3I3MDBqNnpuOWtu
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMTBkMDd5MjY1Z21tdXZ0NHowdzlhdzg4MGpuc3I3MDBqNnpuOWtu
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+- attributes:
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: MQ==
+  type: proposal_deposit
+- attributes:
+  - index: true
+    key: bW9kdWxl
+    value: Z292ZXJuYW5jZQ==
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+- attributes:
+  - index: true
+    key: cHJvcG9zYWxfdHlwZQ==
+    value: U3BlY0FkZA==
+  - index: true
+    key: dm90aW5nX3BlcmlvZF9zdGFydA==
+    value: MQ==
+  type: submit_proposal
+gas_used: "481729"
+gas_wanted: "724875"
+height: "21"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+    - key: amount
+      value: 10000000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: amount
+      value: 10000000stake
+    type: coin_spent
+  - attributes:
+    - key: action
+      value: /cosmos.gov.v1beta1.MsgSubmitProposal
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: module
+      value: governance
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    type: message
+  - attributes:
+    - key: amount
+      value: 10000000stake
+    - key: proposal_id
+      value: "1"
+    type: proposal_deposit
+  - attributes:
+    - key: proposal_id
+      value: "1"
+    - key: proposal_type
+      value: SpecAdd
+    - key: voting_period_start
+      value: "1"
+    type: submit_proposal
+  - attributes:
+    - key: recipient
+      value: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: amount
+      value: 10000000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"},{"key":"amount","value":"10000000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"amount","value":"10000000stake"}]},{"type":"message","attributes":[{"key":"action","value":"/cosmos.gov.v1beta1.MsgSubmitProposal"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"}]},{"type":"proposal_deposit","attributes":[{"key":"amount","value":"10000000stake"},{"key":"proposal_id","value":"1"}]},{"type":"submit_proposal","attributes":[{"key":"proposal_id","value":"1"},{"key":"proposal_type","value":"SpecAdd"},{"key":"voting_period_start","value":"1"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"amount","value":"10000000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 5CF68E89447F4D01A48A4BE724231A118307737C72CFA5058B0A3A843E99B684
+gas estimate: 2753218
+code: 0
+codespace: ""
+data: 0A2B0A252F636F736D6F732E676F762E763162657461312E4D73675375626D697450726F706F73616C12020802
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2MwLzI=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: NmtQZTZ2VEhVb0hRM041Um9nVG5HQmpNWnVPRzFvZS9PRGkxT2U5a2hDUndFOVMwUHBLTHo2emhJSUZMbzY4ckJNWm55ZG5ocFhaTEpwaXlhSEtPZWc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: L2Nvc21vcy5nb3YudjFiZXRhMS5Nc2dTdWJtaXRQcm9wb3NhbA==
+  type: message
+- attributes:
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: Mg==
+  type: submit_proposal
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMTBkMDd5MjY1Z21tdXZ0NHowdzlhdzg4MGpuc3I3MDBqNnpuOWtu
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMTBkMDd5MjY1Z21tdXZ0NHowdzlhdzg4MGpuc3I3MDBqNnpuOWtu
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+- attributes:
+  - index: true
+    key: YW1vdW50
+    value: MTAwMDAwMDBzdGFrZQ==
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: Mg==
+  type: proposal_deposit
+- attributes:
+  - index: true
+    key: bW9kdWxl
+    value: Z292ZXJuYW5jZQ==
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+- attributes:
+  - index: true
+    key: cHJvcG9zYWxfdHlwZQ==
+    value: U3BlY0FkZA==
+  - index: true
+    key: dm90aW5nX3BlcmlvZF9zdGFydA==
+    value: Mg==
+  type: submit_proposal
+gas_used: "1833968"
+gas_wanted: "2753218"
+height: "22"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+    - key: amount
+      value: 10000000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: amount
+      value: 10000000stake
+    type: coin_spent
+  - attributes:
+    - key: action
+      value: /cosmos.gov.v1beta1.MsgSubmitProposal
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: module
+      value: governance
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    type: message
+  - attributes:
+    - key: amount
+      value: 10000000stake
+    - key: proposal_id
+      value: "2"
+    type: proposal_deposit
+  - attributes:
+    - key: proposal_id
+      value: "2"
+    - key: proposal_type
+      value: SpecAdd
+    - key: voting_period_start
+      value: "2"
+    type: submit_proposal
+  - attributes:
+    - key: recipient
+      value: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    - key: amount
+      value: 10000000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"},{"key":"amount","value":"10000000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"amount","value":"10000000stake"}]},{"type":"message","attributes":[{"key":"action","value":"/cosmos.gov.v1beta1.MsgSubmitProposal"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"}]},{"type":"proposal_deposit","attributes":[{"key":"amount","value":"10000000stake"},{"key":"proposal_id","value":"2"}]},{"type":"submit_proposal","attributes":[{"key":"proposal_id","value":"2"},{"key":"proposal_type","value":"SpecAdd"},{"key":"voting_period_start","value":"2"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"},{"key":"amount","value":"10000000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 4A1BB628AD01056B361A3BE39D1F2B325BA74284B59B4E801F815E555B05E68A
+code: 0
+codespace: ""
+data: 0A1D0A1B2F636F736D6F732E676F762E763162657461312E4D7367566F7465
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2MwLzM=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: UmNjYVVpNW5WQVZPN0NiT2NYdTcxaVg0Wnh4UUVRUTQrOUhrazZlRkNBOTltYTRhV2NDTzZucHhZL2VsSGd4K3FWOU9lTXVoemtQWDBxdDJ2V0RsNUE9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: L2Nvc21vcy5nb3YudjFiZXRhMS5Nc2dWb3Rl
+  type: message
+- attributes:
+  - index: true
+    key: b3B0aW9u
+    value: eyJvcHRpb24iOjEsIndlaWdodCI6IjEuMDAwMDAwMDAwMDAwMDAwMDAwIn0=
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: MQ==
+  type: proposal_vote
+- attributes:
+  - index: true
+    key: bW9kdWxl
+    value: Z292ZXJuYW5jZQ==
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+gas_used: "50946"
+gas_wanted: "200000"
+height: "23"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: action
+      value: /cosmos.gov.v1beta1.MsgVote
+    - key: module
+      value: governance
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    type: message
+  - attributes:
+    - key: option
+      value: '{"option":1,"weight":"1.000000000000000000"}'
+    - key: proposal_id
+      value: "1"
+    type: proposal_vote
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"message","attributes":[{"key":"action","value":"/cosmos.gov.v1beta1.MsgVote"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"}]},{"type":"proposal_vote","attributes":[{"key":"option","value":"{\"option\":1,\"weight\":\"1.000000000000000000\"}"},{"key":"proposal_id","value":"1"}]}]}]'
+timestamp: ""
+tx: null
+txhash: EDB34F25E3B6252CFEFB83C224CB42499A82AF4BD8476E7F1947A9C65A9DEA70
+code: 0
+codespace: ""
+data: 0A1D0A1B2F636F736D6F732E676F762E763162657461312E4D7367566F7465
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2MwLzQ=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: Unk3bm8vNTNsOW5KWG5uVEpTMGU0V3JUcEwrb1lVZ0xGQW1Dbm1qS0hNb0lEQ2hQSmp6U2tEOElJczZFNzVCZzZCSmN1eHErZXNoMW95WS9aTXc5SEE9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: L2Nvc21vcy5nb3YudjFiZXRhMS5Nc2dWb3Rl
+  type: message
+- attributes:
+  - index: true
+    key: b3B0aW9u
+    value: eyJvcHRpb24iOjEsIndlaWdodCI6IjEuMDAwMDAwMDAwMDAwMDAwMDAwIn0=
+  - index: true
+    key: cHJvcG9zYWxfaWQ=
+    value: Mg==
+  type: proposal_vote
+- attributes:
+  - index: true
+    key: bW9kdWxl
+    value: Z292ZXJuYW5jZQ==
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWg3ZW1qM3FxaHQ1dXIyZGxmZGcwNzVmZHRoNTkzcThkOGh3a2Mw
+  type: message
+gas_used: "78768"
+gas_wanted: "200000"
+height: "24"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: action
+      value: /cosmos.gov.v1beta1.MsgVote
+    - key: module
+      value: governance
+    - key: sender
+      value: cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0
+    type: message
+  - attributes:
+    - key: option
+      value: '{"option":1,"weight":"1.000000000000000000"}'
+    - key: proposal_id
+      value: "2"
+    type: proposal_vote
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"message","attributes":[{"key":"action","value":"/cosmos.gov.v1beta1.MsgVote"},{"key":"module","value":"governance"},{"key":"sender","value":"cosmos1h7emj3qqht5ur2dlfdg075fdth593q8d8hwkc0"}]},{"type":"proposal_vote","attributes":[{"key":"option","value":"{\"option\":1,\"weight\":\"1.000000000000000000\"}"},{"key":"proposal_id","value":"2"}]}]}]'
+timestamp: ""
+tx: null
+txhash: BF273C0E90ACC770C6B4756135C5177713D59F67B6A2D048FB1E47EEFB1C2F77
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0LzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: ZlBoS0JOU1h4UFBOOWdsWUx6b2dhS1hCVWwva0Vra2dYQytvbjdWM1EzdGd3SFgxVk5IWEhvSmgzK2ZncVlDZ3lkT3hYZ0F6eWw1L1VrclhnRmlxZWc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  type: message
+- attributes:
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzA=
+  - index: true
+    key: c3Rha2U=
+    value: MjAxMHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  type: lava_provider_stake_new
+gas_used: "91873"
+gas_wanted: "200000"
+height: "29"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2010stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    - key: amount
+      value: 2010stake
+    type: coin_spent
+  - attributes:
+    - key: deadline
+      value: "30"
+    - key: stake
+      value: 2010stake
+    - key: spec
+      value: ETH1
+    - key: provider
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    - key: amount
+      value: 2010stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2010stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"},{"key":"amount","value":"2010stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"deadline","value":"30"},{"key":"stake","value":"2010stake"},{"key":"spec","value":"ETH1"},{"key":"provider","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"},{"key":"amount","value":"2010stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 8D427A176E8385EF9327AF90FCFFF4CBA94A5B7E11A087C8E298EEAC5FEA146B
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6LzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: cnVQb0UwM3c3T3dOQ1VIQ2FtdVJyY1FtQUNDRERKbnZRbUhZK3JVaVJCTXEzSGxEVXU1ZUpXSE5PeXVDN1NINFA5N0xlM0YzbWg1QW1LMGJ6dDk2UGc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  type: message
+- attributes:
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzE=
+  - index: true
+    key: c3Rha2U=
+    value: MjAwMHN0YWtl
+  type: lava_provider_stake_new
+gas_used: "87317"
+gas_wanted: "200000"
+height: "30"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: amount
+      value: 2000stake
+    type: coin_spent
+  - attributes:
+    - key: spec
+      value: ETH1
+    - key: provider
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: deadline
+      value: "31"
+    - key: stake
+      value: 2000stake
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: amount
+      value: 2000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"amount","value":"2000stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"spec","value":"ETH1"},{"key":"provider","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"deadline","value":"31"},{"key":"stake","value":"2000stake"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"amount","value":"2000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 8C9A8D4AE11E56FE402977297F73054D57F75806F1DA62E5639E2E87D9F1E9A7
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZzLzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: blRHRk4vdXVkMmxCRkZlZnNCUlJvVFRROUNYdGN5ZENxa1FmK215d2ZSOGJPRDE0ZVJlcjZNL1doVjB1ejJQd09xaVFOYUs5ZGJuKzh5aGh5WFRlNXc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  type: message
+- attributes:
+  - index: true
+    key: c3Rha2U=
+    value: MjA1MHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzI=
+  type: lava_provider_stake_new
+gas_used: "91025"
+gas_wanted: "200000"
+height: "31"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2050stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: amount
+      value: 2050stake
+    type: coin_spent
+  - attributes:
+    - key: stake
+      value: 2050stake
+    - key: spec
+      value: ETH1
+    - key: provider
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: deadline
+      value: "32"
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: amount
+      value: 2050stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2050stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"amount","value":"2050stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"stake","value":"2050stake"},{"key":"spec","value":"ETH1"},{"key":"provider","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"deadline","value":"32"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"amount","value":"2050stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: D1EE7043A2F2B95C501FB06985264768A220DEF15DA25E11D071732894E39F00
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWczczZydThtZnQzZWFmZTkzZmt1dHhhcTl3cGsyNGphbjZyZzhwLzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: anFGWW4vVjd3SWhYUFZKcmk2VTFiNVN6ZzJTMkl3ZTVjYmQ4SWJRSG1YWmU2K2tLMzFEUDV6N05rU3J1aVRCVkxBYk1QM3c2c2oyMGlKZVE0VXJxbGc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWczczZydThtZnQzZWFmZTkzZmt1dHhhcTl3cGsyNGphbjZyZzhw
+  - index: true
+    key: YW1vdW50
+    value: MjAyMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAyMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWczczZydThtZnQzZWFmZTkzZmt1dHhhcTl3cGsyNGphbjZyZzhw
+  - index: true
+    key: YW1vdW50
+    value: MjAyMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWczczZydThtZnQzZWFmZTkzZmt1dHhhcTl3cGsyNGphbjZyZzhw
+  type: message
+- attributes:
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMWczczZydThtZnQzZWFmZTkzZmt1dHhhcTl3cGsyNGphbjZyZzhw
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzM=
+  - index: true
+    key: c3Rha2U=
+    value: MjAyMHN0YWtl
+  type: lava_provider_stake_new
+gas_used: "94733"
+gas_wanted: "200000"
+height: "32"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2020stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p
+    - key: amount
+      value: 2020stake
+    type: coin_spent
+  - attributes:
+    - key: spec
+      value: ETH1
+    - key: provider
+      value: cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p
+    - key: deadline
+      value: "33"
+    - key: stake
+      value: 2020stake
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p
+    - key: amount
+      value: 2020stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2020stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p"},{"key":"amount","value":"2020stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"spec","value":"ETH1"},{"key":"provider","value":"cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p"},{"key":"deadline","value":"33"},{"key":"stake","value":"2020stake"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p"},{"key":"amount","value":"2020stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: D96EDE672ED35FA78FE4A99C2AB79DE7622999FBF1E084D1D819B72FE1FA9210
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMTU2eGFwZWh2NzZxbHlyNnB5a2tzdXc5NXo0NDNhZHpueGhyYTU1LzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: ZjBmVTBWK0l0Vk1ETzVQMU5SZ3RIeEUzNnd2Z0g2b1c1TVlLMWU0M3BFNWdXeURQMUVXUWZlb3FpU3htT3BsVkdDRWZteEs5V1gwVk8zWWpGZzU0M3c9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMTU2eGFwZWh2NzZxbHlyNnB5a2tzdXc5NXo0NDNhZHpueGhyYTU1
+  - index: true
+    key: YW1vdW50
+    value: MjAzMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAzMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTU2eGFwZWh2NzZxbHlyNnB5a2tzdXc5NXo0NDNhZHpueGhyYTU1
+  - index: true
+    key: YW1vdW50
+    value: MjAzMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTU2eGFwZWh2NzZxbHlyNnB5a2tzdXc5NXo0NDNhZHpueGhyYTU1
+  type: message
+- attributes:
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzQ=
+  - index: true
+    key: c3Rha2U=
+    value: MjAzMHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTU2eGFwZWh2NzZxbHlyNnB5a2tzdXc5NXo0NDNhZHpueGhyYTU1
+  type: lava_provider_stake_new
+gas_used: "98471"
+gas_wanted: "200000"
+height: "33"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2030stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos156xapehv76qlyr6pykksuw95z443adznxhra55
+    - key: amount
+      value: 2030stake
+    type: coin_spent
+  - attributes:
+    - key: deadline
+      value: "34"
+    - key: stake
+      value: 2030stake
+    - key: spec
+      value: ETH1
+    - key: provider
+      value: cosmos156xapehv76qlyr6pykksuw95z443adznxhra55
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos156xapehv76qlyr6pykksuw95z443adznxhra55
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos156xapehv76qlyr6pykksuw95z443adznxhra55
+    - key: amount
+      value: 2030stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2030stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos156xapehv76qlyr6pykksuw95z443adznxhra55"},{"key":"amount","value":"2030stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"deadline","value":"34"},{"key":"stake","value":"2030stake"},{"key":"spec","value":"ETH1"},{"key":"provider","value":"cosmos156xapehv76qlyr6pykksuw95z443adznxhra55"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos156xapehv76qlyr6pykksuw95z443adznxhra55"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos156xapehv76qlyr6pykksuw95z443adznxhra55"},{"key":"amount","value":"2030stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 3266D3CD774F1FBB765DDB7DEE51D17EF37ADD947B9C69EA6D3AFD55801D81D9
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0LzE=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: QkVYNlQ4ck9BaGJYWVl0b29UVEhxVUxqWnpNeXRqOXVFYS80a0xPZTgyOVIxYU9lcXZuQ1hnY255WU0rc2ZCM3FOMVBoTE9KcFFLaG5KaVl4RUlxOXc9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  - index: true
+    key: YW1vdW50
+    value: MjAxMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  type: message
+- attributes:
+  - index: true
+    key: c3Rha2U=
+    value: MjAxMHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: Q09TMw==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMWc1aHpjemc2cjV4YzdqcTdqdndmMjI1YWFhcjQ2dWR6aHNuenA0
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzU=
+  type: lava_provider_stake_new
+gas_used: "134918"
+gas_wanted: "200000"
+height: "34"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2010stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    - key: amount
+      value: 2010stake
+    type: coin_spent
+  - attributes:
+    - key: stake
+      value: 2010stake
+    - key: spec
+      value: COS3
+    - key: provider
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    - key: deadline
+      value: "35"
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+    - key: amount
+      value: 2010stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2010stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"},{"key":"amount","value":"2010stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"stake","value":"2010stake"},{"key":"spec","value":"COS3"},{"key":"provider","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"},{"key":"deadline","value":"35"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4"},{"key":"amount","value":"2010stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: C8592E24A64262B13CB2259076886E618220B964B7828677EA32B98D467F5964
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6LzE=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: SjBsMGlObWVCRmRVQ2k2YkxmbkxTR1JFREpUNjhjbHlDczRBSlpwRFlEbFlUc2dIUFowZ3FFS08wbWxmQ253TTIwU2hjaitDZmYvMGt1Wm9pMFlQb3c9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  type: message
+- attributes:
+  - index: true
+    key: c3Rha2U=
+    value: MjAwMHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: Q09TMw==
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTZ5d3hsNXg4bmRxNTVhcDVzZ3R2OTg2azh4ODA5OXh0OXRxeWN6
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: MzY=
+  type: lava_provider_stake_new
+gas_used: "139898"
+gas_wanted: "200000"
+height: "35"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: amount
+      value: 2000stake
+    type: coin_spent
+  - attributes:
+    - key: stake
+      value: 2000stake
+    - key: spec
+      value: COS3
+    - key: provider
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: deadline
+      value: "36"
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+    - key: amount
+      value: 2000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"amount","value":"2000stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"stake","value":"2000stake"},{"key":"spec","value":"COS3"},{"key":"provider","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"deadline","value":"36"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz"},{"key":"amount","value":"2000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 66A7020C0E110C7D29F231056968E2CC830AF10C443F8496D61AD91B5B2729CB
+code: 0
+codespace: ""
+data: 0A280A262F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B6550726F7669646572
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZzLzE=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: ajg3ZGNQVytGeFZMQ0RUREhQS1AyWGdwY3huRFM0NXdiMGVSMGNlRDFmTUx4dHhxRG5XeXh2VEJTSnR2RFJCM2RxUENOQ25SRERQNmUwb1pXbXpGbEE9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfcHJvdmlkZXI=
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: YW1vdW50
+    value: MjA1MHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  type: message
+- attributes:
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMW5ucHh2amVtemd1c3B3ZHdlODd6dW53OHN4cG5yZ3A3dzJhdDZz
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: Mzc=
+  - index: true
+    key: c3Rha2U=
+    value: MjA1MHN0YWtl
+  - index: true
+    key: c3BlYw==
+    value: Q09TMw==
+  type: lava_provider_stake_new
+gas_used: "144794"
+gas_wanted: "200000"
+height: "36"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 2050stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: amount
+      value: 2050stake
+    type: coin_spent
+  - attributes:
+    - key: provider
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: deadline
+      value: "37"
+    - key: stake
+      value: 2050stake
+    - key: spec
+      value: COS3
+    type: lava_provider_stake_new
+  - attributes:
+    - key: action
+      value: stake_provider
+    - key: sender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+    - key: amount
+      value: 2050stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"2050stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"amount","value":"2050stake"}]},{"type":"lava_provider_stake_new","attributes":[{"key":"provider","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"deadline","value":"37"},{"key":"stake","value":"2050stake"},{"key":"spec","value":"COS3"}]},{"type":"message","attributes":[{"key":"action","value":"stake_provider"},{"key":"sender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s"},{"key":"amount","value":"2050stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: FFFBCC6ACCC6B1387F5A4A5809CAEAB3C8F70E52FBB631D80E8BD6A2EA43BC98
+code: 0
+codespace: ""
+data: 0A260A242F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B65436C69656E74
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMXAzeXc0eGFteHR4enJnZmEzdWVqeXZrZ3c3eG5rNjB6Znc3dW5oLzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: UUVZZlZjY3QzTmdRdSsxZlM2eE5HQW9DYTg3RzN3OG9LRktGOEpGcHZ3MEMyTlNSL0ZFdFFuV3UxVG1NeXBxMXEwMnZGYzBtNHJHWjg2ZHFOc0RnQ1E9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfY2xpZW50
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMXAzeXc0eGFteHR4enJnZmEzdWVqeXZrZ3c3eG5rNjB6Znc3dW5o
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMXAzeXc0eGFteHR4enJnZmEzdWVqeXZrZ3c3eG5rNjB6Znc3dW5o
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMXAzeXc0eGFteHR4enJnZmEzdWVqeXZrZ3c3eG5rNjB6Znc3dW5o
+  type: message
+- attributes:
+  - index: true
+    key: c3Rha2U=
+    value: MjAwMDAwc3Rha2U=
+  - index: true
+    key: c3BlYw==
+    value: RVRIMQ==
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMXAzeXc0eGFteHR4enJnZmEzdWVqeXZrZ3c3eG5rNjB6Znc3dW5o
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: Mzg=
+  type: lava_client_stake_new
+gas_used: "73397"
+gas_wanted: "200000"
+height: "37"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 200000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh
+    - key: amount
+      value: 200000stake
+    type: coin_spent
+  - attributes:
+    - key: stake
+      value: 200000stake
+    - key: spec
+      value: ETH1
+    - key: client
+      value: cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh
+    - key: deadline
+      value: "38"
+    type: lava_client_stake_new
+  - attributes:
+    - key: action
+      value: stake_client
+    - key: sender
+      value: cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh
+    - key: amount
+      value: 200000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"200000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh"},{"key":"amount","value":"200000stake"}]},{"type":"lava_client_stake_new","attributes":[{"key":"stake","value":"200000stake"},{"key":"spec","value":"ETH1"},{"key":"client","value":"cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh"},{"key":"deadline","value":"38"}]},{"type":"message","attributes":[{"key":"action","value":"stake_client"},{"key":"sender","value":"cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh"},{"key":"amount","value":"200000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 5594DFDC8DCBBB97F3ADFC83B00933E4196B50FC8DC7F12E391C8E400FAFACB2
+code: 0
+codespace: ""
+data: 0A260A242F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B65436C69656E74
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWpuMHpmcTQ4emF2NWg3ajNtdmR3NHB5dXBudnlmbGp1Z3dsdzV4LzA=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: UUc1VllwcVVJRlZHL0dreDJYcjQvaWgydXUyVndQTlFRRk9rTFlpc2l1VXBEZ1BsbG16R3Q5QnZtc1ZHMkZsSkliUkM2aGdkV1pJVzhkUThPd0dkYkE9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: c3Rha2VfY2xpZW50
+  type: message
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWpuMHpmcTQ4emF2NWg3ajNtdmR3NHB5dXBudnlmbGp1Z3dsdzV4
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWpuMHpmcTQ4emF2NWg3ajNtdmR3NHB5dXBudnlmbGp1Z3dsdzV4
+  - index: true
+    key: YW1vdW50
+    value: MjAwMDAwc3Rha2U=
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWpuMHpmcTQ4emF2NWg3ajNtdmR3NHB5dXBudnlmbGp1Z3dsdzV4
+  type: message
+- attributes:
+  - index: true
+    key: c3BlYw==
+    value: Q09TMw==
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMWpuMHpmcTQ4emF2NWg3ajNtdmR3NHB5dXBudnlmbGp1Z3dsdzV4
+  - index: true
+    key: ZGVhZGxpbmU=
+    value: Mzk=
+  - index: true
+    key: c3Rha2U=
+    value: MjAwMDAwc3Rha2U=
+  type: lava_client_stake_new
+gas_used: "101534"
+gas_wanted: "200000"
+height: "38"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 200000stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x
+    - key: amount
+      value: 200000stake
+    type: coin_spent
+  - attributes:
+    - key: spec
+      value: COS3
+    - key: client
+      value: cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x
+    - key: deadline
+      value: "39"
+    - key: stake
+      value: 200000stake
+    type: lava_client_stake_new
+  - attributes:
+    - key: action
+      value: stake_client
+    - key: sender
+      value: cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x
+    - key: amount
+      value: 200000stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"200000stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x"},{"key":"amount","value":"200000stake"}]},{"type":"lava_client_stake_new","attributes":[{"key":"spec","value":"COS3"},{"key":"client","value":"cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x"},{"key":"deadline","value":"39"},{"key":"stake","value":"200000stake"}]},{"type":"message","attributes":[{"key":"action","value":"stake_client"},{"key":"sender","value":"cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1jn0zfq48zav5h7j3mvdw4pyupnvyfljugwlw5x"},{"key":"amount","value":"200000stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 40EB9FAC67C70F6578DEB692A1E171C0DDCE88AC9451BA70856EBAE0F7DAF53A
+---------------Queries------------------
+output: |
+  Staked Providers Query Output:
+  ChainID: ETH1 Enabled: true Current Block: 38
+  Staked Providers:
+  [{2000stake cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz 31 [{127.0.0.1:2222 jsonrpc 1}] 1 ETH1} {2010stake cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4 30 [{127.0.0.1:2221 jsonrpc 1}] 1 ETH1} {2020stake cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p 33 [{127.0.0.1:2224 jsonrpc 1}] 1 ETH1} {2030stake cosmos156xapehv76qlyr6pykksuw95z443adznxhra55 34 [{127.0.0.1:2225 jsonrpc 1}] 1 ETH1} {2050stake cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s 32 [{127.0.0.1:2223 jsonrpc 1}] 1 ETH1}]
+  Unstaking Providers:
+  []
+  --------------------------------------
+stakeEntry:
+- address: cosmos16ywxl5x8ndq55ap5sgtv986k8x8099xt9tqycz
+  chain: ETH1
+  deadline: "31"
+  endpoints:
+  - geolocation: "1"
+    iPPORT: 127.0.0.1:2222
+    useType: jsonrpc
+  geolocation: "1"
+  stake:
+    amount: "2000"
+    denom: stake
+- address: cosmos1g5hzczg6r5xc7jq7jvwf225aaar46udzhsnzp4
+  chain: ETH1
+  deadline: "30"
+  endpoints:
+  - geolocation: "1"
+    iPPORT: 127.0.0.1:2221
+    useType: jsonrpc
+  geolocation: "1"
+  stake:
+    amount: "2010"
+    denom: stake
+- address: cosmos1g3s6ru8mft3eafe93fkutxaq9wpk24jan6rg8p
+  chain: ETH1
+  deadline: "33"
+  endpoints:
+  - geolocation: "1"
+    iPPORT: 127.0.0.1:2224
+    useType: jsonrpc
+  geolocation: "1"
+  stake:
+    amount: "2020"
+    denom: stake
+- address: cosmos156xapehv76qlyr6pykksuw95z443adznxhra55
+  chain: ETH1
+  deadline: "34"
+  endpoints:
+  - geolocation: "1"
+    iPPORT: 127.0.0.1:2225
+    useType: jsonrpc
+  geolocation: "1"
+  stake:
+    amount: "2030"
+    denom: stake
+- address: cosmos1nnpxvjemzguspwdwe87zunw8sxpnrgp7w2at6s
+  chain: ETH1
+  deadline: "32"
+  endpoints:
+  - geolocation: "1"
+    iPPORT: 127.0.0.1:2223
+    useType: jsonrpc
+  geolocation: "1"
+  stake:
+    amount: "2050"
+    denom: stake
+output: |
+  Staked Clients Query Output:
+  ChainID: ETH1 Enabled: true Current Block: 38
+  Staked Clients:
+  [{200000stake cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh 38 [] 1 ETH1}]
+  Unstaking Clients:
+  []
+  --------------------------------------
+stakeEntry:
+- address: cosmos1p3yw4xamxtxzrgfa3uejyvkgw7xnk60zfw7unh
+  chain: ETH1
+  deadline: "38"
+  endpoints: []
+  geolocation: "1"
+  stake:
+    amount: "200000"
+    denom: stake
+---------------Setup Providers------------------
+screen: no process found
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+Remove dead screens with 'screen -wipe'.
+--- setting up screens done ---
+There are screens on:
+	3339345.portals	(05/31/2022 06:44:05 PM)	(Detached)
+	3339285.cos3_providers	(05/31/2022 06:44:05 PM)	(Detached)
+	3339267.eth1_providers	(05/31/2022 06:44:05 PM)	(Detached)
+	1565487.portals	(05/25/2022 09:09:33 PM)	(Dead ???)
+	1565433.cos3_providers	(05/25/2022 09:09:33 PM)	(Dead ???)
+	1565413.eth1_providers	(05/25/2022 09:09:33 PM)	(Dead ???)
+	836561.portals	(05/25/2022 09:09:33 PM)	(Dead ???)
+	836499.cos3_providers	(05/25/2022 09:09:33 PM)	(Dead ???)
+	836480.eth1_providers	(05/25/2022 09:09:33 PM)	(Dead ???)
+Remove dead screens with 'screen -wipe'.
+9 Sockets in /run/screen/S-magic.
