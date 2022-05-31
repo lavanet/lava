@@ -9,9 +9,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # Update Ubuntu Software repository
 RUN apt update
+RUN apt install tree -y
 RUN echo `pwd`
 RUN ls -l
-ADD /home/runner/work/lava/lava /root/go/lava
+RUN mkdir lava
+ADD . lava/.
 RUN apt install wget -y
 RUN pwd
 RUN apt install apt-utils -y
@@ -32,7 +34,6 @@ RUN pwd
 RUN ls -l
 RUN which go
 RUN mkdir ~/go
-RUN apt install tree -y
 RUN cd ~/go
 RUN mkdir /bin/go
 RUN mkdir /bin/go/lava
