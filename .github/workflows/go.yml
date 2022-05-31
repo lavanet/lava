@@ -19,8 +19,8 @@ jobs:
       run:  starport version
     - name: home
       run:  pwd && ls -l
-    - name: mv lava
-      run:  mv ~/work/lava/lava ~/go/lava 
+    - name: cp lava
+      run:  cp ~/work/lava/lava ~/go/lava 
     - name: export gopath
       run:  export GOPATH=/home/runner/work/:$GOPATH
     - name: go env

@@ -161,7 +161,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	client := LogProcess(CMD{
 		stateID:      "client",
 		homepath:     homepath,
-		cmd:          "go run /home/magic/go/lava/relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+		cmd:          "go run relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 		filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 		testing:      true,
 		test:         clientTest,
