@@ -124,7 +124,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath() + "work/go/lava/lava/" //local
+	// homepath := getHomePath() + "go/lava/" //local
+	homepath := getHomePath() + "work/lava/lava/" //github
 	// homepath := "/go/lava/" // github
 	// homepath := "/home/magic/go/lava/"
 	// homepath := "~/go/lava/"
@@ -135,8 +136,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	node := LogProcess(CMD{
 		stateID:  "starport",
 		homepath: homepath,
-		// cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r ",
-		cmd:          "killall starport; starport chain serve -v -r ",
+		cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r ",
+		// cmd:          "killall starport; starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
 		test:         nodeTest,
