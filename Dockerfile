@@ -29,7 +29,14 @@ RUN pwd
 RUN ls -l
 RUN which go
 RUN mkdir ~/go
+RUN apt install tree -y
 RUN cd ~/go
-ADD . .
+ADD . ./lava
 RUN pwd
-RUN ls -l
+RUN tree
+RUN apt install less grep -y
+RUN cd /go/lava && ignite chain build
+RUN export LAVA=/go/lava
+# RUN cd /go/lava && starport chain serve -r -v
+RUN cd /go/lava && go test ./testutil/e2e -v
+LABEL name="Lava Docker"
