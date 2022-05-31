@@ -31,7 +31,7 @@ RUN which go
 RUN mkdir ~/go
 RUN apt install tree -y
 RUN cd ~/go
-ADD . /root/go/lava
+ADD /home/runner/lava/lava /root/go/lava
 RUN pwd
 RUN tree
 RUN apt install less grep -y
