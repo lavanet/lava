@@ -20,7 +20,7 @@ jobs:
     - name: home
       run:  pwd && ls -l
     - name: node
-      run: cd /home/runner/work/lava/lava/ && starport chain serve -v -r
+      run: starport chain serve -v -r
     - name: test
       run: go test ./testutil/e2e/ -v
 
