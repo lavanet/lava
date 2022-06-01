@@ -14,6 +14,7 @@ const PENDING_BLOCK int64 = -4
 
 type RPCInput interface {
 	GetParams() []interface{}
+	GetResult() []interface{}
 	ParseBlock(block string) (int64, error)
 }
 
@@ -45,8 +46,10 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) 
 		return NOT_APPLICABLE, nil
 	case spectypes.PARSER_FUNC_PARSE_PARAM_BY_ARG:
 		return ParseParamByArg(rpcInput, blockParser.ParserArg)
-	case spectypes.PARSER_FUNC_PARSE_PARAM_CANONICAL:
-		return ParseParamCanonical(rpcInput, blockParser.ParserArg)
+	case spectypes.PARSER_FUNC_PARSE_PARAM_CANONICAL: // PARSER_FUNC_PARSE_PARAM_CANONICAL -> PARSER_FUNC_PARSE_CANONICAL. regenrate pb for this change to work?
+		return ParseCanonical(rpcInput, blockParser.ParserArg)
+	// case spectypes.PARSER_FUNC_PARSE_RESULT_CANONICAL:
+	// 	return ParseResultCanonical(rpcInput, blockParser.ParserArg)
 	default:
 		return NOT_APPLICABLE, fmt.Errorf("unsupported block parser parserFunc")
 	}
@@ -71,23 +74,32 @@ func ParseParamByArg(rpcInput RPCInput, input []string) (int64, error) {
 	return rpcInput.ParseBlock(fmt.Sprintf("%s", block))
 }
 
-func ParseParamCanonical(rpcInput RPCInput, input []string) (int64, error) {
-	if len(input) != 2 {
-		return NOT_APPLICABLE, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
+func ParseCanonical(rpcInput RPCInput, input []string) (int64, error) {
+	switch {
+	case input[0] == "Params":
+		if len(input) != 2 {
+			return NOT_APPLICABLE, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
+		}
+		inp := input[1]
+		param_index, err := strconv.ParseUint(inp, 10, 32)
+		if err != nil {
+			return NOT_APPLICABLE, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
+		}
+		params := rpcInput.GetParams()
+		if uint64(len(params)) < param_index {
+			return NOT_APPLICABLE, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, params)
+		}
+		blockContainer := params[param_index]
+		if container, ok := blockContainer.(map[string]interface{}); ok {
+			//TODO: add default
+			return rpcInput.ParseBlock(fmt.Sprintf("%s", container[input[1]]))
+		}
+	case input[0] == "Result":
+		fmt.Printf("rpcInput %v", rpcInput)
+		result := rpcInput.GetResult()
+		fmt.Printf("result %s", result)
+		return 0, nil
 	}
-	inp := input[0]
-	param_index, err := strconv.ParseUint(inp, 10, 32)
-	if err != nil {
-		return NOT_APPLICABLE, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
-	}
-	params := rpcInput.GetParams()
-	if uint64(len(params)) < param_index {
-		return NOT_APPLICABLE, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, params)
-	}
-	blockContainer := params[param_index]
-	if container, ok := blockContainer.(map[string]interface{}); ok {
-		//TODO: add default
-		return rpcInput.ParseBlock(fmt.Sprintf("%s", container[input[1]]))
-	}
-	return NOT_APPLICABLE, fmt.Errorf("invalid input format, blockContainer is %s and tried to get a field inside: %s", blockContainer, input)
+
+	return NOT_APPLICABLE, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
 }

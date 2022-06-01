@@ -53,11 +53,15 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 	}
 }
 
-func (cp jsonrpcMessage) GetParams() []interface{} {
-	return cp.Params
+func (msg jsonrpcMessage) GetParams() []interface{} {
+	return msg.Params
 }
 
-func (cp jsonrpcMessage) ParseBlock(inp string) (int64, error) {
+func (msg jsonrpcMessage) GetResult() []interface{} {
+	return msg.Params
+}
+
+func (msg jsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 

@@ -459,8 +459,8 @@
         {
           "name": "eth_blockNumber",
           "block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["Result"],
+						"parserFunc": "PARSE_PARAM_CANONICAL"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -971,7 +971,7 @@
         {
           "name": "eth_newFilter",
           "block_parsing": {
-						"parserArg": ["0","toBlock"],
+						"parserArg": ["Params", "0","toBlock"],
 						"parserFunc": "PARSE_PARAM_CANONICAL"
 					},
 					"compute_units": "20",
@@ -1147,7 +1147,7 @@
         {
           "name": "eth_getLogs",
           "block_parsing": {
-						"parserArg": ["0","toBlock"],
+						"parserArg": ["Params","0","toBlock"],
 						"parserFunc": "PARSE_PARAM_CANONICAL"
 					},
 					"compute_units": "75",
