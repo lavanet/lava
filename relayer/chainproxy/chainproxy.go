@@ -51,6 +51,7 @@ func SendRelay(
 	if err != nil {
 		return nil, err
 	}
+	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
 
 	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
@@ -59,6 +60,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 
+		blockHeight = cp.GetSentry().GetBlockHeight()
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ApiUrl:          url,
@@ -66,7 +68,7 @@ func SendRelay(
 			SessionId:       uint64(clientSession.SessionId),
 			ChainID:         cp.GetSentry().ChainID,
 			CuSum:           clientSession.CuSum,
-			BlockHeight:     cp.GetSentry().GetBlockHeight(),
+			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
 			DataReliability: nil,
@@ -100,16 +102,21 @@ func SendRelay(
 		}
 		return reply, relayRequest, nil
 	}
-	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error) {
 		//client session is locked here
+
+		if blockHeight < 0 {
+			return nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+		}
+
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ApiUrl:          url,
 			Data:            []byte(req),
-			SessionId:       uint64(clientSession.SessionId),
+			SessionId:       uint64(0), //sessionID for reliability is 0
 			ChainID:         cp.GetSentry().ChainID,
 			CuSum:           clientSession.CuSum,
-			BlockHeight:     cp.GetSentry().GetBlockHeight(),
+			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
 			DataReliability: dataReliability,
@@ -117,33 +124,33 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		relayRequest.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
 
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
+			return nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
 		}
-		return reply, relayRequest, nil
+		return reply, nil
 	}
 	//
 	//

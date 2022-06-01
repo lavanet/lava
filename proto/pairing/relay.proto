@@ -35,9 +35,10 @@ message RelayReply {
 
 message VRFData {
     bool differentiator = 1;
-    bytes vrf_proof =2;
-    bytes provider_sig = 3;
-    bytes allDataHash = 4;
-    bytes queryHash = 5; //we only need it for payment later
-    bytes sig =6;
+    bytes vrf_value =2;
+    bytes vrf_proof =3;
+    bytes provider_sig = 4;
+    bytes allDataHash = 5;
+    bytes queryHash = 6; //we only need it for payment later
+    bytes sig =7;
 }

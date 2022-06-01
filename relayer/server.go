@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -40,8 +41,10 @@ var (
 
 type UserSessions struct {
 	UsedComputeUnits uint64
-	MaxComputeUnits  uint64
 	Sessions         map[uint64]*RelaySession
+	MaxComputeUnits  uint64
+	DataReliability  *pairingtypes.VRFData
+	VrfPk            utils.VrfPubKey
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -148,17 +151,17 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
+func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		maxcuRes, err := g_sentry.GetMaxCUForUser(ctx, userAddr, req.ChainID)
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID)
 		if err != nil {
-			return nil, errors.New("failed to get the Max allowed compute units for the user")
+			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
 
-		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}}
+		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}, VrfPk: *vrf_pk}
 		log.Println("new user sessions " + strconv.FormatUint(maxcuRes, 10))
 	}
 
@@ -167,7 +170,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr]}
 	}
 
-	return userSessions.Sessions[req.SessionId], nil
+	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
 }
 
 func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
@@ -191,8 +194,6 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *p
 	sess.userSessionsParent.UsedComputeUnits = sess.userSessionsParent.UsedComputeUnits + serviceApi.ComputeUnits
 	sess.CuSum = in.CuSum
 
-	// TODO:
-	// save relay request here for reward submission at end of session
 	return nil
 }
 
@@ -227,46 +228,101 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
-	// Update session
-	relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
+	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request)
 	if err != nil {
 		return nil, err
 	}
 
 	if request.DataReliability != nil {
-		return nil, fmt.Errorf("not implemented data reliability handling")
+		//data reliability message
+		if relaySession.userSessionsParent.DataReliability != nil {
+			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
+		}
+		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
+		if vrf_pk == nil {
+			return nil, fmt.Errorf("dataReliability Triggered with vrf_pk == nil")
+		}
+		// verify the providerSig is ineed a signature by a valid provider on this query
+		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
+		if err != nil {
+			return nil, err
+		}
+		if !valid {
+			return nil, fmt.Errorf("invalid DataReliability Provider signing")
+		}
+		//verify data reliability fields correspond to the right vrf
+		valid = utils.VerifyVrfProof(request, *vrf_pk)
+		if !valid {
+			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
+		}
+		log.Println("server got valid DataReliability request")
+		//will get some rewards for this
+		relaySession.userSessionsParent.DataReliability = request.DataReliability
+	} else {
+		// Update session
+		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
+		if err != nil {
+			return nil, err
+		}
+
+		relaySession.Proof = request
 	}
-
-	err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
-	if err != nil {
-		return nil, err
-	}
-
-	relaySession.Proof = request
-
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	//update relay request requestedBlock to the provided one in case it was arbitrary
-	sentry.UpdateRequestedBlock(request, reply)
-
-	// Update signature, return reply to user
-	sig, err := sigs.SignRelayResponse(g_privKey, reply, request)
+	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
+		// request is a copy of the original request, but won't modify it
+		//update relay request requestedBlock to the provided one in case it was arbitrary
+		sentry.UpdateRequestedBlock(&request, reply)
+		// Update signature,
+		sig, err := sigs.SignRelayResponse(g_privKey, reply, &request)
+		if err != nil {
+			return err
+		}
+		reply.Sig = sig
+		//update sig blocks signature
+		sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request)
+		if err != nil {
+			return err
+		}
+		reply.SigBlocks = sigBlocks
+		return nil
+	}
+	err = getSignaturesFromRequest(*request)
 	if err != nil {
 		return nil, err
 	}
-	reply.Sig = sig
-
-	sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, request)
-	if err != nil {
-		return nil, err
-	}
-	reply.SigBlocks = sigBlocks
-
+	// return reply to user
 	return reply, nil
+}
+
+func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Context, consumer sdk.AccAddress, request *pairingtypes.RelayRequest) (valid bool, err error) {
+	//validate consumer signing on VRF data
+	pubKey, err := sigs.RecoverPubKeyFromVRFData(*request.DataReliability)
+	if err != nil {
+		return false, err
+	}
+
+	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	if err != nil {
+		return false, err
+	}
+	if !signerAccAddress.Equals(consumer) {
+		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), consumer.String())
+	}
+
+	//validate provider signing on query data
+	pubKey, err = sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
+	if err != nil {
+		return false, err
+	}
+	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	if err != nil {
+		return false, err
+	}
+	return g_sentry.IsAuthorizedPairing(ctx, signerAccAddress.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
 func Server(

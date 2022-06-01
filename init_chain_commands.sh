@@ -7,6 +7,9 @@ lavad tx gov vote 2 yes -y --from alice
 # lavad tx gov vote 3 yes -y --from alice
 sleep 4
 
+lavad tx pairing stake-client "ETH1" 200000stake 1 -y --from user1
+lavad tx pairing stake-client "COS3" 200000stake 1 -y --from user2
+
 #Ethereum providers
 lavad tx pairing stake-provider "ETH1" 2010stake "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1
 lavad tx pairing stake-provider "ETH1" 2000stake "127.0.0.1:2222,jsonrpc,1" 1 -y --from servicer2
@@ -21,8 +24,6 @@ lavad tx pairing stake-provider "COS3" 2050stake "127.0.0.1:2243,tendermintrpc,1
 # lavad tx pairing stake-provider "COS1" 2020stake "127.0.0.1:2244,tendermintrpc,1 127.0.0.1:2234,rest,1" 1 -y --from servicer4
 # lavad tx pairing stake-provider "COS1" 2030stake "127.0.0.1:2245,tendermintrpc,1 127.0.0.1:2235,rest,1" 1 -y --from servicer5
 
-lavad tx pairing stake-client "ETH1" 200000stake 1 -y --from user1
-lavad tx pairing stake-client "COS3" 200000stake 1 -y --from user2
 
 echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"
@@ -33,8 +34,8 @@ killall screen
 screen -d -m -S eth1_providers zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
 screen -S eth1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2"
 screen -S eth1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3"
-screen -S eth1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4"
-screen -S eth1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5"
+screen -S eth1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4"
+screen -S eth1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5"
 
 # Terra providers 
 # screen -S providers -X screen -t win3 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/lcd/ COS1 rest --from servicer1"

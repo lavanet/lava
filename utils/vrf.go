@@ -18,9 +18,26 @@ const (
 	sk_vrf_prefix = "vrf-sk-"
 )
 
+func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey) (valid bool) {
+	queryHash := CalculateQueryHash(*request)
+	providerSig := request.DataReliability.ProviderSig
+	differentiator := []uint8{0}
+	if request.DataReliability.Differentiator {
+		differentiator[0] = 1
+	}
+	vrf_data := bytes.Join([][]byte{queryHash, providerSig, differentiator}, nil)
+	return vrf_pk.pk.Verify(vrf_data, request.DataReliability.VrfValue, request.DataReliability.VrfProof)
+}
+
 func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey) ([]byte, []byte) {
-	vrfData0, vrfData1 := FormatDataForVrf(request, response)
+	vrfData0 := FormatDataForVrf(request, response, false)
+	vrfData1 := FormatDataForVrf(request, response, true)
 	return vrf_sk.Compute(vrfData0), vrf_sk.Compute(vrfData1)
+}
+
+func ProveVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, differentiator bool) (vrf_res []byte, proof []byte) {
+	vrfData := FormatDataForVrf(request, response, differentiator)
+	return vrf_sk.Prove(vrfData)
 }
 
 func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
@@ -29,15 +46,19 @@ func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
 	relayReq.RelayNum = 0
 	relayReq.SessionId = 0
 	relayReq.Sig = nil
+	relayReq.DataReliability = nil
 	queryHash = tendermintcrypto.Sha256([]byte(relayReq.String()))
 	return
 }
 
-func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) (data0 []byte, data1 []byte) {
+func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool) (data []byte) {
 	//vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
-	data0 = bytes.Join([][]byte{queryHash, response.Sig, []uint8{0}}, nil)
-	data1 = bytes.Join([][]byte{queryHash, response.Sig, []uint8{1}}, nil)
+	if differentiator {
+		data = bytes.Join([][]byte{queryHash, response.Sig, []uint8{0}}, nil)
+	} else {
+		data = bytes.Join([][]byte{queryHash, response.Sig, []uint8{1}}, nil)
+	}
 	return
 }
 

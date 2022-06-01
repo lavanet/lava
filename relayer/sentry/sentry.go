@@ -17,6 +17,7 @@ import (
 
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/rpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -580,8 +581,20 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	return wrap, index, nil
 }
 
-func (s *Sentry) DataReliabilityAddress(vrf0 []byte, vrf1 []byte) (address0 string, address1 string) {
+func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, reply1 *pairingtypes.RelayReply) (ok bool) {
+	compare_result := bytes.Compare(reply0.Data, reply1.Data)
+	if compare_result == 0 {
+		//they have equal data
+		return true
+	}
+	//they have different data! report!
+	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s", reply0.Data, reply1.Data))
+	return false
+}
+
+func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (address0 string, address1 string) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
+	//TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
 	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
 	s.specMu.RUnlock()
@@ -608,8 +621,8 @@ func (s *Sentry) DataReliabilityAddress(vrf0 []byte, vrf1 []byte) (address0 stri
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	cb_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error),
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
@@ -642,9 +655,9 @@ func (s *Sentry) SendRelay(
 	// Get or create session and lock it
 	clientSession := getClientSessionFromWrap(wrap)
 
-	//
+	fmt.Printf("DEBUG0")
 	// call user
-	reply, request, err := cb(clientSession)
+	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
 	if err != nil {
 		s.movePairingEntryToPurge(wrap, index)
@@ -655,39 +668,61 @@ func (s *Sentry) SendRelay(
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
 	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+		log.Println("Finalized Block reply received")
 		// handle data reliability
 		s.VrfSkMu.Lock()
 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
 		s.VrfSkMu.Unlock()
-		address0, address1 := s.DataReliabilityAddress(vrfRes0, vrfRes1)
-		sendReliabilityRelay := func(address string, differentiator bool, vrfProof []byte) error {
+		address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
+		sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
 			if address != "" && address != providerAcc {
 				wrap, index, err := s.specificPairing(ctx, address)
 				if err != nil {
 					// failed to get clientWrapper for this address, skip reliability
 					log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
+					return nil, err
 				} else {
+					s.VrfSkMu.Lock()
+					vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
+					s.VrfSkMu.Unlock()
 					dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
-						VrfProof:    vrfProof,
+						VrfValue:    vrf_res,
+						VrfProof:    vrf_proof,
 						ProviderSig: reply.Sig,
 						AllDataHash: sigs.AllDataHash(reply, request),
-						QueryHash:   nil, //calculated from query body anyway, this field is for the consensus payment
+						QueryHash:   nil, //calculated from query body anyway, this field is for the consensus payment provider side
 						Sig:         nil, //calculated in the callback
 					}
 					clientSession = getClientSessionFromWrap(wrap)
-					_, _, err = cb_reliability(clientSession, dataReliability)
+					relay_rep, err = cb_send_reliability(clientSession, dataReliability)
 					if err != nil {
-						log.Println("error: Could not send reliability relay to provider: ", address, err)
+						log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
 						s.movePairingEntryToPurge(wrap, index)
+						return nil, err
 					}
+					return relay_rep, nil
 				}
-				return err
 			}
-			return nil
+			return nil, fmt.Errorf("is not a valid reliability VRF result")
 		}
 
-		go sendReliabilityRelay(address0, false, vrfRes0)
-		go sendReliabilityRelay(address1, true, vrfRes1)
+		checkReliability := func() {
+			reply0, err0 := sendReliabilityRelay(address0, false)
+			reply1, err1 := sendReliabilityRelay(address1, true)
+			ok := true
+			check0 := err0 == nil && reply0 != nil
+			check1 := err1 == nil && reply1 != nil
+			if check0 {
+				ok = ok && s.CompareRelaysAndReportConflict(reply, reply0)
+			}
+			if check1 {
+				ok = ok && s.CompareRelaysAndReportConflict(reply, reply1)
+			}
+			if !ok && check0 && check1 {
+				s.CompareRelaysAndReportConflict(reply0, reply1)
+			}
+		}
+		go checkReliability()
 	}
 	return reply, nil
 }
@@ -736,6 +771,25 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error
 		return true, nil
 	}
 	return false, fmt.Errorf("invalid pairing with user CurrentBlock: %d", s.GetBlockHeight())
+}
+
+func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provider string, block uint64) (bool, error) {
+	//
+	// TODO: cache results!
+
+	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
+		ChainID:  s.ChainID,
+		Client:   consumer,
+		Provider: provider,
+		Block:    block,
+	})
+	if err != nil {
+		return false, err
+	}
+	if res.Valid {
+		return true, nil
+	}
+	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
 }
 
 func (s *Sentry) GetSpecName() string {
@@ -795,13 +849,22 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
 }
 
-func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (uint64, error) {
-	maxcuRes, err := s.pairingQueryClient.UserMaxCu(ctx, &pairingtypes.QueryUserMaxCuRequest{ChainID: chainID, Address: address})
+func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (maxCu uint64, err error) {
+	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(s.GetBlockHeight())})
 	if err != nil {
 		return 0, err
 	}
+	return UserEntryRes.GetMaxCU(), err
+}
 
-	return maxcuRes.GetMaxCu(), err
+func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, chainID string) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
+	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(s.GetBlockHeight())})
+	if err != nil {
+		return nil, 0, err
+	}
+	vrfPk = &utils.VrfPubKey{}
+	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
+	return vrfPk, UserEntryRes.GetMaxCU(), err
 }
 
 func NewSentry(
@@ -817,7 +880,11 @@ func NewSentry(
 	pairingQueryClient := pairingtypes.NewQueryClient(clientCtx)
 	epochStorageQueryClient := epochstoragetypes.NewQueryClient(clientCtx)
 	acc := clientCtx.GetFromAddress().String()
-
+	currentBlock, err := rpc.GetChainHeight(clientCtx)
+	if err != nil {
+		log.Fatal("Invalid block height, error: %s", err)
+		currentBlock = 0
+	}
 	return &Sentry{
 		ClientCtx:               clientCtx,
 		rpcClient:               rpcClient,
@@ -830,6 +897,7 @@ func NewSentry(
 		newBlockCb:              newBlockCb,
 		ApiInterface:            apiInterface,
 		VrfSk:                   vrf_sk,
+		blockHeight:             currentBlock,
 	}
 }
 

@@ -87,6 +87,13 @@ func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *p
 	return
 }
 
+func DataToVerifyProviderSig(request *pairingtypes.RelayRequest) (dataToSign []byte) {
+	queryHash := utils.CalculateQueryHash(*request)
+	data_hash := request.DataReliability.AllDataHash
+	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	return
+}
+
 func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
 	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
 	latestBlockBytes := make([]byte, 8)
@@ -134,6 +141,26 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
+}
+
+func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, error) {
+	signature := vrfData.Sig
+	vrfData.Sig = nil
+	msgData := []byte(vrfData.String())
+	pubKey, err := RecoverPubKey(signature, msgData)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	dataToSign := DataToVerifyProviderSig(request)
+	pubKey, err := RecoverPubKey(request.DataReliability.ProviderSig, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
 }
 
 func RecoverPubKeyFromRelay(in pairingtypes.RelayRequest) (secp256k1.PubKey, error) {

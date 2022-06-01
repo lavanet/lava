@@ -13456,17 +13456,59 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/user_max_cu/{address}/{chainID}':
+  '/lavanet/lava/pairing/user_entry/{address}/{chainID}':
     get:
-      summary: Queries a list of UserMaxCu items.
-      operationId: LavanetLavaPairingUserMaxCu
+      summary: Queries a UserEntry items.
+      operationId: LavanetLavaPairingUserEntry
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              maxCu:
+              consumer:
+                type: object
+                properties:
+                  stake:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  address:
+                    type: string
+                  deadline:
+                    type: string
+                    format: uint64
+                  endpoints:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        iPPORT:
+                          type: string
+                        useType:
+                          type: string
+                        geolocation:
+                          type: string
+                          format: uint64
+                  geolocation:
+                    type: string
+                    format: uint64
+                  chain:
+                    type: string
+                  vrfpk:
+                    type: string
+              maxCU:
                 type: string
                 format: uint64
         default:
@@ -13496,6 +13538,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: block
+          in: query
+          required: false
+          type: string
+          format: uint64
       tags:
         - Query
   '/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}':
@@ -21438,10 +21485,52 @@ definitions:
               type: string
       output:
         type: string
-  lavanet.lava.pairing.QueryUserMaxCuResponse:
+  lavanet.lava.pairing.QueryUserEntryResponse:
     type: object
     properties:
-      maxCu:
+      consumer:
+        type: object
+        properties:
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          address:
+            type: string
+          deadline:
+            type: string
+            format: uint64
+          endpoints:
+            type: array
+            items:
+              type: object
+              properties:
+                iPPORT:
+                  type: string
+                useType:
+                  type: string
+                geolocation:
+                  type: string
+                  format: uint64
+          geolocation:
+            type: string
+            format: uint64
+          chain:
+            type: string
+          vrfpk:
+            type: string
+      maxCU:
         type: string
         format: uint64
   lavanet.lava.pairing.QueryVerifyPairingResponse:
@@ -21510,6 +21599,9 @@ definitions:
         properties:
           differentiator:
             type: boolean
+          vrfValue:
+            type: string
+            format: byte
           vrfProof:
             type: string
             format: byte
@@ -21541,6 +21633,9 @@ definitions:
     properties:
       differentiator:
         type: boolean
+      vrfValue:
+        type: string
+        format: byte
       vrfProof:
         type: string
         format: byte
