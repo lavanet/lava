@@ -54,7 +54,7 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	results := map[string][]TestResult{}
 	homepath := getHomePath()                 //local
 	if strings.Contains(homepath, "runner") { // on github
-		homepath += "worker/lava/lava/" //local
+		homepath += "work/lava/lava/" //local
 	} else { // local
 		homepath += "go/lava/" //local
 	}
