@@ -51,14 +51,21 @@ func (cs *ChainSentry) GetLatestBlockNum() int64 {
 }
 
 func (cs *ChainSentry) SetLatestBlockNum(value int64) {
+	log.Printf("beforecs.blockQueueMu.Lock()")
 	cs.blockQueueMu.Lock()
+	log.Printf("after cs.blockQueueMu.Lock()")
 	defer cs.blockQueueMu.Unlock()
+	defer log.Printf("cs.blockQueueMu.Unlock()")
+
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
 func (cs *ChainSentry) GetLatestBlockData() (int64, []map[string]interface{}, error) {
+	log.Printf("beforecs.blockQueueMu.Lock()")
 	cs.blockQueueMu.Lock()
+	log.Printf("after cs.blockQueueMu.Lock()")
 	defer cs.blockQueueMu.Unlock()
+	defer log.Printf("cs.blockQueueMu.Unlock()")
 
 	latestBlockNum := cs.GetLatestBlockNum()
 	var hashes = make([]map[string]interface{}, len(cs.blocksQueue))
@@ -152,7 +159,6 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 		cs.blocksQueue = append(cs.blocksQueue, result) //save entire block data for now
 	}
 	cs.blockQueueMu.Unlock()
-
 	ticker := time.NewTicker(time.Second * 5)
 	quit := make(chan struct{})
 
@@ -166,9 +172,9 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 					log.Printf("error: chainSentry block fetcher", err)
 				}
 
+				// TODO:: dont lock for this entire process. create a temp list and replace blocksqueue. like in sentry service api
 				if cs.latestBlockNum != latestBlock {
 					cs.blockQueueMu.Lock()
-					defer cs.blockQueueMu.Unlock()
 
 					prevLatestBlock := cs.GetLatestBlockNum()
 					// Get all missing blocks
@@ -186,8 +192,9 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 					// remove the first entries from the queue (oldest ones)
 					// max(len(queue) - 10,0)
 					cs.blocksQueue = cs.blocksQueue[(latestBlock - prevLatestBlock):]
-					log.Printf("chainSentry blocks list updated. latest block %d", latestBlock) // TODO:: print nicer
+					log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
 					atomic.StoreInt64(&cs.latestBlockNum, latestBlock)
+					cs.blockQueueMu.Unlock()
 				}
 			case <-quit:
 				ticker.Stop()

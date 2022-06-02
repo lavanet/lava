@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -665,7 +666,6 @@ func (s *Sentry) SendRelay(
 	// Get or create session and lock it
 	clientSession := getClientSessionFromWrap(wrap)
 
-	fmt.Printf("DEBUG0")
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
@@ -677,12 +677,12 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
-	// finalizedBlocks := BlockHash{}
-	// err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
-	// if err != nil {
-	// 	log.Println("Finalized Block reply err", err)
-	// 	return nil, err
-	// }
+	finalizedBlocks := BlockHash{}
+	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
+	if err != nil {
+		log.Println("Finalized Block reply err", err)
+		return nil, err
+	}
 
 	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 		log.Println("Finalized Block reply received")
@@ -754,7 +754,9 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 		//TODO: regard earliest block from spec
 		finalization_criteria := int64(7)
 		if requestedBlock <= latestBlock-finalization_criteria {
+			log.Println("requestedBlock <= latestBlock-finalization_criteria returns true")
 			return true
+			// return false
 		}
 	}
 	return false
