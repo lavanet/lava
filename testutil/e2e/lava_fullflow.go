@@ -335,28 +335,29 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			debug:        true}, t, &states)
 		await(init, "get init done", init_done, "awating for init to proceed...")
 	}
+	providerAsCMD := false
+	if providerAsCMD {
+		home := homepath
+		os.Chdir(home)
 
-	home := homepath
-	os.Chdir(home)
+		id := "provX"
+		logFile := id + ".log"
+		// logPath := resetLog(home, logFile, "x_test/tests/integration/")
+		// logPath := resetLog(home, logFile, "testutil/e2e/logs/")
+		logPath := resetLog(home, logFile, "logs/")
+		// logPath := home + logFile
+		end := " 2>&1"
+		// println("home", home)
+		cmd := "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
+		full := "cd " + home + " && " + cmd + " >> " + logPath + end
+		// println("full", full)
+		fullCMD := exec.Command("sh", "-c", full)
 
-	id := "provX"
-	logFile := id + ".log"
-	// logPath := resetLog(home, logFile, "x_test/tests/integration/")
-	// logPath := resetLog(home, logFile, "testutil/e2e/logs/")
-	logPath := resetLog(home, logFile, "logs/")
-	// logPath := home + logFile
-	end := " 2>&1"
-	// println("home", home)
-	cmd := "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
-	full := "cd " + home + " && " + cmd + " >> " + logPath + end
-	// println("full", full)
-	fullCMD := exec.Command("sh", "-c", full)
-
-	// fullCMD := exec.Command(cmd + end + " >> " + logPath + ")")
-	err := fullCMD.Run()
-	t.Logf(" xxxxxxx ::: %s", err)
-	// go readFile(logPath, state, filter, t)
-
+		// fullCMD := exec.Command(cmd + end + " >> " + logPath + ")")
+		err := fullCMD.Run()
+		t.Logf(" xxxxxxx ::: %s", err)
+		// go readFile(logPath, state, filter, t)
+	}
 	run_providers := false
 	if run_providers {
 
@@ -433,9 +434,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
 
-	run_client := false
+	run_client := true
 	if run_client {
-		sleep(1, failed)
+		// sleep(1, failed)
+		sleep(60, failed)
 
 		client := LogProcess(CMD{
 			stateID:  "client",
