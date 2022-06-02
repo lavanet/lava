@@ -18,16 +18,17 @@ type TestResult struct {
 }
 
 type CMD struct {
-	stateID      string
-	homepath     string
-	cmd          string
-	filter       []string
-	testing      bool
-	test         Test
-	results      *map[string][]TestResult
-	dep          *State
-	failed       *bool
-	requireAlive bool
+	stateID      string                   `json:"stateID"`
+	homepath     string                   `json:"homepath"`
+	cmd          string                   `json:"cmd"`
+	filter       []string                 `json:"filter"`
+	testing      bool                     `json:"testing"`
+	test         Test                     `json:"test"`
+	results      *map[string][]TestResult `json:"results"`
+	dep          *State                   `json:"dep"`
+	failed       *bool                    `json:"failed"`
+	requireAlive bool                     `json:"requireAlive"`
+	debug        bool                     `json:"debug"`
 }
 
 type State struct {
@@ -42,6 +43,7 @@ type State struct {
 	failed       *bool                    `json:"failed"`
 	requireAlive bool                     `json:"requireAlive"`
 	lastLine     *string                  `json:"lastLine"`
+	debug        bool                     `json:"debug"`
 }
 
 type Await struct {

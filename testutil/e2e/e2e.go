@@ -86,6 +86,14 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			if _, found := passingFilter(line, filter); found {
 				*state.lastLine = line
 				processLog(line, state, t)
+			} else if state.debug {
+				log := "(DEBUG) " + state.id + " ::: " + line
+				if t != nil {
+					t.Log(log)
+				} else {
+					fmt.Println(log)
+				}
+				// fmt.Println(parent + " ::: " + string("!!! nice !!! ") + string(line))
 			} else {
 				// fmt.Println(parent + " ::: " + string("!!! nice !!! ") + string(line))
 			}
@@ -304,12 +312,12 @@ func printTestResult(res TestResult, t *testing.T) {
 }
 
 func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
-	newState := logProcess(t, cmd.stateID, cmd.homepath, cmd.cmd, cmd.filter, cmd.testing, cmd.test, cmd.results, cmd.dep, cmd.failed, cmd.requireAlive)
+	newState := logProcess(t, cmd.stateID, cmd.homepath, cmd.cmd, cmd.filter, cmd.testing, cmd.test, cmd.results, cmd.dep, cmd.failed, cmd.requireAlive, cmd.debug)
 	*states = append(*states, newState)
 	return newState
 }
 
-func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test Test, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool) State {
+func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test Test, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug bool) State {
 
 	finished := false
 	lastLine := "init"
@@ -325,6 +333,7 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 		failed:       failed,
 		requireAlive: requireAlive,
 		lastLine:     &lastLine,
+		debug:        debug,
 	}
 	// state := State{id, &finished, map[string]Await{}, testing, test, results, &[]*State{depends}}
 	// d := false

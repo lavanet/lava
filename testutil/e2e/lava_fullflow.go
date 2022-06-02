@@ -144,7 +144,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		results:      &results,
 		dep:          nil,
 		failed:       failed,
-		requireAlive: true}, t, &states)
+		requireAlive: true,
+		debug:        false,
+	}, t, &states)
 	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
 	// await(node, "node connected", node_ready, "awating for node api to proceed...")
 	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
@@ -160,7 +162,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		results:      &results,
 		dep:          &node,
 		failed:       failed,
-		requireAlive: false}, t, &states)
+		requireAlive: false,
+		debug:        false}, t, &states)
 	await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 	await(node, "init chain - providers ready", providers_ready, "awating for providers to proceed...")
 	sleep(2, failed)
@@ -176,7 +179,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		results:      &results,
 		dep:          &node,
 		failed:       failed,
-		requireAlive: false}, t, &states)
+		requireAlive: false,
+		debug:        true}, t, &states)
 	await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
 	await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
 	println(" ::: GOT FIRST PAYMENT !!!")
