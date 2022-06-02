@@ -63,8 +63,10 @@ jobs:
 
     # - name: check lavad prov1 output
     #   run: sleep 120 ; go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1
-    - name: check init + prov 
-      run: sleep 60 ; ./init_provX
+    - name: sleep 60 for node uptime
+      run: sleep 60 
+    - name: ./init_provX
+      run: cd /home/runner/work/lava/lava && ./init_provX.sh
     
     # - name: cat provX.log
     #   run: cat ./testutil/e2e/logs/provX.log

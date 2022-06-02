@@ -342,8 +342,8 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 	os.Chdir(home)
 	logFile := id + ".log"
 	// logPath := resetLog(home, logFile, "x_test/tests/integration/")
-	// logPath := resetLog(home, logFile, "testutil/e2e/logs/")
-	logPath := resetLog(home, logFile, "logs/")
+	logPath := resetLog(home, logFile, "testutil/e2e/logs/")
+	// logPath := resetLog(home, logFile, "logs/")
 	// logPath := home + logFile
 	end := " 2>&1"
 	// println("home", home)

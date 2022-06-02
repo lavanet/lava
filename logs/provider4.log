@@ -1,7 +1,0 @@
-2022/06/02 17:10:50 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
-2022/06/02 17:10:51 Server starting 127.0.0.1:2224 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
-2022/06/02 17:10:52 Server pubkey 65880EEB46029517136841AC4844746DE0E86C36
-2022/06/02 17:10:52 server listening at 127.0.0.1:2224
-New session: Height: 40 
-total CU serviced: 0, total CU paid: 0
-signal: terminated
