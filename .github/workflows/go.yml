@@ -54,8 +54,8 @@ jobs:
     
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r
-    # - name: test timeout 3 mins
-      run: cd ~/go/lava; go test ./testutil/e2e/ -v
+      # run: cd ~/go/lava; go test ./testutil/e2e/ -v
+    - name: test timeout 3 mins
       run: go test -timeout 180s
     - name: lava e2e tests
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
