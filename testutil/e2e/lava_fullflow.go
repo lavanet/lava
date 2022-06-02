@@ -131,9 +131,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath()                 //local
+	homepath := getHomePath() //local
+	resetGenesis := false
+	isGithubAction := false
 	if strings.Contains(homepath, "runner") { // on github
 		homepath += "work/lava/lava/" //local
+		isGithubAction = true
 	} else { // local
 		homepath += "go/lava/" //local
 	}
@@ -145,13 +148,18 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
-
+	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
+	usingLavad := false
+	if isGithubAction || (!resetGenesis && !isGithubAction) {
+		lava_serve_cmd = "lavad start "
+		usingLavad = true
+	}
 	// Test Flow
 	node := LogProcess(CMD{
 		stateID:  "starport",
 		homepath: homepath,
 		// cmd:      "lavad start",
-		cmd: "killall starport; cd " + homepath + " && starport chain serve -v -r  ",
+		cmd: lava_serve_cmd,
 		// cmd:          "starport chain serve -v -r ",
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
@@ -163,23 +171,27 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		debug:        false,
 	}, t, &states)
 	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
-	await(node, "node connected", node_ready, "awating for node api to proceed...")
+	if !usingLavad {
+		await(node, "node connected", node_ready, "awating for node api to proceed...")
+	}
+
 	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
 	sleep(2, failed)
-
-	init := LogProcess(CMD{
-		stateID:      "init",
-		homepath:     homepath,
-		cmd:          "./init_chain_commands_noscreen.sh",
-		filter:       []string{":::", "raw_log", "Error", "error", "panic"},
-		testing:      true,
-		test:         initTest,
-		results:      &results,
-		dep:          &node,
-		failed:       failed,
-		requireAlive: false,
-		debug:        true}, t, &states)
-	await(init, "get init done", init_done, "awating for init to proceed...")
+	if resetGenesis || isGithubAction {
+		init := LogProcess(CMD{
+			stateID:      "init",
+			homepath:     homepath,
+			cmd:          "./init_chain_commands_noscreen.sh",
+			filter:       []string{":::", "raw_log", "Error", "error", "panic"},
+			testing:      true,
+			test:         initTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		await(init, "get init done", init_done, "awating for init to proceed...")
+	}
 
 	run_providers := true
 	if run_providers {

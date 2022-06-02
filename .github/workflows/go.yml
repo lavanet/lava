@@ -47,7 +47,13 @@ jobs:
     - name: ls -l
       run: ls -l
     - name: ignite build
-      run: ignite chain build
+      run: ignite chain build -v
+    - name: starport build
+      run: starport chain build -v
+    
+    - name: check lavad prov1 output
+      run: go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1
+    
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r
     # - name: test timeout 3 mins
