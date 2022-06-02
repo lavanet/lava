@@ -6,7 +6,7 @@ import (
 )
 
 func xTestFullflow(t *testing.T) {
-	finalresults, err := FullFlowTestX(t)
+	finalresults, err := XTestX(t)
 	if err != nil {
 		t.Errorf("expected no error but got %v", err)
 	}
@@ -33,7 +33,7 @@ func TestFullflowWithTimeOut(t *testing.T) {
 	done := make(chan bool)
 	go func() {
 		// do your testing
-		finalresults, err := FullFlowTestX(t)
+		finalresults, err := XTestX(t)
 		if err != nil {
 			t.Errorf("expected no error but got %v", err)
 		}
@@ -64,6 +64,7 @@ func TestFullflowWithTimeOut(t *testing.T) {
 	}
 }
 
-func FullFlowTestX(t *testing.T) ([]TestResult, error) {
-	return FullFlowTest(t)
+func XTestX(t *testing.T) ([]TestResult, error) {
+	// return FullFlowTest(t)
+	return InitTest(t)
 }
