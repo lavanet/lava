@@ -37,6 +37,7 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainPro
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
 
+// Client requests and queries
 func SendRelay(
 	ctx context.Context,
 	cp ChainProxy,

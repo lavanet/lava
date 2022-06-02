@@ -3,6 +3,7 @@ package relayer
 import (
 	gobytes "bytes"
 	context "context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -20,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -30,13 +32,15 @@ import (
 )
 
 var (
-	g_privKey        *btcSecp256k1.PrivateKey
-	g_sessions       map[string]*UserSessions
-	g_sessions_mutex sync.Mutex
-	g_sentry         *sentry.Sentry
-	g_serverChainID  string
-	g_txFactory      tx.Factory
-	g_chainProxy     chainproxy.ChainProxy
+	g_privKey         *btcSecp256k1.PrivateKey
+	g_sessions        map[string]*UserSessions
+	g_sessions_mutex  sync.Mutex
+	g_sentry          *sentry.Sentry
+	g_serverChainID   string
+	g_txFactory       tx.Factory
+	g_chainProxy      chainproxy.ChainProxy
+	g_chainSentry     *chainsentry.ChainSentry
+	g_latestBlockHash string
 )
 
 type UserSessions struct {
@@ -272,6 +276,17 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	if err != nil {
 		return nil, err
 	}
+
+	// Add latest block and finalized
+	latestBlock, finalizedBlocksHashes, err := g_chainSentry.GetLatestBlockData()
+	jsonStr, err := json.Marshal(finalizedBlocksHashes)
+	if err != nil {
+		return nil, err
+	}
+
+	reply.LatestBlock = latestBlock
+	reply.FinalizedBlocksHashes = []byte(jsonStr)
+
 	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
 		// request is a copy of the original request, but won't modify it
 		//update relay request requestedBlock to the provided one in case it was arbitrary
@@ -345,17 +360,17 @@ func Server(
 	}()
 
 	//
-	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil)
-	err := sentry.Init(ctx)
+	// Start newSentry
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil)
+	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start(ctx)
-	for sentry.GetBlockHeight() == 0 {
+	go newSentry.Start(ctx)
+	for newSentry.GetSpecHash() == nil {
 		time.Sleep(1 * time.Second)
 	}
-	g_sentry = sentry
+	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
 	g_serverChainID = ChainID
 	//allow more gas
@@ -363,7 +378,7 @@ func Server(
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName(), "chainID", sentry.GetChainID(), "api Interface", apiInterface)
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", newSentry.GetSpecName(), "chainID", newSentry.GetChainID(), "api Interface", apiInterface)
 
 	//
 	// Keys
@@ -382,12 +397,17 @@ func Server(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
+
+	// Start chain sentry
+	chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
+	chainSentry.Start(ctx)
+	g_chainSentry = chainSentry
 
 	//
 	// GRPC

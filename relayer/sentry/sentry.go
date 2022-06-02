@@ -32,6 +32,10 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+type BlockHash struct {
+	BlockNum  int64  `json:"BlockNum"`
+	BlockHash string `json:"BlockHash"`
+}
 type ClientSession struct {
 	CuSum     uint64
 	SessionId int64
@@ -191,6 +195,12 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	log.Println("update pairing list!", pairing)
 
 	return nil
+}
+
+func (s *Sentry) GetSpecHash() []byte {
+	s.specMu.Lock()
+	defer s.specMu.Unlock()
+	return s.specHash
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
@@ -513,9 +523,9 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 
-	/*connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()*/
-	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithBlock())
+	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -666,6 +676,13 @@ func (s *Sentry) SendRelay(
 
 	providerAcc := clientSession.Client.Acc
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+
+	// finalizedBlocks := BlockHash{}
+	// err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
+	// if err != nil {
+	// 	log.Println("Finalized Block reply err", err)
+	// 	return nil, err
+	// }
 
 	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 		log.Println("Finalized Block reply received")
@@ -898,6 +915,7 @@ func NewSentry(
 		ApiInterface:            apiInterface,
 		VrfSk:                   vrf_sk,
 		blockHeight:             currentBlock,
+		specHash:                nil,
 	}
 }
 
