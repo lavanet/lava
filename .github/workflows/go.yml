@@ -42,6 +42,8 @@ jobs:
       run:  go env
     - name: pwd
       run: pwd
+    - name: tree
+      run: tree
     - name: ls -l
       run: ls -l
     - name: ignite build
@@ -51,7 +53,7 @@ jobs:
     # - name: test timeout 3 mins
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
       # run: go test -timeout 180s
-    - name: test
+    - name: lava e2e tests
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
       run: go test ./testutil/e2e/ -v
     - name: cat client.log

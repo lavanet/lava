@@ -69,8 +69,8 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	node := LogProcess(CMD{
 		stateID:  "simple",
 		homepath: homepath,
-		cmd:      "go run " + homepath + "testutil/e2e/simple/simple.go ",
-		// cmd:          "go run ./testutil/e2e/simple/simple.go ",
+		// cmd:      "go run " + homepath + "testutil/e2e/simple/simple.go ",
+		cmd:          "go run ./testutil/e2e/simple/simple.go ",
 		filter:       []string{"!", "no", "un", "error"},
 		testing:      true,
 		test:         simpleTest,
