@@ -1,4 +1,4 @@
-Error: rpc error: code = InvalidArgument desc = failed to execute message; message index: 0: ERR_spec_add_dup: found duplicate spec name status: true,chainID: ETH1,spec: Ethereum Mainnet,: invalid proposal content: invalid request
+Error: rpc error: code = InvalidArgument desc = failed to execute message; message index: 0: ERR_spec_add_dup: found duplicate spec name spec: Ethereum Mainnet,status: true,chainID: ETH1,: invalid proposal content: invalid request
 Usage:
   lavad tx gov submit-proposal spec-add [proposal-file] [flags]
 
@@ -80,22 +80,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMW5lbTc1NzZ1OHcwNTBodW1yd3l0bG0wbGc2ajZ5cTl3cXY5eHdrLzU=
+    value: Y29zbW9zMW5lbTc1NzZ1OHcwNTBodW1yd3l0bG0wbGc2ajZ5cTl3cXY5eHdrLzc=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: UkFDZGMvS2gwa0dwSk1BS1dOK0xCRDJaTXZPNjdQS0RteG9ETEE0ZTZEbE1zWVBBaGcvcXUrRWErZjNuMkpnbFMySFAzTkg0dDlNMXF3UFFkUGxPSUE9PQ==
+    value: clBvT2pGQ1o4NUVaNVBia3Boa2oyenlzOFBraU8yTFFvWVYrTVFHMmpmNFgrMkd5VXJqQXBxbE10Ujhtc29zdmtpTDhraUhwK1JrQkQrU0pKNmw0OHc9PQ==
   type: tx
 gas_used: "46771"
 gas_wanted: "200000"
-height: "101"
+height: "982"
 info: ""
 logs: []
 raw_log: 'failed to execute message; message index: 0: 1: inactive proposal'
 timestamp: ""
 tx: null
-txhash: EDE644F0F7B00A973ED81521F5CE62EE8F9B437AAE5998ADD8E9A94FE490EB3F
+txhash: 2F82936E8BCA9BEF96E01375474193DC941C1991FE93F2B1E5F04A21431F0E1E
 code: 3
 codespace: gov
 data: ""
@@ -108,22 +108,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMW5lbTc1NzZ1OHcwNTBodW1yd3l0bG0wbGc2ajZ5cTl3cXY5eHdrLzY=
+    value: Y29zbW9zMW5lbTc1NzZ1OHcwNTBodW1yd3l0bG0wbGc2ajZ5cTl3cXY5eHdrLzg=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: aGNHZVNCQTN2M2Z4Y1FXK0FNeHMxeXBaRUxtN0MxMWNpdWtzUk1LUmZFaGxpZUFRMTlrWkQwS05kZWwySVh2V3owY09RSTAzdW0wQnd1QWJzYnBYL3c9PQ==
+    value: WDZhR0M3TWZYY25lclZuOTBTUFUvUTFYTjVXM1d3U0pYZjY4ckxZN3VOUlJ2MFVhNjVaQ1p3bHlqK0ViRUx5L1k3VzR4alo1clR5OTdDcVNtY0RKMWc9PQ==
   type: tx
 gas_used: "74593"
 gas_wanted: "200000"
-height: "102"
+height: "983"
 info: ""
 logs: []
 raw_log: 'failed to execute message; message index: 0: 2: inactive proposal'
 timestamp: ""
 tx: null
-txhash: B0F6869BE869A8CB4BB6D922AB2CF98634314FD9A5DB869DA0E73F65D379343E
+txhash: 151CC951A4058870E1F2E987379E8ED10F7C43C45A800D35543296BD37A157D8
 code: 1
 codespace: undefined
 data: ""
@@ -136,22 +136,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMW1rd3djdTUzMjJxdXF4MnMzajJlZTZjczh1dzl6OHY4MmdsaHBrLzI=
+    value: Y29zbW9zMW1rd3djdTUzMjJxdXF4MnMzajJlZTZjczh1dzl6OHY4MmdsaHBrLzQ=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: L1RzN2loVThrZ3FvWlc4OFBJM0dDNHpVeDdaZTY4VDhyOVN1V2REU0k2RmtJeDdydGlsTDVCMDBNd3NJRnpaR3E4cUlpbHEvbXppRm93WkQ1MnVVVkE9PQ==
+    value: R3pUT1RDU2greGFYV1dRdmI0aFlyVE9BNkhTZ0NoRVdlYjhmbTNvZlZvQVZRbmptYVhXS3FzbEUybFpYMVpFdVE3dnFGcDBBNW5RbGk4VkwvRjdYdEE9PQ==
   type: tx
 gas_used: "60082"
 gas_wanted: "200000"
-height: "107"
+height: "988"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 84766BFB22B9CC3714CE7B8BF209B5D0A133F47A05C701DA11568C0BDAC660B0
+txhash: A063FAD3075FF7D136A6AD8967144BB2CEF8B41656A7CA36DFECD18A0F1F35C0
 code: 1
 codespace: undefined
 data: ""
@@ -164,22 +164,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMXlxYWoycWZwdmhrcmRldHVjcTU1YXc5YXY2Mjk4aGhsNTB6a2V5LzI=
+    value: Y29zbW9zMXlxYWoycWZwdmhrcmRldHVjcTU1YXc5YXY2Mjk4aGhsNTB6a2V5LzQ=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: UXBXNXJVZTl6NHJuc3gxZU8wc2dPM3k3YnhHQjVTNWxSZXRqODMzeGVoc3VnSEZVWVdrMHBjMHVCRVVKWG9mR2ZkcVdiSUp4eGJoOXlrdHBDZXVML3c9PQ==
+    value: clNzWEJxTHZvOEhOc3UwQkxNYkNyUjAvWE1nQjBQSFNZWGZCZEZnTVMrSjQ0SjdJNVFYbkJKZnpBSUozbnUyM1lGaWszK3VQMEZ5UU8vUkFKeWVDL1E9PQ==
   type: tx
 gas_used: "60082"
 gas_wanted: "200000"
-height: "108"
+height: "989"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 0519D71ECA9656A3903C06E466C4E193B6C22CFCCE535B5244D70F839DB8DBF0
+txhash: B84F7AA4D260004892EE546A427630518811291B528C7D2B4A77FE2E03D54375
 code: 1
 codespace: undefined
 data: ""
@@ -192,22 +192,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMXdzYXM5NTRhcndoc3lzM3NrMDU2ZjRlcjgwd2YwZ2o4eHgwN3l0LzM=
+    value: Y29zbW9zMXdzYXM5NTRhcndoc3lzM3NrMDU2ZjRlcjgwd2YwZ2o4eHgwN3l0LzU=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: T0V4NkZzemtSK3NubTllamtCQVJUZjlBMFJNT0tsZjk0Q2IzMFZRTlZXVmVXUGVKd3Z5dys5NTE4MXVZMmNsQXRQdWxaWk00S1lTTkNQV0VSenp6WEE9PQ==
+    value: Y2M2S28wT1hSNFJCQVBzTjNQemp1RlpBcnczRGh2dEdlcGhWN2VRS0dRZ1U5UXpTLzVHN3BPMjE0dDFobytCNGJneGNCMEJ1VmhQZUZaYU5yeFpSdmc9PQ==
   type: tx
 gas_used: "60082"
 gas_wanted: "200000"
-height: "109"
+height: "990"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 272AD86A95569F1DD8A34D61E86155F2843C0BE798285A2020FD280D78E5BF98
+txhash: 32EA7F68AAB02F00AFAFD87151230F83FD6FB87CECAC5B13316C49C85E20B8BC
 code: 1
 codespace: undefined
 data: ""
@@ -220,22 +220,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMTluNGw2cDVoZDY1c3JrZTlxNXA1YWhzampocXRncGd0cDU2bXI1LzE=
+    value: Y29zbW9zMTluNGw2cDVoZDY1c3JrZTlxNXA1YWhzampocXRncGd0cDU2bXI1LzI=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: SU5FQ01rc3A4NUs2YW4wZWRzZlJUcTdTWGw0bS85dUZGbDFzWStraEEzSndhWW96S244L1IxRHhTKzI2VGd3c01KcHZvNUxXV2pTajNSM3NzeXBySEE9PQ==
+    value: Qm13UkYxRTMwOXVseGh0YUJOcFA1bVNtWU44ejdUVGQvTFV4KzdzZE1CSThzTDdWa2I5TU5OT1lJbTl4QXRDdEduSjhKWm9uNy8xUnpaa2lFdFBYSGc9PQ==
   type: tx
 gas_used: "60082"
 gas_wanted: "200000"
-height: "110"
+height: "991"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: CC73D406BE3F1442873EF9CE63102FCDA14023104D11C1A4DA2B057E64466E58
+txhash: 145A5D0E80060A79ED4A62050AE28D7AEFD677C36E30C6B1CFA1C48029BC919B
 code: 1
 codespace: undefined
 data: ""
@@ -248,22 +248,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMTkzNXNmOXA3Mmwzazh1MzhkMnUyandxNXJtcWthNWtjaDc3dDU3LzE=
+    value: Y29zbW9zMTkzNXNmOXA3Mmwzazh1MzhkMnUyandxNXJtcWthNWtjaDc3dDU3LzI=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: a1RlSnBKK2tWSXRuOEw3ekFrVFhacnZzWmpTR0NuQW5ReWxPWnVyWGFFc3dCNWpYcGZYWGdkcHdKWmFlWnZyVzNsS3doaFdKOTUra0ptdlB0S0FUb3c9PQ==
+    value: UWxpY3VuWnhMV09vaXlNYURPcFYrc2FnM1V3K3MxUmJLeFBrSFVvZFA3SmNEdGF4V0ZYMG5veHlCb2Flcm1tdzJxWU1CYTJwS3YwK2QrNk0wWGRzWFE9PQ==
   type: tx
 gas_used: "60082"
 gas_wanted: "200000"
-height: "111"
+height: "992"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 1E37DAAC2DE125476FD441D1E4CD455573E76A31BFD63BBA4CDEC359A4B1B573
+txhash: 0B4228451C6D6D6066049A6D7A107B564BCECC1D0C94FC714E1937421DDCA97C
 code: 1
 codespace: undefined
 data: ""
@@ -276,22 +276,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMW1rd3djdTUzMjJxdXF4MnMzajJlZTZjczh1dzl6OHY4MmdsaHBrLzM=
+    value: Y29zbW9zMW1rd3djdTUzMjJxdXF4MnMzajJlZTZjczh1dzl6OHY4MmdsaHBrLzU=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: eU1PSk5kYmhra2NUNEltNTBaS0w5TUV3TGYveEhDTFc3cWlSaE1ZaTNzRnFZOE5zMkNKNTh0K1VncEpXd1BRWUg5WmlqaXJKeHVPaDk0OWVReFg0a2c9PQ==
+    value: NTA3MkNiNmtsM1RTOHdwUCtRYzgwTWtjZGV3VDNHajBkWVE0UlV6dm5hTS9rcTBHNmw1OXI2UFVZejdrVlBZa3pkdnU0WEZ3M2hZTE4yRGZDZ3JkSVE9PQ==
   type: tx
 gas_used: "116359"
 gas_wanted: "200000"
-height: "112"
+height: "993"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 56FABB18A2397A8F530448E65DB101D8CFEE3C47C21CB4D0D3D3D255DBE27124
+txhash: 1EEB9FD56ECF98305DDB133D6E4408530A8FA013F0260E7A0C76084C106E1EC9
 code: 1
 codespace: undefined
 data: ""
@@ -304,22 +304,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMXlxYWoycWZwdmhrcmRldHVjcTU1YXc5YXY2Mjk4aGhsNTB6a2V5LzM=
+    value: Y29zbW9zMXlxYWoycWZwdmhrcmRldHVjcTU1YXc5YXY2Mjk4aGhsNTB6a2V5LzU=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: RnNDQ3U1S3dKbzlqS0o1dDlGT2NxS3JDQ3pOZkk3dFpKOUVZNks3YW1VUVNVeUNXS1U0MmdVemZsNktqZjVCRTdsbDF3U2R1eFo0N2FKQ0U2VzNKdkE9PQ==
+    value: cHp1RGdycGRVT1poOGVndXZCVVByN2FqUmMyK2VPUFZCNFdlcUFObU5GZEhkZ3U5Z3hXM1ZHM3JxdlZ2YW5odXAwam5hblVlSE5FT2NOdG92WEVrUnc9PQ==
   type: tx
 gas_used: "116359"
 gas_wanted: "200000"
-height: "113"
+height: "994"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 6698E3910A4F55CA4A0340E4C484DE19588AA6408F92B999AB52A70448023077
+txhash: BB7A0A5EF9F0D3B49DB9730CC39A9BC1C8A7462FAD9ACCE0821C29804981E62D
 code: 1
 codespace: undefined
 data: ""
@@ -332,140 +332,22 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMXdzYXM5NTRhcndoc3lzM3NrMDU2ZjRlcjgwd2YwZ2o4eHgwN3l0LzQ=
+    value: Y29zbW9zMXdzYXM5NTRhcndoc3lzM3NrMDU2ZjRlcjgwd2YwZ2o4eHgwN3l0LzY=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: S3ZlYm4yN2x2Qytlenc2cGlHdWhRQ0ZBbWRzVHlscDJsNWVmTkdHbm5kNUtuODg2M0ZrTzBhVW1PQVdxK3grMHJ3VXJMemU2M2xUQi81bWV3TWRMbFE9PQ==
+    value: VW0rZlJJUHpub3Vlc3A1L3NWWDZJbWUvOGVLU25aMVM0Qk1oWFhiT2JmQkR1Wk0xb3BDUXdqaE1rbGtlMXhZaEVBT2R1ZnVmTDMyb2hEK09PNUxCVmc9PQ==
   type: tx
 gas_used: "116359"
 gas_wanted: "200000"
-height: "114"
+height: "995"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: 6D40FFCD8FE489FB950200877531FC8A2056A7836577794EB0C63EB638E7F10C
-code: 0
-codespace: ""
-data: 0A260A242F6C6176616E65742E6C6176612E70616972696E672E4D73675374616B65436C69656E74
-events:
-- attributes:
-  - index: true
-    key: ZmVl
-    value: ""
-  type: tx
-- attributes:
-  - index: true
-    key: YWNjX3NlcQ==
-    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3LzE=
-  type: tx
-- attributes:
-  - index: true
-    key: c2lnbmF0dXJl
-    value: aDBHcjliMXhLOHpoYzVNQlZHZlNuOUhkRDY0eFRicmU3QjZ0ZnpxbEZleHlnaC9QYnpCZzQxTFF3aHR2K0dvLy85cVlmRDQ2MXJBeTk2UnFjRG9NVnc9PQ==
-  type: tx
-- attributes:
-  - index: true
-    key: YWN0aW9u
-    value: c3Rha2VfY2xpZW50
-  type: message
-- attributes:
-  - index: true
-    key: c3BlbmRlcg==
-    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3
-  - index: true
-    key: YW1vdW50
-    value: MTRzdGFrZQ==
-  type: coin_spent
-- attributes:
-  - index: true
-    key: cmVjZWl2ZXI=
-    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
-  - index: true
-    key: YW1vdW50
-    value: MTRzdGFrZQ==
-  type: coin_received
-- attributes:
-  - index: true
-    key: cmVjaXBpZW50
-    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
-  - index: true
-    key: c2VuZGVy
-    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3
-  - index: true
-    key: YW1vdW50
-    value: MTRzdGFrZQ==
-  type: transfer
-- attributes:
-  - index: true
-    key: c2VuZGVy
-    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3
-  type: message
-- attributes:
-  - index: true
-    key: c3BlYw==
-    value: RVRIMQ==
-  - index: true
-    key: Y2xpZW50
-    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3
-  - index: true
-    key: ZGVhZGxpbmU=
-    value: MTE2
-  - index: true
-    key: c3Rha2U=
-    value: MjAwMDAwc3Rha2U=
-  type: lava_client_stake_update
-gas_used: "67700"
-gas_wanted: "200000"
-height: "115"
-info: ""
-logs:
-- events:
-  - attributes:
-    - key: receiver
-      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
-    - key: amount
-      value: 14stake
-    type: coin_received
-  - attributes:
-    - key: spender
-      value: cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww
-    - key: amount
-      value: 14stake
-    type: coin_spent
-  - attributes:
-    - key: spec
-      value: ETH1
-    - key: client
-      value: cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww
-    - key: deadline
-      value: "116"
-    - key: stake
-      value: 200000stake
-    type: lava_client_stake_update
-  - attributes:
-    - key: action
-      value: stake_client
-    - key: sender
-      value: cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww
-    type: message
-  - attributes:
-    - key: recipient
-      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
-    - key: sender
-      value: cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww
-    - key: amount
-      value: 14stake
-    type: transfer
-  log: ""
-  msg_index: 0
-raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"14stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww"},{"key":"amount","value":"14stake"}]},{"type":"lava_client_stake_update","attributes":[{"key":"spec","value":"ETH1"},{"key":"client","value":"cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww"},{"key":"deadline","value":"116"},{"key":"stake","value":"200000stake"}]},{"type":"message","attributes":[{"key":"action","value":"stake_client"},{"key":"sender","value":"cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww"},{"key":"amount","value":"14stake"}]}]}]'
-timestamp: ""
-tx: null
-txhash: 4B84B48BCCC60E268DFA1766A9DA85C5ADA3894B78FA9FCEC4A927E86A4EA2E2
+txhash: E07B27BF68CC77A384A62526B5440C581B1C0A604A7F9E3AF8FC6421D1EDC8BF
 code: 1
 codespace: undefined
 data: ""
@@ -478,26 +360,54 @@ events:
 - attributes:
   - index: false
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMWNnbnRsN2N2c2dxYXkwN3B1NWhkbmMyeDNuODJ2anhhNjVubGsyLzE=
+    value: Y29zbW9zMWp1bWUwcmV2anJ5aHk5anE2MnE0MjdocDVscGV6bmVzdXJycnd3LzI=
   type: tx
 - attributes:
   - index: false
     key: c2lnbmF0dXJl
-    value: TzdhaHFOcG9zUkF6SFQ0M0twMjl5ZEt3b0MxNnU5NEFHb2xwdS9ySXpVRVU0cmNlOWEzZk1YSWNacVpTbERqWjhDamlSWWpTZ3ROWjFaZ0R5b0t3N1E9PQ==
+    value: dEMxeEN1OVlpaFNpOFNsazI4c2ZIbkoxcFpKUG00MHNvNitBSVNiOHNqQVlXS1UrR0lkRTd6ZkNVbXN2WVRqdU42WE41Q2VxSVdPb28ySkg5OWtQRnc9PQ==
+  type: tx
+gas_used: "49438"
+gas_wanted: "200000"
+height: "996"
+info: ""
+logs: []
+raw_log: internal
+timestamp: ""
+tx: null
+txhash: 00F65BB72BA6F1E66EEAC355085D01C2A110F64126B5B4F1CAB3EADD28DC08F1
+code: 1
+codespace: undefined
+data: ""
+events:
+- attributes:
+  - index: false
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: false
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMWNnbnRsN2N2c2dxYXkwN3B1NWhkbmMyeDNuODJ2anhhNjVubGsyLzI=
+  type: tx
+- attributes:
+  - index: false
+    key: c2lnbmF0dXJl
+    value: VFZsRkl5aUhvRjh5WVZPNDdwUEFLRTRnR2xVZm9ENUlPM3NldGZsUlpob252OEZIc2RGckJzRDl0SnlqaDJudjdyMEx4dFA2MHowbnFGdWxtbzRuY1E9PQ==
   type: tx
 gas_used: "77572"
 gas_wanted: "200000"
-height: "116"
+height: "997"
 info: ""
 logs: []
 raw_log: internal
 timestamp: ""
 tx: null
-txhash: BE5B4FED98D7F3B136E67B14C72861F515541088015F4E63E8985C62A57AB07D
+txhash: 75A44C414B275520BDD630FD74545C6C104A2312C7D5E15E6852731AE17FF5E5
 ---------------Queries------------------
 output: |
   Staked Providers Query Output:
-  ChainID: ETH1 Enabled: true Current Block: 116
+  ChainID: ETH1 Enabled: true Current Block: 997
   Staked Providers:
   [{2000stake cosmos1yqaj2qfpvhkrdetucq55aw9av6298hhl50zkey 31 [{127.0.0.1:2222 jsonrpc 1}] 1 ETH1} {2010stake cosmos1mkwwcu5322quqx2s3j2ee6cs8uw9z8v82glhpk 30 [{127.0.0.1:2221 jsonrpc 1}] 1 ETH1} {2020stake cosmos19n4l6p5hd65srke9q5p5ahsjjhqtgpgtp56mr5 33 [{127.0.0.1:2224 jsonrpc 1}] 1 ETH1} {2030stake cosmos1935sf9p72l3k8u38d2u2jwq5rmqka5kch77t57 34 [{127.0.0.1:2225 jsonrpc 1}] 1 ETH1} {2050stake cosmos1wsas954arwhsys3sk056f4er80wf0gj8xx07yt 32 [{127.0.0.1:2223 jsonrpc 1}] 1 ETH1}]
   Unstaking Providers:
@@ -561,7 +471,7 @@ stakeEntry:
     denom: stake
 output: |
   Staked Clients Query Output:
-  ChainID: ETH1 Enabled: true Current Block: 116
+  ChainID: ETH1 Enabled: true Current Block: 997
   Staked Clients:
   [{200000stake cosmos1jume0revjryhy9jq62q427hp5lpeznesurrrww 38 [] 1 ETH1}]
   Unstaking Clients:
@@ -577,10 +487,9 @@ stakeEntry:
     amount: "200000"
     denom: stake
 ---------------Setup Providers------------------
-screen: no process found
 --- setting up screens done ---
 There are screens on:
-	124456.portals	(06/02/2022 11:42:49 AM)	(Detached)
-	124400.cos3_providers	(06/02/2022 11:42:49 AM)	(Detached)
-	124379.eth1_providers	(06/02/2022 11:42:49 AM)	(Detached)
+	132211.portals	(06/02/2022 11:57:43 AM)	(Detached)
+	132148.cos3_providers	(06/02/2022 11:57:43 AM)	(Detached)
+	132120.eth1_providers	(06/02/2022 11:57:43 AM)	(Detached)
 3 Sockets in /run/screen/S-magic.

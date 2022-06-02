@@ -14,12 +14,12 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
+    - name: ignite install
+      run: curl https://get.ignite.com/cli! | bash
     - name: ls usr 
       run: ls -l /home/runner/work/lava/lava
     # - name: docker build 
     #   run: docker build -t lava-docker .
-    - name: ignite install
-      run: curl https://get.ignite.com/cli! | bash
     - name: ignite version
       run:  ignite version
     - name: starport install
@@ -49,5 +49,8 @@ jobs:
     - name: test
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
       run: go test ./testutil/e2e/ -v
+    - name: cat client.log
+      # run: cd ~/go/lava; go test ./testutil/e2e/ -v
+      run: cat ./testutil/e2e/logs/client.log
 
   
