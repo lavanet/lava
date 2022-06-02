@@ -293,7 +293,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	}
 	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
 	usingLavad := false
-	if isGithubAction || (!resetGenesis && !isGithubAction) {
+	if !resetGenesis {
 		lava_serve_cmd = "lavad start "
 		usingLavad = true
 	}

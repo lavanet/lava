@@ -65,6 +65,6 @@ func TestFullflowWithTimeOut(t *testing.T) {
 }
 
 func XTestX(t *testing.T) ([]TestResult, error) {
-	// return FullFlowTest(t)
-	return InitTest(t)
+	return FullFlowTest(t)
+	// return InitTest(t)
 }
