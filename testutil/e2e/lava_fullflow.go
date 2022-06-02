@@ -274,7 +274,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	states := []State{}
 	results := map[string][]TestResult{}
 	homepath := getHomePath() //local
-	resetGenesis := false
+	resetGenesis := true
 	isGithubAction := false
 	if strings.Contains(homepath, "runner") { // on github
 		homepath += "work/lava/lava/" //local
