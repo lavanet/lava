@@ -1,7 +1,7 @@
 name: Lava e2e Tests
 
-# on: [push, pull_request]
-on: [push]
+on: [push, pull_request]
+# on: [push]
 
 
 jobs:
