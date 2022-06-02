@@ -103,7 +103,7 @@ func tests() map[string](func(string) (bool, string, error)) {
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 	t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
-	t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
+	// t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
 	// Test Configs
 	nodeTest := Test{
 		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},

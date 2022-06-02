@@ -56,14 +56,14 @@ jobs:
       run:  go env
     # - name: PATH
     #   run:  export PATH=$PATH:`pwd`:
-    - name: cd ~/go/lava
-      run: cd ~/go/lava
+    # - name: cd ~/go/lava
+      # run: cd ~/go/lava
     - name: pwd
       run: pwd
     - name: ls -l
       run: ls -l
-    # - name: ignite build
-    #   run: ignite chain build -p `pwd`
+    - name: ignite build
+      run: ignite chain build
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r
     - name: test
