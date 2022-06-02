@@ -155,7 +155,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	init := LogProcess(CMD{
 		stateID:      "init",
 		homepath:     homepath,
-		cmd:          "./init_chain_commands.sh",
+		cmd:          "./init_chain_commands_noscreen.sh",
 		filter:       []string{"raw_log", "Error", "error", "panic"},
 		testing:      true,
 		test:         initTest,

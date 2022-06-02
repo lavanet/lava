@@ -1,4 +1,4 @@
-name: Go Test1
+name: Lava e2e Tests
 
 # on: [push, pull_request]
 on: [push]
