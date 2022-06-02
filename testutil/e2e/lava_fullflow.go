@@ -362,7 +362,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// go readFile(logPath, state, filter, t)
 	}
 
-	run_providers := false
+	run_providers := true
 	if run_providers {
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		prov5 := LogProcess(CMD{
@@ -381,7 +381,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
-	run_providers_manual := true
+	run_providers_manual := false
 	if run_providers_manual {
 
 		prov1 := LogProcess(CMD{

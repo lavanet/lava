@@ -1,10 +1,14 @@
  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ relayer started !!!!!
-2022/06/02 18:24:07 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
-2022/06/02 18:24:08 Server starting 127.0.0.1:2221 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
-2022/06/02 18:24:09 Server pubkey BC144511C3B0B3AA63BDC1EA6A0797571949EFAB
-2022/06/02 18:24:09 server listening at 127.0.0.1:2221
+2022/06/02 18:45:49 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
+2022/06/02 18:45:50 Server starting 127.0.0.1:2221 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
+2022/06/02 18:45:51 Server pubkey 482439FBF92F641E5939CD8512C87F1481BE6028
+2022/06/02 18:45:51 server listening at 127.0.0.1:2221
 New session: Height: 40 
 total CU serviced: 0, total CU paid: 0
-2022/06/02 18:24:26 signalChan
-2022/06/02 18:24:26 connectorLoop ctx.Done
-2022/06/02 18:24:26 Connector closing 1
+New session: Height: 60 
+total CU serviced: 0, total CU paid: 0
+New session: Height: 80 
+total CU serviced: 0, total CU paid: 0
+New session: Height: 100 
+total CU serviced: 0, total CU paid: 0
+signal: terminated
