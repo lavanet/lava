@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -51,17 +52,25 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	// homepath := getHomePath() + "/home/runner/work/goTestGH/goTestGH/"
-	// homepath := "/home/runner/work/goTestGH/goTestGH/"
-	homepath := getHomePath() + "go/lava/" //local
+	homepath := getHomePath()                 //local
+	if strings.Contains(homepath, "runner") { // on github
+		homepath += "worker/lava/lava/" //local
+	} else { // local
+		homepath += "go/lava/" //local
+	}
 	// homepath := getHomePath() + "work/lava/lava/" //github
-	// fmt.Errorf("SSSSSSSSSSSSSS XXXXXXXXXXXXXXXXXXXXX HOME %s", getHomePath())
-
+	// homepath := "/go/lava/" // github
+	// homepath := "/home/magic/go/lava/"
+	// homepath := "~/go/lava/"
+	// homepath := ""
+	if t != nil {
+		t.Logf(" ::: Test Homepath ::: %s", homepath)
+	}
 	node := LogProcess(CMD{
 		stateID:  "simple",
 		homepath: homepath,
-		// cmd:          "go run " + homepath + "testutil/e2e/simple/simple.go ",
-		cmd:          "go run ./testutil/e2e/simple/simple.go ",
+		cmd:      "go run " + homepath + "testutil/e2e/simple/simple.go ",
+		// cmd:          "go run ./testutil/e2e/simple/simple.go ",
 		filter:       []string{"!", "no", "un", "error"},
 		testing:      true,
 		test:         simpleTest,

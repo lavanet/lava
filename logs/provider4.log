@@ -1,9 +1,213 @@
-2022/06/02 14:15:27 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
-2022/06/02 14:15:28 Server starting 127.0.0.1:2224 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
-2022/06/02 14:15:29 Server pubkey 5FBFB36AA711D823C6AD466455C64503C5E5D54A
-2022/06/02 14:15:29 server listening at 127.0.0.1:2224
+2022/06/02 14:30:08 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
+2022/06/02 14:30:09 Server starting 127.0.0.1:2224 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
+2022/06/02 14:30:09 Server pubkey 82C813CFF5AAAEEC06F891F4271FF9433910C6B1
+2022/06/02 14:30:10 server listening at 127.0.0.1:2224
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 new user sessions 250000
+2022/06/02 14:30:19 updateSessionCu eth_blockNumber 605394647632969758 10 0 10
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_getBalance 605394647632969758 19 10 29
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_blockNumber 605394647632969758 10 29 39
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_getBalance 605394647632969758 19 39 58
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_blockNumber 605394647632969758 10 58 68
+2022/06/02 14:30:20 server got Relay
+2022/06/02 14:30:20 updateSessionCu eth_blockNumber 605394647632969758 10 68 78
+2022/06/02 14:30:20 server got Relay
+2022/06/02 14:30:20 updateSessionCu eth_blockNumber 605394647632969758 10 78 88
+2022/06/02 14:30:20 server got Relay
+2022/06/02 14:30:20 updateSessionCu eth_getBalance 605394647632969758 19 88 107
 New session: Height: 40 
+2022/06/02 14:30:20 active sessions: 
+2022/06/02 14:30:20 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:20 
 total CU serviced: 0, total CU paid: 0
-New session: Height: 60 
-total CU serviced: 0, total CU paid: 0
+2022/06/02 14:30:21 active sessions: 
+2022/06/02 14:30:21 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:21 
+2022/06/02 14:30:22 active sessions: 
+2022/06/02 14:30:22 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:22 
+2022/06/02 14:30:23 active sessions: 
+2022/06/02 14:30:23 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:23 
+2022/06/02 14:30:24 active sessions: 
+2022/06/02 14:30:24 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:24 
+2022/06/02 14:30:25 active sessions: 
+2022/06/02 14:30:25 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0014c5dd0]} 
+2022/06/02 14:30:25 
+2022/06/02 14:30:25 asking for rewards cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3
+----------SUCCESS-----------
+transaction results: code: 0
+codespace: ""
+data: 0A270A252F6C6176616E65742E6C6176612E70616972696E672E4D736752656C61795061796D656E74
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMXN0eXA4bmw0NDJod2NwaGNqODZ6dzhsZWd2dTNwMzQzbmRwZ2czLzE=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: OVNJcVlmeWlpaVhnNWhaNVVRUHBaQ05YMEZvMk1PNVlTb3EvOWJ5TUpMRWI2dGR1UDd4NVVtWWFJNUtaSVlEVW1WcFlOZHFFaGVHVUk4QXhyY1BlR0E9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: cmVsYXlfcGF5bWVudA==
+  type: message
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTBzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: bWludGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTBzdGFrZQ==
+  type: coinbase
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTBzdGFrZQ==
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMXN0eXA4bmw0NDJod2NwaGNqODZ6dzhsZWd2dTNwMzQzbmRwZ2cz
+  - index: true
+    key: YW1vdW50
+    value: MTBzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMXN0eXA4bmw0NDJod2NwaGNqODZ6dzhsZWd2dTNwMzQzbmRwZ2cz
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTBzdGFrZQ==
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  type: message
+- attributes:
+  - index: true
+    key: dG90YWxDVUluRXBvY2g=
+    value: MTA3
+  - index: true
+    key: aXNPdmVybGFw
+    value: ZmFsc2U=
+  - index: true
+    key: Y2xpZW50RmVl
+    value: NXN0YWtl
+  - index: true
+    key: Y2hhaW5JRA==
+    value: RVRIMQ==
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMXo0ZG1lNmo4Z3Z3dWw5amY3cnkyNWp5czdybHR0cnhxeWhuZGF0
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMXN0eXA4bmw0NDJod2NwaGNqODZ6dzhsZWd2dTNwMzQzbmRwZ2cz
+  - index: true
+    key: Q1U=
+    value: MTA3
+  - index: true
+    key: TWludA==
+    value: MTBzdGFrZQ==
+  type: lava_relay_payment
+gas_used: "141115"
+gas_wanted: "1000000"
+height: "46"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 10stake
+    - key: receiver
+      value: cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3
+    - key: amount
+      value: 10stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 10stake
+    type: coin_spent
+  - attributes:
+    - key: minter
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 10stake
+    type: coinbase
+  - attributes:
+    - key: totalCUInEpoch
+      value: "107"
+    - key: isOverlap
+      value: "false"
+    - key: clientFee
+      value: 5stake
+    - key: chainID
+      value: ETH1
+    - key: client
+      value: cosmos1z4dme6j8gvwul9jf7ry25jys7rlttrxqyhndat
+    - key: provider
+      value: cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3
+    - key: CU
+      value: "107"
+    - key: Mint
+      value: 10stake
+    type: lava_relay_payment
+  - attributes:
+    - key: action
+      value: relay_payment
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 10stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"10stake"},{"key":"receiver","value":"cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3"},{"key":"amount","value":"10stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"10stake"}]},{"type":"coinbase","attributes":[{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"10stake"}]},{"type":"lava_relay_payment","attributes":[{"key":"totalCUInEpoch","value":"107"},{"key":"isOverlap","value":"false"},{"key":"clientFee","value":"5stake"},{"key":"chainID","value":"ETH1"},{"key":"client","value":"cosmos1z4dme6j8gvwul9jf7ry25jys7rlttrxqyhndat"},{"key":"provider","value":"cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3"},{"key":"CU","value":"107"},{"key":"Mint","value":"10stake"}]},{"type":"message","attributes":[{"key":"action","value":"relay_payment"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos1styp8nl442hwcphcj86zw8legvu3p343ndpgg3"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"10stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: 03D902B53E7713C8A0B6EBFB996E35DC2774DFD6C81314B58AD18B88A497852A
+
+-----------SUCCESS-------------
+
+Received relay payment of 10stake for CU: 107
+SUCCESS: payment received as expected
 signal: terminated

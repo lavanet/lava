@@ -1,174 +1,40 @@
-2022/06/02 14:15:27 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
-2022/06/02 14:15:28 Server starting 127.0.0.1:2225 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
-2022/06/02 14:15:29 Server pubkey F0395799677593A391918B1AD056874AF4BC89DD
-2022/06/02 14:15:29 server listening at 127.0.0.1:2225
+2022/06/02 14:30:08 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
+2022/06/02 14:30:09 Server starting 127.0.0.1:2225 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
+2022/06/02 14:30:09 Server pubkey A08905E9F1E004AEFB262A0E8A7A920489F5E507
+2022/06/02 14:30:10 server listening at 127.0.0.1:2225
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 new user sessions 250000
+2022/06/02 14:30:19 updateSessionCu eth_blockNumber 4037200794235010051 10 0 10
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_getBalance 4037200794235010051 19 10 29
+2022/06/02 14:30:19 active sessions: 
+2022/06/02 14:30:19 {UsedComputeUnits:29 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:19 
+2022/06/02 14:30:19 server got Relay
+2022/06/02 14:30:19 updateSessionCu eth_getBalance 4037200794235010051 19 29 48
+2022/06/02 14:30:20 server got Relay
+2022/06/02 14:30:20 updateSessionCu eth_getBalance 4037200794235010051 19 48 67
 New session: Height: 40 
+2022/06/02 14:30:20 active sessions: 
+2022/06/02 14:30:20 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:20 
 total CU serviced: 0, total CU paid: 0
-2022/06/02 14:15:39 server got Relay
-2022/06/02 14:15:39 new user sessions 250000
-2022/06/02 14:15:39 updateSessionCu eth_blockNumber 605394647632969758 10 0 10
-2022/06/02 14:15:39 server got Relay
-2022/06/02 14:15:39 updateSessionCu eth_getBalance 605394647632969758 19 10 29
-2022/06/02 14:15:39 server got Relay
-2022/06/02 14:15:39 updateSessionCu eth_blockNumber 605394647632969758 10 29 39
-2022/06/02 14:15:39 server got Relay
-2022/06/02 14:15:39 updateSessionCu eth_getBalance 605394647632969758 19 39 58
-2022/06/02 14:15:39 server got Relay
-2022/06/02 14:15:39 updateSessionCu eth_blockNumber 605394647632969758 10 58 68
-2022/06/02 14:15:39 active sessions: 
-2022/06/02 14:15:39 {UsedComputeUnits:68 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:39 
-2022/06/02 14:15:40 server got Relay
-2022/06/02 14:15:40 updateSessionCu eth_blockNumber 605394647632969758 10 68 78
-2022/06/02 14:15:40 server got Relay
-2022/06/02 14:15:40 updateSessionCu eth_blockNumber 605394647632969758 10 78 88
-2022/06/02 14:15:40 server got Relay
-2022/06/02 14:15:40 updateSessionCu eth_getBalance 605394647632969758 19 88 107
-2022/06/02 14:15:41 active sessions: 
-2022/06/02 14:15:41 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:41 
-2022/06/02 14:15:41 server got Relay
-2022/06/02 14:15:41 updateSessionCu eth_getBalance 605394647632969758 19 107 126
-2022/06/02 14:15:41 server got Relay
-2022/06/02 14:15:41 updateSessionCu eth_getBalance 605394647632969758 19 126 145
-2022/06/02 14:15:41 server got Relay
-2022/06/02 14:15:41 updateSessionCu eth_blockNumber 605394647632969758 10 145 155
-2022/06/02 14:15:41 server got Relay
-2022/06/02 14:15:41 updateSessionCu eth_getBalance 605394647632969758 19 155 174
-2022/06/02 14:15:42 active sessions: 
-2022/06/02 14:15:42 {UsedComputeUnits:174 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:42 
-2022/06/02 14:15:43 active sessions: 
-2022/06/02 14:15:43 {UsedComputeUnits:174 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:43 
-2022/06/02 14:15:43 server got Relay
-2022/06/02 14:15:43 updateSessionCu eth_getBalance 605394647632969758 19 174 193
-2022/06/02 14:15:44 server got Relay
-2022/06/02 14:15:44 updateSessionCu eth_blockNumber 605394647632969758 10 193 203
-2022/06/02 14:15:44 active sessions: 
-2022/06/02 14:15:44 {UsedComputeUnits:203 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:44 
-2022/06/02 14:15:44 server got Relay
-2022/06/02 14:15:44 updateSessionCu eth_getBalance 605394647632969758 19 203 222
-2022/06/02 14:15:44 server got Relay
-2022/06/02 14:15:44 updateSessionCu eth_getBalance 605394647632969758 19 222 241
-2022/06/02 14:15:45 server got Relay
-2022/06/02 14:15:45 updateSessionCu eth_getBalance 605394647632969758 19 241 260
-2022/06/02 14:15:45 active sessions: 
-2022/06/02 14:15:45 {UsedComputeUnits:260 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:45 
-2022/06/02 14:15:45 server got Relay
-2022/06/02 14:15:45 updateSessionCu eth_getBalance 605394647632969758 19 260 279
-2022/06/02 14:15:45 server got Relay
-2022/06/02 14:15:45 updateSessionCu eth_blockNumber 605394647632969758 10 279 289
-2022/06/02 14:15:46 active sessions: 
-2022/06/02 14:15:46 {UsedComputeUnits:289 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:46 
-2022/06/02 14:15:47 active sessions: 
-2022/06/02 14:15:47 {UsedComputeUnits:289 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:47 
-2022/06/02 14:15:47 server got Relay
-2022/06/02 14:15:47 updateSessionCu eth_blockNumber 605394647632969758 10 289 299
-2022/06/02 14:15:48 server got Relay
-2022/06/02 14:15:48 updateSessionCu eth_getBalance 605394647632969758 19 299 318
-2022/06/02 14:15:48 active sessions: 
-2022/06/02 14:15:48 {UsedComputeUnits:318 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:48 
-2022/06/02 14:15:48 server got Relay
-2022/06/02 14:15:48 updateSessionCu eth_blockNumber 605394647632969758 10 318 328
-2022/06/02 14:15:48 server got Relay
-2022/06/02 14:15:48 updateSessionCu eth_blockNumber 605394647632969758 10 328 338
-2022/06/02 14:15:49 server got Relay
-2022/06/02 14:15:49 updateSessionCu eth_getBalance 605394647632969758 19 338 357
-2022/06/02 14:15:49 active sessions: 
-2022/06/02 14:15:49 {UsedComputeUnits:357 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:49 
-2022/06/02 14:15:49 server got Relay
-2022/06/02 14:15:49 updateSessionCu eth_getBalance 605394647632969758 19 357 376
-2022/06/02 14:15:49 server got Relay
-2022/06/02 14:15:49 updateSessionCu eth_getBalance 605394647632969758 19 376 395
-2022/06/02 14:15:50 active sessions: 
-2022/06/02 14:15:50 {UsedComputeUnits:395 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:50 
-2022/06/02 14:15:51 active sessions: 
-2022/06/02 14:15:51 {UsedComputeUnits:395 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:51 
-2022/06/02 14:15:51 server got Relay
-2022/06/02 14:15:51 updateSessionCu eth_blockNumber 605394647632969758 10 395 405
-2022/06/02 14:15:51 server got Relay
-2022/06/02 14:15:51 updateSessionCu eth_getBalance 605394647632969758 19 405 424
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_getBalance 605394647632969758 19 424 443
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_getBalance 605394647632969758 19 443 462
-2022/06/02 14:15:52 active sessions: 
-2022/06/02 14:15:52 {UsedComputeUnits:462 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:52 
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_getBalance 605394647632969758 19 462 481
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_blockNumber 605394647632969758 10 481 491
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_getBalance 605394647632969758 19 491 510
-2022/06/02 14:15:52 server got Relay
-2022/06/02 14:15:52 updateSessionCu eth_getBalance 605394647632969758 19 510 529
-2022/06/02 14:15:53 server got Relay
-2022/06/02 14:15:53 updateSessionCu eth_blockNumber 605394647632969758 10 529 539
-2022/06/02 14:15:53 server got Relay
-2022/06/02 14:15:53 updateSessionCu eth_getBalance 605394647632969758 19 539 558
-2022/06/02 14:15:53 active sessions: 
-2022/06/02 14:15:53 {UsedComputeUnits:558 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:53 
-2022/06/02 14:15:54 active sessions: 
-2022/06/02 14:15:54 {UsedComputeUnits:558 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:54 
-2022/06/02 14:15:55 active sessions: 
-2022/06/02 14:15:55 {UsedComputeUnits:558 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:55 
-2022/06/02 14:15:56 active sessions: 
-2022/06/02 14:15:56 {UsedComputeUnits:558 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:56 
-2022/06/02 14:15:56 server got Relay
-2022/06/02 14:15:56 updateSessionCu eth_getBalance 605394647632969758 19 558 577
-2022/06/02 14:15:56 server got Relay
-2022/06/02 14:15:56 updateSessionCu eth_blockNumber 605394647632969758 10 577 587
-2022/06/02 14:15:56 server got Relay
-2022/06/02 14:15:56 updateSessionCu eth_getBalance 605394647632969758 19 587 606
-2022/06/02 14:15:56 server got Relay
-2022/06/02 14:15:56 updateSessionCu eth_blockNumber 605394647632969758 10 606 616
-2022/06/02 14:15:56 server got Relay
-2022/06/02 14:15:56 updateSessionCu eth_blockNumber 605394647632969758 10 616 626
-2022/06/02 14:15:57 server got Relay
-2022/06/02 14:15:57 updateSessionCu eth_blockNumber 605394647632969758 10 626 636
-2022/06/02 14:15:57 active sessions: 
-2022/06/02 14:15:57 {UsedComputeUnits:636 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:57 
-2022/06/02 14:15:57 server got Relay
-2022/06/02 14:15:57 updateSessionCu eth_getBalance 605394647632969758 19 636 655
-2022/06/02 14:15:58 active sessions: 
-2022/06/02 14:15:58 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:58 
-New session: Height: 60 
-2022/06/02 14:15:59 active sessions: 
-2022/06/02 14:15:59 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:15:59 
-total CU serviced: 0, total CU paid: 0
-2022/06/02 14:16:00 active sessions: 
-2022/06/02 14:16:00 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:16:00 
-2022/06/02 14:16:01 active sessions: 
-2022/06/02 14:16:01 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:16:01 
-2022/06/02 14:16:02 active sessions: 
-2022/06/02 14:16:02 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:16:02 
-2022/06/02 14:16:03 active sessions: 
-2022/06/02 14:16:03 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:16:03 
-2022/06/02 14:16:04 active sessions: 
-2022/06/02 14:16:04 {UsedComputeUnits:655 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001714780]} 
-2022/06/02 14:16:04 
-2022/06/02 14:16:04 asking for rewards cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d
+2022/06/02 14:30:21 active sessions: 
+2022/06/02 14:30:21 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:21 
+2022/06/02 14:30:22 active sessions: 
+2022/06/02 14:30:22 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:22 
+2022/06/02 14:30:23 active sessions: 
+2022/06/02 14:30:23 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:23 
+2022/06/02 14:30:24 active sessions: 
+2022/06/02 14:30:24 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:24 
+2022/06/02 14:30:25 active sessions: 
+2022/06/02 14:30:25 {UsedComputeUnits:67 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc000e30180]} 
+2022/06/02 14:30:25 
+2022/06/02 14:30:25 asking for rewards cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz
 ----------SUCCESS-----------
 transaction results: code: 0
 codespace: ""
@@ -182,12 +48,12 @@ events:
 - attributes:
   - index: true
     key: YWNjX3NlcQ==
-    value: Y29zbW9zMTdxdTQweHQ4d2tmNjh5djMzdmRkcTQ1OGZ0NnRlendhdWdlMjhkLzE=
+    value: Y29zbW9zMTV6eXN0NjAzdXF6MmE3ZXg5ZzhnNTc1anFqeWx0ZWc4cXE1eG16LzE=
   type: tx
 - attributes:
   - index: true
     key: c2lnbmF0dXJl
-    value: UEdMQ1U1QmdBK002VlQyOStGRG9oQ2xISXdYQXhuYjJOTGc2bDJBeWFtMGhXOUYwNlNxakMrNWRIWnlTS3BuOUtyamtkUjBjREtaMkE1WkZYd2pSNXc9PQ==
+    value: bHdTdW5ZWHVIQkNLRVN2N1dQbkVIMlZLQ2ZKeXc3alhFZmVBeU5mVFpQNWw2Sm1WSWNTRWdTQTg4WnRPS21ibHFUMURBM1ZLWm8valhLUTU1TkRYTXc9PQ==
   type: tx
 - attributes:
   - index: true
@@ -200,7 +66,7 @@ events:
     value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
   - index: true
     key: YW1vdW50
-    value: NjVzdGFrZQ==
+    value: NnN0YWtl
   type: coin_received
 - attributes:
   - index: true
@@ -208,7 +74,7 @@ events:
     value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
   - index: true
     key: YW1vdW50
-    value: NjVzdGFrZQ==
+    value: NnN0YWtl
   type: coinbase
 - attributes:
   - index: true
@@ -216,26 +82,26 @@ events:
     value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
   - index: true
     key: YW1vdW50
-    value: NjVzdGFrZQ==
+    value: NnN0YWtl
   type: coin_spent
 - attributes:
   - index: true
     key: cmVjZWl2ZXI=
-    value: Y29zbW9zMTdxdTQweHQ4d2tmNjh5djMzdmRkcTQ1OGZ0NnRlendhdWdlMjhk
+    value: Y29zbW9zMTV6eXN0NjAzdXF6MmE3ZXg5ZzhnNTc1anFqeWx0ZWc4cXE1eG16
   - index: true
     key: YW1vdW50
-    value: NjVzdGFrZQ==
+    value: NnN0YWtl
   type: coin_received
 - attributes:
   - index: true
     key: cmVjaXBpZW50
-    value: Y29zbW9zMTdxdTQweHQ4d2tmNjh5djMzdmRkcTQ1OGZ0NnRlendhdWdlMjhk
+    value: Y29zbW9zMTV6eXN0NjAzdXF6MmE3ZXg5ZzhnNTc1anFqeWx0ZWc4cXE1eG16
   - index: true
     key: c2VuZGVy
     value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
   - index: true
     key: YW1vdW50
-    value: NjVzdGFrZQ==
+    value: NnN0YWtl
   type: transfer
 - attributes:
   - index: true
@@ -244,33 +110,33 @@ events:
   type: message
 - attributes:
   - index: true
-    key: TWludA==
-    value: NjVzdGFrZQ==
-  - index: true
-    key: dG90YWxDVUluRXBvY2g=
-    value: NjU1
-  - index: true
-    key: aXNPdmVybGFw
-    value: ZmFsc2U=
-  - index: true
     key: Y2xpZW50RmVl
-    value: MzJzdGFrZQ==
+    value: M3N0YWtl
   - index: true
     key: Y2hhaW5JRA==
     value: RVRIMQ==
   - index: true
     key: Y2xpZW50
-    value: Y29zbW9zMTM0cWNqeXF1Mm5jdDN4eHdzOHd2eXlsaHAwOGYwcmN1enZ2bTUz
+    value: Y29zbW9zMXo0ZG1lNmo4Z3Z3dWw5amY3cnkyNWp5czdybHR0cnhxeWhuZGF0
   - index: true
     key: cHJvdmlkZXI=
-    value: Y29zbW9zMTdxdTQweHQ4d2tmNjh5djMzdmRkcTQ1OGZ0NnRlendhdWdlMjhk
+    value: Y29zbW9zMTV6eXN0NjAzdXF6MmE3ZXg5ZzhnNTc1anFqeWx0ZWc4cXE1eG16
   - index: true
     key: Q1U=
-    value: NjU1
+    value: Njc=
+  - index: true
+    key: TWludA==
+    value: NnN0YWtl
+  - index: true
+    key: dG90YWxDVUluRXBvY2g=
+    value: Njc=
+  - index: true
+    key: aXNPdmVybGFw
+    value: ZmFsc2U=
   type: lava_relay_payment
-gas_used: "127628"
+gas_used: "127618"
 gas_wanted: "1000000"
-height: "66"
+height: "46"
 info: ""
 logs:
 - events:
@@ -278,41 +144,41 @@ logs:
     - key: receiver
       value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
     - key: amount
-      value: 65stake
+      value: 6stake
     - key: receiver
-      value: cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d
+      value: cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz
     - key: amount
-      value: 65stake
+      value: 6stake
     type: coin_received
   - attributes:
     - key: spender
       value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
     - key: amount
-      value: 65stake
+      value: 6stake
     type: coin_spent
   - attributes:
     - key: minter
       value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
     - key: amount
-      value: 65stake
+      value: 6stake
     type: coinbase
   - attributes:
-    - key: Mint
-      value: 65stake
-    - key: totalCUInEpoch
-      value: "655"
-    - key: isOverlap
-      value: "false"
     - key: clientFee
-      value: 32stake
+      value: 3stake
     - key: chainID
       value: ETH1
     - key: client
-      value: cosmos134qcjyqu2nct3xxws8wvyylhp08f0rcuzvvm53
+      value: cosmos1z4dme6j8gvwul9jf7ry25jys7rlttrxqyhndat
     - key: provider
-      value: cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d
+      value: cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz
     - key: CU
-      value: "655"
+      value: "67"
+    - key: Mint
+      value: 6stake
+    - key: totalCUInEpoch
+      value: "67"
+    - key: isOverlap
+      value: "false"
     type: lava_relay_payment
   - attributes:
     - key: action
@@ -322,21 +188,21 @@ logs:
     type: message
   - attributes:
     - key: recipient
-      value: cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d
+      value: cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz
     - key: sender
       value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
     - key: amount
-      value: 65stake
+      value: 6stake
     type: transfer
   log: ""
   msg_index: 0
-raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"65stake"},{"key":"receiver","value":"cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d"},{"key":"amount","value":"65stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"65stake"}]},{"type":"coinbase","attributes":[{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"65stake"}]},{"type":"lava_relay_payment","attributes":[{"key":"Mint","value":"65stake"},{"key":"totalCUInEpoch","value":"655"},{"key":"isOverlap","value":"false"},{"key":"clientFee","value":"32stake"},{"key":"chainID","value":"ETH1"},{"key":"client","value":"cosmos134qcjyqu2nct3xxws8wvyylhp08f0rcuzvvm53"},{"key":"provider","value":"cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d"},{"key":"CU","value":"655"}]},{"type":"message","attributes":[{"key":"action","value":"relay_payment"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos17qu40xt8wkf68yv33vddq458ft6tezwauge28d"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"65stake"}]}]}]'
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"6stake"},{"key":"receiver","value":"cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz"},{"key":"amount","value":"6stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"6stake"}]},{"type":"coinbase","attributes":[{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"6stake"}]},{"type":"lava_relay_payment","attributes":[{"key":"clientFee","value":"3stake"},{"key":"chainID","value":"ETH1"},{"key":"client","value":"cosmos1z4dme6j8gvwul9jf7ry25jys7rlttrxqyhndat"},{"key":"provider","value":"cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz"},{"key":"CU","value":"67"},{"key":"Mint","value":"6stake"},{"key":"totalCUInEpoch","value":"67"},{"key":"isOverlap","value":"false"}]},{"type":"message","attributes":[{"key":"action","value":"relay_payment"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos15zyst603uqz2a7ex9g8g575jqjylteg8qq5xmz"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"6stake"}]}]}]'
 timestamp: ""
 tx: null
-txhash: 7400473ACBFC35908CC2A519115418B476A3EDAE7C235FFBC4C9C48469979294
+txhash: A4870D76B2F76870A56A1A6A97C8AE03919DD796D06B8D949D0377C395042E1E
 
 -----------SUCCESS-------------
 
-Received relay payment of 65stake for CU: 655
+Received relay payment of 6stake for CU: 67
 SUCCESS: payment received as expected
 signal: terminated
