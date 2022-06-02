@@ -28,7 +28,7 @@ echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
 echo "---------------Setup Providers------------------"
-killall screen
+# killall screen
 #Eth providers
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2 &

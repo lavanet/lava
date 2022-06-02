@@ -363,6 +363,25 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	}
 	run_providers := true
 	if run_providers {
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		prov5 := LogProcess(CMD{
+			stateID:      "provider5",
+			homepath:     homepath,
+			cmd:          "./providers.sh",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
+		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
+	}
+	run_providers_manual := false
+	if run_providers_manual {
 
 		prov1 := LogProcess(CMD{
 			stateID:      "provider1",
