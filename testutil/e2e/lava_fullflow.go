@@ -361,7 +361,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		t.Logf(" xxxxxxx ::: %s", err)
 		// go readFile(logPath, state, filter, t)
 	}
-	run_providers := true
+
+	run_providers := false
 	if run_providers {
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		prov5 := LogProcess(CMD{
@@ -459,7 +460,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	run_client := true
 	if run_client {
 		sleep(1, failed)
-		// sleep(60, failed)
+		if !run_providers {
+			sleep(60, failed)
+		}
 
 		client := LogProcess(CMD{
 			stateID:  "client",
