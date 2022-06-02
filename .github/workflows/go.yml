@@ -21,7 +21,7 @@ jobs:
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
     - name: ignite version
-      run:  starport version
+      run:  ignite version
     - name: starport install
       run: curl https://get.starport.network/starport@v0.19.2! | bash
     - name: starport version
