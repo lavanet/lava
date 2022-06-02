@@ -55,18 +55,22 @@ jobs:
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-    - name: test timeout 3 mins
-      run: go test -timeout 180s
+    - name: test timeout 4 mins
+      run: go test -timeout 240s
+    # - name: test timeout 3 mins
+    #   run: go test -timeout 180s
     - name: lava e2e tests
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-      run: go test ./testutil/e2e/ -v &
+      # run: go test ./testutil/e2e/ -v &
+      run: go test ./testutil/e2e/ -v 
 
     # - name: check lavad prov1 output
     #   run: sleep 120 ; go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1
-    - name: sleep 60 for node uptime
-      run: sleep 60 
-    - name: ./init_provX
-      run: cd /home/runner/work/lava/lava && ./init_provX.sh
+   
+    # - name: sleep 60 for node uptime
+    #   run: sleep 60 
+    # - name: ./init_provX
+    #   run: cd /home/runner/work/lava/lava && ./init_provX.sh
     
     # - name: cat provX.log
     #   run: cat ./testutil/e2e/logs/provX.log

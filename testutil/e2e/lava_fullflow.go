@@ -319,7 +319,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	}
 
 	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
-	init_chain := false
+	init_chain := true
 	if init_chain {
 		sleep(2, failed)
 		if resetGenesis || isGithubAction {
@@ -361,7 +361,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		t.Logf(" xxxxxxx ::: %s", err)
 		// go readFile(logPath, state, filter, t)
 	}
-	run_providers := false
+	run_providers := true
 	if run_providers {
 
 		prov1 := LogProcess(CMD{
@@ -439,8 +439,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 	run_client := true
 	if run_client {
-		// sleep(1, failed)
-		sleep(60, failed)
+		sleep(1, failed)
+		// sleep(60, failed)
 
 		client := LogProcess(CMD{
 			stateID:  "client",
