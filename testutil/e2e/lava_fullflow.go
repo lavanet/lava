@@ -152,7 +152,7 @@ func InitTest(t *testing.T) ([]TestResult, error) {
 	}
 	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
 	usingLavad := false
-	if isGithubAction || (!resetGenesis && !isGithubAction) {
+	if !resetGenesis {
 		lava_serve_cmd = "lavad start "
 		usingLavad = true
 	}
@@ -170,7 +170,7 @@ func InitTest(t *testing.T) ([]TestResult, error) {
 		dep:          nil,
 		failed:       failed,
 		requireAlive: true,
-		debug:        false,
+		debug:        true,
 	}, t, &states)
 	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
 	if !usingLavad {
