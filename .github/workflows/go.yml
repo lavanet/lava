@@ -8,7 +8,9 @@ jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'
     - uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
@@ -18,6 +20,8 @@ jobs:
     #   run: docker build -t lava-docker .
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
+    - name: ignite version
+      run:  starport version
     - name: starport install
       run: curl https://get.starport.network/starport@v0.19.2! | bash
     - name: starport version
@@ -26,38 +30,14 @@ jobs:
       run:  pwd && ls -l
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
-    - name: export
-      run: export PATH=$PATH:/go/bin
-    - name: export
-      run: export PATH=$PATH:/go
-    - name: export
-      run: export PATH=$PATH:$(go env GOPATH)/bin
-    - name: export
-      run: export PATH=$PATH:/usr/local
-    - name: export
-      run: export PATH=$PATH:/go/lava
-    - name: export
-      run: export PATH=$PATH:`pwd`
-    - name: export
-      run: export GOPATH=$(go env GOPATH)
-    - name: export
-      run: export GOPATH=$GOPATH:/go
-    - name: export
-      run: export GOPATH=$GOPATH:/go/lava
-    - name: export
-      run: export GOPATH=$GOPATH:`pwd`
-    - name: export gopath
-      run:  export GOPATH=/home/runner/work/lava/lava:$GOPATH
-    - name: export gopath
-      run:  export PATH=$PATH:$(go env GOPATH)/bin
-    - name: export gopath
-      run:  export GOPATH=$(go env GOPATH)
+    - name: export PATH
+      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`
+    # - name: export
+    #   run: export PATH=$PATH:/go/lava
+    - name: export GOPATH
+      run: export GOPATH=$GOPATH:(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
     - name: go env
       run:  go env
-    # - name: PATH
-    #   run:  export PATH=$PATH:`pwd`:
-    # - name: cd ~/go/lava
-      # run: cd ~/go/lava
     - name: pwd
       run: pwd
     - name: ls -l
