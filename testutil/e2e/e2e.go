@@ -121,6 +121,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 					passed:  false,
 					line:    "Exiting Test",
 					err:     fmt.Errorf(log),
+					parent:  state.id,
 				}}
 				if t != nil {
 					t.Logf(log)
@@ -201,10 +202,10 @@ func processLog(line string, state State, t *testing.T) {
 				}
 				if test, test_exists := state.test.tests[event]; test_exists {
 					res, _, err := test(line)
-					results[event] = append(results[event], TestResult{event, true, res, line, err})
+					results[event] = append(results[event], TestResult{event, true, res, line, err, state.id})
 					// foundExpected = true
 				} else {
-					results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event)})
+					results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event), state.id})
 					failed = true
 				}
 				foundExpected = true
@@ -232,13 +233,13 @@ func processLog(line string, state State, t *testing.T) {
 					}
 					if test, test_exists := state.test.tests[event]; test_exists {
 						res, _, err := test(line)
-						results[event] = append(results[event], TestResult{event, true, res, line, err})
+						results[event] = append(results[event], TestResult{event, true, res, line, err, state.id})
 						// foundExpected = true
 						if !res && state.test.strict {
 							failed = true
 						}
 					} else {
-						results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line)})
+						results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line), state.id})
 						if state.test.strict {
 							failed = true
 						}
@@ -304,7 +305,7 @@ func printTestResult(res TestResult, t *testing.T) {
 		errMsg = errMsg[:short] + "..."
 	}
 	// fmt.Println(fmt.Sprintf("%s ::: %s ::: %s ::: %s", status, res.line))
-	log := fmt.Sprintf("%s ::: %s ::: %s ::: %s", status, res.eventID, line, errMsg)
+	log := fmt.Sprintf("%s ::: %s ::: %s ::: %s ::: %s", status, res.parent, res.eventID, line, errMsg)
 	fmt.Println(log)
 	// if t != nil {
 	// 	t.Log(log)

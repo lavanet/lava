@@ -15,6 +15,7 @@ type TestResult struct {
 	passed bool   `json:"passed"`
 	line   string `json:"comment"`
 	err    error  `json:"err"`
+	parent string `json:"parent"`
 }
 
 type CMD struct {
