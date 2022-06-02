@@ -61,7 +61,7 @@ jobs:
     #   run: go test -timeout 180s
     - name: lava e2e tests
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-      run: go test ./testutil/e2e/ -v -timeout 240s
+      run: go test ./testutil/e2e/ -v -timeout 360s
       # run: go test ./testutil/e2e/ -v -timeout 240s & sleep 60 && ./providers.sh
 
     # - name: check lavad prov1 output
