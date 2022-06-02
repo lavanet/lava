@@ -29,7 +29,11 @@ func awaitState(state State) {
 				for key, await := range state.awaiting {
 					// println(" ::: "+state.id+" ::: "+await.msg, *state.finished)
 					if !*state.failed {
-						println(" ::: " + state.id + " ::: " + await.msg)
+						last := " :::(log tail)::: " + string(*state.lastLine)
+						if len(last) > 120 {
+							last = last[:120] + "..."
+						}
+						println(" ::: " + state.id + " ::: " + await.msg + last)
 					}
 					if *await.done {
 						markForDelete = append(markForDelete, key)
@@ -79,6 +83,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			// fmt.Println(string("XXX error XXX ") + string(err.Error()))
 		} else {
 			line := string(data)
+			*state.lastLine = line
 			if _, found := passingFilter(line, filter); found {
 				processLog(line, state, t)
 			} else {
@@ -307,6 +312,7 @@ func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
 func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test Test, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool) State {
 
 	finished := false
+	lastLine := "init"
 	state := State{
 		id:           id,
 		finished:     &finished,
@@ -318,6 +324,7 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 		cmd:          nil,
 		failed:       failed,
 		requireAlive: requireAlive,
+		lastLine:     &lastLine,
 	}
 	// state := State{id, &finished, map[string]Await{}, testing, test, results, &[]*State{depends}}
 	// d := false

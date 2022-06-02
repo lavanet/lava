@@ -55,7 +55,7 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	// homepath := "/home/runner/work/goTestGH/goTestGH/"
 	homepath := getHomePath() + "go/lava/" //local
 	// homepath := getHomePath() + "work/lava/lava/" //github
-	fmt.Errorf("SSSSSSSSSSSSSS XXXXXXXXXXXXXXXXXXXXX HOME %s", getHomePath())
+	// fmt.Errorf("SSSSSSSSSSSSSS XXXXXXXXXXXXXXXXXXXXX HOME %s", getHomePath())
 
 	node := LogProcess(CMD{
 		stateID:  "simple",

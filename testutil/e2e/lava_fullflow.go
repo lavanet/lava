@@ -59,7 +59,7 @@ func exit(states []State) bool {
 
 func ExitLavaProcess() {
 	// print("XXXXXXXXXXXXXXXXXxx", pid)
-	cmd := exec.Command("sh", "-c", "killall lavad ; killall starport ; killall main ;")
+	cmd := exec.Command("sh", "-c", "killall lavad ; killall starport ; killall main ; killall lavad")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -101,7 +101,7 @@ func tests() map[string](func(string) (bool, string, error)) {
 // [-] dockerize
 // [-] github actions CI/CD
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
-	t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
+	// t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
 
 	// Test Configs
 	nodeTest := Test{
@@ -129,7 +129,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	// homepath := "/home/magic/go/lava/"
 	// homepath := "~/go/lava/"
 	// homepath := ""
-	t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
+	// t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
 
 	// Test Flow
 	node := LogProcess(CMD{

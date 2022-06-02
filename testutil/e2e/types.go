@@ -40,7 +40,8 @@ type State struct {
 	depending    *[]*State                `json:"depending"`
 	cmd          *exec.Cmd                `json:"cmd"`
 	failed       *bool                    `json:"failed"`
-	requireAlive bool                     `json:"failed"`
+	requireAlive bool                     `json:"requireAlive"`
+	lastLine     *string                  `json:"lastLine"`
 }
 
 type Await struct {
