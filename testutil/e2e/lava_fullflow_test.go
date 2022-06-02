@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func xTestFullflow(t *testing.T) {
+func TestFullflow(t *testing.T) {
 	finalresults, err := XTestX(t)
 	if err != nil {
 		t.Errorf("expected no error but got %v", err)
@@ -27,7 +27,7 @@ func xTestFullflow(t *testing.T) {
 	}
 }
 
-func TestFullflowWithTimeOut(t *testing.T) {
+func xTestFullflowWithTimeOut(t *testing.T) {
 	// timeout := time.After(3 * time.Second)
 	timeout := time.After(3 * time.Minute)
 	done := make(chan bool)
