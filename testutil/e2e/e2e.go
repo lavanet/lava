@@ -69,7 +69,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 	}
 	defer file.Close()
 	r := bufio.NewReader(file)
-	debugProcess, once := false, true
+	debugProcess, once, checkTerminated := false, true, false
 	for {
 		// line, err := r.ReadString('\n')
 
@@ -99,7 +99,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 		// }
 		if state.cmd.Process != nil {
 			pid := state.cmd.Process.Pid
-			if !*state.finished && state.requireAlive && !isPidAlive(pid) {
+			if checkTerminated && !*state.finished && state.requireAlive && !isPidAlive(pid) {
 				// require := fmt.Sprintf(" @@@@@@@@", state.id, state.requireAlive)
 				log := state.id + " ::: PROCESS HAS TERMINATED ::: "
 				(*state.results)["TERMINATED"] = []TestResult{TestResult{
@@ -325,7 +325,8 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 	os.Chdir(home)
 	logFile := id + ".log"
 	// logPath := resetLog(home, logFile, "x_test/tests/integration/")
-	logPath := resetLog(home, logFile, "testutil/e2e/logs/")
+	// logPath := resetLog(home, logFile, "testutil/e2e/logs/")
+	logPath := resetLog(home, logFile, "logs/")
 	// logPath := home + logFile
 	end := " 2>&1"
 	// println("home", home)

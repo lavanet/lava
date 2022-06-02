@@ -5,6 +5,36 @@ import (
 	"testing"
 )
 
+func TestSimple(t *testing.T) {
+	finalresults, err := SimpleTest(t)
+	if err != nil {
+		t.Errorf("expected no error but got %v", err)
+	}
+	for _, res := range finalresults {
+		end := res.line
+		if res.err != nil {
+			if !res.passed {
+				t.Errorf(res.err.Error())
+			}
+			end = res.err.Error() + " :  " + res.line
+		}
+		if res.passed {
+			t.Log(" ::: PASSED ::: " + res.eventID + " ::: " + end)
+		} else {
+			t.Log(" ::: FAILED ::: " + res.eventID + " ::: " + end)
+			t.Fail()
+		}
+	}
+}
+
+func simple_tests() map[string](func(string) (bool, string, error)) {
+	tests := map[string](func(string) (bool, string, error)){
+		"NICE":  test_found_pass,
+		"error": test_found_fail,
+	}
+	return tests
+}
+
 func nice(line string) (bool, bool) {
 	contains := "NICE"
 	return advanceFlow(line, contains), true
@@ -13,8 +43,8 @@ func nice(line string) (bool, bool) {
 func SimpleTest(t *testing.T) ([]TestResult, error) {
 	simpleTest := Test{
 		expectedEvents:   []string{"NICE"},
-		unexpectedEvents: []string{"error", "x"},
-		tests:            tests(),
+		unexpectedEvents: []string{"error", "x", "no"},
+		tests:            simple_tests(),
 		strict:           true}
 
 	testfailed := false
@@ -23,14 +53,16 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	results := map[string][]TestResult{}
 	// homepath := getHomePath() + "/home/runner/work/goTestGH/goTestGH/"
 	// homepath := "/home/runner/work/goTestGH/goTestGH/"
-	homepath := getHomePath() + "work/lava/lava/" //github
-	fmt.Errorf("XXXXXXXXXXXXXXXXXXXXX HOME %s", getHomePath())
+	homepath := getHomePath() + "go/lava/" //local
+	// homepath := getHomePath() + "work/lava/lava/" //github
+	fmt.Errorf("SSSSSSSSSSSSSS XXXXXXXXXXXXXXXXXXXXX HOME %s", getHomePath())
 
 	node := LogProcess(CMD{
-		stateID:      "simple",
-		homepath:     homepath,
-		cmd:          "go run " + homepath + "simple.go ",
-		filter:       []string{"!"},
+		stateID:  "simple",
+		homepath: homepath,
+		// cmd:          "go run " + homepath + "testutil/e2e/simple/simple.go ",
+		cmd:          "go run ./testutil/e2e/simple/simple.go ",
+		filter:       []string{"!", "no", "un", "error"},
 		testing:      true,
 		test:         simpleTest,
 		results:      &results,

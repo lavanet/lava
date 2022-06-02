@@ -1,0 +1,12 @@
+# command-line-arguments
+testutil/e2e/simple.go:10:9: undefined: advanceFlow
+testutil/e2e/simple.go:13:34: undefined: TestResult
+testutil/e2e/simple.go:14:16: undefined: Test
+testutil/e2e/simple.go:17:21: undefined: tests
+testutil/e2e/simple.go:22:14: undefined: State
+testutil/e2e/simple.go:23:26: undefined: TestResult
+testutil/e2e/simple.go:26:14: undefined: getHomePath
+testutil/e2e/simple.go:28:46: undefined: getHomePath
+testutil/e2e/simple.go:30:10: undefined: LogProcess
+testutil/e2e/simple.go:30:21: undefined: CMD
+testutil/e2e/simple.go:30:21: too many errors

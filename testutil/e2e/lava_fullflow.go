@@ -124,67 +124,100 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	// homepath := getHomePath() + "go/lava/" //local
-	homepath := getHomePath() + "work/lava/lava/" //github
+	homepath := getHomePath() + "go/lava/" //local
+	// homepath := getHomePath() + "work/lava/lava/" //github
 	// homepath := "/go/lava/" // github
 	// homepath := "/home/magic/go/lava/"
 	// homepath := "~/go/lava/"
 	// homepath := ""
 	t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
+	simple := false
+	if simple {
+		// simpleTest := Test{
+		// 	expectedEvents:   []string{"NICE"},
+		// 	unexpectedEvents: []string{"error", "x", "no"},
+		// 	tests:            tests(),
+		// 	strict:           true}
 
-	// Test Flow
-	node := LogProcess(CMD{
-		stateID:  "starport",
-		homepath: homepath,
-		cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r  ",
-		// cmd:          "starport chain serve -v -r ",
-		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
-		testing:      true,
-		test:         nodeTest,
-		results:      &results,
-		dep:          nil,
-		failed:       failed,
-		requireAlive: true}, t, &states)
-	await(node, "node reset", node_reset, "awating for node reset to proceed...")
-	await(node, "node connected", node_ready, "awating for node api to proceed...")
-	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
-	// sleep(2, failed)
+		// testfailed := false
+		// failed := &testfailed
+		// states := []State{}
+		// results := map[string][]TestResult{}
+		// // homepath := getHomePath() + "/home/runner/work/goTestGH/goTestGH/"
+		// // homepath := "/home/runner/work/goTestGH/goTestGH/"
+		// homepath := getHomePath() + "go/lava/" //local
+		// // homepath := getHomePath() + "work/lava/lava/" //github
+		// if t != nil {
+		// 	t.Logf("XXXXXXXXXXXXXXXXXXXXX HOME %s", homepath)
+		// }
 
-	init := LogProcess(CMD{
-		stateID:      "init",
-		homepath:     homepath,
-		cmd:          "./init_chain_commands.sh",
-		filter:       []string{"raw_log", "Error", "error", "panic"},
-		testing:      true,
-		test:         initTest,
-		results:      &results,
-		dep:          &node,
-		failed:       failed,
-		requireAlive: false}, t, &states)
-	await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
-	await(node, "init chain - providers ready", providers_ready, "awating for providers to proceed...")
-	sleep(2, failed)
+		// node := LogProcess(CMD{
+		// 	stateID:      "simple",
+		// 	homepath:     homepath,
+		// 	cmd:          "go run " + homepath + "testutil/e2e/simple.go ",
+		// 	filter:       []string{"!", "no", "un", "error"},
+		// 	testing:      true,
+		// 	test:         simpleTest,
+		// 	results:      &results,
+		// 	dep:          nil,
+		// 	failed:       failed,
+		// 	requireAlive: true}, t, &states)
+		// await(node, "nice!", nice, "awating for NICE to proceed...")
+	} else {
+		// Test Flow
+		node := LogProcess(CMD{
+			stateID:  "starport",
+			homepath: homepath,
+			cmd:      "killall starport; cd " + homepath + " && starport chain serve -v -r  ",
+			// cmd:          "starport chain serve -v -r ",
+			filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
+			testing:      true,
+			test:         nodeTest,
+			results:      &results,
+			dep:          nil,
+			failed:       failed,
+			requireAlive: true}, t, &states)
+		await(node, "node reset", node_reset, "awating for node reset to proceed...")
+		await(node, "node connected", node_ready, "awating for node api to proceed...")
+		await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
+		// sleep(2, failed)
 
-	client := LogProcess(CMD{
-		stateID:  "client",
-		homepath: homepath,
-		cmd:      "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
-		// cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
-		filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
-		testing:      true,
-		test:         clientTest,
-		results:      &results,
-		dep:          &node,
-		failed:       failed,
-		requireAlive: false}, t, &states)
-	await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
-	await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
-	println(" ::: GOT FIRST PAYMENT !!!")
+		init := LogProcess(CMD{
+			stateID:      "init",
+			homepath:     homepath,
+			cmd:          "./init_chain_commands.sh",
+			filter:       []string{"raw_log", "Error", "error", "panic"},
+			testing:      true,
+			test:         initTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false}, t, &states)
+		await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		await(node, "init chain - providers ready", providers_ready, "awating for providers to proceed...")
+		sleep(2, failed)
 
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	awaitErrorsTimeout := 10
-	println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
-	sleep(awaitErrorsTimeout, failed)
+		client := LogProcess(CMD{
+			stateID:  "client",
+			homepath: homepath,
+			cmd:      "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			// cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false}, t, &states)
+		await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
+		println(" ::: GOT FIRST PAYMENT !!!")
+
+		println("::::::::::::::::::::::::::::::::::::::::::::::")
+		awaitErrorsTimeout := 10
+		println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
+		sleep(awaitErrorsTimeout, failed)
+	}
 
 	println("::::::::::::::::::::::::::::::::::::::::::::::")
 	println("::::::::::::::::::::::::::::::::::::::::::::::")
