@@ -181,9 +181,10 @@ func InitTest(t *testing.T) ([]TestResult, error) {
 	sleep(2, failed)
 	if resetGenesis || isGithubAction {
 		init := LogProcess(CMD{
-			stateID:      "init",
-			homepath:     homepath,
-			cmd:          "./init_chain_commands_noscreen.sh",
+			stateID:  "init",
+			homepath: homepath,
+			cmd:      "./init_chain_commands_noscreen.sh",
+			// cmd:          "/cd home/runner/work/lava/lava/ && " + "./init_chain_commands_noscreen.sh",
 			filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 			testing:      true,
 			test:         initTest,

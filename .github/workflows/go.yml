@@ -30,10 +30,10 @@ jobs:
       run:  starport version
     - name: home
       run:  pwd && ls -l
-    # - name: cp lava
-    #   run:  cp -r ~/work/lava/lava ~/go/lava 
+    - name: cp lava
+      run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
-      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`
+      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
     # - name: export
     #   run: export PATH=$PATH:/go/lava
     - name: export GOPATH
@@ -60,7 +60,7 @@ jobs:
     - name: lava e2e tests
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
       run: go test ./testutil/e2e/ -v
-      
+
     - name: check lavad prov1 output
       run: go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1
     
