@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -82,8 +83,10 @@ func tests() map[string](func(string) (bool, string, error)) {
 		"Client pubkey":              test_found_pass,
 		"no pairings available":      test_found_fail,
 		"rpc error":                  test_found_pass,
+		"reply":                      test_found_pass,
+		"refused":                    test_found_fail,
+		"listening":                  test_found_pass,
 		// "error":                      test_found_fail,
-		"reply": test_found_pass,
 	}
 	return tests
 }
@@ -114,6 +117,11 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		unexpectedEvents: []string{"Error"},
 		tests:            tests(),
 		strict:           true}
+	providersTest := Test{
+		expectedEvents:   []string{"listening"},
+		unexpectedEvents: []string{"refused"},
+		tests:            tests(),
+		strict:           true}
 	clientTest := Test{
 		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
 		unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
@@ -123,13 +131,20 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath() + "go/lava/" //local
+	homepath := getHomePath()                 //local
+	if strings.Contains(homepath, "runner") { // on github
+		homepath += "worker/lava/lava/" //local
+	} else { // local
+		homepath += "go/lava/" //local
+	}
 	// homepath := getHomePath() + "work/lava/lava/" //github
 	// homepath := "/go/lava/" // github
 	// homepath := "/home/magic/go/lava/"
 	// homepath := "~/go/lava/"
 	// homepath := ""
-	// t.Logf("!!!!!!!!!!!! HOME XXX !!!!!!!!!!!!!!! %s", homepath)
+	if t != nil {
+		t.Logf(" ::: Test Homepath ::: %s", homepath)
+	}
 
 	// Test Flow
 	node := LogProcess(CMD{
@@ -148,15 +163,15 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		debug:        false,
 	}, t, &states)
 	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
-	// await(node, "node connected", node_ready, "awating for node api to proceed...")
-	await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
-	// sleep(2, failed)
+	await(node, "node connected", node_ready, "awating for node api to proceed...")
+	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
+	sleep(2, failed)
 
 	init := LogProcess(CMD{
 		stateID:      "init",
 		homepath:     homepath,
 		cmd:          "./init_chain_commands_noscreen.sh",
-		filter:       []string{"raw_log", "Error", "error", "panic"},
+		filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 		testing:      true,
 		test:         initTest,
 		results:      &results,
@@ -164,9 +179,84 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		failed:       failed,
 		requireAlive: false,
 		debug:        true}, t, &states)
-	await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
-	await(node, "init chain - providers ready", providers_ready, "awating for providers to proceed...")
-	sleep(2, failed)
+	await(init, "get init done", init_done, "awating for init to proceed...")
+
+	run_providers := true
+	if run_providers {
+
+		prov1 := LogProcess(CMD{
+			stateID:      "provider1",
+			homepath:     homepath,
+			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ", prov1.id)
+		LogProcess(CMD{
+			stateID:      "provider2",
+			homepath:     homepath,
+			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		LogProcess(CMD{
+			stateID:      "provider3",
+			homepath:     homepath,
+			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		LogProcess(CMD{
+			stateID:      "provider4",
+			homepath:     homepath,
+			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		prov5 := LogProcess(CMD{
+			stateID:      "provider5",
+			homepath:     homepath,
+			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
+	}
+	sleep(1, failed)
 
 	client := LogProcess(CMD{
 		stateID:  "client",

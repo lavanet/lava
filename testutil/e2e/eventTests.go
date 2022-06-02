@@ -5,12 +5,16 @@ import (
 	"strings"
 )
 
+func init_done(line string) (bool, bool) {
+	contains := "init done"
+	return advanceFlow(line, contains), true
+}
 func raw_log(line string) (bool, bool) {
 	contains := "raw_log"
 	return advanceFlow(line, contains), true
 }
 func providers_ready(line string) (bool, bool) {
-	contains := "lava_client_stake"
+	contains := "listening"
 	return advanceFlow(line, contains), true
 }
 
