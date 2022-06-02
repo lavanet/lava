@@ -1,0 +1,175 @@
+ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ relayer started !!!!!
+2022/06/02 18:17:16 Sentry updated spec for chainID: ETH1 Spec name:Ethereum Mainnet
+2022/06/02 18:17:17 Server starting 127.0.0.1:2223 node ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ spec Ethereum Mainnet chainID ETH1 api Interface jsonrpc
+2022/06/02 18:17:18 Server pubkey FDC4EB3DC581E09A4A801CCEC80D88D229D58DDA
+2022/06/02 18:17:18 server listening at 127.0.0.1:2223
+New session: Height: 40 
+total CU serviced: 0, total CU paid: 0
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 new user sessions 250000
+2022/06/02 18:17:28 updateSessionCu eth_blockNumber 1976235410884491574 10 0 10
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 updateSessionCu eth_getBalance 1976235410884491574 19 10 29
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 updateSessionCu eth_blockNumber 1976235410884491574 10 29 39
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 updateSessionCu eth_getBalance 1976235410884491574 19 39 58
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 updateSessionCu eth_blockNumber 1976235410884491574 10 58 68
+2022/06/02 18:17:28 active sessions: 
+2022/06/02 18:17:28 {UsedComputeUnits:68 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:28 
+2022/06/02 18:17:28 server got Relay
+2022/06/02 18:17:28 updateSessionCu eth_blockNumber 1976235410884491574 10 68 78
+2022/06/02 18:17:29 server got Relay
+2022/06/02 18:17:29 updateSessionCu eth_blockNumber 1976235410884491574 10 78 88
+2022/06/02 18:17:29 server got Relay
+2022/06/02 18:17:29 updateSessionCu eth_getBalance 1976235410884491574 19 88 107
+2022/06/02 18:17:29 active sessions: 
+2022/06/02 18:17:29 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:29 
+2022/06/02 18:17:30 active sessions: 
+2022/06/02 18:17:30 {UsedComputeUnits:107 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:30 
+2022/06/02 18:17:31 server got Relay
+2022/06/02 18:17:31 updateSessionCu eth_blockNumber 1976235410884491574 10 107 117
+2022/06/02 18:17:31 server got Relay
+2022/06/02 18:17:31 updateSessionCu eth_getBalance 1976235410884491574 19 117 136
+2022/06/02 18:17:31 active sessions: 
+2022/06/02 18:17:31 {UsedComputeUnits:136 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:31 
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_blockNumber 1976235410884491574 10 136 146
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_blockNumber 1976235410884491574 10 146 156
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_getBalance 1976235410884491574 19 156 175
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_blockNumber 1976235410884491574 10 175 185
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_blockNumber 1976235410884491574 10 185 195
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_getBalance 1976235410884491574 19 195 214
+2022/06/02 18:17:32 server got Relay
+2022/06/02 18:17:32 updateSessionCu eth_blockNumber 1976235410884491574 10 214 224
+2022/06/02 18:17:32 active sessions: 
+2022/06/02 18:17:32 {UsedComputeUnits:224 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:32 
+2022/06/02 18:17:33 server got Relay
+2022/06/02 18:17:33 updateSessionCu eth_blockNumber 1976235410884491574 10 224 234
+2022/06/02 18:17:33 server got Relay
+2022/06/02 18:17:33 updateSessionCu eth_getBalance 1976235410884491574 19 234 253
+2022/06/02 18:17:33 server got Relay
+2022/06/02 18:17:33 updateSessionCu eth_blockNumber 1976235410884491574 10 253 263
+2022/06/02 18:17:33 server got Relay
+2022/06/02 18:17:33 updateSessionCu eth_getBalance 1976235410884491574 19 263 282
+2022/06/02 18:17:34 active sessions: 
+2022/06/02 18:17:34 {UsedComputeUnits:282 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:34 
+2022/06/02 18:17:35 active sessions: 
+2022/06/02 18:17:35 {UsedComputeUnits:282 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:35 
+2022/06/02 18:17:35 server got Relay
+2022/06/02 18:17:35 updateSessionCu eth_blockNumber 1976235410884491574 10 282 292
+2022/06/02 18:17:36 active sessions: 
+2022/06/02 18:17:36 {UsedComputeUnits:292 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:36 
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_getBalance 1976235410884491574 19 292 311
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_blockNumber 1976235410884491574 10 311 321
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_getBalance 1976235410884491574 19 321 340
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_blockNumber 1976235410884491574 10 340 350
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_getBalance 1976235410884491574 19 350 369
+2022/06/02 18:17:36 server got Relay
+2022/06/02 18:17:36 updateSessionCu eth_getBalance 1976235410884491574 19 369 388
+2022/06/02 18:17:37 active sessions: 
+2022/06/02 18:17:37 {UsedComputeUnits:388 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:37 
+2022/06/02 18:17:37 server got Relay
+2022/06/02 18:17:37 updateSessionCu eth_blockNumber 1976235410884491574 10 388 398
+2022/06/02 18:17:37 server got Relay
+2022/06/02 18:17:37 updateSessionCu eth_getBalance 1976235410884491574 19 398 417
+2022/06/02 18:17:37 server got Relay
+2022/06/02 18:17:37 updateSessionCu eth_blockNumber 1976235410884491574 10 417 427
+2022/06/02 18:17:37 server got Relay
+2022/06/02 18:17:37 updateSessionCu eth_blockNumber 1976235410884491574 10 427 437
+2022/06/02 18:17:38 active sessions: 
+2022/06/02 18:17:38 {UsedComputeUnits:437 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:38 
+2022/06/02 18:17:39 active sessions: 
+2022/06/02 18:17:39 {UsedComputeUnits:437 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:39 
+2022/06/02 18:17:39 server got Relay
+2022/06/02 18:17:39 updateSessionCu eth_blockNumber 1976235410884491574 10 437 447
+2022/06/02 18:17:40 active sessions: 
+2022/06/02 18:17:40 {UsedComputeUnits:447 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:40 
+2022/06/02 18:17:40 server got Relay
+2022/06/02 18:17:40 updateSessionCu eth_blockNumber 1976235410884491574 10 447 457
+2022/06/02 18:17:40 server got Relay
+2022/06/02 18:17:40 updateSessionCu eth_blockNumber 1976235410884491574 10 457 467
+2022/06/02 18:17:40 server got Relay
+2022/06/02 18:17:40 updateSessionCu eth_blockNumber 1976235410884491574 10 467 477
+2022/06/02 18:17:41 active sessions: 
+2022/06/02 18:17:41 {UsedComputeUnits:477 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:41 
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_blockNumber 1976235410884491574 10 477 487
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_getBalance 1976235410884491574 19 487 506
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_blockNumber 1976235410884491574 10 506 516
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_getBalance 1976235410884491574 19 516 535
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_blockNumber 1976235410884491574 10 535 545
+2022/06/02 18:17:41 server got Relay
+2022/06/02 18:17:41 updateSessionCu eth_getBalance 1976235410884491574 19 545 564
+2022/06/02 18:17:42 server got Relay
+2022/06/02 18:17:42 updateSessionCu eth_blockNumber 1976235410884491574 10 564 574
+2022/06/02 18:17:42 server got Relay
+2022/06/02 18:17:42 updateSessionCu eth_getBalance 1976235410884491574 19 574 593
+2022/06/02 18:17:42 active sessions: 
+2022/06/02 18:17:42 {UsedComputeUnits:593 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:42 
+2022/06/02 18:17:43 active sessions: 
+2022/06/02 18:17:43 {UsedComputeUnits:593 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:43 
+2022/06/02 18:17:44 active sessions: 
+2022/06/02 18:17:44 {UsedComputeUnits:593 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:44 
+2022/06/02 18:17:44 server got Relay
+2022/06/02 18:17:44 updateSessionCu eth_blockNumber 1976235410884491574 10 593 603
+2022/06/02 18:17:44 server got Relay
+2022/06/02 18:17:44 updateSessionCu eth_getBalance 1976235410884491574 19 603 622
+2022/06/02 18:17:44 server got Relay
+2022/06/02 18:17:44 updateSessionCu eth_blockNumber 1976235410884491574 10 622 632
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_getBalance 1976235410884491574 19 632 651
+2022/06/02 18:17:45 active sessions: 
+2022/06/02 18:17:45 {UsedComputeUnits:651 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:45 
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_getBalance 1976235410884491574 19 651 670
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_getBalance 1976235410884491574 19 670 689
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_blockNumber 1976235410884491574 10 689 699
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_blockNumber 1976235410884491574 10 699 709
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_getBalance 1976235410884491574 19 709 728
+2022/06/02 18:17:45 server got Relay
+2022/06/02 18:17:45 updateSessionCu eth_blockNumber 1976235410884491574 10 728 738
+2022/06/02 18:17:46 server got Relay
+2022/06/02 18:17:46 updateSessionCu eth_getBalance 1976235410884491574 19 738 757
+2022/06/02 18:17:46 server got Relay
+2022/06/02 18:17:46 updateSessionCu eth_blockNumber 1976235410884491574 10 757 767
+2022/06/02 18:17:46 active sessions: 
+2022/06/02 18:17:46 {UsedComputeUnits:767 MaxComputeUnits:250000 Sessions:map[1976235410884491574:0xc0013f3ad0]} 
+2022/06/02 18:17:46 
+signal: terminated
