@@ -163,7 +163,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		dep:          &node,
 		failed:       failed,
 		requireAlive: false,
-		debug:        false}, t, &states)
+		debug:        true}, t, &states)
 	await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 	await(node, "init chain - providers ready", providers_ready, "awating for providers to proceed...")
 	sleep(2, failed)

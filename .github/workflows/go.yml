@@ -46,9 +46,9 @@ jobs:
       run: ignite chain build
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r
-    - name: test timeout 5 mins
+    - name: test timeout 3 mins
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-      run: go test -timeout 300s
+      run: go test -timeout 180s
     - name: test
       # run: cd ~/go/lava; go test ./testutil/e2e/ -v
       run: go test ./testutil/e2e/ -v
