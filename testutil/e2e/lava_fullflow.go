@@ -319,21 +319,24 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	}
 
 	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
-	sleep(2, failed)
-	if resetGenesis || isGithubAction {
-		init := LogProcess(CMD{
-			stateID:      "init",
-			homepath:     homepath,
-			cmd:          "./init_chain_commands_noscreen.sh",
-			filter:       []string{":::", "raw_log", "Error", "error", "panic"},
-			testing:      true,
-			test:         initTest,
-			results:      &results,
-			dep:          &node,
-			failed:       failed,
-			requireAlive: false,
-			debug:        true}, t, &states)
-		await(init, "get init done", init_done, "awating for init to proceed...")
+	init_chain := false
+	if init_chain {
+		sleep(2, failed)
+		if resetGenesis || isGithubAction {
+			init := LogProcess(CMD{
+				stateID:      "init",
+				homepath:     homepath,
+				cmd:          "./init_chain_commands_noscreen.sh",
+				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
+				testing:      true,
+				test:         initTest,
+				results:      &results,
+				dep:          &node,
+				failed:       failed,
+				requireAlive: false,
+				debug:        true}, t, &states)
+			await(init, "get init done", init_done, "awating for init to proceed...")
+		}
 	}
 	providerAsCMD := false
 	if providerAsCMD {
@@ -430,7 +433,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
-		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
 
