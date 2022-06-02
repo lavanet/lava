@@ -310,7 +310,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		results:      &results,
 		dep:          nil,
 		failed:       failed,
-		requireAlive: true,
+		requireAlive: false,
 		debug:        false,
 	}, t, &states)
 	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
@@ -336,7 +336,28 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		await(init, "get init done", init_done, "awating for init to proceed...")
 	}
 
-	run_providers := true
+	home := homepath
+	os.Chdir(home)
+
+	id := "provX"
+	logFile := id + ".log"
+	// logPath := resetLog(home, logFile, "x_test/tests/integration/")
+	// logPath := resetLog(home, logFile, "testutil/e2e/logs/")
+	logPath := resetLog(home, logFile, "logs/")
+	// logPath := home + logFile
+	end := " 2>&1"
+	// println("home", home)
+	cmd := "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
+	full := "cd " + home + " && " + cmd + " >> " + logPath + end
+	// println("full", full)
+	fullCMD := exec.Command("sh", "-c", full)
+
+	// fullCMD := exec.Command(cmd + end + " >> " + logPath + ")")
+	err := fullCMD.Run()
+	t.Logf(" xxxxxxx ::: %s", err)
+	// go readFile(logPath, state, filter, t)
+
+	run_providers := false
 	if run_providers {
 
 		prov1 := LogProcess(CMD{
@@ -411,36 +432,39 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
-	sleep(1, failed)
 
-	client := LogProcess(CMD{
-		stateID:  "client",
-		homepath: homepath,
-		cmd:      "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
-		// cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
-		filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
-		testing:      true,
-		test:         clientTest,
-		results:      &results,
-		dep:          &node,
-		failed:       failed,
-		requireAlive: false,
-		debug:        true}, t, &states)
-	await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
-	await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
-	println(" ::: GOT FIRST PAYMENT !!!")
+	run_client := false
+	if run_client {
+		sleep(1, failed)
 
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	awaitErrorsTimeout := 10
-	println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
-	sleep(awaitErrorsTimeout, failed)
+		client := LogProcess(CMD{
+			stateID:  "client",
+			homepath: homepath,
+			cmd:      "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			// cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
+		println(" ::: GOT FIRST PAYMENT !!!")
 
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
+		println("::::::::::::::::::::::::::::::::::::::::::::::")
+		awaitErrorsTimeout := 10
+		println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
+		sleep(awaitErrorsTimeout, failed)
 
-	// Display Results
+		println("::::::::::::::::::::::::::::::::::::::::::::::")
+		println("::::::::::::::::::::::::::::::::::::::::::::::")
+		println("::::::::::::::::::::::::::::::::::::::::::::::")
 
+		// Display Results
+	}
 	fmt.Println(string("================================================="))
 	fmt.Println(string("================ TEST DONE! ====================="))
 	fmt.Println(string("================================================="))
