@@ -30,8 +30,8 @@ jobs:
       run:  starport version
     - name: home
       run:  pwd && ls -l
-    # - name: cp lava
-    #   run:  cp -r ~/work/lava/lava ~/go/lava 
+    - name: cp lava
+      run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
       run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`
     # - name: export

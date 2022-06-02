@@ -83,8 +83,8 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			// fmt.Println(string("XXX error XXX ") + string(err.Error()))
 		} else {
 			line := string(data)
+			*state.lastLine = line
 			if _, found := passingFilter(line, filter); found {
-				*state.lastLine = line
 				processLog(line, state, t)
 			} else if state.debug {
 				log := "(DEBUG) " + state.id + " ::: " + line
