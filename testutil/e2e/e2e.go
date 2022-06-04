@@ -63,6 +63,14 @@ func await(state State, id string, f func(string) TestResult, msg string) {
 	awaitState(state)
 }
 
+func getExpectedEvents(states []State) []string {
+	expected := []string{}
+	for _, state := range states {
+		expected = append(expected, state.test.expectedEvents...)
+	}
+	return expected
+}
+
 func readFile(path string, state State, filter []string, t *testing.T) {
 	file, fileError := os.Open(path)
 	if fileError != nil {

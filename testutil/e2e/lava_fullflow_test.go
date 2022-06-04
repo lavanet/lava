@@ -28,9 +28,9 @@ func LavaTestFullflow(t *testing.T) {
 			end = res.err.Error() + " :  " + res.line
 		}
 		if res.passed {
-			t.Log(" ::: PASSED ::: " + res.eventID + " ::: " + end)
+			t.Log(" ::: PASSED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
 		} else {
-			t.Log(" ::: FAILED ::: " + res.eventID + " ::: " + end)
+			t.Log(" ::: FAILED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
 			t.Fail()
 		}
 	}
@@ -38,7 +38,7 @@ func LavaTestFullflow(t *testing.T) {
 
 func LavaTestFullflowWithTimeOut(t *testing.T) {
 	// timeout := time.After(3 * time.Second)
-	timeout := time.After(6 * time.Minute)
+	timeout := time.After(8 * time.Minute)
 	done := make(chan bool)
 	go func() {
 		// run lava testing

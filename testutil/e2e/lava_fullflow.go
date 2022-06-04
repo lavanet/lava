@@ -186,13 +186,13 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// go readFile(logPath, state, filter, t)
 	}
 
-	run_providers := true
-	if run_providers {
-		println(" ::: Starting Providers Processes ::: ")
-		prov5 := LogProcess(CMD{
-			stateID:      "providers",
+	run_providers_eth := true
+	if run_providers_eth {
+		println(" ::: Starting Providers Processes [ETH] ::: ")
+		prov_eth := LogProcess(CMD{
+			stateID:      "providers_eth",
 			homepath:     homepath,
-			cmd:          "./providers.sh",
+			cmd:          "./providers_eth.sh",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -202,7 +202,25 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
-		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
+		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
+	}
+	run_providers_osmosis := true
+	if run_providers_osmosis {
+		println(" ::: Starting Providers Processes [Osmosis] ::: ")
+		prov_osm := LogProcess(CMD{
+			stateID:      "providers_osmosis",
+			homepath:     homepath,
+			cmd:          "./providers_osmosis.sh",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		println(" ::: Providers Processes Started ::: ")
+		await(prov_osm, "Osmosis providers ready", providers_ready, "awating for providers to listen to proceed...")
 	}
 	run_providers_manual := false
 	if run_providers_manual {
@@ -278,7 +296,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	run_client := true
 	if run_client {
 		sleep(1, failed)
-		if !run_providers {
+		if !run_providers_eth {
 			sleep(60, failed)
 		}
 
@@ -317,7 +335,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	finalExpectedTests := []TestResult{}
 	finalUnexpectedTests := []TestResult{}
 	count := 1
-	for _, expected := range append(nodeTest.expectedEvents, append(initTest.expectedEvents, clientTest.expectedEvents...)...) {
+	for _, expected := range getExpectedEvents(states) {
 		if testList, foundEvent := results[expected]; foundEvent {
 			for _, res := range testList {
 				finalExpectedTests = append(finalExpectedTests, res)
