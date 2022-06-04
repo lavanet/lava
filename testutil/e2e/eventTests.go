@@ -2,78 +2,125 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
-func init_done(line string) (bool, bool) {
+func init_done(line string) TestResult {
 	contains := "init done"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func raw_log(line string) (bool, bool) {
+func raw_log(line string) TestResult {
 	contains := "raw_log"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func providers_ready(line string) (bool, bool) {
+func providers_ready(line string) TestResult {
 	contains := "listening"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-
-func found_rpc_reply(line string) (bool, bool) {
+func found_rpc_reply(line string) TestResult {
 	contains := "reply JSONRPC_"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func found_relay_payment(line string) (bool, bool) {
+func found_relay_payment(line string) TestResult {
 	contains := "lava_relay_payment"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func node_reset(line string) (bool, bool) {
+func node_reset(line string) TestResult {
 	contains := "🔄"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func node_ready(line string) (bool, bool) {
+func node_ready(line string) TestResult {
 	contains := "🌍 Token faucet: http"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
-func new_epoch(line string) (bool, bool) {
+func new_epoch(line string) TestResult {
 	contains := "lava_new_epoch"
-	return advanceFlow(line, contains), true
+	return test_basic(line, contains)
 }
 
-func testStart(line string) (bool, bool) {
-	contains := "🌍 Token faucet: http"
-	return advanceFlow(line, contains), true // found, pass
-}
-
-func test0(line string) (bool, bool) {
-	contains := "Cosmos SDK"
-	return advanceFlow(line, contains), true // found, pass
-}
-func test_found_pass(line string) (bool, string, error) {
-	return true, line, nil
-}
-func test_found_fail(line string) (bool, string, error) {
-	return false, line, nil
-}
-
-func test_ERR_client_entries_pairing(line string) (pass bool, retline string, err error) {
-	return true, line, fmt.Errorf("ERR_client_entries_pairing is unexpected but still passing to finish fullflow")
-}
-func test_start(line string) (bool, string, error) {
-	return true, line, fmt.Errorf("🔄 is expected")
-}
-func test_start_fail(line string) (bool, string, error) {
-	return false, line, fmt.Errorf("🔄 is not expected")
-}
-func advanceFlow(line string, contains string) bool {
-	if strings.Contains(line, contains) {
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		// println("DONEEEE " + contains)
-		return true
+func test_found_pass(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_pass",
+		found:   true,
+		passed:  true,
+		line:    log.line,
+		err:     nil,
+		parent:  log.parent,
+		failNow: false,
 	}
-	return false
+}
+
+func test_found_fail(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_fail",
+		found:   true,
+		passed:  false,
+		line:    log.line,
+		err:     nil,
+		parent:  log.parent,
+		failNow: false,
+	}
+}
+
+func test_found_fail_now(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_fail_now",
+		found:   true,
+		passed:  false,
+		line:    log.line,
+		err:     nil,
+		parent:  log.parent,
+		failNow: true,
+	}
+}
+
+func test_basic(line string, contains string) TestResult {
+	found, pass := false, false
+	if strContains(line, contains) {
+		found, pass = true, true
+	}
+	return TestResult{
+		eventID: "",
+		found:   found,
+		passed:  pass,
+		line:    line,
+		err:     nil,
+		parent:  "",
+		failNow: false,
+	}
+}
+
+func test_ERR_client_entries_pairing(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_fail_now",
+		found:   true,
+		passed:  true,
+		line:    log.line,
+		err:     fmt.Errorf("ERR_client_entries_pairing is unexpected but still passing to finish fullflow"),
+		parent:  log.parent,
+		failNow: false,
+	}
+}
+
+func test_start(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_fail_now",
+		found:   true,
+		passed:  true,
+		line:    log.line,
+		err:     fmt.Errorf("🔄 is not expected"),
+		parent:  log.parent,
+		failNow: false,
+	}
+}
+
+func test_start_fail(log LogLine) TestResult {
+	return TestResult{
+		eventID: "found_fail_now",
+		found:   true,
+		passed:  false,
+		line:    log.line,
+		err:     fmt.Errorf("🔄 is not expected"),
+		parent:  log.parent,
+		failNow: true,
+	}
 }

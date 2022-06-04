@@ -12,7 +12,6 @@ import (
 )
 
 func awaitState(state State) {
-
 	fin := false
 	markForDelete := []string{}
 	if !*state.failed {
@@ -20,14 +19,12 @@ func awaitState(state State) {
 			if *state.finished || *state.failed {
 				break
 			}
-
 			if len(state.awaiting) == 0 {
 				fin = true
 				break
 			} else {
 				time.Sleep(1 * time.Second)
 				for key, await := range state.awaiting {
-					// println(" ::: "+state.id+" ::: "+await.msg, *state.finished)
 					if !*state.failed {
 						last := " :::(log tail)::: " + string(*state.lastLine)
 						if len(last) > 120 {
@@ -60,7 +57,7 @@ func awaitState(state State) {
 
 }
 
-func await(state State, id string, f func(string) (bool, bool), msg string) {
+func await(state State, id string, f func(string) TestResult, msg string) {
 	done, pass := false, false
 	state.awaiting[id] = Await{&done, &pass, f, msg}
 	awaitState(state)
@@ -75,10 +72,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 	r := bufio.NewReader(file)
 	debugProcess, once, checkTerminated := false, true, false
 	for {
-		// line, err := r.ReadString('\n')
-
 		data, _, err := r.ReadLine()
-		// num += 1
 		if err != nil {
 			// fmt.Println(string("XXX error XXX ") + string(err.Error()))
 		} else {
@@ -93,35 +87,32 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 				} else {
 					fmt.Println(log)
 				}
-				// fmt.Println(parent + " ::: " + string("!!! nice !!! ") + string(line))
 			} else {
 				// fmt.Println(parent + " ::: " + string("!!! nice !!! ") + string(line))
 			}
 
-			// if processLog(line, path, doneF) {
-			// 	*done = true
-			// }
 		}
-
 		if err == io.EOF {
 			// fmt.Printf("EOF.")
 			// break
 		}
+
 		// if finishedTests(state.test.expectedEvents, *state.results) {
 		// 	state.finished = true
 		// }
+
 		if state.cmd.Process != nil {
 			pid := state.cmd.Process.Pid
 			if checkTerminated && !*state.finished && state.requireAlive && !isPidAlive(pid) {
-				// require := fmt.Sprintf(" @@@@@@@@", state.id, state.requireAlive)
 				log := state.id + " ::: PROCESS HAS TERMINATED ::: "
-				(*state.results)["TERMINATED"] = []TestResult{TestResult{
+				(*state.results)["TERMINATED"] = []TestResult{{
 					eventID: "TERMINATED",
 					found:   true,
 					passed:  false,
 					line:    "Exiting Test",
 					err:     fmt.Errorf(log),
 					parent:  state.id,
+					failNow: true,
 				}}
 				if t != nil {
 					t.Logf(log)
@@ -130,82 +121,67 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 				}
 				break
 			}
-			// process, err := os.FindProcess(int(pid))
 			if debugProcess && once {
 				println(" ::: +++++++++++++++++++ started process "+state.id+" PID: ", pid)
 				once = false
 			}
-			// if err != nil {
-			// 	println("RRRRRRRRRRRRRRRRRRRRRRR not found")
-			// 	// fmt.Printf("Failed to find process: %s\n", err)
-			// } else {
-			// 	err := process.Signal(syscall.Signal(0))
-			// 	// println(".....", pid, err)
-			// 	if err != nil {
-			// 		println("RRRRRRRRRRRRRRRRRRRRRRR process terminated")
-			// 		break
-			// 	}
-			// 	// fmt.Printf("process.Signal on pid %d returned: %v\n", pid, err)
-			// }
-		} else {
-			// println(".....") // process not started yet
-		}
-		if *state.finished || *state.failed {
-			break
-		} else {
-			// print("not finished...")
 		}
 
+		if *state.finished || *state.failed {
+			break
+		}
 	}
-	fmt.Println(fmt.Sprintf(" ::: exiting %s ::: ", state.id))
+	fmt.Printf(" ::: exiting %s ::: \n", state.id)
 	*state.failed = true
 	for _, dep := range *state.depending {
 		if dep != nil {
-			// println("!!!!!!!", dep.id, *dep.finished)
 			*dep.finished = true
-			// *(*dep).finished = true
-			// println("!!!!!!!", dep.id, *dep.finished)
 		}
 	}
 	*state.finished = true
-	// println("XXXXXXXXXXXXX")
 }
 
-// func processLog(line string, parent string, doneF func(string) bool) bool {
 func processLog(line string, state State, t *testing.T) {
 	parent := state.id
 	foundAwating := false
 	for key, await := range state.awaiting {
 		if foundAwating {
 			continue
-		} else if found, pass := await.f(line); found {
+		} else if testRes := await.f(line); testRes.found {
 			*state.awaiting[key].done = true
-			*state.awaiting[key].pass = pass
+			*state.awaiting[key].pass = testRes.passed
 			foundAwating = true
+			if testRes.failNow {
+				println("1111111111111111")
+				*state.failed = true
+				*state.finished = true
+			}
 		}
 	}
 	runtype := ""
 	if state.testing {
 		runtype = "!!! testing !!! "
-
 		foundExpected := false
 		results := *state.results
 		failed := false
+		fail_now := false
 		for _, event := range state.test.expectedEvents {
 			//TODO: match with regex
 			if strings.Contains(line, event) {
-				//TODO: match with regex
 				if _, ok := results[event]; !ok {
 					results[event] = []TestResult{}
 				} else {
 					// reacurring event
 				}
 				if test, test_exists := state.test.tests[event]; test_exists {
-					res, _, err := test(line)
-					results[event] = append(results[event], TestResult{event, true, res, line, err, state.id})
-					// foundExpected = true
+					testRes := test(LogLine{line: line, parent: state.id})
+					if testRes.failNow {
+						fail_now = true
+					}
+					res, err := testRes.passed, testRes.err
+					results[event] = append(results[event], TestResult{event, true, res, line, err, state.id, fail_now})
 				} else {
-					results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event), state.id})
+					results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event), state.id, fail_now})
 					failed = true
 				}
 				foundExpected = true
@@ -220,40 +196,46 @@ func processLog(line string, state State, t *testing.T) {
 		} else {
 			foundUnexpected := false
 			for _, event := range state.test.unexpectedEvents {
-				//TODO: match with regex
 				if foundUnexpected {
 					continue
 				}
+				//TODO: match with regex
 				if strings.Contains(line, event) {
-					//TODO: match with regex
 					if _, ok := results[event]; !ok {
 						results[event] = []TestResult{}
 					} else {
 						// reacurring event
 					}
 					if test, test_exists := state.test.tests[event]; test_exists {
-						res, _, err := test(line)
-						results[event] = append(results[event], TestResult{event, true, res, line, err, state.id})
-						// foundExpected = true
+						testRes := test(LogLine{line: line, parent: state.id})
+						if testRes.failNow {
+							fail_now = true
+						}
+						res, err := testRes.passed, testRes.err
 						if !res && state.test.strict {
 							failed = true
+							fail_now = true
 						}
+						results[event] = append(results[event], TestResult{event, true, res, line, err, state.id, fail_now})
 					} else {
-						results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line), state.id})
+						results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line), state.id, fail_now})
 						if state.test.strict {
 							failed = true
 						}
 					}
 					foundUnexpected = true
 					pre = "[X] "
-
 				}
 			}
 		}
 		log := parent + " ::: " + runtype + pre + line
 		fmt.Println(log)
+		if fail_now {
+			*state.failed = true
+			*state.finished = true
+			t.FailNow()
+		}
 		if failed {
-			// println(state.id + " XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 			t.Fail()
 			if state.test.strict {
 				println(" ::: FAILED TEST WITH STRICT CONDITION ::: EXITING " + state.id + " ::: ")
@@ -262,27 +244,18 @@ func processLog(line string, state State, t *testing.T) {
 				for _, dep := range *state.depending {
 					if dep != nil {
 						println(" ::: FAILED TEST WITH STRICT CONDITION ::: EXITING " + dep.id + " ::: ")
-						// println("!!!!!!!", dep.id, *dep.finished)
 						*dep.finished = true
-						// *(*dep).finished = true
-						// println("!!!!!!!", dep.id, *dep.finished)
 					}
 				}
 				t.FailNow()
 			} else {
-				// println("33333333222222XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
 			}
 		}
-		// if t != nil {
-		// 	t.Log(log)
-		// }
 	} else {
 		log := parent + " ::: " + runtype + line
 		fmt.Println(log)
-		// if t != nil {
-		// 	t.Log(log)
-		// }
+
 	}
 }
 
@@ -304,12 +277,8 @@ func printTestResult(res TestResult, t *testing.T) {
 	if len(errMsg) > short {
 		errMsg = errMsg[:short] + "..."
 	}
-	// fmt.Println(fmt.Sprintf("%s ::: %s ::: %s ::: %s", status, res.line))
 	log := fmt.Sprintf("%s ::: %s ::: %s ::: %s ::: %s", status, res.parent, res.eventID, line, errMsg)
 	fmt.Println(log)
-	// if t != nil {
-	// 	t.Log(log)
-	// }
 }
 
 func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
@@ -318,8 +287,7 @@ func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
 	return newState
 }
 
-func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test Test, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug bool) State {
-
+func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test TestProcess, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug bool) State {
 	finished := false
 	lastLine := "init"
 	state := State{
@@ -336,25 +304,17 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 		lastLine:     &lastLine,
 		debug:        debug,
 	}
-	// state := State{id, &finished, map[string]Await{}, testing, test, results, &[]*State{depends}}
-	// d := false
-	// done := &d
 	os.Chdir(home)
 	logFile := id + ".log"
-	// logPath := resetLog(home, logFile, "x_test/tests/integration/")
 	logPath := resetLog(home, logFile, "testutil/e2e/logs/")
-	// logPath := resetLog(home, logFile, "logs/")
-	// logPath := home + logFile
+
 	end := " 2>&1"
-	// println("home", home)
 	full := "cd " + home + " && " + cmd + " >> " + logPath + end
-	// println("full", full)
 	fullCMD := exec.Command("sh", "-c", full)
 	state.cmd = fullCMD
-	// fullCMD := exec.Command(cmd + end + " >> " + logPath + ")")
+
 	go fullCMD.Start()
 	go readFile(logPath, state, filter, t)
-	//TODO: add cmd to state and kill when finished
-	//https://stackoverflow.com/questions/11886531/terminating-a-process-started-with-os-exec-in-golang
+
 	return state
 }

@@ -28,21 +28,20 @@ func TestSimple(t *testing.T) {
 	}
 }
 
-func simple_tests() map[string](func(string) (bool, string, error)) {
-	tests := map[string](func(string) (bool, string, error)){
+func simple_tests() map[string](func(LogLine) TestResult) {
+	tests := map[string](func(LogLine) TestResult){
 		"NICE":  test_found_pass,
 		"error": test_found_fail,
 	}
 	return tests
 }
 
-func nice(line string) (bool, bool) {
-	contains := "NICE"
-	return advanceFlow(line, contains), true
+func nice(line string) TestResult {
+	return test_basic(line, "NICE")
 }
 
 func SimpleTest(t *testing.T) ([]TestResult, error) {
-	simpleTest := Test{
+	simpleTest := TestProcess{
 		expectedEvents:   []string{"NICE"},
 		unexpectedEvents: []string{"error", "x", "no"},
 		tests:            simple_tests(),
@@ -52,24 +51,18 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath()                 //local
+	homepath := getHomePath()
 	if strings.Contains(homepath, "runner") { // on github
-		homepath += "work/lava/lava/" //local
-	} else { // local
+		homepath += "work/lava/lava/"
+	} else {
 		homepath += "go/lava/" //local
 	}
-	// homepath := getHomePath() + "work/lava/lava/" //github
-	// homepath := "/go/lava/" // github
-	// homepath := "/home/magic/go/lava/"
-	// homepath := "~/go/lava/"
-	// homepath := ""
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
 	node := LogProcess(CMD{
-		stateID:  "simple",
-		homepath: homepath,
-		// cmd:      "go run " + homepath + "testutil/e2e/simple/simple.go ",
+		stateID:      "simple",
+		homepath:     homepath,
 		cmd:          "go run ./testutil/e2e/simple/simple.go ",
 		filter:       []string{"!", "no", "un", "error"},
 		testing:      true,
@@ -95,13 +88,10 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	finalUnexpectedTests := []TestResult{}
 	count := 1
 	for _, expected := range simpleTest.expectedEvents {
-		// fmt.Println("XXX " + expected)
 		if testList, foundEvent := results[expected]; foundEvent {
-			// fmt.Println("foundxxxxx")
 			for _, res := range testList {
 				finalExpectedTests = append(finalExpectedTests, res)
 				printTestResult(res, t)
-				// fmt.Println("RRRRRRRRRRR")
 				count += 1
 			}
 		}
@@ -123,8 +113,6 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 		t.Errorf(" ::: Test Failed ::: ")
 		t.FailNow()
 	}
-	// nothing([]State{init, client}) // we are not using client or init atm so theres a "declared but not used" error
-	// exit(states)
 	final := append(finalExpectedTests, finalUnexpectedTests...)
 	return final, nil
 }

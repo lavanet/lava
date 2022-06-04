@@ -9,37 +9,6 @@ import (
 	"testing"
 )
 
-// func finishedTests(expectedEvents []string, results map[string][]TestResult) bool {
-// 	for _, eventID := range expectedEvents {
-// 		if _, ok := results[eventID]; !ok {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
-
-// func readFile(path string, done *bool, doneF func(string) bool) {
-// func readFile(path string, state State, doneF func(string) bool) {
-
-// run node -r
-// wait new epoch node
-// run init
-// await lava_client_stake_new from init + timeout
-// await new epoch from node
-// run client
-// await new_relay_payment from node
-// await 10 secs without error
-// get test results
-// func await(done *bool, msg string, after string) {
-// 	for !*done {
-// 		time.Sleep(1 * time.Second)
-// 		println(" ::: " + msg)
-// 	}
-// 	println("*********************************************")
-// 	println(fmt.Sprintf("***************  %s   *********************", after))
-// 	println("*********************************************")
-// }
-
 func exit(states []State) bool {
 	processList := []*os.Process{}
 	for _, state := range states {
@@ -50,29 +19,29 @@ func exit(states []State) bool {
 	}
 	f := false
 	sleep(2, &f)
-	// for _, process := range processList {
-	// 	killPid(process.Pid)
-	// 	process.Kill()
-	// }
+	killProcessess := false
+	if killProcessess {
+		for _, process := range processList {
+			killPid(process.Pid)
+			process.Kill()
+		}
+	}
 	ExitLavaProcess()
 	return true
 }
 
 func ExitLavaProcess() {
-	// print("XXXXXXXXXXXXXXXXXxx", pid)
 	cmd := exec.Command("sh", "-c", "killall lavad ; killall starport ; killall main ; killall lavad")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Println(fmt.Errorf(err.Error()).Error())
 	}
 	fmt.Printf(" ::: Exiting Lava Process ::: %s\n", stdoutStderr)
-	// return true
 }
 
-func tests() map[string](func(string) (bool, string, error)) {
-	tests := map[string](func(string) (bool, string, error)){
-		"🔄": test_start,
-		// "🔄":                          test_found_pass,
+func tests() map[string]func(LogLine) TestResult {
+	tests := map[string](func(LogLine) TestResult){
+		"🔄":                          test_start,
 		"🌍":                          test_found_pass,
 		"lava_spec_add":              test_found_pass,
 		"lava_provider_stake_new":    test_found_pass,
@@ -87,66 +56,37 @@ func tests() map[string](func(string) (bool, string, error)) {
 		"refused":                    test_found_fail,
 		"listening":                  test_found_pass,
 		"init done":                  test_found_pass,
-		// "error":                      test_found_fail,
+		"connection refused":         test_found_fail_now,
+		"cannot build app":           test_found_fail_now,
+		"exit status":                test_found_fail_now,
 	}
 	return tests
 }
 
 // TODO:
 // [-] merge main
-// [-] refactor & clean for PR
+// [+] refactor & clean for PR
 // [-] improvements:
 // 		[-] add steps to test results,
 // 		[-] add pass/fail to step,
 //		[-] steps & events in order,
 //		[-] await timeout
-// [-] logProcess providers
-// [-] go-test output
+//		[+] test timeout
+// [+] logProcess providers
+// [+] go-test output
 // [-] dockerize
-// [-] github actions CI/CD
-
-func InitTest(t *testing.T) ([]TestResult, error) {
-	// t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
-
-	// Test Configs
-	nodeTest := Test{
-		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},
-		unexpectedEvents: []string{"ERR_client_entries_pairing", "ERR"},
-		tests:            tests(),
-		strict:           false}
-	initTest := Test{
-		expectedEvents:   []string{"init done"},
-		unexpectedEvents: []string{"Error"},
-		tests:            tests(),
-		strict:           true}
-	// providersTest := Test{
-	// 	expectedEvents:   []string{"listening"},
-	// 	unexpectedEvents: []string{"refused"},
-	// 	tests:            tests(),
-	// 	strict:           true}
-	clientTest := Test{
-		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
-		unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
-		tests:            tests(),
-		strict:           true}
-	testfailed := false
-	failed := &testfailed
-	states := []State{}
-	results := map[string][]TestResult{}
-	homepath := getHomePath() //local
+// [+] github actions CI/CD
+func FullFlowTest(t *testing.T) ([]TestResult, error) {
+	// Setup Env
+	homepath := getHomePath()
 	resetGenesis := true
 	isGithubAction := false
 	if strings.Contains(homepath, "runner") { // on github
-		homepath += "work/lava/lava/" //local
+		homepath += "work/lava/lava/"
 		isGithubAction = true
-	} else { // local
+	} else {
 		homepath += "go/lava/" //local
 	}
-	// homepath := getHomePath() + "work/lava/lava/" //github
-	// homepath := "/go/lava/" // github
-	// homepath := "/home/magic/go/lava/"
-	// homepath := "~/go/lava/"
-	// homepath := ""
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
@@ -156,116 +96,24 @@ func InitTest(t *testing.T) ([]TestResult, error) {
 		lava_serve_cmd = "lavad start "
 		usingLavad = true
 	}
-	// Test Flow
-	node := LogProcess(CMD{
-		stateID:  "starport",
-		homepath: homepath,
-		// cmd:      "lavad start",
-		cmd: lava_serve_cmd,
-		// cmd:          "starport chain serve -v -r ",
-		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
-		testing:      true,
-		test:         nodeTest,
-		results:      &results,
-		dep:          nil,
-		failed:       failed,
-		requireAlive: true,
-		debug:        true,
-	}, t, &states)
-	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
-	if !usingLavad {
-		await(node, "node connected", node_ready, "awating for node api to proceed...")
-	}
-
-	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
-	sleep(2, failed)
-	if resetGenesis || isGithubAction {
-		init := LogProcess(CMD{
-			stateID:  "init",
-			homepath: homepath,
-			cmd:      "./init_chain_commands_noscreen.sh",
-			// cmd:          "/cd home/runner/work/lava/lava/ && " + "./init_chain_commands_noscreen.sh",
-			filter:       []string{":::", "raw_log", "Error", "error", "panic"},
-			testing:      true,
-			test:         initTest,
-			results:      &results,
-			dep:          &node,
-			failed:       failed,
-			requireAlive: false,
-			debug:        true}, t, &states)
-		await(init, "get init done", init_done, "awating for init to proceed...")
-	}
-
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-	println("::::::::::::::::::::::::::::::::::::::::::::::")
-
-	// Display Results
-
-	fmt.Println(string("================================================="))
-	fmt.Println(string("================ TEST DONE! ====================="))
-	fmt.Println(string("================================================="))
-	fmt.Println(string("=============== Expected Events ================="))
-
-	finalExpectedTests := []TestResult{}
-	finalUnexpectedTests := []TestResult{}
-	count := 1
-	for _, expected := range append(nodeTest.expectedEvents, append(initTest.expectedEvents, clientTest.expectedEvents...)...) {
-		// fmt.Println("XXX " + expected)
-		if testList, foundEvent := results[expected]; foundEvent {
-			// fmt.Println("foundxxxxx")
-			for _, res := range testList {
-				finalExpectedTests = append(finalExpectedTests, res)
-				printTestResult(res, t)
-				// fmt.Println("RRRRRRRRRRR")
-				count += 1
-			}
-		}
-		delete(results, expected)
-	}
-
-	count = 1
-	fmt.Println(string("============== Unexpected Events ================"))
-	for key, testList := range results {
-		for _, res := range testList {
-			count += 1
-			printTestResult(res, t)
-			finalUnexpectedTests = append(finalUnexpectedTests, res)
-		}
-		delete(results, key)
-	}
-	fmt.Println(string("================================================="))
-	if *failed && t != nil {
-		t.Errorf(" ::: Test Failed ::: ")
-		t.FailNow()
-	}
-	// nothing([]State{init, client}) // we are not using client or init atm so theres a "declared but not used" error
-	exit(states)
-	final := append(finalExpectedTests, finalUnexpectedTests...)
-	return final, nil
-	// TODO: exit cleanly
-}
-
-func FullFlowTest(t *testing.T) ([]TestResult, error) {
-	// t.Logf("!!!!!!!!!!!! HOME AAAAAAA !!!!!!!!!!!!!!!")
 
 	// Test Configs
-	nodeTest := Test{
+	nodeTest := TestProcess{
 		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},
-		unexpectedEvents: []string{"ERR_client_entries_pairing", "ERR"},
+		unexpectedEvents: []string{"exit status", "cannot build app", "connection refused", "ERR_client_entries_pairing", "ERR"},
 		tests:            tests(),
 		strict:           false}
-	initTest := Test{
+	initTest := TestProcess{
 		expectedEvents:   []string{"init done"},
 		unexpectedEvents: []string{"Error"},
 		tests:            tests(),
 		strict:           true}
-	providersTest := Test{
+	providersTest := TestProcess{
 		expectedEvents:   []string{"listening"},
 		unexpectedEvents: []string{"refused"},
 		tests:            tests(),
 		strict:           true}
-	clientTest := Test{
+	clientTest := TestProcess{
 		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
 		unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
 		tests:            tests(),
@@ -274,36 +122,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath() //local
-	resetGenesis := true
-	isGithubAction := false
-	if strings.Contains(homepath, "runner") { // on github
-		homepath += "work/lava/lava/" //local
-		isGithubAction = true
-	} else { // local
-		homepath += "go/lava/" //local
-	}
-	// homepath := getHomePath() + "work/lava/lava/" //github
-	// homepath := "/go/lava/" // github
-	// homepath := "/home/magic/go/lava/"
-	// homepath := "~/go/lava/"
-	// homepath := ""
-	if t != nil {
-		t.Logf(" ::: Test Homepath ::: %s", homepath)
-	}
-	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
-	usingLavad := false
-	if !resetGenesis {
-		lava_serve_cmd = "lavad start "
-		usingLavad = true
-	}
-	// Test Flow
+
+	// Test Full Flow
 	node := LogProcess(CMD{
-		stateID:  "starport",
-		homepath: homepath,
-		// cmd:      "lavad start",
-		cmd: lava_serve_cmd,
-		// cmd:          "starport chain serve -v -r ",
+		stateID:      "starport",
+		homepath:     homepath,
+		cmd:          lava_serve_cmd,
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
 		testing:      true,
 		test:         nodeTest,
@@ -326,7 +150,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          "./init_chain_commands_noscreen.sh",
+				cmd:          "./init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -334,7 +158,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 				dep:          &node,
 				failed:       failed,
 				requireAlive: false,
-				debug:        true}, t, &states)
+				debug:        false}, t, &states)
 			await(init, "get init done", init_done, "awating for init to proceed...")
 		}
 	}
@@ -364,9 +188,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 	run_providers := true
 	if run_providers {
-		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+		println(" ::: Starting Providers Processes ::: ")
 		prov5 := LogProcess(CMD{
-			stateID:      "provider5",
+			stateID:      "providers",
 			homepath:     homepath,
 			cmd:          "./providers.sh",
 			filter:       []string{"updated", "server", "error"},
@@ -377,8 +201,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
-		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
+		println(" ::: Providers Processes Started ::: ")
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
 	run_providers_manual := false
@@ -396,7 +219,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ", prov1.id)
 		LogProcess(CMD{
 			stateID:      "provider2",
@@ -410,7 +232,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		LogProcess(CMD{
 			stateID:      "provider3",
@@ -424,7 +245,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		LogProcess(CMD{
 			stateID:      "provider4",
@@ -438,7 +258,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
 		prov5 := LogProcess(CMD{
 			stateID:      "provider5",
@@ -452,7 +271,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(init, "get raw_log from init", raw_log, "awating for raw_log to proceed...")
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
@@ -465,10 +283,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		}
 
 		client := LogProcess(CMD{
-			stateID:  "client",
-			homepath: homepath,
-			cmd:      "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
-			// cmd:          "go run " + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			stateID:      "client",
+			homepath:     homepath,
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
@@ -501,13 +318,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	finalUnexpectedTests := []TestResult{}
 	count := 1
 	for _, expected := range append(nodeTest.expectedEvents, append(initTest.expectedEvents, clientTest.expectedEvents...)...) {
-		// fmt.Println("XXX " + expected)
 		if testList, foundEvent := results[expected]; foundEvent {
-			// fmt.Println("foundxxxxx")
 			for _, res := range testList {
 				finalExpectedTests = append(finalExpectedTests, res)
 				printTestResult(res, t)
-				// fmt.Println("RRRRRRRRRRR")
 				count += 1
 			}
 		}
@@ -529,14 +343,13 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		t.Errorf(" ::: Test Failed ::: ")
 		t.FailNow()
 	}
-	// nothing([]State{init, client}) // we are not using client or init atm so theres a "declared but not used" error
+
 	exit(states)
 	final := append(finalExpectedTests, finalUnexpectedTests...)
 	return final, nil
-	// TODO: exit cleanly
 }
 
 func main() {
-	// mainB() // when piping into go i.e - 6; cd ~/go/lava && starport chain serve -v -r |& go run x_test/lava_pipe.go
 	FullFlowTest(nil)
+	// mainB() // when piping into go i.e - 6; cd ~/go/lava && starport chain serve -v -r |& go run x_test/lava_pipe.go
 }
