@@ -77,7 +77,7 @@ jobs:
 
     - name: cat client.log
       run: cat ./testutil/e2e/logs/client.log
-    - name: cat providers.log
-      run: cat ./testutil/e2e/logs/providers.log
+    - name: cat providers_eth.log
+      run: cat ./testutil/e2e/logs/providers_eth.log
 
   
