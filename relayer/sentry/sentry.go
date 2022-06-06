@@ -198,6 +198,8 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	s.pairing = pairing                                   // replace with new connections
 	s.pairingAddresses = pairingAddresses
 	log.Println("update pairing list!", pairing)
+	// TODO:: new epoch, reset field containing previous finalizedBlocks of providers of epoch - 2
+	// TODO:: keep latest provider finalized blocks and prev finalied from epoch - 1
 
 	return nil
 }
@@ -684,12 +686,38 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
-	finalizedBlocks := BlockHash{}
-	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
+	finalizedBlocks := []BlockHash{}                                    //TODO::
+	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
 	if err != nil {
 		log.Println("Finalized Block reply err", err)
 		return nil, err
 	}
+
+	// TODO:: compare finalized block hashes with other providers
+	// Save in a struct that keeps finalized hases of each provider
+	// providerAcc can be key in a map that keep reply.LatestBlock and the hashes from reply
+	// new reply should have blocknum >= from block same provider
+	// make sure finalized blocks overlap with finalized block of other providers in correct order
+	// add new field to sentry (mutex protected) we keep the new info from line one and two
+	// reset this new field in every new epoch
+
+	// create a list of dataContainer: map[providerAcc]data : data-struct  {
+	// finalizedblock: block
+	//  hashes []
+	// }
+	// (1) on new data recieved iterate with for loop in this list of dataContainer
+	// this list will contain only one entry when there is no fraud
+	//
+	// init toCompare to empty in each iteration
+	// in each dataContainer find one provider that has this block to compare with. (exclude same provider)
+	// maybe theres no overlap then continue
+	// full overlap - compare and check for discrepency with no changes to the list in the dataContainer
+	// parital overlap - tkae only blocks we need for overlap. no need to keep copies of blocks we already prepared in toCompare list because everything we have there is already under consensus
+	//    - we might not reach full overlap with partial
+	// no overlap then insert new data into dataContainer list
+	// send toCompare and new data from relay to discrepency checker which loops over toCompare and new relay data and compares them  -- compareFunc
+	// if comparefunc returns ok the nadd to datacontainer and continues in the iteration (1)
+	//
 
 	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 		log.Println("Finalized Block reply received")

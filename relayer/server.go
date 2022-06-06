@@ -406,6 +406,10 @@ func Server(
 
 	// Start chain sentry
 	chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
+	err = chainSentry.Init(ctx)
+	if err != nil {
+		log.Fatalln("error sentry.Init", err)
+	}
 	chainSentry.Start(ctx)
 	g_chainSentry = chainSentry
 
