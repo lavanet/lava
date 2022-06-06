@@ -16,3 +16,4 @@ vue/src/store/generated/lavanet/lava/lavanet.lava.user/index.ts
 vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.d.ts
 vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.js
 vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.ts
+relayer/cmd/relayer/__debug_bin
