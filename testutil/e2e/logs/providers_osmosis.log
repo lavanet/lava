@@ -1,42 +1,42 @@
 ---------------Setup Providers------------------
  ::: STARTING OSMOSIS PROVIDERS :::
  ::: Relayer Started :::
-2022/06/04 14:08:56 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:40 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/04 14:08:56 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
- ::: Relayer Started :::
-2022/06/04 14:08:56 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:40 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
  ::: Relayer Started :::
-2022/06/04 14:08:56 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
-2022/06/04 14:08:56 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:40 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:40 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/04 14:08:57 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
-2022/06/04 14:08:57 Server starting 127.0.0.1:2242 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/04 14:08:57 Server starting 127.0.0.1:2232 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/04 14:08:57 Server starting 127.0.0.1:2241 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/04 14:08:57 Server starting 127.0.0.1:2231 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/04 14:08:57 Server starting 127.0.0.1:2243 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/04 14:08:58 Server starting 127.0.0.1:2233 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/04 14:08:58 Server pubkey E5C0E82AC9981D0049FD03A30B46CBDBDA200477
-2022/06/04 14:08:58 server listening at 127.0.0.1:2242
-2022/06/04 14:08:58 Server pubkey E5C0E82AC9981D0049FD03A30B46CBDBDA200477
-2022/06/04 14:08:58 server listening at 127.0.0.1:2232
-2022/06/04 14:08:58 Server pubkey 3F271CF2441E6BB5C7073B3002709AA5B66DA437
-2022/06/04 14:08:58 server listening at 127.0.0.1:2241
-2022/06/04 14:08:58 Server pubkey 3F271CF2441E6BB5C7073B3002709AA5B66DA437
-2022/06/04 14:08:58 server listening at 127.0.0.1:2231
-2022/06/04 14:08:59 Server pubkey 38C7059FAB0DE2CD4442DB70325757D3DB2A0764
-2022/06/04 14:08:59 server listening at 127.0.0.1:2243
-2022/06/04 14:08:59 Server pubkey 38C7059FAB0DE2CD4442DB70325757D3DB2A0764
-2022/06/04 14:08:59 server listening at 127.0.0.1:2233
-New session: Height: 40 
+ ::: Relayer Started :::
+2022/06/06 10:01:40 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:41 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/06 10:01:41 Server starting 127.0.0.1:2231 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/06 10:01:41 Server starting 127.0.0.1:2242 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/06 10:01:41 Server starting 127.0.0.1:2241 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/06 10:01:41 Server starting 127.0.0.1:2233 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/06 10:01:42 Server starting 127.0.0.1:2243 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/06 10:01:42 Server starting 127.0.0.1:2232 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/06 10:01:42 Server pubkey 3278F67C3B4B7502C5F8927B445F6C7573243F67
+2022/06/06 10:01:42 server listening at 127.0.0.1:2231
+2022/06/06 10:01:42 Server pubkey BA12C2F434F0455AC2A9904AF54CF3BCBB514135
+2022/06/06 10:01:42 server listening at 127.0.0.1:2242
+2022/06/06 10:01:42 Server pubkey 3278F67C3B4B7502C5F8927B445F6C7573243F67
+2022/06/06 10:01:42 server listening at 127.0.0.1:2241
+2022/06/06 10:01:42 Server pubkey 960072BBBF05EA6A631E20411EFF60BDC97D179B
+2022/06/06 10:01:42 server listening at 127.0.0.1:2233
+2022/06/06 10:01:43 Server pubkey 960072BBBF05EA6A631E20411EFF60BDC97D179B
+2022/06/06 10:01:43 server listening at 127.0.0.1:2243
+2022/06/06 10:01:43 Server pubkey BA12C2F434F0455AC2A9904AF54CF3BCBB514135
+2022/06/06 10:01:43 server listening at 127.0.0.1:2232
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
 total CU serviced: 0, total CU paid: 0
+New session: Height: 40 
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
@@ -47,8 +47,8 @@ New session: Height: 60
 New session: Height: 60 
 New session: Height: 60 
 New session: Height: 60 
-New session: Height: 60 
 total CU serviced: 0, total CU paid: 0
+New session: Height: 60 
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
