@@ -1,0 +1,25 @@
+syntax = "proto3";
+package lavanet.lava.conflict;
+
+// this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/conflict/types";
+
+// Msg defines the Msg service.
+service Msg {
+      rpc Detection(MsgDetection) returns (MsgDetectionResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgDetection {
+  string creator = 1;
+  cosmos.base.v1beta1.Coin finalizationConflict = 2;
+  cosmos.base.v1beta1.Coin responseConflict = 3;
+}
+
+message MsgDetectionResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message

@@ -19,13 +19,16 @@ import (
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -76,6 +79,7 @@ type Sentry struct {
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
 	ApiInterface            string
+	cmdFlags                *pflag.FlagSet
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -600,6 +604,9 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	//they have different data! report!
 	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s", reply0.Data, reply1.Data))
+	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+	tx.GenerateOrBroadcastTxCLI(s.ClientCtx, s.cmdFlags, msg)
+	//report the conflict
 	return false
 }
 
@@ -893,6 +900,7 @@ func NewSentry(
 	newBlockCb func(),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
+	flagSet *pflag.FlagSet,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -918,6 +926,7 @@ func NewSentry(
 		VrfSk:                   vrf_sk,
 		blockHeight:             currentBlock,
 		specHash:                nil,
+		cmdFlags:                flagSet,
 	}
 }
 

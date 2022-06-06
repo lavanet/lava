@@ -1,0 +1,14 @@
+syntax = "proto3";
+package lavanet.lava.conflict;
+
+import "gogoproto/gogo.proto";
+import "conflict/params.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/conflict/types";
+
+// GenesisState defines the conflict module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  // this line is used by starport scaffolding # genesis/proto/state
+}

@@ -107,7 +107,7 @@ func main() {
 
 			ctx := context.Background()
 
-			relayer.TestClient(ctx, clientCtx, chainID, apiInterface)
+			relayer.TestClient(ctx, clientCtx, chainID, apiInterface, cmd.Flags())
 
 			return nil
 		},

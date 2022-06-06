@@ -1,0 +1,13 @@
+syntax = "proto3";
+package lavanet.lava.conflict;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/conflict/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  string majorityPercent = 1 [(gogoproto.moretags) = "yaml:\"majority_percent\""];
+}

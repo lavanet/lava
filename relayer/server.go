@@ -361,7 +361,7 @@ func Server(
 
 	//
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil)
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

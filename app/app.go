@@ -91,6 +91,9 @@ import (
 	"github.com/tendermint/starport/starport/pkg/openapiconsole"
 
 	"github.com/lavanet/lava/docs"
+	conflictmodule "github.com/lavanet/lava/x/conflict"
+	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
+	conflictmoduletypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -159,6 +162,7 @@ var (
 		specmodule.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
+		conflictmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -173,6 +177,7 @@ var (
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		conflictmoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -235,6 +240,8 @@ type App struct {
 	EpochstorageKeeper epochstoragemodulekeeper.Keeper
 
 	PairingKeeper pairingmodulekeeper.Keeper
+
+	ConflictKeeper conflictmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -274,6 +281,7 @@ func New(
 		specmoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
+		conflictmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -414,6 +422,20 @@ func New(
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
+		appCodec,
+		keys[conflictmoduletypes.StoreKey],
+		keys[conflictmoduletypes.MemStoreKey],
+		app.GetSubspace(conflictmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.PairingKeeper,
+		app.EpochstorageKeeper,
+		app.SpecKeeper,
+	)
+	conflictModule := conflictmodule.NewAppModule(appCodec, app.ConflictKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -455,6 +477,7 @@ func New(
 		specModule,
 		epochstorageModule,
 		pairingModule,
+		conflictModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -494,6 +517,7 @@ func New(
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		pairingmoduletypes.ModuleName,
+		conflictmoduletypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -519,6 +543,7 @@ func New(
 		specModule,
 		epochstorageModule,
 		pairingModule,
+		conflictModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -709,6 +734,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
+	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
