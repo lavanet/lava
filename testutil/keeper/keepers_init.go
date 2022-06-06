@@ -38,45 +38,56 @@ type servers struct {
 }
 
 func InitAllKeepers(t testing.TB) (*servers, *Keepers, context.Context) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
+	pairingStoreKey := sdk.NewKVStoreKey(types.StoreKey)
+	pairingMemStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	stateStore.MountStoreWithDB(pairingStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(pairingMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	specStoreKey := sdk.NewKVStoreKey(spectypes.StoreKey)
+	specMemStoreKey := storetypes.NewMemoryStoreKey(spectypes.MemStoreKey)
+	stateStore.MountStoreWithDB(specStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(specMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	epochStoreKey := sdk.NewKVStoreKey(epochtypes.StoreKey)
+	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochtypes.MemStoreKey)
+	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	require.NoError(t, stateStore.LoadLatestVersion())
+
 	epochparamsSubspace := paramtypes.NewSubspace(cdc,
 		types.Amino,
-		storeKey,
-		memStoreKey,
+		epochStoreKey,
+		epochMemStoreKey,
 		"EpochstorageParams",
 	)
 
 	pairingparamsSubspace := paramtypes.NewSubspace(cdc,
 		types.Amino,
-		storeKey,
-		memStoreKey,
+		pairingStoreKey,
+		pairingMemStoreKey,
 		"PairingParams",
 	)
 
 	specparamsSubspace := paramtypes.NewSubspace(cdc,
 		types.Amino,
-		storeKey,
-		memStoreKey,
+		specStoreKey,
+		specMemStoreKey,
 		"SpecParams",
 	)
 
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins), moduleBank: make(map[string]map[string]sdk.Coins)}
-	ks.Spec = *speckeeper.NewKeeper(cdc, storeKey, memStoreKey, specparamsSubspace)
-	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, storeKey, memStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, storeKey, memStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
+	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
+	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
@@ -89,5 +100,6 @@ func InitAllKeepers(t testing.TB) (*servers, *Keepers, context.Context) {
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
+
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
