@@ -37,7 +37,7 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 	//
 	// Unmarshal request
-	var msg jsonrpcMessage
+	var msg JsonrpcMessage
 	if string(data) != "" {
 		//assuming jsonrpc
 		err := json.Unmarshal(data, &msg)
@@ -54,7 +54,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 			parsedMethod = path[0:idx]
 		}
 
-		msg = jsonrpcMessage{Method: parsedMethod} //other parameters don't matter
+		msg = JsonrpcMessage{Method: parsedMethod} //other parameters don't matter
 	}
 	//
 	// Check api is supported and save it in nodeMsg
@@ -163,7 +163,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 
 	//
 	// Wrap result back to json
-	replyMsg := jsonrpcMessage{
+	replyMsg := JsonrpcMessage{
 		Version: nm.msg.Version,
 		ID:      nm.msg.ID,
 	}

@@ -761,7 +761,7 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 		//TODO: regard earliest block from spec
 		finalization_criteria := int64(7)
 		if requestedBlock <= latestBlock-finalization_criteria {
-			log.Println("requestedBlock <= latestBlock-finalization_criteria returns true")
+			log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
 			return true
 			// return false
 		}

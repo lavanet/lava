@@ -22,7 +22,7 @@ type jsonError struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-type jsonrpcMessage struct {
+type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
@@ -34,7 +34,7 @@ type jsonrpcMessage struct {
 type JrpcMessage struct {
 	cp             *JrpcChainProxy
 	serviceApi     *spectypes.ServiceApi
-	msg            *jsonrpcMessage
+	msg            *JsonrpcMessage
 	requestedBlock int64
 }
 
@@ -53,11 +53,11 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 	}
 }
 
-func (cp jsonrpcMessage) GetParams() []interface{} {
+func (cp JsonrpcMessage) GetParams() []interface{} {
 	return cp.Params
 }
 
-func (cp jsonrpcMessage) ParseBlock(inp string) (int64, error) {
+func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
@@ -88,7 +88,7 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 	//
 	// Unmarshal request
-	var msg jsonrpcMessage
+	var msg JsonrpcMessage
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	//
 	// Wrap result back to json
-	replyMsg := jsonrpcMessage{
+	replyMsg := JsonrpcMessage{
 		Version: nm.msg.Version,
 		ID:      nm.msg.ID,
 	}

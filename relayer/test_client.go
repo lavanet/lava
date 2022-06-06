@@ -2,8 +2,10 @@ package relayer
 
 import (
 	context "context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -12,6 +14,7 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/pflag"
 )
 
@@ -21,7 +24,7 @@ const (
 	JSONRPC_ETH_TRACE_REPLAY_BLOCK_TRANSACTIONS = `{"jsonrpc":"2.0","method":"trace_replayBlockTransactions","params":["latest", "trace"],"id":1}`
 	JSONRPC_UNSUPPORTED                         = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
 	JSONRPC_ETH_NEWFILTER                       = `{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"fromBlock": "0x12345","toBlock": "0x23456"}],"id":73}`
-	JSONRPC_ETH_GETBLOCK                        = `{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["blockParam", "true"],"id":1}`
+	JSONRPC_ETH_GETBLOCK_FORMAT                 = `{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["%d", "false"],"id":1}`
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
@@ -38,7 +41,9 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 	//
 	// Call a few times and print results
 	for i2 := 0; i2 < 30; i2++ {
+		var blockNumReply *types.RelayReply
 		for i := 0; i < 10; i++ {
+
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_BLOCKNUMBER)
 			if err != nil {
 				log.Println(err)
@@ -47,6 +52,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 				reply.SigBlocks = nil
 				reply.FinalizedBlocksHashes = nil
 				log.Println("reply JSONRPC_ETH_BLOCKNUMBER", reply)
+				blockNumReply = reply
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE)
 			if err != nil {
@@ -67,7 +73,35 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 				log.Println("reply JSONRPC_ETH_NEWFILTER", reply)
 			}
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
+		//reliability testing
+
+		var msg chainproxy.JsonrpcMessage
+		err := json.Unmarshal(blockNumReply.GetData(), &msg)
+		if err != nil {
+			log.Println("Unmarshal error: " + err.Error())
+		}
+		latestBlockstr, err := strconv.Unquote(string(msg.Result))
+		if err != nil {
+			log.Println("unquote Unmarshal error: " + err.Error())
+		}
+		latestBlock, err := strconv.ParseInt(latestBlockstr, 0, 64)
+		if err != nil {
+			log.Println("blockNum Unmarshal error: " + err.Error())
+		}
+		for i := 0; i < 10; i++ {
+			request_data := fmt.Sprintf(JSONRPC_ETH_GETBLOCK_FORMAT, latestBlock-7)
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", request_data)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reply.Sig = nil // for nicer prints
+				reply.SigBlocks = nil
+				reply.FinalizedBlocksHashes = nil
+				log.Println("reply JSONRPC_ETH_GETBLOCKBYNUMBER", request_data, reply)
+				blockNumReply = reply
+			}
+		}
 	}
 
 	//
