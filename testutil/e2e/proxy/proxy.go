@@ -175,7 +175,35 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			realCount += 1
 			println(p.port+" ::: Real Response ::: ", string(respBody))
 
-			// TODO: Check if response is good, if not - try again
+			// Check if response is not good, if not - try again
+			if strings.Contains(string(respBody), "error") {
+				println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
+
+				// Recreating Request
+				proxyRequest, err = createProxyRequest(req, host)
+				if err != nil {
+					println(err.Error())
+				}
+
+				// Send Request to Host & Get Response
+				proxyRes, err = sendRequest(proxyRequest)
+				if err != nil {
+					println(err.Error())
+				}
+				respBody = getDataFromIORead(&proxyRes.Body, true)
+				mock.requests[string(rawBody)] = string(respBody)
+				realCount += 1
+				println(p.port+" ::: Real Response ::: ", string(respBody))
+
+				// TODO: Check if response is good, if not - try again
+				if strings.Contains(string(respBody), "error") {
+					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got another error in response ")
+					println()
+				} else {
+					println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY SUCCESS - no error in response ")
+					println()
+				}
+			}
 
 			// Change Response
 			if fakeResponse {
