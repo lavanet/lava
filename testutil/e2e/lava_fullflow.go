@@ -293,15 +293,47 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
 
-	run_client := true
-	if run_client {
+	run_client_osmosis := true
+	if run_client_osmosis {
+		clientOsmosis := LogProcess(CMD{
+			stateID:      "clientOsmo",
+			homepath:     homepath,
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2",
+			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		sleep(7, failed)
+		clientOsmosis2 := LogProcess(CMD{
+			stateID:      "clientOsmo2",
+			homepath:     homepath,
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2",
+			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		// TODO: check relay payment is COS3
+		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed..."+clientOsmosis.id+","+clientOsmosis2.id)
+		println(" ::: GOT OSMOSIS PAYMENT !!!")
+	}
+	run_client_eth := true
+	if run_client_eth {
 		sleep(1, failed)
 		if !run_providers_eth {
 			sleep(60, failed)
 		}
 
-		client := LogProcess(CMD{
-			stateID:      "client",
+		clientEth := LogProcess(CMD{
+			stateID:      "clientEth",
 			homepath:     homepath,
 			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
@@ -312,21 +344,22 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
-		await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
+		await(clientEth, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		await(node, "relay payment 1 eth", found_relay_payment, "awating for FIRST payment to proceed...")
 		println(" ::: GOT FIRST PAYMENT !!!")
-
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		awaitErrorsTimeout := 10
-		println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
-		sleep(awaitErrorsTimeout, failed)
-
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-
-		// Display Results
 	}
+
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	awaitErrorsTimeout := 10
+	println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
+	sleep(awaitErrorsTimeout, failed)
+
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+
+	// Display Results
+
 	fmt.Println(string("================================================="))
 	fmt.Println(string("================ TEST DONE! ====================="))
 	fmt.Println(string("================================================="))

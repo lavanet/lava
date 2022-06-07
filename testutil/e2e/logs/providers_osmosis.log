@@ -1,40 +1,85 @@
 ---------------Setup Providers------------------
  ::: STARTING OSMOSIS PROVIDERS :::
  ::: Relayer Started :::
-2022/06/07 14:23:45 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/07 14:23:45 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/07 14:23:45 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/07 14:23:45 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/07 14:23:45 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
  ::: Relayer Started :::
-2022/06/07 14:23:46 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
-2022/06/07 14:23:46 Server starting 127.0.0.1:2243 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/07 14:23:46 Server starting 127.0.0.1:2242 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/07 14:23:46 Server starting 127.0.0.1:2231 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/07 14:23:46 Server starting 127.0.0.1:2233 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/07 14:23:46 Server starting 127.0.0.1:2232 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
-2022/06/07 14:23:47 Server starting 127.0.0.1:2241 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
-2022/06/07 14:23:47 Server pubkey 7855BCABF6096366DBB4EE18EDEDEA35021BBE91
-2022/06/07 14:23:47 server listening at 127.0.0.1:2243
-2022/06/07 14:23:47 Server pubkey 58B5A2E1E8B6186E68938DC8ED5FE7488C0F70A0
-2022/06/07 14:23:47 server listening at 127.0.0.1:2242
-2022/06/07 14:23:47 Server pubkey 6E243D00905D7E28B5F352D7C394600305554B3D
-2022/06/07 14:23:47 server listening at 127.0.0.1:2231
-2022/06/07 14:23:47 Server pubkey 7855BCABF6096366DBB4EE18EDEDEA35021BBE91
-2022/06/07 14:23:47 server listening at 127.0.0.1:2233
-2022/06/07 14:23:47 Server pubkey 58B5A2E1E8B6186E68938DC8ED5FE7488C0F70A0
-2022/06/07 14:23:47 server listening at 127.0.0.1:2232
-2022/06/07 14:23:47 Server pubkey 6E243D00905D7E28B5F352D7C394600305554B3D
-2022/06/07 14:23:47 server listening at 127.0.0.1:2241
+ ::: Relayer Started :::
+ ::: Relayer Started :::
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+ ::: Relayer Started :::
+2022/06/07 20:13:48 Sentry updated spec for chainID: COS3 Spec name:osmosis mainnet
+2022/06/07 20:13:49 Server starting 127.0.0.1:2243 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2231 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/07 20:13:49 Server starting 127.0.0.1:2251 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface jsonrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2242 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2232 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/07 20:13:49 Server starting 127.0.0.1:2253 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface jsonrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2252 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface jsonrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2241 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ spec osmosis mainnet chainID COS3 api Interface tendermintrpc
+2022/06/07 20:13:49 Server starting 127.0.0.1:2233 node http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ spec osmosis mainnet chainID COS3 api Interface rest
+2022/06/07 20:13:50 Server pubkey 5007ADD7E810F2892D74186F4623D23B9C5ABC3F
+2022/06/07 20:13:50 server listening at 127.0.0.1:2243
+2022/06/07 20:13:50 Server pubkey B4234948CEA7B28FC62D42CA8353F202074121A3
+2022/06/07 20:13:50 server listening at 127.0.0.1:2231
+2022/06/07 20:13:50 Server pubkey B4234948CEA7B28FC62D42CA8353F202074121A3
+2022/06/07 20:13:50 server listening at 127.0.0.1:2251
+2022/06/07 20:13:50 Server pubkey 082C7E01C5AA260138B68BFC70D66875A06E1C47
+2022/06/07 20:13:50 server listening at 127.0.0.1:2242
+2022/06/07 20:13:50 Server pubkey B4234948CEA7B28FC62D42CA8353F202074121A3
+2022/06/07 20:13:50 server listening at 127.0.0.1:2241
+2022/06/07 20:13:50 Server pubkey 082C7E01C5AA260138B68BFC70D66875A06E1C47
+2022/06/07 20:13:50 server listening at 127.0.0.1:2232
+2022/06/07 20:13:50 Server pubkey 082C7E01C5AA260138B68BFC70D66875A06E1C47
+2022/06/07 20:13:50 server listening at 127.0.0.1:2252
+2022/06/07 20:13:50 Server pubkey 5007ADD7E810F2892D74186F4623D23B9C5ABC3F
+2022/06/07 20:13:50 server listening at 127.0.0.1:2253
+2022/06/07 20:13:50 Server pubkey 5007ADD7E810F2892D74186F4623D23B9C5ABC3F
+2022/06/07 20:13:50 server listening at 127.0.0.1:2233
+2022/06/07 20:13:55 server got Relay
+2022/06/07 20:13:55 new user sessions 250000
+2022/06/07 20:13:55 updateSessionCu status 4037200794235010051 10 0 10
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu health 4037200794235010051 10 10 20
+2022/06/07 20:13:56 active sessions: 
+2022/06/07 20:13:56 {UsedComputeUnits:20 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50]} 
+2022/06/07 20:13:56 
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 new user sessions 250000
+2022/06/07 20:13:56 updateSessionCu status 605394647632969758 10 0 10
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu health 605394647632969758 10 10 20
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu status 605394647632969758 10 20 30
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu health 605394647632969758 10 30 40
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu status 605394647632969758 10 40 50
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu health 4037200794235010051 10 20 30
+2022/06/07 20:13:56 server got Relay
+2022/06/07 20:13:56 updateSessionCu status 605394647632969758 10 50 60
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu health 4037200794235010051 10 30 40
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
 New session: Height: 40 
+New session: Height: 40 
+New session: Height: 40 
+2022/06/07 20:13:57 active sessions: 
+2022/06/07 20:13:57 {UsedComputeUnits:40 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50]} 
+2022/06/07 20:13:57 
 New session: Height: 40 
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
@@ -42,6 +87,954 @@ total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
 total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+New session: Height: 40 
+2022/06/07 20:13:57 active sessions: 
+2022/06/07 20:13:57 {UsedComputeUnits:60 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0]} 
+2022/06/07 20:13:57 
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu status 4324745483838182873 10 0 10
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu health 2703387474910584091 10 0 10
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu status 2703387474910584091 10 10 20
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu health 4324745483838182873 10 10 20
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu status 2703387474910584091 10 20 30
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu health 4324745483838182873 10 20 30
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu status 4324745483838182873 10 30 40
+2022/06/07 20:13:57 server got Relay
+2022/06/07 20:13:57 updateSessionCu health 4324745483838182873 10 40 50
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu status 2703387474910584091 10 30 40
+2022/06/07 20:13:58 active sessions: 
+2022/06/07 20:13:58 {UsedComputeUnits:100 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:13:58 
+2022/06/07 20:13:58 active sessions: 
+2022/06/07 20:13:58 {UsedComputeUnits:90 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:13:58 
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu health 2703387474910584091 10 40 50
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu status 2703387474910584091 10 50 60
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu health 4324745483838182873 10 50 60
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu status 4324745483838182873 10 60 70
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu health 2703387474910584091 10 60 70
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu status 2703387474910584091 10 70 80
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu health 4324745483838182873 10 70 80
+2022/06/07 20:13:58 server got Relay
+2022/06/07 20:13:58 updateSessionCu status 2703387474910584091 10 80 90
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu health 2703387474910584091 10 90 100
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu status 2703387474910584091 10 100 110
+2022/06/07 20:13:59 active sessions: 
+2022/06/07 20:13:59 {UsedComputeUnits:170 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:13:59 
+2022/06/07 20:13:59 active sessions: 
+2022/06/07 20:13:59 {UsedComputeUnits:120 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:13:59 
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu health 4324745483838182873 10 80 90
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu status 2703387474910584091 10 110 120
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu health 2703387474910584091 10 120 130
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu status 2703387474910584091 10 130 140
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu health 4324745483838182873 10 90 100
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu status 2703387474910584091 10 140 150
+2022/06/07 20:13:59 server got Relay
+2022/06/07 20:13:59 updateSessionCu health 4324745483838182873 10 100 110
+2022/06/07 20:14:00 server got Relay
+2022/06/07 20:14:00 updateSessionCu status 4324745483838182873 10 110 120
+2022/06/07 20:14:00 server got Relay
+2022/06/07 20:14:00 updateSessionCu health 2703387474910584091 10 150 160
+2022/06/07 20:14:00 active sessions: 
+2022/06/07 20:14:00 {UsedComputeUnits:160 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:00 
+2022/06/07 20:14:00 active sessions: 
+2022/06/07 20:14:00 {UsedComputeUnits:220 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:14:00 
+2022/06/07 20:14:00 server got Relay
+2022/06/07 20:14:00 updateSessionCu status 2703387474910584091 10 160 170
+2022/06/07 20:14:00 server got Relay
+2022/06/07 20:14:00 updateSessionCu health 2703387474910584091 10 170 180
+2022/06/07 20:14:01 active sessions: 
+2022/06/07 20:14:01 {UsedComputeUnits:160 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:01 
+2022/06/07 20:14:01 active sessions: 
+2022/06/07 20:14:01 {UsedComputeUnits:240 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:14:01 
+2022/06/07 20:14:02 active sessions: 
+2022/06/07 20:14:02 {UsedComputeUnits:240 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:14:02 
+2022/06/07 20:14:02 active sessions: 
+2022/06/07 20:14:02 {UsedComputeUnits:160 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:02 
+2022/06/07 20:14:03 active sessions: 
+2022/06/07 20:14:03 {UsedComputeUnits:240 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450]} 
+2022/06/07 20:14:03 
+2022/06/07 20:14:03 active sessions: 
+2022/06/07 20:14:03 {UsedComputeUnits:160 MaxComputeUnits:250000 Sessions:map[4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:03 
+2022/06/07 20:14:03 server got Relay
+2022/06/07 20:14:03 updateSessionCu status 4037200794235010051 10 0 10
+2022/06/07 20:14:03 server got Relay
+2022/06/07 20:14:03 updateSessionCu health 4037200794235010051 10 10 20
+2022/06/07 20:14:03 server got Relay
+2022/06/07 20:14:03 updateSessionCu status 605394647632969758 10 0 10
+2022/06/07 20:14:03 server got Relay
+2022/06/07 20:14:03 updateSessionCu health 605394647632969758 10 10 20
+2022/06/07 20:14:03 server got Relay
+2022/06/07 20:14:03 updateSessionCu status 605394647632969758 10 20 30
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu health 605394647632969758 10 30 40
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu status 605394647632969758 10 40 50
+2022/06/07 20:14:04 active sessions: 
+2022/06/07 20:14:04 {UsedComputeUnits:260 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:04 
+2022/06/07 20:14:04 active sessions: 
+2022/06/07 20:14:04 {UsedComputeUnits:210 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:04 
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu health 4037200794235010051 10 20 30
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu status 605394647632969758 10 50 60
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu health 4037200794235010051 10 30 40
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu status 605394647632969758 10 60 70
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu health 605394647632969758 10 70 80
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu status 4037200794235010051 10 40 50
+2022/06/07 20:14:04 server got Relay
+2022/06/07 20:14:04 updateSessionCu health 4037200794235010051 10 50 60
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu status 4037200794235010051 10 60 70
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu health 605394647632969758 10 80 90
+2022/06/07 20:14:05 active sessions: 
+2022/06/07 20:14:05 {UsedComputeUnits:310 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:05 
+2022/06/07 20:14:05 active sessions: 
+2022/06/07 20:14:05 {UsedComputeUnits:250 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:05 
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu status 4037200794235010051 10 70 80
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu health 605394647632969758 10 90 100
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu status 605394647632969758 10 100 110
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu health 605394647632969758 10 110 120
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu status 4037200794235010051 10 80 90
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu health 4037200794235010051 10 90 100
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu status 4037200794235010051 10 100 110
+2022/06/07 20:14:05 server got Relay
+2022/06/07 20:14:05 updateSessionCu health 605394647632969758 10 120 130
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu status 605394647632969758 10 130 140
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu health 4037200794235010051 10 110 120
+2022/06/07 20:14:06 active sessions: 
+2022/06/07 20:14:06 {UsedComputeUnits:360 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:06 
+2022/06/07 20:14:06 active sessions: 
+2022/06/07 20:14:06 {UsedComputeUnits:300 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:06 
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu status 4037200794235010051 10 120 130
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu health 605394647632969758 10 140 150
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu status 4037200794235010051 10 130 140
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu health 4037200794235010051 10 140 150
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu status 4037200794235010051 10 150 160
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu health 605394647632969758 10 150 160
+2022/06/07 20:14:06 server got Relay
+2022/06/07 20:14:06 updateSessionCu status 4037200794235010051 10 160 170
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu health 4037200794235010051 10 170 180
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu status 4037200794235010051 10 180 190
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu health 605394647632969758 10 160 170
+2022/06/07 20:14:07 active sessions: 
+2022/06/07 20:14:07 {UsedComputeUnits:430 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:07 
+2022/06/07 20:14:07 active sessions: 
+2022/06/07 20:14:07 {UsedComputeUnits:330 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:07 
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu status 4037200794235010051 10 190 200
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu health 605394647632969758 10 170 180
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu status 605394647632969758 10 180 190
+2022/06/07 20:14:07 server got Relay
+2022/06/07 20:14:07 updateSessionCu health 4037200794235010051 10 200 210
+2022/06/07 20:14:08 active sessions: 
+2022/06/07 20:14:08 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:08 
+2022/06/07 20:14:08 active sessions: 
+2022/06/07 20:14:08 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:08 
+2022/06/07 20:14:09 active sessions: 
+2022/06/07 20:14:09 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:09 
+2022/06/07 20:14:09 active sessions: 
+2022/06/07 20:14:09 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:09 
+2022/06/07 20:14:10 active sessions: 
+2022/06/07 20:14:10 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:10 
+2022/06/07 20:14:10 active sessions: 
+2022/06/07 20:14:10 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:10 
+2022/06/07 20:14:11 active sessions: 
+2022/06/07 20:14:11 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:11 
+2022/06/07 20:14:11 active sessions: 
+2022/06/07 20:14:11 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:11 
+2022/06/07 20:14:12 active sessions: 
+2022/06/07 20:14:12 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:12 
+2022/06/07 20:14:12 active sessions: 
+2022/06/07 20:14:12 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:12 
+2022/06/07 20:14:13 active sessions: 
+2022/06/07 20:14:13 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:13 
+2022/06/07 20:14:13 active sessions: 
+2022/06/07 20:14:13 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:13 
+2022/06/07 20:14:14 active sessions: 
+2022/06/07 20:14:14 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:14 
+2022/06/07 20:14:14 active sessions: 
+2022/06/07 20:14:14 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:14 
+2022/06/07 20:14:15 active sessions: 
+2022/06/07 20:14:15 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:15 
+2022/06/07 20:14:15 active sessions: 
+2022/06/07 20:14:15 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:15 
+2022/06/07 20:14:16 active sessions: 
+2022/06/07 20:14:16 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:16 
+2022/06/07 20:14:16 active sessions: 
+2022/06/07 20:14:16 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:16 
+New session: Height: 60 
+New session: Height: 60 
+New session: Height: 60 
+New session: Height: 60 
+2022/06/07 20:14:17 active sessions: 
+2022/06/07 20:14:17 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:17 
+New session: Height: 60 
+New session: Height: 60 
+2022/06/07 20:14:17 active sessions: 
+2022/06/07 20:14:17 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:17 
+New session: Height: 60 
+New session: Height: 60 
+New session: Height: 60 
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+2022/06/07 20:14:18 active sessions: 
+2022/06/07 20:14:18 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:18 
+2022/06/07 20:14:18 active sessions: 
+2022/06/07 20:14:18 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:18 
+2022/06/07 20:14:19 active sessions: 
+2022/06/07 20:14:19 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:19 
+2022/06/07 20:14:19 active sessions: 
+2022/06/07 20:14:19 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:19 
+2022/06/07 20:14:20 active sessions: 
+2022/06/07 20:14:20 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:20 
+2022/06/07 20:14:20 active sessions: 
+2022/06/07 20:14:20 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:20 
+2022/06/07 20:14:21 active sessions: 
+2022/06/07 20:14:21 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:21 
+2022/06/07 20:14:21 active sessions: 
+2022/06/07 20:14:21 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:21 
+2022/06/07 20:14:22 active sessions: 
+2022/06/07 20:14:22 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:22 
+2022/06/07 20:14:22 active sessions: 
+2022/06/07 20:14:22 {UsedComputeUnits:350 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc001bb7cb0 4037200794235010051:0xc001764a50 4324745483838182873:0xc0018d26c0]} 
+2022/06/07 20:14:22 
+2022/06/07 20:14:22 asking for rewards cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+2022/06/07 20:14:23 active sessions: 
+2022/06/07 20:14:23 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:23 
+
+Received relay payment of 4stake for CU: 40
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {40 66 4stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+
+Received relay payment of 12stake for CU: 120
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {120 66 12stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+
+Received relay payment of 19stake for CU: 190
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {190 66 19stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+
+Received relay payment of 4stake for CU: 40
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {40 66 4stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+
+Received relay payment of 12stake for CU: 120
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {120 66 12stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+
+Received relay payment of 19stake for CU: 190
+ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment
+ last Received: {190 66 19stake D04779AFD5667824E69B1CAB3721DFDAD9248A84}
+ Expected: []
+----------SUCCESS-----------
+transaction results: code: 0
+codespace: ""
+data: 0A270A252F6C6176616E65742E6C6176612E70616972696E672E4D736752656C61795061796D656E74
+events:
+- attributes:
+  - index: true
+    key: ZmVl
+    value: ""
+  type: tx
+- attributes:
+  - index: true
+    key: YWNjX3NlcQ==
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4LzI=
+  type: tx
+- attributes:
+  - index: true
+    key: c2lnbmF0dXJl
+    value: cVkrT09aVitWYldHcG55UXN0NTZsVmoxS1daT3Q0QVh0VVRPeUc1MHM3QW1zZ05xbkZNdjk2eXVMZHRaSS9TTlRSbVBQZW1UVmZSUWQzVTczVHc5Q3c9PQ==
+  type: tx
+- attributes:
+  - index: true
+    key: YWN0aW9u
+    value: cmVsYXlfcGF5bWVudA==
+  type: message
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: NHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: bWludGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: NHN0YWtl
+  type: coinbase
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: NHN0YWtl
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: YW1vdW50
+    value: NHN0YWtl
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: NHN0YWtl
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  type: message
+- attributes:
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMTZwcmhudDc0dmV1emZlNW1yajRud2d3bG10dmpmejV5ZHdoamE0
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: Q1U=
+    value: NDA=
+  - index: true
+    key: TWludA==
+    value: NHN0YWtl
+  - index: true
+    key: dG90YWxDVUluRXBvY2g=
+    value: NDA=
+  - index: true
+    key: aXNPdmVybGFw
+    value: ZmFsc2U=
+  - index: true
+    key: Y2xpZW50RmVl
+    value: MnN0YWtl
+  - index: true
+    key: Y2hhaW5JRA==
+    value: Q09TMw==
+  type: lava_relay_payment
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTJzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: bWludGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTJzdGFrZQ==
+  type: coinbase
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTJzdGFrZQ==
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: YW1vdW50
+    value: MTJzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTJzdGFrZQ==
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  type: message
+- attributes:
+  - index: true
+    key: Y2hhaW5JRA==
+    value: Q09TMw==
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMTZwcmhudDc0dmV1emZlNW1yajRud2d3bG10dmpmejV5ZHdoamE0
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: Q1U=
+    value: MTIw
+  - index: true
+    key: TWludA==
+    value: MTJzdGFrZQ==
+  - index: true
+    key: dG90YWxDVUluRXBvY2g=
+    value: MTIw
+  - index: true
+    key: aXNPdmVybGFw
+    value: ZmFsc2U=
+  - index: true
+    key: Y2xpZW50RmVl
+    value: NnN0YWtl
+  type: lava_relay_payment
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTlzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: bWludGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTlzdGFrZQ==
+  type: coinbase
+- attributes:
+  - index: true
+    key: c3BlbmRlcg==
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTlzdGFrZQ==
+  type: coin_spent
+- attributes:
+  - index: true
+    key: cmVjZWl2ZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: YW1vdW50
+    value: MTlzdGFrZQ==
+  type: coin_received
+- attributes:
+  - index: true
+    key: cmVjaXBpZW50
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  - index: true
+    key: YW1vdW50
+    value: MTlzdGFrZQ==
+  type: transfer
+- attributes:
+  - index: true
+    key: c2VuZGVy
+    value: Y29zbW9zMWw4NnU3dWx4cXc5ZXpzdnRwdXlzbGtoZW11MGY1c3h1NzkzZGt6
+  type: message
+- attributes:
+  - index: true
+    key: Y2xpZW50
+    value: Y29zbW9zMTZwcmhudDc0dmV1emZlNW1yajRud2d3bG10dmpmejV5ZHdoamE0
+  - index: true
+    key: cHJvdmlkZXI=
+    value: Y29zbW9zMTJxcjZtNGxnenJlZ2p0dDVycGg1dmc3ajh3dzk0MHBsMzc1azc4
+  - index: true
+    key: Q1U=
+    value: MTkw
+  - index: true
+    key: TWludA==
+    value: MTlzdGFrZQ==
+  - index: true
+    key: dG90YWxDVUluRXBvY2g=
+    value: MzEw
+  - index: true
+    key: aXNPdmVybGFw
+    value: ZmFsc2U=
+  - index: true
+    key: Y2xpZW50RmVl
+    value: OXN0YWtl
+  - index: true
+    key: Y2hhaW5JRA==
+    value: Q09TMw==
+  type: lava_relay_payment
+gas_used: "570452"
+gas_wanted: "1000000"
+height: "66"
+info: ""
+logs:
+- events:
+  - attributes:
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 4stake
+    - key: receiver
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: amount
+      value: 4stake
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 12stake
+    - key: receiver
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: amount
+      value: 12stake
+    - key: receiver
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 19stake
+    - key: receiver
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: amount
+      value: 19stake
+    type: coin_received
+  - attributes:
+    - key: spender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 4stake
+    - key: spender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 12stake
+    - key: spender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 19stake
+    type: coin_spent
+  - attributes:
+    - key: minter
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 4stake
+    - key: minter
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 12stake
+    - key: minter
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 19stake
+    type: coinbase
+  - attributes:
+    - key: client
+      value: cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4
+    - key: provider
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: CU
+      value: "40"
+    - key: Mint
+      value: 4stake
+    - key: totalCUInEpoch
+      value: "40"
+    - key: isOverlap
+      value: "false"
+    - key: clientFee
+      value: 2stake
+    - key: chainID
+      value: COS3
+    - key: chainID
+      value: COS3
+    - key: client
+      value: cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4
+    - key: provider
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: CU
+      value: "120"
+    - key: Mint
+      value: 12stake
+    - key: totalCUInEpoch
+      value: "120"
+    - key: isOverlap
+      value: "false"
+    - key: clientFee
+      value: 6stake
+    - key: client
+      value: cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4
+    - key: provider
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: CU
+      value: "190"
+    - key: Mint
+      value: 19stake
+    - key: totalCUInEpoch
+      value: "310"
+    - key: isOverlap
+      value: "false"
+    - key: clientFee
+      value: 9stake
+    - key: chainID
+      value: COS3
+    type: lava_relay_payment
+  - attributes:
+    - key: action
+      value: relay_payment
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    type: message
+  - attributes:
+    - key: recipient
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 4stake
+    - key: recipient
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 12stake
+    - key: recipient
+      value: cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78
+    - key: sender
+      value: cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz
+    - key: amount
+      value: 19stake
+    type: transfer
+  log: ""
+  msg_index: 0
+raw_log: '[{"events":[{"type":"coin_received","attributes":[{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"4stake"},{"key":"receiver","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"amount","value":"4stake"},{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"12stake"},{"key":"receiver","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"amount","value":"12stake"},{"key":"receiver","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"19stake"},{"key":"receiver","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"amount","value":"19stake"}]},{"type":"coin_spent","attributes":[{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"4stake"},{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"12stake"},{"key":"spender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"19stake"}]},{"type":"coinbase","attributes":[{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"4stake"},{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"12stake"},{"key":"minter","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"19stake"}]},{"type":"lava_relay_payment","attributes":[{"key":"client","value":"cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4"},{"key":"provider","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"CU","value":"40"},{"key":"Mint","value":"4stake"},{"key":"totalCUInEpoch","value":"40"},{"key":"isOverlap","value":"false"},{"key":"clientFee","value":"2stake"},{"key":"chainID","value":"COS3"},{"key":"chainID","value":"COS3"},{"key":"client","value":"cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4"},{"key":"provider","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"CU","value":"120"},{"key":"Mint","value":"12stake"},{"key":"totalCUInEpoch","value":"120"},{"key":"isOverlap","value":"false"},{"key":"clientFee","value":"6stake"},{"key":"client","value":"cosmos16prhnt74veuzfe5mrj4nwgwlmtvjfz5ydwhja4"},{"key":"provider","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"CU","value":"190"},{"key":"Mint","value":"19stake"},{"key":"totalCUInEpoch","value":"310"},{"key":"isOverlap","value":"false"},{"key":"clientFee","value":"9stake"},{"key":"chainID","value":"COS3"}]},{"type":"message","attributes":[{"key":"action","value":"relay_payment"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"}]},{"type":"transfer","attributes":[{"key":"recipient","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"4stake"},{"key":"recipient","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"12stake"},{"key":"recipient","value":"cosmos12qr6m4lgzregjtt5rph5vg7j8ww940pl375k78"},{"key":"sender","value":"cosmos1l86u7ulxqw9ezsvtpuyslkhemu0f5sxu793dkz"},{"key":"amount","value":"19stake"}]}]}]'
+timestamp: ""
+tx: null
+txhash: B963649FFB641A9AAE5FCF33FFD5136EDC6D336F5DA25016B473D5A24EF0C62F
+
+-----------SUCCESS-------------
+
+Received relay payment of 4stake for CU: 40
+SUCCESS: payment received as expected
+
+Received relay payment of 12stake for CU: 120
+SUCCESS: payment received as expected
+
+Received relay payment of 19stake for CU: 190
+SUCCESS: payment received as expected
+2022/06/07 20:14:24 active sessions: 
+2022/06/07 20:14:24 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:24 
+2022/06/07 20:14:25 active sessions: 
+2022/06/07 20:14:25 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:25 
+2022/06/07 20:14:26 active sessions: 
+2022/06/07 20:14:26 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:26 
+2022/06/07 20:14:27 active sessions: 
+2022/06/07 20:14:27 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:27 
+2022/06/07 20:14:28 active sessions: 
+2022/06/07 20:14:28 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:28 
+2022/06/07 20:14:29 active sessions: 
+2022/06/07 20:14:29 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:29 
+2022/06/07 20:14:30 active sessions: 
+2022/06/07 20:14:30 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:30 
+2022/06/07 20:14:31 active sessions: 
+2022/06/07 20:14:31 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:31 
+2022/06/07 20:14:32 active sessions: 
+2022/06/07 20:14:32 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:32 
+2022/06/07 20:14:33 active sessions: 
+2022/06/07 20:14:33 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:33 
+2022/06/07 20:14:34 active sessions: 
+2022/06/07 20:14:34 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:34 
+2022/06/07 20:14:35 active sessions: 
+2022/06/07 20:14:35 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:35 
+2022/06/07 20:14:36 active sessions: 
+2022/06/07 20:14:36 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:36 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+New session: Height: 80 
+2022/06/07 20:14:37 active sessions: 
+2022/06/07 20:14:37 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:37 
+New session: Height: 80 
+total CU serviced: 0, total CU paid: 350
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 350, total CU paid: 350
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 350
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+2022/06/07 20:14:38 active sessions: 
+2022/06/07 20:14:38 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:38 
+2022/06/07 20:14:39 active sessions: 
+2022/06/07 20:14:39 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:39 
+2022/06/07 20:14:40 active sessions: 
+2022/06/07 20:14:40 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:40 
+2022/06/07 20:14:41 active sessions: 
+2022/06/07 20:14:41 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:41 
+2022/06/07 20:14:42 active sessions: 
+2022/06/07 20:14:42 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:42 
+2022/06/07 20:14:43 active sessions: 
+2022/06/07 20:14:43 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:43 
+2022/06/07 20:14:44 active sessions: 
+2022/06/07 20:14:44 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:44 
+2022/06/07 20:14:45 active sessions: 
+2022/06/07 20:14:45 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:45 
+2022/06/07 20:14:46 active sessions: 
+2022/06/07 20:14:46 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:46 
+2022/06/07 20:14:47 active sessions: 
+2022/06/07 20:14:47 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:47 
+2022/06/07 20:14:48 active sessions: 
+2022/06/07 20:14:48 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:48 
+2022/06/07 20:14:49 active sessions: 
+2022/06/07 20:14:49 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:49 
+2022/06/07 20:14:50 active sessions: 
+2022/06/07 20:14:50 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:50 
+2022/06/07 20:14:51 active sessions: 
+2022/06/07 20:14:51 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:51 
+2022/06/07 20:14:53 active sessions: 
+2022/06/07 20:14:53 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:53 
+2022/06/07 20:14:54 active sessions: 
+2022/06/07 20:14:54 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:54 
+2022/06/07 20:14:55 active sessions: 
+2022/06/07 20:14:55 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:55 
+2022/06/07 20:14:56 active sessions: 
+2022/06/07 20:14:56 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:56 
+2022/06/07 20:14:57 active sessions: 
+2022/06/07 20:14:57 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:57 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+New session: Height: 100 
+2022/06/07 20:14:58 active sessions: 
+2022/06/07 20:14:58 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:58 
+New session: Height: 100 
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 350
+total CU serviced: 0, total CU paid: 350
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 350, total CU paid: 350
+total CU serviced: 0, total CU paid: 0
+total CU serviced: 0, total CU paid: 0
+2022/06/07 20:14:59 active sessions: 
+2022/06/07 20:14:59 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:14:59 
+2022/06/07 20:15:00 active sessions: 
+2022/06/07 20:15:00 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:00 
+2022/06/07 20:15:01 active sessions: 
+2022/06/07 20:15:01 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:01 
+2022/06/07 20:15:02 active sessions: 
+2022/06/07 20:15:02 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:02 
+2022/06/07 20:15:03 active sessions: 
+2022/06/07 20:15:03 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:03 
+2022/06/07 20:15:04 active sessions: 
+2022/06/07 20:15:04 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:04 
+2022/06/07 20:15:05 active sessions: 
+2022/06/07 20:15:05 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:05 
+2022/06/07 20:15:06 active sessions: 
+2022/06/07 20:15:06 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:06 
+2022/06/07 20:15:07 active sessions: 
+2022/06/07 20:15:07 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:07 
+2022/06/07 20:15:08 active sessions: 
+2022/06/07 20:15:08 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:08 
+2022/06/07 20:15:09 active sessions: 
+2022/06/07 20:15:09 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:09 
+2022/06/07 20:15:10 active sessions: 
+2022/06/07 20:15:10 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:10 
+2022/06/07 20:15:11 active sessions: 
+2022/06/07 20:15:11 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:11 
+2022/06/07 20:15:12 active sessions: 
+2022/06/07 20:15:12 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:12 
+2022/06/07 20:15:13 active sessions: 
+2022/06/07 20:15:13 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:13 
+2022/06/07 20:15:14 active sessions: 
+2022/06/07 20:15:14 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:14 
+2022/06/07 20:15:15 active sessions: 
+2022/06/07 20:15:15 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:15 
+2022/06/07 20:15:16 active sessions: 
+2022/06/07 20:15:16 {UsedComputeUnits:450 MaxComputeUnits:250000 Sessions:map[605394647632969758:0xc0017996b0 2703387474910584091:0xc000648450 4037200794235010051:0xc00173a9f0]} 
+2022/06/07 20:15:16 
+signal: terminated
+signal: terminated
+signal: terminated
 signal: terminated
 signal: terminated
 signal: terminated
