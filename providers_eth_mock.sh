@@ -4,16 +4,16 @@ echo "---------------Setup Providers------------------"
 #Eth providers
 echo " ::: STARTING ETH PROVIDERS :::"
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2200 ETH1 jsonrpc --from servicer1 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer1 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer2 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer3 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer4 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5 
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer1 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer2 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer3 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer4 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5 
 
 # Terra providers 
 # screen -S providers -X screen -t win3 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/lcd/ COS1 rest --from servicer1"
