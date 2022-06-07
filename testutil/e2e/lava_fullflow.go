@@ -280,8 +280,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		clientOsmosis := LogProcess(CMD{
 			stateID:      "clientOsmo",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2",
-			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 1 :::\"",
+			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
 			results:      &results,
@@ -289,12 +289,13 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		sleep(15, failed)
+		// sleep(15, failed)
+		await(clientOsmosis, "osmosis client1 finished", osmosis_finished, "awating for osmosis1 to finish to proceed...")
 		clientOsmosis2 := LogProcess(CMD{
 			stateID:      "clientOsmo2",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2",
-			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 2 :::\"",
+			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
 			results:      &results,
@@ -304,7 +305,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			debug:        true}, t, &states)
 		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
 		// TODO: check relay payment is COS3
-		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed..."+clientOsmosis.id+","+clientOsmosis2.id)
+		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed... "+clientOsmosis2.id)
 		println(" ::: GOT OSMOSIS PAYMENT !!!")
 	}
 	run_providers_eth := true
