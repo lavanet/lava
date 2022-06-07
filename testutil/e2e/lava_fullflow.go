@@ -186,24 +186,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// go readFile(logPath, state, filter, t)
 	}
 
-	run_providers_eth := true
-	if run_providers_eth {
-		println(" ::: Starting Providers Processes [ETH] ::: ")
-		prov_eth := LogProcess(CMD{
-			stateID:      "providers_eth",
-			homepath:     homepath,
-			cmd:          "./providers_eth.sh",
-			filter:       []string{"updated", "server", "error"},
-			testing:      true,
-			test:         providersTest,
-			results:      &results,
-			dep:          &node,
-			failed:       failed,
-			requireAlive: false,
-			debug:        true}, t, &states)
-		println(" ::: Providers Processes Started ::: ")
-		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
-	}
 	run_providers_osmosis := true
 	if run_providers_osmosis {
 		println(" ::: Starting Providers Processes [Osmosis] ::: ")
@@ -307,7 +289,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		sleep(7, failed)
+		sleep(15, failed)
 		clientOsmosis2 := LogProcess(CMD{
 			stateID:      "clientOsmo2",
 			homepath:     homepath,
@@ -324,6 +306,24 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// TODO: check relay payment is COS3
 		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed..."+clientOsmosis.id+","+clientOsmosis2.id)
 		println(" ::: GOT OSMOSIS PAYMENT !!!")
+	}
+	run_providers_eth := true
+	if run_providers_eth {
+		println(" ::: Starting Providers Processes [ETH] ::: ")
+		prov_eth := LogProcess(CMD{
+			stateID:      "providers_eth",
+			homepath:     homepath,
+			cmd:          "./providers_eth.sh",
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		println(" ::: Providers Processes Started ::: ")
+		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
 	}
 	run_client_eth := true
 	if run_client_eth {
