@@ -2,13 +2,21 @@
 echo "---------------Setup Providers------------------"
 # killall screen
 #Eth providers
+# echo " ::: STARTING PROXY SERVERS :::"
+# killall proxy
+# go run ./testutil/e2e/proxy/. 2001 mainnet.infura.io &
+# go run ./testutil/e2e/proxy/. 2002 mainnet.infura.io &
+# go run ./testutil/e2e/proxy/. 2003 mainnet.infura.io &
+# go run ./testutil/e2e/proxy/. 2004 mainnet.infura.io &
+# go run ./testutil/e2e/proxy/. 2005 mainnet.infura.io &
+
 echo " ::: STARTING ETH PROVIDERS :::"
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2200 ETH1 jsonrpc --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer3 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer4 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:2000/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 http://0.0.0.0:2001/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer1 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 http://0.0.0.0:2002/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer2 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 http://0.0.0.0:2003/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer3 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 http://0.0.0.0:2004/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer4 &
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:2005/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3 &

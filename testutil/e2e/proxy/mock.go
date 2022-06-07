@@ -7,8 +7,6 @@ import (
 	"os"
 )
 
-var mockFile string = "testutil/e2e/proxy/mockMaps/mock.json"
-
 type mockMap struct {
 	requests map[string]string //`json:"requests"`
 }
@@ -30,7 +28,7 @@ func mapToJsonFile(mMap mockMap, outfile string) error {
 	jsonFile.Close()
 
 	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-	fmt.Println("    JSON data written to ", jsonFile.Name(), " with "+fmt.Sprintf("%d", len(mock.requests))+" entries")
+	fmt.Println("    JSON data written to ", jsonFile.Name(), " with "+fmt.Sprintf("%d", len(mMap.requests))+" entries")
 	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
 	println()
 
