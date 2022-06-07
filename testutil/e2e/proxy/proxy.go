@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var hostURL string = "mainnet.infura.io"
-
 var mockFolder string = "testutil/e2e/proxy/mockMaps/"
 
 var responsesChanged bool = false
@@ -128,9 +126,22 @@ func startEpochUpdate() {
 	}()
 }
 
+func fakeResult(val string, fake string) string {
+	parts := strings.Split(val, ",")
+	found := -1
+	for i, part := range parts {
+		if strings.Contains(part, "result") {
+			found = i
+		}
+	}
+	if found != -1 {
+		parts[found] = fmt.Sprintf("\"result\":\"%s\"}", fake)
+	}
+	return strings.Join(parts, ",")
+}
 func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
-	// All incoming requests will be sent to this host
-	host := hostURL
+
+	host := p.host
 	mock := p.mock
 	// Get request body
 	rawBody := getDataFromIORead(&req.Body, true)
@@ -151,7 +162,8 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 			// Change Response
 			if fakeResponse {
-				val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
+				val = fakeResult(val, "0xe000000000000000000")
+				// val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
 				println(p.port+" ::: Fake Response ::: ", val)
 				fakeCount += 1
 			}
@@ -163,58 +175,77 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			proxyRequest, err := createProxyRequest(req, host)
 			if err != nil {
 				println(err.Error())
-			}
-
-			// Send Request to Host & Get Response
-			proxyRes, err := sendRequest(proxyRequest)
-			if err != nil {
-				println(err.Error())
-			}
-			respBody := getDataFromIORead(&proxyRes.Body, true)
-			mock.requests[string(rawBody)] = string(respBody)
-			realCount += 1
-			println(p.port+" ::: Real Response ::: ", string(respBody))
-
-			// Check if response is not good, if not - try again
-			if strings.Contains(string(respBody), "error") {
-				println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
-
-				// Recreating Request
-				proxyRequest, err = createProxyRequest(req, host)
-				if err != nil {
-					println(err.Error())
-				}
+			} else {
 
 				// Send Request to Host & Get Response
-				proxyRes, err = sendRequest(proxyRequest)
+				proxyRes, err := sendRequest(proxyRequest)
+				// respBody := []byte("error")
+				var respBody []byte
+				respBodyStr := "xxxxxx"
+				status := 400
 				if err != nil {
 					println(err.Error())
-				}
-				respBody = getDataFromIORead(&proxyRes.Body, true)
-				mock.requests[string(rawBody)] = string(respBody)
-				realCount += 1
-				println(p.port+" ::: Real Response ::: ", string(respBody))
-
-				// TODO: Check if response is good, if not - try again
-				if strings.Contains(string(respBody), "error") {
-					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got another error in response ")
-					println()
+					respBody = []byte(err.Error())
 				} else {
-					println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY SUCCESS - no error in response ")
-					println()
+					status = proxyRes.StatusCode
+					respBody = getDataFromIORead(&proxyRes.Body, true)
+					respBodyStr = string(respBody)
+					mock.requests[string(rawBody)] = respBodyStr
+					realCount += 1
+					println(p.port+" ::: Real Response ::: ", respBodyStr)
 				}
-			}
 
-			// Change Response
-			if fakeResponse {
-				respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-				println(p.port+" ::: Fake Response ::: ", string(respBody))
-				fakeCount += 1
-			}
-			responsesChanged = true
+				// Check if response is not good, if not - try again
+				if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
+					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
 
-			//Return Response
-			returnResponse(rw, proxyRes.StatusCode, respBody)
+					// Recreating Request
+					proxyRequest, err = createProxyRequest(req, host)
+					if err != nil {
+						println(err.Error())
+						respBody = []byte(err.Error())
+					} else {
+
+						// Send Request to Host & Get Response
+						proxyRes, err = sendRequest(proxyRequest)
+						if err != nil {
+							println(err.Error())
+							respBody = []byte(err.Error())
+						} else {
+							respBody = getDataFromIORead(&proxyRes.Body, true)
+							mock.requests[string(rawBody)] = string(respBody)
+							status = proxyRes.StatusCode
+						}
+						realCount += 1
+						println(p.port+" ::: Real Response ::: ", string(respBody))
+
+						// TODO: Check if response is good, if not - try again
+						if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
+							println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got another error in response ")
+							println()
+						} else {
+							println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY SUCCESS - no error in response ")
+							println()
+						}
+					}
+
+				}
+
+				// Change Response
+				if fakeResponse {
+					// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
+					respBody = []byte(fakeResult(respBodyStr, "0xe000000000000000000"))
+					println(p.port+" ::: Fake Response ::: ", string(respBody))
+					fakeCount += 1
+				}
+				responsesChanged = true
+
+				//Return Response
+				if respBody == nil {
+					respBody = []byte("error")
+				}
+				returnResponse(rw, status, respBody)
+			}
 		}
 	}
 	println("_________________________________", realCount, "/", cacheCount, "\n")
