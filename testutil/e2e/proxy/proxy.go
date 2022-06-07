@@ -20,10 +20,13 @@ type mockMap struct {
 
 var blockCount int
 var mockFile string
+var hostURL string
 
 func main() {
 	blockCount = 0
 	mockFile = "testutil/e2e/proxy/mock.json"
+	hostURL = "mainnet.infura.io"
+
 	go func() {
 		for true {
 			time.Sleep(1 * time.Second)
@@ -106,78 +109,87 @@ func jsonFileToMap(jsonfile string) (m map[string]string) {
 // }
 
 func getMockBlockNumber() (block string) {
+	return "0xe" + fmt.Sprintf("%d", blockCount)
+	return "0xe39ab8"
 	return "0xe39ab8"
 }
 
 func handler5(rw http.ResponseWriter, req *http.Request) {
 	url := req.URL
-	url.Host = fmt.Sprintf("mainnet.infura.io")
+	url.Host = hostURL
 	// responses = jsonFileToMap("mock.json")
 
+	fromCache := true
+	fakeResponse := false
+	saveCache := true
 	// r := io.Reader(req.Body)
 	// var buf bytes.Buffer
 	// tee := io.TeeReader(r, &buf)
 	rawBody, _ := ioutil.ReadAll(req.Body)
-	println("RRRRRRRRRRRRRR", string(rawBody))
-	if strings.Contains(string(rawBody), "blockNumber") {
-		print("!!!!!!!!!!!!!! block number")
+	println(" ::: INCOMING PROXY MSG :::", string(rawBody))
+	if fakeResponse && strings.Contains(string(rawBody), "blockNumber") {
+		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
 		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
 
-	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
-
-	if val, ok := responses[string(rawBody)]; ok {
-		println(" ::::::::::: FROM CACHE ::::::::::::: ")
-		rw.WriteHeader(200)
-		rw.Write([]byte(val))
 	} else {
-		println(" ::::::::::: FROM REAL ::::::::::::: ")
-	}
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
 
-	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
-	// proxyReq, err := http.NewRequest(req.Method, url.String(), tee)
-
-	if err != nil {
-		println("XXXXXX ERR 1", err.Error(), url.Host)
-	}
-
-	proxyReq.Header.Set("Host", req.Host)
-	proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
-	// proxyReq.RequestURI = "v3/3755a1321ab24f938589412403c46455"
-	proxyReq.URL.Scheme = "https"
-	for header, values := range req.Header {
-		for _, value := range values {
-			// println("!!!!!!!!!!!!!! ", header, value)
-			proxyReq.Header.Add(header, value)
+		if val, ok := responses[string(rawBody)]; ok && fromCache {
+			println(" ::::::::::: FROM CACHE ::::::::::::: ")
+			rw.WriteHeader(200)
+			rw.Write([]byte(val))
+		} else if fromCache {
+			println(" ::::::::::: FROM REAL ::::::::::::: ")
 		}
+
+		proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
+		// proxyReq, err := http.NewRequest(req.Method, url.String(), tee)
+
+		if err != nil {
+			println("XXXXXX ERR 1", err.Error(), url.Host)
+		}
+
+		proxyReq.Header.Set("Host", req.Host)
+		proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
+		// proxyReq.RequestURI = "v3/3755a1321ab24f938589412403c46455"
+		proxyReq.URL.Scheme = "https"
+		for header, values := range req.Header {
+			for _, value := range values {
+				// println("!!!!!!!!!!!!!! ", header, value)
+				proxyReq.Header.Add(header, value)
+			}
+		}
+
+		client := &http.Client{}
+		proxyRes, err := client.Do(proxyReq)
+		if err != nil {
+			println("XXXXXX ERR 2", err.Error())
+		}
+		// reqBod, err := ioutil.ReadAll(req.Body)
+		// println("RRRRRRRR", string(reqBod))
+
+		respBody, _ := ioutil.ReadAll(proxyRes.Body)
+
+		// if req != nil && req.Body != nil {
+		// 	reqBody, _ := ioutil.ReadAll(req.Body)
+		// 	println("RRRRRRRRRR ::: [", string(reqBody), "]")
+		// }
+
+		println("Real Response ::: ", string(respBody))
+		if fakeResponse {
+			respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
+			println("Fake Response ::: ", string(respBody))
+		}
+
+		responses[string(rawBody)] = string(respBody)
+		// mapToJsonFile(responses, "./mock.json")
+		if saveCache {
+			mapToJsonFile(responses, "./"+mockFile)
+		}
+		rw.WriteHeader(proxyRes.StatusCode)
+		rw.Write(respBody)
 	}
-
-	client := &http.Client{}
-	proxyRes, err := client.Do(proxyReq)
-	if err != nil {
-		println("XXXXXX ERR 2", err.Error())
-	}
-	// reqBod, err := ioutil.ReadAll(req.Body)
-	// println("RRRRRRRR", string(reqBod))
-
-	respBody, _ := ioutil.ReadAll(proxyRes.Body)
-
-	// if req != nil && req.Body != nil {
-	// 	reqBody, _ := ioutil.ReadAll(req.Body)
-	// 	println("RRRRRRRRRR ::: [", string(reqBody), "]")
-	// }
-
-	println("Real Response ::: ", string(respBody))
-	// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-	// println("Fake Response ::: ", string(respBody))
-	// Here:
-
-	responses[string(rawBody)] = string(respBody)
-	// mapToJsonFile(responses, "./mock.json")
-	mapToJsonFile(responses, "./"+mockFile)
-	rw.WriteHeader(proxyRes.StatusCode)
-	rw.Write(respBody)
 
 }
 
