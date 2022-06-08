@@ -53,7 +53,7 @@ func SendRelay(
 		return nil, err
 	}
 	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
-
+	requestedBlock := int64(0)
 	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
@@ -80,16 +80,14 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.Sig = sig
-
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err
 		}
-
 		//update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(relayRequest, reply)
-
+		requestedBlock = relayRequest.RequestBlock
 		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 		if err != nil {
 			return nil, nil, err
@@ -119,7 +117,7 @@ func SendRelay(
 			CuSum:           clientSession.CuSum,
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
-			RequestBlock:    nodeMsg.RequestedBlock(),
+			RequestBlock:    requestedBlock,
 			DataReliability: dataReliability,
 		}
 
@@ -134,7 +132,6 @@ func SendRelay(
 			return nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
-
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {

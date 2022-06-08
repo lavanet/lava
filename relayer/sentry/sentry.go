@@ -551,7 +551,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 	}
 	//
 	for index, wrap := range s.pairing {
-		if wrap.Addr != address {
+		if wrap.Acc != address {
 			continue
 		}
 		if wrap.Client == nil {
@@ -692,7 +692,6 @@ func (s *Sentry) SendRelay(
 		log.Println("Finalized Block reply err", err)
 		return nil, err
 	}
-
 	// TODO:: compare finalized block hashes with other providers
 	// Save in a struct that keeps finalized hases of each provider
 	// providerAcc can be key in a map that keep reply.LatestBlock and the hashes from reply
@@ -720,12 +719,18 @@ func (s *Sentry) SendRelay(
 	//
 
 	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
-		log.Println("Finalized Block reply received")
+
 		// handle data reliability
 		s.VrfSkMu.Lock()
 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
 		s.VrfSkMu.Unlock()
 		address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
+
+		//Printing VRF Data
+		// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
+		// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
+		// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
+
 		sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
 			if address != "" && address != providerAcc {
 				wrap, index, err := s.specificPairing(ctx, address)
@@ -742,8 +747,8 @@ func (s *Sentry) SendRelay(
 						VrfProof:    vrf_proof,
 						ProviderSig: reply.Sig,
 						AllDataHash: sigs.AllDataHash(reply, request),
-						QueryHash:   nil, //calculated from query body anyway, this field is for the consensus payment provider side
-						Sig:         nil, //calculated in the callback
+						QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will compare
+						Sig:         nil,                                //calculated in cb_send_reliability
 					}
 					clientSession = getClientSessionFromWrap(wrap)
 					relay_rep, err = cb_send_reliability(clientSession, dataReliability)
@@ -752,6 +757,7 @@ func (s *Sentry) SendRelay(
 						s.movePairingEntryToPurge(wrap, index)
 						return nil, err
 					}
+					clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 					return relay_rep, nil
 				}
 			}
@@ -773,6 +779,9 @@ func (s *Sentry) SendRelay(
 			if !ok && check0 && check1 {
 				s.CompareRelaysAndReportConflict(reply0, reply1)
 			}
+			if (ok && check0) || (ok && check1) {
+				log.Printf("---- Reliability verified and Okay! ----\n")
+			}
 		}
 		go checkReliability()
 	}
@@ -789,7 +798,7 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 		//TODO: regard earliest block from spec
 		finalization_criteria := int64(7)
 		if requestedBlock <= latestBlock-finalization_criteria {
-			log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
+			// log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
 			return true
 			// return false
 		}
@@ -798,6 +807,7 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
 	s.pairingMu.Lock()
 	s.pairingPurgeLock.Lock()
 	defer s.pairingMu.Unlock()

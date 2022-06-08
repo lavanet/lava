@@ -23,7 +23,7 @@ func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey) (valid
 	providerSig := request.DataReliability.ProviderSig
 	differentiator := []uint8{0}
 	if request.DataReliability.Differentiator {
-		differentiator[0] = 1
+		differentiator = []uint8{1}
 	}
 	vrf_data := bytes.Join([][]byte{queryHash, providerSig, differentiator}, nil)
 	return vrf_pk.pk.Verify(vrf_data, request.DataReliability.VrfValue, request.DataReliability.VrfProof)
@@ -55,9 +55,9 @@ func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes
 	//vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
 	if differentiator {
-		data = bytes.Join([][]byte{queryHash, response.Sig, []uint8{0}}, nil)
-	} else {
 		data = bytes.Join([][]byte{queryHash, response.Sig, []uint8{1}}, nil)
+	} else {
+		data = bytes.Join([][]byte{queryHash, response.Sig, []uint8{0}}, nil)
 	}
 	return
 }

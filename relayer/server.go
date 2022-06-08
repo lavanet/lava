@@ -317,12 +317,12 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	//validate consumer signing on VRF data
 	pubKey, err := sigs.RecoverPubKeyFromVRFData(*request.DataReliability)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
 	}
 
 	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("AccAddressFromHex consumer: %w", err)
 	}
 	if !signerAccAddress.Equals(consumer) {
 		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), consumer.String())
@@ -331,11 +331,11 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	//validate provider signing on query data
 	pubKey, err = sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("RecoverProviderPubKeyFromVrfDataAndQuery: %w", err)
 	}
 	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("AccAddressFromHex provider: %w", err)
 	}
 	return g_sentry.IsAuthorizedPairing(ctx, signerAccAddress.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }

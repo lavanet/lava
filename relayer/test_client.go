@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"bytes"
 	context "context"
 	"encoding/json"
 	"fmt"
@@ -24,7 +25,7 @@ const (
 	JSONRPC_ETH_TRACE_REPLAY_BLOCK_TRANSACTIONS = `{"jsonrpc":"2.0","method":"trace_replayBlockTransactions","params":["latest", "trace"],"id":1}`
 	JSONRPC_UNSUPPORTED                         = `{"jsonrpc":"2.0","method":"eth_blahblah","params":[],"id":1}`
 	JSONRPC_ETH_NEWFILTER                       = `{"jsonrpc":"2.0","method":"eth_newFilter","params":[{"fromBlock": "0x12345","toBlock": "0x23456"}],"id":73}`
-	JSONRPC_ETH_GETBLOCK_FORMAT                 = `{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["%d", "false"],"id":1}`
+	JSONRPC_ETH_GETBLOCK_FORMAT                 = `{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x", false],"id":1}`
 
 	TERRA_BLOCKS_LATEST_URL_REST  = "/blocks/latest"
 	TERRA_BLOCKS_LATEST_DATA_REST = ``
@@ -35,6 +36,16 @@ const (
 	URIRPC_TERRA_STATUS           = `status?`
 	URIRPC_TERRA_HEALTH           = `health`
 )
+
+func prettyPrintReply(reply types.RelayReply, name string) {
+	reply.Sig = nil // for nicer prints
+	reply.SigBlocks = nil
+	reply.FinalizedBlocksHashes = nil
+	if len(reply.Data) > 200 {
+		reply.Data = bytes.Join([][]byte{reply.Data[:200], []byte("...TooLong...")}, nil) //too long is ugly
+	}
+	log.Printf("reply %s, %s", name, reply.String())
+}
 
 func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey) {
 	fmt.Println("starting Eth Tests")
@@ -48,29 +59,14 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				reply.FinalizedBlocksHashes = nil
-				log.Println("reply JSONRPC_ETH_BLOCKNUMBER", reply)
+				prettyPrintReply(*reply, "JSONRPC_ETH_BLOCKNUMBER")
 				blockNumReply = reply
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE)
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				reply.FinalizedBlocksHashes = nil
-				log.Println("reply JSONRPC_ETH_GETBALANCE", reply)
-			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_NEWFILTER)
-			if err != nil {
-				log.Println(err)
-			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				reply.FinalizedBlocksHashes = nil
-				log.Println("reply JSONRPC_ETH_NEWFILTER", reply)
+				prettyPrintReply(*reply, "JSONRPC_ETH_GETBALANCE")
 			}
 		}
 		time.Sleep(1 * time.Second)
@@ -95,13 +91,16 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				reply.FinalizedBlocksHashes = nil
-				log.Println("reply JSONRPC_ETH_GETBLOCKBYNUMBER", request_data, reply)
-				blockNumReply = reply
+				prettyPrintReply(*reply, "JSONRPC_ETH_GETBLOCKBYNUMBER")
+			}
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_NEWFILTER)
+			if err != nil {
+				log.Println(err)
+			} else {
+				prettyPrintReply(*reply, "JSONRPC_ETH_NEWFILTER")
 			}
 		}
+		time.Sleep(1 * time.Second)
 	}
 
 	//
@@ -110,10 +109,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 	if err != nil {
 		log.Println(err)
 	} else {
-		reply.Sig = nil // for nicer prints
-		reply.SigBlocks = nil
-		reply.FinalizedBlocksHashes = nil
-		log.Println("reply", reply)
+		prettyPrintReply(*reply, "unsupported")
 	}
 }
 
@@ -124,9 +120,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			if err != nil {
 				log.Println("1:" + err.Error())
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
 		}
 	} else if apiInterface == "tendermintrpc" {
@@ -135,33 +129,26 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply JSONRPC_TERRA_STATUS", reply)
+				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
+				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
+				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 				log.Println("reply URIRPC_TERRA_STATUS", reply)
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply URIRPC_TERRA_HEALTH", reply)
+				prettyPrintReply(*reply, "URIRPC_TERRA_HEALTH")
 			}
 		}
 	} else {
@@ -177,17 +164,13 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 			if err != nil {
 				log.Println("1:" + err.Error())
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST)
 			if err != nil {
 				log.Println("1:" + err.Error())
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply TERRA_BLOCKS_LATEST_URL_REST", reply)
+				prettyPrintReply(*reply, "OSMOSIS_NUM_POOLS_URL_REST")
 			}
 		}
 	} else if apiInterface == "tendermintrpc" {
@@ -196,33 +179,25 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply JSONRPC_TERRA_STATUS", reply)
+				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply JSONRPC_TERRA_HEALTH", reply)
+				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply URIRPC_TERRA_STATUS", reply)
+				prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
 			if err != nil {
 				log.Println(err)
 			} else {
-				reply.Sig = nil // for nicer prints
-				reply.SigBlocks = nil
-				log.Println("reply URIRPC_TERRA_HEALTH", reply)
+				prettyPrintReply(*reply, "URIRPC_TERRA_HEALTH")
 			}
 		}
 	} else {

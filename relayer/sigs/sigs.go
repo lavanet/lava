@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
@@ -85,6 +86,7 @@ func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *p
 	queryHash := utils.CalculateQueryHash(*relayReq)
 	data_hash := AllDataHash(relayResponse, relayReq)
 	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
 	return
 }
 
@@ -92,6 +94,7 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest) (dataToSign []b
 	queryHash := utils.CalculateQueryHash(*request)
 	data_hash := request.DataReliability.AllDataHash
 	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
 	return
 }
 
@@ -136,9 +139,8 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("RecoverCompact: %w len:%d", err, len(sig))
 	}
-
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
@@ -147,8 +149,8 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, error) {
 	signature := vrfData.Sig
 	vrfData.Sig = nil
-	msgData := []byte(vrfData.String())
-	pubKey, err := RecoverPubKey(signature, msgData)
+	msgDataHash := HashMsg([]byte(vrfData.String()))
+	pubKey, err := RecoverPubKey(signature, msgDataHash)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +161,7 @@ func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest
 	dataToSign := DataToVerifyProviderSig(request)
 	pubKey, err := RecoverPubKey(request.DataReliability.ProviderSig, dataToSign)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, request.DataReliability)
 	}
 	return pubKey, nil
 }
