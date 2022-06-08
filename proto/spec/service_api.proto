@@ -12,6 +12,7 @@ message ServiceApi {
   uint64 computeUnits = 3; 
   bool enabled = 4; 
   repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
+  SpecCategory category = 6;
 }
 
 message ApiInterface {
@@ -30,3 +31,11 @@ enum PARSER_FUNC{
   PARSE_PARAM_BY_ARG = 1;
   PARSE_PARAM_CANONICAL = 2;
 }
+
+message SpecCategory{
+  bool deterministic = 1;
+  bool local = 2;
+  bool subscription = 3;
+  uint32 stateful = 4;
+}
+

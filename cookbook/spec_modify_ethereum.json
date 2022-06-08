@@ -10,7 +10,8 @@
       "apis": [
           {
               "name": "eth_getBalance",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
@@ -26,7 +27,8 @@
           },
           {
               "name": "eth_codeAt",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
@@ -42,7 +44,8 @@
           },
           {
               "name": "eth_blockNumber",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
@@ -65,7 +68,8 @@
       "apis": [
           {
               "name": "eth_getBalance",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
@@ -81,7 +85,8 @@
           },
           {
               "name": "eth_codeAt",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},
@@ -97,7 +102,8 @@
           },
           {
               "name": "eth_blockNumber",
-              "block_parsing": {
+              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+					"block_parsing": {
 						"parserArg": [""],
 						"parserFunc": "EMPTY"
 					},

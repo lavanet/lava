@@ -15,11 +15,12 @@ type (
 	}
 
 	ApiJSON struct {
-		Name          string             `json:"name" yaml:"name"`
-		ComputeUnits  uint               `json:"compute_units" yaml:"compute_units"`
-		Enabled       bool               `json:"enabled" yaml:"enabled"`
-		ApiInterfaces []ApiInterfaceJSON `json:"apiInterfaces" yaml:"apiInterfaces"`
-		BlockParsing  types.BlockParser  `json:"block_parsing" yaml:"block_parsing"`
+		Name          string              `json:"name" yaml:"name"`
+		ComputeUnits  uint                `json:"compute_units" yaml:"compute_units"`
+		Enabled       bool                `json:"enabled" yaml:"enabled"`
+		ApiInterfaces []ApiInterfaceJSON  `json:"apiInterfaces" yaml:"apiInterfaces"`
+		BlockParsing  types.BlockParser   `json:"block_parsing" yaml:"block_parsing"`
+		Category      *types.SpecCategory `json:"category"`
 	}
 
 	SpecJSON struct {
@@ -50,6 +51,7 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 				Enabled:       api.Enabled,
 				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
 				BlockParsing:  api.BlockParsing,
+				Category:      api.Category,
 			})
 		}
 		ret = append(ret, types.Spec{

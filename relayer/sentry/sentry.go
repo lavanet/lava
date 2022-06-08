@@ -57,6 +57,7 @@ type RelayerClientWrapper struct {
 	Sessions         map[int64]*ClientSession
 	MaxComputeUnits  uint64
 	UsedComputeUnits uint64
+	ReliabilitySent  bool
 }
 
 type PaymentRequest struct {
@@ -187,6 +188,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			Addr:            relevantEndpoints[0].IPPORT,
 			Sessions:        map[int64]*ClientSession{},
 			MaxComputeUnits: maxcu,
+			ReliabilitySent: false,
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
@@ -325,6 +327,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
 		}
 	}
+
 	return nil
 }
 
@@ -542,6 +545,16 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 	return &c, nil
 }
 
+func (s *Sentry) CheckAndMarkReliabilityForThisPairing(wrap *RelayerClientWrapper) (valid bool) {
+	wrap.SessionsLock.Lock()
+	defer wrap.SessionsLock.Unlock()
+	if wrap.ReliabilitySent {
+		return false
+	}
+	wrap.ReliabilitySent = true
+	return true
+}
+
 func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerClientWrapper, int, error) {
 
 	s.pairingMu.RLock()
@@ -605,9 +618,11 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 		return true
 	}
 	//they have different data! report!
-	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s", reply0.Data, reply1.Data))
+	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s\nReporting...", reply0.Data, reply1.Data))
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
-	tx.GenerateOrBroadcastTxCLI(s.ClientCtx, s.cmdFlags, msg)
+	s.ClientCtx.SkipConfirm = true
+	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
 	//report the conflict
 	return false
 }
@@ -643,6 +658,7 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error),
+	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
@@ -663,8 +679,13 @@ func (s *Sentry) SendRelay(
 			}
 		}
 
+		randomSessId := int64(0)
+		for randomSessId == 0 { //we don't allow 0
+			randomSessId = rand.Int63()
+		}
+
 		clientSession := &ClientSession{
-			SessionId: rand.Int63(),
+			SessionId: randomSessId,
 			Client:    wrap,
 		}
 		clientSession.Lock.Lock()
@@ -718,9 +739,9 @@ func (s *Sentry) SendRelay(
 	// if comparefunc returns ok the nadd to datacontainer and continues in the iteration (1)
 	//
 
-	if s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
-
+	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 		// handle data reliability
+
 		s.VrfSkMu.Lock()
 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
 		s.VrfSkMu.Unlock()
@@ -739,29 +760,35 @@ func (s *Sentry) SendRelay(
 					log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
 					return nil, err
 				} else {
-					s.VrfSkMu.Lock()
-					vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
-					s.VrfSkMu.Unlock()
-					dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
-						VrfValue:    vrf_res,
-						VrfProof:    vrf_proof,
-						ProviderSig: reply.Sig,
-						AllDataHash: sigs.AllDataHash(reply, request),
-						QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will compare
-						Sig:         nil,                                //calculated in cb_send_reliability
+					canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
+					if canSendReliability {
+						s.VrfSkMu.Lock()
+						vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
+						s.VrfSkMu.Unlock()
+						dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
+							VrfValue:    vrf_res,
+							VrfProof:    vrf_proof,
+							ProviderSig: reply.Sig,
+							AllDataHash: sigs.AllDataHash(reply, request),
+							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will compare
+							Sig:         nil,                                //calculated in cb_send_reliability
+						}
+						clientSession = getClientSessionFromWrap(wrap)
+						relay_rep, err = cb_send_reliability(clientSession, dataReliability)
+						if err != nil {
+							log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
+							s.movePairingEntryToPurge(wrap, index)
+							return nil, err
+						}
+						clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+						return relay_rep, nil
+					} else {
+						log.Println("Reliability already Sent in this epoch to this provider")
+						return nil, nil
 					}
-					clientSession = getClientSessionFromWrap(wrap)
-					relay_rep, err = cb_send_reliability(clientSession, dataReliability)
-					if err != nil {
-						log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
-						s.movePairingEntryToPurge(wrap, index)
-						return nil, err
-					}
-					clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-					return relay_rep, nil
 				}
 			}
-			return nil, fmt.Errorf("is not a valid reliability VRF result")
+			return nil, fmt.Errorf("is not a valid reliability VRF address result")
 		}
 
 		checkReliability := func() {
@@ -780,7 +807,7 @@ func (s *Sentry) SendRelay(
 				s.CompareRelaysAndReportConflict(reply0, reply1)
 			}
 			if (ok && check0) || (ok && check1) {
-				log.Printf("---- Reliability verified and Okay! ----\n")
+				log.Printf("\n[+] Reliability verified and Okay! ----\n")
 			}
 		}
 		go checkReliability()

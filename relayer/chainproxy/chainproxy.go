@@ -152,7 +152,7 @@ func SendRelay(
 	}
 	//
 	//
-	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability)
+	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 
 	return reply, err
 }
