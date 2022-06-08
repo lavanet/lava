@@ -196,7 +196,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				}
 
 				// Check if response is not good, if not - try again
-				if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
+				if false && (strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error")) {
 					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
 
 					// Recreating Request
