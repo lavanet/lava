@@ -24,10 +24,7 @@ go run relayer/cmd/relayer/main.go server 127.0.0.1 2232 http://DiHj7kLfX6hNhECG
 go run relayer/cmd/relayer/main.go server 127.0.0.1 2233 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ COS3 rest --from servicer3 &
 go run relayer/cmd/relayer/main.go server 127.0.0.1 2241 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 tendermintrpc --from servicer1 &
 go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 tendermintrpc --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 tendermintrpc --from servicer3 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2251 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 jsonrpc --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2252 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 jsonrpc --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2253 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 jsonrpc --from servicer3 
+go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/ COS3 tendermintrpc --from servicer3 
 echo " ::: providers done! :::"
 # screen -d -m -S portals zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 # screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; cd ~/go/lava; go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3334 COS3 rest --from user2"

@@ -1,10 +1,11 @@
 # Lava e2e Tests & Mock Proxy
 ### TL;DR
 ```
-cd $LAVA && go test ./testutil/e2e/ -v      # Runs all Lava e2e Tests - Full Lava Node, Providers, Test_clients
-cd $LAVA && ./initFull.sh                   # Add specs, stakes, Runs all Proxies, Starts all Mock Providers (both eth&osmosis)
-                                                (Everything Excluding Lava & test_clients)
-cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, proxies, mock providers, test_clients
+$ export LAVA=$HOME/go/lava
+$ cd $LAVA && go test ./testutil/e2e/ -v      # Runs all Lava e2e Tests - Full Lava Node, Providers, Test_clients
+$ cd $LAVA && ./initFull.sh                   # Add specs, stakes, Runs all Proxies, Starts all Mock Providers (both eth&osmosis)
+                                                 (Everything Excluding Lava & test_clients)
+$ cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, proxies, mock providers, test_clients
 ``` 
 
 
@@ -88,3 +89,4 @@ tldr
 mock proxy
 - TODO: add -cache -mal [id] arguments
 - TODO: add -strict option ? return ONLY from cache
+- TODO: combined cache + optional alternative file
