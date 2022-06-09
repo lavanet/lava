@@ -140,6 +140,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyServicersToPairCount, &p.ServicersToPairCount, validateServicersToPairCount),
 		paramtypes.NewParamSetPair(KeyEpochBlocksOverlap, &p.EpochBlocksOverlap, validateEpochBlocksOverlap),
 		paramtypes.NewParamSetPair(KeyStakeToMaxCUList, &p.StakeToMaxCUList, validateStakeToMaxCUList),
+		paramtypes.NewParamSetPair(KeyUnpayLimit, &p.UnpayLimit, validateUnpayLimit),
+		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 	}
 }
 
@@ -178,6 +180,14 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateStakeToMaxCUList(p.StakeToMaxCUList); err != nil {
+		return err
+	}
+
+	if err := validateUnpayLimit(p.UnpayLimit); err != nil {
+		return err
+	}
+
+	if err := validateSlashLimit(p.SlashLimit); err != nil {
 		return err
 	}
 
@@ -308,6 +318,34 @@ func validateStakeToMaxCUList(v interface{}) error {
 				return fmt.Errorf("invalid parameter order: %T", v)
 			}
 		}
+	}
+
+	return nil
+}
+
+// validateUnpayLimit validates the UnpayLimit param
+func validateUnpayLimit(v interface{}) error {
+	unpayLimit, ok := v.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	if unpayLimit.GT(sdk.OneDec()) || unpayLimit.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter unpayLimit")
+	}
+
+	return nil
+}
+
+// validateSlashLimit validates the SlashLimit param
+func validateSlashLimit(v interface{}) error {
+	slashLimit, ok := v.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	if slashLimit.GT(sdk.OneDec()) || slashLimit.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter unpayLimit")
 	}
 
 	return nil
