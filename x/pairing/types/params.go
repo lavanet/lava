@@ -77,6 +77,11 @@ var (
 	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) //0.2 = 20%
 )
 
+var (
+	KeyDataReliabilityReward             = []byte("DataReliabilityReward")
+	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -95,6 +100,7 @@ func NewParams(
 	stakeToMaxCUList StakeToMaxCUList,
 	unpayLimit sdk.Dec,
 	slashLimit sdk.Dec,
+	dataReliabilityReward sdk.Dec,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -108,6 +114,7 @@ func NewParams(
 		StakeToMaxCUList:         stakeToMaxCUList,
 		UnpayLimit:               unpayLimit,
 		SlashLimit:               slashLimit,
+		DataReliabilityReward:    dataReliabilityReward,
 	}
 }
 
@@ -125,6 +132,7 @@ func DefaultParams() Params {
 		DefaultStakeToMaxCUList,
 		DefaultUnpayLimit,
 		DefaultSlashLimit,
+		DefaultDataReliabilityReward,
 	)
 }
 
@@ -142,6 +150,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyStakeToMaxCUList, &p.StakeToMaxCUList, validateStakeToMaxCUList),
 		paramtypes.NewParamSetPair(KeyUnpayLimit, &p.UnpayLimit, validateUnpayLimit),
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
+		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
 	}
 }
 
@@ -190,7 +199,9 @@ func (p Params) Validate() error {
 	if err := validateSlashLimit(p.SlashLimit); err != nil {
 		return err
 	}
-
+	if err := validateDataReliabilityReward(p.DataReliabilityReward); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -346,6 +357,20 @@ func validateSlashLimit(v interface{}) error {
 
 	if slashLimit.GT(sdk.OneDec()) || slashLimit.LT(sdk.ZeroDec()) {
 		return fmt.Errorf("invalid parameter unpayLimit")
+	}
+
+	return nil
+}
+
+// validateDataReliabilityReward validates the param
+func validateDataReliabilityReward(v interface{}) error {
+	dataReliabilityReward, ok := v.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	if dataReliabilityReward.GT(sdk.OneDec()) || dataReliabilityReward.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter DataReliabilityReward")
 	}
 
 	return nil

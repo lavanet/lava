@@ -123,6 +123,7 @@ message QueryVerifyPairingRequest {
 message QueryVerifyPairingResponse {
   bool valid = 1;
   bool overlap = 2;
+  int64 index = 3;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {

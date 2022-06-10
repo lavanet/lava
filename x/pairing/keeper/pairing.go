@@ -12,6 +12,8 @@ import (
 	"github.com/tendermint/tendermint/rpc/core"
 )
 
+const INVALID_INDEX = -2
+
 func (k Keeper) verifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, isNew bool, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
 	logger := k.Logger(ctx)
 	//TODO: add support for spec changes
@@ -69,27 +71,28 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, foundIndex int, errorRet error) {
+
 	epochStart, blockInEpoch := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
 	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
 	userStake, err := k.verifyPairingData(ctx, chainID, clientAddress, false, epochStart)
 	if err != nil {
 		//user is not valid for pairing
-		return false, false, nil, fmt.Errorf("invalid user for pairing: %s", err)
+		return false, false, nil, INVALID_INDEX, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
 	providerStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epochStart, epochstoragetypes.ProviderKey, chainID)
 	if !found {
-		return false, false, nil, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", epochStart, chainID)
+		return false, false, nil, INVALID_INDEX, fmt.Errorf("could not get provider epoch stake entries for: %d, %s", epochStart, chainID)
 	}
 
 	_, validAddresses, errorRet := k.calculatePairingForClient(ctx, providerStakeEntries, clientAddress, epochStart, chainID, userStake.Geolocation)
 	if errorRet != nil {
-		return false, false, nil, errorRet
+		return false, false, nil, INVALID_INDEX, errorRet
 	}
-	for _, possibleAddr := range validAddresses {
+	for idx, possibleAddr := range validAddresses {
 		if possibleAddr.Equals(providerAddress) {
-			return true, false, userStake, nil
+			return true, false, userStake, idx, nil
 		}
 	}
 	//Support overlap
@@ -99,20 +102,20 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 		previousEpochBlock := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
 		previousProviderStakeEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, previousEpochBlock, epochstoragetypes.ProviderKey, chainID)
 		if !found {
-			return false, false, nil, fmt.Errorf("could not get previous provider epoch stake entries for: %d previous: %d, %s", block, previousEpochBlock, chainID)
+			return false, false, nil, INVALID_INDEX, fmt.Errorf("could not get previous provider epoch stake entries for: %d previous: %d, %s", block, previousEpochBlock, chainID)
 		}
 		_, validAddressesOverlap, errorRet := k.calculatePairingForClient(ctx, previousProviderStakeEntries, clientAddress, previousEpochBlock, chainID, userStake.Geolocation)
 		if errorRet != nil {
-			return false, false, nil, errorRet
+			return false, false, nil, INVALID_INDEX, errorRet
 		}
 		//check overlap addresses from previous session
-		for _, possibleAddr := range validAddressesOverlap {
+		for idx, possibleAddr := range validAddressesOverlap {
 			if possibleAddr.Equals(providerAddress) {
-				return true, true, userStake, nil
+				return true, true, userStake, idx, nil
 			}
 		}
 	}
-	return false, false, userStake, nil
+	return false, false, userStake, INVALID_INDEX, nil
 }
 
 func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, clientAddress sdk.AccAddress, epochStartBlock uint64, chainID string, geolocation uint64) (validProviders []epochstoragetypes.StakeEntry, addrList []sdk.AccAddress, err error) {

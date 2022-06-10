@@ -32,7 +32,7 @@ func (k Keeper) VerifyPairing(goCtx context.Context, req *types.QueryVerifyPairi
 	if err != nil {
 		return nil, fmt.Errorf("invalid creator address %s error: %s", req.Provider, err)
 	}
-	isValidPairing, isOverlap, _, err := k.ValidatePairingForClient(ctx, req.ChainID, clientAddr, providerAddr, req.Block)
+	isValidPairing, isOverlap, _, index, err := k.ValidatePairingForClient(ctx, req.ChainID, clientAddr, providerAddr, req.Block)
 
-	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, Overlap: isOverlap}, err
+	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, Overlap: isOverlap, Index: int64(index)}, err
 }

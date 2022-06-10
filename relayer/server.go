@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"bytes"
 	gobytes "bytes"
 	context "context"
 	"encoding/json"
@@ -75,6 +76,7 @@ func askForRewards() {
 	}
 
 	relays := []*pairingtypes.RelayRequest{}
+	reliability := false
 	for user, userSessions := range g_sessions {
 		validuser, _ := g_sentry.IsAuthorizedUser(context.Background(), user)
 		if validuser {
@@ -86,9 +88,17 @@ func askForRewards() {
 		// TODO: we can come up with a better locking mechanism
 		for k, sess := range userSessions.Sessions {
 			sess.Lock.Lock()
+			if sess.Proof == nil {
+				continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
+			}
 			relay := sess.Proof
 			relays = append(relays, relay)
 			delete(userSessions.Sessions, k)
+			if userSessions.DataReliability != nil {
+				relay.DataReliability = userSessions.DataReliability
+				userSessions.DataReliability = nil
+				reliability = true
+			}
 			sess.Lock.Unlock()
 			userAccAddr, err := sdk.AccAddressFromBech32(user)
 			if err != nil {
@@ -96,6 +106,7 @@ func askForRewards() {
 			}
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
+
 		}
 		if len(userSessions.Sessions) == 0 {
 			delete(g_sessions, user)
@@ -105,7 +116,11 @@ func askForRewards() {
 		// no rewards to ask for
 		return
 	}
-	log.Println("asking for rewards", g_sentry.Acc)
+	if reliability {
+		log.Println("asking for rewards", g_sentry.Acc, "with reliability")
+	} else {
+		log.Println("asking for rewards", g_sentry.Acc)
+	}
 	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
@@ -259,6 +274,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		if !valid {
 			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
 		}
+		//TODO: verify reliability result corresponds to this provider
+
 		log.Println("server got valid DataReliability request")
 		//will get some rewards for this
 		relaySession.userSessionsParent.DataReliability = request.DataReliability
@@ -314,22 +331,20 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 }
 
 func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Context, consumer sdk.AccAddress, request *pairingtypes.RelayRequest) (valid bool, err error) {
-	//validate consumer signing on VRF data
-	pubKey, err := sigs.RecoverPubKeyFromVRFData(*request.DataReliability)
-	if err != nil {
-		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
+
+	queryHash := utils.CalculateQueryHash(*request)
+	if !bytes.Equal(queryHash, request.DataReliability.QueryHash) {
+		return false, fmt.Errorf("query hash mismatch on data reliability message: %s VS %s", queryHash, request.DataReliability.QueryHash)
 	}
 
-	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	//validate consumer signing on VRF data
+	valid, err = sigs.ValidateSignerOnVRFData(consumer, *request.DataReliability)
 	if err != nil {
-		return false, fmt.Errorf("AccAddressFromHex consumer: %w", err)
-	}
-	if !signerAccAddress.Equals(consumer) {
-		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), consumer.String())
+		return
 	}
 
 	//validate provider signing on query data
-	pubKey, err = sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
+	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
 		return false, fmt.Errorf("RecoverProviderPubKeyFromVrfDataAndQuery: %w", err)
 	}
@@ -337,7 +352,7 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	if err != nil {
 		return false, fmt.Errorf("AccAddressFromHex provider: %w", err)
 	}
-	return g_sentry.IsAuthorizedPairing(ctx, signerAccAddress.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
+	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
 func Server(

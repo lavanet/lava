@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -155,6 +155,34 @@ func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, e
 		return nil, err
 	}
 	return pubKey, nil
+}
+
+func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes.VRFData) (valid bool, err error) {
+	pubKey, err := RecoverPubKeyFromVRFData(dataReliability)
+	if err != nil {
+		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
+	}
+	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //signer
+	if err != nil {
+		return false, fmt.Errorf("AccAddressFromHex : %w", err)
+	}
+	if !signerAccAddress.Equals(signer) {
+		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), signer.String())
+	}
+	return true, nil
+}
+
+func RecoverProviderPubKeyFromVrfDataOnly(dataReliability *pairingtypes.VRFData) (providerAccAddress sdk.AccAddress, err error) {
+	queryHash := dataReliability.QueryHash
+	data_hash := dataReliability.AllDataHash
+	dataToSign := bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
+	pubKey, err := RecoverPubKey(dataReliability.ProviderSig, dataToSign)
+	if err != nil {
+		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, dataReliability)
+	}
+	providerAccAddress, err = sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	return
 }
 
 func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {

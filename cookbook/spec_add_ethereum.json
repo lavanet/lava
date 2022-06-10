@@ -1030,7 +1030,7 @@
         },
         {
           "name": "eth_newFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
+          "category":{"deterministic":false,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["0","toBlock"],
 						"parserFunc": "PARSE_PARAM_CANONICAL"

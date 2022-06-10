@@ -13218,6 +13218,8 @@ paths:
                     type: string
                   slashLimit:
                     type: string
+                  dataReliabilityReward:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -13598,6 +13600,9 @@ paths:
                 type: boolean
               overlap:
                 type: boolean
+              index:
+                type: string
+                format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -21142,6 +21147,8 @@ definitions:
         type: string
       slashLimit:
         type: string
+      dataReliabilityReward:
+        type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
@@ -21492,6 +21499,8 @@ definitions:
             type: string
           slashLimit:
             type: string
+          dataReliabilityReward:
+            type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -21597,6 +21606,9 @@ definitions:
         type: boolean
       overlap:
         type: boolean
+      index:
+        type: string
+        format: int64
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:

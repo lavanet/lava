@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/99designs/keyring"
@@ -18,15 +19,36 @@ const (
 	sk_vrf_prefix = "vrf-sk-"
 )
 
-func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey) (valid bool) {
-	queryHash := CalculateQueryHash(*request)
-	providerSig := request.DataReliability.ProviderSig
+func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint32) (index int64) {
+	vrf_num := binary.LittleEndian.Uint32(vrf)
+	if vrf_num <= reliabilityThreshold {
+		// need to send relay with VRF
+		modulo := uint32(providersCount)
+		index = int64(vrf_num % modulo)
+	} else {
+		index = -1
+	}
+	return
+}
+
+func verifyVRF(queryHash []byte, reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey) (valid bool) {
+	providerSig := reliabilityData.ProviderSig
 	differentiator := []uint8{0}
-	if request.DataReliability.Differentiator {
+	if reliabilityData.Differentiator {
 		differentiator = []uint8{1}
 	}
 	vrf_data := bytes.Join([][]byte{queryHash, providerSig, differentiator}, nil)
-	return vrf_pk.pk.Verify(vrf_data, request.DataReliability.VrfValue, request.DataReliability.VrfProof)
+	return vrf_pk.pk.Verify(vrf_data, reliabilityData.VrfValue, reliabilityData.VrfProof)
+}
+
+func VerifyVrfProofFromVRFData(reliabilityData *pairingtypes.VRFData, vrf_pk VrfPubKey) (valid bool) {
+	queryHash := reliabilityData.QueryHash
+	return verifyVRF(queryHash, reliabilityData, vrf_pk)
+}
+
+func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey) (valid bool) {
+	queryHash := CalculateQueryHash(*request)
+	return verifyVRF(queryHash, request.DataReliability, vrf_pk)
 }
 
 func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey) ([]byte, []byte) {

@@ -3,7 +3,6 @@ package sentry
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -633,20 +632,22 @@ func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (ad
 	s.specMu.RLock()
 	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
 	s.specMu.RUnlock()
-	getAddressForVrf := func(vrf []byte) (address string) {
-		vrf_num := binary.LittleEndian.Uint32(vrf)
-		if vrf_num <= reliabilityThreshold {
-			// need to send relay with VRF
-			s.pairingMu.RLock()
-			modulo := uint32(len(s.pairingAddresses))
-			index := vrf_num % modulo
-			address = s.pairingAddresses[index]
-			s.pairingMu.RUnlock()
+	s.pairingMu.RLock()
+
+	providersCount := uint32(len(s.pairingAddresses))
+	index0 := utils.GetIndexForVrf(vrf0, providersCount, reliabilityThreshold)
+	index1 := utils.GetIndexForVrf(vrf1, providersCount, reliabilityThreshold)
+	parseIndex := func(idx int64) (address string) {
+		if idx == -1 {
+			address = ""
+		} else {
+			address = s.pairingAddresses[idx]
 		}
 		return
 	}
-	address0 = getAddressForVrf(vrf0)
-	address1 = getAddressForVrf(vrf1)
+	address0 = parseIndex(index0)
+	address1 = parseIndex(index1)
+	s.pairingMu.RUnlock()
 	if address0 == address1 {
 		//can't have both with the same provider
 		address1 = ""
@@ -770,7 +771,7 @@ func (s *Sentry) SendRelay(
 							VrfProof:    vrf_proof,
 							ProviderSig: reply.Sig,
 							AllDataHash: sigs.AllDataHash(reply, request),
-							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will compare
+							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 							Sig:         nil,                                //calculated in cb_send_reliability
 						}
 						clientSession = getClientSessionFromWrap(wrap)

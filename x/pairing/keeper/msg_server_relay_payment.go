@@ -29,27 +29,27 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		pubKey, err := sigs.RecoverPubKeyFromRelay(*relay)
 		if err != nil {
-			return errorLogAndFormat("relay_proof_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
+			return errorLogAndFormat("relay_payment_sig", map[string]string{"sig": string(relay.Sig)}, "recover PubKey from relay failed")
 		}
 		clientAddr, err := sdk.AccAddressFromHex(pubKey.Address().String())
 		if err != nil {
-			return errorLogAndFormat("relay_proof_user_addr", map[string]string{"user": pubKey.Address().String()}, "invalid user address in relay msg")
+			return errorLogAndFormat("relay_payment_user_addr", map[string]string{"user": pubKey.Address().String()}, "invalid user address in relay msg")
 		}
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
-			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
+			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg")
 		}
 		if !providerAddr.Equals(creator) {
-			return errorLogAndFormat("relay_proof_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg, creator and signed provider mismatch")
+			return errorLogAndFormat("relay_payment_addr", map[string]string{"provider": relay.Provider, "creator": msg.Creator}, "invalid provider address in relay msg, creator and signed provider mismatch")
 		}
 
 		// TODO: add support for spec changes
 		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
 		if !ok {
-			return errorLogAndFormat("relay_proof_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
+			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, isOverlap, userStake, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, isOverlap, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.ChainID,
 			clientAddr,
@@ -58,12 +58,73 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		)
 		if err != nil {
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
-			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing on proof of relay")
+			return errorLogAndFormat("relay_payment_pairing", details, "invalid pairing on proof of relay")
 		}
 		if !isValidPairing {
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": "pairing result doesn't include provider"}
-			return errorLogAndFormat("relay_proof_pairing", details, "invalid pairing claim on proof of relay")
+			return errorLogAndFormat("relay_payment_pairing", details, "invalid pairing claim on proof of relay")
 		}
+
+		payReliability := false
+		//validate data reliability
+		if relay.DataReliability != nil {
+			//verify user signed this data reliability
+			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
+			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
+			if err != nil || !valid {
+				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
+			}
+			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(relay.DataReliability)
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
+			}
+			if otherProviderAddress.Equals(providerAddr) {
+				//provider signed his own stuff
+				details["error"] = "provider attempted to claim data reliability sent by himself"
+				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
+			}
+			//check this other provider is indeed legitimate
+			isValidPairing, _, _, _, err := k.Keeper.ValidatePairingForClient(
+				ctx,
+				relay.ChainID,
+				clientAddr,
+				otherProviderAddress,
+				uint64(relay.BlockHeight),
+			)
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing error")
+			}
+			if !isValidPairing {
+				details["error"] = "pairing isn't valid"
+				return errorLogAndFormat("relay_data_reliability_other_provider_pairing", details, "invalid signature by other provider on data reliability message, provider pairing mismatch")
+			}
+			vrfPk := &utils.VrfPubKey{}
+			vrfPk, err = vrfPk.DecodeFromBech32(userStake.Vrfpk)
+			//signatures valid, validate VRF signing
+			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk)
+			if !valid {
+				details["error"] = "vrf signing is invalid, proof result mismatch"
+				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
+			}
+			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+			if !found {
+				details["chainID"] = relay.ChainID
+				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
+				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
+			}
+
+			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(k.ServicersToPairCount(ctx)), spec.ReliabilityThreshold)
+			if index != int64(thisProviderIndex) {
+				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
+				details["VRF_index"] = strconv.FormatInt(index, 10)
+				errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
+			}
+			//all checks passed
+			payReliability = true
+		}
+
 		epochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
 		if isOverlap {
 			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
@@ -74,7 +135,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			//double spending on user detected!
 			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(),
 				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
-			return errorLogAndFormat("relay_proof_claim", details, "double spending detected")
+			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 		allowedCU, err := k.GetAllowedCU(ctx, userStake)
 		if err != nil {
@@ -92,7 +153,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"CU":                            strconv.FormatUint(relay.CuSum, 10),
 				"cuToPay":                       strconv.FormatUint(cuToPay, 10),
 				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10)}
-			return errorLogAndFormat("relay_proof_user_limit", details, "user bypassed CU limit")
+			return errorLogAndFormat("relay_payment_user_limit", details, "user bypassed CU limit")
 		}
 		if cuToPay > relay.CuSum {
 			panic("cuToPay should never be higher than relay.CuSum")
@@ -101,34 +162,36 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		//pairing is valid, we can pay provider for work
 		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 		if reward.IsZero() {
 			continue
 		}
-
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "Mint": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String() + "stake", "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 		//first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
-		spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
-		if !found {
-			details["chainID"] = relay.ChainID
-			errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
-			panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
-		}
+
 		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
-		burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
+		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
 		if err2 != nil {
 			details["amountToBurn"] = burnAmount.String()
 			details["error"] = err2.Error()
-			return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user")
+			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user")
 		}
 		if !burnSucceeded {
 			details["amountToBurn"] = burnAmount.String()
 			details["error"] = "insufficient funds or didn't find user"
-			return errorLogAndFormat("relay_proof_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
+			return errorLogAndFormat("relay_payment_burn", details, "BurnUserStake failed on user, did not find user, or insufficient funds")
 		}
 
-		//
+		if payReliability {
+			details["reliability_pay"] = "true"
+			reward = reward.Mul(k.Keeper.DataReliabilityReward(ctx))
+			rewardCoins = sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
+		} else {
+			details["reliability_pay"] = "false"
+			details["Mint"] = details["BasePay"]
+		}
+
 		// Mint to module
 		err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
 		if err != nil {
