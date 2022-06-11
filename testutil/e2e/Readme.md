@@ -1,11 +1,11 @@
 # Lava e2e Tests & Mock Proxy
 ### TL;DR
 ```
-[+]$ export LAVA=$HOME/go/lava
-[+]$ cd $LAVA && go test ./testutil/e2e/ -v      # Runs all Lava e2e Tests - Full Lava Node, Providers, Test_clients
-[+]$ cd $LAVA && ./initFull.sh                   # Add specs, stakes, Runs all Proxies, Starts all Mock Providers (both eth&osmosis)
+$ export LAVA=$HOME/go/lava
+$ cd $LAVA && go test ./testutil/e2e/ -v      # Runs all Lava e2e Tests - Full Lava Node, Providers, Test_clients
+$ cd $LAVA && ./initFull.sh                   # Add specs, stakes, Runs all Proxies, Starts all Mock Providers (both eth&osmosis)
                                                  (Everything Excluding Lava & test_clients)
-[+]$ cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, proxies, mock providers, test_clients
+$ cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, proxies, mock providers, test_clients
 ``` 
 
 
