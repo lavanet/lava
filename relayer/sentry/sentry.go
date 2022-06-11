@@ -743,6 +743,11 @@ func (s *Sentry) SendRelay(
 	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 		// handle data reliability
 
+		isSecure, err := s.cmdFlags.GetBool("secure")
+		if err != nil {
+			log.Println("Error: Could not get flag --secure")
+		}
+
 		s.VrfSkMu.Lock()
 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
 		s.VrfSkMu.Unlock()
@@ -787,6 +792,11 @@ func (s *Sentry) SendRelay(
 						log.Println("Reliability already Sent in this epoch to this provider")
 						return nil, nil
 					}
+				}
+			} else {
+				if isSecure {
+					//send reliability on the client's expense
+					log.Println("secure flag Not Implemented, TODO:")
 				}
 			}
 			return nil, fmt.Errorf("is not a valid reliability VRF address result")

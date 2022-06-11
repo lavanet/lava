@@ -190,7 +190,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		if payReliability {
 			details["reliabilityPay"] = "true"
-			reward = reward.Mul(k.Keeper.DataReliabilityReward(ctx))
+			rewardAddition := reward.Mul(k.Keeper.DataReliabilityReward(ctx))
+			reward = reward.Add(rewardAddition)
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
 			details["Mint"] = rewardCoins.String()
 		} else {

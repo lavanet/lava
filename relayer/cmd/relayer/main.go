@@ -119,11 +119,10 @@ func main() {
 	cmdPortalServer.MarkFlagRequired(flags.FlagFrom)
 	flags.AddTxFlagsToCmd(cmdTestClient)
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
-
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
-
+	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		os.Exit(1)
 	}

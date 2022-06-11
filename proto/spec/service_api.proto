@@ -28,8 +28,10 @@ message BlockParser {
 
 enum PARSER_FUNC{
   EMPTY = 0;
-  PARSE_PARAM_BY_ARG = 1;
-  PARSE_PARAM_CANONICAL = 2;
+  PARSE_PARAM_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index]
+  PARSE_PARAM_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
+  PARSE_PARAM_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
+  PARSE_PARAM_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
 }
 
 message SpecCategory{

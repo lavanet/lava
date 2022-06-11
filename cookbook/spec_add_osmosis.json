@@ -25,8 +25,8 @@
           "name": "abci_query",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["height","=","2"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -40,8 +40,8 @@
           "name": "block",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["height","=","0"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -70,8 +70,8 @@
           "name": "block_results",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+            "parserArg": ["height","=","0"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -100,8 +100,8 @@
           "name": "blockchain",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+            "parserArg": ["maxHeight","=","1"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -190,8 +190,8 @@
           "name": "commit",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["height","=","0"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -205,8 +205,8 @@
           "name": "consensus_params",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["height","=","0"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -430,8 +430,8 @@
           "name": "validators",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
+						"parserArg": ["height","=","0"],
+						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,

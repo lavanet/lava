@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
@@ -54,7 +55,13 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 			parsedMethod = path[0:idx]
 		}
 
-		msg = JsonrpcMessage{Method: parsedMethod} //other parameters don't matter
+		msg = JsonrpcMessage{Method: parsedMethod}     //other parameters don't matter
+		params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
+		//convert the list of strings to a list of interfaces
+		msg.Params = make([]interface{}, len(params_raw))
+		for i := range params_raw {
+			msg.Params[i] = params_raw[i]
+		}
 	}
 	//
 	// Check api is supported and save it in nodeMsg
@@ -62,9 +69,15 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 	if err != nil {
 		return nil, err
 	}
+
+	requestedBlock, err := parser.Parse(msg, serviceApi.BlockParsing)
+	if err != nil {
+		return nil, err
+	}
+
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{serviceApi: serviceApi,
-			msg: &msg},
+			msg: &msg, requestedBlock: requestedBlock},
 		cp: cp,
 	}
 	return nodeMsg, nil
