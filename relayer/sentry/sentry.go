@@ -808,7 +808,7 @@ func (s *Sentry) SendRelay(
 				s.CompareRelaysAndReportConflict(reply0, reply1)
 			}
 			if (ok && check0) || (ok && check1) {
-				log.Printf("\n[+] Reliability verified and Okay! ----\n")
+				log.Printf("[+] Reliability verified and Okay! ----\n\n")
 			}
 		}
 		go checkReliability()

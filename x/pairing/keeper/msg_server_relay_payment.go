@@ -70,13 +70,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if relay.DataReliability != nil {
 			//verify user signed this data reliability
 			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
-			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String(), "error": err.Error()}
+			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if err != nil || !valid {
+				details["error"] = err.Error()
 				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
 			}
 			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(relay.DataReliability)
 			if err != nil {
-				details["error"] = err.Error()
+
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
 			}
 			if otherProviderAddress.Equals(providerAddr) {
@@ -102,6 +103,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 			vrfPk := &utils.VrfPubKey{}
 			vrfPk, err = vrfPk.DecodeFromBech32(userStake.Vrfpk)
+			if err != nil {
+				details["error"] = err.Error()
+				details["vrf_bech32"] = userStake.Vrfpk
+				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
+			}
 			//signatures valid, validate VRF signing
 			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk)
 			if !valid {
@@ -114,7 +120,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-
 			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(k.ServicersToPairCount(ctx)), spec.ReliabilityThreshold)
 			if index != int64(thisProviderIndex) {
 				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
@@ -166,7 +171,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			continue
 		}
 		rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String() + "stake", "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 		//first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 
@@ -184,11 +189,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		if payReliability {
-			details["reliability_pay"] = "true"
+			details["reliabilityPay"] = "true"
 			reward = reward.Mul(k.Keeper.DataReliabilityReward(ctx))
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
+			details["Mint"] = rewardCoins.String()
 		} else {
-			details["reliability_pay"] = "false"
+			details["reliabilityPay"] = "false"
 			details["Mint"] = details["BasePay"]
 		}
 
