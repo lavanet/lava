@@ -24,9 +24,14 @@ lavad tx pairing stake-provider "COS3" 2050stake "127.0.0.1:2243,tendermintrpc,1
 lavad tx pairing stake-client "ETH1" 200000stake 1 -y --from user1
 lavad tx pairing stake-client "COS3" 200000stake 1 -y --from user2
 
-echo "---------------Queries------------------"
+echo "---------------ETH1 Queries------------------"
 lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
+echo "---------------COS3 Queries------------------"
+lavad query pairing providers "COS3"
+lavad query pairing clients "COS3"
+echo "---------------------------------------------"
+
 # killall screen
 #Eth providers
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &

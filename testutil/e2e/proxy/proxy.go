@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,9 +17,7 @@ var realCount int = 0
 var cacheCount int = 0
 var fakeCount int = 0
 
-var fromCache bool = true
 var fakeResponse bool = false
-var saveCache bool = true
 
 var saveJsonEvery int = 10 // in seconds
 var epochTime int = 3      // in seconds
@@ -33,40 +32,82 @@ type proxyProcess struct {
 	mock      *mockMap
 	handler   func(http.ResponseWriter, *http.Request)
 	malicious bool
+	cache     bool
+	strict    bool
+	noSave    bool
 }
 
 func getDomain(s string) (domain string) {
 	parts := strings.Split(s, ".")
-	if len(parts) > 2 {
+	if len(parts) >= 2 {
 		return parts[len(parts)-2]
 	}
 	return s
 }
 
 func main() {
-	startEpochUpdate()
 
-	port := "2000"              // default
-	host := "mainnet.infura.io" // default
-	malicious := false          // default
-	if len(os.Args) >= 2 {
-		port = os.Args[1]
-		if len(os.Args) >= 3 {
-			host = os.Args[2]
-			if len(os.Args) >= 4 {
-				malicious = os.Args[3] == "1"
+	// CLI ARGS
+	host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
+	port := flag.String("p", "1111", "PORT")
+	id := flag.String("id", "", "ID (optional) - will set the default host id instead of the full domain name"+
+		"\nUsage Example:\n	$ go run proxy.go randomnumberapi.com -id random -cache")
+	cache := flag.Bool("cache", false, "CACHE (optional) - This will make proxy return from cache if possible "+
+		"(from default [host].json unless -alt was set)\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache")
+	alt := flag.String("alt", "", "ALT (optional) [JSONFILE] - This will make proxy return from alternative cache file if possible"+
+		"\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache -alt ./mockMaps/google_alt.json		# respond from google_alt.json")
+	strict := flag.Bool("strict", false, "STRICT (optional) - This will make proxy return ONLY from cache, no external calls")
+	help := flag.Bool("h", false, "Shows this help message")
+	noSave := flag.Bool("no-save", false, "NO-SAVE (optional) will not store any data from proxy")
+
+	flag.Parse()
+	if *help || (*host == "" && flag.NArg() == 0) {
+		fmt.Println("\ngo run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict\n")
+		fmt.Println("	Usage Example:")
+		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache \n")
+		flag.Usage()
+	} else if *host == "" {
+		if len(os.Args) > 0 {
+			if os.Args[1] != "-host" {
+				*host = os.Args[1]
+				flag.CommandLine.Parse(append([]string{"-host"}, os.Args[1:]...))
+			} else {
+				*host = os.Args[1]
 			}
 		}
 	}
+	println()
 
-	domain := getDomain(host)
+	domain := getDomain(*host)
+	if *id != "" {
+		domain = *id
+	} else {
+		*id = domain
+	}
+
+	mockfile := mockFolder + domain + ".json"
+	if *alt != "" {
+		mockfile = mockFolder + *alt
+	}
+
+	if *host == "" {
+		println("\n [host] is required. Exiting")
+		os.Exit(1)
+	}
+	malicious := false // default
+
+	startEpochUpdate(noSave)
+
 	process := proxyProcess{
 		id:        domain,
-		port:      port,
-		host:      host,
-		mockfile:  mockFolder + domain + port + ".json",
+		port:      *port,
+		host:      *host,
+		mockfile:  mockfile,
 		mock:      &mockMap{requests: map[string]string{}},
-		malicious: malicious,
+		malicious: false,
+		cache:     *cache,
+		strict:    *strict,
+		noSave:    *noSave,
 	}
 	proxies = append(proxies, process)
 
@@ -90,10 +131,22 @@ func startProxyProcess(process proxyProcess) {
 	if process.malicious {
 		fakeResponse = true
 	}
-	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::: HOST ", process.host)
-	fmt.Println("::::::::::::: Mock Proxy Started :::::::::::::: CACHE", fmt.Sprintf("%d", len(process.mock.requests)))
-	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::: PORT ", process.port)
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::::::::") // HOST ", process.host)
+	fmt.Println("::::::::::::: Mock Proxy Started ::::::::::::::") // CACHE", fmt.Sprintf("%d", len(process.mock.requests)))
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::::::::") // PORT ", process.port)
 	println()
+	fmt.Print(fmt.Sprintf(" ::: Proxy ID 		::: %s", process.id) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Proxy Host 	::: %s", process.host) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Return Cache 	::: %t", process.cache) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Strict Mode 	::: %t", process.strict) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Saving	 	::: %t", !process.noSave) + "\n")
+	if !process.noSave || process.cache {
+		fmt.Print(fmt.Sprintf(" ::: Cache File 	::: %s", process.mockfile) + "\n")
+		fmt.Print(fmt.Sprintf(" ::: Loaded Responses 	::: %d", len(process.mock.requests)) + "\n")
+	}
+	println()
+	fmt.Print(fmt.Sprintf(" ::: Proxy Started! 	::: ID: %s", process.id) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Listening On 	::: %s", "http://0.0.0.0:"+process.port+"/") + "\n")
 
 	http.HandleFunc("/", process.handler)
 	err := http.ListenAndServe(":"+process.port, nil)
@@ -106,7 +159,7 @@ func getMockBlockNumber() (block string) {
 	return "0xe" + fmt.Sprintf("%d", epochCount) // return "0xe39ab8"
 }
 
-func startEpochUpdate() {
+func startEpochUpdate(noSave *bool) {
 	go func() {
 		count := 0
 		for {
@@ -115,7 +168,7 @@ func startEpochUpdate() {
 			if count%epochTime == 0 {
 				epochCount += 1
 			}
-			if saveCache && responsesChanged && count%saveJsonEvery == 0 {
+			if !*noSave && responsesChanged && count%saveJsonEvery == 0 {
 				for _, process := range proxies {
 					mapToJsonFile(*process.mock, process.mockfile)
 				}
@@ -143,9 +196,11 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	host := p.host
 	mock := p.mock
+
 	// Get request body
 	rawBody := getDataFromIORead(&req.Body, true)
-	println(p.port+" ::: INCOMING PROXY MSG :::", string(rawBody))
+	println()
+	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", string(rawBody))
 
 	// TODO: make generic
 	// Check if asking for blockNumber
@@ -156,8 +211,8 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	} else {
 		// Return Cached data if found in history and fromCache is set on
-		if val, ok := mock.requests[string(rawBody)]; ok && fromCache {
-			println(p.port+" ::: Cached Response ::: ", string(val))
+		if val, ok := mock.requests[string(rawBody)]; ok && p.cache {
+			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
 			cacheCount += 1
 
 			// Change Response
@@ -192,7 +247,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					respBodyStr = string(respBody)
 					mock.requests[string(rawBody)] = respBodyStr
 					realCount += 1
-					println(p.port+" ::: Real Response ::: ", respBodyStr)
+					println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", respBodyStr)
 				}
 
 				// Check if response is not good, if not - try again
@@ -217,7 +272,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 							status = proxyRes.StatusCode
 						}
 						realCount += 1
-						println(p.port+" ::: Real Response ::: ", string(respBody))
+						println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", string(respBody))
 
 						// TODO: Check if response is good, if not - try again
 						if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
@@ -235,7 +290,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				if fakeResponse {
 					// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
 					respBody = []byte(fakeResult(respBodyStr, "0xe000000000000000000"))
-					println(p.port+" ::: Fake Response ::: ", string(respBody))
+					println(" ::: "+p.port+" ::: "+p.id+" ::: Fake Response ::: ", string(respBody))
 					fakeCount += 1
 				}
 				responsesChanged = true
