@@ -24,6 +24,10 @@ func found_relay_payment(line string) TestResult {
 	contains := "lava_relay_payment"
 	return test_basic(line, contains)
 }
+func osmosis_finished(line string) TestResult {
+	contains := "osmosis finished"
+	return test_basic(line, contains)
+}
 func node_reset(line string) TestResult {
 	contains := "🔄"
 	return test_basic(line, contains)

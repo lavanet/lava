@@ -1,396 +1,307 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
+	"flag"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 )
 
-var responses map[string]string = map[string]string{}
+var mockFolder string = "testutil/e2e/proxy/mockMaps/"
 
-type mockMap struct {
-	mock map[string]string `json:"mock"`
+var responsesChanged bool = false
+var realCount int = 0
+var cacheCount int = 0
+var fakeCount int = 0
+
+var fakeResponse bool = false
+
+var saveJsonEvery int = 10 // in seconds
+var epochTime int = 3      // in seconds
+var epochCount int = 0     // starting epoch count
+var proxies []proxyProcess = []proxyProcess{}
+
+type proxyProcess struct {
+	id        string
+	port      string
+	host      string
+	mockfile  string
+	mock      *mockMap
+	handler   func(http.ResponseWriter, *http.Request)
+	malicious bool
+	cache     bool
+	strict    bool
+	noSave    bool
 }
 
-var blockCount int
-var mockFile string
-var hostURL string
+func getDomain(s string) (domain string) {
+	parts := strings.Split(s, ".")
+	if len(parts) >= 2 {
+		return parts[len(parts)-2]
+	}
+	return s
+}
 
 func main() {
-	blockCount = 0
-	mockFile = "testutil/e2e/proxy/mock.json"
-	hostURL = "mainnet.infura.io"
 
-	go func() {
-		for true {
-			time.Sleep(1 * time.Second)
-			blockCount += 1
+	// CLI ARGS
+	host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
+	port := flag.String("p", "1111", "PORT")
+	id := flag.String("id", "", "ID (optional) - will set the default host id instead of the full domain name"+
+		"\nUsage Example:\n	$ go run proxy.go randomnumberapi.com -id random -cache")
+	cache := flag.Bool("cache", false, "CACHE (optional) - This will make proxy return from cache if possible "+
+		"(from default [host].json unless -alt was set)\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache")
+	alt := flag.String("alt", "", "ALT (optional) [JSONFILE] - This will make proxy return from alternative cache file if possible"+
+		"\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache -alt ./mockMaps/google_alt.json		# respond from google_alt.json")
+	strict := flag.Bool("strict", false, "STRICT (optional) - This will make proxy return ONLY from cache, no external calls")
+	help := flag.Bool("h", false, "Shows this help message")
+	noSave := flag.Bool("no-save", false, "NO-SAVE (optional) will not store any data from proxy")
+
+	flag.Parse()
+	if *help || (*host == "" && flag.NArg() == 0) {
+		fmt.Println("\ngo run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict\n")
+		fmt.Println("	Usage Example:")
+		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache \n")
+		flag.Usage()
+	} else if *host == "" {
+		if len(os.Args) > 0 {
+			if os.Args[1] != "-host" {
+				*host = os.Args[1]
+				flag.CommandLine.Parse(append([]string{"-host"}, os.Args[1:]...))
+			} else {
+				*host = os.Args[1]
+			}
 		}
-	}()
-	responses = jsonFileToMap(mockFile)
-	if responses == nil {
-		responses = map[string]string{}
 	}
-	fmt.Printf(":::::::::::::::::::::::::::\n")
-	// responses := make(chan map[string][]byte)
-	// go func() {
-	// 	// run lava testing
-	// 	// Test finished on time !
-	// 	responses <- map[string][]byte{"ok": []byte("nice")}
-	// }()
-	// res := <-responses
-	// fmt.Printf(":::::::::::::::::::::::::::\n", res)
-	// fmt.Printf(":::::::::::::::::::::::::::\n")
-	// http.HandleFunc("/", handler5)
-	http.HandleFunc("/", handler5)
-	http.ListenAndServe(":2000", nil)
+	println()
+
+	domain := getDomain(*host)
+	if *id != "" {
+		domain = *id
+	} else {
+		*id = domain
+	}
+
+	mockfile := mockFolder + domain + ".json"
+	if *alt != "" {
+		mockfile = mockFolder + *alt
+	}
+
+	if *host == "" {
+		println("\n [host] is required. Exiting")
+		os.Exit(1)
+	}
+	malicious := false // default
+
+	startEpochUpdate(noSave)
+
+	process := proxyProcess{
+		id:        domain,
+		port:      *port,
+		host:      *host,
+		mockfile:  mockfile,
+		mock:      &mockMap{requests: map[string]string{}},
+		malicious: false,
+		cache:     *cache,
+		strict:    *strict,
+		noSave:    *noSave,
+	}
+	proxies = append(proxies, process)
+
+	if !malicious {
+		process.handler = process.LavaTestProxy
+	} else {
+		println()
+		println("MMMMMMMMMMMMMMM MALICIOUS MMMMMMMMMMMMMMM PORT", port)
+		println()
+		// TODO: Make malicious proxy
+		process.handler = process.LavaTestProxy
+	}
+	startProxyProcess(process)
 }
 
-func mapToJsonFile(m map[string]string, outfile string) error {
-	// map to json
-	// json to file
-	jsonData, err := json.Marshal(m)
-	if err != nil {
-		fmt.Println(err)
-		return err
+func startProxyProcess(process proxyProcess) {
+	process.mock.requests = jsonFileToMap(process.mockfile)
+	if process.mock.requests == nil {
+		process.mock.requests = map[string]string{}
 	}
-	jsonFile, err := os.Create(outfile)
-
-	if err != nil {
-		panic(err)
+	if process.malicious {
+		fakeResponse = true
 	}
-	defer jsonFile.Close()
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::::::::") // HOST ", process.host)
+	fmt.Println("::::::::::::: Mock Proxy Started ::::::::::::::") // CACHE", fmt.Sprintf("%d", len(process.mock.requests)))
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::::::::") // PORT ", process.port)
+	println()
+	fmt.Print(fmt.Sprintf(" ::: Proxy ID 		::: %s", process.id) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Proxy Host 	::: %s", process.host) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Return Cache 	::: %t", process.cache) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Strict Mode 	::: %t", process.strict) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Saving	 	::: %t", !process.noSave) + "\n")
+	if !process.noSave || process.cache {
+		fmt.Print(fmt.Sprintf(" ::: Cache File 	::: %s", process.mockfile) + "\n")
+		fmt.Print(fmt.Sprintf(" ::: Loaded Responses 	::: %d", len(process.mock.requests)) + "\n")
+	}
+	println()
+	fmt.Print(fmt.Sprintf(" ::: Proxy Started! 	::: ID: %s", process.id) + "\n")
+	fmt.Print(fmt.Sprintf(" ::: Listening On 	::: %s", "http://0.0.0.0:"+process.port+"/") + "\n")
 
-	jsonFile.Write(jsonData)
-	jsonFile.Close()
-	fmt.Println("JSON data written to ", jsonFile.Name())
-
-	return nil
+	http.HandleFunc("/", process.handler)
+	err := http.ListenAndServe(":"+process.port, nil)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
-func jsonFileToMap(jsonfile string) (m map[string]string) {
-	// open file
-	// unmarshal to mockMap
-	m = map[string]string{}
-	jsonFile, err := os.Open(jsonfile)
-	// if we os.Open returns an error then handle it
-	if err != nil {
-		fmt.Println(" ::: XXX ::: Could not open "+jsonfile+" ::: ", err)
-		return
-	}
-	fmt.Println(" ::: Successfully Opened " + jsonfile)
-	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
-	// read our opened jsonFile as a byte array.
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	// we initialize our Users array
-	var mock mockMap
-	for key, body := range mock.mock {
-		m[key] = body
-	}
-
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'users' which we defined above
-	json.Unmarshal(byteValue, &mock)
-	return
-}
-
-// type Payload struct {
-// 	Jsonrpc string        `json:"jsonrpc"`
-// 	Method  string        `json:"method"`
-// 	Params  []interface{} `json:"params"`
-// 	ID      int           `json:"id"`
-// }
 
 func getMockBlockNumber() (block string) {
-	return "0xe" + fmt.Sprintf("%d", blockCount)
-	return "0xe39ab8"
-	return "0xe39ab8"
+	return "0xe" + fmt.Sprintf("%d", epochCount) // return "0xe39ab8"
 }
 
-func handler5(rw http.ResponseWriter, req *http.Request) {
-	url := req.URL
-	url.Host = hostURL
-	// responses = jsonFileToMap("mock.json")
+func startEpochUpdate(noSave *bool) {
+	go func() {
+		count := 0
+		for {
+			wait := 1 * time.Second
+			time.Sleep(wait)
+			if count%epochTime == 0 {
+				epochCount += 1
+			}
+			if !*noSave && responsesChanged && count%saveJsonEvery == 0 {
+				for _, process := range proxies {
+					mapToJsonFile(*process.mock, process.mockfile)
+				}
+				responsesChanged = false
+			}
+			count += 1
+		}
+	}()
+}
 
-	fromCache := true
-	fakeResponse := false
-	saveCache := true
-	// r := io.Reader(req.Body)
-	// var buf bytes.Buffer
-	// tee := io.TeeReader(r, &buf)
-	rawBody, _ := ioutil.ReadAll(req.Body)
-	println(" ::: INCOMING PROXY MSG :::", string(rawBody))
+func fakeResult(val string, fake string) string {
+	parts := strings.Split(val, ",")
+	found := -1
+	for i, part := range parts {
+		if strings.Contains(part, "result") {
+			found = i
+		}
+	}
+	if found != -1 {
+		parts[found] = fmt.Sprintf("\"result\":\"%s\"}", fake)
+	}
+	return strings.Join(parts, ",")
+}
+func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
+
+	host := p.host
+	mock := p.mock
+
+	// Get request body
+	rawBody := getDataFromIORead(&req.Body, true)
+	println()
+	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", string(rawBody))
+
+	// TODO: make generic
+	// Check if asking for blockNumber
 	if fakeResponse && strings.Contains(string(rawBody), "blockNumber") {
 		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
 		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
 
 	} else {
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
+		// Return Cached data if found in history and fromCache is set on
+		if val, ok := mock.requests[string(rawBody)]; ok && p.cache {
+			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
+			cacheCount += 1
 
-		if val, ok := responses[string(rawBody)]; ok && fromCache {
-			println(" ::::::::::: FROM CACHE ::::::::::::: ")
+			// Change Response
+			if fakeResponse {
+				val = fakeResult(val, "0xe000000000000000000")
+				// val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
+				println(p.port+" ::: Fake Response ::: ", val)
+				fakeCount += 1
+			}
 			rw.WriteHeader(200)
 			rw.Write([]byte(val))
-		} else if fromCache {
-			println(" ::::::::::: FROM REAL ::::::::::::: ")
-		}
 
-		proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
-		// proxyReq, err := http.NewRequest(req.Method, url.String(), tee)
+		} else {
+			// Recreating Request
+			proxyRequest, err := createProxyRequest(req, host)
+			if err != nil {
+				println(err.Error())
+			} else {
 
-		if err != nil {
-			println("XXXXXX ERR 1", err.Error(), url.Host)
-		}
+				// Send Request to Host & Get Response
+				proxyRes, err := sendRequest(proxyRequest)
+				// respBody := []byte("error")
+				var respBody []byte
+				respBodyStr := "xxxxxx"
+				status := 400
+				if err != nil {
+					println(err.Error())
+					respBody = []byte(err.Error())
+				} else {
+					status = proxyRes.StatusCode
+					respBody = getDataFromIORead(&proxyRes.Body, true)
+					respBodyStr = string(respBody)
+					mock.requests[string(rawBody)] = respBodyStr
+					realCount += 1
+					println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", respBodyStr)
+				}
 
-		proxyReq.Header.Set("Host", req.Host)
-		proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
-		// proxyReq.RequestURI = "v3/3755a1321ab24f938589412403c46455"
-		proxyReq.URL.Scheme = "https"
-		for header, values := range req.Header {
-			for _, value := range values {
-				// println("!!!!!!!!!!!!!! ", header, value)
-				proxyReq.Header.Add(header, value)
+				// Check if response is not good, if not - try again
+				if false && (strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error")) {
+					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
+
+					// Recreating Request
+					proxyRequest, err = createProxyRequest(req, host)
+					if err != nil {
+						println(err.Error())
+						respBody = []byte(err.Error())
+					} else {
+
+						// Send Request to Host & Get Response
+						proxyRes, err = sendRequest(proxyRequest)
+						if err != nil {
+							println(err.Error())
+							respBody = []byte(err.Error())
+						} else {
+							respBody = getDataFromIORead(&proxyRes.Body, true)
+							mock.requests[string(rawBody)] = string(respBody)
+							status = proxyRes.StatusCode
+						}
+						realCount += 1
+						println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", string(respBody))
+
+						// TODO: Check if response is good, if not - try again
+						if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
+							println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got another error in response ")
+							println()
+						} else {
+							println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY SUCCESS - no error in response ")
+							println()
+						}
+					}
+
+				}
+
+				// Change Response
+				if fakeResponse {
+					// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
+					respBody = []byte(fakeResult(respBodyStr, "0xe000000000000000000"))
+					println(" ::: "+p.port+" ::: "+p.id+" ::: Fake Response ::: ", string(respBody))
+					fakeCount += 1
+				}
+				responsesChanged = true
+
+				//Return Response
+				if respBody == nil {
+					respBody = []byte("error")
+				}
+				returnResponse(rw, status, respBody)
 			}
 		}
-
-		client := &http.Client{}
-		proxyRes, err := client.Do(proxyReq)
-		if err != nil {
-			println("XXXXXX ERR 2", err.Error())
-		}
-		// reqBod, err := ioutil.ReadAll(req.Body)
-		// println("RRRRRRRR", string(reqBod))
-
-		respBody, _ := ioutil.ReadAll(proxyRes.Body)
-
-		// if req != nil && req.Body != nil {
-		// 	reqBody, _ := ioutil.ReadAll(req.Body)
-		// 	println("RRRRRRRRRR ::: [", string(reqBody), "]")
-		// }
-
-		println("Real Response ::: ", string(respBody))
-		if fakeResponse {
-			respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-			println("Fake Response ::: ", string(respBody))
-		}
-
-		responses[string(rawBody)] = string(respBody)
-		// mapToJsonFile(responses, "./mock.json")
-		if saveCache {
-			mapToJsonFile(responses, "./"+mockFile)
-		}
-		rw.WriteHeader(proxyRes.StatusCode)
-		rw.Write(respBody)
 	}
-
-}
-
-func handler4(rw http.ResponseWriter, req *http.Request) {
-	url := req.URL
-	url.Host = fmt.Sprintf("mainnet.infura.io")
-
-	// r := io.Reader(req.Body)
-	// var buf bytes.Buffer
-	// tee := io.TeeReader(r, &buf)
-	rawBody, _ := ioutil.ReadAll(req.Body)
-	println("RRRRRRRRRRRRRR", string(rawBody))
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
-
-	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
-	// proxyReq, err := http.NewRequest(req.Method, url.String(), tee)
-
-	if err != nil {
-		println("XXXXXX ERR 1", err.Error(), url.Host)
-	}
-
-	proxyReq.Header.Set("Host", req.Host)
-	proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
-	// proxyReq.RequestURI = "v3/3755a1321ab24f938589412403c46455"
-	proxyReq.URL.Scheme = "https"
-	for header, values := range req.Header {
-		for _, value := range values {
-			// println("!!!!!!!!!!!!!! ", header, value)
-			proxyReq.Header.Add(header, value)
-		}
-	}
-
-	client := &http.Client{}
-	proxyRes, err := client.Do(proxyReq)
-	if err != nil {
-		println("XXXXXX ERR 2", err.Error())
-	}
-	// reqBod, err := ioutil.ReadAll(req.Body)
-	// println("RRRRRRRR", string(reqBod))
-
-	respBody, _ := ioutil.ReadAll(proxyRes.Body)
-
-	// if req != nil && req.Body != nil {
-	// 	reqBody, _ := ioutil.ReadAll(req.Body)
-	// 	println("RRRRRRRRRR ::: [", string(reqBody), "]")
-	// }
-
-	println("Real Response ::: ", string(respBody))
-	// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-	// println("Fake Response ::: ", string(respBody))
-	// Here:
-	rw.WriteHeader(proxyRes.StatusCode)
-	rw.Write(respBody)
-
-}
-
-func handler3(rw http.ResponseWriter, req *http.Request) {
-	// res := <-responses
-	fmt.Printf(":H:::::::::::::::::::::::::\n")
-	// fmt.Printf(":::::::::::::::::::::::::::\n", responses)
-
-	url := req.URL
-	url.Host = fmt.Sprintf("mainnet.infura.io")
-
-	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
-	if err != nil {
-		println("XXXXXX ERR 1", err.Error(), url.Host)
-	}
-
-	reqBody, _ := ioutil.ReadAll(proxyReq.Body)
-	// current := <-responses
-	if val, ok := responses[string(reqBody)]; ok {
-		println("!!!!!! FROM CACHE !!!!!!!! ", string(reqBody))
-		rw.WriteHeader(200)
-		rw.Write([]byte(val))
-
-	} else {
-		println("!!!!!! FROM SERVER !!!!!!!! ", string(reqBody))
-		proxyReq.Header.Set("Host", req.Host)
-		proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
-		// proxyReq.RequestURI = "v3/3755a1321ab24f938589412403c46455"
-		proxyReq.URL.Scheme = "https"
-		for header, values := range req.Header {
-			for _, value := range values {
-				// println("!!!!!!!!!!!!!! ", header, value)
-				proxyReq.Header.Add(header, value)
-			}
-		}
-
-		client := &http.Client{}
-		proxyRes, err := client.Do(proxyReq)
-		if err != nil {
-			println("XXXXXX ERR 2", err.Error())
-		}
-
-		println("RRRRRRRRRR ::: [", string(reqBody), "]")
-		respBody, _ := ioutil.ReadAll(proxyRes.Body)
-		// current := <-responses
-		// responses <- current
-		println("Real Response ::: ", string(respBody))
-		rw.WriteHeader(proxyRes.StatusCode)
-		rw.Write(respBody)
-		responses[string(reqBody)] = string(respBody)
-		mapToJsonFile(responses, "./mock.json")
-		// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-		// println("Fake Response ::: ", string(respBody))
-		// Here:
-	}
-
-}
-
-func handler2(w http.ResponseWriter, req *http.Request) {
-	// Generated by curl-to-Go: https://mholt.github.io/curl-to-go
-
-	// curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' 'https://mainnet.infura.io/v3/3755a1321ab24f938589412403c46455'
-	fmt.Printf("req.Body: %v\n", req)
-	type Payload struct {
-		Jsonrpc string        `json:"jsonrpc"`
-		Method  string        `json:"method"`
-		Params  []interface{} `json:"params"`
-		ID      int           `json:"id"`
-	}
-
-	data := Payload{
-		Jsonrpc: "2.0",
-		Method:  "eth_blockNumber",
-		Params:  []interface{}{},
-		ID:      1,
-	}
-	payloadBytes, err := json.Marshal(data)
-	if err != nil {
-		// handle err
-	}
-	body := bytes.NewReader(payloadBytes)
-
-	res, err := http.NewRequest("POST", "https://mainnet.infura.io/v3/3755a1321ab24f938589412403c46455", body)
-	if err != nil {
-		// handle err
-	}
-	res.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(res)
-
-	if err != nil {
-		println("XXXXXXXXX", err.Error())
-		// return nil, err
-	}
-	println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", resp.Body)
-
-	defer resp.Body.Close()
-
-}
-
-func handler(w http.ResponseWriter, req *http.Request) {
-	fmt.Println(":::::::::::::::::::::::::::")
-	// we need to buffer the body if we want to read it here and send it
-	// in the request.
-	r := req
-	r.URL.Host = "https://mainnet.infura.io/v3/3755a1321ab24f938589412403c46455/eth/ws/"
-	r.RequestURI = ""
-	client := &http.Client{}
-
-	// delete(r.Header, "Accept-Encoding")
-	// delete(r.Header, "Content-Length")
-	resp, err := client.Do(r.WithContext(context.Background()))
-	if err != nil {
-		println("XXXXXXXXX", err.Error())
-		// return nil, err
-	}
-	// return resp, nil
-	fmt.Printf("resp.Body: %v\n", resp.Body)
-	println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", resp.Body)
-
-	// body, err := ioutil.ReadAll(req.Body)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // you can reassign the body if you need to parse it as multipart
-	// req.Body = ioutil.NopCloser(bytes.NewReader(body))
-
-	// // create a new url from the raw RequestURI sent by the client
-	// // url := fmt.Sprintf("%s://%s%s", proxyScheme, proxyHost, req.RequestURI)
-	// url := "https://mainnet.infura.io/v3/3755a1321ab24f938589412403c46455"
-
-	// proxyReq, err := http.NewRequest(req.Method, url, bytes.NewReader(body))
-
-	// // We may want to filter some headers, otherwise we could just use a shallow copy
-	// // proxyReq.Header = req.Header
-	// proxyReq.Header = make(http.Header)
-	// for h, val := range req.Header {
-	// 	proxyReq.Header[h] = val
-	// }
-
-	// resp, err := httpClient.Do(proxyReq)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadGateway)
-	// 	return
-	// }
-	// defer resp.Body.Close()
-
-	// // legacy code
+	println("_________________________________", realCount, "/", cacheCount, "\n")
 }

@@ -115,9 +115,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		strict:           true}
 	clientTest := TestProcess{
 		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
-		unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
-		tests:            tests(),
-		strict:           true}
+		unexpectedEvents: []string{"no pairings available", "Error", "signal: interrupt"},
+		// unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
+		tests:  tests(),
+		strict: true}
 	testfailed := false
 	failed := &testfailed
 	states := []State{}
@@ -150,7 +151,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          "./init.sh",
+				cmd:          "./.scripts/init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -186,31 +187,14 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// go readFile(logPath, state, filter, t)
 	}
 
-	run_providers_eth := true
-	if run_providers_eth {
-		println(" ::: Starting Providers Processes [ETH] ::: ")
-		prov_eth := LogProcess(CMD{
-			stateID:      "providers_eth",
-			homepath:     homepath,
-			cmd:          "./providers_eth.sh",
-			filter:       []string{"updated", "server", "error"},
-			testing:      true,
-			test:         providersTest,
-			results:      &results,
-			dep:          &node,
-			failed:       failed,
-			requireAlive: false,
-			debug:        true}, t, &states)
-		println(" ::: Providers Processes Started ::: ")
-		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
-	}
 	run_providers_osmosis := true
 	if run_providers_osmosis {
 		println(" ::: Starting Providers Processes [Osmosis] ::: ")
 		prov_osm := LogProcess(CMD{
-			stateID:      "providers_osmosis",
-			homepath:     homepath,
-			cmd:          "./providers_osmosis.sh",
+			stateID:  "providers_osmosis",
+			homepath: homepath,
+			// cmd:          "./providers_osmosis.sh",
+			cmd:          "./.scripts/osmosis.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -293,15 +277,67 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
 	}
 
-	run_client := true
-	if run_client {
+	run_client_osmosis := true
+	if run_client_osmosis {
+		clientOsmosis := LogProcess(CMD{
+			stateID:      "clientOsmo",
+			homepath:     homepath,
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 1 :::\"",
+			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// sleep(15, failed)
+		await(clientOsmosis, "osmosis client1 finished", osmosis_finished, "awating for osmosis1 to finish to proceed...")
+		clientOsmosis2 := LogProcess(CMD{
+			stateID:      "clientOsmo2",
+			homepath:     homepath,
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 2 :::\"",
+			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
+			testing:      true,
+			test:         clientTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		// TODO: check relay payment is COS3
+		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed... "+clientOsmosis2.id)
+		println(" ::: GOT OSMOSIS PAYMENT !!!")
+	}
+	run_providers_eth := true
+	if run_providers_eth {
+		println(" ::: Starting Providers Processes [ETH] ::: ")
+		prov_eth := LogProcess(CMD{
+			stateID:  "providers_eth",
+			homepath: homepath,
+			// cmd:          "./providers_eth.sh",
+			cmd:          "./.scripts/eth.sh", // with mock
+			filter:       []string{"updated", "server", "error"},
+			testing:      true,
+			test:         providersTest,
+			results:      &results,
+			dep:          &node,
+			failed:       failed,
+			requireAlive: false,
+			debug:        true}, t, &states)
+		println(" ::: Providers Processes Started ::: ")
+		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
+	}
+	run_client_eth := true
+	if run_client_eth {
 		sleep(1, failed)
 		if !run_providers_eth {
 			sleep(60, failed)
 		}
 
-		client := LogProcess(CMD{
-			stateID:      "client",
+		clientEth := LogProcess(CMD{
+			stateID:      "clientEth",
 			homepath:     homepath,
 			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
 			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
@@ -312,21 +348,22 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		await(client, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
-		await(node, "relay payment 1", found_relay_payment, "awating for FIRST payment to proceed...")
+		await(clientEth, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		await(node, "relay payment 1 eth", found_relay_payment, "awating for FIRST payment to proceed...")
 		println(" ::: GOT FIRST PAYMENT !!!")
-
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		awaitErrorsTimeout := 10
-		println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
-		sleep(awaitErrorsTimeout, failed)
-
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-		println("::::::::::::::::::::::::::::::::::::::::::::::")
-
-		// Display Results
 	}
+
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	awaitErrorsTimeout := 10
+	println(" ::: wait ", awaitErrorsTimeout, " seconds for potential errors...")
+	sleep(awaitErrorsTimeout, failed)
+
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+	println("::::::::::::::::::::::::::::::::::::::::::::::")
+
+	// Display Results
+
 	fmt.Println(string("================================================="))
 	fmt.Println(string("================ TEST DONE! ====================="))
 	fmt.Println(string("================================================="))

@@ -56,3 +56,7 @@ After a draft release is created, make your final changes from the release page 
 * you can interact with the binary to send transactions and queries
 * ./init_chain_commands.sh has examples on how to set up an initial chain with 5 servicers and 1 user,
     for basic testing of pairing on ethereum mainnet, you can run it or have a look at the commands to learn more
+
+
+# Lava e2e Test & Mock Proxy 
+* check out ./testutils/e2e/Readme.md
