@@ -38,15 +38,12 @@ $ curl -v "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"               
 $ curl -v "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"                # if -cache was set,
                                                                                      the second time, will return the SAME number
 
-# Full Generic Test
-go run ./testutil/e2e/proxy/. randomnumberapi.com -p 1111 -cache -id random & sleep 1 &&  \
-     curl -v "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1" && sleep 1 && \
-     curl -v "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"
-
-(sleep 1 && echo ' @@@ RANDOM NUMBER:' `curl "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"` && sleep 1 && \
-     echo ' @@@ RANDOM NUMBER:' `curl "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"` && \
-     echo '' && echo '@@@@@@@@@@@@@@@@@@@@@@@@' && echo ' @@@ Test (-cache) Passed If The 2 Random Numbers WERE THE SAME' && echo "";) &  \
-     go run ./testutil/e2e/proxy/. randomnumberapi.com -p 1111 -cache -id random 
+# Full Generic Mock Proxy Test
+$ (sleep 1 && echo ' @@@ RANDOM NUMBER:' `curl "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"` && \
+     sleep 1 &&  echo ' @@@ RANDOM NUMBER:' `curl "0.0.0.0:1111/api/v1.0/random?min=100&max=1000&count=1"` && \
+     echo '' && echo '@@@@@@@@@@@@@@@@@@@@@@@@' && \
+     echo ' @@@ Test (-cache) Passed If The 2 Random Numbers WERE THE SAME' && echo "";) &  \
+     go run ./testutil/e2e/proxy/. randomnumberapi.com -p 1111 -id random -cache 
 ```
 
 ### Edit Cache & Mal Json
