@@ -56,17 +56,20 @@ func (cs *ChainSentry) SetLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
-func (cs *ChainSentry) GetLatestBlockData() (int64, []map[string]interface{}, error) {
+func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
 
 	latestBlockNum := cs.GetLatestBlockNum()
-	var hashes = make([]map[string]interface{}, len(cs.blocksQueue))
-	for i := 0; i < len(cs.blocksQueue); i++ {
-		item := make(map[string]interface{})
-		item["blockNum"] = latestBlockNum - int64(len(cs.blocksQueue)+i)
-		item["blockHash"] = cs.blocksQueue[i]["hash"]
-		hashes[i] = item
+	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
+
+	for i := 0; i < cs.numFinalBlocks; i++ {
+		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i)
+		// item := cs.blocksQueue[i]
+		// log.Printf("blockhash %v", item["hash"])
+		// log.Printf("blocknum %v", item["number"])
+
+		hashes[blockNum] = cs.blocksQueue[i]["hash"]
 	}
 	return latestBlockNum, hashes, nil
 }
@@ -132,15 +135,15 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	cs.blockQueueMu.Lock()
 	// TODO:: move cs.numSavedBlocks+cs.numFinalBlocks to get finalizationBlockDistance
 	// TODO:: get finalized blocks only - not latest ( 100 -> 83-93)
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks-1); i <= latestBlock-int64(cs.finalizedBlockDistance); i++ {
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks); i <= latestBlock-int64(cs.finalizedBlockDistance)-1; i++ {
 		result, err := cs.fetchBlockByNum(ctx, i)
 		if err != nil {
 			log.Fatalln("error: Start", err)
 			return err
 		}
 
-		log.Printf("Block number: %v, block hash: %s", i, result["hash"])
-		cs.blocksQueue = append(cs.blocksQueue, result) //save entire block data for now
+		log.Printf("Block number: %d, block hash: %s", i, result["hash"])
+		cs.blocksQueue = append(cs.blocksQueue, result) // save entire block data for now
 	}
 	cs.blockQueueMu.Unlock()
 

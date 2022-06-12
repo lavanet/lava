@@ -37,6 +37,37 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainPro
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
 
+func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+
+	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+	if err != nil {
+		return err
+	}
+	serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+	if err != nil {
+		return err
+	}
+	if serverAddr.String() != addr {
+		return fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), addr)
+	}
+
+	serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest)
+	if err != nil {
+		return err
+	}
+
+	serverAddr, err = sdk.AccAddressFromHex(serverKey.Address().String())
+	if err != nil {
+		return err
+	}
+
+	// if serverAddr.String() != addr {
+	// 	return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), addr)
+	// }
+
+	return nil
+}
+
 // Client requests and queries
 func SendRelay(
 	ctx context.Context,
@@ -88,17 +119,12 @@ func SendRelay(
 		//update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(relayRequest, reply)
 		requestedBlock = relayRequest.RequestBlock
-		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc)
 		if err != nil {
 			return nil, nil, err
 		}
-		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
-		if err != nil {
-			return nil, nil, err
-		}
-		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
-		}
+
 		return reply, relayRequest, nil
 	}
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error) {
@@ -137,17 +163,12 @@ func SendRelay(
 		if err != nil {
 			return nil, err
 		}
-		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc)
 		if err != nil {
 			return nil, err
 		}
-		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
-		if err != nil {
-			return nil, err
-		}
-		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
-		}
+
 		return reply, nil
 	}
 	//

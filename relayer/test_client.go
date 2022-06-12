@@ -53,6 +53,7 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 	// Call a few times and print results
 	for i2 := 0; i2 < 30; i2++ {
 		var blockNumReply *types.RelayReply
+		blockNumReply = nil
 		for i := 0; i < 10; i++ {
 
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_BLOCKNUMBER)
@@ -71,6 +72,10 @@ func ethTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 		}
 		time.Sleep(1 * time.Second)
 		//reliability testing
+
+		if blockNumReply == nil {
+			continue
+		}
 
 		var msg chainproxy.JsonrpcMessage
 		err := json.Unmarshal(blockNumReply.GetData(), &msg)
