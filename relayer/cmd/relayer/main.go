@@ -84,7 +84,7 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
-			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface)
+			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface, cmd.Flags())
 
 			return nil
 		},
@@ -123,6 +123,7 @@ func main() {
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
+	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		os.Exit(1)
 	}
