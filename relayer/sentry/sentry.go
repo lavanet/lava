@@ -839,6 +839,7 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
+	// if s.ChainID == "ETH1" {
 	finalizedBlocks := map[int64]string{}                               //TODO:: define struct in relay response
 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
 	if err != nil {
@@ -847,12 +848,13 @@ func (s *Sentry) SendRelay(
 	}
 	latestBlock := reply.LatestBlock
 
-	// TODO:: validate that finalizedBlocks makes sense. latestBlock-7
 	err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc)
 	if err != nil {
 		log.Println("Provider reply error, ", err)
 		return nil, err
 	}
+
+	// validate that finalizedBlocks makes sense
 
 	// TODO:: compare finalized block hashes with other providers
 	// Save in a struct that keeps finalized hases of each provider
@@ -946,9 +948,6 @@ func (s *Sentry) SendRelay(
 		}
 	}
 
-	// TODO:: same as above with prev epoch
-	// if len(s.prevEpochProviderDataContainers) == 0
-
 	s.providerDataContainersMu.Unlock()
 
 	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -1009,8 +1008,8 @@ func (s *Sentry) SendRelay(
 					//send reliability on the client's expense
 					log.Println("secure flag Not Implemented, TODO:")
 				}
+				return nil, fmt.Errorf("is not a valid reliability VRF address result")
 			}
-			return nil, fmt.Errorf("is not a valid reliability VRF address result")
 		}
 
 		checkReliability := func() {
@@ -1108,6 +1107,10 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
+
+// func (s *Sentry) GetSpecComparesHashes() string {
+// 	return s.serverSpec.ComparesFinalizedHashes
+// }
 
 func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index

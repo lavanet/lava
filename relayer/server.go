@@ -294,15 +294,17 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
-	// Add latest block and finalized
-	latestBlock, finalizedBlocksHashes, err := g_chainSentry.GetLatestBlockData()
-	jsonStr, err := json.Marshal(finalizedBlocksHashes)
-	if err != nil {
-		return nil, err
-	}
+	if g_sentry.ChainID == "ETH1" {
+		// Add latest block and finalized
+		latestBlock, finalizedBlocksHashes, err := g_chainSentry.GetLatestBlockData()
+		jsonStr, err := json.Marshal(finalizedBlocksHashes)
+		if err != nil {
+			return nil, err
+		}
 
-	reply.LatestBlock = latestBlock
-	reply.FinalizedBlocksHashes = []byte(jsonStr)
+		reply.LatestBlock = latestBlock
+		reply.FinalizedBlocksHashes = []byte(jsonStr)
+	}
 
 	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
 		// request is a copy of the original request, but won't modify it
@@ -419,14 +421,17 @@ func Server(
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
 
-	// Start chain sentry
-	chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
-	err = chainSentry.Init(ctx)
-	if err != nil {
-		log.Fatalln("error sentry.Init", err)
+	if ChainID == "ETH1" {
+		// Start chain sentry
+		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
+		err = chainSentry.Init(ctx)
+		if err != nil {
+			log.Fatalln("error sentry.Init", err)
+			// log.Println("error sentry.Init", err)
+		}
+		chainSentry.Start(ctx)
+		g_chainSentry = chainSentry
 	}
-	chainSentry.Start(ctx)
-	g_chainSentry = chainSentry
 
 	//
 	// GRPC

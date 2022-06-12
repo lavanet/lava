@@ -51,19 +51,21 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 		return fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), addr)
 	}
 
-	serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest)
-	if err != nil {
-		return err
-	}
+	if relayRequest.GetChainID() == "ETH1" {
+		serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest)
+		if err != nil {
+			return err
+		}
 
-	serverAddr, err = sdk.AccAddressFromHex(serverKey.Address().String())
-	if err != nil {
-		return err
-	}
+		serverAddr, err = sdk.AccAddressFromHex(serverKey.Address().String())
+		if err != nil {
+			return err
+		}
 
-	// if serverAddr.String() != addr {
-	// 	return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), addr)
-	// }
+		if serverAddr.String() != addr {
+			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), addr)
+		}
+	}
 
 	return nil
 }

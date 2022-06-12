@@ -217,7 +217,7 @@ func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayRe
 
 func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
 	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq)
-	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
+	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
 	if err != nil {
 		return nil, err
 	}

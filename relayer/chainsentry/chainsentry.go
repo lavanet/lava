@@ -65,10 +65,6 @@ func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error
 
 	for i := 0; i < cs.numFinalBlocks; i++ {
 		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i)
-		// item := cs.blocksQueue[i]
-		// log.Printf("blockhash %v", item["hash"])
-		// log.Printf("blocknum %v", item["number"])
-
 		hashes[blockNum] = cs.blocksQueue[i]["hash"]
 	}
 	return latestBlockNum, hashes, nil
@@ -123,6 +119,10 @@ func (cs *ChainSentry) fetchBlockByNum(ctx context.Context, blockNum int64) (map
 }
 
 func (cs *ChainSentry) Init(ctx context.Context) error {
+	if cs.chainProxy.GetSentry().ChainID != "ETH1" {
+		return nil
+	}
+
 	latestBlock, err := cs.fetchLatestBlockNum(ctx)
 	// TODO:: chekc if we have at least x blocknums before forloop
 	if err != nil {
