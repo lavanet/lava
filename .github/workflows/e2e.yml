@@ -75,9 +75,18 @@ jobs:
     # - name: cat provX.log
     #   run: cat ./testutil/e2e/logs/provX.log
 
-    - name: cat client.log
-      run: cat ./testutil/e2e/logs/client.log
+    # Show ETH Logs
+    - name: cat clientEth.log
+      run: cat ./testutil/e2e/logs/clientEth.log
     - name: cat providers_eth.log
+      run: cat ./testutil/e2e/logs/providers_eth.log
+  
+    # Show OSMOSIS Logs
+    - name: cat clientOsmo.log
+      run: cat ./testutil/e2e/logs/clientOsmo.log
+    - name: cat clientOsmo2.log
+      run: cat ./testutil/e2e/logs/clientOsmo2.log
+    - name: cat providers_osmosis.log
       run: cat ./testutil/e2e/logs/providers_eth.log
 
   
