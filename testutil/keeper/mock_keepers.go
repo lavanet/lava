@@ -17,7 +17,7 @@ func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) type
 }
 
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return nil
+	return sdk.AccAddress([]byte(moduleName))
 }
 
 //mock bank keeper
@@ -42,6 +42,7 @@ func (k *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom 
 
 func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	//TODO support multiple coins
+	moduleAcc := sdk.AccAddress([]byte(recipientModule))
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
 	}
@@ -52,24 +53,26 @@ func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 		return fmt.Errorf("not enough coins")
 	}
 
-	k.balance[senderAddr.String()] = k.balance[senderAddr.String()].Sub(amt)
-	if k.moduleBank[recipientModule] == nil {
-		k.moduleBank[recipientModule] = make(map[string]sdk.Coins)
-		k.moduleBank[recipientModule][senderAddr.String()] = sdk.NewCoins()
+	k.SubFromBalance(senderAddr, amt)
+	if k.moduleBank[moduleAcc.String()] == nil {
+		k.moduleBank[moduleAcc.String()] = make(map[string]sdk.Coins)
+		k.moduleBank[moduleAcc.String()][senderAddr.String()] = sdk.NewCoins()
 	}
-	k.moduleBank[recipientModule][senderAddr.String()] = k.moduleBank[recipientModule][senderAddr.String()].Add(amt[0])
+	k.moduleBank[moduleAcc.String()][senderAddr.String()] = k.moduleBank[moduleAcc.String()][senderAddr.String()].Add(amt[0])
+	k.AddToBalance(moduleAcc, amt)
 	return nil
 }
 
 func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	//TODO support multiple coins
 	coin := amt[0]
-
-	if module, ok := k.moduleBank[senderModule]; ok {
+	moduleAcc := sdk.AccAddress([]byte(senderModule))
+	if module, ok := k.moduleBank[moduleAcc.String()]; ok {
 		if coins, ok := module[recipientAddr.String()]; ok {
 			if coins[0].IsGTE(coin) {
 				k.balance[recipientAddr.String()] = k.balance[recipientAddr.String()].Add(coin)
 				module[recipientAddr.String()] = module[recipientAddr.String()].Sub(amt)
+				k.SubFromBalance(moduleAcc, amt)
 				return nil
 			}
 		}
@@ -78,11 +81,34 @@ func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 	return fmt.Errorf("didnt find staked coins")
 }
 func (k *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+	acc := sdk.AccAddress([]byte(moduleName))
+	k.AddToBalance(acc, amounts)
 	return nil
 }
 
 func (k *mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
 	k.balance[addr.String()] = amounts
+	return nil
+}
+
+func (k *mockBankKeeper) AddToBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
+	if _, ok := k.balance[addr.String()]; ok {
+		for _, coin := range amounts {
+			k.balance[addr.String()] = k.balance[addr.String()].Add(coin)
+		}
+	} else {
+		k.balance[addr.String()] = amounts
+	}
+	return nil
+}
+
+func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
+	if _, ok := k.balance[addr.String()]; ok {
+		k.balance[addr.String()] = k.balance[addr.String()].Sub(amounts)
+	} else {
+		return fmt.Errorf("acount is empty, can't sub")
+	}
+
 	return nil
 }
 

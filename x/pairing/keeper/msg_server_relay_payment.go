@@ -23,6 +23,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
 	for _, relay := range msg.Relays {
+		if relay.BlockHeight > ctx.BlockHeight() {
+			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
+		}
 
 		pubKey, err := sigs.RecoverPubKeyFromRelay(*relay)
 		if err != nil {

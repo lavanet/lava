@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/tendermint/tendermint/rpc/core"
 	tmdb "github.com/tendermint/tm-db"
 
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -143,4 +144,8 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ClientKey)
 		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 	}
+
+	blockstore := MockBlockStore{}
+	blockstore.SetHeight(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	core.SetEnvironment(&core.Environment{BlockStore: &blockstore})
 }
