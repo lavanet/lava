@@ -115,9 +115,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		strict:           true}
 	clientTest := TestProcess{
 		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
-		unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
-		tests:            tests(),
-		strict:           true}
+		unexpectedEvents: []string{"no pairings available", "Error", "signal: interrupt"},
+		// unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
+		tests:  tests(),
+		strict: true}
 	testfailed := false
 	failed := &testfailed
 	states := []State{}
@@ -150,7 +151,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          "./init.sh",
+				cmd:          "./.scripts/init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -190,9 +191,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	if run_providers_osmosis {
 		println(" ::: Starting Providers Processes [Osmosis] ::: ")
 		prov_osm := LogProcess(CMD{
-			stateID:      "providers_osmosis",
-			homepath:     homepath,
-			cmd:          "./providers_osmosis.sh",
+			stateID:  "providers_osmosis",
+			homepath: homepath,
+			// cmd:          "./providers_osmosis.sh",
+			cmd:          "./.scripts/osmosis.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -312,9 +314,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	if run_providers_eth {
 		println(" ::: Starting Providers Processes [ETH] ::: ")
 		prov_eth := LogProcess(CMD{
-			stateID:      "providers_eth",
-			homepath:     homepath,
-			cmd:          "./providers_eth.sh",
+			stateID:  "providers_eth",
+			homepath: homepath,
+			// cmd:          "./providers_eth.sh",
+			cmd:          "./.scripts/eth.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
