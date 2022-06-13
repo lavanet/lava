@@ -1,4 +1,7 @@
 # Lava e2e Tests & Mock Proxy
+
+<br>
+
 ### TL;DR
 ```
 $ export LAVA=$HOME/go/lava
@@ -8,6 +11,8 @@ $ cd $LAVA && ./initFull.sh                   # Add specs, stakes, Runs all Prox
 $ cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, proxies, mock providers, test_clients
 ``` 
 
+
+<br>
 
 # Mock Proxy
 
@@ -62,6 +67,9 @@ $ cp ./testutil/e2e/proxy/mockMaps/random.json ./testutil/e2e/proxy/mockMaps/ran
 ```
 
 
+<br>
+
+
 # Lava e2e tests
 
 ### Run all Lava e2e Tests Locally
@@ -98,3 +106,134 @@ mock proxy
 - TODO: add -cache -mal [id] arguments
 - TODO: add -strict option ? return ONLY from cache
 - TODO: combined cache + optional alternative file
+
+<br><br><br>
+## ~~~~~~~~~~~ maybe usefull ~~~~~~~~~~~~~~
+### basic Proxy
+```
+func basicProxy(rw http.ResponseWriter, req *http.Request) {
+	// All incoming requests will be sent to this host
+	host := fmt.Sprintf("mainnet.infura.io")
+
+	// Get request body
+	rawBody := getDataFromIORead(&req.Body, true)
+	println(" ::: INCOMING PROXY MSG :::", string(rawBody))
+
+	// Recreating Request
+	proxyRequest, err := createProxyRequest(req, host)
+	if err != nil {
+		println(err.Error())
+	}
+
+	// Send Request to Host & Get Response
+	proxyRes, err := sendRequest(proxyRequest)
+	if err != nil {
+		println(err.Error())
+	}
+	// respBody, _ := ioutil.ReadAll(proxyRes.Body)
+	respBody := getDataFromIORead(&proxyRes.Body, true)
+	println(" ::: Real Response ::: ", string(respBody), "\n")
+
+	// Change Response
+	// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
+	// println(" ::: Fake Response ::: ", string(respBody))
+
+	//Return Response
+	returnResponse(rw, proxyRes.StatusCode, respBody)
+
+}
+```
+
+### proxy docker experiment (Dockerfile & proxy.sh)
+```
+FROM nginx:1.15-alpine
+
+COPY proxy.sh /usr/local/bin/
+
+RUN apk add --update bash \
+	&& rm -rf /var/cache/apk/* \
+	&& chmod +x /usr/local/bin/proxy.sh
+
+EXPOSE 80
+
+CMD ["proxy.sh"]
+```
+```
+#!/bin/bash
+if [ -z "$REDIRECT_TYPE" ]; then
+	REDIRECT_TYPE="permanent"
+fi
+
+if [ -z "$REDIRECT_TARGET" ]; then
+	echo "Redirect target variable not set (REDIRECT_TARGET)"
+	exit 1
+else
+	
+	# Add trailing slash
+	if [[ ${REDIRECT_TARGET:length-1:1} != "/" ]]; then
+		REDIRECT_TARGET="$REDIRECT_TARGET/"
+	fi
+fi
+
+# Default to 80
+LISTEN="80"
+# Listen to PORT variable given on Cloud Run Context
+if [ ! -z "$PORT" ]; then
+	LISTEN="$PORT"
+fi
+
+
+cat <<EOF > /etc/nginx/conf.d/default.conf
+
+server {
+	listen ${LISTEN};
+
+	location "/" {                                        
+		mirror "/mirror";                                                       
+		mirror_request_body on;                                                 
+		return 200;                                                             
+	}                                                                           
+
+	location = "/mirror" {                                                      
+		internal;                                                               
+		proxy_pass "https://mainnet.infura.io/v3/3755a1321ab24f938589412403c46455/";                   
+		proxy_set_header Host "mainnet.infura.io";                            
+		proxy_set_header X-Original-URI $request_uri;                           
+		proxy_set_header X-SERVER-PORT $server_port;                            
+		proxy_set_header X-SERVER-ADDR $server_addr;                            
+		proxy_set_header X-REAL-IP $remote_addr;                                
+	}
+ 
+}
+EOF
+
+echo "Listening to $LISTEN, Redirecting HTTP requests to ${REDIRECT_TARGET}..."
+exec nginx -g "daemon off;"
+
+```
+
+### Piping stdout/err into go
+```
+//simple_pipe.go
+func mainA() {
+
+	nBytes, nChunks := int64(0), int64(0)
+	r := bufio.NewReader(os.Stdin)
+	// buf := make([]byte, 0, 4*1024)
+	num := 0
+	for {
+		line, err := r.ReadString('\n')
+		fmt.Println(string("!!! nice !!! ") + string(line))
+		num += 1
+		if err != nil {
+			fmt.Print(string("XXX error XXX ") + string(err.Error()))
+		}
+
+		if err == io.EOF {
+			break
+		}
+	}
+
+	fmt.Println("Bytes:", nBytes, "Chunks:", nChunks)
+}
+```
