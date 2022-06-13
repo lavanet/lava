@@ -21,6 +21,7 @@ import (
 // TODO: https://docs.cosmos.network/master/architecture/adr-027-deterministic-protobuf-serialization.html
 
 func main() {
+	fmt.Println(fmt.Sprintf(" ::: Relayer Started :::"))
 	rootCmd, _ := cosmoscmd.NewRootCmd(
 		"relayer",
 		app.AccountAddressPrefix,
