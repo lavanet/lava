@@ -31,7 +31,7 @@ func exit(states []State) bool {
 }
 
 func ExitLavaProcess() {
-	cmd := exec.Command("sh", "-c", "killall lavad ; killall starport ; killall main ; killall lavad")
+	cmd := exec.Command("sh", "-c", "killall lavad ; killall ignite ; killall starport ; killall main ; killall lavad")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(fmt.Errorf(err.Error()).Error())
@@ -64,7 +64,7 @@ func tests() map[string]func(LogLine) TestResult {
 }
 
 // TODO:
-// [-] merge main
+// [+] merge main
 // [+] refactor & clean for PR
 // [-] improvements:
 // 		[-] add steps to test results,
@@ -90,7 +90,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
-	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
+	// lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
+	lava_serve_cmd := "killall ignite; cd " + homepath + " && ignite chain serve -v -r  "
 	usingLavad := false
 	if !resetGenesis {
 		lava_serve_cmd = "lavad start "
@@ -126,7 +127,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 	// Test Full Flow
 	node := LogProcess(CMD{
-		stateID:      "starport",
+		stateID:      "ignite",
 		homepath:     homepath,
 		cmd:          lava_serve_cmd,
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
@@ -406,5 +407,5 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 func main() {
 	FullFlowTest(nil)
-	// mainB() // when piping into go i.e - 6; cd ~/go/lava && starport chain serve -v -r |& go run x_test/lava_pipe.go
+	// mainB() // when piping into go i.e - 6; cd ~/go/lava && ignite chain serve -v -r |& go run x_test/lava_pipe.go
 }

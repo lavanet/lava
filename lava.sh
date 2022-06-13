@@ -2,7 +2,7 @@
 ########   RUN LAVA    #######
 ##############################
 
-echo ' ::: SERVING LAVA CHAIN (starport 0.19.2) :::'
+echo ' ::: SERVING LAVA CHAIN (ignite 0.22.1) :::'
 ### Serve chain
 sh ./.scripts/serve_chain.sh &
 #TODO await event
