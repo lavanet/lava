@@ -74,35 +74,3 @@ func returnResponse(rw http.ResponseWriter, status int, body []byte) {
 	rw.WriteHeader(status)
 	rw.Write(body)
 }
-
-func basicProxy(rw http.ResponseWriter, req *http.Request) {
-	// All incoming requests will be sent to this host
-	host := fmt.Sprintf("mainnet.infura.io")
-
-	// Get request body
-	rawBody := getDataFromIORead(&req.Body, true)
-	println(" ::: INCOMING PROXY MSG :::", string(rawBody))
-
-	// Recreating Request
-	proxyRequest, err := createProxyRequest(req, host)
-	if err != nil {
-		println(err.Error())
-	}
-
-	// Send Request to Host & Get Response
-	proxyRes, err := sendRequest(proxyRequest)
-	if err != nil {
-		println(err.Error())
-	}
-	// respBody, _ := ioutil.ReadAll(proxyRes.Body)
-	respBody := getDataFromIORead(&proxyRes.Body, true)
-	println(" ::: Real Response ::: ", string(respBody), "\n")
-
-	// Change Response
-	// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
-	// println(" ::: Fake Response ::: ", string(respBody))
-
-	//Return Response
-	returnResponse(rw, proxyRes.StatusCode, respBody)
-
-}

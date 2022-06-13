@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -78,31 +77,24 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 	}
 	defer file.Close()
 	r := bufio.NewReader(file)
+	showAll := false
 	debugProcess, once, checkTerminated := false, true, false
 	for {
-		data, _, err := r.ReadLine()
-		if err != nil {
-			// fmt.Println(string("XXX error XXX ") + string(err.Error()))
-		} else {
+		data, _, _ := r.ReadLine()
+		if data != nil && len(string(data)) > 0 {
 			line := string(data)
 			*state.lastLine = line
 			if _, found := passingFilter(line, filter); found {
 				processLog(line, state, t)
-			} else if state.debug {
+			} else if state.debug || showAll {
 				log := "(DEBUG) " + state.id + " ::: " + line
 				if t != nil {
 					t.Log(log)
 				} else {
 					fmt.Println(log)
 				}
-			} else {
-				// fmt.Println(parent + " ::: " + string("!!! nice !!! ") + string(line))
 			}
 
-		}
-		if err == io.EOF {
-			// fmt.Printf("EOF.")
-			// break
 		}
 
 		// if finishedTests(state.test.expectedEvents, *state.results) {
@@ -209,10 +201,8 @@ func processLog(line string, state State, t *testing.T) {
 				}
 				//TODO: match with regex
 				if strings.Contains(line, event) {
-					if _, ok := results[event]; !ok {
+					if _, ok := results[event]; !ok { // first time event
 						results[event] = []TestResult{}
-					} else {
-						// reacurring event
 					}
 					if test, test_exists := state.test.tests[event]; test_exists {
 						testRes := test(LogLine{line: line, parent: state.id})
