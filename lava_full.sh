@@ -14,7 +14,7 @@ sleep 40
 ###     Run mock proxies
 ###     Run Providers (blocked uptil specs)
 echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::'
-sh init_full.sh 
+sh ./.scripts/init_full.sh 
 
 ### Run Clients
 #TODO await event
