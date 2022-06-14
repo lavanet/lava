@@ -42,10 +42,24 @@ type BlockHash struct {
 }
 type ClientSession struct {
 	CuSum     uint64
+	qosSum    pairingtypes.QualityOfServiceReport
 	SessionId int64
 	Client    *RelayerClientWrapper
 	Lock      sync.Mutex
 	RelayNum  uint64
+}
+
+func (cs *ClientSession) AddQoS(QoSReport pairingtypes.QualityOfServiceReport) {
+	cs.qosSum.Latency.Add(QoSReport.Latency)
+	cs.qosSum.Availability.Add(QoSReport.Availability)
+	cs.qosSum.Freshness.Add(QoSReport.Freshness)
+}
+
+func (cs *ClientSession) GetQoS() pairingtypes.QualityOfServiceReport {
+	latencyAverage := cs.qosSum.Latency.Quo(sdk.NewDec(int64(cs.RelayNum)))
+	AvailabilityAverage := cs.qosSum.Availability.Quo(sdk.NewDec(int64(cs.RelayNum)))
+	FreshnessAverage := cs.qosSum.Freshness.Quo(sdk.NewDec(int64(cs.RelayNum)))
+	return pairingtypes.QualityOfServiceReport{Latency: latencyAverage, Availability: AvailabilityAverage, Freshness: FreshnessAverage}
 }
 
 type RelayerClientWrapper struct {
@@ -690,7 +704,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocks map[int64]string, toCompare 
 func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string) error {
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
-	for blockNum, _ := range finalizedBlocks {
+	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
 			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
 			return errors.New("provider returned non finalized block reply")
