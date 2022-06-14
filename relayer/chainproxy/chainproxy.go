@@ -102,6 +102,7 @@ func SendRelay(
 		}
 
 		blockHeight = cp.GetSentry().GetBlockHeight()
+		QoS := clientSession.GetQoS()
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ApiUrl:          url,
@@ -112,6 +113,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
+			QoSReport:       &QoS, //todo DataRelliability
 			DataReliability: nil,
 		}
 
