@@ -80,8 +80,8 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	//
 	// Catch all
-	app.Use(func(c *fiber.Ctx) error {
-		path := c.OriginalURL()
+	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+		path := "/" + c.Params("*")
 
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "")
