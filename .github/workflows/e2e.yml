@@ -47,7 +47,7 @@ jobs:
     - name: ls -l
       run: ls -l
 
-    Pre-build with ignite
+    # Pre-build with ignite
     - name: ignite build
       run: ignite chain build -v
     # - name: starport build
