@@ -50,7 +50,8 @@ jobs:
       run: ignite chain build -v
     - name: starport build
       run: starport chain build -v
-    
+    - name: export LAVA
+      run: export LAVA=/home/runner/work/lava/lava
     
     # - name: node
     #   run: cd ~/go/lava; starport chain serve -v -r

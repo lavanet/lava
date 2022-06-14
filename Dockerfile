@@ -93,6 +93,9 @@ RUN /sbin/ldconfig -p | grep stdc++
 
 # RUN strings /lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
 
+ENV LAVA=$GOPATH/lava
+RUN echo ":::::::::::::::::::::::::: @@@ LAVA: " $LAVA
+# ENV LAVA $GOPATH/lava
 
 ADD . $GOPATH/lava
 RUN echo ":::::::::::::::::::::::::: !!! pwd: " `pwd`
@@ -126,7 +129,7 @@ RUN ignite chain build
 
 # RUN cd /go/lava && starport chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
-RUN chmod +x lava_node.sh
+RUN chmod +x lava_node.sh lava_full.sh
 RUN chmod +x -R .scripts/
 
 # CMD sh lava_node.sh
@@ -142,7 +145,11 @@ EXPOSE 1317
 # 🌍 Tendermint node: 
 EXPOSE 26657
 
-# To build docker locally
+#   To build docker locally
 # $ docker build . -t lava_starport
-# To run docker
-# $ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 lava_starport -r |& grep -e lava_ -e ERR_ -e STARPORT] -e !
+#
+#   To run docker
+# $ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lava19 lava_starport |& grep -e lava_ -e ERR_ -e STARPORT] -e !
+#
+#   init
+# $ docker exec -it lava19 sh .scripts/init.sh
