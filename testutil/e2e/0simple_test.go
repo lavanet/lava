@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -51,11 +52,16 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := os.Getenv("LAVA") + "/"
+	homepath := os.Getenv("LAVA")
 	if homepath == "" {
 		homepath = getHomePath()
+		if strings.Contains(homepath, "runner") { // on github
+			homepath += "work/lava/lava"
+		} else {
+			homepath += "go/lava" //local
+		}
 	}
-
+	homepath += "/"
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}

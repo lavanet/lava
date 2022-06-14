@@ -79,19 +79,21 @@ func tests() map[string]func(LogLine) TestResult {
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	// Setup Env
 	// homepath := "$LAVA"
-	homepath := os.Getenv("LAVA") + "/"
-	if homepath == "" {
-		homepath = getHomePath()
-	}
 	resetGenesis := true
 	isGithubAction := false
-	if strings.Contains(homepath, "runner") { // on github
-		// homepath += "work/lava/lava/"
-		isGithubAction = true
+
+	homepath := os.Getenv("LAVA")
+	if homepath == "" {
+		homepath = getHomePath()
+		if strings.Contains(homepath, "runner") { // on github
+			homepath += "work/lava/lava"
+			isGithubAction = true
+		} else {
+			homepath += "go/lava" //local
+		}
 	}
-	// else {
-	// 	homepath += "go/lava/" //local
-	// }
+	homepath += "/"
+
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
