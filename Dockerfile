@@ -129,7 +129,10 @@ RUN ignite chain build
 RUN chmod +x lava_node.sh
 RUN chmod +x -R .scripts/
 
-CMD sh lava_node.sh
+# CMD sh lava_node.sh
+# CMD (cd $LAVA && starport chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e STARPORT] -e !
+CMD starport chain serve -v
+# CMD ignite chain serve -v
 # ENTRYPOINT $GOPATH/lava/lava_node.sh 
 
 # 🌍 Token faucet API
@@ -142,5 +145,4 @@ EXPOSE 26657
 # To build docker locally
 # $ docker build . -t lava_starport
 # To run docker
-# $ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 lava_starport
- 
+# $ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 lava_starport -r |& grep -e lava_ -e ERR_ -e STARPORT] -e !

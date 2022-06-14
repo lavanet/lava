@@ -5,7 +5,7 @@
 echo ' ::: SERVING LAVA CHAIN (starport 0.19.2) :::'
 
 ### Init(delayed) + Serve chain
-(sleep 40 && echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::' && sh ./.scripts/init.sh  ) & \
+(sleep 40 && echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::' && sh ./.scripts/init.sh  ) & 
 sh ./.scripts/serve_chain.sh
 
     # ### Serve chain
