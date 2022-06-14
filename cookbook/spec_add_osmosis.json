@@ -6,6 +6,7 @@
       "name": "osmosis mainnet",
       "enabled": true,
       "reliability_threshold" : 268435455,
+      "compares_hashes": false,
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},

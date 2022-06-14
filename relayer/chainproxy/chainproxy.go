@@ -37,7 +37,7 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainPro
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
 
-func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, comparesHashes bool) error {
 
 	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 	if err != nil {
@@ -51,7 +51,7 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 		return fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), addr)
 	}
 
-	if relayRequest.GetChainID() == "ETH1" {
+	if comparesHashes {
 		serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest)
 		if err != nil {
 			return err
@@ -122,7 +122,7 @@ func SendRelay(
 		sentry.UpdateRequestedBlock(relayRequest, reply)
 		requestedBlock = relayRequest.RequestBlock
 
-		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc)
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -166,7 +166,7 @@ func SendRelay(
 			return nil, err
 		}
 
-		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc)
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, err
 		}

@@ -7,6 +7,7 @@
       "name": "Ethereum Mainnet",
       "enabled": true,
       "reliability_threshold" : 268435455,
+      "compares_hashes": true,
       "apis": [
         {
           "name": "rpc_modules",

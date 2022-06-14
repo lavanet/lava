@@ -29,6 +29,7 @@ type (
 		Enabled              bool      `json:"enabled" yaml:"enabled"`
 		Apis                 []ApiJSON `json:"apis" yaml:"apis"`
 		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"enabled"`
+		ComparesHashes       bool      `json:"compares_hashes" yaml:"enabled"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -60,6 +61,7 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			Enabled:              spec.Enabled,
 			Apis:                 apis,
 			ReliabilityThreshold: spec.ReliabilityThreshold,
+			ComparesHashes:       spec.ComparesHashes,
 		})
 	}
 	return ret

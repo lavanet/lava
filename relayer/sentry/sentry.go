@@ -839,199 +839,171 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
-	// if s.ChainID == "ETH1" {
-	finalizedBlocks := map[int64]string{}                               //TODO:: define struct in relay response
-	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
-	if err != nil {
-		log.Println("Finalized Block reply err", err)
-		return nil, err
-	}
-	latestBlock := reply.LatestBlock
+	if s.GetSpecComparesHashes() {
+		finalizedBlocks := map[int64]string{}                               //TODO:: define struct in relay response
+		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
+		if err != nil {
+			log.Println("Finalized Block reply err", err)
+			return nil, err
+		}
+		latestBlock := reply.LatestBlock
 
-	err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc)
-	if err != nil {
-		log.Println("Provider reply error, ", err)
-		return nil, err
-	}
-
-	// validate that finalizedBlocks makes sense
-
-	// TODO:: compare finalized block hashes with other providers
-	// Save in a struct that keeps finalized hases of each provider
-	// providerAcc can be key in a map that keep reply.LatestBlock and the hashes from reply
-	// new reply should have blocknum >= from block same provider
-	// make sure finalized blocks overlap with finalized block of other providers in correct order
-	// add new field to sentry (mutex protected) we keep the new info from line one and two
-	// reset this new field in every new epoch
-
-	// create a list of dataContainer: map[providerAcc]data : data-struct  {
-	//  finalizedblock: block
-	//  hashes []
-	// }
-	// (1) on new data recieved iterate with for loop in this list of dataContainer
-	// this list will contain only one entry when there is no fraud
-
-	//
-	// init toCompare to empty in each iteration
-	// in each dataContainer find one provider that has this block to compare with. (exclude same provider)
-	// maybe theres no overlap then continue
-	// full overlap - compare and check for discrepency with no changes to the list in the dataContainer
-	// parital overlap - tkae only blocks we need for overlap. no need to keep copies of blocks we already prepared in toCompare list because everything we have there is already under consensus
-	//    - we might not reach full overlap with partial
-	// no overlap then insert new data into dataContainer list
-	// send toCompare and new data from relay to discrepency checker which loops over toCompare and new relay data and compares them  -- compareFunc
-	// if comparefunc returns ok the nadd to datacontainer and continues in the iteration (1)
-	//
-
-	s.providerDataContainersMu.Lock()
-
-	if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
-		newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
-		s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-	} else {
-		// New reply should have blocknum >= from block same provider
-		consensus := s.getConsensusByProvider(providerAcc)
-		if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock > latestBlock {
-			log.Println("Provider supplied an older latest block than it has previously")
-			// add punishment code
+		// validate that finalizedBlocks makes sense
+		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc)
+		if err != nil {
+			log.Println("Provider reply error, ", err)
+			return nil, err
 		}
 
-		// TODO:: tocompare shoudl be map[block]hash of intersection of finalizedBlockHashes and the blocks in consensus
-		// iterate over current and prev epoch and add to toCompare.
-		// if latest block is out of range of kept hashes, break
-		matchWithExistingConsensus := false
-		for idx, consensus := range s.providerHashesConsensus {
-			toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
-			if len(toCompare) != 0 {
-				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
-				if err != nil {
-					log.Println("Discrepancy Checker err", err)
-					return nil, err
-				}
+		//
+		// Compare finalized block hashes with previous providers
+		s.providerDataContainersMu.Lock()
 
-				// insert into consensus and break
-				if !discrepancyResult {
-					matchWithExistingConsensus = true
-				} else {
-					log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
-				}
-			}
-			// if no discrepency with this group -> insert into consensus and break
-			if matchWithExistingConsensus || len(toCompare) == 0 {
-				matchWithExistingConsensus = true
-				s.insertProviderToConsensus(&consensus, finalizedBlocks, latestBlock, reply.SigBlocks, providerAcc)
-				break
-			}
-		}
-
-		// create new consensus group if no consensus matched
-		if !matchWithExistingConsensus {
+		if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
 			newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
 			s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-		}
-
-		// check for discrepancy with old epoch
-		for idx, consensus := range s.prevEpochProviderHashesConsensus {
-			toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
-			if len(toCompare) != 0 {
-				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
-				if err != nil {
-					log.Println("Discrepancy Checker err", err)
-					return nil, err
-				}
-
-				// handle discrepancy
-				if discrepancyResult {
-					log.Println("Conflict found between old epoch consensus %d and provider %s", idx, providerAcc)
-				}
+		} else {
+			// New reply should have blocknum >= from block same provider
+			consensus := s.getConsensusByProvider(providerAcc)
+			if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock > latestBlock {
+				log.Println("Provider supplied an older latest block than it has previously")
+				// add punishment code
 			}
-		}
-	}
 
-	s.providerDataContainersMu.Unlock()
+			matchWithExistingConsensus := false
+			for idx, consensus := range s.providerHashesConsensus {
+				toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
+				if len(toCompare) != 0 {
+					discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
+					if err != nil {
+						log.Println("Discrepancy Checker err", err)
+						return nil, err
+					}
 
-	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
-		// handle data reliability
-
-		isSecure, err := s.cmdFlags.GetBool("secure")
-		if err != nil {
-			log.Println("Error: Could not get flag --secure")
-		}
-
-		s.VrfSkMu.Lock()
-		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
-		s.VrfSkMu.Unlock()
-		address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
-
-		//Printing VRF Data
-		// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
-		// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
-		// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
-
-		sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
-			if address != "" && address != providerAcc {
-				wrap, index, err := s.specificPairing(ctx, address)
-				if err != nil {
-					// failed to get clientWrapper for this address, skip reliability
-					log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
-					return nil, err
-				} else {
-					canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
-					if canSendReliability {
-						s.VrfSkMu.Lock()
-						vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
-						s.VrfSkMu.Unlock()
-						dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
-							VrfValue:    vrf_res,
-							VrfProof:    vrf_proof,
-							ProviderSig: reply.Sig,
-							AllDataHash: sigs.AllDataHash(reply, request),
-							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
-							Sig:         nil,                                //calculated in cb_send_reliability
-						}
-						clientSession = getClientSessionFromWrap(wrap)
-						relay_rep, err = cb_send_reliability(clientSession, dataReliability)
-						if err != nil {
-							log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
-							s.movePairingEntryToPurge(wrap, index)
-							return nil, err
-						}
-						clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-						return relay_rep, nil
+					// insert into consensus and break
+					if !discrepancyResult {
+						matchWithExistingConsensus = true
 					} else {
-						log.Println("Reliability already Sent in this epoch to this provider")
-						return nil, nil
+						log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
 					}
 				}
-			} else {
-				if isSecure {
-					//send reliability on the client's expense
-					log.Println("secure flag Not Implemented, TODO:")
+				// if no discrepency with this group -> insert into consensus and break
+				if matchWithExistingConsensus || len(toCompare) == 0 {
+					matchWithExistingConsensus = true
+					s.insertProviderToConsensus(&consensus, finalizedBlocks, latestBlock, reply.SigBlocks, providerAcc)
+					break
 				}
-				return nil, fmt.Errorf("is not a valid reliability VRF address result")
+			}
+
+			// create new consensus group if no consensus matched
+			if !matchWithExistingConsensus {
+				newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
+				s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+			}
+
+			// check for discrepancy with old epoch
+			for idx, consensus := range s.prevEpochProviderHashesConsensus {
+				toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
+				if len(toCompare) != 0 {
+					discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
+					if err != nil {
+						log.Println("Discrepancy Checker err", err)
+						return nil, err
+					}
+
+					// handle discrepancy
+					if discrepancyResult {
+						log.Println("Conflict found between old epoch consensus %d and provider %s", idx, providerAcc)
+					}
+				}
 			}
 		}
 
-		checkReliability := func() {
-			reply0, err0 := sendReliabilityRelay(address0, false)
-			reply1, err1 := sendReliabilityRelay(address1, true)
-			ok := true
-			check0 := err0 == nil && reply0 != nil
-			check1 := err1 == nil && reply1 != nil
-			if check0 {
-				ok = ok && s.CompareRelaysAndReportConflict(reply, reply0)
+		s.providerDataContainersMu.Unlock()
+
+		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+			// handle data reliability
+
+			isSecure, err := s.cmdFlags.GetBool("secure")
+			if err != nil {
+				log.Println("Error: Could not get flag --secure")
 			}
-			if check1 {
-				ok = ok && s.CompareRelaysAndReportConflict(reply, reply1)
+
+			s.VrfSkMu.Lock()
+			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
+			s.VrfSkMu.Unlock()
+			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
+
+			//Printing VRF Data
+			// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
+			// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
+			// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
+
+			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
+				if address != "" && address != providerAcc {
+					wrap, index, err := s.specificPairing(ctx, address)
+					if err != nil {
+						// failed to get clientWrapper for this address, skip reliability
+						log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
+						return nil, err
+					} else {
+						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
+						if canSendReliability {
+							s.VrfSkMu.Lock()
+							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
+							s.VrfSkMu.Unlock()
+							dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
+								VrfValue:    vrf_res,
+								VrfProof:    vrf_proof,
+								ProviderSig: reply.Sig,
+								AllDataHash: sigs.AllDataHash(reply, request),
+								QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
+								Sig:         nil,                                //calculated in cb_send_reliability
+							}
+							clientSession = getClientSessionFromWrap(wrap)
+							relay_rep, err = cb_send_reliability(clientSession, dataReliability)
+							if err != nil {
+								log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
+								s.movePairingEntryToPurge(wrap, index)
+								return nil, err
+							}
+							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+							return relay_rep, nil
+						} else {
+							log.Println("Reliability already Sent in this epoch to this provider")
+							return nil, nil
+						}
+					}
+				} else {
+					if isSecure {
+						//send reliability on the client's expense
+						log.Println("secure flag Not Implemented, TODO:")
+					}
+					return nil, fmt.Errorf("is not a valid reliability VRF address result")
+				}
 			}
-			if !ok && check0 && check1 {
-				s.CompareRelaysAndReportConflict(reply0, reply1)
+
+			checkReliability := func() {
+				reply0, err0 := sendReliabilityRelay(address0, false)
+				reply1, err1 := sendReliabilityRelay(address1, true)
+				ok := true
+				check0 := err0 == nil && reply0 != nil
+				check1 := err1 == nil && reply1 != nil
+				if check0 {
+					ok = ok && s.CompareRelaysAndReportConflict(reply, reply0)
+				}
+				if check1 {
+					ok = ok && s.CompareRelaysAndReportConflict(reply, reply1)
+				}
+				if !ok && check0 && check1 {
+					s.CompareRelaysAndReportConflict(reply0, reply1)
+				}
+				if (ok && check0) || (ok && check1) {
+					log.Printf("[+] Reliability verified and Okay! ----\n\n")
+				}
 			}
-			if (ok && check0) || (ok && check1) {
-				log.Printf("[+] Reliability verified and Okay! ----\n\n")
-			}
+			go checkReliability()
 		}
-		go checkReliability()
 	}
 	return reply, nil
 }
@@ -1108,9 +1080,9 @@ func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
 
-// func (s *Sentry) GetSpecComparesHashes() string {
-// 	return s.serverSpec.ComparesFinalizedHashes
-// }
+func (s *Sentry) GetSpecComparesHashes() bool {
+	return s.serverSpec.ComparesHashes
+}
 
 func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index

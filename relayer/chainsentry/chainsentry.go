@@ -119,10 +119,6 @@ func (cs *ChainSentry) fetchBlockByNum(ctx context.Context, blockNum int64) (map
 }
 
 func (cs *ChainSentry) Init(ctx context.Context) error {
-	if cs.chainProxy.GetSentry().ChainID != "ETH1" {
-		return nil
-	}
-
 	latestBlock, err := cs.fetchLatestBlockNum(ctx)
 	// TODO:: chekc if we have at least x blocknums before forloop
 	if err != nil {

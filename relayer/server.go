@@ -294,17 +294,25 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
-	if g_sentry.ChainID == "ETH1" {
+	var latestBlock = int64(0)
+	var finalizedBlockHashes map[int64]interface{}
+
+	if g_sentry.GetSpecComparesHashes() {
 		// Add latest block and finalized
-		latestBlock, finalizedBlocksHashes, err := g_chainSentry.GetLatestBlockData()
-		jsonStr, err := json.Marshal(finalizedBlocksHashes)
+		latestBlock, finalizedBlockHashes, err = g_chainSentry.GetLatestBlockData()
 		if err != nil {
 			return nil, err
 		}
-
-		reply.LatestBlock = latestBlock
-		reply.FinalizedBlocksHashes = []byte(jsonStr)
+	} else {
+		finalizedBlockHashes = map[int64]interface{}{}
 	}
+	jsonStr, err := json.Marshal(finalizedBlockHashes)
+	if err != nil {
+		return nil, err
+	}
+
+	reply.FinalizedBlocksHashes = []byte(jsonStr)
+	reply.LatestBlock = latestBlock
 
 	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
 		// request is a copy of the original request, but won't modify it
@@ -421,7 +429,7 @@ func Server(
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
 
-	if ChainID == "ETH1" {
+	if g_sentry.GetSpecComparesHashes() {
 		// Start chain sentry
 		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
 		err = chainSentry.Init(ctx)
