@@ -18,8 +18,6 @@ jobs:
       run: curl https://get.ignite.com/cli! | bash
     - name: ignite version
       run:  ignite version
-    # - name: docker build 
-    #   run: docker build -t lava-docker .
     # - name: starport install
     #   run: curl https://get.starport.network/starport@v0.19.2! | bash
     # - name: starport version
@@ -38,6 +36,8 @@ jobs:
     #   run: export PATH=$PATH:/go/lava
     - name: export GOPATH
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+    - name: export LAVA
+      run: export LAVA=/home/runner/work/lava/lava
     - name: go env
       run:  go env
     - name: pwd
@@ -72,5 +72,8 @@ jobs:
       run: cat ./testutil/e2e/logs/clientOsmo2.log
     - name: cat providers_osmosis.log
       run: cat ./testutil/e2e/logs/providers_eth.log
+    - name: docker build 
+      run: docker build -t lava-docker .
+    
 
   

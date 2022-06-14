@@ -124,7 +124,7 @@ RUN ls -l
 
 
 # Build with ignite to build dependencies
-RUN ignite chain build
+# RUN ignite chain build
 # ENV LAVA=/bin/go/lava
 
 # RUN cd /go/lava && starport chain serve -r -v
@@ -134,7 +134,7 @@ RUN chmod +x -R .scripts/
 
 # CMD sh lava_node.sh
 # CMD (cd $LAVA && starport chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e STARPORT] -e !
-CMD starport chain serve -v
+CMD ignite chain serve -v
 # CMD ignite chain serve -v
 # ENTRYPOINT $GOPATH/lava/lava_node.sh 
 

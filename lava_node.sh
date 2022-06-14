@@ -2,7 +2,7 @@
 ########   RUN LAVA    #######
 ##############################
 
-echo ' ::: SERVING LAVA CHAIN (starport 0.19.2) :::'
+echo ' ::: SERVING LAVA CHAIN (starport 0.22.1) :::'
 
 ### Init(delayed) + Serve chain
 (sleep 40 && echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::' && sh ./.scripts/init.sh  ) & 
