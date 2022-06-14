@@ -1,8 +1,6 @@
 name: Lava e2e Tests
 
 on: [push, pull_request]
-# on: [push]
-
 
 jobs:
   go:
@@ -14,22 +12,24 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
-    # - name: install screen
-    #   run: sudo apt install screen -y
+    
+    # Install Ignite
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
-    # - name: docker build 
-    #   run: docker build -t lava-docker .
     - name: ignite version
       run:  ignite version
-    - name: starport install
-      run: curl https://get.starport.network/starport@v0.19.2! | bash
-    - name: starport version
-      run:  starport version
+    # - name: docker build 
+    #   run: docker build -t lava-docker .
+    # - name: starport install
+    #   run: curl https://get.starport.network/starport@v0.19.2! | bash
+    # - name: starport version
+    #   run:  starport version
+
+    # Setup Paths
     - name: home
       run:  pwd && ls -l
+    - name: ls usr 
+      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
@@ -38,6 +38,8 @@ jobs:
     #   run: export PATH=$PATH:/go/lava
     - name: export GOPATH
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+    - name: export LAVA
+      run: export LAVA=/home/runner/work/lava/lava
     - name: go env
       run:  go env
     - name: pwd
@@ -46,35 +48,18 @@ jobs:
       run: tree
     - name: ls -l
       run: ls -l
+
+    # Pre-build with ignite & starport
     - name: ignite build
       run: ignite chain build -v
     - name: starport build
       run: starport chain build -v
-    - name: export LAVA
-      run: export LAVA=/home/runner/work/lava/lava
-    
-    # - name: node
-    #   run: cd ~/go/lava; starport chain serve -v -r
-      # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-    # - name: test timeout 4 mins
-    #   run: go test -timeout 240s
-    # - name: test timeout 3 mins
-    #   run: go test -timeout 180s
-    - name: lava e2e tests
-      # run: cd ~/go/lava; go test ./testutil/e2e/ -v
-      run: go test ./testutil/e2e/ -v -timeout 440s # 8mins 20secs
-      # run: go test ./testutil/e2e/ -v -timeout 240s & sleep 60 && ./providers.sh
 
-    # - name: check lavad prov1 output
-    #   run: sleep 120 ; go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1
-   
-    # - name: sleep 60 for node uptime
-    #   run: sleep 60 
-    # - name: ./init_provX
-    #   run: cd /home/runner/work/lava/lava && ./init_provX.sh
-    
-    # - name: cat provX.log
-    #   run: cat ./testutil/e2e/logs/provX.log
+    ######################################################
+    ### Run Lava E2E Tests IGNITE VERSION:0.22.1
+    ######################################################
+    - name: Run Lava E2E Tests STARPORT VERSION:0.19.2 -timeout 660s
+      run: go test ./testutil/e2e/ -v -timeout 660s # 11mins
 
     # Show ETH Logs
     - name: cat clientEth.log
