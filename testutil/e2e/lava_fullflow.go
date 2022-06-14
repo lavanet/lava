@@ -78,7 +78,7 @@ func tests() map[string]func(LogLine) TestResult {
 // [+] github actions CI/CD
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	// Setup Env
-	// homepath := "$LAVA"
+	// homepath := homepath+""
 	resetGenesis := true
 	isGithubAction := false
 
@@ -158,7 +158,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          "$LAVA/.scripts/init.sh",
+				cmd:          homepath + "/.scripts/init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -200,8 +200,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov_osm := LogProcess(CMD{
 			stateID:  "providers_osmosis",
 			homepath: homepath,
-			// cmd:          "$LAVA/providers_osmosis.sh",
-			cmd:          "$LAVA/.scripts/osmosis.sh", // with mock
+			// cmd:          homepath+"/providers_osmosis.sh",
+			cmd:          homepath + "/.scripts/osmosis.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -323,8 +323,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov_eth := LogProcess(CMD{
 			stateID:  "providers_eth",
 			homepath: homepath,
-			// cmd:          "$LAVA/providers_eth.sh",
-			cmd:          "$LAVA/.scripts/eth.sh", // with mock
+			// cmd:          "homepath+"/providers_eth.sh",
+			cmd:          homepath + "/.scripts/eth.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
