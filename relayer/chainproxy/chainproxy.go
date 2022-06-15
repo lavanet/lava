@@ -95,7 +95,6 @@ func SendRelay(
 		}
 
 		blockHeight = cp.GetSentry().GetBlockHeight()
-		QoS := clientSession.GetQoS()
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ApiUrl:          url,
@@ -106,7 +105,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
-			QoSReport:       &QoS, //todo DataRelliability
+			QoSReport:       clientSession.GetQoS(), //todo DataRelliability
 			DataReliability: nil,
 		}
 
@@ -128,6 +127,9 @@ func SendRelay(
 		if err != nil {
 			return nil, nil, err
 		}
+
+		relayQoS := CalculateQoS() //Todo
+		clientSession.AddQoS(relayQoS)
 
 		return reply, relayRequest, nil
 	}
@@ -194,4 +196,9 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 	clientSession.Client.UsedComputeUnits += apiCu
 	clientSession.RelayNum += 1
 	return nil
+}
+
+func CalculateQoS() pairingtypes.QualityOfServiceReport {
+	//todo Add real calculations
+	return pairingtypes.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Freshness: sdk.NewDecWithPrec(1, 0)}
 }
