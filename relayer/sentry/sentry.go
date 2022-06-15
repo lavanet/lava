@@ -38,7 +38,7 @@ import (
 
 type ClientSession struct {
 	CuSum     uint64
-	qosSum    pairingtypes.QualityOfServiceReport
+	qosSum    *pairingtypes.QualityOfServiceReport
 	SessionId int64
 	Client    *RelayerClientWrapper
 	Lock      sync.Mutex
@@ -46,16 +46,28 @@ type ClientSession struct {
 }
 
 func (cs *ClientSession) AddQoS(QoSReport pairingtypes.QualityOfServiceReport) {
-	cs.qosSum.Latency.Add(QoSReport.Latency)
-	cs.qosSum.Availability.Add(QoSReport.Availability)
-	cs.qosSum.Freshness.Add(QoSReport.Freshness)
+	if cs.qosSum == nil { //this is the first time we add QoS
+		cs.qosSum = &pairingtypes.QualityOfServiceReport{}
+		cs.qosSum.Latency = (QoSReport.Latency)
+		cs.qosSum.Availability = (QoSReport.Availability)
+		cs.qosSum.Freshness = (QoSReport.Freshness)
+	} else {
+		cs.qosSum.Latency.Add(QoSReport.Latency)
+		cs.qosSum.Availability.Add(QoSReport.Availability)
+		cs.qosSum.Freshness.Add(QoSReport.Freshness)
+	}
+
 }
 
-func (cs *ClientSession) GetQoS() pairingtypes.QualityOfServiceReport {
+func (cs *ClientSession) GetQoS() *pairingtypes.QualityOfServiceReport {
+	if cs.qosSum == nil {
+		return nil
+	}
+
 	latencyAverage := cs.qosSum.Latency.Quo(sdk.NewDec(int64(cs.RelayNum)))
 	AvailabilityAverage := cs.qosSum.Availability.Quo(sdk.NewDec(int64(cs.RelayNum)))
 	FreshnessAverage := cs.qosSum.Freshness.Quo(sdk.NewDec(int64(cs.RelayNum)))
-	return pairingtypes.QualityOfServiceReport{Latency: latencyAverage, Availability: AvailabilityAverage, Freshness: FreshnessAverage}
+	return &pairingtypes.QualityOfServiceReport{Latency: latencyAverage, Availability: AvailabilityAverage, Freshness: FreshnessAverage}
 }
 
 type RelayerClientWrapper struct {

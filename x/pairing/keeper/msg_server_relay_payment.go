@@ -171,8 +171,21 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if reward.IsZero() {
 			continue
 		}
+
 		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+
+		if relay.QoSReport != nil {
+			details["QoSReport"] = relay.QoSReport.String()
+			QoS, err := relay.QoSReport.ComputeQoS()
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
+			}
+			reward = reward.Mul(QoS)
+			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
+		}
+
 		//first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 

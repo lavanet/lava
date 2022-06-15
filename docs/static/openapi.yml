@@ -51257,6 +51257,15 @@ definitions:
       dataReliabilityReward:
         type: string
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.QualityOfServiceReport:
+    type: object
+    properties:
+      latency:
+        type: string
+      availability:
+        type: string
+      freshness:
+        type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -51791,6 +51800,15 @@ definitions:
           sig:
             type: string
             format: byte
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          freshness:
+            type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
