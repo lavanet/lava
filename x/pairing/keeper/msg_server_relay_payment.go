@@ -176,12 +176,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
 
 		if relay.QoSReport != nil {
-			details["QoSReport"] = relay.QoSReport.String()
 			QoS, err := relay.QoSReport.ComputeQoS()
 			if err != nil {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
+			details["QoSScore"] = QoS.String()
 			reward = reward.Mul(QoS)
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
