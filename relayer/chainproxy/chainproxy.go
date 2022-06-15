@@ -150,6 +150,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    requestedBlock,
+			QoSReport:       nil,
 			DataReliability: dataReliability,
 		}
 
@@ -200,5 +201,9 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 
 func CalculateQoS() pairingtypes.QualityOfServiceReport {
 	//todo Add real calculations
-	return pairingtypes.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Freshness: sdk.NewDecWithPrec(1, 0)}
+	QoS := pairingtypes.QualityOfServiceReport{}
+	QoS.Latency = sdk.NewDecWithPrec(10, 1)      //1
+	QoS.Availability = sdk.NewDecWithPrec(10, 1) //1
+	QoS.Freshness = sdk.NewDecWithPrec(10, 1)    //1
+	return QoS
 }

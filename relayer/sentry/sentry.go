@@ -56,11 +56,10 @@ func (cs *ClientSession) AddQoS(QoSReport pairingtypes.QualityOfServiceReport) {
 		cs.qosSum.Availability = (QoSReport.Availability)
 		cs.qosSum.Freshness = (QoSReport.Freshness)
 	} else {
-		cs.qosSum.Latency.Add(QoSReport.Latency)
-		cs.qosSum.Availability.Add(QoSReport.Availability)
-		cs.qosSum.Freshness.Add(QoSReport.Freshness)
+		cs.qosSum.Latency = cs.qosSum.Latency.Add(QoSReport.Latency)
+		cs.qosSum.Availability = cs.qosSum.Availability.Add(QoSReport.Availability)
+		cs.qosSum.Freshness = cs.qosSum.Freshness.Add(QoSReport.Freshness)
 	}
-
 }
 
 func (cs *ClientSession) GetQoS() *pairingtypes.QualityOfServiceReport {
@@ -68,9 +67,9 @@ func (cs *ClientSession) GetQoS() *pairingtypes.QualityOfServiceReport {
 		return nil
 	}
 
-	latencyAverage := cs.qosSum.Latency.Quo(sdk.NewDec(int64(cs.RelayNum)))
-	AvailabilityAverage := cs.qosSum.Availability.Quo(sdk.NewDec(int64(cs.RelayNum)))
-	FreshnessAverage := cs.qosSum.Freshness.Quo(sdk.NewDec(int64(cs.RelayNum)))
+	latencyAverage := cs.qosSum.Latency.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
+	AvailabilityAverage := cs.qosSum.Availability.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
+	FreshnessAverage := cs.qosSum.Freshness.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
 	return &pairingtypes.QualityOfServiceReport{Latency: latencyAverage, Availability: AvailabilityAverage, Freshness: FreshnessAverage}
 }
 
