@@ -1,5 +1,7 @@
 package types
 
+const TokenDenom = "ulava"
+
 //returns a deep copy of the stake storage with the same index
 func (stksto StakeStorage) Copy() (returnedStorage StakeStorage) {
 	returnedStorage = StakeStorage{Index: stksto.Index, StakeEntries: []StakeEntry{}}
