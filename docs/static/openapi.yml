@@ -51264,7 +51264,7 @@ definitions:
         type: string
       availability:
         type: string
-      freshness:
+      sync:
         type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
@@ -51807,7 +51807,7 @@ definitions:
             type: string
           availability:
             type: string
-          freshness:
+          sync:
             type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object

@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -112,7 +113,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
-			QoSReport:       clientSession.GetQoS(), //todo DataRelliability
+			QoSReport:       clientSession.QoSInfo.LastQoSReport,
 			DataReliability: nil,
 		}
 
@@ -123,10 +124,20 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *clientSession.Client.Client
 
+		relaySentTime := time.Now()
+		clientSession.QoSInfo.TotalRelays++
+
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
+			if err.Error() == context.DeadlineExceeded.Error() { //check if this is right
+				clientSession.QoSInfo.ConsecutiveTimeOut++
+			}
 			return nil, nil, err
 		}
+		currentLatency := time.Since(relaySentTime)
+		clientSession.QoSInfo.ConsecutiveTimeOut = 0
+		clientSession.QoSInfo.AnsweredRelays++
+
 		//update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(relayRequest, reply)
 		requestedBlock = relayRequest.RequestBlock
@@ -136,8 +147,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 
-		relayQoS := CalculateQoS() //Todo
-		clientSession.AddQoS(relayQoS)
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency)
 
 		return reply, relayRequest, nil
 	}
@@ -205,13 +215,4 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 	clientSession.Client.UsedComputeUnits += apiCu
 	clientSession.RelayNum += 1
 	return nil
-}
-
-func CalculateQoS() pairingtypes.QualityOfServiceReport {
-	//todo Add real calculations
-	QoS := pairingtypes.QualityOfServiceReport{}
-	QoS.Latency = sdk.NewDecWithPrec(10, 1)      //1
-	QoS.Availability = sdk.NewDecWithPrec(10, 1) //1
-	QoS.Freshness = sdk.NewDecWithPrec(10, 1)    //1
-	return QoS
 }
