@@ -42,35 +42,37 @@ type BlockHash struct {
 }
 type ClientSession struct {
 	CuSum     uint64
-	qosSum    *pairingtypes.QualityOfServiceReport
+	QoSInfo   QoSInfo
 	SessionId int64
 	Client    *RelayerClientWrapper
 	Lock      sync.Mutex
 	RelayNum  uint64
 }
 
-func (cs *ClientSession) AddQoS(QoSReport pairingtypes.QualityOfServiceReport) {
-	if cs.qosSum == nil { //this is the first time we add QoS
-		cs.qosSum = &pairingtypes.QualityOfServiceReport{}
-		cs.qosSum.Latency = (QoSReport.Latency)
-		cs.qosSum.Availability = (QoSReport.Availability)
-		cs.qosSum.Freshness = (QoSReport.Freshness)
-	} else {
-		cs.qosSum.Latency = cs.qosSum.Latency.Add(QoSReport.Latency)
-		cs.qosSum.Availability = cs.qosSum.Availability.Add(QoSReport.Availability)
-		cs.qosSum.Freshness = cs.qosSum.Freshness.Add(QoSReport.Freshness)
-	}
+type QoSInfo struct {
+	LastQoSReport      *pairingtypes.QualityOfServiceReport
+	LatencyScoreList   []sdk.Dec
+	TotalRelays        uint64
+	AnsweredRelays     uint64
+	ConsecutiveTimeOut uint64
 }
 
-func (cs *ClientSession) GetQoS() *pairingtypes.QualityOfServiceReport {
-	if cs.qosSum == nil {
-		return nil
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration) {
+	if cs.QoSInfo.LastQoSReport == nil {
+		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
+	AvailabilityPrecentage := sdk.NewDecWithPrec(5, 2)
+	SuccessPrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(SuccessPrecentage).Quo(AvailabilityPrecentage))
 
-	latencyAverage := cs.qosSum.Latency.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
-	AvailabilityAverage := cs.qosSum.Availability.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
-	FreshnessAverage := cs.qosSum.Freshness.Quo(sdk.NewDec(int64(cs.RelayNum - 1)))
-	return &pairingtypes.QualityOfServiceReport{Latency: latencyAverage, Availability: AvailabilityAverage, Freshness: FreshnessAverage}
+	var latencyThreshold time.Duration = 1*time.Second + time.Duration(cu)*time.Millisecond
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+	cs.QoSInfo.LatencyScoreList = append(cs.QoSInfo.LatencyScoreList, latencyScore)
+	sort.SliceStable(cs.QoSInfo.LatencyScoreList, func(i, j int) bool {
+		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
+	})
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[len(cs.QoSInfo.LatencyScoreList)*90/100]
+
 }
 
 type RelayerClientWrapper struct {
@@ -577,7 +579,7 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 
-	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -856,7 +858,7 @@ func (s *Sentry) SendRelay(
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
-	if err != nil {
+	if err != nil && clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 		s.movePairingEntryToPurge(wrap, index)
 		return reply, err
 	}

@@ -23,7 +23,7 @@ message RelayRequest {
     int64 request_block = 11;
 
     VRFData DataReliability = 12;
-    QualityOfServiceReport QoSReport = 13 [(gogoproto.nullable)   = true];
+    QualityOfServiceReport QoSReport = 13;
 }
 
 message RelayReply {
@@ -56,10 +56,9 @@ message QualityOfServiceReport{
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
-    string freshness = 3 [
-        (gogoproto.moretags) = "yaml:\"freshness\"",
+    string sync = 3 [
+        (gogoproto.moretags) = "yaml:\"sync\"",
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
-    
 }

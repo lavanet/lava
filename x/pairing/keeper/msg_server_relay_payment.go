@@ -179,6 +179,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
 			}
+			details["QoSReport"] = "Latency: " + relay.QoSReport.Latency.String() + ", Availability: " + relay.QoSReport.Availability.String() + ", Sync: " + relay.QoSReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 			reward = reward.Mul(QoS)
 		}
@@ -228,6 +229,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
 		}
 		details["clientFee"] = burnAmount.String()
+		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 
 	}
