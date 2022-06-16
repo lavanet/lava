@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -98,7 +99,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		//pairing is valid, we can pay provider for work
 		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: "stake", Amount: reward.TruncateInt()}}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		if reward.IsZero() {
 			continue
 		}
@@ -112,7 +113,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			errorLogAndFormat("relay_proof_spec", details, "failed to get spec for chain ID")
 			panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 		}
-		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: "stake"}
+		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
 		burnSucceeded, err2 := k.BurnClientStake(ctx, spec.Index, clientAddr, burnAmount, false)
 		if err2 != nil {
 			details["amountToBurn"] = burnAmount.String()

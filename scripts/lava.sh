@@ -4,7 +4,7 @@
 
 echo ' ::: SERVING LAVA CHAIN (starport 0.19.2) :::'
 ### Serve chain
-sh ./.scripts/serve_chain.sh &
+sh ./scripts/serve_chain.sh &
 #TODO await event
 echo ' ::: AWITING LAVA CHAIN ::: (40 secs) '
 sleep 40
@@ -21,7 +21,7 @@ sh init_full.sh
 echo ' ::: AWITING FOR PROVIDERS ::: (40 secs)'
 echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::'
 sleep 40
-sh ./.scripts/run_clients.sh
+sh ./scripts/run_clients.sh
 
 echo ' ::: DONE - FINISHED CLIENTS :::'
 echo ''

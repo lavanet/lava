@@ -75,7 +75,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 		return epochstoragetypes.ClientKey
 	}
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
-		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), "stake")
+		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 		if moduleBalance.IsLT(neededAmount) {
 			return false, fmt.Errorf("insufficient balance for unstaking %s current balance: %s", neededAmount, moduleBalance)
 		}
