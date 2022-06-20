@@ -58,8 +58,8 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration) {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 	AvailabilityPrecentage := sdk.NewDecWithPrec(5, 2)
-	SuccessPrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(SuccessPrecentage).Quo(AvailabilityPrecentage))
+	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
 
 	var latencyThreshold time.Duration = 1*time.Second + time.Duration(cu)*time.Millisecond
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -68,7 +68,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration) {
 		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
 	})
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[len(cs.QoSInfo.LatencyScoreList)*90/100]
-
+	cs.QoSInfo.LastQoSReport.Sync = sdk.OneDec()
 }
 
 type RelayerClientWrapper struct {
