@@ -16,17 +16,17 @@ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lavaC lava_starport |
 # echo ' ::: LAVA INIT (on docker):::'
 # echo ' ::: waiting 40 secs :::'
 # sleep 40
-# docker exec -it lavaC sh .scripts/init.sh
+# docker exec -it lavaC sh scripts/init.sh
 
 # ### PROVIDERS
 # echo ' ::: LAVA PROVIDERS (on docker):::'
-# docker exec -it -d lavaC sh .scripts/eth.sh
-# docker exec -it -d lavaC sh .scripts/osmosis.sh
+# docker exec -it -d lavaC sh scripts/eth.sh
+# docker exec -it -d lavaC sh scripts/osmosis.sh
 
 # ### CLIENTS
 # echo ' ::: LAVA CLIENT (on docker):::'
 # sleep 15
-# docker exec -it lavaC sh .scripts/run_clients.sh
+# docker exec -it lavaC sh scripts/run_clients.sh
 
 
 

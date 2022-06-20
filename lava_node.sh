@@ -5,11 +5,11 @@
 echo ' ::: SERVING LAVA CHAIN (starport 0.22.1) :::'
 
 ### Init(delayed) + Serve chain
-(sleep 40 && echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::' && sh ./.scripts/init.sh  ) & 
-sh ./.scripts/serve_chain.sh
+(sleep 40 && echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::' && sh ./scripts/init.sh  ) & 
+sh ./scripts/serve_chain.sh
 
     # ### Serve chain
-    # sh ./.scripts/serve_chain.sh &
+    # sh ./scripts/serve_chain.sh &
     # #TODO await event
     # echo ' ::: AWITING LAVA CHAIN ::: (40 secs) '
     # sleep 40
@@ -26,7 +26,7 @@ sh ./.scripts/serve_chain.sh
 # echo ' ::: AWITING FOR PROVIDERS ::: (40 secs)'
 # echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::'
 # sleep 40
-# sh ./.scripts/run_clients.sh
+# sh ./scripts/run_clients.sh
 # echo ' ::: DONE - FINISHED CLIENTS :::'
 
 echo ''

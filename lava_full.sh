@@ -4,7 +4,7 @@
 
 echo ' ::: SERVING LAVA CHAIN (ignite 0.22.1) :::'
 ### Serve chain
-sh ./.scripts/serve_chain.sh &
+sh ./scripts/serve_chain.sh &
 #TODO await event
 echo ' ::: AWITING LAVA CHAIN ::: (40 secs) '
 sleep 40
@@ -14,14 +14,14 @@ sleep 40
 ###     Run mock proxies
 ###     Run Providers (blocked uptil specs)
 echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::'
-sh ./.scripts/init_full.sh 
+sh ./scripts/init_full.sh 
 
 ### Run Clients
 #TODO await event
 echo ' ::: AWITING FOR PROVIDERS ::: (40 secs)'
 echo ' ::: RUNNING INITFULL - SPECS, PROXIES, MOCK PROVIDERS :::'
 sleep 40
-sh ./.scripts/run_clients.sh
+sh ./scripts/run_clients.sh
 
 echo ' ::: DONE - FINISHED CLIENTS :::'
 echo ''

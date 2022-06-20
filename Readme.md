@@ -54,7 +54,7 @@ After a draft release is created, make your final changes from the release page 
 * when compiling a binary called: "lavad", is created by starport on your $GOPATH (and if you configured go environment properly,
     it should be ~/go/bin/lavad)
 * you can interact with the binary to send transactions and queries
-* ./.scripts/init_chain_commands.sh has examples on how to set up an initial chain with 5 servicers and 1 user,
+* ./scripts/init_chain_commands.sh has examples on how to set up an initial chain with 5 servicers and 1 user,
     for basic testing of pairing on ethereum mainnet, you can run it or have a look at the commands to learn more
 
 
