@@ -8,8 +8,8 @@ import (
 )
 
 func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressToBurn sdk.AccAddress, burnAmount sdk.Coin, failBurnOnLeftover bool) (bool, error) {
-	if burnAmount.Denom != "stake" {
-		return false, fmt.Errorf("burn coin isn't stake: %s", burnAmount.Denom)
+	if burnAmount.Denom != epochstoragetypes.TokenDenom {
+		return false, fmt.Errorf("burn coin isn't right denom: %s", burnAmount.Denom)
 	}
 	logger := k.Logger(ctx)
 	//find the user in the stake list
@@ -26,7 +26,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		//now we need to save the entry
 		k.epochStorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, chainID, clientEntry, indexFound)
 
-		if clientEntry.Stake.IsLT(k.GetMinStakeClient(ctx)) {
+		if clientEntry.Stake.IsLT(k.MinStakeClient(ctx)) {
 			//if user doesn't have enough stake to stay staked, we will unstake him now
 			logger.Info("unstaking client", clientEntry.Address, "insufficient funds to stay staked", clientEntry.Stake)
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})

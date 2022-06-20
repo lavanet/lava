@@ -60,6 +60,3 @@ After a draft release is created, make your final changes from the release page 
 
 # Lava e2e Test & Mock Proxy 
 * check out ./testutils/e2e/Readme.md
-
-<br>
-#TODO: update all links to ignite

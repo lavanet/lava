@@ -19,12 +19,12 @@ $ cd $LAVA && ./lava.sh                       # Runs Everything, Lava, init, pro
 ### Start Proxies & Mock Providers 
 ```
 # ETH
-$ ./.scripts/mock_proxy_eth.sh                   # will start proxies for eth
-$ ./.scripts/providers_eth_mock.sh               # will run eth providers directed towards the proxies
+$ ./scripts/mock_proxy_eth.sh                   # will start proxies for eth
+$ ./scripts/providers_eth_mock.sh               # will run eth providers directed towards the proxies
 
 # OSMOSIS
-$ ./.scripts/mock_proxy_osmosis.sh               # will start proxies for osmosis
-$ ./.scripts/providers_osmosis_mock.sh           # will run osmosis providers directed towards the proxies
+$ ./scripts/mock_proxy_osmosis.sh               # will start proxies for osmosis
+$ ./scripts/providers_osmosis_mock.sh           # will run osmosis providers directed towards the proxies
 ```
 
 ### Start & Use Generic Proxy Server

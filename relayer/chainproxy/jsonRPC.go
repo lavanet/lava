@@ -103,7 +103,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use("/ws", func(c *fiber.Ctx) error {
+	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -113,7 +113,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
@@ -140,7 +140,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 	}))
 
-	app.Post("/", func(c *fiber.Ctx) error {
+	app.Post("/:dappId", func(c *fiber.Ctx) error {
 		log.Println("in <<< ", string(c.Body()))
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
 		if err != nil {

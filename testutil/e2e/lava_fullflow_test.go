@@ -37,7 +37,6 @@ func LavaTestFullflow(t *testing.T) {
 }
 
 func LavaTestFullflowWithTimeOut(t *testing.T) {
-	// timeout := time.After(3 * time.Second)
 	timeout := time.After(11 * time.Minute)
 	done := make(chan bool)
 	go func() {

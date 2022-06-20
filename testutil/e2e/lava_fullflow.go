@@ -158,7 +158,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          homepath + ".scripts/init.sh",
+				cmd:          homepath + "scripts/init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -201,7 +201,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			stateID:  "providers_osmosis",
 			homepath: homepath,
 			// cmd:          homepath+"providers_osmosis.sh",
-			cmd:          homepath + ".scripts/osmosis.sh", // with mock
+			cmd:          homepath + "scripts/osmosis.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -324,7 +324,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			stateID:  "providers_eth",
 			homepath: homepath,
 			// cmd:          homepath+"providers_eth.sh",
-			cmd:          homepath + ".scripts/eth.sh", // with mock
+			cmd:          homepath + "scripts/eth.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,

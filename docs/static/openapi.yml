@@ -29647,10 +29647,8 @@ paths:
                 properties:
                   minStakeProvider:
                     type: string
-                    format: uint64
                   minStakeClient:
                     type: string
-                    format: uint64
                   mintCoinsPerCU:
                     type: string
                   burnCoinsPerCU:
@@ -50914,10 +50912,8 @@ definitions:
     properties:
       minStakeProvider:
         type: string
-        format: uint64
       minStakeClient:
         type: string
-        format: uint64
       mintCoinsPerCU:
         type: string
       burnCoinsPerCU:
@@ -51260,10 +51256,8 @@ definitions:
         properties:
           minStakeProvider:
             type: string
-            format: uint64
           minStakeClient:
             type: string
-            format: uint64
           mintCoinsPerCU:
             type: string
           burnCoinsPerCU:
