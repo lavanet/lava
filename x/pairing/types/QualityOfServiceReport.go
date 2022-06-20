@@ -13,5 +13,5 @@ func (qos *QualityOfServiceReport) ComputeQoS() (sdk.Dec, error) {
 		return sdk.ZeroDec(), fmt.Errorf("QoS scores is not between 0-1")
 	}
 
-	return qos.Availability.Mul(qos.Sync).Mul(qos.Latency).ApproxSqrt()
+	return qos.Availability.Mul(qos.Sync).Mul(qos.Latency).ApproxRoot(3)
 }
