@@ -132,6 +132,8 @@ RUN ls -l
 RUN chmod +x lava_node.sh lava_full.sh
 RUN chmod +x -R .scripts/
 
+# VOLUME [ "/go/lava/docker/shared" ]
+
 # CMD sh lava_node.sh
 # CMD (cd $LAVA && starport chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e STARPORT] -e !
 CMD ignite chain serve -v

@@ -9,8 +9,8 @@ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lavaC lava_ignite go 
 ### OR MANUALLY
 
 ### RUN LAVA DOCKER 
-# echo ' ::: LAVA DOCKER (STARPORT) :::'
-# docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lavaC lava_starport |& grep -e lava_ -e ERR_ -e STARPORT] -e ! &
+echo ' ::: LAVA DOCKER (STARPORT) :::'
+docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lavaC lava_starport |& grep -e lava_ -e ERR_ -e STARPORT] -e ! 
 
 # ### INIT
 # echo ' ::: LAVA INIT (on docker):::'
@@ -27,4 +27,12 @@ docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 --name lavaC lava_ignite go 
 # echo ' ::: LAVA CLIENT (on docker):::'
 # sleep 15
 # docker exec -it lavaC sh .scripts/run_clients.sh
+
+
+
+### EXPERIMENTAL
+# docker run -p 4500:4500 -p 1317:1317 -p 26657:26657  -v $LAVA/docker/shared:/go/lava/docker/shared --name lavaC lava_starport ignite chain serve -v --home /go/lava/docker/shared |& grep -e lava_ -e ERR_ -e STARPORT] -e ! 
+# docker run -p 4500:4500 -p 1317:1317 -p 26657:26657 \
+#   --mount 'type=volume,src=/home/magic/go/lava/docker/shared,dst=/go/lava/docker/shared,volume-driver=local,readonly' \ 
+#   lava_starport ignite chain serve -v --home /go/lava/docker/shared |& grep -e lava_ -e ERR_ -e STARPORT] -e ! 
 
