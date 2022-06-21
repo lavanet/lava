@@ -52,15 +52,15 @@ RUN ls -l
 
 # RUN cd /go/lava && ignite chain serve -r -v
 # RUN cd /go/lava && go test ./testutil/e2e -v
-RUN chmod +x lava_node.sh lava_full.sh
+RUN chmod +x scripts/lava_node.sh scripts/lava_full.sh
 RUN chmod +x -R scripts/
 
 # VOLUME [ "/go/lava/docker/shared" ]
 
-# CMD sh lava_node.sh
+# CMD sh scripts/lava_node.sh
 # CMD (cd $LAVA && starport chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e STARPORT] -e !
 CMD ignite chain serve -v
-# ENTRYPOINT $GOPATH/lava/lava_node.sh 
+# ENTRYPOINT $GOPATH/lava/scripts/lava_node.sh 
 
 # 🌍 Token faucet API
 EXPOSE 4500
