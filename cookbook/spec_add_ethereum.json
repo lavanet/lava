@@ -8,6 +8,8 @@
       "enabled": true,
       "reliability_threshold" : 268435455,
       "compares_hashes": true,
+      "average_block_time": 13000,
+      "block_height_threshold": 5,
       "apis": [
         {
           "name": "rpc_modules",

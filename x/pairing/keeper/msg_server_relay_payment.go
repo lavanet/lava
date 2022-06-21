@@ -214,19 +214,21 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// Mint to module
-		err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-		if err != nil {
-			details["error"] = err.Error()
-			utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
-			panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
-		}
-		//
-		// Send to provider
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
-		if err != nil {
-			details["error"] = err.Error()
-			utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
-			panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+		if !reward.IsZero() {
+			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
+			if err != nil {
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
+				panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
+			}
+			//
+			// Send to provider
+			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
+			if err != nil {
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
+				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+			}
 		}
 		details["clientFee"] = burnAmount.String()
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)

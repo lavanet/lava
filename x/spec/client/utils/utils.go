@@ -30,6 +30,8 @@ type (
 		Apis                 []ApiJSON `json:"apis" yaml:"apis"`
 		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"enabled"`
 		ComparesHashes       bool      `json:"compares_hashes" yaml:"enabled"`
+		AverageBlockTime     int64     `json:"average_block_time" yaml:"enabled"`
+		BlockHeightThreshold int64     `json:"block_height_threshold" yaml:"enabled"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -62,6 +64,8 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			Apis:                 apis,
 			ReliabilityThreshold: spec.ReliabilityThreshold,
 			ComparesHashes:       spec.ComparesHashes,
+			AverageBlockTime:     spec.AverageBlockTime,
+			BlochHeightThreshold: spec.BlockHeightThreshold,
 		})
 	}
 	return ret
