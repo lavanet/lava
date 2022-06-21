@@ -9,6 +9,8 @@
       "compares_hashes": true,
       "finalization_criteria": 0,
       "saved_blocks": 1,
+      "average_block_time": 6500,
+      "block_height_threshold": 5,
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},

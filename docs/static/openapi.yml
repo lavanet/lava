@@ -30247,6 +30247,12 @@ paths:
                   saved_blocks:
                     type: integer
                     format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30423,6 +30429,12 @@ paths:
                       format: int64
                     saved_blocks:
                       type: integer
+                      format: int64
+                    averageBlockTime:
+                      type: string
+                      format: int64
+                    blochHeightThreshold:
+                      type: string
                       format: int64
               pagination:
                 type: object
@@ -30634,6 +30646,12 @@ paths:
                     format: int64
                   saved_blocks:
                     type: integer
+                    format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
                     format: int64
         default:
           description: An unexpected error response.
@@ -52016,6 +52034,12 @@ definitions:
             saved_blocks:
               type: integer
               format: int64
+            averageBlockTime:
+              type: string
+              format: int64
+            blochHeightThreshold:
+              type: string
+              format: int64
       pagination:
         type: object
         properties:
@@ -52141,6 +52165,12 @@ definitions:
           saved_blocks:
             type: integer
             format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
+            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:
@@ -52240,6 +52270,12 @@ definitions:
             format: int64
           saved_blocks:
             type: integer
+            format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
@@ -52426,6 +52462,12 @@ definitions:
         format: int64
       saved_blocks:
         type: integer
+        format: int64
+      averageBlockTime:
+        type: string
+        format: int64
+      blochHeightThreshold:
+        type: string
         format: int64
   lavanet.lava.spec.SpecCategory:
     type: object

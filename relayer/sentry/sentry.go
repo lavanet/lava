@@ -33,6 +33,7 @@ import (
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tenderminttypes "github.com/tendermint/tendermint/types"
+	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 )
 
@@ -48,12 +49,13 @@ type ClientSession struct {
 type QoSInfo struct {
 	LastQoSReport      *pairingtypes.QualityOfServiceReport
 	LatencyScoreList   []sdk.Dec
+	SyncScoreList      []sdk.Dec
 	TotalRelays        uint64
 	AnsweredRelays     uint64
 	ConsecutiveTimeOut uint64
 }
 
-func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration) {
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int) {
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
@@ -68,7 +70,22 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration) {
 		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
 	})
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[len(cs.QoSInfo.LatencyScoreList)*90/100]
-	cs.QoSInfo.LastQoSReport.Sync = sdk.OneDec()
+
+	if numOfPorivders > 1 { //todo >0.6(constant)*providersPerEpoch
+		if blockHeightDiff > 0 {
+			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.ZeroDec())
+		} else {
+			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+		}
+	} else {
+		cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+	}
+
+	sum := sdk.ZeroDec()
+	for _, element := range cs.QoSInfo.SyncScoreList {
+		sum.Add(element)
+	}
+	cs.QoSInfo.LastQoSReport.Sync = sum.QuoInt64(int64(len(cs.QoSInfo.SyncScoreList)))
 }
 
 type RelayerClientWrapper struct {
@@ -92,6 +109,7 @@ type PaymentRequest struct {
 
 type providerDataContainer struct {
 	LatestFinalizedBlock  int64
+	LatestBlockTime       time.Time
 	FinalizedBlocksHashes map[int64]string
 	SigBlocks             []byte
 	SessionId             uint64
@@ -816,6 +834,7 @@ func findMinKey(blockMap map[int64]string) int64 {
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -834,6 +853,7 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -1238,6 +1258,43 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 	vrfPk = &utils.VrfPubKey{}
 	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
 	return vrfPk, UserEntryRes.GetMaxCU(), err
+}
+
+func (s *Sentry) ExpecedBlockHeight() (int64, int) {
+
+	averageBlockTime_ms := s.serverSpec.AverageBlockTime
+	listExpectedBlockHeights := []int64{}
+
+	now := time.Now()
+	calcExpectedBlocks := func(listPHC []ProviderHashesConsensus) []int64 {
+		listExpectedBH := []int64{}
+		for _, PHC := range listPHC {
+			for _, element := range PHC.agreeingProviders {
+				expected := element.LatestFinalizedBlock + (now.Sub(element.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				listExpectedBH = append(listExpectedBH, expected)
+			}
+		}
+		return listExpectedBH
+	}
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.prevEpochProviderHashesConsensus)...)
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.providerHashesConsensus)...)
+
+	median := func(data []int64) int64 {
+		slices.Sort(data)
+
+		var median int64
+		l := len(data)
+		if l == 0 {
+			return 0
+		} else if l%2 == 0 {
+			median = int64((data[l/2-1] + data[l/2]) / 2.0)
+		} else {
+			median = int64(data[l/2])
+		}
+		return median
+	}
+
+	return median(listExpectedBlockHeights) - s.serverSpec.BlochHeightThreshold, len(listExpectedBlockHeights)
 }
 
 func NewSentry(
