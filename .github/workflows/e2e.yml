@@ -72,8 +72,8 @@ jobs:
       run: cat ./testutil/e2e/logs/clientOsmo2.log
     - name: cat providers_osmosis.log
       run: cat ./testutil/e2e/logs/providers_eth.log
-    - name: docker build 
-      run: docker build -t lava-docker scripts/docker
+    # - name: docker build 
+    #   run: docker build -t lava-docker scripts/docker
     
 
   
