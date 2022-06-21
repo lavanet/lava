@@ -31,7 +31,7 @@ func exit(states []State) bool {
 }
 
 func ExitLavaProcess() {
-	cmd := exec.Command("sh", "-c", "killall lavad ; killall starport ; killall main ; killall lavad")
+	cmd := exec.Command("sh", "-c", "killall lavad ; killall ignite ; killall starport ; killall main ; killall lavad")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(fmt.Errorf(err.Error()).Error())
@@ -64,7 +64,7 @@ func tests() map[string]func(LogLine) TestResult {
 }
 
 // TODO:
-// [-] merge main
+// [+] merge main
 // [+] refactor & clean for PR
 // [-] improvements:
 // 		[-] add steps to test results,
@@ -78,19 +78,26 @@ func tests() map[string]func(LogLine) TestResult {
 // [+] github actions CI/CD
 func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	// Setup Env
-	homepath := getHomePath()
+	// homepath := "$LAVA"
 	resetGenesis := true
 	isGithubAction := false
-	if strings.Contains(homepath, "runner") { // on github
-		homepath += "work/lava/lava/"
-		isGithubAction = true
-	} else {
-		homepath += "go/lava/" //local
+	homepath := os.Getenv("LAVA")
+	if homepath == "" {
+		homepath = getHomePath()
+		if strings.Contains(homepath, "runner") { // on github
+			homepath += "work/lava/lava"
+			isGithubAction = true
+		} else {
+			homepath += "go/lava" //local
+		}
 	}
+	homepath += "/"
+
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
-	lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
+	// lava_serve_cmd := "killall starport; cd " + homepath + " && starport chain serve -v -r  "
+	lava_serve_cmd := "killall ignite; cd " + homepath + " && ignite chain serve -v -r  "
 	usingLavad := false
 	if !resetGenesis {
 		lava_serve_cmd = "lavad start "
@@ -126,7 +133,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 	// Test Full Flow
 	node := LogProcess(CMD{
-		stateID:      "starport",
+		stateID:      "ignite",
 		homepath:     homepath,
 		cmd:          lava_serve_cmd,
 		filter:       []string{"STARPORT]", "!", "lava_", "ERR_", "panic"},
@@ -151,7 +158,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			init := LogProcess(CMD{
 				stateID:      "init",
 				homepath:     homepath,
-				cmd:          "./scripts/init.sh",
+				cmd:          homepath + "scripts/init.sh",
 				filter:       []string{":::", "raw_log", "Error", "error", "panic"},
 				testing:      true,
 				test:         initTest,
@@ -193,8 +200,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov_osm := LogProcess(CMD{
 			stateID:  "providers_osmosis",
 			homepath: homepath,
-			// cmd:          "./providers_osmosis.sh",
-			cmd:          "./scripts/osmosis.sh", // with mock
+			// cmd:          homepath+"providers_osmosis.sh",
+			cmd:          homepath + "scripts/osmosis.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -316,8 +323,8 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov_eth := LogProcess(CMD{
 			stateID:  "providers_eth",
 			homepath: homepath,
-			// cmd:          "./providers_eth.sh",
-			cmd:          "./scripts/eth.sh", // with mock
+			// cmd:          homepath+"providers_eth.sh",
+			cmd:          homepath + "scripts/eth.sh", // with mock
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -406,5 +413,5 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 func main() {
 	FullFlowTest(nil)
-	// mainB() // when piping into go i.e - 6; cd ~/go/lava && starport chain serve -v -r |& go run x_test/lava_pipe.go
+	// mainB() // when piping into go i.e - 6; cd ~/go/lava && ignite chain serve -v -r |& go run x_test/lava_pipe.go
 }

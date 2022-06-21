@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -51,19 +52,24 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 	failed := &testfailed
 	states := []State{}
 	results := map[string][]TestResult{}
-	homepath := getHomePath()
-	if strings.Contains(homepath, "runner") { // on github
-		homepath += "work/lava/lava/"
-	} else {
-		homepath += "go/lava/" //local
+	homepath := os.Getenv("LAVA")
+	if homepath == "" {
+		homepath = getHomePath()
+		if strings.Contains(homepath, "runner") { // on github
+			homepath += "work/lava/lava"
+		} else {
+			homepath += "go/lava" //local
+		}
 	}
+	homepath += "/"
+
 	if t != nil {
 		t.Logf(" ::: Test Homepath ::: %s", homepath)
 	}
 	node := LogProcess(CMD{
 		stateID:      "simple",
 		homepath:     homepath,
-		cmd:          "go run ./testutil/e2e/simple/simple.go ",
+		cmd:          "go run " + homepath + "testutil/e2e/simple/simple.go ",
 		filter:       []string{"!", "no", "un", "error"},
 		testing:      true,
 		test:         simpleTest,
