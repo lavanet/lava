@@ -6,7 +6,8 @@
       "name": "osmosis mainnet",
       "enabled": true,
       "reliability_threshold" : 268435455,
-      "compares_hashes": false,
+      "compares_hashes": true,
+      "finalization_criteria": 7,
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
@@ -27,7 +28,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["height","=","2"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -42,7 +43,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["height","=","0"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -50,7 +51,12 @@
             "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
-          }]
+          }],
+					"function_tag": "getBlockByNumber",
+          "result_parsing": {
+						"parserArg": ["0", "sync_info", "latest_block_height"],
+						"parserFunc": "PARSE_CANONICAL"
+					}
         },
         {
           "name": "block_by_hash",
@@ -72,7 +78,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
             "parserArg": ["height","=","0"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -102,7 +108,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
             "parserArg": ["maxHeight","=","1"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -192,7 +198,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["height","=","0"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -207,7 +213,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["height","=","0"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -335,7 +341,12 @@
             "interface": "tendermintrpc",
             "type": "get",
             "extra_compute_units": "0"
-          }]
+          }],
+					"function_tag": "getBlockNumber",
+          "result_parsing": {
+						"parserArg": ["0", "sync_info", "latest_block_height"],
+						"parserFunc": "PARSE_CANONICAL"
+					}
         },
         {
           "name": "subscribe",
@@ -432,7 +443,7 @@
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
 					"block_parsing": {
 						"parserArg": ["height","=","0"],
-						"parserFunc": "PARSE_PARAM_DICTIONARY_OR_ORDERED"
+						"parserFunc": "PARSE_DICTIONARY_OR_ORDERED"
 					},
 					"compute_units": "10",
           "enabled": true,
@@ -485,7 +496,12 @@
             "interface": "rest",
             "type": "get",
             "extra_compute_units": "0"
-          }]
+          }],
+          "function_tag": "getBlockByNumber",
+          "result_parsing": {
+						"parserArg": ["0", "hash"],
+						"parserFunc": "PARSE_CANONICAL"
+					}
         },
         {
           "name": "/blocks/{height}",

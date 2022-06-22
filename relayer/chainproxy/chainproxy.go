@@ -23,6 +23,8 @@ type ChainProxy interface {
 	GetSentry() *sentry.Sentry
 	ParseMsg(string, []byte) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
+	FetchLatestBlockNum(ctx context.Context) (int64, error)
+	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
 
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
@@ -52,7 +54,11 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 	}
 
 	if comparesHashes {
-		serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest)
+		strAdd, err := sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return err
+		}
+		serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest, strAdd)
 		if err != nil {
 			return err
 		}
@@ -62,8 +68,8 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 			return err
 		}
 
-		if serverAddr.String() != addr {
-			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), addr)
+		if serverAddr.String() != strAdd.String() {
+			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), strAdd.String())
 		}
 	}
 

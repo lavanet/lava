@@ -38,6 +38,10 @@ type JrpcMessage struct {
 	requestedBlock int64
 }
 
+func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
+	j.msg.Result = result
+}
+
 type JrpcChainProxy struct {
 	conn    *Connector
 	nConns  uint
@@ -53,8 +57,80 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 	}
 }
 
+type rpcInputReply struct {
+	Data json.RawMessage
+}
+
+func (r *rpcInputReply) GetParams() []interface{}               { return nil }
+func (r *rpcInputReply) GetResult() json.RawMessage             { return r.Data }
+func (r *rpcInputReply) ParseBlock(block string) (int64, error) { return 0, nil }
+
+func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockNumber") //TODO:: move to const
+	if !ok {
+		return -1, errors.New("getBlockNumber tag function not found")
+	}
+
+	params := []interface{}{}
+	nodeMsg := cp.NewMessage(&serviceApi, serviceApi.GetName(), 0, params)
+
+	reply, err := nodeMsg.Send(ctx)
+	if err != nil {
+		return -1, err
+	}
+	log.Println("%s", reply)
+
+	blocknum, err := parser.ParseBlockFromReply(nodeMsg.msg, serviceApi.ResultParsing)
+	if err != nil {
+		return -1, err
+	}
+
+	return blocknum, nil
+}
+func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockByNumber") //TODO:: move to const
+	if !ok {
+		return "", errors.New("getBlockNumber tag function not found")
+	}
+
+	params := []interface{}{}
+	if serviceApi.GetFunctionParams().Type == "array" {
+		retArr := make([]interface{}, 0)
+		for _, paramConfig := range serviceApi.GetFunctionParams().Params {
+
+			switch paramConfig.Type {
+			case "printformat":
+				retArr = append(retArr, fmt.Sprintf(paramConfig.Template, blockNum))
+			case "plain":
+				retArr = append(retArr, paramConfig.Value)
+			}
+
+		}
+		params = retArr
+	}
+
+	nodeMsg := cp.NewMessage(&serviceApi, serviceApi.GetName(), 0, params)
+
+	reply, err := nodeMsg.Send(ctx)
+	if err != nil {
+		return "", err
+	}
+	log.Println("%s", reply)
+
+	blockData, err := parser.ParseMessageResponse(nodeMsg.msg, serviceApi.ResultParsing)
+	if err != nil {
+		return "", err
+	}
+
+	return blockData[0].(string), nil
+}
+
 func (cp JsonrpcMessage) GetParams() []interface{} {
 	return cp.Params
+}
+
+func (cp JsonrpcMessage) GetResult() json.RawMessage {
+	return cp.Result
 }
 
 func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
@@ -99,7 +175,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error
 	if err != nil {
 		return nil, err
 	}
-	requestedBlock, err := parser.Parse(msg, serviceApi.BlockParsing)
+	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +186,39 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error
 		requestedBlock: requestedBlock,
 	}
 	return nodeMsg, nil
+}
+
+func (cp *JrpcChainProxy) ParseMsgResponse(nodeMsg NodeMessage) (NodeMessage, error) {
+	// err := parser.ParseResponse(nodeMsg)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	//
+	// msg.GetServiceApi().
+
+	// nodeMsg := &JrpcMessage{
+	// 	cp:             cp,
+	// 	serviceApi:     serviceApi,
+	// 	msg:            &msg,
+	// 	requestedBlock: requestedBlock,
+	// }
+	return nil, nil
+}
+
+func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) JrpcMessage {
+	nodeMsg := &JrpcMessage{
+		cp:             cp,
+		serviceApi:     serviceApi,
+		requestedBlock: requestedBlock,
+		msg: &JsonrpcMessage{
+			Version: "2.0",
+			ID:      []byte("1"), //TODO:: use ids
+			Method:  method,
+			Params:  params,
+		},
+	}
+	return *nodeMsg
 }
 
 func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
@@ -213,6 +322,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		}
 	} else {
 		replyMsg.Result = result
+		nm.msg.Result = result
 	}
 
 	data, err := json.Marshal(replyMsg)

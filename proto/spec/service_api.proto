@@ -13,8 +13,22 @@ message ServiceApi {
   bool enabled = 4; 
   repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
   SpecCategory category = 6;
+  string functionTag = 7;
+  BlockParser resultParsing = 8 [(gogoproto.nullable) = false];
+  FunctionParams functionParams = 9 [(gogoproto.nullable) = false];
 }
 
+message FunctionParams {
+  string type = 1;
+  repeated FunctionParam params = 2 [(gogoproto.nullable) = false]; 
+
+}
+message FunctionParam {
+  string type = 1;
+  string template = 2;
+  string value = 3;
+  string order = 4;
+}
 message ApiInterface {
   string interface = 1;
   string type = 2;
@@ -28,10 +42,11 @@ message BlockParser {
 
 enum PARSER_FUNC{
   EMPTY = 0;
-  PARSE_PARAM_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index]
-  PARSE_PARAM_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
-  PARSE_PARAM_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
-  PARSE_PARAM_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index]
+  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
+  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
+  PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+  PARSE_PLAIN = 5; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
 }
 
 message SpecCategory{

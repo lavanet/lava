@@ -26,27 +26,30 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type PARSER_FUNC int32
 
 const (
-	PARSER_FUNC_EMPTY                             PARSER_FUNC = 0
-	PARSER_FUNC_PARSE_PARAM_BY_ARG                PARSER_FUNC = 1
-	PARSER_FUNC_PARSE_PARAM_CANONICAL             PARSER_FUNC = 2
-	PARSER_FUNC_PARSE_PARAM_DICTIONARY            PARSER_FUNC = 3
-	PARSER_FUNC_PARSE_PARAM_DICTIONARY_OR_ORDERED PARSER_FUNC = 4
+	PARSER_FUNC_EMPTY                       PARSER_FUNC = 0
+	PARSER_FUNC_PARSE_BY_ARG                PARSER_FUNC = 1
+	PARSER_FUNC_PARSE_CANONICAL             PARSER_FUNC = 2
+	PARSER_FUNC_PARSE_DICTIONARY            PARSER_FUNC = 3
+	PARSER_FUNC_PARSE_DICTIONARY_OR_ORDERED PARSER_FUNC = 4
+	PARSER_FUNC_PARSE_PLAIN                 PARSER_FUNC = 5
 )
 
 var PARSER_FUNC_name = map[int32]string{
 	0: "EMPTY",
-	1: "PARSE_PARAM_BY_ARG",
-	2: "PARSE_PARAM_CANONICAL",
-	3: "PARSE_PARAM_DICTIONARY",
-	4: "PARSE_PARAM_DICTIONARY_OR_ORDERED",
+	1: "PARSE_BY_ARG",
+	2: "PARSE_CANONICAL",
+	3: "PARSE_DICTIONARY",
+	4: "PARSE_DICTIONARY_OR_ORDERED",
+	5: "PARSE_PLAIN",
 }
 
 var PARSER_FUNC_value = map[string]int32{
-	"EMPTY":                             0,
-	"PARSE_PARAM_BY_ARG":                1,
-	"PARSE_PARAM_CANONICAL":             2,
-	"PARSE_PARAM_DICTIONARY":            3,
-	"PARSE_PARAM_DICTIONARY_OR_ORDERED": 4,
+	"EMPTY":                       0,
+	"PARSE_BY_ARG":                1,
+	"PARSE_CANONICAL":             2,
+	"PARSE_DICTIONARY":            3,
+	"PARSE_DICTIONARY_OR_ORDERED": 4,
+	"PARSE_PLAIN":                 5,
 }
 
 func (x PARSER_FUNC) String() string {
@@ -58,12 +61,15 @@ func (PARSER_FUNC) EnumDescriptor() ([]byte, []int) {
 }
 
 type ServiceApi struct {
-	Name          string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	BlockParsing  BlockParser    `protobuf:"bytes,2,opt,name=blockParsing,proto3" json:"blockParsing"`
-	ComputeUnits  uint64         `protobuf:"varint,3,opt,name=computeUnits,proto3" json:"computeUnits,omitempty"`
-	Enabled       bool           `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ApiInterfaces []ApiInterface `protobuf:"bytes,5,rep,name=apiInterfaces,proto3" json:"apiInterfaces"`
-	Category      *SpecCategory  `protobuf:"bytes,6,opt,name=category,proto3" json:"category,omitempty"`
+	Name           string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	BlockParsing   BlockParser    `protobuf:"bytes,2,opt,name=blockParsing,proto3" json:"blockParsing"`
+	ComputeUnits   uint64         `protobuf:"varint,3,opt,name=computeUnits,proto3" json:"computeUnits,omitempty"`
+	Enabled        bool           `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	ApiInterfaces  []ApiInterface `protobuf:"bytes,5,rep,name=apiInterfaces,proto3" json:"apiInterfaces"`
+	Category       *SpecCategory  `protobuf:"bytes,6,opt,name=category,proto3" json:"category,omitempty"`
+	FunctionTag    string         `protobuf:"bytes,7,opt,name=functionTag,proto3" json:"functionTag,omitempty"`
+	ResultParsing  BlockParser    `protobuf:"bytes,8,opt,name=resultParsing,proto3" json:"resultParsing"`
+	FunctionParams FunctionParams `protobuf:"bytes,9,opt,name=functionParams,proto3" json:"functionParams"`
 }
 
 func (m *ServiceApi) Reset()         { *m = ServiceApi{} }
@@ -141,6 +147,147 @@ func (m *ServiceApi) GetCategory() *SpecCategory {
 	return nil
 }
 
+func (m *ServiceApi) GetFunctionTag() string {
+	if m != nil {
+		return m.FunctionTag
+	}
+	return ""
+}
+
+func (m *ServiceApi) GetResultParsing() BlockParser {
+	if m != nil {
+		return m.ResultParsing
+	}
+	return BlockParser{}
+}
+
+func (m *ServiceApi) GetFunctionParams() FunctionParams {
+	if m != nil {
+		return m.FunctionParams
+	}
+	return FunctionParams{}
+}
+
+type FunctionParams struct {
+	Type   string          `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Params []FunctionParam `protobuf:"bytes,2,rep,name=params,proto3" json:"params"`
+}
+
+func (m *FunctionParams) Reset()         { *m = FunctionParams{} }
+func (m *FunctionParams) String() string { return proto.CompactTextString(m) }
+func (*FunctionParams) ProtoMessage()    {}
+func (*FunctionParams) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3323a3ad252c5ed4, []int{1}
+}
+func (m *FunctionParams) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FunctionParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FunctionParams.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FunctionParams) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FunctionParams.Merge(m, src)
+}
+func (m *FunctionParams) XXX_Size() int {
+	return m.Size()
+}
+func (m *FunctionParams) XXX_DiscardUnknown() {
+	xxx_messageInfo_FunctionParams.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FunctionParams proto.InternalMessageInfo
+
+func (m *FunctionParams) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *FunctionParams) GetParams() []FunctionParam {
+	if m != nil {
+		return m.Params
+	}
+	return nil
+}
+
+type FunctionParam struct {
+	Type     string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Template string `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
+	Value    string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	Order    string `protobuf:"bytes,4,opt,name=order,proto3" json:"order,omitempty"`
+}
+
+func (m *FunctionParam) Reset()         { *m = FunctionParam{} }
+func (m *FunctionParam) String() string { return proto.CompactTextString(m) }
+func (*FunctionParam) ProtoMessage()    {}
+func (*FunctionParam) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3323a3ad252c5ed4, []int{2}
+}
+func (m *FunctionParam) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FunctionParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FunctionParam.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FunctionParam) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FunctionParam.Merge(m, src)
+}
+func (m *FunctionParam) XXX_Size() int {
+	return m.Size()
+}
+func (m *FunctionParam) XXX_DiscardUnknown() {
+	xxx_messageInfo_FunctionParam.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FunctionParam proto.InternalMessageInfo
+
+func (m *FunctionParam) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *FunctionParam) GetTemplate() string {
+	if m != nil {
+		return m.Template
+	}
+	return ""
+}
+
+func (m *FunctionParam) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
+func (m *FunctionParam) GetOrder() string {
+	if m != nil {
+		return m.Order
+	}
+	return ""
+}
+
 type ApiInterface struct {
 	Interface         string `protobuf:"bytes,1,opt,name=interface,proto3" json:"interface,omitempty"`
 	Type              string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
@@ -151,7 +298,7 @@ func (m *ApiInterface) Reset()         { *m = ApiInterface{} }
 func (m *ApiInterface) String() string { return proto.CompactTextString(m) }
 func (*ApiInterface) ProtoMessage()    {}
 func (*ApiInterface) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{1}
+	return fileDescriptor_3323a3ad252c5ed4, []int{3}
 }
 func (m *ApiInterface) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -210,7 +357,7 @@ func (m *BlockParser) Reset()         { *m = BlockParser{} }
 func (m *BlockParser) String() string { return proto.CompactTextString(m) }
 func (*BlockParser) ProtoMessage()    {}
 func (*BlockParser) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{2}
+	return fileDescriptor_3323a3ad252c5ed4, []int{4}
 }
 func (m *BlockParser) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -264,7 +411,7 @@ func (m *SpecCategory) Reset()         { *m = SpecCategory{} }
 func (m *SpecCategory) String() string { return proto.CompactTextString(m) }
 func (*SpecCategory) ProtoMessage()    {}
 func (*SpecCategory) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{3}
+	return fileDescriptor_3323a3ad252c5ed4, []int{5}
 }
 func (m *SpecCategory) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -324,6 +471,8 @@ func (m *SpecCategory) GetStateful() uint32 {
 func init() {
 	proto.RegisterEnum("lavanet.lava.spec.PARSER_FUNC", PARSER_FUNC_name, PARSER_FUNC_value)
 	proto.RegisterType((*ServiceApi)(nil), "lavanet.lava.spec.ServiceApi")
+	proto.RegisterType((*FunctionParams)(nil), "lavanet.lava.spec.FunctionParams")
+	proto.RegisterType((*FunctionParam)(nil), "lavanet.lava.spec.FunctionParam")
 	proto.RegisterType((*ApiInterface)(nil), "lavanet.lava.spec.ApiInterface")
 	proto.RegisterType((*BlockParser)(nil), "lavanet.lava.spec.BlockParser")
 	proto.RegisterType((*SpecCategory)(nil), "lavanet.lava.spec.SpecCategory")
@@ -332,42 +481,50 @@ func init() {
 func init() { proto.RegisterFile("spec/service_api.proto", fileDescriptor_3323a3ad252c5ed4) }
 
 var fileDescriptor_3323a3ad252c5ed4 = []byte{
-	// 555 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x53, 0xcd, 0x6e, 0xda, 0x40,
-	0x10, 0x66, 0x03, 0x49, 0xcd, 0x40, 0x2a, 0xb2, 0x4a, 0x23, 0x17, 0x55, 0x8e, 0x8b, 0x52, 0x09,
-	0x55, 0x95, 0x91, 0xd2, 0x63, 0xa5, 0x4a, 0xc6, 0x90, 0x16, 0xb5, 0x01, 0xb4, 0x24, 0x07, 0x7a,
-	0xb1, 0x96, 0xcd, 0xc6, 0x5d, 0xc5, 0xd8, 0x96, 0xbd, 0x44, 0xc9, 0x2b, 0xf4, 0x50, 0xf5, 0x31,
-	0x7a, 0xee, 0x53, 0xe4, 0x98, 0x63, 0x4f, 0x55, 0x05, 0x2f, 0x52, 0x79, 0xf9, 0xa9, 0x11, 0x9c,
-	0x3c, 0xf3, 0xcd, 0x7c, 0xfe, 0x66, 0xbe, 0xd1, 0xc2, 0x51, 0x12, 0x71, 0xd6, 0x48, 0x78, 0x7c,
-	0x2b, 0x18, 0x77, 0x69, 0x24, 0xac, 0x28, 0x0e, 0x65, 0x88, 0x0f, 0x7c, 0x7a, 0x4b, 0x03, 0x2e,
-	0xad, 0xf4, 0x6b, 0xa5, 0x4d, 0xd5, 0x43, 0x2f, 0xf4, 0x42, 0x55, 0x6d, 0xa4, 0xd1, 0xbc, 0xb1,
-	0xf6, 0x6b, 0x07, 0x60, 0x30, 0xa7, 0xdb, 0x91, 0xc0, 0x18, 0x0a, 0x01, 0x1d, 0x73, 0x1d, 0x99,
-	0xa8, 0x5e, 0x24, 0x2a, 0xc6, 0x1f, 0xa1, 0x3c, 0xf2, 0x43, 0x76, 0xd3, 0xa7, 0x71, 0x22, 0x02,
-	0x4f, 0xdf, 0x31, 0x51, 0xbd, 0x74, 0x6a, 0x58, 0x1b, 0x12, 0x56, 0x73, 0xd9, 0xc6, 0xe3, 0x66,
-	0xe1, 0xe1, 0xcf, 0x71, 0x8e, 0xac, 0x31, 0x71, 0x0d, 0xca, 0x2c, 0x1c, 0x47, 0x13, 0xc9, 0x2f,
-	0x03, 0x21, 0x13, 0x3d, 0x6f, 0xa2, 0x7a, 0x81, 0xac, 0x61, 0x58, 0x87, 0x27, 0x3c, 0xa0, 0x23,
-	0x9f, 0x5f, 0xe9, 0x05, 0x13, 0xd5, 0x35, 0xb2, 0x4c, 0xf1, 0x27, 0xd8, 0xa7, 0x91, 0xe8, 0x04,
-	0x92, 0xc7, 0xd7, 0x94, 0xf1, 0x44, 0xdf, 0x35, 0xf3, 0xf5, 0xd2, 0xe9, 0xf1, 0x96, 0x41, 0xec,
-	0x4c, 0xdf, 0x62, 0x92, 0x75, 0x2e, 0x7e, 0x07, 0x1a, 0xa3, 0x92, 0x7b, 0x61, 0x7c, 0xaf, 0xef,
-	0xa9, 0x85, 0xb6, 0xfd, 0x67, 0x10, 0x71, 0xe6, 0x2c, 0xda, 0xc8, 0x8a, 0x50, 0x0b, 0xa0, 0x9c,
-	0x55, 0xc0, 0x2f, 0xa0, 0x28, 0x96, 0xc9, 0xc2, 0xba, 0xff, 0x40, 0xea, 0xa9, 0xbc, 0x8f, 0xb8,
-	0xf2, 0xad, 0x48, 0x54, 0x8c, 0xdf, 0xc0, 0x01, 0xbf, 0x93, 0x31, 0x75, 0x36, 0xed, 0xd8, 0x2c,
-	0xd4, 0x6e, 0xa0, 0x94, 0xb1, 0x36, 0x95, 0x8b, 0x54, 0x64, 0xc7, 0x9e, 0x8e, 0xcc, 0x7c, 0x2a,
-	0xb7, 0x02, 0xf0, 0x7b, 0x80, 0x79, 0x72, 0x36, 0x09, 0x98, 0x12, 0x7d, 0xba, 0xf5, 0x58, 0x7d,
-	0x9b, 0x0c, 0xda, 0xc4, 0x3d, 0xbb, 0xec, 0x3a, 0x24, 0xc3, 0xa8, 0x7d, 0x43, 0x50, 0xce, 0xee,
-	0x8d, 0x4f, 0x60, 0xff, 0x8a, 0x4b, 0x1e, 0x8f, 0x45, 0x20, 0x12, 0x29, 0x98, 0xda, 0x50, 0x23,
-	0xeb, 0x20, 0x3e, 0x84, 0x5d, 0x3f, 0x64, 0xd4, 0x57, 0x8a, 0x1a, 0x99, 0x27, 0xe9, 0xc5, 0x93,
-	0xc9, 0x28, 0x61, 0xb1, 0x88, 0xa4, 0x08, 0x03, 0xb5, 0xa2, 0x46, 0xd6, 0x30, 0x5c, 0x05, 0x2d,
-	0x91, 0x54, 0xf2, 0xeb, 0x89, 0xaf, 0x4e, 0xbe, 0x4f, 0x56, 0xf9, 0xeb, 0xef, 0x08, 0x4a, 0x99,
-	0x41, 0x71, 0x11, 0x76, 0xdb, 0xe7, 0xfd, 0x8b, 0x61, 0x25, 0x87, 0x8f, 0x00, 0xab, 0x8a, 0xdb,
-	0xb7, 0x89, 0x7d, 0xee, 0x36, 0x87, 0xae, 0x4d, 0x3e, 0x54, 0x10, 0x7e, 0x0e, 0xcf, 0xb2, 0xb8,
-	0x63, 0x77, 0x7b, 0xdd, 0x8e, 0x63, 0x7f, 0xae, 0xec, 0xe0, 0x2a, 0x1c, 0x65, 0x4b, 0xad, 0x8e,
-	0x73, 0xd1, 0xe9, 0x75, 0x6d, 0x32, 0xac, 0xe4, 0xf1, 0x2b, 0x78, 0xb9, 0xbd, 0xe6, 0xf6, 0x88,
-	0xdb, 0x23, 0xad, 0x36, 0x69, 0xb7, 0x2a, 0x85, 0x66, 0xf3, 0xe7, 0xd4, 0x40, 0x0f, 0x53, 0x03,
-	0x3d, 0x4e, 0x0d, 0xf4, 0x77, 0x6a, 0xa0, 0x1f, 0x33, 0x23, 0xf7, 0x38, 0x33, 0x72, 0xbf, 0x67,
-	0x46, 0xee, 0xcb, 0x89, 0x27, 0xe4, 0xd7, 0xc9, 0xc8, 0x62, 0xe1, 0xb8, 0xb1, 0x70, 0x5c, 0x7d,
-	0x1b, 0x77, 0x0d, 0xf5, 0x50, 0xd3, 0xdb, 0x27, 0xa3, 0x3d, 0xf5, 0xf4, 0xde, 0xfe, 0x0b, 0x00,
-	0x00, 0xff, 0xff, 0x26, 0xd3, 0x65, 0xa8, 0xbd, 0x03, 0x00, 0x00,
+	// 683 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0x8e, 0xf3, 0xd3, 0x26, 0x93, 0xa4, 0x75, 0x97, 0x0a, 0x59, 0x05, 0xb9, 0x26, 0xea, 0x21,
+	0x42, 0x28, 0x91, 0xca, 0x11, 0xa9, 0x92, 0x93, 0xa6, 0x10, 0x28, 0x49, 0xb4, 0x6d, 0x0f, 0xe5,
+	0x12, 0x6d, 0x9c, 0xad, 0xb1, 0xea, 0xd8, 0xd6, 0x7a, 0x5d, 0xb5, 0x4f, 0x80, 0xc4, 0x89, 0xc7,
+	0xe0, 0x51, 0x7a, 0xec, 0x91, 0x13, 0x42, 0xe9, 0x13, 0xf0, 0x06, 0x68, 0xd7, 0x4e, 0xb0, 0xdb,
+	0x48, 0x88, 0x93, 0x77, 0xbe, 0xf9, 0xf9, 0x66, 0xbf, 0x19, 0x2f, 0x3c, 0x0d, 0x03, 0x6a, 0xb5,
+	0x43, 0xca, 0xae, 0x1c, 0x8b, 0x8e, 0x49, 0xe0, 0xb4, 0x02, 0xe6, 0x73, 0x1f, 0x6d, 0xb9, 0xe4,
+	0x8a, 0x78, 0x94, 0xb7, 0xc4, 0xb7, 0x25, 0x82, 0x76, 0xb6, 0x6d, 0xdf, 0xf6, 0xa5, 0xb7, 0x2d,
+	0x4e, 0x71, 0x60, 0xe3, 0x77, 0x01, 0xe0, 0x24, 0x4e, 0x37, 0x03, 0x07, 0x21, 0x28, 0x7a, 0x64,
+	0x46, 0x35, 0xc5, 0x50, 0x9a, 0x15, 0x2c, 0xcf, 0xe8, 0x1d, 0xd4, 0x26, 0xae, 0x6f, 0x5d, 0x8e,
+	0x08, 0x0b, 0x1d, 0xcf, 0xd6, 0xf2, 0x86, 0xd2, 0xac, 0xee, 0xeb, 0xad, 0x47, 0x14, 0xad, 0xce,
+	0x22, 0x8c, 0xb2, 0x4e, 0xf1, 0xf6, 0xe7, 0x6e, 0x0e, 0x67, 0x32, 0x51, 0x03, 0x6a, 0x96, 0x3f,
+	0x0b, 0x22, 0x4e, 0xcf, 0x3c, 0x87, 0x87, 0x5a, 0xc1, 0x50, 0x9a, 0x45, 0x9c, 0xc1, 0x90, 0x06,
+	0xeb, 0xd4, 0x23, 0x13, 0x97, 0x4e, 0xb5, 0xa2, 0xa1, 0x34, 0xcb, 0x78, 0x61, 0xa2, 0x0f, 0x50,
+	0x27, 0x81, 0xd3, 0xf7, 0x38, 0x65, 0x17, 0xc4, 0xa2, 0xa1, 0x56, 0x32, 0x0a, 0xcd, 0xea, 0xfe,
+	0xee, 0x8a, 0x46, 0xcc, 0x54, 0x5c, 0xd2, 0x49, 0x36, 0x17, 0xbd, 0x81, 0xb2, 0x45, 0x38, 0xb5,
+	0x7d, 0x76, 0xa3, 0xad, 0xc9, 0x0b, 0xad, 0xaa, 0x73, 0x12, 0x50, 0xab, 0x9b, 0x84, 0xe1, 0x65,
+	0x02, 0x32, 0xa0, 0x7a, 0x11, 0x79, 0x16, 0x77, 0x7c, 0xef, 0x94, 0xd8, 0xda, 0xba, 0x14, 0x2b,
+	0x0d, 0xa1, 0xf7, 0x50, 0x67, 0x34, 0x8c, 0x5c, 0xbe, 0x10, 0xad, 0xfc, 0x1f, 0xa2, 0x65, 0x53,
+	0xd1, 0x10, 0x36, 0x16, 0xa5, 0x47, 0x84, 0x91, 0x59, 0xa8, 0x55, 0x64, 0xb1, 0x17, 0x2b, 0x8a,
+	0x1d, 0x65, 0x02, 0x93, 0x7a, 0x0f, 0xd2, 0x1b, 0x53, 0xd8, 0xc8, 0xc6, 0x89, 0xb1, 0xf3, 0x9b,
+	0x60, 0x39, 0x76, 0x71, 0x46, 0x07, 0xb0, 0x16, 0xc4, 0x74, 0x79, 0xa9, 0xb3, 0xf1, 0x2f, 0xba,
+	0x84, 0x2d, 0xc9, 0x6a, 0x5c, 0x42, 0x3d, 0xe3, 0x5e, 0x49, 0xb2, 0x03, 0x65, 0x4e, 0x67, 0x81,
+	0x4b, 0x38, 0x95, 0x7b, 0x55, 0xc1, 0x4b, 0x1b, 0x6d, 0x43, 0xe9, 0x8a, 0xb8, 0x11, 0x95, 0x6b,
+	0x52, 0xc1, 0xb1, 0x21, 0x50, 0x9f, 0x4d, 0x29, 0x93, 0xdb, 0x51, 0xc1, 0xb1, 0xd1, 0xf0, 0xa0,
+	0x96, 0x9e, 0x39, 0x7a, 0x0e, 0x15, 0x67, 0x61, 0x24, 0x84, 0x7f, 0x81, 0x65, 0x27, 0xf9, 0x54,
+	0x27, 0xaf, 0x60, 0x8b, 0x5e, 0x73, 0x46, 0xba, 0x8f, 0x17, 0xf4, 0xb1, 0xa3, 0x71, 0x09, 0xd5,
+	0xd4, 0xdc, 0x04, 0x5d, 0x20, 0x4f, 0x26, 0xb3, 0x35, 0xc5, 0x28, 0x08, 0xba, 0x25, 0x80, 0x0e,
+	0x00, 0x62, 0x43, 0xe8, 0x21, 0x49, 0x37, 0x56, 0x6e, 0xc2, 0xc8, 0xc4, 0x27, 0x3d, 0x3c, 0x3e,
+	0x3a, 0x1b, 0x74, 0x71, 0x2a, 0xa3, 0xf1, 0x55, 0x81, 0x5a, 0x7a, 0x13, 0xd1, 0x1e, 0xd4, 0xa7,
+	0x94, 0x53, 0x36, 0x73, 0x3c, 0x27, 0xe4, 0x8e, 0x25, 0x6f, 0x58, 0xc6, 0x59, 0x50, 0x28, 0xe5,
+	0xfa, 0x16, 0x71, 0x25, 0x63, 0x19, 0xc7, 0x86, 0xf8, 0x07, 0xc3, 0x68, 0x12, 0x5a, 0xcc, 0x09,
+	0xc4, 0x68, 0xe4, 0x15, 0xcb, 0x38, 0x83, 0x89, 0xa9, 0x84, 0x9c, 0x70, 0x7a, 0x11, 0xb9, 0x52,
+	0xe6, 0x3a, 0x5e, 0xda, 0x2f, 0xbf, 0x28, 0x50, 0x4d, 0x35, 0x8a, 0x2a, 0x50, 0xea, 0x7d, 0x1c,
+	0x9d, 0x9e, 0xab, 0x39, 0xa4, 0x42, 0x4d, 0x7a, 0xc6, 0x9d, 0xf3, 0xb1, 0x89, 0xdf, 0xaa, 0x0a,
+	0x7a, 0x02, 0x9b, 0x31, 0xd2, 0x35, 0x07, 0xc3, 0x41, 0xbf, 0x6b, 0x1e, 0xab, 0x79, 0xb4, 0x0d,
+	0x6a, 0x0c, 0x1e, 0xf6, 0xbb, 0xa7, 0xfd, 0xe1, 0xc0, 0xc4, 0xe7, 0x6a, 0x01, 0xed, 0xc2, 0xb3,
+	0x87, 0xe8, 0x78, 0x88, 0xc7, 0x43, 0x7c, 0xd8, 0xc3, 0xbd, 0x43, 0xb5, 0x88, 0x36, 0x13, 0xde,
+	0xf1, 0xe8, 0xd8, 0xec, 0x0f, 0xd4, 0x52, 0xa7, 0xf3, 0x7d, 0xae, 0x2b, 0xb7, 0x73, 0x5d, 0xb9,
+	0x9b, 0xeb, 0xca, 0xaf, 0xb9, 0xae, 0x7c, 0xbb, 0xd7, 0x73, 0x77, 0xf7, 0x7a, 0xee, 0xc7, 0xbd,
+	0x9e, 0xfb, 0xb4, 0x67, 0x3b, 0xfc, 0x73, 0x34, 0x69, 0x59, 0xfe, 0xac, 0x9d, 0x48, 0x2d, 0xbf,
+	0xed, 0xeb, 0xb6, 0x7c, 0x33, 0xc5, 0xd0, 0xc3, 0xc9, 0x9a, 0x7c, 0x05, 0x5f, 0xff, 0x09, 0x00,
+	0x00, 0xff, 0xff, 0xc6, 0x9f, 0xdf, 0x75, 0x48, 0x05, 0x00, 0x00,
 }
 
 func (this *ServiceApi) Equal(that interface{}) bool {
@@ -410,6 +567,80 @@ func (this *ServiceApi) Equal(that interface{}) bool {
 		}
 	}
 	if !this.Category.Equal(that1.Category) {
+		return false
+	}
+	if this.FunctionTag != that1.FunctionTag {
+		return false
+	}
+	if !this.ResultParsing.Equal(&that1.ResultParsing) {
+		return false
+	}
+	if !this.FunctionParams.Equal(&that1.FunctionParams) {
+		return false
+	}
+	return true
+}
+func (this *FunctionParams) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FunctionParams)
+	if !ok {
+		that2, ok := that.(FunctionParams)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if len(this.Params) != len(that1.Params) {
+		return false
+	}
+	for i := range this.Params {
+		if !this.Params[i].Equal(&that1.Params[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *FunctionParam) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FunctionParam)
+	if !ok {
+		that2, ok := that.(FunctionParam)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.Template != that1.Template {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	if this.Order != that1.Order {
 		return false
 	}
 	return true
@@ -529,6 +760,33 @@ func (m *ServiceApi) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	{
+		size, err := m.FunctionParams.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintServiceApi(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x4a
+	{
+		size, err := m.ResultParsing.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintServiceApi(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x42
+	if len(m.FunctionTag) > 0 {
+		i -= len(m.FunctionTag)
+		copy(dAtA[i:], m.FunctionTag)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.FunctionTag)))
+		i--
+		dAtA[i] = 0x3a
+	}
 	if m.Category != nil {
 		{
 			size, err := m.Category.MarshalToSizedBuffer(dAtA[:i])
@@ -584,6 +842,101 @@ func (m *ServiceApi) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Name)
 		copy(dAtA[i:], m.Name)
 		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FunctionParams) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FunctionParams) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FunctionParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Params) > 0 {
+		for iNdEx := len(m.Params) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Params[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintServiceApi(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Type)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FunctionParam) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FunctionParam) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FunctionParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Order) > 0 {
+		i -= len(m.Order)
+		copy(dAtA[i:], m.Order)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Order)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Template) > 0 {
+		i -= len(m.Template)
+		copy(dAtA[i:], m.Template)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Template)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Type)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -764,6 +1117,58 @@ func (m *ServiceApi) Size() (n int) {
 	}
 	if m.Category != nil {
 		l = m.Category.Size()
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = len(m.FunctionTag)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = m.ResultParsing.Size()
+	n += 1 + l + sovServiceApi(uint64(l))
+	l = m.FunctionParams.Size()
+	n += 1 + l + sovServiceApi(uint64(l))
+	return n
+}
+
+func (m *FunctionParams) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	if len(m.Params) > 0 {
+		for _, e := range m.Params {
+			l = e.Size()
+			n += 1 + l + sovServiceApi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *FunctionParam) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = len(m.Template)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = len(m.Order)
+	if l > 0 {
 		n += 1 + l + sovServiceApi(uint64(l))
 	}
 	return n
@@ -1036,6 +1441,398 @@ func (m *ServiceApi) Unmarshal(dAtA []byte) error {
 			if err := m.Category.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionTag", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FunctionTag = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResultParsing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ResultParsing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionParams", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.FunctionParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServiceApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FunctionParams) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServiceApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FunctionParams: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FunctionParams: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Params = append(m.Params, FunctionParam{})
+			if err := m.Params[len(m.Params)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServiceApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FunctionParam) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServiceApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FunctionParam: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FunctionParam: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Template", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Template = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Order", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Order = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

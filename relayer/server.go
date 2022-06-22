@@ -294,8 +294,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
-	var latestBlock = int64(0)
-	var finalizedBlockHashes map[int64]interface{}
+	latestBlock := int64(0)
+	finalizedBlockHashes := map[int64]interface{}{}
 
 	if g_sentry.GetSpecComparesHashes() {
 		// Add latest block and finalized
@@ -303,9 +303,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		finalizedBlockHashes = map[int64]interface{}{}
 	}
+
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {
 		return nil, err
@@ -316,7 +315,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
 		// request is a copy of the original request, but won't modify it
-		//update relay request requestedBlock to the provided one in case it was arbitrary
+		// update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(&request, reply)
 		// Update signature,
 		sig, err := sigs.SignRelayResponse(g_privKey, reply, &request)
@@ -324,12 +323,15 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			return err
 		}
 		reply.Sig = sig
-		//update sig blocks signature
-		sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request)
-		if err != nil {
-			return err
+
+		if g_sentry.GetSpecComparesHashes() {
+			//update sig blocks signature
+			sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
+			if err != nil {
+				return err
+			}
+			reply.SigBlocks = sigBlocks
 		}
-		reply.SigBlocks = sigBlocks
 		return nil
 	}
 	err = getSignaturesFromRequest(*request)
@@ -435,7 +437,6 @@ func Server(
 		err = chainSentry.Init(ctx)
 		if err != nil {
 			log.Fatalln("error sentry.Init", err)
-			// log.Println("error sentry.Init", err)
 		}
 		chainSentry.Start(ctx)
 		g_chainSentry = chainSentry

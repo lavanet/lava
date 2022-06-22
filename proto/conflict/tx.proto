@@ -13,10 +13,12 @@ service Msg {
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
+// TODO:: change coin type to another proto (define proto in another file int this directory)
 message MsgDetection {
   string creator = 1;
-  cosmos.base.v1beta1.Coin finalizationConflict = 2;
+  cosmos.base.v1beta1.Coin finalizationConflict = 2; 
   cosmos.base.v1beta1.Coin responseConflict = 3;
+  cosmos.base.v1beta1.Coin sameProviderConflict = 4;
 }
 
 message MsgDetectionResponse {

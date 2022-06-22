@@ -98,7 +98,7 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest) (dataToSign []b
 	return
 }
 
-func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
+func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
 	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
 	latestBlockBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(relayResponse.LatestBlock))
@@ -108,7 +108,7 @@ func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, 
 	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(relayReq.BlockHeight))
 	relayNumBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(relayNumBytes, uint64(relayReq.RelayNum))
-	dataToSign = bytes.Join([][]byte{latestBlockBytes, relayResponse.FinalizedBlocksHashes, sessionIdBytes, blockHeightBytes, relayNumBytes}, nil)
+	dataToSign = bytes.Join([][]byte{latestBlockBytes, relayResponse.FinalizedBlocksHashes, sessionIdBytes, blockHeightBytes, relayNumBytes, clientAddress}, nil)
 	return
 }
 
@@ -123,8 +123,8 @@ func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtype
 	return sig, nil
 }
 
-func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
-	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq)
+func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) ([]byte, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, clientAddress)
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
 	if err != nil {
@@ -139,7 +139,7 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
-		return nil, fmt.Errorf("RecoverCompact: %w len:%d", err, len(sig))
+		return nil, fmt.Errorf("RecoverCompact: %w len: %d", err, len(sig))
 	}
 	pk := recPub.SerializeCompressed()
 
@@ -215,8 +215,8 @@ func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayRe
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq)
+func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, addr sdk.AccAddress) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, addr)
 	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
 	if err != nil {
 		return nil, err

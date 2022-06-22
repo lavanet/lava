@@ -36,10 +36,6 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-type BlockHash struct {
-	BlockNum  int64  `json:"BlockNum"`
-	BlockHash string `json:"BlockHash"`
-}
 type ClientSession struct {
 	CuSum     uint64
 	SessionId int64
@@ -72,6 +68,8 @@ type providerDataContainer struct {
 	FinalizedBlocksHashes map[int64]string
 	SigBlocks             []byte
 	//TODO:: keep relay request for conflict reporting
+	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+
 }
 
 type ProviderHashesConsensus struct {
@@ -112,6 +110,7 @@ type Sentry struct {
 	specHash   []byte
 	serverSpec spectypes.Spec
 	serverApis map[string]spectypes.ServiceApi
+	taggedApis map[string]spectypes.ServiceApi
 
 	// (client only)
 	// Pairing storage (rw mutex)
@@ -254,6 +253,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
 	serverApis := map[string]spectypes.ServiceApi{}
+	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
 		for _, api := range spec.Spec.Apis {
 			if !api.Enabled {
@@ -272,8 +272,14 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 					processedName = regexp.QuoteMeta(processedName)
 					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
 					serverApis[processedName] = api
+					if api.GetFunctionTag() != "" {
+						taggedApis[processedName] = api
+					}
 				} else {
 					serverApis[api.Name] = api
+					if api.GetFunctionTag() != "" {
+						taggedApis[api.GetFunctionTag()] = api
+					}
 				}
 			}
 		}
@@ -282,6 +288,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	defer s.specMu.Unlock()
 	s.serverSpec = spec.Spec
 	s.serverApis = serverApis
+	s.taggedApis = taggedApis
 
 	return nil
 }
@@ -675,14 +682,37 @@ func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (ad
 	return
 }
 
-func (s *Sentry) discrepancyChecker(finalizedBlocks map[int64]string, toCompare map[int64]string) (bool, error) {
-	// for idx, blockMap := range toCompare {
-	for blockNum, blockHash := range toCompare {
-		if blockHash != finalizedBlocks[blockNum] {
-			log.Println("reliability discrepancy - block %d has different hashes:[ %s, %s ]", blockNum, blockHash, finalizedBlocks[blockNum])
+//
+//
+func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (bool, error) {
+	var toIterate map[int64]string   // the smaller map between the two to compare
+	var otherBlocks map[int64]string // the other map
+
+	if len(finalizedBlocksA) < len(consensus.FinalizedBlocksHashes) {
+		toIterate = finalizedBlocksA
+		otherBlocks = consensus.FinalizedBlocksHashes
+	} else {
+		toIterate = consensus.FinalizedBlocksHashes
+		otherBlocks = finalizedBlocksA
+	}
+
+	// Iterate over smaller array, looks for mismatching hashes between the inputs
+	for blockNum, blockHash := range toIterate {
+		if otherHash, ok := otherBlocks[blockNum]; ok {
+			if blockHash != otherHash {
+				//
+				// TODO:: Fill msg with incriminating data
+				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+				s.ClientCtx.SkipConfirm = true
+				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+
+				// TODO:: should break here? is one enough or search for more?
+				log.Printf("reliability discrepancy - block %d has different hashes:[ %s, %s ]\n", blockNum, blockHash, otherHash)
+				return true, fmt.Errorf("is not a valid reliability VRF address result")
+			}
 		}
 	}
-	// }
 
 	return false, nil
 }
@@ -709,6 +739,23 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 			return errors.New("provider returned non consecutive finalized blocks reply")
 		}
 	}
+
+	// TODO check that latest finalized block address + 1 points to a non finalized block
+
+	// New reply should have blocknum >= from block same provider
+	consensus := s.getConsensusByProvider(providerAcc)
+	if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock >= latestBlock {
+		log.Println("Provider supplied an older latest block than it has previously")
+
+		//
+		// Report same provider discrepancy
+		// TODO:: Fill msg with incriminating data
+		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+		s.ClientCtx.SkipConfirm = true
+		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+	}
+
 	return nil
 }
 
@@ -751,28 +798,6 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 	}
 }
 
-func (s *Sentry) getIntersect(finalizedBlocksA map[int64]string, finalizedBlocksB map[int64]string) map[int64]string {
-	newMinAddress := findMinKey(finalizedBlocksA)
-	consensusMinAddress := findMinKey(finalizedBlocksB)
-	distance := newMinAddress - consensusMinAddress
-	if distance < 0 {
-		distance = distance * -1
-	}
-
-	// check if overlap
-	tempMap := make(map[int64]string)
-	if distance < int64(len(finalizedBlocksA)-1) { // this assumes same size arrays
-		tempMap = make(map[int64]string)
-		for blockNum, _ := range finalizedBlocksA {
-			if hash, ok := finalizedBlocksB[blockNum]; ok {
-				tempMap[blockNum] = hash
-			}
-		}
-	}
-
-	return tempMap
-}
-
 func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, SigBlocks []byte, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
@@ -790,7 +815,7 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error),
-	specCategory *spectypes.SpecCategory,
+	specCategory *spectypes.SpecCategory, // TODO::
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
@@ -840,7 +865,7 @@ func (s *Sentry) SendRelay(
 	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
-		finalizedBlocks := map[int64]string{}                               //TODO:: define struct in relay response
+		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
 		if err != nil {
 			log.Println("Finalized Block reply err", err)
@@ -863,33 +888,26 @@ func (s *Sentry) SendRelay(
 			newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
 			s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
 		} else {
-			// New reply should have blocknum >= from block same provider
-			consensus := s.getConsensusByProvider(providerAcc)
-			if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock > latestBlock {
-				log.Println("Provider supplied an older latest block than it has previously")
-				// add punishment code
-			}
-
 			matchWithExistingConsensus := false
-			for idx, consensus := range s.providerHashesConsensus {
-				toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
-				if len(toCompare) != 0 {
-					discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
-					if err != nil {
-						log.Println("Discrepancy Checker err", err)
-						return nil, err
-					}
 
-					// insert into consensus and break
-					if !discrepancyResult {
-						matchWithExistingConsensus = true
-					} else {
-						log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
-					}
+			// Looks for discrepancy wit current epoch providers
+			for idx, consensus := range s.providerHashesConsensus {
+				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
+				if err != nil {
+					log.Println("Discrepancy Checker err", err)
+					return nil, err
 				}
-				// if no discrepency with this group -> insert into consensus and break
-				if matchWithExistingConsensus || len(toCompare) == 0 {
+
+				// if no conflicts, insert into consensus and break
+				if !discrepancyResult {
 					matchWithExistingConsensus = true
+				} else {
+					log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
+				}
+
+				// if no discrepency with this group -> insert into consensus and break
+				if matchWithExistingConsensus {
+					// TODO:: Add more increminiating data to consensus
 					s.insertProviderToConsensus(&consensus, finalizedBlocks, latestBlock, reply.SigBlocks, providerAcc)
 					break
 				}
@@ -903,18 +921,17 @@ func (s *Sentry) SendRelay(
 
 			// check for discrepancy with old epoch
 			for idx, consensus := range s.prevEpochProviderHashesConsensus {
-				toCompare := s.getIntersect(finalizedBlocks, consensus.FinalizedBlocksHashes)
-				if len(toCompare) != 0 {
-					discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, toCompare)
-					if err != nil {
-						log.Println("Discrepancy Checker err", err)
-						return nil, err
-					}
+				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
+				if err != nil {
+					log.Println("Discrepancy Checker err", err)
+					return nil, err
+				}
 
-					// handle discrepancy
-					if discrepancyResult {
-						log.Println("Conflict found between old epoch consensus %d and provider %s", idx, providerAcc)
-					}
+				// if no conflicts, insert into consensus and break
+				if !discrepancyResult {
+					matchWithExistingConsensus = true
+				} else {
+					log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
 				}
 			}
 		}
@@ -1016,7 +1033,7 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 	default:
 		//TODO: load this from spec
 		//TODO: regard earliest block from spec
-		finalization_criteria := int64(7)
+		finalization_criteria := int64(s.GetSpecFinalizationCriteria())
 		if requestedBlock <= latestBlock-finalization_criteria {
 			// log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
 			return true
@@ -1084,6 +1101,10 @@ func (s *Sentry) GetSpecComparesHashes() bool {
 	return s.serverSpec.ComparesHashes
 }
 
+func (s *Sentry) GetSpecFinalizationCriteria() uint32 {
+	return s.serverSpec.FinalizationCriteria
+}
+
 func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index
 }
@@ -1110,6 +1131,14 @@ func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	defer s.specMu.RUnlock()
 
 	val, ok := s.serverApis[name]
+	return val, ok
+}
+
+func (s *Sentry) GetSpecApiByTag(tag string) (spectypes.ServiceApi, bool) {
+	s.specMu.RLock()
+	defer s.specMu.RUnlock()
+
+	val, ok := s.taggedApis[tag]
 	return val, ok
 }
 

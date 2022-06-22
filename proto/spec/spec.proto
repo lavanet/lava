@@ -15,4 +15,5 @@ message Spec {
   bool enabled = 4;
   uint32 reliabilityThreshold = 5;
   bool comparesHashes = 6;
+  uint32 finalizationCriteria = 7;
 }

@@ -3,15 +3,19 @@ package chainproxy
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -23,6 +27,7 @@ type RestMessage struct {
 	path           string
 	msg            []byte
 	requestedBlock int64
+	Result         json.RawMessage
 }
 
 type RestChainProxy struct {
@@ -36,6 +41,92 @@ func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
 		nodeUrl: nodeUrl,
 		sentry:  sentry,
 	}
+}
+
+func (cp *RestChainProxy) NewMsg(path string, data []byte) (*RestMessage, error) {
+	//
+	// Check api is supported an save it in nodeMsg
+	serviceApi, err := cp.getSupportedApi(path)
+	if err != nil {
+		return nil, err
+	}
+	nodeMsg := &RestMessage{
+		cp:         cp,
+		serviceApi: serviceApi,
+		path:       path,
+		msg:        data,
+	}
+
+	return nodeMsg, nil
+}
+
+func (m RestMessage) GetParams() []interface{} {
+	retArr := make([]interface{}, 0)
+	retArr = append(retArr, m.msg)
+	return retArr
+}
+
+func (m RestMessage) GetResult() json.RawMessage {
+	return m.Result
+}
+
+func (m RestMessage) ParseBlock(block string) (int64, error) {
+	blockNum, err := strconv.ParseInt(block, 0, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
+	}
+	return blockNum, nil
+}
+
+func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	// serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockByNumber") //TODO:: move to const
+	// if !ok {
+	// 	return nil, errors.New("getBlockNumber tag function not found")
+	// }
+
+	// params := []interface{}{}
+	// nodeMsg := cp.NewMessage(&serviceApi, serviceApi.GetName(), 0, params)
+
+	// _, err := nodeMsg.Send(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// // log.Println("%s", reply)
+
+	// blockData, err := parser.ParseMessageResponse(nodeMsg.msg, serviceApi.ResultParsing)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return blockData.(map[string]interface{}), nil
+
+	//TODO:: Fill this in
+	return "", nil
+}
+
+func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockNumber") //TODO:: move to const
+	if !ok {
+		return -1, errors.New("getBlockNumber tag function not found")
+	}
+
+	params := []byte{}
+	nodeMsg, err := cp.NewMsg(serviceApi.GetName(), params)
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return -1, err
+	}
+
+	blocknum, err := parser.ParseBlockFromParams(nodeMsg, serviceApi.ResultParsing)
+	if err != nil {
+		return -1, err
+	}
+
+	return blocknum, nil
 }
 
 func (cp *RestChainProxy) GetSentry() *sentry.Sentry {
@@ -148,5 +239,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	reply := &pairingtypes.RelayReply{
 		Data: body,
 	}
+	nm.Result = body
 	return reply, nil
 }

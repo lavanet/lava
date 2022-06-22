@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type TendemintRpcMessage struct {
@@ -33,6 +34,21 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 			sentry:  sentry,
 		},
 	}
+}
+
+func (cp *tendermintRpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) NodeMessage {
+	nodeMsg := &TendemintRpcMessage{
+		JrpcMessage: JrpcMessage{serviceApi: serviceApi,
+			msg: &JsonrpcMessage{
+				Version: "2.0",
+				ID:      []byte("1"), //TODO:: use ids
+				Method:  method,
+				Params:  params,
+			},
+			requestedBlock: requestedBlock},
+		cp: cp,
+	}
+	return nodeMsg
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
@@ -70,7 +86,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 		return nil, err
 	}
 
-	requestedBlock, err := parser.Parse(msg, serviceApi.BlockParsing)
+	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
 		return nil, err
 	}

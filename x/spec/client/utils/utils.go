@@ -15,12 +15,15 @@ type (
 	}
 
 	ApiJSON struct {
-		Name          string              `json:"name" yaml:"name"`
-		ComputeUnits  uint                `json:"compute_units" yaml:"compute_units"`
-		Enabled       bool                `json:"enabled" yaml:"enabled"`
-		ApiInterfaces []ApiInterfaceJSON  `json:"apiInterfaces" yaml:"apiInterfaces"`
-		BlockParsing  types.BlockParser   `json:"block_parsing" yaml:"block_parsing"`
-		Category      *types.SpecCategory `json:"category"`
+		Name           string               `json:"name" yaml:"name"`
+		ComputeUnits   uint                 `json:"compute_units" yaml:"compute_units"`
+		Enabled        bool                 `json:"enabled" yaml:"enabled"`
+		ApiInterfaces  []ApiInterfaceJSON   `json:"apiInterfaces" yaml:"apiInterfaces"`
+		BlockParsing   types.BlockParser    `json:"block_parsing" yaml:"block_parsing"`
+		Category       *types.SpecCategory  `json:"category"`
+		FunctionTag    string               `json:"function_tag"  yaml:"function_tag"`
+		ResultParsing  types.BlockParser    `json:"result_parsing" yaml:"result_parsing"`
+		FunctionParams types.FunctionParams `json:"function_params" yaml:"function_params"`
 	}
 
 	SpecJSON struct {
@@ -28,8 +31,9 @@ type (
 		Name                 string    `json:"name" yaml:"name"`
 		Enabled              bool      `json:"enabled" yaml:"enabled"`
 		Apis                 []ApiJSON `json:"apis" yaml:"apis"`
-		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"enabled"`
-		ComparesHashes       bool      `json:"compares_hashes" yaml:"enabled"`
+		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"reliability_threshold"`
+		ComparesHashes       bool      `json:"compares_hashes" yaml:"compares_hashes"`
+		FinalizationCriteria uint32    `json:"finalization_criteria" yaml:"finalization_criteria"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -47,12 +51,15 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 		apis := []types.ServiceApi{}
 		for _, api := range spec.Apis {
 			apis = append(apis, types.ServiceApi{
-				Name:          api.Name,
-				ComputeUnits:  uint64(api.ComputeUnits),
-				Enabled:       api.Enabled,
-				ApiInterfaces: ConvertJSONApiInterface(api.ApiInterfaces),
-				BlockParsing:  api.BlockParsing,
-				Category:      api.Category,
+				Name:           api.Name,
+				ComputeUnits:   uint64(api.ComputeUnits),
+				Enabled:        api.Enabled,
+				ApiInterfaces:  ConvertJSONApiInterface(api.ApiInterfaces),
+				BlockParsing:   api.BlockParsing,
+				ResultParsing:  api.ResultParsing,
+				FunctionTag:    api.FunctionTag,
+				Category:       api.Category,
+				FunctionParams: api.FunctionParams,
 			})
 		}
 		ret = append(ret, types.Spec{
@@ -62,6 +69,7 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			Apis:                 apis,
 			ReliabilityThreshold: spec.ReliabilityThreshold,
 			ComparesHashes:       spec.ComparesHashes,
+			FinalizationCriteria: spec.FinalizationCriteria,
 		})
 	}
 	return ret
@@ -81,6 +89,15 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Spec
 	}
 
 	return proposal, nil
+}
+
+func ConvertJSONFunctionParams(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
+
+	for _, apiinterface := range apiinterfacesJSON {
+		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type, ExtraComputeUnits: uint64(apiinterface.ExtraComputeUnits)})
+	}
+
+	return
 }
 
 func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
