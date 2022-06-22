@@ -10,8 +10,8 @@
       "compares_hashes": true,
       "finalization_criteria": 7,
       "saved_blocks": 3,
-      "average_block_time": 13000,
-      "block_height_threshold": 5,
+      "average_block_time": "13000",
+      "block_height_threshold": "5",
       "apis": [
         {
           "name": "rpc_modules",
