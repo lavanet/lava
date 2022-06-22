@@ -67,6 +67,10 @@ type providerDataContainer struct {
 	LatestFinalizedBlock  int64
 	FinalizedBlocksHashes map[int64]string
 	SigBlocks             []byte
+	SessionId             uint64
+	BlockHeight           int64
+	RelayNum              uint64
+	LatestBlock           int64
 	//TODO:: keep relay request for conflict reporting
 	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
 
@@ -782,11 +786,15 @@ func findMinKey(blockMap map[int64]string) int64 {
 	return min
 }
 
-func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, SigBlocks []byte) ProviderHashesConsensus {
+func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
 		FinalizedBlocksHashes: finalizedBlocks,
-		SigBlocks:             SigBlocks,
+		SigBlocks:             reply.SigBlocks,
+		SessionId:             req.SessionId,
+		RelayNum:              req.RelayNum,
+		BlockHeight:           req.BlockHeight,
+		LatestBlock:           latestBlock,
 	}
 	providerDataContainers := map[string]providerDataContainer{}
 	providerDataContainers[providerAcc] = newProviderDataContainer
@@ -796,11 +804,15 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 	}
 }
 
-func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, SigBlocks []byte, providerAcc string) {
+func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
 		FinalizedBlocksHashes: finalizedBlocks,
-		SigBlocks:             SigBlocks,
+		SigBlocks:             reply.SigBlocks,
+		SessionId:             req.SessionId,
+		RelayNum:              req.RelayNum,
+		BlockHeight:           req.BlockHeight,
+		LatestBlock:           latestBlock,
 	}
 	consensus.agreeingProviders[providerAcc] = newProviderDataContainer
 
@@ -880,61 +892,17 @@ func (s *Sentry) SendRelay(
 
 		//
 		// Compare finalized block hashes with previous providers
-		s.providerDataContainersMu.Lock()
-
-		if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
-			newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
-			s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-		} else {
-			matchWithExistingConsensus := false
-
-			// Looks for discrepancy wit current epoch providers
-			for idx, consensus := range s.providerHashesConsensus {
-				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
-				if err != nil {
-					log.Println("Discrepancy Checker err", err)
-					return nil, err
-				}
-
-				// if no conflicts, insert into consensus and break
-				if !discrepancyResult {
-					matchWithExistingConsensus = true
-				} else {
-					log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
-				}
-
-				// if no discrepency with this group -> insert into consensus and break
-				if matchWithExistingConsensus {
-					// TODO:: Add more increminiating data to consensus
-					s.insertProviderToConsensus(&consensus, finalizedBlocks, latestBlock, reply.SigBlocks, providerAcc)
-					break
-				}
-			}
-
-			// create new consensus group if no consensus matched
-			if !matchWithExistingConsensus {
-				newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply.SigBlocks)
-				s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-			}
-
-			// check for discrepancy with old epoch
-			for idx, consensus := range s.prevEpochProviderHashesConsensus {
-				discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
-				if err != nil {
-					log.Println("Discrepancy Checker err", err)
-					return nil, err
-				}
-
-				// if no conflicts, insert into consensus and break
-				if !discrepancyResult {
-					matchWithExistingConsensus = true
-				} else {
-					log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
-				}
-			}
+		// Looks for discrepancy wit current epoch providers
+		// if no conflicts, insert into consensus and break
+		// if no discrepency with this group -> insert into consensus and break
+		// TODO:: Add more increminiating data to consensus
+		// create new consensus group if no consensus matched
+		// check for discrepancy with old epoch
+		// if no conflicts, insert into consensus and break
+		_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
+		if err != nil {
+			return nil, err
 		}
-
-		s.providerDataContainersMu.Unlock()
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 			// handle data reliability
@@ -1021,6 +989,65 @@ func (s *Sentry) SendRelay(
 		}
 	}
 	return reply, nil
+}
+
+func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {
+	s.providerDataContainersMu.Lock()
+
+	if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
+		newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply, req)
+		s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+	} else {
+		matchWithExistingConsensus := false
+
+		// Looks for discrepancy wit current epoch providers
+		for idx, consensus := range s.providerHashesConsensus {
+			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
+			if err != nil {
+				log.Println("Discrepancy Checker err", err)
+				return false, err
+			}
+
+			// if no conflicts, insert into consensus and break
+			if !discrepancyResult {
+				matchWithExistingConsensus = true
+			} else {
+				log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
+			}
+
+			// if no discrepency with this group -> insert into consensus and break
+			if matchWithExistingConsensus {
+				// TODO:: Add more increminiating data to consensus
+				s.insertProviderToConsensus(&consensus, finalizedBlocks, latestBlock, reply, req, providerAcc)
+				break
+			}
+		}
+
+		// create new consensus group if no consensus matched
+		if !matchWithExistingConsensus {
+			newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply, req)
+			s.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+		}
+
+		// check for discrepancy with old epoch
+		for idx, consensus := range s.prevEpochProviderHashesConsensus {
+			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
+			if err != nil {
+				log.Println("Discrepancy Checker err", err)
+				return false, err
+			}
+
+			// if no conflicts, insert into consensus and break
+			if !discrepancyResult {
+				matchWithExistingConsensus = true
+			} else {
+				log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
+			}
+		}
+	}
+
+	s.providerDataContainersMu.Unlock()
+	return false, nil
 }
 
 func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool {

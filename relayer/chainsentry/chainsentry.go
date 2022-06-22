@@ -88,8 +88,6 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	cs.SetLatestBlockNum(latestBlock)
 	log.Printf("latest %v block %v", cs.ChainID, latestBlock)
 	cs.blockQueueMu.Lock()
-	// TODO:: move cs.numSavedBlocks+cs.numFinalBlocks to get finalizationBlockDistance
-	// TODO:: get finalized blocks only - not latest ( 100 -> 83-93)
 	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks); i <= latestBlock-int64(cs.finalizedBlockDistance)-1; i++ {
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
@@ -117,8 +115,12 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 
 		prevLatestBlock := cs.GetLatestBlockNum()
 		// Get all missing blocks
-		//max x missing blocks from (latestbloc - how many we need )
-		for i := prevLatestBlock + 1; i <= latestBlock; i++ {
+		i := prevLatestBlock + 1
+		if latestBlock-prevLatestBlock > int64(cs.finalizedBlockDistance)+int64(cs.numFinalBlocks) {
+			i = latestBlock - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks)
+		}
+
+		for ; i <= latestBlock; i++ {
 			blockData, err := cs.fetchBlockHashByNum(ctx, i)
 			if err != nil {
 				log.Fatalln("error: Start", err)
