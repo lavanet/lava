@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -26,6 +27,87 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 }
 
+func (m TendemintRpcMessage) GetParams() []interface{} {
+	return m.msg.Params
+}
+
+func (m TendemintRpcMessage) GetResult() json.RawMessage {
+	return m.msg.Result
+}
+
+func (m TendemintRpcMessage) ParseBlock(inp string) (int64, error) {
+	return parser.ParseDefaultBlockParameter(inp)
+}
+
+func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockNumber") //TODO:: move to const
+	if !ok {
+		return parser.NOT_APPLICABLE, errors.New("getBlockNumber tag function not found")
+	}
+
+	params := []interface{}{}
+	nodeMsg, err := cp.newMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	blocknum, err := parser.ParseBlockFromReply(nodeMsg.GetMsg().(*JsonrpcMessage), serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	return blocknum, nil
+}
+
+func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockByNumber") //TODO:: move to const
+	if !ok {
+		return "", errors.New("getBlockNumber tag function not found")
+	}
+
+	var nodeMsg NodeMessage
+	var err error
+	if serviceApi.GetParsing().FunctionTemplate != "" {
+		// if serviceApi.ApiInterfaces[0].
+		if serviceApi.ApiInterfaces[0].Interface == "tendermintrpc" {
+			nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
+		} else {
+			nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum), []byte(""))
+		}
+	} else {
+		params := make([]interface{}, 0)
+		params = append(params, blockNum)
+		nodeMsg, err = cp.newMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return "", err
+	}
+	// log.Println("%s", reply)
+
+	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", err
+	}
+
+	hash, ok := blockData[0].(string)
+	if !ok {
+		return "", errors.New("hash not string parseable")
+	}
+
+	return hash, nil
+}
+
 func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
@@ -36,7 +118,7 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 	}
 }
 
-func (cp *tendermintRpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) NodeMessage {
+func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*TendemintRpcMessage, error) {
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{serviceApi: serviceApi,
 			msg: &JsonrpcMessage{
@@ -48,7 +130,7 @@ func (cp *tendermintRpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, 
 			requestedBlock: requestedBlock},
 		cp: cp,
 	}
-	return nodeMsg
+	return nodeMsg, nil
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
@@ -61,6 +143,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 		if err != nil {
 			return nil, err
 		}
+
 	} else {
 		//assuming URI
 		var parsedMethod string
@@ -71,13 +154,21 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 			parsedMethod = path[0:idx]
 		}
 
-		msg = JsonrpcMessage{Method: parsedMethod}     //other parameters don't matter
-		params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
-		//convert the list of strings to a list of interfaces
-		msg.Params = make([]interface{}, len(params_raw))
-		for i := range params_raw {
-			msg.Params[i] = params_raw[i]
+		msg = JsonrpcMessage{
+			ID:      []byte("1"),
+			Version: "2.0",
+			Method:  parsedMethod,
+		} //other parameters don't matter
+		if strings.Contains(path[idx+1:], "=") {
+			params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
+			msg.Params = make([]interface{}, len(params_raw))
+			for i := range params_raw {
+				msg.Params[i] = params_raw[i]
+			}
+		} else {
+			msg.Params = make([]interface{}, 0)
 		}
+		//convert the list of strings to a list of interfaces
 	}
 	//
 	// Check api is supported and save it in nodeMsg
@@ -206,6 +297,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 		}
 	} else {
 		replyMsg.Result = result
+		nm.msg.Result = result
 	}
 
 	data, err := json.Marshal(replyMsg)

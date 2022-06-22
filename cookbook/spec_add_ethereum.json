@@ -9,6 +9,7 @@
       "reliability_threshold" : 268435455,
       "compares_hashes": true,
       "finalization_criteria": 7,
+      "saved_blocks": 3,
       "apis": [
         {
           "name": "rpc_modules",
@@ -502,11 +503,14 @@
               "extra_compute_units": "0"
             }
           ],
-					"function_tag": "getBlockNumber",
-          "result_parsing": {
-            "parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					}
+          "parsing": { 
+            "function_template":  "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+            "function_tag": "getBlockNumber",
+            "result_parsing": {
+              "parserArg": ["0"],
+              "parserFunc": "PARSE_BY_ARG"
+            }
+          }
         },
         {
           "name": "eth_subscribe",
@@ -830,23 +834,14 @@
               "extra_compute_units": "0"
             }
           ],
-					"function_tag": "getBlockByNumber",
-          "function_params": [
-            {
-              "order": "1", 
-              "type": "printformat", 
-              "template": "0"
-            },
-            {
-              "order": "2", 
-              "type": "plain", 
-              "value": "true"
-            }
-          ],
-          "result_parsing": {
-						"parserArg": ["0", "hash"],
-						"parserFunc": "PARSE_CANONICAL"
-					}
+          "parsing": { 
+            "function_tag": "getBlockByNumber",
+            "function_template":  "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+            "result_parsing": {
+              "parserArg": ["0", "hash"],
+              "parserFunc": "PARSE_CANONICAL"
+            }  
+          }
         },
         {
           "name": "eth_getStorageAt",

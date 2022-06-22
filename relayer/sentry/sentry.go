@@ -271,14 +271,12 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 					processedName = regexp.QuoteMeta(processedName)
 					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
 					serverApis[processedName] = api
-					if api.GetFunctionTag() != "" {
-						taggedApis[processedName] = api
-					}
 				} else {
 					serverApis[api.Name] = api
-					if api.GetFunctionTag() != "" {
-						taggedApis[api.GetFunctionTag()] = api
-					}
+				}
+
+				if api.Parsing.GetFunctionTag() != "" {
+					taggedApis[api.Parsing.GetFunctionTag()] = api
 				}
 			}
 		}
@@ -1088,6 +1086,10 @@ func (s *Sentry) GetSpecComparesHashes() bool {
 
 func (s *Sentry) GetSpecFinalizationCriteria() uint32 {
 	return s.serverSpec.FinalizationCriteria
+}
+
+func (s *Sentry) GetSpecSavedBlocks() uint32 {
+	return s.serverSpec.SavedBlocks
 }
 
 func (s *Sentry) GetChainID() string {

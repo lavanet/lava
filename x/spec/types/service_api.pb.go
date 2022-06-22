@@ -61,15 +61,13 @@ func (PARSER_FUNC) EnumDescriptor() ([]byte, []int) {
 }
 
 type ServiceApi struct {
-	Name           string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	BlockParsing   BlockParser    `protobuf:"bytes,2,opt,name=blockParsing,proto3" json:"blockParsing"`
-	ComputeUnits   uint64         `protobuf:"varint,3,opt,name=computeUnits,proto3" json:"computeUnits,omitempty"`
-	Enabled        bool           `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ApiInterfaces  []ApiInterface `protobuf:"bytes,5,rep,name=apiInterfaces,proto3" json:"apiInterfaces"`
-	Category       *SpecCategory  `protobuf:"bytes,6,opt,name=category,proto3" json:"category,omitempty"`
-	FunctionTag    string         `protobuf:"bytes,7,opt,name=functionTag,proto3" json:"functionTag,omitempty"`
-	ResultParsing  BlockParser    `protobuf:"bytes,8,opt,name=resultParsing,proto3" json:"resultParsing"`
-	FunctionParams FunctionParams `protobuf:"bytes,9,opt,name=functionParams,proto3" json:"functionParams"`
+	Name          string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	BlockParsing  BlockParser    `protobuf:"bytes,2,opt,name=blockParsing,proto3" json:"blockParsing"`
+	ComputeUnits  uint64         `protobuf:"varint,3,opt,name=computeUnits,proto3" json:"computeUnits,omitempty"`
+	Enabled       bool           `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	ApiInterfaces []ApiInterface `protobuf:"bytes,5,rep,name=apiInterfaces,proto3" json:"apiInterfaces"`
+	Category      *SpecCategory  `protobuf:"bytes,6,opt,name=category,proto3" json:"category,omitempty"`
+	Parsing       Parsing        `protobuf:"bytes,7,opt,name=parsing,proto3" json:"parsing"`
 }
 
 func (m *ServiceApi) Reset()         { *m = ServiceApi{} }
@@ -147,145 +145,71 @@ func (m *ServiceApi) GetCategory() *SpecCategory {
 	return nil
 }
 
-func (m *ServiceApi) GetFunctionTag() string {
+func (m *ServiceApi) GetParsing() Parsing {
+	if m != nil {
+		return m.Parsing
+	}
+	return Parsing{}
+}
+
+type Parsing struct {
+	FunctionTag      string      `protobuf:"bytes,1,opt,name=function_tag,json=functionTag,proto3" json:"function_tag,omitempty"`
+	FunctionTemplate string      `protobuf:"bytes,2,opt,name=function_template,json=functionTemplate,proto3" json:"function_template,omitempty"`
+	ResultParsing    BlockParser `protobuf:"bytes,3,opt,name=result_parsing,json=resultParsing,proto3" json:"result_parsing"`
+}
+
+func (m *Parsing) Reset()         { *m = Parsing{} }
+func (m *Parsing) String() string { return proto.CompactTextString(m) }
+func (*Parsing) ProtoMessage()    {}
+func (*Parsing) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3323a3ad252c5ed4, []int{1}
+}
+func (m *Parsing) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Parsing) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Parsing.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Parsing) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Parsing.Merge(m, src)
+}
+func (m *Parsing) XXX_Size() int {
+	return m.Size()
+}
+func (m *Parsing) XXX_DiscardUnknown() {
+	xxx_messageInfo_Parsing.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Parsing proto.InternalMessageInfo
+
+func (m *Parsing) GetFunctionTag() string {
 	if m != nil {
 		return m.FunctionTag
 	}
 	return ""
 }
 
-func (m *ServiceApi) GetResultParsing() BlockParser {
+func (m *Parsing) GetFunctionTemplate() string {
+	if m != nil {
+		return m.FunctionTemplate
+	}
+	return ""
+}
+
+func (m *Parsing) GetResultParsing() BlockParser {
 	if m != nil {
 		return m.ResultParsing
 	}
 	return BlockParser{}
-}
-
-func (m *ServiceApi) GetFunctionParams() FunctionParams {
-	if m != nil {
-		return m.FunctionParams
-	}
-	return FunctionParams{}
-}
-
-type FunctionParams struct {
-	Type   string          `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Params []FunctionParam `protobuf:"bytes,2,rep,name=params,proto3" json:"params"`
-}
-
-func (m *FunctionParams) Reset()         { *m = FunctionParams{} }
-func (m *FunctionParams) String() string { return proto.CompactTextString(m) }
-func (*FunctionParams) ProtoMessage()    {}
-func (*FunctionParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{1}
-}
-func (m *FunctionParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *FunctionParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_FunctionParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *FunctionParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FunctionParams.Merge(m, src)
-}
-func (m *FunctionParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *FunctionParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_FunctionParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FunctionParams proto.InternalMessageInfo
-
-func (m *FunctionParams) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
-
-func (m *FunctionParams) GetParams() []FunctionParam {
-	if m != nil {
-		return m.Params
-	}
-	return nil
-}
-
-type FunctionParam struct {
-	Type     string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Template string `protobuf:"bytes,2,opt,name=template,proto3" json:"template,omitempty"`
-	Value    string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
-	Order    string `protobuf:"bytes,4,opt,name=order,proto3" json:"order,omitempty"`
-}
-
-func (m *FunctionParam) Reset()         { *m = FunctionParam{} }
-func (m *FunctionParam) String() string { return proto.CompactTextString(m) }
-func (*FunctionParam) ProtoMessage()    {}
-func (*FunctionParam) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{2}
-}
-func (m *FunctionParam) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *FunctionParam) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_FunctionParam.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *FunctionParam) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FunctionParam.Merge(m, src)
-}
-func (m *FunctionParam) XXX_Size() int {
-	return m.Size()
-}
-func (m *FunctionParam) XXX_DiscardUnknown() {
-	xxx_messageInfo_FunctionParam.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FunctionParam proto.InternalMessageInfo
-
-func (m *FunctionParam) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
-
-func (m *FunctionParam) GetTemplate() string {
-	if m != nil {
-		return m.Template
-	}
-	return ""
-}
-
-func (m *FunctionParam) GetValue() string {
-	if m != nil {
-		return m.Value
-	}
-	return ""
-}
-
-func (m *FunctionParam) GetOrder() string {
-	if m != nil {
-		return m.Order
-	}
-	return ""
 }
 
 type ApiInterface struct {
@@ -298,7 +222,7 @@ func (m *ApiInterface) Reset()         { *m = ApiInterface{} }
 func (m *ApiInterface) String() string { return proto.CompactTextString(m) }
 func (*ApiInterface) ProtoMessage()    {}
 func (*ApiInterface) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{3}
+	return fileDescriptor_3323a3ad252c5ed4, []int{2}
 }
 func (m *ApiInterface) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -357,7 +281,7 @@ func (m *BlockParser) Reset()         { *m = BlockParser{} }
 func (m *BlockParser) String() string { return proto.CompactTextString(m) }
 func (*BlockParser) ProtoMessage()    {}
 func (*BlockParser) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{4}
+	return fileDescriptor_3323a3ad252c5ed4, []int{3}
 }
 func (m *BlockParser) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -411,7 +335,7 @@ func (m *SpecCategory) Reset()         { *m = SpecCategory{} }
 func (m *SpecCategory) String() string { return proto.CompactTextString(m) }
 func (*SpecCategory) ProtoMessage()    {}
 func (*SpecCategory) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3323a3ad252c5ed4, []int{5}
+	return fileDescriptor_3323a3ad252c5ed4, []int{4}
 }
 func (m *SpecCategory) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -471,8 +395,7 @@ func (m *SpecCategory) GetStateful() uint32 {
 func init() {
 	proto.RegisterEnum("lavanet.lava.spec.PARSER_FUNC", PARSER_FUNC_name, PARSER_FUNC_value)
 	proto.RegisterType((*ServiceApi)(nil), "lavanet.lava.spec.ServiceApi")
-	proto.RegisterType((*FunctionParams)(nil), "lavanet.lava.spec.FunctionParams")
-	proto.RegisterType((*FunctionParam)(nil), "lavanet.lava.spec.FunctionParam")
+	proto.RegisterType((*Parsing)(nil), "lavanet.lava.spec.Parsing")
 	proto.RegisterType((*ApiInterface)(nil), "lavanet.lava.spec.ApiInterface")
 	proto.RegisterType((*BlockParser)(nil), "lavanet.lava.spec.BlockParser")
 	proto.RegisterType((*SpecCategory)(nil), "lavanet.lava.spec.SpecCategory")
@@ -481,50 +404,48 @@ func init() {
 func init() { proto.RegisterFile("spec/service_api.proto", fileDescriptor_3323a3ad252c5ed4) }
 
 var fileDescriptor_3323a3ad252c5ed4 = []byte{
-	// 683 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0x8e, 0xf3, 0xd3, 0x26, 0x93, 0xa4, 0x75, 0x97, 0x0a, 0x59, 0x05, 0xb9, 0x26, 0xea, 0x21,
-	0x42, 0x28, 0x91, 0xca, 0x11, 0xa9, 0x92, 0x93, 0xa6, 0x10, 0x28, 0x49, 0xb4, 0x6d, 0x0f, 0xe5,
-	0x12, 0x6d, 0x9c, 0xad, 0xb1, 0xea, 0xd8, 0xd6, 0x7a, 0x5d, 0xb5, 0x4f, 0x80, 0xc4, 0x89, 0xc7,
-	0xe0, 0x51, 0x7a, 0xec, 0x91, 0x13, 0x42, 0xe9, 0x13, 0xf0, 0x06, 0x68, 0xd7, 0x4e, 0xb0, 0xdb,
-	0x48, 0x88, 0x93, 0x77, 0xbe, 0xf9, 0xf9, 0x66, 0xbf, 0x19, 0x2f, 0x3c, 0x0d, 0x03, 0x6a, 0xb5,
-	0x43, 0xca, 0xae, 0x1c, 0x8b, 0x8e, 0x49, 0xe0, 0xb4, 0x02, 0xe6, 0x73, 0x1f, 0x6d, 0xb9, 0xe4,
-	0x8a, 0x78, 0x94, 0xb7, 0xc4, 0xb7, 0x25, 0x82, 0x76, 0xb6, 0x6d, 0xdf, 0xf6, 0xa5, 0xb7, 0x2d,
-	0x4e, 0x71, 0x60, 0xe3, 0x77, 0x01, 0xe0, 0x24, 0x4e, 0x37, 0x03, 0x07, 0x21, 0x28, 0x7a, 0x64,
-	0x46, 0x35, 0xc5, 0x50, 0x9a, 0x15, 0x2c, 0xcf, 0xe8, 0x1d, 0xd4, 0x26, 0xae, 0x6f, 0x5d, 0x8e,
-	0x08, 0x0b, 0x1d, 0xcf, 0xd6, 0xf2, 0x86, 0xd2, 0xac, 0xee, 0xeb, 0xad, 0x47, 0x14, 0xad, 0xce,
-	0x22, 0x8c, 0xb2, 0x4e, 0xf1, 0xf6, 0xe7, 0x6e, 0x0e, 0x67, 0x32, 0x51, 0x03, 0x6a, 0x96, 0x3f,
-	0x0b, 0x22, 0x4e, 0xcf, 0x3c, 0x87, 0x87, 0x5a, 0xc1, 0x50, 0x9a, 0x45, 0x9c, 0xc1, 0x90, 0x06,
-	0xeb, 0xd4, 0x23, 0x13, 0x97, 0x4e, 0xb5, 0xa2, 0xa1, 0x34, 0xcb, 0x78, 0x61, 0xa2, 0x0f, 0x50,
-	0x27, 0x81, 0xd3, 0xf7, 0x38, 0x65, 0x17, 0xc4, 0xa2, 0xa1, 0x56, 0x32, 0x0a, 0xcd, 0xea, 0xfe,
-	0xee, 0x8a, 0x46, 0xcc, 0x54, 0x5c, 0xd2, 0x49, 0x36, 0x17, 0xbd, 0x81, 0xb2, 0x45, 0x38, 0xb5,
-	0x7d, 0x76, 0xa3, 0xad, 0xc9, 0x0b, 0xad, 0xaa, 0x73, 0x12, 0x50, 0xab, 0x9b, 0x84, 0xe1, 0x65,
-	0x02, 0x32, 0xa0, 0x7a, 0x11, 0x79, 0x16, 0x77, 0x7c, 0xef, 0x94, 0xd8, 0xda, 0xba, 0x14, 0x2b,
-	0x0d, 0xa1, 0xf7, 0x50, 0x67, 0x34, 0x8c, 0x5c, 0xbe, 0x10, 0xad, 0xfc, 0x1f, 0xa2, 0x65, 0x53,
-	0xd1, 0x10, 0x36, 0x16, 0xa5, 0x47, 0x84, 0x91, 0x59, 0xa8, 0x55, 0x64, 0xb1, 0x17, 0x2b, 0x8a,
-	0x1d, 0x65, 0x02, 0x93, 0x7a, 0x0f, 0xd2, 0x1b, 0x53, 0xd8, 0xc8, 0xc6, 0x89, 0xb1, 0xf3, 0x9b,
-	0x60, 0x39, 0x76, 0x71, 0x46, 0x07, 0xb0, 0x16, 0xc4, 0x74, 0x79, 0xa9, 0xb3, 0xf1, 0x2f, 0xba,
-	0x84, 0x2d, 0xc9, 0x6a, 0x5c, 0x42, 0x3d, 0xe3, 0x5e, 0x49, 0xb2, 0x03, 0x65, 0x4e, 0x67, 0x81,
-	0x4b, 0x38, 0x95, 0x7b, 0x55, 0xc1, 0x4b, 0x1b, 0x6d, 0x43, 0xe9, 0x8a, 0xb8, 0x11, 0x95, 0x6b,
-	0x52, 0xc1, 0xb1, 0x21, 0x50, 0x9f, 0x4d, 0x29, 0x93, 0xdb, 0x51, 0xc1, 0xb1, 0xd1, 0xf0, 0xa0,
-	0x96, 0x9e, 0x39, 0x7a, 0x0e, 0x15, 0x67, 0x61, 0x24, 0x84, 0x7f, 0x81, 0x65, 0x27, 0xf9, 0x54,
-	0x27, 0xaf, 0x60, 0x8b, 0x5e, 0x73, 0x46, 0xba, 0x8f, 0x17, 0xf4, 0xb1, 0xa3, 0x71, 0x09, 0xd5,
-	0xd4, 0xdc, 0x04, 0x5d, 0x20, 0x4f, 0x26, 0xb3, 0x35, 0xc5, 0x28, 0x08, 0xba, 0x25, 0x80, 0x0e,
-	0x00, 0x62, 0x43, 0xe8, 0x21, 0x49, 0x37, 0x56, 0x6e, 0xc2, 0xc8, 0xc4, 0x27, 0x3d, 0x3c, 0x3e,
-	0x3a, 0x1b, 0x74, 0x71, 0x2a, 0xa3, 0xf1, 0x55, 0x81, 0x5a, 0x7a, 0x13, 0xd1, 0x1e, 0xd4, 0xa7,
-	0x94, 0x53, 0x36, 0x73, 0x3c, 0x27, 0xe4, 0x8e, 0x25, 0x6f, 0x58, 0xc6, 0x59, 0x50, 0x28, 0xe5,
-	0xfa, 0x16, 0x71, 0x25, 0x63, 0x19, 0xc7, 0x86, 0xf8, 0x07, 0xc3, 0x68, 0x12, 0x5a, 0xcc, 0x09,
-	0xc4, 0x68, 0xe4, 0x15, 0xcb, 0x38, 0x83, 0x89, 0xa9, 0x84, 0x9c, 0x70, 0x7a, 0x11, 0xb9, 0x52,
-	0xe6, 0x3a, 0x5e, 0xda, 0x2f, 0xbf, 0x28, 0x50, 0x4d, 0x35, 0x8a, 0x2a, 0x50, 0xea, 0x7d, 0x1c,
-	0x9d, 0x9e, 0xab, 0x39, 0xa4, 0x42, 0x4d, 0x7a, 0xc6, 0x9d, 0xf3, 0xb1, 0x89, 0xdf, 0xaa, 0x0a,
-	0x7a, 0x02, 0x9b, 0x31, 0xd2, 0x35, 0x07, 0xc3, 0x41, 0xbf, 0x6b, 0x1e, 0xab, 0x79, 0xb4, 0x0d,
-	0x6a, 0x0c, 0x1e, 0xf6, 0xbb, 0xa7, 0xfd, 0xe1, 0xc0, 0xc4, 0xe7, 0x6a, 0x01, 0xed, 0xc2, 0xb3,
-	0x87, 0xe8, 0x78, 0x88, 0xc7, 0x43, 0x7c, 0xd8, 0xc3, 0xbd, 0x43, 0xb5, 0x88, 0x36, 0x13, 0xde,
-	0xf1, 0xe8, 0xd8, 0xec, 0x0f, 0xd4, 0x52, 0xa7, 0xf3, 0x7d, 0xae, 0x2b, 0xb7, 0x73, 0x5d, 0xb9,
-	0x9b, 0xeb, 0xca, 0xaf, 0xb9, 0xae, 0x7c, 0xbb, 0xd7, 0x73, 0x77, 0xf7, 0x7a, 0xee, 0xc7, 0xbd,
-	0x9e, 0xfb, 0xb4, 0x67, 0x3b, 0xfc, 0x73, 0x34, 0x69, 0x59, 0xfe, 0xac, 0x9d, 0x48, 0x2d, 0xbf,
-	0xed, 0xeb, 0xb6, 0x7c, 0x33, 0xc5, 0xd0, 0xc3, 0xc9, 0x9a, 0x7c, 0x05, 0x5f, 0xff, 0x09, 0x00,
-	0x00, 0xff, 0xff, 0xc6, 0x9f, 0xdf, 0x75, 0x48, 0x05, 0x00, 0x00,
+	// 642 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xc1, 0x4e, 0xdb, 0x4a,
+	0x14, 0xcd, 0x90, 0x84, 0x24, 0x37, 0x09, 0x98, 0x79, 0xe8, 0xc9, 0xe2, 0x3d, 0x99, 0xbc, 0x88,
+	0x45, 0xf4, 0x5a, 0x25, 0x12, 0xdd, 0xb5, 0x52, 0x25, 0x27, 0x84, 0x36, 0x82, 0x26, 0xd1, 0x00,
+	0x0b, 0xba, 0xb1, 0x26, 0xc3, 0xe0, 0x8e, 0x70, 0x6c, 0xcb, 0x1e, 0x23, 0xf8, 0x82, 0x4a, 0x5d,
+	0xf5, 0x2b, 0xaa, 0x7e, 0x0a, 0x4b, 0x96, 0x5d, 0x55, 0x55, 0xd8, 0xf7, 0x1b, 0x2a, 0x8f, 0xed,
+	0x90, 0x94, 0x6c, 0xba, 0xf2, 0xbd, 0x67, 0xee, 0xf1, 0x39, 0xf7, 0xde, 0xd1, 0xc0, 0xdf, 0xa1,
+	0xcf, 0x59, 0x27, 0xe4, 0xc1, 0xb5, 0x60, 0xdc, 0xa2, 0xbe, 0x68, 0xfb, 0x81, 0x27, 0x3d, 0xbc,
+	0xe5, 0xd0, 0x6b, 0xea, 0x72, 0xd9, 0x8e, 0xbf, 0xed, 0xb8, 0x68, 0x67, 0xdb, 0xf6, 0x6c, 0x4f,
+	0x9d, 0x76, 0xe2, 0x28, 0x29, 0x6c, 0xfe, 0x5c, 0x03, 0x38, 0x49, 0xe8, 0xa6, 0x2f, 0x30, 0x86,
+	0x82, 0x4b, 0xa7, 0x5c, 0x47, 0x0d, 0xd4, 0xaa, 0x10, 0x15, 0xe3, 0xb7, 0x50, 0x9b, 0x38, 0x1e,
+	0xbb, 0x1a, 0xd3, 0x20, 0x14, 0xae, 0xad, 0xaf, 0x35, 0x50, 0xab, 0xba, 0x6f, 0xb4, 0x9f, 0x48,
+	0xb4, 0xbb, 0x59, 0x19, 0x0f, 0xba, 0x85, 0xbb, 0xef, 0xbb, 0x39, 0xb2, 0xc4, 0xc4, 0x4d, 0xa8,
+	0x31, 0x6f, 0xea, 0x47, 0x92, 0x9f, 0xb9, 0x42, 0x86, 0x7a, 0xbe, 0x81, 0x5a, 0x05, 0xb2, 0x84,
+	0x61, 0x1d, 0x4a, 0xdc, 0xa5, 0x13, 0x87, 0x5f, 0xe8, 0x85, 0x06, 0x6a, 0x95, 0x49, 0x96, 0xe2,
+	0x23, 0xa8, 0x53, 0x5f, 0x0c, 0x5c, 0xc9, 0x83, 0x4b, 0xca, 0x78, 0xa8, 0x17, 0x1b, 0xf9, 0x56,
+	0x75, 0x7f, 0x77, 0x85, 0x11, 0x73, 0xa1, 0x2e, 0x75, 0xb2, 0xcc, 0xc5, 0xaf, 0xa0, 0xcc, 0xa8,
+	0xe4, 0xb6, 0x17, 0xdc, 0xea, 0xeb, 0xaa, 0xa1, 0x55, 0xff, 0x39, 0xf1, 0x39, 0xeb, 0xa5, 0x65,
+	0x64, 0x4e, 0xc0, 0x2f, 0xa1, 0xe4, 0xa7, 0xc3, 0x28, 0x29, 0xee, 0xce, 0x0a, 0x6e, 0xda, 0x74,
+	0x2a, 0x9f, 0x11, 0x9a, 0x5f, 0x10, 0x94, 0xb2, 0x79, 0xfc, 0x07, 0xb5, 0xcb, 0xc8, 0x65, 0x52,
+	0x78, 0xae, 0x25, 0xa9, 0x9d, 0x4e, 0xbd, 0x9a, 0x61, 0xa7, 0xd4, 0xc6, 0xcf, 0x60, 0xeb, 0xb1,
+	0x84, 0x4f, 0x7d, 0x87, 0x4a, 0xae, 0x36, 0x50, 0x21, 0xda, 0xbc, 0x2e, 0xc5, 0xf1, 0x11, 0x6c,
+	0x04, 0x3c, 0x8c, 0x1c, 0x69, 0x65, 0xf6, 0xf2, 0x7f, 0xb0, 0xab, 0x7a, 0xc2, 0x4d, 0xcd, 0x35,
+	0x5d, 0xa8, 0x2d, 0x8e, 0x11, 0xff, 0x0b, 0x15, 0x91, 0x25, 0xa9, 0xd3, 0x47, 0x20, 0xbe, 0x38,
+	0xf2, 0xd6, 0xcf, 0xac, 0xa9, 0x18, 0x3f, 0x87, 0x2d, 0x7e, 0x23, 0x03, 0xda, 0x7b, 0xba, 0xf3,
+	0xa7, 0x07, 0xcd, 0x2b, 0xa8, 0x2e, 0x78, 0x8a, 0xe5, 0x7c, 0x15, 0x99, 0x41, 0x3c, 0x98, 0x7c,
+	0x2c, 0x37, 0x07, 0xf0, 0x6b, 0x80, 0x24, 0x39, 0x8c, 0x5c, 0xa6, 0x44, 0x37, 0x56, 0x76, 0x39,
+	0x36, 0xc9, 0x49, 0x9f, 0x58, 0x87, 0x67, 0xc3, 0x1e, 0x59, 0x60, 0x34, 0x3f, 0x21, 0xa8, 0x2d,
+	0x2e, 0x17, 0xef, 0x41, 0xfd, 0x82, 0x4b, 0x1e, 0x4c, 0x85, 0x2b, 0x42, 0x29, 0x98, 0xea, 0xb0,
+	0x4c, 0x96, 0x41, 0xbc, 0x0d, 0x45, 0xc7, 0x63, 0xd4, 0x51, 0x8a, 0x65, 0x92, 0x24, 0xf1, 0xb5,
+	0x0e, 0xa3, 0x49, 0xc8, 0x02, 0xe1, 0xc7, 0xeb, 0x50, 0x2d, 0x96, 0xc9, 0x12, 0x86, 0x77, 0xa0,
+	0x1c, 0x4a, 0x2a, 0xf9, 0x65, 0xe4, 0xa8, 0x7b, 0x5d, 0x27, 0xf3, 0xfc, 0xff, 0x8f, 0x08, 0xaa,
+	0x0b, 0x46, 0x71, 0x05, 0x8a, 0xfd, 0x77, 0xe3, 0xd3, 0x73, 0x2d, 0x87, 0x35, 0xa8, 0xa9, 0x13,
+	0xab, 0x7b, 0x6e, 0x99, 0xe4, 0x8d, 0x86, 0xf0, 0x5f, 0xb0, 0x99, 0x20, 0x3d, 0x73, 0x38, 0x1a,
+	0x0e, 0x7a, 0xe6, 0xb1, 0xb6, 0x86, 0xb7, 0x41, 0x4b, 0xc0, 0x83, 0x41, 0xef, 0x74, 0x30, 0x1a,
+	0x9a, 0xe4, 0x5c, 0xcb, 0xe3, 0x5d, 0xf8, 0xe7, 0x77, 0xd4, 0x1a, 0x11, 0x6b, 0x44, 0x0e, 0xfa,
+	0xa4, 0x7f, 0xa0, 0x15, 0xf0, 0x66, 0xaa, 0x6b, 0x8d, 0x8f, 0xcd, 0xc1, 0x50, 0x2b, 0x76, 0xbb,
+	0x5f, 0x67, 0x06, 0xba, 0x9b, 0x19, 0xe8, 0x7e, 0x66, 0xa0, 0x1f, 0x33, 0x03, 0x7d, 0x7e, 0x30,
+	0x72, 0xf7, 0x0f, 0x46, 0xee, 0xdb, 0x83, 0x91, 0x7b, 0xbf, 0x67, 0x0b, 0xf9, 0x21, 0x9a, 0xb4,
+	0x99, 0x37, 0xed, 0xa4, 0xa3, 0x56, 0xdf, 0xce, 0x4d, 0x47, 0x3d, 0x43, 0xf1, 0xd2, 0xc3, 0xc9,
+	0xba, 0x7a, 0x58, 0x5e, 0xfc, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x25, 0x9e, 0x5a, 0xed, 0x9b, 0x04,
+	0x00, 0x00,
 }
 
 func (this *ServiceApi) Equal(that interface{}) bool {
@@ -569,78 +490,37 @@ func (this *ServiceApi) Equal(that interface{}) bool {
 	if !this.Category.Equal(that1.Category) {
 		return false
 	}
+	if !this.Parsing.Equal(&that1.Parsing) {
+		return false
+	}
+	return true
+}
+func (this *Parsing) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Parsing)
+	if !ok {
+		that2, ok := that.(Parsing)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
 	if this.FunctionTag != that1.FunctionTag {
 		return false
 	}
+	if this.FunctionTemplate != that1.FunctionTemplate {
+		return false
+	}
 	if !this.ResultParsing.Equal(&that1.ResultParsing) {
-		return false
-	}
-	if !this.FunctionParams.Equal(&that1.FunctionParams) {
-		return false
-	}
-	return true
-}
-func (this *FunctionParams) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FunctionParams)
-	if !ok {
-		that2, ok := that.(FunctionParams)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Type != that1.Type {
-		return false
-	}
-	if len(this.Params) != len(that1.Params) {
-		return false
-	}
-	for i := range this.Params {
-		if !this.Params[i].Equal(&that1.Params[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *FunctionParam) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*FunctionParam)
-	if !ok {
-		that2, ok := that.(FunctionParam)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Type != that1.Type {
-		return false
-	}
-	if this.Template != that1.Template {
-		return false
-	}
-	if this.Value != that1.Value {
-		return false
-	}
-	if this.Order != that1.Order {
 		return false
 	}
 	return true
@@ -761,7 +641,7 @@ func (m *ServiceApi) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
-		size, err := m.FunctionParams.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.Parsing.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -769,24 +649,7 @@ func (m *ServiceApi) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintServiceApi(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x4a
-	{
-		size, err := m.ResultParsing.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintServiceApi(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x42
-	if len(m.FunctionTag) > 0 {
-		i -= len(m.FunctionTag)
-		copy(dAtA[i:], m.FunctionTag)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.FunctionTag)))
-		i--
-		dAtA[i] = 0x3a
-	}
+	dAtA[i] = 0x3a
 	if m.Category != nil {
 		{
 			size, err := m.Category.MarshalToSizedBuffer(dAtA[:i])
@@ -848,7 +711,7 @@ func (m *ServiceApi) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *FunctionParams) Marshal() (dAtA []byte, err error) {
+func (m *Parsing) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -858,85 +721,37 @@ func (m *FunctionParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *FunctionParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *Parsing) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *FunctionParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Parsing) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Params) > 0 {
-		for iNdEx := len(m.Params) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Params[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintServiceApi(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
+	{
+		size, err := m.ResultParsing.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
+		i -= size
+		i = encodeVarintServiceApi(dAtA, i, uint64(size))
 	}
-	if len(m.Type) > 0 {
-		i -= len(m.Type)
-		copy(dAtA[i:], m.Type)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Type)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *FunctionParam) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *FunctionParam) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *FunctionParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Order) > 0 {
-		i -= len(m.Order)
-		copy(dAtA[i:], m.Order)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Order)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Value) > 0 {
-		i -= len(m.Value)
-		copy(dAtA[i:], m.Value)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Value)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Template) > 0 {
-		i -= len(m.Template)
-		copy(dAtA[i:], m.Template)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Template)))
+	i--
+	dAtA[i] = 0x1a
+	if len(m.FunctionTemplate) > 0 {
+		i -= len(m.FunctionTemplate)
+		copy(dAtA[i:], m.FunctionTemplate)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.FunctionTemplate)))
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Type) > 0 {
-		i -= len(m.Type)
-		copy(dAtA[i:], m.Type)
-		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.Type)))
+	if len(m.FunctionTag) > 0 {
+		i -= len(m.FunctionTag)
+		copy(dAtA[i:], m.FunctionTag)
+		i = encodeVarintServiceApi(dAtA, i, uint64(len(m.FunctionTag)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1119,58 +934,27 @@ func (m *ServiceApi) Size() (n int) {
 		l = m.Category.Size()
 		n += 1 + l + sovServiceApi(uint64(l))
 	}
+	l = m.Parsing.Size()
+	n += 1 + l + sovServiceApi(uint64(l))
+	return n
+}
+
+func (m *Parsing) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	l = len(m.FunctionTag)
+	if l > 0 {
+		n += 1 + l + sovServiceApi(uint64(l))
+	}
+	l = len(m.FunctionTemplate)
 	if l > 0 {
 		n += 1 + l + sovServiceApi(uint64(l))
 	}
 	l = m.ResultParsing.Size()
 	n += 1 + l + sovServiceApi(uint64(l))
-	l = m.FunctionParams.Size()
-	n += 1 + l + sovServiceApi(uint64(l))
-	return n
-}
-
-func (m *FunctionParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	if l > 0 {
-		n += 1 + l + sovServiceApi(uint64(l))
-	}
-	if len(m.Params) > 0 {
-		for _, e := range m.Params {
-			l = e.Size()
-			n += 1 + l + sovServiceApi(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *FunctionParam) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Type)
-	if l > 0 {
-		n += 1 + l + sovServiceApi(uint64(l))
-	}
-	l = len(m.Template)
-	if l > 0 {
-		n += 1 + l + sovServiceApi(uint64(l))
-	}
-	l = len(m.Value)
-	if l > 0 {
-		n += 1 + l + sovServiceApi(uint64(l))
-	}
-	l = len(m.Order)
-	if l > 0 {
-		n += 1 + l + sovServiceApi(uint64(l))
-	}
 	return n
 }
 
@@ -1444,6 +1228,89 @@ func (m *ServiceApi) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parsing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Parsing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServiceApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Parsing) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServiceApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Parsing: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Parsing: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FunctionTag", wireType)
 			}
 			var stringLen uint64
@@ -1474,7 +1341,39 @@ func (m *ServiceApi) Unmarshal(dAtA []byte) error {
 			}
 			m.FunctionTag = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 8:
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FunctionTemplate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServiceApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServiceApi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FunctionTemplate = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ResultParsing", wireType)
 			}
@@ -1506,333 +1405,6 @@ func (m *ServiceApi) Unmarshal(dAtA []byte) error {
 			if err := m.ResultParsing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FunctionParams", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.FunctionParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServiceApi(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *FunctionParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServiceApi
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FunctionParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FunctionParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Params = append(m.Params, FunctionParam{})
-			if err := m.Params[len(m.Params)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServiceApi(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *FunctionParam) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServiceApi
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: FunctionParam: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FunctionParam: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Template", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Template = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Value = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Order", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServiceApi
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServiceApi
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Order = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
