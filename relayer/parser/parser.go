@@ -9,11 +9,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const NOT_APPLICABLE int64 = -1
-const LATEST_BLOCK int64 = -2
-const EARLIEST_BLOCK int64 = -3
-const PENDING_BLOCK int64 = -4
-
 const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
@@ -30,20 +25,20 @@ type RPCInput interface {
 func ParseDefaultBlockParameter(block string) (int64, error) {
 	switch block {
 	case "latest":
-		return LATEST_BLOCK, nil
+		return spectypes.LATEST_BLOCK, nil
 	case "earliest":
-		return EARLIEST_BLOCK, nil
+		return spectypes.EARLIEST_BLOCK, nil
 	case "pending":
-		return PENDING_BLOCK, nil
+		return spectypes.PENDING_BLOCK, nil
 	default:
 		//try to parse a number
 	}
 	blockNum, err := strconv.ParseInt(block, 0, 64)
 	if err != nil {
-		return NOT_APPLICABLE, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
+		return spectypes.NOT_APPLICABLE, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
 	}
 	if blockNum < 0 {
-		return NOT_APPLICABLE, fmt.Errorf("invalid block value, block value was negative %d", blockNum)
+		return spectypes.NOT_APPLICABLE, fmt.Errorf("invalid block value, block value was negative %d", blockNum)
 	}
 	return blockNum, nil
 }
@@ -83,7 +78,7 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_PARAMS)
 	if err != nil || result == nil {
-		return NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 	return rpcInput.ParseBlock(result[0].(string))
 }
@@ -92,14 +87,14 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
-		return NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	blockstr := result[0].(string)
 	if strings.Contains(result[0].(string), "\"") {
 		blockstr, err = strconv.Unquote(blockstr)
 		if err != nil {
-			return NOT_APPLICABLE, err
+			return spectypes.NOT_APPLICABLE, err
 		}
 
 	}

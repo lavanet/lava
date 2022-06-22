@@ -21,7 +21,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -645,7 +644,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	//they have different data! report!
 	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s\nReporting...", reply0.Data, reply1.Data))
-	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -702,7 +701,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 			if blockHash != otherHash {
 				//
 				// TODO:: Fill msg with incriminating data
-				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -750,7 +749,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		//
 		// Report same provider discrepancy
 		// TODO:: Fill msg with incriminating data
-		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -1026,21 +1025,7 @@ func (s *Sentry) SendRelay(
 }
 
 func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool {
-	//TODO: implement this for the chain, make a method for spec to verify this on chain?
-	switch requestedBlock {
-	case parser.NOT_APPLICABLE:
-		return false
-	default:
-		//TODO: load this from spec
-		//TODO: regard earliest block from spec
-		finalization_criteria := int64(s.GetSpecFinalizationCriteria())
-		if requestedBlock <= latestBlock-finalization_criteria {
-			// log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
-			return true
-			// return false
-		}
-	}
-	return false
+	return spectypes.IsFinalizedBlock(requestedBlock, latestBlock, s.GetSpecFinalizationCriteria())
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
@@ -1224,9 +1209,9 @@ func NewSentry(
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
 	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
 	switch request.RequestBlock {
-	case parser.LATEST_BLOCK:
+	case spectypes.LATEST_BLOCK:
 		request.RequestBlock = response.LatestBlock
-	case parser.EARLIEST_BLOCK:
-		request.RequestBlock = parser.NOT_APPLICABLE // TODO: add support for earliest block reliability
+	case spectypes.EARLIEST_BLOCK:
+		request.RequestBlock = spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
 }
