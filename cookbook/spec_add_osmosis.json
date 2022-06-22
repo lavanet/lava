@@ -7,8 +7,8 @@
       "enabled": true,
       "reliability_threshold" : 268435455,
       "compares_hashes": false,
-      "average_block_time": 6500,
-      "block_height_threshold": 5,
+      "average_block_time": "6500",
+      "block_height_threshold": "5",
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
