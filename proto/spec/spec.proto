@@ -16,4 +16,5 @@ message Spec {
   uint32 reliabilityThreshold = 5;
   bool comparesHashes = 6;
   uint32 finalizationCriteria = 7;
+  uint32 saved_blocks = 8;
 }

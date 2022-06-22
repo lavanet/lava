@@ -7,7 +7,8 @@
       "enabled": true,
       "reliability_threshold" : 268435455,
       "compares_hashes": true,
-      "finalization_criteria": 7,
+      "finalization_criteria": 0,
+      "saved_blocks": 1,
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
@@ -52,11 +53,14 @@
             "type": "get",
             "extra_compute_units": "0"
           }],
-					"function_tag": "getBlockByNumber",
-          "result_parsing": {
-						"parserArg": ["0", "sync_info", "latest_block_height"],
-						"parserFunc": "PARSE_CANONICAL"
-					}
+          "parsing": { 
+            "function_template":  "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"%d\"]}",
+            "function_tag": "getBlockByNumber",
+            "result_parsing": {
+              "parserArg": ["0", "block_id", "hash"],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
         },
         {
           "name": "block_by_hash",
@@ -342,11 +346,14 @@
             "type": "get",
             "extra_compute_units": "0"
           }],
-					"function_tag": "getBlockNumber",
-          "result_parsing": {
-						"parserArg": ["0", "sync_info", "latest_block_height"],
-						"parserFunc": "PARSE_CANONICAL"
-					}
+          "parsing": { 
+            "function_tag": "getBlockNumber",
+            "function_template":  "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+            "result_parsing": {
+              "parserArg": ["0", "sync_info", "latest_block_height"],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
         },
         {
           "name": "subscribe",
@@ -497,11 +504,14 @@
             "type": "get",
             "extra_compute_units": "0"
           }],
-          "function_tag": "getBlockByNumber",
-          "result_parsing": {
-						"parserArg": ["0", "hash"],
-						"parserFunc": "PARSE_CANONICAL"
-					}
+          "parsing": { 
+            "function_template":  "/blocks/latest",
+            "function_tag": "getBlockNumber",
+            "result_parsing": {
+              "parserArg": ["0",  "block", "header", "height"],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
         },
         {
           "name": "/blocks/{height}",
@@ -516,7 +526,15 @@
             "interface": "rest",
             "type": "get",
             "extra_compute_units": "0"
-          }]
+          }],
+          "parsing": { 
+            "function_template":  "/blocks/%d",
+            "function_tag": "getBlockByNumber",
+            "result_parsing": {
+              "parserArg": ["0",  "block_id", "hash"],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
         },
         {
           "name": "/validatorsets/latest",

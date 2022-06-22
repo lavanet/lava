@@ -13,21 +13,13 @@ message ServiceApi {
   bool enabled = 4; 
   repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
   SpecCategory category = 6;
-  string functionTag = 7;
-  BlockParser resultParsing = 8 [(gogoproto.nullable) = false];
-  FunctionParams functionParams = 9 [(gogoproto.nullable) = false];
+  Parsing parsing = 7 [(gogoproto.nullable) = false];
 }
 
-message FunctionParams {
-  string type = 1;
-  repeated FunctionParam params = 2 [(gogoproto.nullable) = false]; 
-
-}
-message FunctionParam {
-  string type = 1;
-  string template = 2;
-  string value = 3;
-  string order = 4;
+message Parsing {
+  string function_tag = 1;
+  string function_template = 2;
+  BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
 }
 message ApiInterface {
   string interface = 1;

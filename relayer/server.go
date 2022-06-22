@@ -338,6 +338,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	if err != nil {
 		return nil, err
 	}
+
 	// return reply to user
 	return reply, nil
 }

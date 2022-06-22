@@ -69,56 +69,10 @@ func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error
 }
 
 func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
-
-	// blockNumMsg, err := cs.chainProxy.ParseMsg("", []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`))
-	// if err != nil {
-	// 	return -1, err
-	// }
-	// blockNumReply, err := blockNumMsg.Send(ctx)
-	// if err != nil {
-	// 	return -1, err
-	// }
-
-	// // TODO:: use parser parser.parse()
-	// var msg jsonrpcMessage
-	// err = json.Unmarshal(blockNumReply.GetData(), &msg)
-	// if err != nil {
-	// 	return -1, err
-	// }
-
-	// latestBlockstr, err := strconv.Unquote(string(msg.Result))
-	// latestBlock, err := strconv.ParseInt(latestBlockstr, 0, 64)
-
-	// cs.chainProxy.GetSentry().FetchLatestBlockNum()
-
 	return cs.chainProxy.FetchLatestBlockNum(ctx)
 }
 
 func (cs *ChainSentry) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-
-	// messageTemplate := `{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x", true],"id":1}` // move to parser
-	// message := fmt.Sprintf(messageTemplate, blockNum)
-
-	// blockMsg, err := cs.chainProxy.ParseMsg("", []byte(message))
-	// if err != nil {
-	// 	log.Fatalln("error: Start", err)
-	// 	return nil, err
-	// }
-	// blockMsgReply, err := blockMsg.Send(ctx)
-	// if err != nil {
-	// 	log.Fatalln("error: Start", err)
-	// 	return nil, err
-	// }
-
-	// var msg jsonrpcMessage
-	// err = json.Unmarshal(blockMsgReply.GetData(), &msg)
-	// var result map[string]interface{}
-	// err = json.Unmarshal(msg.Result, &result)
-	// if err != nil {
-	// 	log.Fatalln("error: Start", err)
-	// 	return nil, err
-	// }
-	// return result, nil
 	return cs.chainProxy.FetchBlockHashByNum(ctx, blockNum)
 
 }
@@ -213,7 +167,7 @@ func NewChainSentry(
 	return &ChainSentry{
 		chainProxy:             cp,
 		ChainID:                chainID,
-		numFinalBlocks:         DEFAULT_NUM_FINAL_BLOCKS,
-		finalizedBlockDistance: DEFAULT_NUM_SAVED_BLOCKS,
+		numFinalBlocks:         int(cp.GetSentry().GetSpecSavedBlocks()),
+		finalizedBlockDistance: int(cp.GetSentry().GetSpecFinalizationCriteria()),
 	}
 }

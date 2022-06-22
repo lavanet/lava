@@ -16,6 +16,7 @@ type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
 	RequestedBlock() int64
+	GetMsg() interface{}
 }
 
 type ChainProxy interface {
@@ -120,6 +121,7 @@ func SendRelay(
 		}
 		relayRequest.Sig = sig
 		c := *clientSession.Client.Client
+
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err
