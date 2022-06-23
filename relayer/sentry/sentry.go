@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"regexp"
 	"sort"
@@ -55,7 +56,7 @@ type QoSInfo struct {
 	ConsecutiveTimeOut uint64
 }
 
-func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int) {
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
@@ -71,7 +72,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	})
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[len(cs.QoSInfo.LatencyScoreList)*90/100]
 
-	if numOfPorivders > 1 { //todo >0.6(constant)*providersPerEpoch
+	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*60/100)) {
 		if blockHeightDiff > 0 {
 			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.ZeroDec())
 		} else {
@@ -83,7 +84,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 	sum := sdk.ZeroDec()
 	for _, element := range cs.QoSInfo.SyncScoreList {
-		sum.Add(element)
+		sum = sum.Add(element)
 	}
 	cs.QoSInfo.LastQoSReport.Sync = sum.QuoInt64(int64(len(cs.QoSInfo.SyncScoreList)))
 }
@@ -163,14 +164,15 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu        sync.RWMutex
-	pairingHash      []byte
-	pairing          []*RelayerClientWrapper
-	pairingAddresses []string
-	pairingPurgeLock sync.Mutex
-	pairingPurge     []*RelayerClientWrapper
-	VrfSkMu          sync.Mutex
-	VrfSk            vrf.PrivateKey
+	pairingMu                   sync.RWMutex
+	PairingServicersToPairCount uint64
+	pairingHash                 []byte
+	pairing                     []*RelayerClientWrapper
+	pairingAddresses            []string
+	pairingPurgeLock            sync.Mutex
+	pairingPurge                []*RelayerClientWrapper
+	VrfSkMu                     sync.Mutex
+	VrfSk                       vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
@@ -279,6 +281,19 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
+func (s *Sentry) getServicersToPairCount(ctx context.Context) error {
+	paramsReply, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+	s.PairingServicersToPairCount = paramsReply.Params.GetServicersToPairCount()
+
+	return nil
+}
+
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
@@ -369,6 +384,13 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Get spec for the first time
 	err = s.getSpec(ctx)
+	if err != nil {
+		return err
+	}
+
+	//
+	// Get ServicersToPairCount for the first time
+	err = s.getServicersToPairCount(ctx)
 	if err != nil {
 		return err
 	}
