@@ -209,7 +209,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			dep:          &node,
 			failed:       failed,
 			requireAlive: false,
-			debug:        true}, t, &states)
+			debug:        false}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
 		await(prov_osm, "Osmosis providers ready", providers_ready, "awating for providers to listen to proceed...")
 	}
@@ -354,7 +354,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			dep:          &node,
 			failed:       failed,
 			requireAlive: false,
-			debug:        true}, t, &states)
+			debug:        false}, t, &states)
 		await(clientEth, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
 		await(node, "relay payment 1 eth", found_relay_payment, "awating for FIRST payment to proceed...")
 		println(" ::: GOT FIRST PAYMENT !!!")
