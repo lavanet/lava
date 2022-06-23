@@ -176,12 +176,6 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 	if uint64(len(unmarshalledData)) < param_index {
 		return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
 	}
-	// blockContainer := unmarshalledData[param_index]
-	// if container, ok := blockContainer.(map[string]interface{}); ok {
-	// 	//TODO: add default
-	// 	//TODO: turn this into type assertion instead
-	// 	return fmt.Sprintf("%s", container[input[1]]), nil
-	// }
 
 	blockContainer := unmarshalledData[param_index]
 	for _, key := range input[1:] {
