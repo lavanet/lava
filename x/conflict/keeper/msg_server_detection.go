@@ -11,6 +11,6 @@ import (
 func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*types.MsgDetectionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Keeper.Logger(ctx)
-	utils.LogLavaEvent(ctx, logger, "lava_conflict_detection", map[string]string{"client": msg.Creator}, "Got a new conflict detection from consumer")
+	utils.LogLavaEvent(ctx, logger, "conflict_detection", map[string]string{"client": msg.Creator}, "Got a new conflict detection from consumer")
 	return &types.MsgDetectionResponse{}, nil
 }

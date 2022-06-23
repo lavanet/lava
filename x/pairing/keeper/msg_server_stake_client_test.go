@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -19,7 +20,7 @@ func TestNewStakeClient(t *testing.T) {
 	//init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
-	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(amount))))
+	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
 
 	_, pk, _ := utils.GeneratePrivateVRFKey()
 	vrfPk := &utils.VrfPubKey{}
@@ -40,9 +41,9 @@ func TestNewStakeClient(t *testing.T) {
 		stake sdk.Coin
 		valid bool
 	}{
-		{"MinStake", sdk.NewCoin("stake", sdk.NewInt(10)), false},
-		{"InsufficientFunds", sdk.NewCoin("stake", sdk.NewInt(amount+1)), false},
-		{"HappyFlow", sdk.NewCoin("stake", sdk.NewInt(amount/2)), true},
+		{"MinStake", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10)), false},
+		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount+1)), false},
+		{"HappyFlow", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,11 +54,11 @@ func TestNewStakeClient(t *testing.T) {
 
 			if tt.valid {
 				require.Nil(t, err)
-				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, "stake").Amount.Int64()
+				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 				require.Equal(t, amount-tt.stake.Amount.Int64(), balance)
 			} else {
 				require.NotNil(t, err)
-				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, "stake").Amount.Int64()
+				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 				require.Equal(t, amount, balance)
 			}
 		})
@@ -71,7 +72,7 @@ func TestAddStakeClient(t *testing.T) {
 	//init keepers state
 	_, clientAddr := sigs.GenerateFloatingKey()
 	var amount int64 = 1000
-	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(amount))))
+	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))))
 
 	_, pk, _ := utils.GeneratePrivateVRFKey()
 	vrfPk := &utils.VrfPubKey{}
@@ -87,7 +88,7 @@ func TestAddStakeClient(t *testing.T) {
 
 	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochtypes.DefaultGenesis().EpochDetails)
 	firstStake := amount / 10
-	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin("stake", sdk.NewInt(firstStake)), Geolocation: 1, Vrfpk: vrfPk.String()})
+	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(firstStake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 	require.Nil(t, err)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
@@ -96,9 +97,9 @@ func TestAddStakeClient(t *testing.T) {
 		stake sdk.Coin
 		valid bool
 	}{
-		{"MinStake", sdk.NewCoin("stake", sdk.NewInt(amount/20)), false},
-		{"InsufficientFunds", sdk.NewCoin("stake", sdk.NewInt(amount*2)), false},
-		{"HappyFlow", sdk.NewCoin("stake", sdk.NewInt(amount/2)), true},
+		{"MinStake", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/20)), false},
+		{"InsufficientFunds", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount*2)), false},
+		{"HappyFlow", sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/2)), true},
 	}
 
 	for _, tt := range tests {
@@ -108,11 +109,11 @@ func TestAddStakeClient(t *testing.T) {
 
 			if tt.valid {
 				require.Nil(t, err)
-				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, "stake").Amount.Int64()
+				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 				require.Equal(t, amount-tt.stake.Amount.Int64(), balance)
 			} else {
 				require.NotNil(t, err)
-				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, "stake").Amount.Int64()
+				balance := keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ctx), clientAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 				require.Equal(t, amount-firstStake, balance)
 			}
 		})

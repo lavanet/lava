@@ -29,12 +29,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 	var minStake sdk.Coin
 	if provider {
-		minStake = k.GetMinStakeProvider(ctx)
+		minStake = k.MinStakeProvider(ctx)
 	} else {
-		minStake = k.GetMinStakeClient(ctx)
+		minStake = k.MinStakeClient(ctx)
 	}
 	//if we get here, the spec is active and supported
-	if amount.IsLT(minStake) {
+
+	if amount.IsLT(minStake) { //we count on this to also check the denom
 		details := map[string]string{"spec": specChainID, stake_type(): creator, "stake": amount.String(), "minStake": minStake.String()}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_amount", details, "insufficient "+stake_type()+" stake amount")
 	}
@@ -45,8 +46,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 	//define the function here for later use
 	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
-		if k.bankKeeper.GetBalance(ctx, addr, "stake").IsLT(neededAmount) {
-			return false, fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, "stake"))
+		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
+			return false, fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
 		}
 		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {

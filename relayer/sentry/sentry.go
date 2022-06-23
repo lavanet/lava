@@ -746,7 +746,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 
 	// New reply should have blocknum >= from block same provider
 	consensus := s.getConsensusByProvider(providerAcc)
-	if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock >= latestBlock {
+	if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock > latestBlock {
 		log.Println("Provider supplied an older latest block than it has previously")
 
 		//
