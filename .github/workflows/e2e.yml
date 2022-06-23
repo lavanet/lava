@@ -56,7 +56,7 @@ jobs:
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
-    - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 660s
+    - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 960s
       run: go test ./testutil/e2e/ -v -timeout 660s # 11mins
 
     # Show ETH Logs
