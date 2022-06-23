@@ -325,7 +325,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			homepath: homepath,
 			// cmd:          homepath+"providers_eth.sh",
 			cmd:          homepath + "scripts/eth.sh", // with mock
-			filter:       []string{"updated", "server", "error"},
+			filter:       []string{"Server", "updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
 			results:      &results,
@@ -334,7 +334,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
-		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
+		await(prov_eth, "ETH providers ready", providers_ready_eth, "awating for providers to listen to proceed...")
 	}
 	run_client_eth := true
 	if run_client_eth {
