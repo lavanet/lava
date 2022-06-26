@@ -421,7 +421,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 			relay := *relayRequest
 			Relays = append(Relays, &relay)
 
-			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, "stake").Amount.Int64()
+			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
 			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
 
 			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
@@ -434,7 +434,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 
 				want := mint.MulInt64(int64(cuSum)).Mul(score)
 				require.Equal(t, balance+want.TruncateInt64(),
-					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, "stake").Amount.Int64())
+					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
 
 				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
 				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
