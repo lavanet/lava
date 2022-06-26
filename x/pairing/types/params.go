@@ -5,19 +5,20 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"gopkg.in/yaml.v2"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMinStakeProvider            = []byte("MinStakeProvider")
-	DefaultMinStakeProvider uint64 = 1000
+	KeyMinStakeProvider              = []byte("MinStakeProvider")
+	DefaultMinStakeProvider sdk.Coin = sdk.NewCoin("ulava", sdk.NewInt(1000))
 )
 
 var (
-	KeyMinStakeClient            = []byte("MinStakeClient")
-	DefaultMinStakeClient uint64 = 100
+	KeyMinStakeClient              = []byte("MinStakeClient")
+	DefaultMinStakeClient sdk.Coin = sdk.NewCoin("ulava", sdk.NewInt(100))
 )
 
 var (
@@ -59,12 +60,12 @@ var (
 	// TODO: Determine the default value
 	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
 
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(0)}, 5000},
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(500)}, 15000},
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(2000)}, 50000},
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(5000)}, 250000},
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(100000)}, 500000},
-		{sdk.Coin{Denom: "stake", Amount: sdk.NewIntFromUint64(9999900000)}, 9999999999},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, 5000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, 15000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, 50000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, 250000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(100000)}, 500000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(9999900000)}, 9999999999},
 	}}
 )
 
@@ -89,8 +90,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	minStakeProvider uint64,
-	minStakeClient uint64,
+	minStakeProvider sdk.Coin,
+	minStakeClient sdk.Coin,
 	mintCoinsPerCU sdk.Dec,
 	burnCoinsPerCU sdk.Dec,
 	fraudStakeSlashingFactor sdk.Dec,
@@ -213,26 +214,28 @@ func (p Params) String() string {
 
 // validateMinStakeProvider validates the MinStakeProvider param
 func validateMinStakeProvider(v interface{}) error {
-	minStakeProvider, ok := v.(uint64)
+	minStakeProvider, ok := v.(sdk.Coin)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	// TODO implement validation
-	_ = minStakeProvider
+	if minStakeProvider.Denom != epochstoragetypes.TokenDenom {
+		return fmt.Errorf("invalid denom %s on provider minstake param, should be %s", minStakeProvider.Denom, epochstoragetypes.TokenDenom)
+	}
 
 	return nil
 }
 
 // validateMinStakeClient validates the MinStakeClient param
 func validateMinStakeClient(v interface{}) error {
-	minStakeClient, ok := v.(uint64)
+	minStakeClient, ok := v.(sdk.Coin)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	// TODO implement validation
-	_ = minStakeClient
+	if minStakeClient.Denom != epochstoragetypes.TokenDenom {
+		return fmt.Errorf("invalid denom %s on consumer minstake param,, should be %s", minStakeClient.Denom, epochstoragetypes.TokenDenom)
+	}
 
 	return nil
 }
@@ -270,8 +273,9 @@ func validateFraudStakeSlashingFactor(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	// TODO implement validation
-	_ = fraudStakeSlashingFactor
+	if fraudStakeSlashingFactor.GT(sdk.OneDec()) || fraudStakeSlashingFactor.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter fraudStakeSlashingFactor")
+	}
 
 	return nil
 }

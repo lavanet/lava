@@ -10,16 +10,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/starport/starport/pkg/cosmoscmd"
 )
 
 //
 // TODO: https://docs.cosmos.network/master/architecture/adr-027-deterministic-protobuf-serialization.html
 
 func main() {
+	fmt.Println(fmt.Sprintf(" ::: Relayer Started :::"))
 	rootCmd, _ := cosmoscmd.NewRootCmd(
 		"relayer",
 		app.AccountAddressPrefix,

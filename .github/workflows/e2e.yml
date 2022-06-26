@@ -1,8 +1,6 @@
 name: Lava e2e Tests
 
 on: [push, pull_request]
-# on: [push]
-
 
 jobs:
   go:
@@ -14,22 +12,22 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
-    # - name: install screen
-    #   run: sudo apt install screen -y
+    
+    # Install Ignite
     - name: ignite install
       run: curl https://get.ignite.com/cli! | bash
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
-    # - name: docker build 
-    #   run: docker build -t lava-docker .
     - name: ignite version
       run:  ignite version
-    - name: starport install
-      run: curl https://get.starport.network/starport@v0.19.2! | bash
-    - name: starport version
-      run:  starport version
+    # - name: starport install
+    #   run: curl https://get.starport.network/starport@v0.19.2! | bash
+    # - name: starport version
+    #   run:  starport version
+
+    # Setup Paths
     - name: home
       run:  pwd && ls -l
+    - name: ls usr 
+      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
@@ -38,6 +36,8 @@ jobs:
     #   run: export PATH=$PATH:/go/lava
     - name: export GOPATH
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+    - name: export LAVA
+      run: export LAVA=/home/runner/work/lava/lava
     - name: go env
       run:  go env
     - name: pwd
@@ -46,10 +46,34 @@ jobs:
       run: tree
     - name: ls -l
       run: ls -l
+
+    # Pre-build with ignite
     - name: ignite build
       run: ignite chain build -v
-    - name: starport build
-      run: starport chain build -v
-    
+    # - name: starport build
+    #   run: starport chain build -v
+
+    ######################################################
+    ### Run Lava E2E Tests IGNITE VERSION:0.22.1
+    ######################################################
+    - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 960s
+      run: go test ./testutil/e2e/ -v -timeout 660s # 11mins
+
+    # Show ETH Logs
+    - name: cat clientEth.log
+      run: cat ./testutil/e2e/logs/clientEth.log
+    - name: cat providers_eth.log
+      run: cat ./testutil/e2e/logs/providers_eth.log
+  
+    # Show OSMOSIS Logs
+    - name: cat clientOsmo.log
+      run: cat ./testutil/e2e/logs/clientOsmo.log
+    - name: cat clientOsmo2.log
+      run: cat ./testutil/e2e/logs/clientOsmo2.log
+    - name: cat providers_osmosis.log
+      run: cat ./testutil/e2e/logs/providers_eth.log
+    # - name: docker build 
+    #   run: docker build -t lava-docker scripts/docker
+  
     - name: lava unit Tests
       run: go test ./x/pairing/keeper -v

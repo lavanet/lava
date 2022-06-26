@@ -153,7 +153,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 
 //this function randomly chooses count providers by weight
 func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
-	var stakeSum sdk.Coin = sdk.NewCoin("stake", sdk.NewInt(0))
+	var stakeSum sdk.Coin = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 	hashData := make([]byte, 0)
 	for _, stakedProvider := range providersMaps {
 		stakeSum = stakeSum.Add(stakedProvider.Stake)
@@ -180,7 +180,7 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.Mod(stakeSum.Amount)
 
-		var newStakeSum = sdk.NewCoin("stake", sdk.NewInt(0))
+		var newStakeSum = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 		//we loop the servicers list form the end because the list is sorted, biggest is last,
 		// and statistically this will have less iterations
 

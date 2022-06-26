@@ -9,8 +9,14 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  uint64 minStakeProvider = 1 [(gogoproto.moretags) = "yaml:\"min_stake_provider\""];
-  uint64 minStakeClient = 2 [(gogoproto.moretags) = "yaml:\"min_stake_client\""];
+  string minStakeProvider = 1 [(gogoproto.moretags) = "yaml:\"min_stake_provider\"",
+  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+  (gogoproto.nullable)   = false
+  ];
+  string minStakeClient = 2 [(gogoproto.moretags) = "yaml:\"min_stake_client\"",
+  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+  (gogoproto.nullable)   = false
+  ];
   string mintCoinsPerCU = 3 [
     (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",

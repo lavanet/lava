@@ -3,28 +3,28 @@ build:
   main: "cmd/lavad"
 accounts:
   - name: alice
-    coins: ["20000token", "200000000000stake"]
+    coins: ["200000000000ulava"]
   - name: bob
-    coins: ["10000token", "100000000stake"]
+    coins: ["100000000ulava"]
   - name: user1
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: user2
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: user3
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: servicer1
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: servicer2
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: servicer3
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: servicer4
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
   - name: servicer5
-    coins: ["10000token", "200000000stake"]
+    coins: ["200000000ulava"]
 validator:
   name: alice
-  staked: "100000000000stake"
+  staked: "100000000000ulava"
 client:
   openapi:
     path: "docs/static/openapi.yml"
@@ -32,10 +32,20 @@ client:
     path: "vue/src/store"
 faucet:
   name: bob
-  coins: ["5token", "100000stake"]
+  coins: ["100000ulava"]
 genesis:
   chain_id: "lava"
   app_state:
     gov:
+      deposit_params:
+        min_deposit:
+        - amount: "10000000"
+          denom: "ulava"
       voting_params:
         voting_period: "3s"
+    staking:
+      params:
+        bond_denom: "ulava"
+    mint:
+      params:
+        mint_denom: "ulava"
