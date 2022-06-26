@@ -162,14 +162,3 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 
 	return operations
 }
-
-func (am AppModule) YaromStakeOperations() []simtypes.WeightedOperation {
-	operations := make([]simtypes.WeightedOperation, 0)
-
-	operations = append(operations, simulation.NewWeightedOperation(
-		100,
-		pairingsimulation.SimulateMsgStakeProvider_HappyFlow(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
-
-	return operations
-}

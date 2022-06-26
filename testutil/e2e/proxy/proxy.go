@@ -227,7 +227,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 		} else {
 			// Recreating Request
-			proxyRequest, err := createProxyRequest(req, host)
+			proxyRequest, err := createProxyRequest(req, host, string(rawBody))
 			if err != nil {
 				println(err.Error())
 			} else {
@@ -255,7 +255,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
 
 					// Recreating Request
-					proxyRequest, err = createProxyRequest(req, host)
+					proxyRequest, err = createProxyRequest(req, host, string(rawBody))
 					if err != nil {
 						println(err.Error())
 						respBody = []byte(err.Error())
@@ -265,7 +265,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 						proxyRes, err = sendRequest(proxyRequest)
 						if err != nil {
 							println(err.Error())
-							respBody = []byte(err.Error())
+							respBody = []byte("error: " + err.Error())
 						} else {
 							respBody = getDataFromIORead(&proxyRes.Body, true)
 							mock.requests[string(rawBody)] = string(respBody)
