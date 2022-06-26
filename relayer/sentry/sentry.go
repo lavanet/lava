@@ -70,9 +70,11 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	sort.SliceStable(cs.QoSInfo.LatencyScoreList, func(i, j int) bool {
 		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
 	})
-	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[len(cs.QoSInfo.LatencyScoreList)*90/100]
+	const LatencyScorePercentage = 0.9
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*LatencyScorePercentage)]
 
-	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*60/100)) {
+	const MinProvidersForSync = 0.6
+	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) {
 		if blockHeightDiff > 0 {
 			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.ZeroDec())
 		} else {
