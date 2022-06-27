@@ -20,6 +20,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.UnpayLimit(ctx),
 		k.SlashLimit(ctx),
 		k.DataReliabilityReward(ctx),
+		k.QoSWeight(ctx),
 	)
 }
 
@@ -94,5 +95,10 @@ func (k Keeper) SlashLimit(ctx sdk.Context) (res sdk.Dec) {
 
 func (k Keeper) DataReliabilityReward(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyDataReliabilityReward, &res)
+	return
+}
+
+func (k Keeper) QoSWeight(ctx sdk.Context) (res sdk.Dec) {
+	k.paramstore.Get(ctx, types.KeyQoSWeight, &res)
 	return
 }

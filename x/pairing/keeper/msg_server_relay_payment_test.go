@@ -432,7 +432,8 @@ func TestRelayPaymentQoS(t *testing.T) {
 				score, err := QoS.ComputeQoS()
 				require.Nil(t, err)
 
-				want := mint.MulInt64(int64(cuSum)).Mul(score)
+				want := mint.MulInt64(int64(cuSum))
+				want = want.Mul(score.Mul(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))).Add(sdk.OneDec().Sub(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx)))))
 				require.Equal(t, balance+want.TruncateInt64(),
 					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
 
