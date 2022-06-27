@@ -9,23 +9,18 @@ message Provider {
   bytes response = 2;
 }
 
-message Voter {
-  string account =1;
-  bytes hashResponse = 2;
-}
-
 message ConflictVote {
   string index = 1; 
-  uint64 voteID = 2; 
-  uint64 voteDeadline = 3; 
-  uint64 voteStartBlock = 4;
+  int64 voteDeadline = 3; 
+  int64 voteStartBlock = 4;
   bool voteIsCommit = 5; 
   string chainID = 6; 
   string apiUrl = 7; 
   bytes requestData = 8; 
-  uint64 requestBlock = 9;
+  int64 requestBlock = 9;
   Provider firstProvider = 10 [(gogoproto.nullable) = false]; 
   Provider secondProvider = 11 [(gogoproto.nullable) = false]; 
-  repeated Voter voters = 12 [(gogoproto.nullable) = false]; 
+  repeated string voters = 12 [(gogoproto.nullable) = false]; 
+  map<string, bytes> votersHash = 13[(gogoproto.nullable) = false]; 
 }
 

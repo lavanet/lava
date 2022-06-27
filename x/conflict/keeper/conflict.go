@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -137,4 +138,16 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 
 func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
 	return nil
+}
+
+func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
+	found := false
+	var index uint64 = 0
+	var sIndex string
+	for !found {
+		index++
+		sIndex = strconv.FormatUint(index, 10)
+		_, found = k.GetConflictVote(ctx, sIndex)
+	}
+	return sIndex
 }
