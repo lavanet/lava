@@ -418,6 +418,15 @@ func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, s
 	return
 }
 
+func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]types.StakeEntry, err error) {
+	stakeStorage, found := k.getStakeStorageEpoch(ctx, epoch, types.ProviderKey, chainID)
+	if !found {
+		return nil, fmt.Errorf("could not find stakeStorage - epoch %d, chainID %s provider %s", epoch, chainID, selectedProvider.String())
+	}
+
+	return &stakeStorage.StakeEntries, nil
+}
+
 func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
 	key := k.stakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)

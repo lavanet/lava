@@ -71,6 +71,18 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	return &types.MsgDetectionResponse{}, nil
 }
 
-func (k Keeper) LotteryVoters() []string {
-	return make([]string, 0) //todo make jury list, for now take all providers
+func (k Keeper) LotteryVoters(goCtx context.Context, chainID string) []string {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	entrys, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epochStart)
+
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	voters := make([]string, 0)
+	for _, entry := range *entrys {
+		voters = append(voters, entry.Address)
+	}
+	return voters
 }
