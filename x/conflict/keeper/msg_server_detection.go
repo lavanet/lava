@@ -61,6 +61,8 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VotersHash[voter] = []byte{}
 	}
 
+	k.SetConflictVote(ctx, conflictVote)
+
 	eventData := map[string]string{"client": msg.Creator}
 	eventData["voteID"] = conflictVote.Index
 	eventData["chainID"] = conflictVote.ChainID
