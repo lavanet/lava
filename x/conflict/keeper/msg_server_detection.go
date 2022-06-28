@@ -43,7 +43,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	index := k.Keeper.AllocateNewConflictVote(ctx)
 	conflictVote := types.ConflictVote{}
 	conflictVote.Index = index
-	conflictVote.VoteIsCommit = true
+	conflictVote.VoteState = types.Commit
 	conflictVote.VoteStartBlock = ctx.BlockHeight()
 	//conflictVote.VoteDeadline = ??
 	conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl
@@ -55,10 +55,10 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	conflictVote.FirstProvider.Response = msg.ResponseConflict.ConflictRelayData0.Reply.Data
 	conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
 	conflictVote.SecondProvider.Response = msg.ResponseConflict.ConflictRelayData1.Reply.Data
-	conflictVote.VotersHash = make(map[string][]byte)
+	conflictVote.VotersHash = map[string]types.Vote{}
 	voters := k.Keeper.LotteryVoters(goCtx, conflictVote.ChainID)
 	for _, voter := range voters {
-		conflictVote.VotersHash[voter] = []byte{}
+		conflictVote.VotersHash[voter] = types.Vote{Hash: []byte{}}
 	}
 
 	k.SetConflictVote(ctx, conflictVote)

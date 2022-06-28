@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -16,6 +17,7 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/client/cli"
 	"github.com/lavanet/lava/x/conflict/keeper"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -166,7 +168,35 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+	logger := am.keeper.Logger(ctx)
+
+	conflictVotes := am.keeper.GetAllConflictVote(ctx)
+	for _, conflictVote := range conflictVotes {
+		if conflictVote.VoteDeadline == ctx.BlockHeight() {
+			if conflictVote.VoteState == types.Commit {
+				conflictVote.VoteState = types.Reveal
+				//conflictVote.VoteDeadline = ??
+				am.keeper.SetConflictVote(ctx, conflictVote)
+
+				eventData := map[string]string{}
+				eventData["voteID"] = conflictVote.Index
+				eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
+
+				utils.LogLavaEvent(ctx, logger, "conflict_vote_reveal", eventData, "Vote is now in reveal state")
+
+			} else if conflictVote.VoteState == types.Reveal {
+				conflictVote.VoteState = types.Closed
+				//conflictVote.VoteDeadline = ??
+				am.keeper.SetConflictVote(ctx, conflictVote)
+			} else if conflictVote.VoteState == types.Closed {
+				am.keeper.HandleAndCloseVote(ctx, conflictVote)
+			}
+		}
+	}
+
+	am.keeper.IsEpochStart(ctx)
+}
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
