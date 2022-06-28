@@ -29958,6 +29958,8 @@ paths:
                     type: string
                   dataReliabilityReward:
                     type: string
+                  QoSWeight:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51185,6 +51187,15 @@ definitions:
               sig:
                 type: string
                 format: byte
+          QoSReport:
+            type: object
+            properties:
+              latency:
+                type: string
+              availability:
+                type: string
+              sync:
+                type: string
       reply:
         type: object
         properties:
@@ -51295,6 +51306,8 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+  lavanet.lava.conflict.MsgConflictVoteCommitResponse:
+    type: object
   lavanet.lava.conflict.MsgDetectionResponse:
     type: object
   lavanet.lava.conflict.Params:
@@ -51504,6 +51517,15 @@ definitions:
                   sig:
                     type: string
                     format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
           reply:
             type: object
             properties:
@@ -51584,6 +51606,15 @@ definitions:
                   sig:
                     type: string
                     format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
           reply:
             type: object
             properties:
@@ -51605,6 +51636,15 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+  lavanet.lava.pairing.QualityOfServiceReport:
+    type: object
+    properties:
+      latency:
+        type: string
+      availability:
+        type: string
+      sync:
+        type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -51682,6 +51722,15 @@ definitions:
           sig:
             type: string
             format: byte
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -52074,16 +52123,9 @@ definitions:
         type: string
       dataReliabilityReward:
         type: string
+      QoSWeight:
+        type: string
     description: Params defines the parameters for the module.
-  lavanet.lava.pairing.QualityOfServiceReport:
-    type: object
-    properties:
-      latency:
-        type: string
-      availability:
-        type: string
-      sync:
-        type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -52432,6 +52474,8 @@ definitions:
           slashLimit:
             type: string
           dataReliabilityReward:
+            type: string
+          QoSWeight:
             type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:

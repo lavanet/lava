@@ -6,6 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	_ "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -133,34 +134,138 @@ func (m *MsgDetectionResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgDetectionResponse proto.InternalMessageInfo
 
+type MsgConflictVoteCommit struct {
+	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	VoteID  uint64 `protobuf:"varint,2,opt,name=voteID,proto3" json:"voteID,omitempty"`
+	Hash    []byte `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
+}
+
+func (m *MsgConflictVoteCommit) Reset()         { *m = MsgConflictVoteCommit{} }
+func (m *MsgConflictVoteCommit) String() string { return proto.CompactTextString(m) }
+func (*MsgConflictVoteCommit) ProtoMessage()    {}
+func (*MsgConflictVoteCommit) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b6235cd7b8ff38e8, []int{2}
+}
+func (m *MsgConflictVoteCommit) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgConflictVoteCommit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgConflictVoteCommit.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgConflictVoteCommit) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgConflictVoteCommit.Merge(m, src)
+}
+func (m *MsgConflictVoteCommit) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgConflictVoteCommit) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgConflictVoteCommit.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgConflictVoteCommit proto.InternalMessageInfo
+
+func (m *MsgConflictVoteCommit) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgConflictVoteCommit) GetVoteID() uint64 {
+	if m != nil {
+		return m.VoteID
+	}
+	return 0
+}
+
+func (m *MsgConflictVoteCommit) GetHash() []byte {
+	if m != nil {
+		return m.Hash
+	}
+	return nil
+}
+
+type MsgConflictVoteCommitResponse struct {
+}
+
+func (m *MsgConflictVoteCommitResponse) Reset()         { *m = MsgConflictVoteCommitResponse{} }
+func (m *MsgConflictVoteCommitResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgConflictVoteCommitResponse) ProtoMessage()    {}
+func (*MsgConflictVoteCommitResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b6235cd7b8ff38e8, []int{3}
+}
+func (m *MsgConflictVoteCommitResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgConflictVoteCommitResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgConflictVoteCommitResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgConflictVoteCommitResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgConflictVoteCommitResponse.Merge(m, src)
+}
+func (m *MsgConflictVoteCommitResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgConflictVoteCommitResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgConflictVoteCommitResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgConflictVoteCommitResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgDetection)(nil), "lavanet.lava.conflict.MsgDetection")
 	proto.RegisterType((*MsgDetectionResponse)(nil), "lavanet.lava.conflict.MsgDetectionResponse")
+	proto.RegisterType((*MsgConflictVoteCommit)(nil), "lavanet.lava.conflict.MsgConflictVoteCommit")
+	proto.RegisterType((*MsgConflictVoteCommitResponse)(nil), "lavanet.lava.conflict.MsgConflictVoteCommitResponse")
 }
 
 func init() { proto.RegisterFile("conflict/tx.proto", fileDescriptor_b6235cd7b8ff38e8) }
 
 var fileDescriptor_b6235cd7b8ff38e8 = []byte{
-	// 299 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x4c, 0xce, 0xcf, 0x4b,
-	0xcb, 0xc9, 0x4c, 0x2e, 0xd1, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xcd,
-	0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x30, 0x79, 0x29, 0x19, 0xb8, 0x4a,
-	0x18, 0x23, 0x3e, 0x25, 0xb1, 0x24, 0x11, 0xa2, 0x49, 0x4a, 0x24, 0x3d, 0x3f, 0x3d, 0x1f, 0xcc,
-	0xd4, 0x07, 0xb1, 0x20, 0xa2, 0x4a, 0xfb, 0x99, 0xb8, 0x78, 0x7c, 0x8b, 0xd3, 0x5d, 0x52, 0x4b,
-	0x52, 0x93, 0x4b, 0x32, 0xf3, 0xf3, 0x84, 0x24, 0xb8, 0xd8, 0x93, 0x8b, 0x52, 0x13, 0x4b, 0xf2,
-	0x8b, 0x24, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0x60, 0x5c, 0xa1, 0x78, 0x2e, 0x91, 0xb4, 0xcc,
-	0xbc, 0xc4, 0x9c, 0xcc, 0xaa, 0x44, 0x90, 0x4a, 0x67, 0xa8, 0x1d, 0x12, 0x4c, 0x0a, 0x8c, 0x1a,
-	0xdc, 0x46, 0xda, 0x7a, 0x58, 0x1d, 0xa5, 0xe7, 0x86, 0x45, 0x4b, 0x10, 0x56, 0x83, 0x84, 0x82,
-	0xb9, 0x04, 0x8a, 0x52, 0x8b, 0x0b, 0xf2, 0xf3, 0x8a, 0x53, 0xe1, 0x86, 0x33, 0x83, 0x0d, 0x57,
-	0xc7, 0x61, 0x78, 0x10, 0x9a, 0xf2, 0x20, 0x0c, 0x03, 0x40, 0xae, 0x2e, 0x4e, 0xcc, 0x4d, 0x0d,
-	0x28, 0xca, 0x2f, 0xcb, 0x4c, 0x49, 0x2d, 0x82, 0x1b, 0xcc, 0x42, 0x86, 0xab, 0xb1, 0x19, 0xa4,
-	0x24, 0xc6, 0x25, 0x82, 0x1c, 0x80, 0x30, 0x27, 0x19, 0xa5, 0x70, 0x31, 0xfb, 0x16, 0xa7, 0x0b,
-	0xc5, 0x72, 0x71, 0x22, 0x02, 0x57, 0x19, 0x87, 0x75, 0xc8, 0x06, 0x48, 0x69, 0x13, 0xa1, 0x08,
-	0x66, 0x8b, 0x93, 0xd3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7,
-	0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44, 0x69, 0xa4,
-	0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x43, 0x0d, 0x04, 0xd3, 0xfa, 0x15,
-	0xfa, 0x88, 0x14, 0x55, 0x59, 0x90, 0x5a, 0x9c, 0xc4, 0x06, 0x4e, 0x0a, 0xc6, 0x80, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xe1, 0x67, 0x31, 0x3c, 0x6a, 0x02, 0x00, 0x00,
+	// 398 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0xc1, 0x6a, 0xe2, 0x40,
+	0x18, 0xc7, 0x8d, 0x8a, 0x8b, 0xb3, 0x1e, 0x76, 0x07, 0x15, 0x09, 0xbb, 0x59, 0xc9, 0x1e, 0x56,
+	0x70, 0xc9, 0xa0, 0xbb, 0x4f, 0xa0, 0xb2, 0xb0, 0x07, 0xa1, 0xa4, 0xd0, 0x43, 0x41, 0x64, 0x12,
+	0xc7, 0x38, 0x60, 0xf2, 0x49, 0x66, 0x1a, 0x6c, 0x9f, 0xa2, 0x6f, 0xd4, 0x6b, 0x8f, 0x1e, 0x7b,
+	0x2a, 0x45, 0x5f, 0xa4, 0x24, 0x66, 0x54, 0x6a, 0x2c, 0x6d, 0x4f, 0xf3, 0x4d, 0xe6, 0x3f, 0xbf,
+	0xef, 0xff, 0xfd, 0xc3, 0xa0, 0xaf, 0x2e, 0x04, 0xd3, 0x39, 0x77, 0x25, 0x91, 0x4b, 0x6b, 0x11,
+	0x82, 0x04, 0x5c, 0x9b, 0xd3, 0x88, 0x06, 0x4c, 0x5a, 0xf1, 0x6a, 0xa9, 0x73, 0xdd, 0x70, 0x41,
+	0xf8, 0x20, 0x88, 0x43, 0x05, 0x23, 0x51, 0xc7, 0x61, 0x92, 0x76, 0x88, 0x0b, 0x3c, 0xd8, 0x5e,
+	0xd3, 0xab, 0x1e, 0x78, 0x90, 0x94, 0x24, 0xae, 0xd2, 0xaf, 0xdf, 0x76, 0x7c, 0x55, 0x8c, 0x27,
+	0x54, 0xd2, 0xed, 0xa9, 0x79, 0x97, 0x47, 0x95, 0xa1, 0xf0, 0x06, 0x4c, 0x32, 0x57, 0x72, 0x08,
+	0x70, 0x03, 0x7d, 0x72, 0x43, 0x46, 0x25, 0x84, 0x0d, 0xad, 0xa9, 0xb5, 0xca, 0xb6, 0xda, 0xe2,
+	0x31, 0xaa, 0x4e, 0x79, 0x40, 0xe7, 0xfc, 0x86, 0xc6, 0xca, 0x7e, 0x4a, 0x6b, 0xe4, 0x9b, 0x5a,
+	0xeb, 0x73, 0xb7, 0x6d, 0x65, 0x9a, 0xb6, 0xfe, 0x65, 0x5c, 0xb1, 0x33, 0x41, 0xf8, 0x1c, 0x7d,
+	0x09, 0x99, 0x58, 0x40, 0x20, 0xd8, 0x0e, 0x5e, 0x48, 0xe0, 0xbf, 0x4e, 0xc0, 0xed, 0x17, 0x72,
+	0xfb, 0x08, 0x10, 0xbb, 0x16, 0xd4, 0x67, 0x67, 0x21, 0x44, 0x7c, 0xc2, 0xc2, 0x1d, 0xb8, 0xf8,
+	0x01, 0xd7, 0x59, 0x20, 0xb3, 0x8e, 0xaa, 0x87, 0x01, 0x2a, 0x4b, 0xe6, 0x08, 0xd5, 0x86, 0xc2,
+	0x53, 0xb2, 0x0b, 0x90, 0xac, 0x0f, 0xbe, 0xcf, 0xe5, 0x2b, 0x09, 0xd7, 0x51, 0x29, 0x02, 0xc9,
+	0xfe, 0x0f, 0x92, 0x4c, 0x8b, 0x76, 0xba, 0xc3, 0x18, 0x15, 0x67, 0x54, 0xcc, 0x92, 0x30, 0x2a,
+	0x76, 0x52, 0x9b, 0x3f, 0xd0, 0xf7, 0x4c, 0xbc, 0xea, 0xdf, 0x7d, 0xd4, 0x50, 0x61, 0x28, 0x3c,
+	0x3c, 0x42, 0xe5, 0xfd, 0xdf, 0xfd, 0x79, 0x62, 0xde, 0xc3, 0x09, 0xf4, 0xf6, 0x1b, 0x44, 0xaa,
+	0x0d, 0x5e, 0x22, 0x9c, 0x31, 0xe3, 0xef, 0xd3, 0x88, 0x63, 0xb5, 0xfe, 0xf7, 0x3d, 0x6a, 0xd5,
+	0xb9, 0xd7, 0xbb, 0x5f, 0x1b, 0xda, 0x6a, 0x6d, 0x68, 0x4f, 0x6b, 0x43, 0xbb, 0xdd, 0x18, 0xb9,
+	0xd5, 0xc6, 0xc8, 0x3d, 0x6c, 0x8c, 0xdc, 0x65, 0xcb, 0xe3, 0x72, 0x76, 0xe5, 0x58, 0x2e, 0xf8,
+	0x24, 0x25, 0x27, 0x2b, 0x59, 0x92, 0xfd, 0x63, 0xbb, 0x5e, 0x30, 0xe1, 0x94, 0x92, 0x57, 0xf0,
+	0xe7, 0x39, 0x00, 0x00, 0xff, 0xff, 0x87, 0x78, 0xf2, 0xa0, 0x85, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -176,6 +281,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	Detection(ctx context.Context, in *MsgDetection, opts ...grpc.CallOption) (*MsgDetectionResponse, error)
+	ConflictVoteCommit(ctx context.Context, in *MsgConflictVoteCommit, opts ...grpc.CallOption) (*MsgConflictVoteCommitResponse, error)
 }
 
 type msgClient struct {
@@ -195,9 +301,19 @@ func (c *msgClient) Detection(ctx context.Context, in *MsgDetection, opts ...grp
 	return out, nil
 }
 
+func (c *msgClient) ConflictVoteCommit(ctx context.Context, in *MsgConflictVoteCommit, opts ...grpc.CallOption) (*MsgConflictVoteCommitResponse, error) {
+	out := new(MsgConflictVoteCommitResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.conflict.Msg/ConflictVoteCommit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	Detection(context.Context, *MsgDetection) (*MsgDetectionResponse, error)
+	ConflictVoteCommit(context.Context, *MsgConflictVoteCommit) (*MsgConflictVoteCommitResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -206,6 +322,9 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) Detection(ctx context.Context, req *MsgDetection) (*MsgDetectionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Detection not implemented")
+}
+func (*UnimplementedMsgServer) ConflictVoteCommit(ctx context.Context, req *MsgConflictVoteCommit) (*MsgConflictVoteCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConflictVoteCommit not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -230,6 +349,24 @@ func _Msg_Detection_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_ConflictVoteCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgConflictVoteCommit)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).ConflictVoteCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.conflict.Msg/ConflictVoteCommit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).ConflictVoteCommit(ctx, req.(*MsgConflictVoteCommit))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.conflict.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -237,6 +374,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Detection",
 			Handler:    _Msg_Detection_Handler,
+		},
+		{
+			MethodName: "ConflictVoteCommit",
+			Handler:    _Msg_ConflictVoteCommit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -332,6 +473,71 @@ func (m *MsgDetectionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgConflictVoteCommit) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgConflictVoteCommit) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgConflictVoteCommit) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Hash) > 0 {
+		i -= len(m.Hash)
+		copy(dAtA[i:], m.Hash)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Hash)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.VoteID != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.VoteID))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgConflictVoteCommitResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgConflictVoteCommitResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgConflictVoteCommitResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -369,6 +575,35 @@ func (m *MsgDetection) Size() (n int) {
 }
 
 func (m *MsgDetectionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgConflictVoteCommit) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.VoteID != 0 {
+		n += 1 + sovTx(uint64(m.VoteID))
+	}
+	l = len(m.Hash)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgConflictVoteCommitResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -600,6 +835,191 @@ func (m *MsgDetectionResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgDetectionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgConflictVoteCommit) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgConflictVoteCommit: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgConflictVoteCommit: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VoteID", wireType)
+			}
+			m.VoteID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VoteID |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Hash = append(m.Hash[:0], dAtA[iNdEx:postIndex]...)
+			if m.Hash == nil {
+				m.Hash = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgConflictVoteCommitResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgConflictVoteCommitResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgConflictVoteCommitResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
