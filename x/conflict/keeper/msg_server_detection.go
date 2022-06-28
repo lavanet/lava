@@ -43,7 +43,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	index := k.Keeper.AllocateNewConflictVote(ctx)
 	conflictVote := types.ConflictVote{}
 	conflictVote.Index = index
-	conflictVote.VoteIsCommit = true
+	conflictVote.VoteState = types.Commit
 	conflictVote.VoteStartBlock = ctx.BlockHeight()
 	//conflictVote.VoteDeadline = ??
 	conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl

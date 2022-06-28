@@ -18,7 +18,7 @@ message ConflictVote {
   string index = 1; 
   int64 voteDeadline = 3; 
   int64 voteStartBlock = 4;
-  bool voteIsCommit = 5; 
+  int64 voteState = 5; 
   string chainID = 6; 
   string apiUrl = 7; 
   bytes requestData = 8; 

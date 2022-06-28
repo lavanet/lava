@@ -21,7 +21,7 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	if !found {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "invalid vote id")
 	}
-	if conflictVote.VoteIsCommit {
+	if conflictVote.VoteState != types.Reveal {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "vote is not in reveal state")
 	}
 	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
@@ -31,7 +31,7 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider did not commit")
 	}
 
-	if conflictVote.VotersHash[msg.Creator].Result != NoVote {
+	if conflictVote.VotersHash[msg.Creator].Result != types.NoVote {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider already revealed")
 	}
 
@@ -47,11 +47,11 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	vote := conflictVote.VotersHash[msg.Creator]
 
 	if bytes.Equal(msg.Hash, conflictVote.FirstProvider.Response) {
-		vote.Result = Provider0
+		vote.Result = types.Provider0
 	} else if bytes.Equal(msg.Hash, conflictVote.SecondProvider.Response) {
-		vote.Result = Provider1
+		vote.Result = types.Provider1
 	} else {
-		vote.Result = None
+		vote.Result = types.None
 	}
 	conflictVote.VotersHash[msg.Creator] = vote
 

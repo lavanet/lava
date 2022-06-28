@@ -18,7 +18,7 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 	if !found {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "invalid vote id")
 	}
-	if !conflictVote.VoteIsCommit {
+	if conflictVote.VoteState != types.Commit {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "vote is not in commit state")
 	}
 	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
@@ -28,7 +28,7 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider already commited")
 	}
 
-	conflictVote.VotersHash[msg.Creator] = types.Vote{Hash: msg.Hash, Result: NoVote}
+	conflictVote.VotersHash[msg.Creator] = types.Vote{Hash: msg.Hash, Result: types.NoVote}
 	k.SetConflictVote(ctx, conflictVote)
 
 	return &types.MsgConflictVoteCommitResponse{}, nil
