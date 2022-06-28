@@ -28756,15 +28756,12 @@ paths:
                   properties:
                     index:
                       type: string
-                    voteID:
-                      type: string
-                      format: uint64
                     voteDeadline:
                       type: string
-                      format: uint64
+                      format: int64
                     voteStartBlock:
                       type: string
-                      format: uint64
+                      format: int64
                     voteIsCommit:
                       type: boolean
                     chainID:
@@ -28776,7 +28773,7 @@ paths:
                       format: byte
                     requestBlock:
                       type: string
-                      format: uint64
+                      format: int64
                     firstProvider:
                       type: object
                       properties:
@@ -28793,16 +28790,11 @@ paths:
                         response:
                           type: string
                           format: byte
-                    voters:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          account:
-                            type: string
-                          hashResponse:
-                            type: string
-                            format: byte
+                    votersHash:
+                      type: object
+                      additionalProperties:
+                        type: string
+                        format: byte
               pagination:
                 type: object
                 properties:
@@ -28922,15 +28914,12 @@ paths:
                 properties:
                   index:
                     type: string
-                  voteID:
-                    type: string
-                    format: uint64
                   voteDeadline:
                     type: string
-                    format: uint64
+                    format: int64
                   voteStartBlock:
                     type: string
-                    format: uint64
+                    format: int64
                   voteIsCommit:
                     type: boolean
                   chainID:
@@ -28942,7 +28931,7 @@ paths:
                     format: byte
                   requestBlock:
                     type: string
-                    format: uint64
+                    format: int64
                   firstProvider:
                     type: object
                     properties:
@@ -28959,16 +28948,11 @@ paths:
                       response:
                         type: string
                         format: byte
-                  voters:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        account:
-                          type: string
-                        hashResponse:
-                          type: string
-                          format: byte
+                  votersHash:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      format: byte
         default:
           description: An unexpected error response.
           schema:
@@ -51209,15 +51193,12 @@ definitions:
     properties:
       index:
         type: string
-      voteID:
-        type: string
-        format: uint64
       voteDeadline:
         type: string
-        format: uint64
+        format: int64
       voteStartBlock:
         type: string
-        format: uint64
+        format: int64
       voteIsCommit:
         type: boolean
       chainID:
@@ -51229,7 +51210,7 @@ definitions:
         format: byte
       requestBlock:
         type: string
-        format: uint64
+        format: int64
       firstProvider:
         type: object
         properties:
@@ -51246,16 +51227,11 @@ definitions:
           response:
             type: string
             format: byte
-      voters:
-        type: array
-        items:
-          type: object
-          properties:
-            account:
-              type: string
-            hashResponse:
-              type: string
-              format: byte
+      votersHash:
+        type: object
+        additionalProperties:
+          type: string
+          format: byte
   lavanet.lava.conflict.FinalizationConflict:
     type: object
     properties:
@@ -51327,15 +51303,12 @@ definitions:
           properties:
             index:
               type: string
-            voteID:
-              type: string
-              format: uint64
             voteDeadline:
               type: string
-              format: uint64
+              format: int64
             voteStartBlock:
               type: string
-              format: uint64
+              format: int64
             voteIsCommit:
               type: boolean
             chainID:
@@ -51347,7 +51320,7 @@ definitions:
               format: byte
             requestBlock:
               type: string
-              format: uint64
+              format: int64
             firstProvider:
               type: object
               properties:
@@ -51364,16 +51337,11 @@ definitions:
                 response:
                   type: string
                   format: byte
-            voters:
-              type: array
-              items:
-                type: object
-                properties:
-                  account:
-                    type: string
-                  hashResponse:
-                    type: string
-                    format: byte
+            votersHash:
+              type: object
+              additionalProperties:
+                type: string
+                format: byte
       pagination:
         type: object
         properties:
@@ -51407,15 +51375,12 @@ definitions:
         properties:
           index:
             type: string
-          voteID:
-            type: string
-            format: uint64
           voteDeadline:
             type: string
-            format: uint64
+            format: int64
           voteStartBlock:
             type: string
-            format: uint64
+            format: int64
           voteIsCommit:
             type: boolean
           chainID:
@@ -51427,7 +51392,7 @@ definitions:
             format: byte
           requestBlock:
             type: string
-            format: uint64
+            format: int64
           firstProvider:
             type: object
             properties:
@@ -51444,16 +51409,11 @@ definitions:
               response:
                 type: string
                 format: byte
-          voters:
-            type: array
-            items:
-              type: object
-              properties:
-                account:
-                  type: string
-                hashResponse:
-                  type: string
-                  format: byte
+          votersHash:
+            type: object
+            additionalProperties:
+              type: string
+              format: byte
   lavanet.lava.conflict.QueryParamsResponse:
     type: object
     properties:
@@ -51627,14 +51587,6 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
-  lavanet.lava.conflict.Voter:
-    type: object
-    properties:
-      account:
-        type: string
-      hashResponse:
-        type: string
-        format: byte
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
