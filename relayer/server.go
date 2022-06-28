@@ -4,6 +4,7 @@ import (
 	"bytes"
 	gobytes "bytes"
 	context "context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,6 +37,8 @@ var (
 	g_privKey         *btcSecp256k1.PrivateKey
 	g_sessions        map[string]*UserSessions
 	g_sessions_mutex  sync.Mutex
+	g_votes           map[string]*voteData
+	g_votes_mutex     sync.Mutex
 	g_sentry          *sentry.Sentry
 	g_serverChainID   string
 	g_txFactory       tx.Factory
@@ -57,6 +60,12 @@ type RelaySession struct {
 	UniqueIdentifier   uint64
 	Lock               sync.Mutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
+}
+
+type voteData struct {
+	RelayDataHash []byte
+	Nonce         uint64
+	CommitHash    []byte
 }
 
 type relayServer struct {
@@ -368,7 +377,65 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
-func voteEventHandler(voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
+func SendVoteCommitment(*voteData) {
+	//TODO:
+}
+
+func voteEventHandler(ctx context.Context, voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
+	//got a new vote event, need to handle
+	if chainID != g_serverChainID {
+		// not our chain ID
+		return
+	}
+	nodeHeight := uint64(g_sentry.GetBlockHeight())
+	if voteDeadline < nodeHeight {
+		// its too late to vote
+		log.Printf("Error: Vote Event received for deadline %d but current block is %d\n", voteDeadline, nodeHeight)
+		return
+	}
+	g_votes_mutex.Lock()
+	defer g_votes_mutex.Unlock()
+	vote, ok := g_votes[voteID]
+	if ok {
+		//TODO: add in the event that this is a reveal step
+		_ = vote.RelayDataHash //send relayData and nonce
+		_ = vote.Nonce
+	} else {
+		// new vote
+		found := false
+		//try to find this provider in the jury
+		for _, voterAddr := range voters {
+			if voterAddr == g_sentry.Acc {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// this is a new vote but not for us
+			return
+		}
+		// we need to send a commit, first we need to use the chainProxy and get the response
+		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
+		nodeMsg, err := g_chainProxy.ParseMsg(apiURL, requestData)
+		if err != nil {
+			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", chainID, err)
+			return
+		}
+		reply, err := nodeMsg.Send(ctx)
+		if err != nil {
+			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", apiURL, requestData, err)
+			return
+		}
+		nonce := uint64(rand.Int63())
+		replyDataHash := sigs.HashMsg(reply.Data)
+		nonceBytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
+		commitHash := sigs.HashMsg(bytes.Join([][]byte{replyDataHash, nonceBytes}, nil))
+		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
+		g_votes[voteID] = vote
+		SendVoteCommitment(vote)
+
+	}
 
 }
 
