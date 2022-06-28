@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -27,7 +28,7 @@ func formatURL(u string) (scheme string, user string, password string, finalURL 
 	}
 	return scheme, "", "", u
 }
-func createProxyRequest(req *http.Request, hostURL string) (proxyRequest *http.Request, err error) {
+func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRequest *http.Request, err error) {
 	reqUrl := req.URL
 	scheme, user, password, hostURL := formatURL(hostURL)
 	println("!!!!!!!", user, password, hostURL)
@@ -36,12 +37,15 @@ func createProxyRequest(req *http.Request, hostURL string) (proxyRequest *http.R
 	if user != "" {
 		reqUrl.User = url.UserPassword(user, password)
 	}
-	proxyReq, err := http.NewRequest(req.Method, reqUrl.String(), req.Body)
+	proxyReq, err := http.NewRequest(req.Method, reqUrl.String(), strings.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf(" ::: XXX ::: Could not reproduce new request ::: " + reqUrl.Host + " ::: " + err.Error())
 	}
 	proxyReq.Header.Set("Host", req.Host)
 	proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)
+	proxyReq.Header.Set("Accept", "application/json")
+	proxyReq.Header.Set("Accept-Encoding", "identity")
+	proxyReq.Header.Set("Content-Length", strconv.FormatInt(req.ContentLength, 10))
 	// proxyReq.URL.Scheme = "https"
 	proxyReq.URL.Scheme = scheme
 	for header, values := range req.Header {
@@ -53,8 +57,11 @@ func createProxyRequest(req *http.Request, hostURL string) (proxyRequest *http.R
 	return proxyReq, nil
 }
 func sendRequest(request *http.Request) (*http.Response, error) {
+
 	client := &http.Client{}
 	proxyRes, err := client.Do(request)
+
+	// proxyReq.Header.Set("Content-Length", )
 	if err != nil {
 		println(" ::: XXX ::: Reply From Host Error ::: "+request.Host+" ::: ", err.Error())
 		return nil, err
@@ -63,10 +70,16 @@ func sendRequest(request *http.Request) (*http.Response, error) {
 }
 
 func getDataFromIORead(feed *io.ReadCloser, reset bool) (rawBody []byte) {
-	rawBody, _ = ioutil.ReadAll(*feed)
+	rawBody, err := ioutil.ReadAll(*feed)
 	if reset {
 		*feed = ioutil.NopCloser(bytes.NewBuffer(rawBody))
 	}
+
+	if err != nil {
+		fmt.Printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^%e\n", err)
+	}
+	fmt.Printf("rawBody %s", rawBody)
+
 	return rawBody
 }
 

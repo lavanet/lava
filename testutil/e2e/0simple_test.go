@@ -77,7 +77,7 @@ func SimpleTest(t *testing.T) ([]TestResult, error) {
 		dep:          nil,
 		failed:       failed,
 		requireAlive: true}, t, &states)
-	await(node, "nice!", nice, "awating for NICE to proceed...")
+	await(node, "nice!", nice, "awaiting for NICE to proceed...")
 
 	println("::::::::::::::::::::::::::::::::::::::::::::::")
 	println("::::::::::::::::::::::::::::::::::::::::::::::")

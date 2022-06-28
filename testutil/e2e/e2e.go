@@ -87,6 +87,9 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			if _, found := passingFilter(line, filter); found {
 				processLog(line, state, t)
 			} else if state.debug || showAll {
+				if len(line) > 200 {
+					line = line[:200] + "..." //too long is ugly
+				}
 				log := "(DEBUG) " + state.id + " ::: " + line
 				if t != nil {
 					t.Log(log)

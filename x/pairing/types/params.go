@@ -83,6 +83,11 @@ var (
 	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
 )
 
+var (
+	KeyQoSWeight             = []byte("QoSWeight")
+	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) //0.5
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -102,6 +107,7 @@ func NewParams(
 	unpayLimit sdk.Dec,
 	slashLimit sdk.Dec,
 	dataReliabilityReward sdk.Dec,
+	qoSWeight sdk.Dec,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -116,6 +122,7 @@ func NewParams(
 		UnpayLimit:               unpayLimit,
 		SlashLimit:               slashLimit,
 		DataReliabilityReward:    dataReliabilityReward,
+		QoSWeight:                qoSWeight,
 	}
 }
 
@@ -134,6 +141,7 @@ func DefaultParams() Params {
 		DefaultUnpayLimit,
 		DefaultSlashLimit,
 		DefaultDataReliabilityReward,
+		DefaultQoSWeight,
 	)
 }
 
@@ -152,6 +160,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyUnpayLimit, &p.UnpayLimit, validateUnpayLimit),
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
+		paramtypes.NewParamSetPair(KeyQoSWeight, &p.QoSWeight, validateQoSWeight),
 	}
 }
 
@@ -375,6 +384,20 @@ func validateDataReliabilityReward(v interface{}) error {
 
 	if dataReliabilityReward.GT(sdk.OneDec()) || dataReliabilityReward.LT(sdk.ZeroDec()) {
 		return fmt.Errorf("invalid parameter DataReliabilityReward")
+	}
+
+	return nil
+}
+
+// validateDataReliabilityReward validates the param
+func validateQoSWeight(v interface{}) error {
+	QoSWeight, ok := v.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	if QoSWeight.GT(sdk.OneDec()) || QoSWeight.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter QoSWeight")
 	}
 
 	return nil

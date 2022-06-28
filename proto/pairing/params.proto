@@ -55,4 +55,9 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
     ];
+    string QoSWeight   = 13 [
+      (gogoproto.moretags) = "yaml:\"data_reliability_reward\"",
+      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+      (gogoproto.nullable)   = false
+      ];
 }

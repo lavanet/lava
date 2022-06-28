@@ -30486,6 +30486,12 @@ paths:
                   saved_blocks:
                     type: integer
                     format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30662,6 +30668,12 @@ paths:
                       format: int64
                     saved_blocks:
                       type: integer
+                      format: int64
+                    averageBlockTime:
+                      type: string
+                      format: int64
+                    blochHeightThreshold:
+                      type: string
                       format: int64
               pagination:
                 type: object
@@ -30873,6 +30885,12 @@ paths:
                     format: int64
                   saved_blocks:
                     type: integer
+                    format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
                     format: int64
         default:
           description: An unexpected error response.
@@ -52057,6 +52075,15 @@ definitions:
       dataReliabilityReward:
         type: string
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.QualityOfServiceReport:
+    type: object
+    properties:
+      latency:
+        type: string
+      availability:
+        type: string
+      sync:
+        type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -52698,6 +52725,12 @@ definitions:
             saved_blocks:
               type: integer
               format: int64
+            averageBlockTime:
+              type: string
+              format: int64
+            blochHeightThreshold:
+              type: string
+              format: int64
       pagination:
         type: object
         properties:
@@ -52823,6 +52856,12 @@ definitions:
           saved_blocks:
             type: integer
             format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
+            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:
@@ -52922,6 +52961,12 @@ definitions:
             format: int64
           saved_blocks:
             type: integer
+            format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
@@ -53108,6 +53153,12 @@ definitions:
         format: int64
       saved_blocks:
         type: integer
+        format: int64
+      averageBlockTime:
+        type: string
+        format: int64
+      blochHeightThreshold:
+        type: string
         format: int64
   lavanet.lava.spec.SpecCategory:
     type: object

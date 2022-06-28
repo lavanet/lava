@@ -25,14 +25,17 @@ type (
 	}
 
 	SpecJSON struct {
-		ChainID              string    `json:"chainid" yaml:"chainid"`
-		Name                 string    `json:"name" yaml:"name"`
-		Enabled              bool      `json:"enabled" yaml:"enabled"`
-		Apis                 []ApiJSON `json:"apis" yaml:"apis"`
-		ReliabilityThreshold uint32    `json:"reliability_threshold" yaml:"reliability_threshold"`
-		ComparesHashes       bool      `json:"compares_hashes" yaml:"compares_hashes"`
-		FinalizationCriteria uint32    `json:"finalization_criteria" yaml:"finalization_criteria"`
-		SavedBlocks          uint32    `json:"saved_blocks" yaml:"saved_blocks"`
+		ChainID string    `json:"chainid" yaml:"chainid"`
+		Name    string    `json:"name" yaml:"name"`
+		Enabled bool      `json:"enabled" yaml:"enabled"`
+		Apis    []ApiJSON `json:"apis" yaml:"apis"`
+
+		ReliabilityThreshold uint32 `json:"reliability_threshold" yaml:"enabled"`
+		ComparesHashes       bool   `json:"compares_hashes" yaml:"enabled"`
+		FinalizationCriteria uint32 `json:"finalization_criteria" yaml:"finalization_criteria"`
+		SavedBlocks          uint32 `json:"saved_blocks" yaml:"saved_blocks"`
+		AverageBlockTime     int64  `json:"average_block_time" yaml:"enabled"`
+		BlockHeightThreshold int64  `json:"block_height_threshold" yaml:"enabled"`
 	}
 
 	SpecAddProposalJSON struct {
@@ -68,6 +71,8 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 			ComparesHashes:       spec.ComparesHashes,
 			FinalizationCriteria: spec.FinalizationCriteria,
 			SavedBlocks:          spec.SavedBlocks,
+			AverageBlockTime:     spec.AverageBlockTime,
+			BlochHeightThreshold: spec.BlockHeightThreshold,
 		})
 	}
 	return ret

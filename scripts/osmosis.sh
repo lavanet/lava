@@ -21,12 +21,12 @@ go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 http://0.0.0.0:$MOCK_PO
 go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer3 
 
 # Multi Port Proxy
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 http://0.0.0.0:2031/rest/ COS3 rest --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2232 http://0.0.0.0:2032/rest/ COS3 rest --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2233 http://0.0.0.0:2033/rest/ COS3 rest --from servicer3 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2241 http://0.0.0.0:2041/rpc/ COS3 tendermintrpc --from servicer1 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 http://0.0.0.0:2042/rpc/ COS3 tendermintrpc --from servicer2 &
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 http://0.0.0.0:2031/rest/ COS3 rest --from servicer1 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2232 http://0.0.0.0:2032/rest/ COS3 rest --from servicer2 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2233 http://0.0.0.0:2033/rest/ COS3 rest --from servicer3 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2241 http://0.0.0.0:2041/rpc/ COS3 tendermintrpc --from servicer1 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 http://0.0.0.0:2042/rpc/ COS3 tendermintrpc --from servicer2 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 
 
 # NO MOCK PROXY
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rest/ COS3 rest --from servicer1 &
