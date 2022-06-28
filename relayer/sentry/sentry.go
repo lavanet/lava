@@ -140,7 +140,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
-	voteInitiationCb        func(ctx context.Context, voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string)
+	voteInitiationCb        func(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	//
@@ -475,6 +475,11 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 
 			if newVotesList, ok := e.Events["lava_response_conflict_detection.voteID"]; ok {
 				for idx, voteID := range newVotesList {
+					voteIDNum, err := strconv.ParseUint(voteID, 10, 64)
+					if err != nil {
+						log.Printf("Error: voteID could not be parsed as uint64 %s\n", voteID)
+						continue
+					}
 					chainID := e.Events["lava_response_conflict_detection.chainID"][idx]
 					apiURL := e.Events["lava_response_conflict_detection.apiURL"][idx]
 					requestData := []byte(e.Events["lava_response_conflict_detection.requestData"][idx])
@@ -491,7 +496,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					}
 					voters_st := e.Events["lava_response_conflict_detection.voters"][idx]
 					voters := strings.Split(voters_st, ",")
-					go s.voteInitiationCb(ctx, voteID, chainID, apiURL, requestData, requestBlock, voteDeadline, voters)
+					go s.voteInitiationCb(ctx, voteIDNum, chainID, apiURL, requestData, requestBlock, voteDeadline, voters)
 				}
 			}
 
@@ -1334,7 +1339,7 @@ func NewSentry(
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
-	voteInitiationCb func(ctx context.Context, voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string),
+	voteInitiationCb func(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
