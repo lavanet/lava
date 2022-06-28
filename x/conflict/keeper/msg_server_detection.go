@@ -55,7 +55,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	conflictVote.FirstProvider.Response = msg.ResponseConflict.ConflictRelayData0.Reply.Data
 	conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
 	conflictVote.SecondProvider.Response = msg.ResponseConflict.ConflictRelayData1.Reply.Data
-	conflictVote.Voters = k.LotteryVoters()
+	conflictVote.Voters = k.Keeper.LotteryVoters(goCtx, conflictVote.ChainID)
 	conflictVote.VotersHash = make(map[string][]byte)
 	eventData := map[string]string{"client": msg.Creator}
 
@@ -67,21 +67,21 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
 	eventData["voters"] = strings.Join(conflictVote.Voters, ",")
 
-	utils.LogLavaEvent(ctx, logger, "conflict_detection", eventData, "Got a new valid conflict detection from consumer, starting new vote")
+	utils.LogLavaEvent(ctx, logger, "response_conflict_detection", eventData, "Got a new valid conflict detection from consumer, starting new vote")
 	return &types.MsgDetectionResponse{}, nil
 }
 
 func (k Keeper) LotteryVoters(goCtx context.Context, chainID string) []string {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-	entrys, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epochStart)
+	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epochStart)
 
 	if err != nil {
 		return make([]string, 0)
 	}
 
 	voters := make([]string, 0)
-	for _, entry := range *entrys {
+	for _, entry := range *entries {
 		voters = append(voters, entry.Address)
 	}
 	return voters

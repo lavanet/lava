@@ -368,6 +368,10 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
+func voteEventHandler(voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
+
+}
+
 func Server(
 	ctx context.Context,
 	clientCtx client.Context,
@@ -389,7 +393,7 @@ func Server(
 
 	//
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil)
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, voteEventHandler, apiInterface, nil, nil)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

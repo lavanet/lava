@@ -28,7 +28,7 @@ func PortalServer(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface, sk, flagSet)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

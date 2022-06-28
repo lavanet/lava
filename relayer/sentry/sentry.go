@@ -92,6 +92,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
+	voteInitiationCb        func(voteID string ,chainID string,apiURL string ,requestData []byte ,requestBlock uint64 ,voteDeadline uint64,voters []string)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	//
@@ -394,13 +395,33 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
 						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
 						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
+							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s\n", s.PrintExpectedPAyments())
 						} else {
 							fmt.Printf("SUCCESS: payment received as expected\n")
 						}
 
 					}
 				}
+			}
+
+			if newVotesList, ok := e.Events["lava_response_conflict_detection.voteID"]; ok {
+				for idx, voteID := range newVotesList {
+				chainID := e.Events["lava_response_conflict_detection.chainID"][idx]
+				apiURL := e.Events["lava_response_conflict_detection.apiURL"][idx]
+				requestData := []byte(e.Events["lava_response_conflict_detection.requestData"][idx])
+				num_str := e.Events["lava_response_conflict_detection.requestBlock"][idx]
+				requestBlock,err := strconv.ParseUint(num_str, 10, 64)
+				if err != nil {
+					//not all votes will have request
+					requestBlock = 0
+				}
+				num_str := e.Events["lava_response_conflict_detection.voteDeadline"][idx]
+				voteDeadline,err := strconv.ParseUint(num_str, 10, 64)
+				if err != nil {
+					fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str,err)
+				}
+				voters := e.Events["lava_response_conflict_detection.voters"][idx]
+				s.voteInitiationCb(voteID,chainID,apiURL,requestData,requestBlock,voteDeadline,voters)
 			}
 
 		}
@@ -1203,6 +1224,7 @@ func NewSentry(
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
+	voteInitiationCb func(voteID string ,chainID string,apiURL string ,requestData []byte ,requestBlock uint64 ,voteDeadline uint64,voters []string),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
@@ -1214,7 +1236,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: %s", err)
+		log.Fatal("Invalid block height, error: " + err.Error())
 		currentBlock = 0
 	}
 	return &Sentry{
@@ -1232,6 +1254,7 @@ func NewSentry(
 		blockHeight:             currentBlock,
 		specHash:                nil,
 		cmdFlags:                flagSet,
+		voteInitiationCb:        voteInitiationCb,
 	}
 }
 
