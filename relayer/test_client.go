@@ -267,4 +267,6 @@ func TestClient(
 	case "COS3":
 		osmosisTests(ctx, chainProxy, privKey, apiInterface)
 	}
+
+	log.Printf("%s Client test  complete \n", chainID)
 }

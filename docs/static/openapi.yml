@@ -28756,15 +28756,12 @@ paths:
                   properties:
                     index:
                       type: string
-                    voteID:
-                      type: string
-                      format: uint64
                     voteDeadline:
                       type: string
-                      format: uint64
+                      format: int64
                     voteStartBlock:
                       type: string
-                      format: uint64
+                      format: int64
                     voteIsCommit:
                       type: boolean
                     chainID:
@@ -28776,7 +28773,7 @@ paths:
                       format: byte
                     requestBlock:
                       type: string
-                      format: uint64
+                      format: int64
                     firstProvider:
                       type: object
                       properties:
@@ -28793,16 +28790,11 @@ paths:
                         response:
                           type: string
                           format: byte
-                    voters:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          account:
-                            type: string
-                          hashResponse:
-                            type: string
-                            format: byte
+                    votersHash:
+                      type: object
+                      additionalProperties:
+                        type: string
+                        format: byte
               pagination:
                 type: object
                 properties:
@@ -28922,15 +28914,12 @@ paths:
                 properties:
                   index:
                     type: string
-                  voteID:
-                    type: string
-                    format: uint64
                   voteDeadline:
                     type: string
-                    format: uint64
+                    format: int64
                   voteStartBlock:
                     type: string
-                    format: uint64
+                    format: int64
                   voteIsCommit:
                     type: boolean
                   chainID:
@@ -28942,7 +28931,7 @@ paths:
                     format: byte
                   requestBlock:
                     type: string
-                    format: uint64
+                    format: int64
                   firstProvider:
                     type: object
                     properties:
@@ -28959,16 +28948,11 @@ paths:
                       response:
                         type: string
                         format: byte
-                  voters:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        account:
-                          type: string
-                        hashResponse:
-                          type: string
-                          format: byte
+                  votersHash:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      format: byte
         default:
           description: An unexpected error response.
           schema:
@@ -29974,6 +29958,8 @@ paths:
                     type: string
                   dataReliabilityReward:
                     type: string
+                  QoSWeight:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30502,6 +30488,12 @@ paths:
                   saved_blocks:
                     type: integer
                     format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30678,6 +30670,12 @@ paths:
                       format: int64
                     saved_blocks:
                       type: integer
+                      format: int64
+                    averageBlockTime:
+                      type: string
+                      format: int64
+                    blochHeightThreshold:
+                      type: string
                       format: int64
               pagination:
                 type: object
@@ -30889,6 +30887,12 @@ paths:
                     format: int64
                   saved_blocks:
                     type: integer
+                    format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  blochHeightThreshold:
+                    type: string
                     format: int64
         default:
           description: An unexpected error response.
@@ -51183,6 +51187,15 @@ definitions:
               sig:
                 type: string
                 format: byte
+          QoSReport:
+            type: object
+            properties:
+              latency:
+                type: string
+              availability:
+                type: string
+              sync:
+                type: string
       reply:
         type: object
         properties:
@@ -51209,15 +51222,12 @@ definitions:
     properties:
       index:
         type: string
-      voteID:
-        type: string
-        format: uint64
       voteDeadline:
         type: string
-        format: uint64
+        format: int64
       voteStartBlock:
         type: string
-        format: uint64
+        format: int64
       voteIsCommit:
         type: boolean
       chainID:
@@ -51229,7 +51239,7 @@ definitions:
         format: byte
       requestBlock:
         type: string
-        format: uint64
+        format: int64
       firstProvider:
         type: object
         properties:
@@ -51246,16 +51256,11 @@ definitions:
           response:
             type: string
             format: byte
-      voters:
-        type: array
-        items:
-          type: object
-          properties:
-            account:
-              type: string
-            hashResponse:
-              type: string
-              format: byte
+      votersHash:
+        type: object
+        additionalProperties:
+          type: string
+          format: byte
   lavanet.lava.conflict.FinalizationConflict:
     type: object
     properties:
@@ -51301,6 +51306,10 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+  lavanet.lava.conflict.MsgConflictVoteCommitResponse:
+    type: object
+  lavanet.lava.conflict.MsgConflictVoteRevealResponse:
+    type: object
   lavanet.lava.conflict.MsgDetectionResponse:
     type: object
   lavanet.lava.conflict.Params:
@@ -51327,15 +51336,12 @@ definitions:
           properties:
             index:
               type: string
-            voteID:
-              type: string
-              format: uint64
             voteDeadline:
               type: string
-              format: uint64
+              format: int64
             voteStartBlock:
               type: string
-              format: uint64
+              format: int64
             voteIsCommit:
               type: boolean
             chainID:
@@ -51347,7 +51353,7 @@ definitions:
               format: byte
             requestBlock:
               type: string
-              format: uint64
+              format: int64
             firstProvider:
               type: object
               properties:
@@ -51364,16 +51370,11 @@ definitions:
                 response:
                   type: string
                   format: byte
-            voters:
-              type: array
-              items:
-                type: object
-                properties:
-                  account:
-                    type: string
-                  hashResponse:
-                    type: string
-                    format: byte
+            votersHash:
+              type: object
+              additionalProperties:
+                type: string
+                format: byte
       pagination:
         type: object
         properties:
@@ -51407,15 +51408,12 @@ definitions:
         properties:
           index:
             type: string
-          voteID:
-            type: string
-            format: uint64
           voteDeadline:
             type: string
-            format: uint64
+            format: int64
           voteStartBlock:
             type: string
-            format: uint64
+            format: int64
           voteIsCommit:
             type: boolean
           chainID:
@@ -51427,7 +51425,7 @@ definitions:
             format: byte
           requestBlock:
             type: string
-            format: uint64
+            format: int64
           firstProvider:
             type: object
             properties:
@@ -51444,16 +51442,11 @@ definitions:
               response:
                 type: string
                 format: byte
-          voters:
-            type: array
-            items:
-              type: object
-              properties:
-                account:
-                  type: string
-                hashResponse:
-                  type: string
-                  format: byte
+          votersHash:
+            type: object
+            additionalProperties:
+              type: string
+              format: byte
   lavanet.lava.conflict.QueryParamsResponse:
     type: object
     properties:
@@ -51526,6 +51519,15 @@ definitions:
                   sig:
                     type: string
                     format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
           reply:
             type: object
             properties:
@@ -51606,6 +51608,15 @@ definitions:
                   sig:
                     type: string
                     format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
           reply:
             type: object
             properties:
@@ -51627,14 +51638,15 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
-  lavanet.lava.conflict.Voter:
+  lavanet.lava.pairing.QualityOfServiceReport:
     type: object
     properties:
-      account:
+      latency:
         type: string
-      hashResponse:
+      availability:
         type: string
-        format: byte
+      sync:
+        type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -51712,6 +51724,15 @@ definitions:
           sig:
             type: string
             format: byte
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -52104,6 +52125,8 @@ definitions:
         type: string
       dataReliabilityReward:
         type: string
+      QoSWeight:
+        type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
@@ -52454,6 +52477,8 @@ definitions:
             type: string
           dataReliabilityReward:
             type: string
+          QoSWeight:
+            type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -52746,6 +52771,12 @@ definitions:
             saved_blocks:
               type: integer
               format: int64
+            averageBlockTime:
+              type: string
+              format: int64
+            blochHeightThreshold:
+              type: string
+              format: int64
       pagination:
         type: object
         properties:
@@ -52871,6 +52902,12 @@ definitions:
           saved_blocks:
             type: integer
             format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
+            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:
@@ -52970,6 +53007,12 @@ definitions:
             format: int64
           saved_blocks:
             type: integer
+            format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          blochHeightThreshold:
+            type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
@@ -53156,6 +53199,12 @@ definitions:
         format: int64
       saved_blocks:
         type: integer
+        format: int64
+      averageBlockTime:
+        type: string
+        format: int64
+      blochHeightThreshold:
+        type: string
         format: int64
   lavanet.lava.spec.SpecCategory:
     type: object

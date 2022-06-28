@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"regexp"
 	"sort"
@@ -32,15 +33,61 @@ import (
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tenderminttypes "github.com/tendermint/tendermint/types"
+	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 )
 
 type ClientSession struct {
 	CuSum     uint64
+	QoSInfo   QoSInfo
 	SessionId int64
 	Client    *RelayerClientWrapper
 	Lock      sync.Mutex
 	RelayNum  uint64
+}
+
+type QoSInfo struct {
+	LastQoSReport      *pairingtypes.QualityOfServiceReport
+	LatencyScoreList   []sdk.Dec
+	SyncScoreList      []sdk.Dec
+	TotalRelays        uint64
+	AnsweredRelays     uint64
+	ConsecutiveTimeOut uint64
+}
+
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
+	if cs.QoSInfo.LastQoSReport == nil {
+		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
+	}
+	AvailabilityPrecentage := sdk.NewDecWithPrec(5, 2)
+	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+
+	var latencyThreshold time.Duration = 1*time.Second + time.Duration(cu)*time.Millisecond
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+	cs.QoSInfo.LatencyScoreList = append(cs.QoSInfo.LatencyScoreList, latencyScore)
+	sort.SliceStable(cs.QoSInfo.LatencyScoreList, func(i, j int) bool {
+		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
+	})
+	const LatencyScorePercentage = 0.9
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*LatencyScorePercentage)]
+
+	const MinProvidersForSync = 0.6
+	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) {
+		if blockHeightDiff > 0 {
+			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.ZeroDec())
+		} else {
+			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+		}
+	} else {
+		cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+	}
+
+	sum := sdk.ZeroDec()
+	for _, element := range cs.QoSInfo.SyncScoreList {
+		sum = sum.Add(element)
+	}
+	cs.QoSInfo.LastQoSReport.Sync = sum.QuoInt64(int64(len(cs.QoSInfo.SyncScoreList)))
 }
 
 type RelayerClientWrapper struct {
@@ -64,6 +111,7 @@ type PaymentRequest struct {
 
 type providerDataContainer struct {
 	LatestFinalizedBlock  int64
+	LatestBlockTime       time.Time
 	FinalizedBlocksHashes map[int64]string
 	SigBlocks             []byte
 	SessionId             uint64
@@ -92,7 +140,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
-	voteInitiationCb        func(voteID string ,chainID string,apiURL string ,requestData []byte ,requestBlock uint64 ,voteDeadline uint64,voters []string)
+	voteInitiationCb        func(voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	//
@@ -118,14 +166,15 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu        sync.RWMutex
-	pairingHash      []byte
-	pairing          []*RelayerClientWrapper
-	pairingAddresses []string
-	pairingPurgeLock sync.Mutex
-	pairingPurge     []*RelayerClientWrapper
-	VrfSkMu          sync.Mutex
-	VrfSk            vrf.PrivateKey
+	pairingMu                   sync.RWMutex
+	PairingServicersToPairCount uint64
+	pairingHash                 []byte
+	pairing                     []*RelayerClientWrapper
+	pairingAddresses            []string
+	pairingPurgeLock            sync.Mutex
+	pairingPurge                []*RelayerClientWrapper
+	VrfSkMu                     sync.Mutex
+	VrfSk                       vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
@@ -234,6 +283,19 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
+func (s *Sentry) getServicersToPairCount(ctx context.Context) error {
+	paramsReply, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+	s.PairingServicersToPairCount = paramsReply.Params.GetServicersToPairCount()
+
+	return nil
+}
+
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
@@ -329,6 +391,13 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	//
+	// Get ServicersToPairCount for the first time
+	err = s.getServicersToPairCount(ctx)
+	if err != nil {
+		return err
+	}
+
+	//
 	// Get pairing for the first time, for clients
 	err = s.getPairing(ctx)
 	if err != nil {
@@ -406,22 +475,24 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 
 			if newVotesList, ok := e.Events["lava_response_conflict_detection.voteID"]; ok {
 				for idx, voteID := range newVotesList {
-				chainID := e.Events["lava_response_conflict_detection.chainID"][idx]
-				apiURL := e.Events["lava_response_conflict_detection.apiURL"][idx]
-				requestData := []byte(e.Events["lava_response_conflict_detection.requestData"][idx])
-				num_str := e.Events["lava_response_conflict_detection.requestBlock"][idx]
-				requestBlock,err := strconv.ParseUint(num_str, 10, 64)
-				if err != nil {
-					//not all votes will have request
-					requestBlock = 0
+					chainID := e.Events["lava_response_conflict_detection.chainID"][idx]
+					apiURL := e.Events["lava_response_conflict_detection.apiURL"][idx]
+					requestData := []byte(e.Events["lava_response_conflict_detection.requestData"][idx])
+					num_str := e.Events["lava_response_conflict_detection.requestBlock"][idx]
+					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
+					if err != nil {
+						//not all votes will have request
+						requestBlock = 0
+					}
+					num_str = e.Events["lava_response_conflict_detection.voteDeadline"][idx]
+					voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+					if err != nil {
+						fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+					}
+					voters_st := e.Events["lava_response_conflict_detection.voters"][idx]
+					voters := strings.Split(voters_st, ",")
+					s.voteInitiationCb(voteID, chainID, apiURL, requestData, requestBlock, voteDeadline, voters)
 				}
-				num_str := e.Events["lava_response_conflict_detection.voteDeadline"][idx]
-				voteDeadline,err := strconv.ParseUint(num_str, 10, 64)
-				if err != nil {
-					fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str,err)
-				}
-				voters := e.Events["lava_response_conflict_detection.voters"][idx]
-				s.voteInitiationCb(voteID,chainID,apiURL,requestData,requestBlock,voteDeadline,voters)
 			}
 
 		}
@@ -581,7 +652,7 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 
-	connectCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -742,7 +813,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string) error {
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
-	for blockNum, _ := range finalizedBlocks {
+	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
 			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
 			return errors.New("provider returned non finalized block reply")
@@ -809,6 +880,7 @@ func findMinKey(blockMap map[int64]string) int64 {
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -827,6 +899,7 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  latestBlock,
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -886,7 +959,7 @@ func (s *Sentry) SendRelay(
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
-	if err != nil {
+	if err != nil && clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 		s.movePairingEntryToPurge(wrap, index)
 		return reply, err
 	}
@@ -1219,12 +1292,49 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 	return vrfPk, UserEntryRes.GetMaxCU(), err
 }
 
+func (s *Sentry) ExpecedBlockHeight() (int64, int) {
+
+	averageBlockTime_ms := s.serverSpec.AverageBlockTime
+	listExpectedBlockHeights := []int64{}
+
+	now := time.Now()
+	calcExpectedBlocks := func(listPHC []ProviderHashesConsensus) []int64 {
+		listExpectedBH := []int64{}
+		for _, PHC := range listPHC {
+			for _, element := range PHC.agreeingProviders {
+				expected := element.LatestFinalizedBlock + (now.Sub(element.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				listExpectedBH = append(listExpectedBH, expected)
+			}
+		}
+		return listExpectedBH
+	}
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.prevEpochProviderHashesConsensus)...)
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.providerHashesConsensus)...)
+
+	median := func(data []int64) int64 {
+		slices.Sort(data)
+
+		var median int64
+		l := len(data)
+		if l == 0 {
+			return 0
+		} else if l%2 == 0 {
+			median = int64((data[l/2-1] + data[l/2]) / 2.0)
+		} else {
+			median = int64(data[l/2])
+		}
+		return median
+	}
+
+	return median(listExpectedBlockHeights) - s.serverSpec.BlochHeightThreshold, len(listExpectedBlockHeights)
+}
+
 func NewSentry(
 	clientCtx client.Context,
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
-	voteInitiationCb func(voteID string ,chainID string,apiURL string ,requestData []byte ,requestBlock uint64 ,voteDeadline uint64,voters []string),
+	voteInitiationCb func(voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,

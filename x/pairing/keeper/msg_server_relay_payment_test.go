@@ -376,3 +376,75 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 		})
 	}
 }
+
+func TestRelayPaymentQoS(t *testing.T) {
+	tests := []struct {
+		name         string
+		availebility sdk.Dec
+		latency      sdk.Dec
+		sync         sdk.Dec
+		valid        bool
+	}{
+		{"InvalidLatency", sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), false},
+		{"InvalidAvailebility", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), false},
+		{"Invalidsync", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), false},
+		{"PerfectScore", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
+		{"MediumScore", sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := setupForPaymentTest(t)
+
+			cuSum := ts.spec.Apis[0].ComputeUnits * 10
+			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availebility, Sync: tt.sync}
+
+			relayRequest := &types.RelayRequest{
+				Provider:        ts.proAddr.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(1),
+				ChainID:         ts.spec.Name,
+				CuSum:           cuSum,
+				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				QoSReport:       QoS,
+				DataReliability: nil,
+			}
+			QoS.ComputeQoS()
+			sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+			relayRequest.Sig = sig
+			require.Nil(t, err)
+
+			var Relays []*types.RelayRequest
+			relay := *relayRequest
+			Relays = append(Relays, &relay)
+
+			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
+			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			if tt.valid {
+				require.Nil(t, err)
+
+				mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
+				score, err := QoS.ComputeQoS()
+				require.Nil(t, err)
+
+				want := mint.MulInt64(int64(cuSum))
+				want = want.Mul(score.Mul(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))).Add(sdk.OneDec().Sub(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx)))))
+				require.Equal(t, balance+want.TruncateInt64(),
+					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
+
+				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
+				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+				require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
+
+			} else {
+				require.NotNil(t, err)
+			}
+
+		})
+	}
+}

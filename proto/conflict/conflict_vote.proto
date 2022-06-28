@@ -20,7 +20,6 @@ message ConflictVote {
   int64 requestBlock = 9;
   Provider firstProvider = 10 [(gogoproto.nullable) = false]; 
   Provider secondProvider = 11 [(gogoproto.nullable) = false]; 
-  repeated string voters = 12 [(gogoproto.nullable) = false]; 
   map<string, bytes> votersHash = 13[(gogoproto.nullable) = false]; 
 }
 

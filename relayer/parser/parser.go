@@ -179,10 +179,16 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 
 	blockContainer := unmarshalledData[param_index]
 	for _, key := range input[1:] {
+		// type assertion for blockcontainer
+		if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
+			return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key)
+		}
+
+		// assertion for key
 		if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 			blockContainer = container
 		} else {
-			return nil, fmt.Errorf("invalid input format, blockContainer is %s and tried to get a field inside: %s", blockContainer, input)
+			return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s", blockContainer, key)
 		}
 
 	}
