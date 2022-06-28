@@ -18,6 +18,9 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 	if !found {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "invalid vote id")
 	}
+	if !conflictVote.VoteIsCommit {
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "vote is not in commit state")
+	}
 	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider is not in the voters list")
 	}
