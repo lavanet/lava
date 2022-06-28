@@ -32,6 +32,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgConflictVoteCommit int = 100
 
+	opWeightMsgConflictVoteReveal = "op_weight_msg_conflict_vote_reveal"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgConflictVoteReveal int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -89,6 +93,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgConflictVoteCommit,
 		conflictsimulation.SimulateMsgConflictVoteCommit(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgConflictVoteReveal int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgConflictVoteReveal, &weightMsgConflictVoteReveal, nil,
+		func(_ *rand.Rand) {
+			weightMsgConflictVoteReveal = defaultWeightMsgConflictVoteReveal
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgConflictVoteReveal,
+		conflictsimulation.SimulateMsgConflictVoteReveal(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

@@ -13,6 +13,7 @@ option go_package = "github.com/lavanet/lava/x/conflict/types";
 service Msg {
       rpc Detection(MsgDetection) returns (MsgDetectionResponse);
   rpc ConflictVoteCommit(MsgConflictVoteCommit) returns (MsgConflictVoteCommitResponse);
+  rpc ConflictVoteReveal(MsgConflictVoteReveal) returns (MsgConflictVoteRevealResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -34,6 +35,16 @@ message MsgConflictVoteCommit {
 }
 
 message MsgConflictVoteCommitResponse {
+}
+
+message MsgConflictVoteReveal {
+  string creator = 1;
+  uint64 voteID = 2;
+  int64 nonce = 3;
+  bytes hash = 4;
+}
+
+message MsgConflictVoteRevealResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

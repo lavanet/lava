@@ -51308,6 +51308,8 @@ definitions:
             format: byte
   lavanet.lava.conflict.MsgConflictVoteCommitResponse:
     type: object
+  lavanet.lava.conflict.MsgConflictVoteRevealResponse:
+    type: object
   lavanet.lava.conflict.MsgDetectionResponse:
     type: object
   lavanet.lava.conflict.Params:
