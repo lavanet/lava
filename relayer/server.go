@@ -27,6 +27,7 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -37,7 +38,7 @@ var (
 	g_privKey         *btcSecp256k1.PrivateKey
 	g_sessions        map[string]*UserSessions
 	g_sessions_mutex  sync.Mutex
-	g_votes           map[string]*voteData
+	g_votes           map[uint64]*voteData
 	g_votes_mutex     sync.Mutex
 	g_sentry          *sentry.Sentry
 	g_serverChainID   string
@@ -64,7 +65,7 @@ type RelaySession struct {
 
 type voteData struct {
 	RelayDataHash []byte
-	Nonce         uint64
+	Nonce         int64
 	CommitHash    []byte
 }
 
@@ -377,11 +378,27 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
-func SendVoteCommitment(*voteData) {
-	//TODO:
+func SendVoteCommitment(voteID uint64, vote *voteData) {
+	msg := conflicttypes.NewMsgConflictVoteCommit(g_sentry.Acc, voteID, vote.CommitHash)
+	myWriter := gobytes.Buffer{}
+	g_sentry.ClientCtx.Output = &myWriter
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Printf("Error: failed to send vote commitment! error: %s\n", err)
+	}
 }
 
-func voteEventHandler(ctx context.Context, voteID string, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
+func SendVoteReveal(voteID uint64, vote *voteData) {
+	msg := conflicttypes.NewMsgConflictVoteReveal(g_sentry.Acc, voteID, vote.Nonce, vote.RelayDataHash)
+	myWriter := gobytes.Buffer{}
+	g_sentry.ClientCtx.Output = &myWriter
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Printf("Error: failed to send vote Reveal! error: %s\n", err)
+	}
+}
+
+func voteEventHandler(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
 	//got a new vote event, need to handle
 	if chainID != g_serverChainID {
 		// not our chain ID
@@ -398,8 +415,7 @@ func voteEventHandler(ctx context.Context, voteID string, chainID string, apiURL
 	vote, ok := g_votes[voteID]
 	if ok {
 		//TODO: add in the event that this is a reveal step
-		_ = vote.RelayDataHash //send relayData and nonce
-		_ = vote.Nonce
+		SendVoteReveal(voteID, vote)
 	} else {
 		// new vote
 		found := false
@@ -426,17 +442,15 @@ func voteEventHandler(ctx context.Context, voteID string, chainID string, apiURL
 			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", apiURL, requestData, err)
 			return
 		}
-		nonce := uint64(rand.Int63())
+		nonce := rand.Int63()
 		replyDataHash := sigs.HashMsg(reply.Data)
 		nonceBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
 		commitHash := sigs.HashMsg(bytes.Join([][]byte{replyDataHash, nonceBytes}, nil))
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
-		SendVoteCommitment(vote)
-
+		SendVoteCommitment(voteID, vote)
 	}
-
 }
 
 func Server(
