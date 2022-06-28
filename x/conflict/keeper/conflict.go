@@ -151,3 +151,14 @@ func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
 	}
 	return sIndex
 }
+
+func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
+	//1) make a list of all voters that didnt vote
+	//2) check that we have enough votes
+	//3) count votes
+	//4) reward voters and providers
+	//5) punish fraud providers and voters that didnt vote
+	//6) cleanup storage
+	//7) unstake punished providers
+	//8) event?
+}
