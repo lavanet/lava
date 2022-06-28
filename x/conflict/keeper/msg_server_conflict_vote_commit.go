@@ -24,11 +24,11 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider is not in the voters list")
 	}
-	if conflictVote.VotersHash[msg.Creator] != nil {
+	if conflictVote.VotersHash[msg.Creator].Hash != nil {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider already commited")
 	}
 
-	conflictVote.VotersHash[msg.Creator] = msg.Hash
+	conflictVote.VotersHash[msg.Creator] = types.Vote{Hash: msg.Hash, Result: NoVote}
 	k.SetConflictVote(ctx, conflictVote)
 
 	return &types.MsgConflictVoteCommitResponse{}, nil

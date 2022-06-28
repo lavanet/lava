@@ -55,10 +55,10 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	conflictVote.FirstProvider.Response = msg.ResponseConflict.ConflictRelayData0.Reply.Data
 	conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
 	conflictVote.SecondProvider.Response = msg.ResponseConflict.ConflictRelayData1.Reply.Data
-	conflictVote.VotersHash = make(map[string][]byte)
+	conflictVote.VotersHash = map[string]types.Vote{}
 	voters := k.LotteryVoters(goCtx, conflictVote.ChainID)
 	for _, voter := range voters {
-		conflictVote.VotersHash[voter] = []byte{}
+		conflictVote.VotersHash[voter] = types.Vote{Hash: []byte{}}
 	}
 
 	k.SetConflictVote(ctx, conflictVote)
