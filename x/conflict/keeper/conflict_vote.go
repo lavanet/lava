@@ -6,13 +6,6 @@ import (
 	"github.com/lavanet/lava/x/conflict/types"
 )
 
-const (
-	NoVote    = 0
-	Provider0 = 1
-	Provider1 = 2
-	None      = 3
-)
-
 // SetConflictVote set a specific conflictVote in the store from its index
 func (k Keeper) SetConflictVote(ctx sdk.Context, conflictVote types.ConflictVote) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ConflictVoteKeyPrefix))

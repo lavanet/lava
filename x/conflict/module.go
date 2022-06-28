@@ -166,7 +166,21 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+	conflictVotes := am.keeper.GetAllConflictVote(ctx)
+	for _, conflictVote := range conflictVotes {
+		if conflictVote.VoteDeadline == ctx.BlockHeight() {
+			if conflictVote.VoteState == types.Commit {
+				conflictVote.VoteState = types.Reveal
+				//conflictVote.VoteDeadline = ??
+			} else if conflictVote.VoteState == types.Reveal {
+				conflictVote.VoteState = types.Closed
+				//conflictVote.VoteDeadline = ??
+			}
+			am.keeper.SetConflictVote(ctx, conflictVote)
+		}
+	}
+}
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
