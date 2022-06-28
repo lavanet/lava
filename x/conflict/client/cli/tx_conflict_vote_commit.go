@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/conflict/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -24,10 +23,7 @@ func CmdConflictVoteCommit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			argHash, err := sdk.ParseCoinNormalized(args[1])
-			if err != nil {
-				return err
-			}
+			argHash := []byte(args[1])
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
