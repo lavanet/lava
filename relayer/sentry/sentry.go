@@ -56,11 +56,20 @@ type QoSInfo struct {
 }
 
 type VoteParams struct {
+	CloseVote    bool
 	ChainID      string
 	ApiURL       string
 	RequestData  []byte
 	RequestBlock uint64
 	Voters       []string
+}
+
+func (vp *VoteParams) GetCloseVote() bool {
+	if vp == nil {
+		//default returns false
+		return false
+	}
+	return vp.CloseVote
 }
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
@@ -507,7 +516,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					}
 					voters_st := e.Events[eventToListen+".voters"][idx]
 					voters := strings.Split(voters_st, ",")
-					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters}
+					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters, CloseVote: false}
 					go s.voteInitiationCb(ctx, voteIDNum, voteDeadline, voteParams)
 				}
 			}
@@ -661,6 +670,19 @@ func (s *Sentry) Start(ctx context.Context) {
 							continue
 						}
 						go s.voteInitiationCb(ctx, voteIDNum, voteDeadline, nil)
+					}
+				}
+
+				eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for _, voteID := range votesList {
+						voteIDNum, err := strconv.ParseUint(voteID, 10, 64)
+						if err != nil {
+							log.Printf("Error: voteID could not be parsed as uint64 %s\n", voteID)
+							continue
+						}
+						voteParams := &VoteParams{CloseVote: true}
+						go s.voteInitiationCb(ctx, voteIDNum, 0, voteParams)
 					}
 				}
 			}

@@ -401,34 +401,51 @@ func SendVoteReveal(voteID uint64, vote *voteData) {
 
 func voteEventHandler(ctx context.Context, voteID uint64, voteDeadline uint64, voteParams *sentry.VoteParams) {
 	//got a vote event, handle the cases here
-	if voteParams != nil {
-		//chainID is sent only on new votes
-		chainID := voteParams.ChainID
-		if chainID != g_serverChainID {
-			// not our chain ID
+
+	if !voteParams.GetCloseVote() {
+		//meaning we dont close a vote, so we should check stuff
+		if voteParams != nil {
+			//chainID is sent only on new votes
+			chainID := voteParams.ChainID
+			if chainID != g_serverChainID {
+				// not our chain ID
+				return
+			}
+		}
+		nodeHeight := uint64(g_sentry.GetBlockHeight())
+		if voteDeadline < nodeHeight {
+			// its too late to vote
+			log.Printf("Error: Vote Event received for deadline %d but current block is %d\n", voteDeadline, nodeHeight)
 			return
 		}
-	}
-	nodeHeight := uint64(g_sentry.GetBlockHeight())
-	if voteDeadline < nodeHeight {
-		// its too late to vote
-		log.Printf("Error: Vote Event received for deadline %d but current block is %d\n", voteDeadline, nodeHeight)
-		return
 	}
 	g_votes_mutex.Lock()
 	defer g_votes_mutex.Unlock()
 	vote, ok := g_votes[voteID]
 	if ok {
+		//we have an existing vote with this ID
 		if voteParams != nil {
+			if voteParams.GetCloseVote() {
+				//we are closing the vote, so its okay we ahve this voteID
+				log.Printf("[+] Received Vote termination event for voteID: %d, Cleared entry\n", voteID)
+				delete(g_votes, voteID)
+				return
+			}
 			//expected to start a new vote but found an existing one
 			log.Printf("Error: new vote Request for vote %+v and voteID: %d had existing entry %v\n", voteParams, voteID, vote)
 			return
 		}
+		log.Printf("[+] Received Vote Reveal for voteID: %d, sending Reveal for result: %v \n", voteID, vote)
 		SendVoteReveal(voteID, vote)
+		return
 	} else {
 		// new vote
 		if voteParams == nil {
 			log.Printf("Error: vote reveal Request voteID: %d didn't have a vote entry\n", voteID)
+			return
+		}
+		if voteParams.GetCloseVote() {
+			log.Printf("Error: vote closing received for voteID: %d but didn't have a vote entry\n", voteID)
 			return
 		}
 		//try to find this provider in the jury
@@ -455,8 +472,9 @@ func voteEventHandler(ctx context.Context, voteID uint64, voteDeadline uint64, v
 
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
-
+		log.Printf("[+] Received Vote start for voteID: %d, sending commit for result: %v \n", voteID, vote)
 		SendVoteCommitment(voteID, vote)
+		return
 	}
 }
 

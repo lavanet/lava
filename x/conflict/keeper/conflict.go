@@ -232,5 +232,5 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 
 	logger := k.Logger(ctx)
 	eventData := map[string]string{"voteID": ConflictVote.Index}
-	utils.LogLavaEvent(ctx, logger, "conflict_detection_vote_resolved", eventData, "conflict detection resolved")
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteResolvedEventName, eventData, "conflict detection resolved")
 }
