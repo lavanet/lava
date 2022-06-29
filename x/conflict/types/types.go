@@ -12,3 +12,7 @@ const (
 	Provider1 = 2
 	None      = 3
 )
+
+const (
+	ConflictVoteRevealEventName = "conflict_vote_reveal"
+)

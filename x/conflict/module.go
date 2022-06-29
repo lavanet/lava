@@ -183,7 +183,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 				eventData["voteID"] = conflictVote.Index
 				eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
 
-				utils.LogLavaEvent(ctx, logger, "conflict_vote_reveal", eventData, "Vote is now in reveal state")
+				utils.LogLavaEvent(ctx, logger, types.ConflictVoteRevealEventName, eventData, "Vote is now in reveal state")
 
 			} else if conflictVote.VoteState == types.Reveal {
 				conflictVote.VoteState = types.Closed
