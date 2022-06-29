@@ -124,12 +124,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		return c.SendString(string(reply.Data))
 	})
 
-	app.Use(func(c *fiber.Ctx) error {
-		path := c.OriginalURL()
-		if len(path) > 1 && path[0] == '/' {
-			path = path[1:]
-		}
-		log.Println("urirpc in <<< ", string(path))
+	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
+		path := c.Params("*")
+		log.Println("urirpc in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "")
 		if err != nil {
 			log.Println(err)
