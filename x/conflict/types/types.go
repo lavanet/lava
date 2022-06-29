@@ -19,6 +19,11 @@ const (
 	None      = 4
 )
 
+const (
+	ConflictVoteRevealEventName    = "conflict_vote_reveal"
+	ConflictVoteDetectionEventName = "response_conflict_detection"
+)
+
 func CommitVoteData(nonce int64, dataHash []byte) []byte {
 	nonceBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
