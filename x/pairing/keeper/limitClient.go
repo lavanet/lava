@@ -159,7 +159,7 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	overusedSumTotalPercent := clientOverusedCU.TotalOverusedPercent
 	overusedSumProviderPercent := clientOverusedCU.OverusedPercentProvider
 	if overusedSumTotalPercent > slashLimitPercent.MustFloat64() || overusedSumProviderPercent > slashLimitPercent.MustFloat64() {
-		k.SlashEntry(ctx, clientAddr, false, chainID)
+		k.SlashEntry(ctx, clientAddr, false, chainID, sdk.OneDec())
 		eventType = "slash_consumer"
 		utils.LogLavaEvent(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(epochStart, 10),
 			"relay.CuSum":                strconv.FormatUint(CuSum, 10),

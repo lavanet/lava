@@ -2,6 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 func (k Keeper) JailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error {
@@ -14,7 +15,7 @@ func (k Keeper) BailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bo
 	return nil
 }
 
-func (k Keeper) SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string) error {
+func (k Keeper) SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, precentage sdk.Dec) (sdk.Coin, error) {
 	//TODO: jail user, and count problems
-	return nil
+	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()), nil
 }

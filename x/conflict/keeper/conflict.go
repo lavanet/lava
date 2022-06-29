@@ -3,12 +3,16 @@ package keeper
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"golang.org/x/exp/slices"
 )
 
 func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
@@ -153,9 +157,6 @@ func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
 }
 
 func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
-	//1) make a list of all voters that didnt vote
-	//3) count votes
-
 	//all wrong voters are punished
 	//add stake as wieght
 	//votecounts is bigint
@@ -166,46 +167,70 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	//reward pool is the slashed amount from all punished providers
 	//reward to stake - client 50%, the original provider 10%, 20% the voters
 
-	var totalVotes int64 = 0
-	var firstProviderVotes int64 = 0
-	var secondProviderVotes int64 = 0
-	var noneProviderVotes int64 = 0
-	var providersToPunish []string
+	totalVotes := big.NewInt(0)
+	firstProviderVotes := big.NewInt(0)
+	secondProviderVotes := big.NewInt(0)
+	noneProviderVotes := big.NewInt(0)
+	var providersWithoutVote []string
+	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
 
-	intVal := map[bool]int64{false: 0, true: 1}
+	//count votes and punish jury that didnt vote
 	for address, vote := range ConflictVote.VotersHash {
-		//switch
-		totalVotes++
-		firstProviderVotes += intVal[vote.Result == types.Provider0]
-		secondProviderVotes += intVal[vote.Result == types.Provider1]
-		noneProviderVotes += intVal[vote.Result == types.None]
-		if vote.Result == types.NoVote {
-			providersToPunish = append(providersToPunish, address)
+		stake := big.NewInt(0) //find the real stake for each provider
+		totalVotes.Add(totalVotes, stake)
+		switch vote.Result {
+		case types.Provider0:
+			firstProviderVotes.Add(firstProviderVotes, stake)
+		case types.Provider1:
+			firstProviderVotes.Add(secondProviderVotes, stake)
+		case types.None:
+			noneProviderVotes.Add(noneProviderVotes, stake)
+		default:
+			providersWithoutVote = append(providersWithoutVote, address)
+			bail := big.NewInt(0)
+			bail.Div(stake, big.NewInt(5))
+			k.pairingKeeper.JailEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, 0, 0, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromBigInt(bail)))
+			slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(5, 2))
+			rewardPool.Add(slashed)
 		}
 	}
 
-	//2) check that we have enough votes
-	if firstProviderVotes > secondProviderVotes && firstProviderVotes > noneProviderVotes {
-		if sdk.NewDecWithPrec(firstProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
-			providersToPunish = []string{}
+	halfTotalVotes := big.NewInt(0)
+	halfTotalVotes.Div(totalVotes, big.NewInt(2))
+	if firstProviderVotes.Cmp(halfTotalVotes) > 0 || secondProviderVotes.Cmp(halfTotalVotes) > 0 || noneProviderVotes.Cmp(halfTotalVotes) > 0 {
+		//we have enough votes for a valid vote
+		//find the winner
+		var winner int64
+		if firstProviderVotes.Cmp(secondProviderVotes) > 0 && firstProviderVotes.Cmp(noneProviderVotes) > 0 {
+			winner = types.Provider0
+		} else if secondProviderVotes.Cmp(noneProviderVotes) > 0 {
+			winner = types.Provider1
+		} else {
+			winner = types.None
 		}
-		providersToPunish = append(providersToPunish, ConflictVote.SecondProvider.Account)
-	} else if secondProviderVotes > noneProviderVotes {
-		if sdk.NewDecWithPrec(secondProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
-			providersToPunish = []string{}
+
+		//punish the frauds and fill the reward pool
+		for address, vote := range ConflictVote.VotersHash {
+			if vote.Result != winner && !slices.Contains(providersWithoutVote, address) {
+				slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
+				rewardPool.Add(slashed)
+			}
+			//unstake provider??
 		}
-		providersToPunish = append(providersToPunish, ConflictVote.FirstProvider.Account)
-	} else {
-		if sdk.NewDecWithPrec(noneProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
-			providersToPunish = []string{}
+
+		for address, vote := range ConflictVote.VotersHash {
+			if vote.Result == winner {
+				slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
+				rewardPool.Add(slashed)
+			}
+			//unstake provider??
 		}
-		providersToPunish = append(providersToPunish, ConflictVote.FirstProvider.Account, ConflictVote.SecondProvider.Account)
+		//4) reward voters and providers
 	}
 
-	//4) reward voters and providers
-	//5) punish fraud providers and voters that didnt vote
-	//6) cleanup storage
 	k.RemoveConflictVote(ctx, ConflictVote.Index)
-	//7) unstake punished providers
-	//8) event?
+
+	logger := k.Logger(ctx)
+	eventData := map[string]string{"voteID": ConflictVote.Index}
+	utils.LogLavaEvent(ctx, logger, "conflict_detection_vote_resolved", eventData, "conflict detection resolved")
 }
