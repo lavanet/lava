@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"gopkg.in/yaml.v2"
 )
@@ -12,7 +13,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyMajorityPercent = []byte("MajorityPercent")
 	// TODO: Determine the default value
-	DefaultMajorityPercent string = "majority_percent"
+	DefaultMajorityPercent sdk.Dec = sdk.NewDecWithPrec(95, 2)
 )
 
 // ParamKeyTable the param key table for launch module
@@ -22,7 +23,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent string,
+	majorityPercent sdk.Dec,
 ) Params {
 	return Params{
 		MajorityPercent: majorityPercent,

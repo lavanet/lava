@@ -171,31 +171,27 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	logger := am.keeper.Logger(ctx)
 
-	conflictVotes := am.keeper.GetAllConflictVote(ctx)
-	for _, conflictVote := range conflictVotes {
-		if conflictVote.VoteDeadline == ctx.BlockHeight() {
-			if conflictVote.VoteState == types.Commit {
-				conflictVote.VoteState = types.Reveal
-				//conflictVote.VoteDeadline = ??
-				am.keeper.SetConflictVote(ctx, conflictVote)
+	if am.keeper.IsEpochStart(ctx) {
+		conflictVotes := am.keeper.GetAllConflictVote(ctx)
+		for _, conflictVote := range conflictVotes {
+			if conflictVote.VoteDeadline >= ctx.BlockHeight() {
+				switch conflictVote.VoteState {
+				case types.StateCommit:
+					conflictVote.VoteState = types.StateReveal
+					//conflictVote.VoteDeadline = ??
+					am.keeper.SetConflictVote(ctx, conflictVote)
 
-				eventData := map[string]string{}
-				eventData["voteID"] = conflictVote.Index
-				eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
+					eventData := map[string]string{}
+					eventData["voteID"] = conflictVote.Index
+					eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
+					utils.LogLavaEvent(ctx, logger, types.ConflictVoteRevealEventName, eventData, "Vote is now in reveal state")
 
-				utils.LogLavaEvent(ctx, logger, types.ConflictVoteRevealEventName, eventData, "Vote is now in reveal state")
-
-			} else if conflictVote.VoteState == types.Reveal {
-				conflictVote.VoteState = types.Closed
-				//conflictVote.VoteDeadline = ??
-				am.keeper.SetConflictVote(ctx, conflictVote)
-			} else if conflictVote.VoteState == types.Closed {
-				am.keeper.HandleAndCloseVote(ctx, conflictVote)
+				case types.StateReveal:
+					am.keeper.HandleAndCloseVote(ctx, conflictVote)
+				}
 			}
 		}
 	}
-
-	am.keeper.IsEpochStart(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It

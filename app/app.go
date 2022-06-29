@@ -502,12 +502,12 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName,
-		conflictmoduletypes.ModuleName)
+		paramstypes.ModuleName)
 
 	app.mm.SetOrderEndBlockers(
 		capabilitytypes.ModuleName,
@@ -525,12 +525,12 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName,
-		conflictmoduletypes.ModuleName)
+		paramstypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.

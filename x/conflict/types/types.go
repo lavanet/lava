@@ -1,18 +1,32 @@
 package types
 
+import (
+	"encoding/binary"
+
+	tendermintcrypto "github.com/tendermint/tendermint/crypto"
+)
+
 const (
-	Commit = 0
-	Reveal = 1
-	Closed = 2
+	StateCommit = 0
+	StateReveal = 1
 )
 
 const (
 	NoVote    = 0
-	Provider0 = 1
-	Provider1 = 2
-	None      = 3
+	Commit    = 1
+	Provider0 = 2
+	Provider1 = 3
+	None      = 4
 )
 
 const (
 	ConflictVoteRevealEventName = "conflict_vote_reveal"
 )
+
+func CommitVoteData(nonce int64, dataHash []byte) []byte {
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
+	commitData := append(nonceBytes, dataHash...)
+	commitDataHash := tendermintcrypto.Sha256(commitData)
+	return commitDataHash
+}

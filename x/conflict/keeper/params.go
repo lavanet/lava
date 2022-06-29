@@ -18,7 +18,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // MajorityPercent returns the MajorityPercent param
-func (k Keeper) MajorityPercent(ctx sdk.Context) (res string) {
+func (k Keeper) MajorityPercent(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyMajorityPercent, &res)
 	return
 }
