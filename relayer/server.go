@@ -399,11 +399,15 @@ func SendVoteReveal(voteID uint64, vote *voteData) {
 	}
 }
 
-func voteEventHandler(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string) {
-	//got a new vote event, need to handle
-	if chainID != g_serverChainID {
-		// not our chain ID
-		return
+func voteEventHandler(ctx context.Context, voteID uint64, voteDeadline uint64, voteParams *sentry.VoteParams) {
+	//got a vote event, handle the cases here
+	if voteParams != nil {
+		//chainID is sent only on new votes
+		chainID := voteParams.ChainID
+		if chainID != g_serverChainID {
+			// not our chain ID
+			return
+		}
 	}
 	nodeHeight := uint64(g_sentry.GetBlockHeight())
 	if voteDeadline < nodeHeight {
@@ -415,28 +419,34 @@ func voteEventHandler(ctx context.Context, voteID uint64, chainID string, apiURL
 	defer g_votes_mutex.Unlock()
 	vote, ok := g_votes[voteID]
 	if ok {
-		//TODO: add in the event that this is a reveal step
+		if voteParams != nil {
+			//expected to start a new vote but found an existing one
+			log.Printf("Error: new vote Request for vote %+v and voteID: %d had existing entry %v\n", voteParams, voteID, vote)
+			return
+		}
 		SendVoteReveal(voteID, vote)
 	} else {
 		// new vote
-
+		if voteParams == nil {
+			log.Printf("Error: vote reveal Request voteID: %d didn't have a vote entry\n", voteID)
+			return
+		}
 		//try to find this provider in the jury
-		found := slices.Contains(voters, g_sentry.Acc)
-
+		found := slices.Contains(voteParams.Voters, g_sentry.Acc)
 		if !found {
 			// this is a new vote but not for us
 			return
 		}
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
-		nodeMsg, err := g_chainProxy.ParseMsg(apiURL, requestData)
+		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData)
 		if err != nil {
-			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", chainID, err)
+			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", voteParams.ChainID, err)
 			return
 		}
 		reply, err := nodeMsg.Send(ctx)
 		if err != nil {
-			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", apiURL, requestData, err)
+			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", voteParams.ApiURL, voteParams.RequestData, err)
 			return
 		}
 		nonce := rand.Int63()

@@ -55,6 +55,14 @@ type QoSInfo struct {
 	ConsecutiveTimeOut uint64
 }
 
+type VoteParams struct {
+	ChainID      string
+	ApiURL       string
+	RequestData  []byte
+	RequestBlock uint64
+	Voters       []string
+}
+
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
@@ -140,7 +148,7 @@ type Sentry struct {
 	isUser                  bool
 	Acc                     string // account address (bech32)
 	newBlockCb              func()
-	voteInitiationCb        func(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string)
+	voteInitiationCb        func(ctx context.Context, voteID uint64, voteDeadline uint64, voteParams *VoteParams)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	//
@@ -473,30 +481,34 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 				}
 			}
 
-			if newVotesList, ok := e.Events["lava_response_conflict_detection.voteID"]; ok {
+			eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteDetectionEventName
+			// listen for vote commit event from tx handler on conflict/detection
+			if newVotesList, ok := e.Events[eventToListen+".voteID"]; ok {
 				for idx, voteID := range newVotesList {
 					voteIDNum, err := strconv.ParseUint(voteID, 10, 64)
 					if err != nil {
 						log.Printf("Error: voteID could not be parsed as uint64 %s\n", voteID)
 						continue
 					}
-					chainID := e.Events["lava_response_conflict_detection.chainID"][idx]
-					apiURL := e.Events["lava_response_conflict_detection.apiURL"][idx]
-					requestData := []byte(e.Events["lava_response_conflict_detection.requestData"][idx])
-					num_str := e.Events["lava_response_conflict_detection.requestBlock"][idx]
+					chainID := e.Events[eventToListen+".chainID"][idx]
+					apiURL := e.Events[eventToListen+".apiURL"][idx]
+					requestData := []byte(e.Events[eventToListen+"requestData"][idx])
+					num_str := e.Events[eventToListen+"requestBlock"][idx]
 					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
-						//not all votes will have request
-						requestBlock = 0
+						log.Printf("Error: requested block could not be parsed as uint64 %s\n", num_str)
+						continue
 					}
-					num_str = e.Events["lava_response_conflict_detection.voteDeadline"][idx]
+					num_str = e.Events[eventToListen+".voteDeadline"][idx]
 					voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
-						fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+						log.Printf("Error: parsing vote deadline %s, err:%s\n", num_str, err)
+						continue
 					}
-					voters_st := e.Events["lava_response_conflict_detection.voters"][idx]
+					voters_st := e.Events[eventToListen+".voters"][idx]
 					voters := strings.Split(voters_st, ",")
-					go s.voteInitiationCb(ctx, voteIDNum, chainID, apiURL, requestData, requestBlock, voteDeadline, voters)
+					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters}
+					go s.voteInitiationCb(ctx, voteIDNum, voteDeadline, voteParams)
 				}
 			}
 
@@ -629,6 +641,27 @@ func (s *Sentry) Start(ctx context.Context) {
 				err = s.getPairing(ctx)
 				if err != nil {
 					log.Println("error: getPairing", err)
+				}
+			}
+
+			if !s.isUser {
+				// listen for vote reveal event from new block handler on conflict/module.go
+				eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for idx, voteID := range votesList {
+						voteIDNum, err := strconv.ParseUint(voteID, 10, 64)
+						if err != nil {
+							log.Printf("Error: voteID could not be parsed as uint64 %s\n", voteID)
+							continue
+						}
+						num_str := e.Events[eventToListen+".voteDeadline"][idx]
+						voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+						if err != nil {
+							fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+							continue
+						}
+						go s.voteInitiationCb(ctx, voteIDNum, voteDeadline, nil)
+					}
 				}
 			}
 
@@ -1339,7 +1372,7 @@ func NewSentry(
 	chainID string,
 	isUser bool,
 	newBlockCb func(),
-	voteInitiationCb func(ctx context.Context, voteID uint64, chainID string, apiURL string, requestData []byte, requestBlock uint64, voteDeadline uint64, voters []string),
+	voteInitiationCb func(ctx context.Context, voteID uint64, voteDeadline uint64, voteParams *VoteParams),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,

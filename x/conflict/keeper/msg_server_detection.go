@@ -73,7 +73,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
 
-		utils.LogLavaEvent(ctx, logger, "response_conflict_detection", eventData, "Got a new valid conflict detection from consumer, starting new vote")
+		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil
 	}
 
