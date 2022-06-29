@@ -154,11 +154,58 @@ func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
 
 func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
 	//1) make a list of all voters that didnt vote
-	//2) check that we have enough votes
 	//3) count votes
+
+	//all wrong voters are punished
+	//add stake as wieght
+	//votecounts is bigint
+	//valid only if one of the votes is bigger than 50% from total
+	//punish providers that didnt vote - discipline/jail + bail = 20%stake + slash 5%stake
+	//(dont add jailed providers to voters)
+	//if strong majority punish wrong providers - jail from start of memory to end + slash 100%stake
+	//reward pool is the slashed amount from all punished providers
+	//reward to stake - client 50%, the original provider 10%, 20% the voters
+
+	var totalVotes int64 = 0
+	var firstProviderVotes int64 = 0
+	var secondProviderVotes int64 = 0
+	var noneProviderVotes int64 = 0
+	var providersToPunish []string
+
+	intVal := map[bool]int64{false: 0, true: 1}
+	for address, vote := range ConflictVote.VotersHash {
+		//switch
+		totalVotes++
+		firstProviderVotes += intVal[vote.Result == types.Provider0]
+		secondProviderVotes += intVal[vote.Result == types.Provider1]
+		noneProviderVotes += intVal[vote.Result == types.None]
+		if vote.Result == types.NoVote {
+			providersToPunish = append(providersToPunish, address)
+		}
+	}
+
+	//2) check that we have enough votes
+	if firstProviderVotes > secondProviderVotes && firstProviderVotes > noneProviderVotes {
+		if sdk.NewDecWithPrec(firstProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
+			providersToPunish = []string{}
+		}
+		providersToPunish = append(providersToPunish, ConflictVote.SecondProvider.Account)
+	} else if secondProviderVotes > noneProviderVotes {
+		if sdk.NewDecWithPrec(secondProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
+			providersToPunish = []string{}
+		}
+		providersToPunish = append(providersToPunish, ConflictVote.FirstProvider.Account)
+	} else {
+		if sdk.NewDecWithPrec(noneProviderVotes, 0).QuoInt64(totalVotes).LT(k.MajorityPercent(ctx)) {
+			providersToPunish = []string{}
+		}
+		providersToPunish = append(providersToPunish, ConflictVote.FirstProvider.Account, ConflictVote.SecondProvider.Account)
+	}
+
 	//4) reward voters and providers
 	//5) punish fraud providers and voters that didnt vote
 	//6) cleanup storage
+	k.RemoveConflictVote(ctx, ConflictVote.Index)
 	//7) unstake punished providers
 	//8) event?
 }

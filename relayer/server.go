@@ -4,7 +4,6 @@ import (
 	"bytes"
 	gobytes "bytes"
 	context "context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -418,14 +419,10 @@ func voteEventHandler(ctx context.Context, voteID uint64, chainID string, apiURL
 		SendVoteReveal(voteID, vote)
 	} else {
 		// new vote
-		found := false
+
 		//try to find this provider in the jury
-		for _, voterAddr := range voters {
-			if voterAddr == g_sentry.Acc {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(voters, g_sentry.Acc)
+
 		if !found {
 			// this is a new vote but not for us
 			return
@@ -444,11 +441,11 @@ func voteEventHandler(ctx context.Context, voteID uint64, chainID string, apiURL
 		}
 		nonce := rand.Int63()
 		replyDataHash := sigs.HashMsg(reply.Data)
-		nonceBytes := make([]byte, 8)
-		binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
-		commitHash := sigs.HashMsg(bytes.Join([][]byte{replyDataHash, nonceBytes}, nil))
+		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash)
+
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
+
 		SendVoteCommitment(voteID, vote)
 	}
 }
