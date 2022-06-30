@@ -32,7 +32,7 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	}
 
 	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash)
-	if bytes.Equal(commitHash, conflictVote.VotersHash[msg.Creator].Hash) {
+	if !bytes.Equal(commitHash, conflictVote.VotersHash[msg.Creator].Hash) {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider reveal does not match the commit")
 	}
 

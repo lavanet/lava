@@ -82,13 +82,14 @@ func (p Params) String() string {
 
 // validateMajorityPercent validates the MajorityPercent param
 func validateMajorityPercent(v interface{}) error {
-	majorityPercent, ok := v.(string)
+	majorityPercent, ok := v.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	// TODO implement validation
-	_ = majorityPercent
+	if majorityPercent.GT(sdk.OneDec()) || majorityPercent.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter majorityPercent")
+	}
 
 	return nil
 }

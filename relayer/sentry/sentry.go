@@ -501,8 +501,8 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					}
 					chainID := e.Events[eventToListen+".chainID"][idx]
 					apiURL := e.Events[eventToListen+".apiURL"][idx]
-					requestData := []byte(e.Events[eventToListen+"requestData"][idx])
-					num_str := e.Events[eventToListen+"requestBlock"][idx]
+					requestData := []byte(e.Events[eventToListen+".requestData"][idx])
+					num_str := e.Events[eventToListen+".requestBlock"][idx]
 					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
 						log.Printf("Error: requested block could not be parsed as uint64 %s\n", num_str)
@@ -790,7 +790,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	return wrap, index, nil
 }
 
-func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, reply1 *pairingtypes.RelayReply) (ok bool) {
+func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
 	compare_result := bytes.Compare(reply0.Data, reply1.Data)
 	if compare_result == 0 {
 		//they have equal data
@@ -798,7 +798,9 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	//they have different data! report!
 	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s\nReporting...", reply0.Data, reply1.Data))
-	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
+	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
+		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
+	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -977,7 +979,7 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error),
+	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory, // TODO::
 ) (*pairingtypes.RelayReply, error) {
 	//
@@ -1019,8 +1021,10 @@ func (s *Sentry) SendRelay(
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
-	if err != nil && clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-		s.movePairingEntryToPurge(wrap, index)
+	if err != nil {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			s.movePairingEntryToPurge(wrap, index) //TODO fix this
+		}
 		return reply, err
 	}
 
@@ -1075,13 +1079,13 @@ func (s *Sentry) SendRelay(
 			// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
 			// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
 
-			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
+			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
 				if address != "" && address != providerAcc {
 					wrap, index, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
 						log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
-						return nil, err
+						return nil, nil, err
 					} else {
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
 						if canSendReliability {
@@ -1097,17 +1101,17 @@ func (s *Sentry) SendRelay(
 								Sig:         nil,                                //calculated in cb_send_reliability
 							}
 							clientSession = getClientSessionFromWrap(wrap)
-							relay_rep, err = cb_send_reliability(clientSession, dataReliability)
+							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
 								log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
 								s.movePairingEntryToPurge(wrap, index)
-								return nil, err
+								return nil, nil, err
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-							return relay_rep, nil
+							return relay_rep, relay_req, nil
 						} else {
 							log.Println("Reliability already Sent in this epoch to this provider")
-							return nil, nil
+							return nil, nil, nil
 						}
 					}
 				} else {
@@ -1115,24 +1119,24 @@ func (s *Sentry) SendRelay(
 						//send reliability on the client's expense
 						log.Println("secure flag Not Implemented, TODO:")
 					}
-					return nil, fmt.Errorf("is not a valid reliability VRF address result")
+					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result")
 				}
 			}
 
 			checkReliability := func() {
-				reply0, err0 := sendReliabilityRelay(address0, false)
-				reply1, err1 := sendReliabilityRelay(address1, true)
+				reply0, request0, err0 := sendReliabilityRelay(address0, false)
+				reply1, request1, err1 := sendReliabilityRelay(address1, true)
 				ok := true
 				check0 := err0 == nil && reply0 != nil
 				check1 := err1 == nil && reply1 != nil
 				if check0 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, reply0)
+					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply0, request0)
 				}
 				if check1 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, reply1)
+					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply1, request1)
 				}
 				if !ok && check0 && check1 {
-					s.CompareRelaysAndReportConflict(reply0, reply1)
+					s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
 				}
 				if (ok && check0) || (ok && check1) {
 					log.Printf("[+] Reliability verified and Okay! ----\n\n")

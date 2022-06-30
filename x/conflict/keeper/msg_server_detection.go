@@ -48,6 +48,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VoteStartBlock = uint64(ctx.BlockHeight())
 		conflictVote.VoteDeadline = k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, conflictVote.VoteStartBlock+k.VotePeriod(ctx)*k.Keeper.epochstorageKeeper.EpochBlocks(ctx))
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl
+		conflictVote.ClientAddress = msg.Creator
 		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.ChainID
 		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock)
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.Data

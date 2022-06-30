@@ -28756,14 +28756,17 @@ paths:
                   properties:
                     index:
                       type: string
+                    clientAddress:
+                      type: string
                     voteDeadline:
                       type: string
-                      format: int64
+                      format: uint64
                     voteStartBlock:
                       type: string
+                      format: uint64
+                    voteState:
+                      type: string
                       format: int64
-                    voteIsCommit:
-                      type: boolean
                     chainID:
                       type: string
                     apiUrl:
@@ -28773,7 +28776,7 @@ paths:
                       format: byte
                     requestBlock:
                       type: string
-                      format: int64
+                      format: uint64
                     firstProvider:
                       type: object
                       properties:
@@ -28793,8 +28796,14 @@ paths:
                     votersHash:
                       type: object
                       additionalProperties:
-                        type: string
-                        format: byte
+                        type: object
+                        properties:
+                          Hash:
+                            type: string
+                            format: byte
+                          Result:
+                            type: string
+                            format: int64
               pagination:
                 type: object
                 properties:
@@ -28914,14 +28923,17 @@ paths:
                 properties:
                   index:
                     type: string
+                  clientAddress:
+                    type: string
                   voteDeadline:
                     type: string
-                    format: int64
+                    format: uint64
                   voteStartBlock:
                     type: string
+                    format: uint64
+                  voteState:
+                    type: string
                     format: int64
-                  voteIsCommit:
-                    type: boolean
                   chainID:
                     type: string
                   apiUrl:
@@ -28931,7 +28943,7 @@ paths:
                     format: byte
                   requestBlock:
                     type: string
-                    format: int64
+                    format: uint64
                   firstProvider:
                     type: object
                     properties:
@@ -28951,8 +28963,14 @@ paths:
                   votersHash:
                     type: object
                     additionalProperties:
-                      type: string
-                      format: byte
+                      type: object
+                      properties:
+                        Hash:
+                          type: string
+                          format: byte
+                        Result:
+                          type: string
+                          format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -28994,6 +29012,12 @@ paths:
                 properties:
                   majorityPercent:
                     type: string
+                  voteStartSpan:
+                    type: string
+                    format: uint64
+                  votePeriod:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51222,14 +51246,17 @@ definitions:
     properties:
       index:
         type: string
+      clientAddress:
+        type: string
       voteDeadline:
         type: string
-        format: int64
+        format: uint64
       voteStartBlock:
         type: string
+        format: uint64
+      voteState:
+        type: string
         format: int64
-      voteIsCommit:
-        type: boolean
       chainID:
         type: string
       apiUrl:
@@ -51239,7 +51266,7 @@ definitions:
         format: byte
       requestBlock:
         type: string
-        format: int64
+        format: uint64
       firstProvider:
         type: object
         properties:
@@ -51259,8 +51286,14 @@ definitions:
       votersHash:
         type: object
         additionalProperties:
-          type: string
-          format: byte
+          type: object
+          properties:
+            Hash:
+              type: string
+              format: byte
+            Result:
+              type: string
+              format: int64
   lavanet.lava.conflict.FinalizationConflict:
     type: object
     properties:
@@ -51317,6 +51350,12 @@ definitions:
     properties:
       majorityPercent:
         type: string
+      voteStartSpan:
+        type: string
+        format: uint64
+      votePeriod:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.conflict.Provider:
     type: object
@@ -51336,14 +51375,17 @@ definitions:
           properties:
             index:
               type: string
+            clientAddress:
+              type: string
             voteDeadline:
               type: string
-              format: int64
+              format: uint64
             voteStartBlock:
               type: string
+              format: uint64
+            voteState:
+              type: string
               format: int64
-            voteIsCommit:
-              type: boolean
             chainID:
               type: string
             apiUrl:
@@ -51353,7 +51395,7 @@ definitions:
               format: byte
             requestBlock:
               type: string
-              format: int64
+              format: uint64
             firstProvider:
               type: object
               properties:
@@ -51373,8 +51415,14 @@ definitions:
             votersHash:
               type: object
               additionalProperties:
-                type: string
-                format: byte
+                type: object
+                properties:
+                  Hash:
+                    type: string
+                    format: byte
+                  Result:
+                    type: string
+                    format: int64
       pagination:
         type: object
         properties:
@@ -51408,14 +51456,17 @@ definitions:
         properties:
           index:
             type: string
+          clientAddress:
+            type: string
           voteDeadline:
             type: string
-            format: int64
+            format: uint64
           voteStartBlock:
             type: string
+            format: uint64
+          voteState:
+            type: string
             format: int64
-          voteIsCommit:
-            type: boolean
           chainID:
             type: string
           apiUrl:
@@ -51425,7 +51476,7 @@ definitions:
             format: byte
           requestBlock:
             type: string
-            format: int64
+            format: uint64
           firstProvider:
             type: object
             properties:
@@ -51445,8 +51496,14 @@ definitions:
           votersHash:
             type: object
             additionalProperties:
-              type: string
-              format: byte
+              type: object
+              properties:
+                Hash:
+                  type: string
+                  format: byte
+                Result:
+                  type: string
+                  format: int64
   lavanet.lava.conflict.QueryParamsResponse:
     type: object
     properties:
@@ -51456,6 +51513,12 @@ definitions:
         properties:
           majorityPercent:
             type: string
+          voteStartSpan:
+            type: string
+            format: uint64
+          votePeriod:
+            type: string
+            format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.conflict.ResponseConflict:
     type: object
@@ -51638,6 +51701,15 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+  lavanet.lava.conflict.Vote:
+    type: object
+    properties:
+      Hash:
+        type: string
+        format: byte
+      Result:
+        type: string
+        format: int64
   lavanet.lava.pairing.QualityOfServiceReport:
     type: object
     properties:

@@ -510,6 +510,7 @@ func Server(
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
+	g_votes = map[uint64]*voteData{}
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
