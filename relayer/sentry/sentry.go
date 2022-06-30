@@ -1078,15 +1078,15 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
-	// log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	// s.pairingMu.Lock()
-	// s.pairingPurgeLock.Lock()
-	// defer s.pairingMu.Unlock()
-	// defer s.pairingPurgeLock.Unlock()
-	// //move to purge list
-	// s.pairingPurge = append(s.pairingPurge, wrap)
-	// s.pairing[index] = s.pairing[len(s.pairing)-1]
-	// s.pairing = s.pairing[:len(s.pairing)-1]
+	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
+	s.pairingMu.Lock()
+	s.pairingPurgeLock.Lock()
+	defer s.pairingMu.Unlock()
+	defer s.pairingPurgeLock.Unlock()
+	//move to purge list
+	s.pairingPurge = append(s.pairingPurge, wrap)
+	s.pairing[index] = s.pairing[len(s.pairing)-1]
+	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
 func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {
