@@ -2,7 +2,6 @@ package chainsentry
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -27,21 +26,6 @@ type ChainSentry struct {
 	// Spec blockQueueMu (rw mutex)
 	blockQueueMu sync.RWMutex
 	blocksQueue  []string
-}
-
-type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-type jsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
 }
 
 func (cs *ChainSentry) GetLatestBlockNum() int64 {
@@ -111,8 +95,8 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 
 	// TODO:: dont lock for this entire process. create a temp list and replace blocksqueue. like in sentry service api
 	if cs.latestBlockNum != latestBlock {
-		cs.blockQueueMu.Lock()
 
+		tempArr := cs.blocksQueue // should copy array
 		prevLatestBlock := cs.GetLatestBlockNum()
 		// Get all missing blocks
 		i := prevLatestBlock + 1
@@ -121,21 +105,23 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 		}
 
 		for ; i <= latestBlock; i++ {
-			blockData, err := cs.fetchBlockHashByNum(ctx, i)
+			blockHash, err := cs.fetchBlockHashByNum(ctx, i)
 			if err != nil {
 				log.Fatalln("error: Start", err)
 				return err
 			}
 
-			cs.blocksQueue = append(cs.blocksQueue, blockData) //save entire block data for now
+			tempArr = append(tempArr, blockHash)
 		}
 
 		// remove the first entries from the queue (oldest ones)
-		if len(cs.blocksQueue) > cs.numFinalBlocks {
-			cs.blocksQueue = cs.blocksQueue[(len(cs.blocksQueue) - cs.numFinalBlocks):]
+		if len(tempArr) > cs.numFinalBlocks {
+			tempArr = tempArr[(len(tempArr) - cs.numFinalBlocks):]
 		}
-		log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
+		cs.blockQueueMu.Lock()
+		cs.blocksQueue = tempArr
 		atomic.StoreInt64(&cs.latestBlockNum, latestBlock)
+		log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
 		cs.blockQueueMu.Unlock()
 	}
 	return nil
