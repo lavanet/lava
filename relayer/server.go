@@ -49,6 +49,7 @@ type UserSessions struct {
 	MaxComputeUnits  uint64
 	DataReliability  *pairingtypes.VRFData
 	VrfPk            utils.VrfPubKey
+	IsBlackListed    bool
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -56,6 +57,7 @@ type RelaySession struct {
 	UniqueIdentifier   uint64
 	Lock               sync.Mutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
+	RelayNum           uint64
 }
 
 type relayServer struct {
@@ -184,25 +186,41 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	userSessions := g_sessions[userAddr]
+
+	if userSessions.IsBlackListed {
+		return nil, nil, fmt.Errorf("User blacklisted! userAddr: %s", userAddr)
+	}
+
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr]}
+		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0}
 	}
 
 	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest) error {
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, in.SessionId, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
+	// Check that relaynum gets incremented by user
+	if sess.RelayNum+1 != request.RelayNum {
+		// log.Printf("provider returned wrong relaynum  sessionid: %d, relaynum: %d\n", session.SessionId, session.RelayNum)
+		g_sessions_mutex.Lock()
+		defer g_sessions_mutex.Unlock()
+		sess.userSessionsParent.IsBlackListed = true
+		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
+	}
+
+	sess.RelayNum = sess.RelayNum + 1
+
+	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, sess.CuSum, request.CuSum)
 
 	//
 	// TODO: do we worry about overflow here?
-	if sess.CuSum >= in.CuSum {
+	if sess.CuSum >= request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	if sess.CuSum+serviceApi.ComputeUnits != in.CuSum {
+	if sess.CuSum+serviceApi.ComputeUnits != request.CuSum {
 		return errors.New("bad cu sum")
 	}
 	if sess.userSessionsParent.UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.MaxComputeUnits {
@@ -210,7 +228,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *p
 	}
 
 	sess.userSessionsParent.UsedComputeUnits = sess.userSessionsParent.UsedComputeUnits + serviceApi.ComputeUnits
-	sess.CuSum = in.CuSum
+	sess.CuSum = request.CuSum
 
 	return nil
 }
@@ -252,10 +270,14 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	if request.DataReliability != nil {
+		g_sessions_mutex.Lock()
 		//data reliability message
 		if relaySession.userSessionsParent.DataReliability != nil {
 			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
 		}
+
+		g_sessions_mutex.Unlock()
+
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
 			return nil, fmt.Errorf("dataReliability Triggered with vrf_pk == nil")
@@ -276,8 +298,13 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		//TODO: verify reliability result corresponds to this provider
 
 		log.Println("server got valid DataReliability request")
+
+		g_sessions_mutex.Lock()
+
 		//will get some rewards for this
 		relaySession.userSessionsParent.DataReliability = request.DataReliability
+		g_sessions_mutex.Unlock()
+
 	} else {
 		// Update session
 		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)

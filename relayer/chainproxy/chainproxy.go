@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -128,7 +129,10 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *clientSession.Client.Client
 
-		reply, err := c.Relay(ctx, relayRequest)
+		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		reply, err := c.Relay(connectCtx, relayRequest)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -205,5 +209,7 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 	clientSession.CuSum += apiCu
 	clientSession.Client.UsedComputeUnits += apiCu
 	clientSession.RelayNum += 1
+
+	fmt.Printf("Client session relaynum += 1 id: %d, relaynum: %d\n", clientSession.SessionId, clientSession.RelayNum)
 	return nil
 }
