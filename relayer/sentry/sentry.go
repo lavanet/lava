@@ -722,6 +722,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string) error {
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
+	maxBlockNum := int64(0)
 	for blockNum, _ := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
 			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
@@ -729,6 +730,10 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		}
 
 		sorted[idx] = blockNum
+
+		if blockNum > maxBlockNum {
+			maxBlockNum = blockNum
+		}
 		idx++
 		// check blockhash length and format?
 	}
@@ -742,7 +747,11 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		}
 	}
 
-	// TODO check that latest finalized block address + 1 points to a non finalized block
+	// check that latest finalized block address + 1 points to a non finalized block
+	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
+		// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
+		return errors.New("provider returned Finalized hashes fot an older latest block")
+	}
 
 	// New reply should have blocknum >= from block same provider
 	consensus := s.getConsensusByProvider(providerAcc)
