@@ -33,15 +33,14 @@ import (
 )
 
 var (
-	g_privKey         *btcSecp256k1.PrivateKey
-	g_sessions        map[string]*UserSessions
-	g_sessions_mutex  sync.Mutex
-	g_sentry          *sentry.Sentry
-	g_serverChainID   string
-	g_txFactory       tx.Factory
-	g_chainProxy      chainproxy.ChainProxy
-	g_chainSentry     *chainsentry.ChainSentry
-	g_latestBlockHash string
+	g_privKey        *btcSecp256k1.PrivateKey
+	g_sessions       map[string]*UserSessions
+	g_sessions_mutex sync.Mutex
+	g_sentry         *sentry.Sentry
+	g_serverChainID  string
+	g_txFactory      tx.Factory
+	g_chainProxy     chainproxy.ChainProxy
+	g_chainSentry    *chainsentry.ChainSentry
 )
 
 type UserSessions struct {

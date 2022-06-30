@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,8 +18,6 @@ const PENDING_BLOCK int64 = -4
 const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
-	Winter       = 2
-	Spring       = 3
 )
 
 type RPCInput interface {
@@ -64,8 +63,6 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		retval, err = ParseDictionary(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_ORDERED:
 		retval, err = ParseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
-	// case spectypes.PARSER_FUNC_PARSE_PLAIN:
-	// retval, err = ParsePlain(rpcInput, blockParser.ParserArg, dataSource)
 
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
@@ -95,8 +92,12 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 		return NOT_APPLICABLE, err
 	}
 
-	blockstr := result[0].(string)
-	if strings.Contains(result[0].(string), "\"") {
+	blockstr, ok := result[0].(string)
+	if !ok {
+		return NOT_APPLICABLE, errors.New("block number is not string parseable")
+	}
+
+	if strings.Contains(blockstr, "\"") {
 		blockstr, err = strconv.Unquote(blockstr)
 		if err != nil {
 			return NOT_APPLICABLE, err
@@ -119,12 +120,10 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) ([]interface{}, error) {
 	case PARSE_RESULT:
 		interfaceArr := []interface{}{}
 		var data map[string]interface{}
-		bleh := rpcInput.GetResult()
-		err := json.Unmarshal(bleh, &data)
+		unmarshalled := rpcInput.GetResult()
+		err := json.Unmarshal(unmarshalled, &data)
 		if err != nil {
-			// fmt.Printf("error: chainSentry block fetcher", err)
-			// return nil, err
-			interfaceArr = append(interfaceArr, bleh)
+			interfaceArr = append(interfaceArr, unmarshalled)
 		} else {
 			interfaceArr = append(interfaceArr, data)
 		}
@@ -146,7 +145,6 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
 	}
 
-	//rpcInput.GetDataToParse
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
@@ -163,10 +161,16 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	return retArr, nil
 }
 
+//expect input to be keys[a,b,c] and a canonical object such as
+// {
+//   "a": {
+//       "b": {
+//          "c": "wanted result"
+//        }
+//    }
+// }
+// should output an interface array with "wanted result" in first index 0
 func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	// if len(input) != 2 {
-	// 	return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
-	// }
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
