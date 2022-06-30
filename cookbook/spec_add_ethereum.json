@@ -6,19 +6,26 @@
       "chainid": "ETH1",
       "name": "Ethereum Mainnet",
       "enabled": true,
-      "reliability_threshold" : 268435455,
+      "reliability_threshold": 268435455,
       "compares_hashes": true,
       "finalization_criteria": 7,
       "saved_blocks": 3,
       "apis": [
         {
           "name": "rpc_modules",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -26,16 +33,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_post",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -43,16 +57,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_version",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -60,16 +81,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_hasIdentity",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -77,16 +105,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_newIdentity",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -94,16 +129,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_newGroup",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -111,16 +153,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_addToGroup",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -128,16 +177,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_newFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -145,16 +201,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_uninstallFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -162,16 +225,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_getFilterChanges",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -179,16 +249,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "shh_getMessages",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -196,16 +273,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "db_putString",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -213,16 +297,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "db_putHex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -230,16 +321,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "db_getHex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -247,16 +345,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "db_getString",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -264,16 +369,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_submitWork",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -281,16 +393,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_submitHashrate",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -298,16 +417,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "net_version",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -315,16 +441,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_chainId",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -332,16 +465,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_syncing",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -349,16 +489,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_protocolVersion",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -366,16 +513,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_mining",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -383,16 +537,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_hashrate",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -400,16 +561,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_coinbase",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -417,16 +585,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "net_listening",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -434,16 +609,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "net_peerCount",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "1",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -451,16 +633,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_uninstallFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": false,
           "apiInterfaces": [
             {
@@ -468,16 +657,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_accounts",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -485,16 +681,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_blockNumber",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -503,57 +706,80 @@
               "extra_compute_units": "0"
             }
           ],
-          "parsing": { 
-            "function_template":  "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+          "parsing": {
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
             "function_tag": "getBlockNumber",
             "result_parsing": {
-              "parserArg": ["0"],
+              "parserArg": [
+                "0"
+              ],
               "parserFunc": "PARSE_BY_ARG"
             }
           }
         },
         {
           "name": "eth_subscribe",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": false,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_unsubscribe",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": false,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_feeHistory",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -561,16 +787,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_maxPriorityFeePerGas",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -578,16 +811,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_createAccessList",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -595,16 +835,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getTransactionReceipt",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -612,16 +859,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getCompilers",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -629,16 +883,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getWork",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -646,16 +907,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_compileSolidity",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -663,16 +931,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_compileLLL",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -680,16 +955,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getUncleByBlockHashAndIndex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -697,16 +979,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getUncleByBlockNumberAndIndex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -714,16 +1003,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getTransactionByBlockHashAndIndex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -731,16 +1027,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getTransactionByBlockNumberAndIndex",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -748,16 +1051,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getUncleCountByBlockHash",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -765,16 +1075,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getUncleCountByBlockNumber",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -782,16 +1099,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "web3_clientVersion",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -799,16 +1123,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "web3_sha3",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "15",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "15",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -816,16 +1147,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getBlockByNumber",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "16",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "16",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -834,23 +1172,33 @@
               "extra_compute_units": "0"
             }
           ],
-          "parsing": { 
+          "parsing": {
             "function_tag": "getBlockByNumber",
-            "function_template":  "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
             "result_parsing": {
-              "parserArg": ["0", "hash"],
+              "parserArg": [
+                "0",
+                "hash"
+              ],
               "parserFunc": "PARSE_CANONICAL"
-            }  
+            }
           }
         },
         {
           "name": "eth_getStorageAt",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["2"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "17",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "2"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -858,16 +1206,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getTransactionByHash",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "17",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -875,16 +1230,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_get",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "17",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "17",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -892,16 +1254,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "alchemy_getTokenAllowance",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "19",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -909,16 +1278,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_gasPrice",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "19",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -926,16 +1302,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getBalance",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["1"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "19",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "1"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -943,16 +1326,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getCode",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["1"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "19",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "1"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "19",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -960,16 +1350,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_sign",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -977,16 +1374,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_signTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -994,16 +1398,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_sendTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1011,84 +1422,120 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getFilterChanges",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "20",
           "enabled": true,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_newBlockFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "20",
           "enabled": true,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_newFilter",
-          "category":{"deterministic":false,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0","toBlock"],
-						"parserFunc": "PARSE_CANONICAL"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0",
+              "toBlock"
+            ],
+            "parserFunc": "PARSE_CANONICAL"
+          },
+          "compute_units": "20",
           "enabled": true,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_newPendingTransactionFilter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "20",
           "enabled": true,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getBlockTransactionCountByHash",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1096,16 +1543,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getBlockTransactionCountByNumber",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "20",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1113,16 +1567,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getProof",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "21",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1130,16 +1591,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getBlockByHash",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "21",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "21",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1147,16 +1615,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_block",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "24",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "24",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1164,16 +1639,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getTransactionCount",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["1"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "26",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "1"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1181,16 +1663,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_call",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["1"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "26",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "1"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1198,16 +1687,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_transaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "26",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "26",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1215,33 +1711,48 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getFilterLogs",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "75",
           "enabled": false,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_getLogs",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["0","toBlock"],
-						"parserFunc": "PARSE_CANONICAL"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0",
+              "toBlock"
+            ],
+            "parserFunc": "PARSE_CANONICAL"
+          },
+          "compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1249,16 +1760,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_call",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1266,16 +1784,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_callMany",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1283,16 +1808,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_rawTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "75",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1300,33 +1832,47 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_filter",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "75",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "75",
           "enabled": false,
-           "apiInterfaces": [
+          "apiInterfaces": [
             {
               "interface": "jsonrpc",
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_estimateGas",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "87",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "87",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1334,16 +1880,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_sendRawTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "250",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "250",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1351,16 +1904,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "debug_traceTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "309",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "309",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1368,16 +1928,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_replayTransaction",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "2983",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1385,16 +1952,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "trace_replayBlockTransactions",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "2983",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "2983",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1402,7 +1976,7 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         }
       ]
     },
@@ -1410,16 +1984,23 @@
       "chainid": "ETH4",
       "name": "Ethereum Rinkeby",
       "enabled": true,
-      "reliability_threshold" : 268435455,
+      "reliability_threshold": 268435455,
       "apis": [
         {
           "name": "eth_getBalance",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": ["1"],
-						"parserFunc": "PARSE_BY_ARG"
-					},
-					"compute_units": "10",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "1"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
           "enabled": true,
           "apiInterfaces": [
             {
@@ -1427,16 +2008,23 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         },
         {
           "name": "eth_codeAt",
-          "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-					"compute_units": "20",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "20",
           "enabled": false,
           "apiInterfaces": [
             {
@@ -1444,7 +2032,7 @@
               "type": "get",
               "extra_compute_units": "0"
             }
-          ] 
+          ]
         }
       ]
     }
