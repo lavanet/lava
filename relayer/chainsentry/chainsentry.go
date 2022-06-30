@@ -94,7 +94,6 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	}
 
 	if cs.latestBlockNum != latestBlock {
-
 		tempArr := cs.blocksQueue // should copy array
 		prevLatestBlock := cs.GetLatestBlockNum()
 		// Get all missing blocks

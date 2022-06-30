@@ -210,6 +210,5 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 	clientSession.Client.UsedComputeUnits += apiCu
 	clientSession.RelayNum += 1
 
-	fmt.Printf("Client session relaynum += 1 id: %d, relaynum: %d\n", clientSession.SessionId, clientSession.RelayNum)
 	return nil
 }
