@@ -45,11 +45,11 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit
-		conflictVote.VoteStartBlock = ctx.BlockHeight()
-		//conflictVote.VoteDeadline = ??
+		conflictVote.VoteStartBlock = uint64(ctx.BlockHeight())
+		conflictVote.VoteDeadline = k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, conflictVote.VoteStartBlock+k.VotePeriod(ctx)*k.Keeper.epochstorageKeeper.EpochBlocks(ctx))
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl
 		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.ChainID
-		conflictVote.RequestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock
+		conflictVote.RequestBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock)
 		conflictVote.RequestData = msg.ResponseConflict.ConflictRelayData0.Request.Data
 
 		conflictVote.FirstProvider.Account = msg.ResponseConflict.ConflictRelayData0.Request.Provider
@@ -69,8 +69,8 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData["chainID"] = conflictVote.ChainID
 		eventData["apiURL"] = conflictVote.ApiUrl
 		eventData["requestData"] = string(conflictVote.RequestData)
-		eventData["requestBlock"] = strconv.FormatInt(conflictVote.RequestBlock, 10)
-		eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
+		eventData["requestBlock"] = strconv.FormatUint(conflictVote.RequestBlock, 10)
+		eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
 
 		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Got a new valid conflict detection from consumer, starting new vote")

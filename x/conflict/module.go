@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -17,7 +16,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/client/cli"
 	"github.com/lavanet/lava/x/conflict/keeper"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -169,23 +167,13 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	logger := am.keeper.Logger(ctx)
-
 	if am.keeper.IsEpochStart(ctx) {
 		conflictVotes := am.keeper.GetAllConflictVote(ctx)
 		for _, conflictVote := range conflictVotes {
-			if conflictVote.VoteDeadline >= ctx.BlockHeight() {
+			if conflictVote.VoteDeadline <= uint64(ctx.BlockHeight()) {
 				switch conflictVote.VoteState {
 				case types.StateCommit:
-					conflictVote.VoteState = types.StateReveal
-					//conflictVote.VoteDeadline = ??
-					am.keeper.SetConflictVote(ctx, conflictVote)
-
-					eventData := map[string]string{}
-					eventData["voteID"] = conflictVote.Index
-					eventData["voteDeadline"] = strconv.FormatInt(conflictVote.VoteDeadline, 10)
-					utils.LogLavaEvent(ctx, logger, types.ConflictVoteRevealEventName, eventData, "Vote is now in reveal state")
-
+					am.keeper.TransitionVoteToReveal(ctx, conflictVote)
 				case types.StateReveal:
 					am.keeper.HandleAndCloseVote(ctx, conflictVote)
 				}

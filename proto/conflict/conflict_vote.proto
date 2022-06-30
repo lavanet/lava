@@ -17,13 +17,13 @@ message Vote {
 message ConflictVote {
   string index = 1; 
   string clientAddress = 2;
-  int64 voteDeadline = 3; 
-  int64 voteStartBlock = 4;
+  uint64 voteDeadline = 3; 
+  uint64 voteStartBlock = 4;
   int64 voteState = 5; 
   string chainID = 6; 
   string apiUrl = 7; 
   bytes requestData = 8; 
-  int64 requestBlock = 9;
+  uint64 requestBlock = 9;
   Provider firstProvider = 10 [(gogoproto.nullable) = false]; 
   Provider secondProvider = 11 [(gogoproto.nullable) = false]; 
   map<string, Vote> votersHash = 13[(gogoproto.nullable) = false]; 

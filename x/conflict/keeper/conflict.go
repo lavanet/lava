@@ -3,16 +3,11 @@ package keeper
 import (
 	"bytes"
 	"fmt"
-	"math/big"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"golang.org/x/exp/slices"
 )
 
 func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
@@ -44,7 +39,18 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if conflictData.ConflictRelayData0.Request.RequestBlock != conflictData.ConflictRelayData1.Request.RequestBlock {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RequestBlock, conflictData.ConflictRelayData1.Request.RequestBlock)
 	}
+
+	//1.5 validate params
 	epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
+	if conflictData.ConflictRelayData0.Request.RequestBlock < 0 {
+		return fmt.Errorf("invalid request block height %d", conflictData.ConflictRelayData0.Request.RequestBlock)
+	}
+
+	span := k.VoteStartSpan(ctx) * k.epochstorageKeeper.EpochBlocks(ctx)
+	if uint64(ctx.BlockHeight())-epochStart <= span {
+		return fmt.Errorf("conflict was recieved outside of the allowed span, current: %d, span %d - %d", ctx.BlockHeight(), epochStart, epochStart+span)
+	}
+
 	k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
 	//2. validate signer
 	clientEntry, err := k.epochstorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epochStart)
@@ -142,129 +148,4 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 
 func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
 	return nil
-}
-
-func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
-	found := false
-	var index uint64 = 0
-	var sIndex string
-	for !found {
-		index++
-		sIndex = strconv.FormatUint(index, 10)
-		_, found = k.GetConflictVote(ctx, sIndex)
-	}
-	return sIndex
-}
-
-func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
-	logger := k.Logger(ctx)
-	//all wrong voters are punished
-	//add stake as wieght
-	//votecounts is bigint
-	//valid only if one of the votes is bigger than 50% from total
-	//punish providers that didnt vote - discipline/jail + bail = 20%stake + slash 5%stake
-	//(dont add jailed providers to voters)
-	//if strong majority punish wrong providers - jail from start of memory to end + slash 100%stake
-	//reward pool is the slashed amount from all punished providers
-	//reward to stake - client 50%, the original provider 10%, 20% the voters
-
-	totalVotes := big.NewInt(0)
-	firstProviderVotes := big.NewInt(0)
-	secondProviderVotes := big.NewInt(0)
-	noneProviderVotes := big.NewInt(0)
-	var providersWithoutVote []string
-	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
-
-	//count votes and punish jury that didnt vote
-	for address, vote := range ConflictVote.VotersHash {
-		stake := big.NewInt(0) //find the real stake for each provider
-		totalVotes.Add(totalVotes, stake)
-		switch vote.Result {
-		case types.Provider0:
-			firstProviderVotes.Add(firstProviderVotes, stake)
-		case types.Provider1:
-			firstProviderVotes.Add(secondProviderVotes, stake)
-		case types.None:
-			noneProviderVotes.Add(noneProviderVotes, stake)
-		default:
-			providersWithoutVote = append(providersWithoutVote, address)
-			bail := big.NewInt(0)
-			bail.Div(stake, big.NewInt(5))
-			k.pairingKeeper.JailEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, 0, 0, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromBigInt(bail)))
-			slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(5, 2))
-			rewardPool.Add(slashed)
-			if err != nil {
-				details := map[string]string{"address": address}
-				utils.LogLavaEvent(ctx, logger, "slash_failed", details, "slashing failed at vote conflict")
-			}
-		}
-	}
-
-	halfTotalVotes := big.NewInt(0)
-	halfTotalVotes.Div(totalVotes, big.NewInt(2))
-	if firstProviderVotes.Cmp(halfTotalVotes) > 0 || secondProviderVotes.Cmp(halfTotalVotes) > 0 || noneProviderVotes.Cmp(halfTotalVotes) > 0 {
-		//we have enough votes for a valid vote
-		//find the winner
-		var winner int64
-		var winnersAddr string
-		if firstProviderVotes.Cmp(secondProviderVotes) > 0 && firstProviderVotes.Cmp(noneProviderVotes) > 0 {
-			winner = types.Provider0
-			winnersAddr = ConflictVote.FirstProvider.Account
-		} else if secondProviderVotes.Cmp(noneProviderVotes) > 0 {
-			winner = types.Provider1
-			winnersAddr = ConflictVote.SecondProvider.Account
-		} else {
-			winner = types.None
-		}
-
-		//punish the frauds and fill the reward pool
-		for address, vote := range ConflictVote.VotersHash {
-			if vote.Result != winner && !slices.Contains(providersWithoutVote, address) {
-				slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
-				rewardPool.Add(slashed)
-				if err != nil {
-					details := map[string]string{"address": address}
-					utils.LogLavaEvent(ctx, logger, "slash_failed", details, "slashing failed at vote conflict")
-				}
-			}
-			//unstake provider??
-		}
-
-		//give reward
-		rewardPerVoter := rewardPool.Amount.BigInt()
-		rewardPerVoter.Div(rewardPerVoter, big.NewInt(int64(5*len(ConflictVote.VotersHash)))) //20% / len(voters)
-		for address, vote := range ConflictVote.VotersHash {
-			if vote.Result == winner {
-				entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(address))
-				if found {
-					entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardPerVoter))
-					k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
-				}
-			}
-		}
-
-		if winner != types.None {
-			rewardProvider := rewardPool.Amount.BigInt()
-			rewardProvider.Div(rewardProvider, big.NewInt(10)) //10%
-			entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(winnersAddr))
-			if found {
-				entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardProvider))
-				k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
-			}
-		}
-	}
-
-	//reward client
-	rewardClient := rewardPool.Amount.BigInt()
-	rewardClient.Div(rewardClient, big.NewInt(2)) //50%
-	entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(ConflictVote.ClientAddress))
-	if found {
-		entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardClient))
-		k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
-	}
-
-	k.RemoveConflictVote(ctx, ConflictVote.Index)
-
-	eventData := map[string]string{"voteID": ConflictVote.Index}
-	utils.LogLavaEvent(ctx, logger, types.ConflictVoteResolvedEventName, eventData, "conflict detection resolved")
 }

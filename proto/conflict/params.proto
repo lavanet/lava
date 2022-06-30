@@ -14,4 +14,6 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
     ];
+  uint64 voteStartSpan = 2;
+  uint64 votePeriod = 3;
 }

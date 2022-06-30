@@ -11,9 +11,18 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMajorityPercent = []byte("MajorityPercent")
-	// TODO: Determine the default value
+	KeyMajorityPercent             = []byte("MajorityPercent")
 	DefaultMajorityPercent sdk.Dec = sdk.NewDecWithPrec(95, 2)
+)
+
+var (
+	KeyVoteStartSpan            = []byte("VoteStartSpan")
+	DefaultVoteStartSpan uint64 = 3
+)
+
+var (
+	KeyVotePeriod            = []byte("VotePeriod")
+	DefaultVotePeriod uint64 = 2
 )
 
 // ParamKeyTable the param key table for launch module
@@ -23,10 +32,11 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent sdk.Dec,
-) Params {
+	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64) Params {
 	return Params{
 		MajorityPercent: majorityPercent,
+		VoteStartSpan:   voteStartSpan,
+		VotePeriod:      votePeriod,
 	}
 }
 
@@ -34,6 +44,8 @@ func NewParams(
 func DefaultParams() Params {
 	return NewParams(
 		DefaultMajorityPercent,
+		DefaultVoteStartSpan,
+		DefaultVotePeriod,
 	)
 }
 
@@ -41,6 +53,8 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyMajorityPercent, &p.MajorityPercent, validateMajorityPercent),
+		paramtypes.NewParamSetPair(KeyVoteStartSpan, &p.VoteStartSpan, validateVoteStartSpan),
+		paramtypes.NewParamSetPair(KeyVotePeriod, &p.VotePeriod, validateVotePeriod),
 	}
 }
 
@@ -50,6 +64,13 @@ func (p Params) Validate() error {
 		return err
 	}
 
+	if err := validateVoteStartSpan(p.VoteStartSpan); err != nil {
+		return err
+	}
+
+	if err := validateVotePeriod(p.VotePeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -68,6 +89,30 @@ func validateMajorityPercent(v interface{}) error {
 
 	// TODO implement validation
 	_ = majorityPercent
+
+	return nil
+}
+
+func validateVoteStartSpan(v interface{}) error {
+	voteStartSpan, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = voteStartSpan
+
+	return nil
+}
+
+func validateVotePeriod(v interface{}) error {
+	votePeriod, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = votePeriod
 
 	return nil
 }

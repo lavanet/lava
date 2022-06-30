@@ -7,6 +7,8 @@ import (
 )
 
 type PairingKeeper interface {
+	UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error
+	CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin, isProvider bool) (bool, error)
 	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
 	JailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
 	BailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, bail sdk.Coin) error
@@ -14,7 +16,10 @@ type PairingKeeper interface {
 }
 
 type EpochstorageKeeper interface {
+	GetNextEpoch(ctx sdk.Context, epoch uint64) uint64
 	GetEpochStart(ctx sdk.Context) uint64
+	EpochBlocks(ctx sdk.Context) (res uint64)
+	BlocksToSave(ctx sdk.Context) (res uint64)
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64)
 	GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
