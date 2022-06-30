@@ -16,6 +16,7 @@ message Vote {
 
 message ConflictVote {
   string index = 1; 
+  string clientAddress = 2;
   int64 voteDeadline = 3; 
   int64 voteStartBlock = 4;
   int64 voteState = 5; 

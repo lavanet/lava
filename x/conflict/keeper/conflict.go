@@ -157,6 +157,7 @@ func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
 }
 
 func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
+	logger := k.Logger(ctx)
 	//all wrong voters are punished
 	//add stake as wieght
 	//votecounts is bigint
@@ -192,6 +193,10 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			k.pairingKeeper.JailEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, 0, 0, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromBigInt(bail)))
 			slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(5, 2))
 			rewardPool.Add(slashed)
+			if err != nil {
+				details := map[string]string{"address": address}
+				utils.LogLavaEvent(ctx, logger, "slash_failed", details, "slashing failed at vote conflict")
+			}
 		}
 	}
 
@@ -201,10 +206,13 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		//we have enough votes for a valid vote
 		//find the winner
 		var winner int64
+		var winnersAddr string
 		if firstProviderVotes.Cmp(secondProviderVotes) > 0 && firstProviderVotes.Cmp(noneProviderVotes) > 0 {
 			winner = types.Provider0
+			winnersAddr = ConflictVote.FirstProvider.Account
 		} else if secondProviderVotes.Cmp(noneProviderVotes) > 0 {
 			winner = types.Provider1
+			winnersAddr = ConflictVote.SecondProvider.Account
 		} else {
 			winner = types.None
 		}
@@ -214,23 +222,49 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			if vote.Result != winner && !slices.Contains(providersWithoutVote, address) {
 				slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
 				rewardPool.Add(slashed)
+				if err != nil {
+					details := map[string]string{"address": address}
+					utils.LogLavaEvent(ctx, logger, "slash_failed", details, "slashing failed at vote conflict")
+				}
 			}
 			//unstake provider??
 		}
 
+		//give reward
+		rewardPerVoter := rewardPool.Amount.BigInt()
+		rewardPerVoter.Div(rewardPerVoter, big.NewInt(int64(5*len(ConflictVote.VotersHash)))) //20% / len(voters)
 		for address, vote := range ConflictVote.VotersHash {
 			if vote.Result == winner {
-				slashed, err := k.pairingKeeper.SlashEntry(ctx, sdk.AccAddress(address), true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
-				rewardPool.Add(slashed)
+				entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(address))
+				if found {
+					entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardPerVoter))
+					k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
+				}
 			}
-			//unstake provider??
 		}
-		//4) reward voters and providers
+
+		if winner != types.None {
+			rewardProvider := rewardPool.Amount.BigInt()
+			rewardProvider.Div(rewardProvider, big.NewInt(10)) //10%
+			entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(winnersAddr))
+			if found {
+				entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardProvider))
+				k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
+			}
+		}
+	}
+
+	//reward client
+	rewardClient := rewardPool.Amount.BigInt()
+	rewardClient.Div(rewardClient, big.NewInt(2)) //50%
+	entry, found, indexFound := k.epochstorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, sdk.AccAddress(ConflictVote.ClientAddress))
+	if found {
+		entry.Stake = entry.Stake.AddAmount(sdk.NewIntFromBigInt(rewardClient))
+		k.epochstorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, ConflictVote.ChainID, entry, indexFound)
 	}
 
 	k.RemoveConflictVote(ctx, ConflictVote.Index)
 
-	logger := k.Logger(ctx)
 	eventData := map[string]string{"voteID": ConflictVote.Index}
 	utils.LogLavaEvent(ctx, logger, types.ConflictVoteResolvedEventName, eventData, "conflict detection resolved")
 }
