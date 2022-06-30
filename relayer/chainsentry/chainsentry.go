@@ -46,7 +46,7 @@ func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error
 	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
 
 	for i := 0; i < cs.numFinalBlocks; i++ {
-		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i)
+		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i+1)
 		hashes[blockNum] = cs.blocksQueue[i]
 	}
 	return latestBlockNum, hashes, nil
@@ -72,7 +72,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	cs.SetLatestBlockNum(latestBlock)
 	log.Printf("latest %v block %v", cs.ChainID, latestBlock)
 	cs.blockQueueMu.Lock()
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks); i <= latestBlock-int64(cs.finalizedBlockDistance)-1; i++ {
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock-int64(cs.finalizedBlockDistance); i++ {
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
 			log.Fatalln("error: Start", err)
@@ -93,7 +93,6 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 		log.Printf("error: chainSentry block fetcher", err)
 	}
 
-	// TODO:: dont lock for this entire process. create a temp list and replace blocksqueue. like in sentry service api
 	if cs.latestBlockNum != latestBlock {
 
 		tempArr := cs.blocksQueue // should copy array
