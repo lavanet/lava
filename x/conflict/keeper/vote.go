@@ -54,22 +54,22 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			continue
 		}
 		stake := entry.Stake.Amount
-		totalVotes.Add(stake)
+		totalVotes = totalVotes.Add(stake)
 		votersStake[address] = stake
 		switch vote.Result {
 		case types.Provider0:
-			firstProviderVotes.Add(stake)
+			firstProviderVotes = firstProviderVotes.Add(stake)
 		case types.Provider1:
-			firstProviderVotes.Add(stake)
+			secondProviderVotes = secondProviderVotes.Add(stake)
 		case types.None:
-			noneProviderVotes.Add(stake)
+			noneProviderVotes = noneProviderVotes.Add(stake)
 		default:
 			providersWithoutVote = append(providersWithoutVote, address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(5)) //20%
 			k.pairingKeeper.JailEntry(ctx, accAddress, true, ConflictVote.ChainID, uint64(ConflictVote.VoteStartBlock), ConflictVote.VoteStartBlock+k.epochstorageKeeper.BlocksToSave(ctx), sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
 			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, ConflictVote.ChainID, sdk.NewDecWithPrec(5, 2))
-			rewardPool.Add(slashed)
+			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
 				utils.LavaError(ctx, logger, "slash_failed_vote", map[string]string{"error": err.Error()}, "slashing failed at vote conflict")
 				continue
@@ -79,7 +79,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	eventData["NumOfNoneVoters"] = strconv.FormatInt(int64(len(providersWithoutVote)), 10)
 	eventData["NumOfVoters"] = strconv.FormatInt(int64(len(ConflictVote.VotersHash)-len(providersWithoutVote)), 10)
 
-	halfTotalVotes := totalVotes
+	halfTotalVotes := totalVotes.Quo(sdk.NewIntFromUint64(2))
 	halfTotalVotes.Quo(sdk.NewIntFromUint64(2))
 	if firstProviderVotes.GT(halfTotalVotes) || secondProviderVotes.GT(halfTotalVotes) || noneProviderVotes.GT(halfTotalVotes) {
 		//we have enough votes for a valid vote
@@ -114,7 +114,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 					continue
 				}
 				slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, ConflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
-				rewardPool.Add(slashed)
+				rewardPool = rewardPool.Add(slashed)
 				if err != nil {
 					utils.LavaError(ctx, logger, "slash_failed_vote", map[string]string{"error": err.Error()}, "slashing failed at vote conflict")
 				}
