@@ -13,12 +13,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	GET_BLOCKNUM                = "getBlockNumber"
-	GET_BLOCK_BY_NUM            = "getBlockByNumber"
-	DEFAULT_PARSED_RESULT_INDEX = 0
-)
-
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)

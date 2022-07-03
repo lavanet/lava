@@ -121,6 +121,8 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) ([]interface{}, error) {
 		interfaceArr := []interface{}{}
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
+
+		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
 		if err != nil {
 			interfaceArr = append(interfaceArr, unmarshalled)

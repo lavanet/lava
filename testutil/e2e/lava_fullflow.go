@@ -117,7 +117,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		strict:           true}
 	providersTest := TestProcess{
 		expectedEvents:   []string{"listening"},
-		unexpectedEvents: []string{},
+		unexpectedEvents: []string{"ERROR", "refused", "Missing Payment"},
 		tests:            tests(),
 		strict:           true}
 	clientTest := TestProcess{

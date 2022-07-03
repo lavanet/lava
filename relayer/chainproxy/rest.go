@@ -83,9 +83,9 @@ func (m RestMessage) ParseBlock(block string) (int64, error) {
 }
 
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(GET_BLOCK_BY_NUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM) //TODO:: move to const
 	if !ok {
-		return "", errors.New(GET_BLOCKNUM + " tag function not found")
+		return "", errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	var nodeMsg NodeMessage
@@ -112,13 +112,13 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
 }
 
 func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(GET_BLOCKNUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM) //TODO:: move to const
 	if !ok {
-		return parser.NOT_APPLICABLE, errors.New(GET_BLOCKNUM + " tag function not found")
+		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []byte{}

@@ -40,9 +40,9 @@ func (m TendemintRpcMessage) ParseBlock(inp string) (int64, error) {
 }
 
 func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(GET_BLOCKNUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM) //TODO:: move to const
 	if !ok {
-		return parser.NOT_APPLICABLE, errors.New(GET_BLOCKNUM + " tag function not found")
+		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []interface{}{}
@@ -65,9 +65,9 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 }
 
 func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(GET_BLOCK_BY_NUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM) //TODO:: move to const
 	if !ok {
-		return "", errors.New(GET_BLOCK_BY_NUM + " tag function not found")
+		return "", errors.New(spectypes.GET_BLOCK_BY_NUM + " tag function not found")
 	}
 
 	var nodeMsg NodeMessage
@@ -96,7 +96,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	hash, ok := blockData[DEFAULT_PARSED_RESULT_INDEX].(string)
+	hash, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
 	if !ok {
 		return "", errors.New("hash not string parseable")
 	}

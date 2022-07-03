@@ -5,6 +5,14 @@ import (
 	"encoding/json"
 )
 
+const (
+	GET_BLOCKNUM                = "getBlockNumber"
+	GET_BLOCK_BY_NUM            = "getBlockByNumber"
+	DEFAULT_PARSED_RESULT_INDEX = 0
+)
+
+var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
+
 //allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
