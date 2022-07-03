@@ -16,4 +16,19 @@ message Params {
     ];
   uint64 voteStartSpan = 2;
   uint64 votePeriod = 3;
+  string winnerRewardPrecent = 4[
+    (gogoproto.moretags) = "yaml:\"winner_reward_precent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string clientRewardPrecent = 5[
+    (gogoproto.moretags) = "yaml:\"client_reward_precent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string votersRewardPrecent = 6[
+    (gogoproto.moretags) = "yaml:\"voters_reward_precent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
 }

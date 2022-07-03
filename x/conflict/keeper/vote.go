@@ -128,8 +128,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		}
 
 		//give reward to voters
-		votersRewardPoolPrecentage := sdk.NewDecWithPrec(15, 2)                        //TODO param
-		rewardAllWinningVoters := votersRewardPoolPrecentage.MulInt(rewardPool.Amount) //15% / len(voters)
+		votersRewardPoolPrecentage := k.VotersRewardPrecent(ctx)
+		rewardAllWinningVoters := votersRewardPoolPrecentage.MulInt(rewardPool.Amount)
 		for address, vote := range ConflictVote.VotersHash {
 			if vote.Result == winner {
 				//calculate the reward for the voter relative part (rewardpool*stake/stakesum)
@@ -149,8 +149,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 
 		//reward winner provider
 		if winner != types.None {
-			winnerRewardPoolPrecentage := sdk.NewDecWithPrec(15, 2)              //TODO param
-			winnerReward := winnerRewardPoolPrecentage.MulInt(rewardPool.Amount) //15%
+			winnerRewardPoolPrecentage := k.WinnerRewardPrecent(ctx)
+			winnerReward := winnerRewardPoolPrecentage.MulInt(rewardPool.Amount)
 			accWinnerAddress, err := sdk.AccAddressFromBech32(winnersAddr)
 			if err != nil {
 				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "4")
@@ -166,8 +166,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	}
 
 	//reward client
-	clientRewardPoolPrecentage := sdk.NewDecWithPrec(50, 2)              //TODO param
-	clientReward := clientRewardPoolPrecentage.MulInt(rewardPool.Amount) //50%
+	clientRewardPoolPrecentage := k.ClientRewardPrecent(ctx)
+	clientReward := clientRewardPoolPrecentage.MulInt(rewardPool.Amount)
 	accClientAddress, err := sdk.AccAddressFromBech32(ConflictVote.ClientAddress)
 	if err != nil {
 		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "5")
