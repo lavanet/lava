@@ -66,7 +66,6 @@ type relayServer struct {
 
 func askForRewards() {
 	g_sessions_mutex.Lock()
-	defer g_sessions_mutex.Unlock()
 
 	if len(g_sessions) > 0 {
 		log.Printf("active sessions: ")
@@ -90,6 +89,7 @@ func askForRewards() {
 		for k, sess := range userSessions.Sessions {
 			sess.Lock.Lock()
 			if sess.Proof == nil {
+				sess.Lock.Unlock()
 				continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
 			}
 			relay := sess.Proof
@@ -113,6 +113,8 @@ func askForRewards() {
 			delete(g_sessions, user)
 		}
 	}
+	g_sessions_mutex.Unlock()
+
 	if len(relays) == 0 {
 		// no rewards to ask for
 		return
@@ -172,7 +174,9 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 }
 
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, *utils.VrfPubKey, error) {
+	log.Println("Lock g_sessions_mutex server 177")
 	g_sessions_mutex.Lock()
+	defer log.Println("unLock g_sessions_mutex server 177")
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
@@ -199,14 +203,13 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 }
 
 func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest) error {
+	g_sessions_mutex.Lock()
+	defer g_sessions_mutex.Unlock()
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
 	// Check that relaynum gets incremented by user
 	if sess.RelayNum+1 != request.RelayNum {
-		// log.Printf("provider returned wrong relaynum  sessionid: %d, relaynum: %d\n", session.SessionId, session.RelayNum)
-		g_sessions_mutex.Lock()
-		defer g_sessions_mutex.Unlock()
 		sess.userSessionsParent.IsBlackListed = true
 		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
 	}
@@ -273,6 +276,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		g_sessions_mutex.Lock()
 		//data reliability message
 		if relaySession.userSessionsParent.DataReliability != nil {
+			g_sessions_mutex.Unlock()
 			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
 		}
 
