@@ -62,7 +62,7 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 }
 
 func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
 		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
@@ -87,7 +87,7 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 }
 
 func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM) //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
 	if !ok {
 		return "", errors.New(spectypes.GET_BLOCK_BY_NUM + " tag function not found")
 	}

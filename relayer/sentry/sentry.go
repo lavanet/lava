@@ -717,7 +717,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 	return false, nil
 }
 
-func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string, session *ClientSession, request *pairingtypes.RelayRequest) error {
+func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string, session *ClientSession) error {
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
 	maxBlockNum := int64(0)
@@ -888,7 +888,7 @@ func (s *Sentry) SendRelay(
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
-		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession, request)
+		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
 			log.Println("Provider reply error, ", err)
 			return nil, err

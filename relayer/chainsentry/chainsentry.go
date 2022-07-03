@@ -90,7 +90,8 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx) // get actual latest from chain
 	if err != nil {
-		log.Printf("error: chainSentry block fetcher", err)
+		log.Printf("error: chainSentry block fetcher: %w", err)
+		return nil // fmt.Errorf("error: chainSentry block fetcher", err)
 	}
 
 	if cs.latestBlockNum != latestBlock {
@@ -105,7 +106,7 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 		for ; i <= latestBlock; i++ {
 			blockHash, err := cs.fetchBlockHashByNum(ctx, i)
 			if err != nil {
-				log.Fatalln("error: Start", err)
+				log.Printf("error fetching block hash for block %d: %w", i, err)
 				return err
 			}
 
