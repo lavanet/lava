@@ -584,7 +584,6 @@ func (s *Sentry) CheckAndMarkReliabilityForThisPairing(wrap *RelayerClientWrappe
 }
 
 func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerClientWrapper, int, error) {
-
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
@@ -602,7 +601,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 			// TODO: we should retry with another addr
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
-				return nil, -1, err
+				return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
 			}
 			wrap.Client = conn
 		}
@@ -631,8 +630,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
-
-			return nil, -1, err
+			return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
 		}
 		wrap.Client = conn
 	}
