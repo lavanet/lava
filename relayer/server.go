@@ -174,9 +174,7 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 }
 
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, *utils.VrfPubKey, error) {
-	log.Println("Lock g_sessions_mutex server 177")
 	g_sessions_mutex.Lock()
-	defer log.Println("unLock g_sessions_mutex server 177")
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
