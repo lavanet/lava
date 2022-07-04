@@ -28739,6 +28739,45 @@ paths:
           format: uint64
       tags:
         - Query
+  /lavanet/lava/conflict/params:
+    get:
+      summary: Parameters queries the parameters of the module.
+      operationId: LavanetLavaConflictParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                description: params holds all the parameters of this module.
+                type: object
+                properties:
+                  majorityPercent:
+                    type: string
+            description: >-
+              QueryParamsResponse is response type for the Query/Params RPC
+              method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
   /lavanet/lava/epochstorage/epoch_details:
     get:
       summary: Queries a EpochDetails by index.
@@ -28883,6 +28922,8 @@ paths:
                             type: string
                             format: uint64
                           chain:
+                            type: string
+                          vrfpk:
                             type: string
               pagination:
                 type: object
@@ -29045,6 +29086,8 @@ paths:
                           type: string
                           format: uint64
                         chain:
+                          type: string
+                        vrfpk:
                           type: string
         default:
           description: An unexpected error response.
@@ -29315,6 +29358,8 @@ paths:
                       type: string
                       format: uint64
                     chain:
+                      type: string
+                    vrfpk:
                       type: string
               output:
                 type: string
@@ -29602,6 +29647,8 @@ paths:
                       format: uint64
                     chain:
                       type: string
+                    vrfpk:
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -29669,6 +29716,8 @@ paths:
                   unpayLimit:
                     type: string
                   slashLimit:
+                    type: string
+                  dataReliabilityReward:
                     type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
@@ -29744,6 +29793,8 @@ paths:
                       type: string
                       format: uint64
                     chain:
+                      type: string
+                    vrfpk:
                       type: string
               output:
                 type: string
@@ -29945,17 +29996,59 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/user_max_cu/{address}/{chainID}':
+  '/lavanet/lava/pairing/user_entry/{address}/{chainID}':
     get:
-      summary: Queries a list of UserMaxCu items.
-      operationId: LavanetLavaPairingUserMaxCu
+      summary: Queries a UserEntry items.
+      operationId: LavanetLavaPairingUserEntry
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              maxCu:
+              consumer:
+                type: object
+                properties:
+                  stake:
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
+                  address:
+                    type: string
+                  deadline:
+                    type: string
+                    format: uint64
+                  endpoints:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        iPPORT:
+                          type: string
+                        useType:
+                          type: string
+                        geolocation:
+                          type: string
+                          format: uint64
+                  geolocation:
+                    type: string
+                    format: uint64
+                  chain:
+                    type: string
+                  vrfpk:
+                    type: string
+              maxCU:
                 type: string
                 format: uint64
         default:
@@ -29985,6 +30078,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: block
+          in: query
+          required: false
+          type: string
+          format: uint64
       tags:
         - Query
   '/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}':
@@ -30001,6 +30099,9 @@ paths:
                 type: boolean
               overlap:
                 type: boolean
+              index:
+                type: string
+                format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30063,6 +30164,22 @@ paths:
                       properties:
                         name:
                           type: string
+                        blockParsing:
+                          type: object
+                          properties:
+                            parserArg:
+                              type: array
+                              items:
+                                type: string
+                            parserFunc:
+                              type: string
+                              enum:
+                                - EMPTY
+                                - PARSE_BY_ARG
+                                - PARSE_CANONICAL
+                                - PARSE_DICTIONARY
+                                - PARSE_DICTIONARY_OR_ORDERED
+                              default: EMPTY
                         computeUnits:
                           type: string
                           format: uint64
@@ -30080,8 +30197,54 @@ paths:
                               extraComputeUnits:
                                 type: string
                                 format: uint64
+                        category:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                        parsing:
+                          type: object
+                          properties:
+                            function_tag:
+                              type: string
+                            function_template:
+                              type: string
+                            result_parsing:
+                              type: object
+                              properties:
+                                parserArg:
+                                  type: array
+                                  items:
+                                    type: string
+                                parserFunc:
+                                  type: string
+                                  enum:
+                                    - EMPTY
+                                    - PARSE_BY_ARG
+                                    - PARSE_CANONICAL
+                                    - PARSE_DICTIONARY
+                                    - PARSE_DICTIONARY_OR_ORDERED
+                                  default: EMPTY
                   enabled:
                     type: boolean
+                  reliabilityThreshold:
+                    type: integer
+                    format: int64
+                  comparesHashes:
+                    type: boolean
+                  finalizationCriteria:
+                    type: integer
+                    format: int64
+                  saved_blocks:
+                    type: integer
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30176,6 +30339,22 @@ paths:
                         properties:
                           name:
                             type: string
+                          blockParsing:
+                            type: object
+                            properties:
+                              parserArg:
+                                type: array
+                                items:
+                                  type: string
+                              parserFunc:
+                                type: string
+                                enum:
+                                  - EMPTY
+                                  - PARSE_BY_ARG
+                                  - PARSE_CANONICAL
+                                  - PARSE_DICTIONARY
+                                  - PARSE_DICTIONARY_OR_ORDERED
+                                default: EMPTY
                           computeUnits:
                             type: string
                             format: uint64
@@ -30193,8 +30372,54 @@ paths:
                                 extraComputeUnits:
                                   type: string
                                   format: uint64
+                          category:
+                            type: object
+                            properties:
+                              deterministic:
+                                type: boolean
+                              local:
+                                type: boolean
+                              subscription:
+                                type: boolean
+                              stateful:
+                                type: integer
+                                format: int64
+                          parsing:
+                            type: object
+                            properties:
+                              function_tag:
+                                type: string
+                              function_template:
+                                type: string
+                              result_parsing:
+                                type: object
+                                properties:
+                                  parserArg:
+                                    type: array
+                                    items:
+                                      type: string
+                                  parserFunc:
+                                    type: string
+                                    enum:
+                                      - EMPTY
+                                      - PARSE_BY_ARG
+                                      - PARSE_CANONICAL
+                                      - PARSE_DICTIONARY
+                                      - PARSE_DICTIONARY_OR_ORDERED
+                                    default: EMPTY
                     enabled:
                       type: boolean
+                    reliabilityThreshold:
+                      type: integer
+                      format: int64
+                    comparesHashes:
+                      type: boolean
+                    finalizationCriteria:
+                      type: integer
+                      format: int64
+                    saved_blocks:
+                      type: integer
+                      format: int64
               pagination:
                 type: object
                 properties:
@@ -30323,6 +30548,22 @@ paths:
                       properties:
                         name:
                           type: string
+                        blockParsing:
+                          type: object
+                          properties:
+                            parserArg:
+                              type: array
+                              items:
+                                type: string
+                            parserFunc:
+                              type: string
+                              enum:
+                                - EMPTY
+                                - PARSE_BY_ARG
+                                - PARSE_CANONICAL
+                                - PARSE_DICTIONARY
+                                - PARSE_DICTIONARY_OR_ORDERED
+                              default: EMPTY
                         computeUnits:
                           type: string
                           format: uint64
@@ -30340,8 +30581,54 @@ paths:
                               extraComputeUnits:
                                 type: string
                                 format: uint64
+                        category:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                        parsing:
+                          type: object
+                          properties:
+                            function_tag:
+                              type: string
+                            function_template:
+                              type: string
+                            result_parsing:
+                              type: object
+                              properties:
+                                parserArg:
+                                  type: array
+                                  items:
+                                    type: string
+                                parserFunc:
+                                  type: string
+                                  enum:
+                                    - EMPTY
+                                    - PARSE_BY_ARG
+                                    - PARSE_CANONICAL
+                                    - PARSE_DICTIONARY
+                                    - PARSE_DICTIONARY_OR_ORDERED
+                                  default: EMPTY
                   enabled:
                     type: boolean
+                  reliabilityThreshold:
+                    type: integer
+                    format: int64
+                  comparesHashes:
+                    type: boolean
+                  finalizationCriteria:
+                    type: integer
+                    format: int64
+                  saved_blocks:
+                    type: integer
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -50576,6 +50863,24 @@ definitions:
     description: |-
       Version defines the versioning scheme used to negotiate the IBC verison in
       the connection handshake.
+  lavanet.lava.conflict.MsgDetectionResponse:
+    type: object
+  lavanet.lava.conflict.Params:
+    type: object
+    properties:
+      majorityPercent:
+        type: string
+    description: Params defines the parameters for the module.
+  lavanet.lava.conflict.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        description: params holds all the parameters of this module.
+        type: object
+        properties:
+          majorityPercent:
+            type: string
+    description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -50659,6 +50964,8 @@ definitions:
                     type: string
                     format: uint64
                   chain:
+                    type: string
+                  vrfpk:
                     type: string
       pagination:
         type: object
@@ -50747,6 +51054,8 @@ definitions:
                   format: uint64
                 chain:
                   type: string
+                vrfpk:
+                  type: string
   lavanet.lava.epochstorage.QueryParamsResponse:
     type: object
     properties:
@@ -50801,6 +51110,8 @@ definitions:
         format: uint64
       chain:
         type: string
+      vrfpk:
+        type: string
   lavanet.lava.epochstorage.StakeStorage:
     type: object
     properties:
@@ -50847,6 +51158,8 @@ definitions:
               type: string
               format: uint64
             chain:
+              type: string
+            vrfpk:
               type: string
   lavanet.lava.pairing.ClientPaymentStorage:
     type: object
@@ -50934,6 +51247,8 @@ definitions:
       unpayLimit:
         type: string
       slashLimit:
+        type: string
+      dataReliabilityReward:
         type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
@@ -51131,6 +51446,8 @@ definitions:
               format: uint64
             chain:
               type: string
+            vrfpk:
+              type: string
       output:
         type: string
   lavanet.lava.pairing.QueryGetClientPaymentStorageResponse:
@@ -51233,6 +51550,8 @@ definitions:
               format: uint64
             chain:
               type: string
+            vrfpk:
+              type: string
   lavanet.lava.pairing.QueryGetUniquePaymentStorageClientProviderResponse:
     type: object
     properties:
@@ -51278,6 +51597,8 @@ definitions:
           unpayLimit:
             type: string
           slashLimit:
+            type: string
+          dataReliabilityReward:
             type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
@@ -51325,12 +51646,56 @@ definitions:
               format: uint64
             chain:
               type: string
+            vrfpk:
+              type: string
       output:
         type: string
-  lavanet.lava.pairing.QueryUserMaxCuResponse:
+  lavanet.lava.pairing.QueryUserEntryResponse:
     type: object
     properties:
-      maxCu:
+      consumer:
+        type: object
+        properties:
+          stake:
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
+          address:
+            type: string
+          deadline:
+            type: string
+            format: uint64
+          endpoints:
+            type: array
+            items:
+              type: object
+              properties:
+                iPPORT:
+                  type: string
+                useType:
+                  type: string
+                geolocation:
+                  type: string
+                  format: uint64
+          geolocation:
+            type: string
+            format: uint64
+          chain:
+            type: string
+          vrfpk:
+            type: string
+      maxCU:
         type: string
         format: uint64
   lavanet.lava.pairing.QueryVerifyPairingResponse:
@@ -51340,6 +51705,9 @@ definitions:
         type: boolean
       overlap:
         type: boolean
+      index:
+        type: string
+        format: int64
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -51347,6 +51715,18 @@ definitions:
         type: string
         format: byte
       sig:
+        type: string
+        format: byte
+      nonce:
+        type: integer
+        format: int64
+      latest_block:
+        type: string
+        format: int64
+      finalized_blocks_hashes:
+        type: string
+        format: byte
+      sig_blocks:
         type: string
         format: byte
   lavanet.lava.pairing.RelayRequest:
@@ -51376,6 +51756,35 @@ definitions:
       block_height:
         type: string
         format: int64
+      relay_num:
+        type: string
+        format: uint64
+      request_block:
+        type: string
+        format: int64
+      DataReliability:
+        type: object
+        properties:
+          differentiator:
+            type: boolean
+          vrf_value:
+            type: string
+            format: byte
+          vrf_proof:
+            type: string
+            format: byte
+          provider_sig:
+            type: string
+            format: byte
+          allDataHash:
+            type: string
+            format: byte
+          queryHash:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -51387,6 +51796,29 @@ definitions:
       usedCU:
         type: string
         format: uint64
+  lavanet.lava.pairing.VRFData:
+    type: object
+    properties:
+      differentiator:
+        type: boolean
+      vrf_value:
+        type: string
+        format: byte
+      vrf_proof:
+        type: string
+        format: byte
+      provider_sig:
+        type: string
+        format: byte
+      allDataHash:
+        type: string
+        format: byte
+      queryHash:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
   lavanet.lava.spec.ApiInterface:
     type: object
     properties:
@@ -51397,6 +51829,31 @@ definitions:
       extraComputeUnits:
         type: string
         format: uint64
+  lavanet.lava.spec.BlockParser:
+    type: object
+    properties:
+      parserArg:
+        type: array
+        items:
+          type: string
+      parserFunc:
+        type: string
+        enum:
+          - EMPTY
+          - PARSE_BY_ARG
+          - PARSE_CANONICAL
+          - PARSE_DICTIONARY
+          - PARSE_DICTIONARY_OR_ORDERED
+        default: EMPTY
+  lavanet.lava.spec.PARSER_FUNC:
+    type: string
+    enum:
+      - EMPTY
+      - PARSE_BY_ARG
+      - PARSE_CANONICAL
+      - PARSE_DICTIONARY
+      - PARSE_DICTIONARY_OR_ORDERED
+    default: EMPTY
   lavanet.lava.spec.Params:
     type: object
     properties:
@@ -51407,6 +51864,29 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
+  lavanet.lava.spec.Parsing:
+    type: object
+    properties:
+      function_tag:
+        type: string
+      function_template:
+        type: string
+      result_parsing:
+        type: object
+        properties:
+          parserArg:
+            type: array
+            items:
+              type: string
+          parserFunc:
+            type: string
+            enum:
+              - EMPTY
+              - PARSE_BY_ARG
+              - PARSE_CANONICAL
+              - PARSE_DICTIONARY
+              - PARSE_DICTIONARY_OR_ORDERED
+            default: EMPTY
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
     properties:
@@ -51426,6 +51906,22 @@ definitions:
                 properties:
                   name:
                     type: string
+                  blockParsing:
+                    type: object
+                    properties:
+                      parserArg:
+                        type: array
+                        items:
+                          type: string
+                      parserFunc:
+                        type: string
+                        enum:
+                          - EMPTY
+                          - PARSE_BY_ARG
+                          - PARSE_CANONICAL
+                          - PARSE_DICTIONARY
+                          - PARSE_DICTIONARY_OR_ORDERED
+                        default: EMPTY
                   computeUnits:
                     type: string
                     format: uint64
@@ -51443,8 +51939,54 @@ definitions:
                         extraComputeUnits:
                           type: string
                           format: uint64
+                  category:
+                    type: object
+                    properties:
+                      deterministic:
+                        type: boolean
+                      local:
+                        type: boolean
+                      subscription:
+                        type: boolean
+                      stateful:
+                        type: integer
+                        format: int64
+                  parsing:
+                    type: object
+                    properties:
+                      function_tag:
+                        type: string
+                      function_template:
+                        type: string
+                      result_parsing:
+                        type: object
+                        properties:
+                          parserArg:
+                            type: array
+                            items:
+                              type: string
+                          parserFunc:
+                            type: string
+                            enum:
+                              - EMPTY
+                              - PARSE_BY_ARG
+                              - PARSE_CANONICAL
+                              - PARSE_DICTIONARY
+                              - PARSE_DICTIONARY_OR_ORDERED
+                            default: EMPTY
             enabled:
               type: boolean
+            reliabilityThreshold:
+              type: integer
+              format: int64
+            comparesHashes:
+              type: boolean
+            finalizationCriteria:
+              type: integer
+              format: int64
+            saved_blocks:
+              type: integer
+              format: int64
       pagination:
         type: object
         properties:
@@ -51487,6 +52029,22 @@ definitions:
               properties:
                 name:
                   type: string
+                blockParsing:
+                  type: object
+                  properties:
+                    parserArg:
+                      type: array
+                      items:
+                        type: string
+                    parserFunc:
+                      type: string
+                      enum:
+                        - EMPTY
+                        - PARSE_BY_ARG
+                        - PARSE_CANONICAL
+                        - PARSE_DICTIONARY
+                        - PARSE_DICTIONARY_OR_ORDERED
+                      default: EMPTY
                 computeUnits:
                   type: string
                   format: uint64
@@ -51504,8 +52062,54 @@ definitions:
                       extraComputeUnits:
                         type: string
                         format: uint64
+                category:
+                  type: object
+                  properties:
+                    deterministic:
+                      type: boolean
+                    local:
+                      type: boolean
+                    subscription:
+                      type: boolean
+                    stateful:
+                      type: integer
+                      format: int64
+                parsing:
+                  type: object
+                  properties:
+                    function_tag:
+                      type: string
+                    function_template:
+                      type: string
+                    result_parsing:
+                      type: object
+                      properties:
+                        parserArg:
+                          type: array
+                          items:
+                            type: string
+                        parserFunc:
+                          type: string
+                          enum:
+                            - EMPTY
+                            - PARSE_BY_ARG
+                            - PARSE_CANONICAL
+                            - PARSE_DICTIONARY
+                            - PARSE_DICTIONARY_OR_ORDERED
+                          default: EMPTY
           enabled:
             type: boolean
+          reliabilityThreshold:
+            type: integer
+            format: int64
+          comparesHashes:
+            type: boolean
+          finalizationCriteria:
+            type: integer
+            format: int64
+          saved_blocks:
+            type: integer
+            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:
@@ -51523,6 +52127,22 @@ definitions:
               properties:
                 name:
                   type: string
+                blockParsing:
+                  type: object
+                  properties:
+                    parserArg:
+                      type: array
+                      items:
+                        type: string
+                    parserFunc:
+                      type: string
+                      enum:
+                        - EMPTY
+                        - PARSE_BY_ARG
+                        - PARSE_CANONICAL
+                        - PARSE_DICTIONARY
+                        - PARSE_DICTIONARY_OR_ORDERED
+                      default: EMPTY
                 computeUnits:
                   type: string
                   format: uint64
@@ -51540,8 +52160,54 @@ definitions:
                       extraComputeUnits:
                         type: string
                         format: uint64
+                category:
+                  type: object
+                  properties:
+                    deterministic:
+                      type: boolean
+                    local:
+                      type: boolean
+                    subscription:
+                      type: boolean
+                    stateful:
+                      type: integer
+                      format: int64
+                parsing:
+                  type: object
+                  properties:
+                    function_tag:
+                      type: string
+                    function_template:
+                      type: string
+                    result_parsing:
+                      type: object
+                      properties:
+                        parserArg:
+                          type: array
+                          items:
+                            type: string
+                        parserFunc:
+                          type: string
+                          enum:
+                            - EMPTY
+                            - PARSE_BY_ARG
+                            - PARSE_CANONICAL
+                            - PARSE_DICTIONARY
+                            - PARSE_DICTIONARY_OR_ORDERED
+                          default: EMPTY
           enabled:
             type: boolean
+          reliabilityThreshold:
+            type: integer
+            format: int64
+          comparesHashes:
+            type: boolean
+          finalizationCriteria:
+            type: integer
+            format: int64
+          saved_blocks:
+            type: integer
+            format: int64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
@@ -51561,6 +52227,22 @@ definitions:
     properties:
       name:
         type: string
+      blockParsing:
+        type: object
+        properties:
+          parserArg:
+            type: array
+            items:
+              type: string
+          parserFunc:
+            type: string
+            enum:
+              - EMPTY
+              - PARSE_BY_ARG
+              - PARSE_CANONICAL
+              - PARSE_DICTIONARY
+              - PARSE_DICTIONARY_OR_ORDERED
+            default: EMPTY
       computeUnits:
         type: string
         format: uint64
@@ -51578,6 +52260,41 @@ definitions:
             extraComputeUnits:
               type: string
               format: uint64
+      category:
+        type: object
+        properties:
+          deterministic:
+            type: boolean
+          local:
+            type: boolean
+          subscription:
+            type: boolean
+          stateful:
+            type: integer
+            format: int64
+      parsing:
+        type: object
+        properties:
+          function_tag:
+            type: string
+          function_template:
+            type: string
+          result_parsing:
+            type: object
+            properties:
+              parserArg:
+                type: array
+                items:
+                  type: string
+              parserFunc:
+                type: string
+                enum:
+                  - EMPTY
+                  - PARSE_BY_ARG
+                  - PARSE_CANONICAL
+                  - PARSE_DICTIONARY
+                  - PARSE_DICTIONARY_OR_ORDERED
+                default: EMPTY
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -51592,6 +52309,22 @@ definitions:
           properties:
             name:
               type: string
+            blockParsing:
+              type: object
+              properties:
+                parserArg:
+                  type: array
+                  items:
+                    type: string
+                parserFunc:
+                  type: string
+                  enum:
+                    - EMPTY
+                    - PARSE_BY_ARG
+                    - PARSE_CANONICAL
+                    - PARSE_DICTIONARY
+                    - PARSE_DICTIONARY_OR_ORDERED
+                  default: EMPTY
             computeUnits:
               type: string
               format: uint64
@@ -51609,5 +52342,63 @@ definitions:
                   extraComputeUnits:
                     type: string
                     format: uint64
+            category:
+              type: object
+              properties:
+                deterministic:
+                  type: boolean
+                local:
+                  type: boolean
+                subscription:
+                  type: boolean
+                stateful:
+                  type: integer
+                  format: int64
+            parsing:
+              type: object
+              properties:
+                function_tag:
+                  type: string
+                function_template:
+                  type: string
+                result_parsing:
+                  type: object
+                  properties:
+                    parserArg:
+                      type: array
+                      items:
+                        type: string
+                    parserFunc:
+                      type: string
+                      enum:
+                        - EMPTY
+                        - PARSE_BY_ARG
+                        - PARSE_CANONICAL
+                        - PARSE_DICTIONARY
+                        - PARSE_DICTIONARY_OR_ORDERED
+                      default: EMPTY
       enabled:
         type: boolean
+      reliabilityThreshold:
+        type: integer
+        format: int64
+      comparesHashes:
+        type: boolean
+      finalizationCriteria:
+        type: integer
+        format: int64
+      saved_blocks:
+        type: integer
+        format: int64
+  lavanet.lava.spec.SpecCategory:
+    type: object
+    properties:
+      deterministic:
+        type: boolean
+      local:
+        type: boolean
+      subscription:
+        type: boolean
+      stateful:
+        type: integer
+        format: int64

@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,6 +16,8 @@ import (
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
+	RequestedBlock() int64
+	GetMsg() interface{}
 }
 
 type ChainProxy interface {
@@ -22,6 +25,8 @@ type ChainProxy interface {
 	GetSentry() *sentry.Sentry
 	ParseMsg(string, []byte) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
+	FetchLatestBlockNum(ctx context.Context) (int64, error)
+	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
 
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
@@ -36,6 +41,44 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainPro
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
 
+func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, comparesHashes bool) error {
+
+	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+	if err != nil {
+		return err
+	}
+	serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+	if err != nil {
+		return err
+	}
+	if serverAddr.String() != addr {
+		return fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), addr)
+	}
+
+	if comparesHashes {
+		strAdd, err := sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return err
+		}
+		serverKey, err = sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest, strAdd)
+		if err != nil {
+			return err
+		}
+
+		serverAddr, err = sdk.AccAddressFromHex(serverKey.Address().String())
+		if err != nil {
+			return err
+		}
+
+		if serverAddr.String() != strAdd.String() {
+			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), strAdd.String())
+		}
+	}
+
+	return nil
+}
+
+// Client requests and queries
 func SendRelay(
 	ctx context.Context,
 	cp ChainProxy,
@@ -50,51 +93,101 @@ func SendRelay(
 	if err != nil {
 		return nil, err
 	}
-
-	//
-	//
-	reply, err := cp.GetSentry().SendRelay(ctx, func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, error) {
+	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
+	requestedBlock := int64(0)
+	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+
+		blockHeight = cp.GetSentry().GetBlockHeight()
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:        clientSession.Client.Acc,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(clientSession.SessionId),
+			ChainID:         cp.GetSentry().ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     blockHeight,
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    nodeMsg.RequestedBlock(),
+			DataReliability: nil,
+		}
+
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.Sig = sig
+		c := *clientSession.Client.Client
+
+		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		reply, err := c.Relay(connectCtx, relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		//update relay request requestedBlock to the provided one in case it was arbitrary
+		sentry.UpdateRequestedBlock(relayRequest, reply)
+		requestedBlock = relayRequest.RequestBlock
+
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return reply, relayRequest, nil
+	}
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error) {
+		//client session is locked here
+
+		if blockHeight < 0 {
+			return nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:    clientSession.Client.Acc,
-			ApiUrl:      url,
-			Data:        []byte(req),
-			SessionId:   uint64(clientSession.SessionId),
-			ChainID:     cp.GetSentry().ChainID,
-			CuSum:       clientSession.CuSum,
-			BlockHeight: cp.GetSentry().GetBlockHeight(),
+			Provider:        clientSession.Client.Acc,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(0), //sessionID for reliability is 0
+			ChainID:         cp.GetSentry().ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     blockHeight,
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    requestedBlock,
+			DataReliability: dataReliability,
 		}
 
-		sig, err := sigs.SignRelay(privKey, []byte(relayRequest.String()))
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, err
 		}
 		relayRequest.Sig = sig
 
+		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
+		if err != nil {
+			return nil, err
+		}
+		relayRequest.DataReliability.Sig = sig
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, err
 		}
-		serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply)
+
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, err
-		}
-		serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
-		if err != nil {
-			return nil, err
-		}
-		if serverAddr.String() != clientSession.Client.Acc {
-			return nil, fmt.Errorf("server address mismatch in reply (%s) (%s)", serverAddr.String(), clientSession.Client.Acc)
 		}
 
 		return reply, nil
-	})
+	}
+	//
+	//
+	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 
 	return reply, err
 }
@@ -109,6 +202,7 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 
 	clientSession.CuSum += apiCu
 	clientSession.Client.UsedComputeUnits += apiCu
+	clientSession.RelayNum += 1
 
 	return nil
 }

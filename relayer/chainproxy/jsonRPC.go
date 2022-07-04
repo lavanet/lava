@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -21,7 +22,7 @@ type jsonError struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-type jsonrpcMessage struct {
+type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
@@ -31,9 +32,18 @@ type jsonrpcMessage struct {
 }
 
 type JrpcMessage struct {
-	cp         *JrpcChainProxy
-	serviceApi *spectypes.ServiceApi
-	msg        *jsonrpcMessage
+	cp             *JrpcChainProxy
+	serviceApi     *spectypes.ServiceApi
+	msg            *JsonrpcMessage
+	requestedBlock int64
+}
+
+func (j *JrpcMessage) GetMsg() interface{} {
+	return j.msg
+}
+
+func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
+	j.msg.Result = result
 }
 
 type JrpcChainProxy struct {
@@ -49,6 +59,79 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 		nConns:  nConns,
 		sentry:  sentry,
 	}
+}
+
+func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
+	if !ok {
+		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
+	}
+
+	params := []interface{}{}
+	nodeMsg, err := cp.NewMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	blocknum, err := parser.ParseBlockFromReply(nodeMsg.msg, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	return blocknum, nil
+}
+
+func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
+	if !ok {
+		return "", errors.New(spectypes.GET_BLOCK_BY_NUM + " tag function not found")
+	}
+
+	var nodeMsg NodeMessage
+	var err error
+	if serviceApi.GetParsing().FunctionTemplate != "" {
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)))
+	} else {
+		params := make([]interface{}, 0)
+		params = append(params, blockNum)
+		nodeMsg, err = cp.NewMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return "", err
+	}
+	// log.Println("%s", reply)
+
+	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", err
+	}
+
+	// blockData is an interface array with the parsed result in index 0.
+	// we know to expect a string result for a hash.
+	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+}
+
+func (cp JsonrpcMessage) GetParams() []interface{} {
+	return cp.Params
+}
+
+func (cp JsonrpcMessage) GetResult() json.RawMessage {
+	return cp.Result
+}
+
+func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
+	return parser.ParseDefaultBlockParameter(inp)
 }
 
 func (cp *JrpcChainProxy) GetSentry() *sentry.Sentry {
@@ -78,22 +161,46 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
 	//
 	// Unmarshal request
-	var msg jsonrpcMessage
+	var msg JsonrpcMessage
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
 		return nil, err
 	}
-
 	//
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
 		return nil, err
 	}
+	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+	if err != nil {
+		return nil, err
+	}
 	nodeMsg := &JrpcMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		msg:        &msg,
+		cp:             cp,
+		serviceApi:     serviceApi,
+		msg:            &msg,
+		requestedBlock: requestedBlock,
+	}
+	return nodeMsg, nil
+}
+
+func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*JrpcMessage, error) {
+	serviceApi, err := cp.getSupportedApi(method)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeMsg := &JrpcMessage{
+		cp:             cp,
+		serviceApi:     serviceApi,
+		requestedBlock: requestedBlock,
+		msg: &JsonrpcMessage{
+			Version: "2.0",
+			ID:      []byte("1"), //TODO:: use ids
+			Method:  method,
+			Params:  params,
+		},
 	}
 	return nodeMsg, nil
 }
@@ -165,6 +272,10 @@ func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *JrpcMessage) RequestedBlock() int64 {
+	return nm.requestedBlock
+}
+
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	//
 	// Get node
@@ -181,7 +292,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	//
 	// Wrap result back to json
-	replyMsg := jsonrpcMessage{
+	replyMsg := JsonrpcMessage{
 		Version: nm.msg.Version,
 		ID:      nm.msg.ID,
 	}
@@ -195,6 +306,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		}
 	} else {
 		replyMsg.Result = result
+		nm.msg.Result = result
 	}
 
 	data, err := json.Marshal(replyMsg)

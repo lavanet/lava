@@ -3,30 +3,40 @@ package chainproxy
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type RestMessage struct {
-	cp         *RestChainProxy
-	serviceApi *spectypes.ServiceApi
-	path       string
-	msg        []byte
+	cp             *RestChainProxy
+	serviceApi     *spectypes.ServiceApi
+	path           string
+	msg            []byte
+	requestedBlock int64
+	Result         json.RawMessage
 }
 
 type RestChainProxy struct {
 	nodeUrl string
 	sentry  *sentry.Sentry
+}
+
+func (r *RestMessage) GetMsg() interface{} {
+	return r.msg
 }
 
 func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
@@ -35,6 +45,99 @@ func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
 		nodeUrl: nodeUrl,
 		sentry:  sentry,
 	}
+}
+
+func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, error) {
+	//
+	// Check api is supported an save it in nodeMsg
+	serviceApi, err := cp.getSupportedApi(path)
+	if err != nil {
+		return nil, err
+	}
+	nodeMsg := &RestMessage{
+		cp:         cp,
+		serviceApi: serviceApi,
+		path:       path,
+		msg:        data,
+	}
+
+	return nodeMsg, nil
+}
+
+func (m RestMessage) GetParams() []interface{} {
+	retArr := make([]interface{}, 0)
+	retArr = append(retArr, m.msg)
+	return retArr
+}
+
+func (m RestMessage) GetResult() json.RawMessage {
+	return m.Result
+}
+
+func (m RestMessage) ParseBlock(block string) (int64, error) {
+	blockNum, err := strconv.ParseInt(block, 0, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
+	}
+	return blockNum, nil
+}
+
+func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
+	if !ok {
+		return "", errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
+	}
+
+	var nodeMsg NodeMessage
+	var err error
+	if serviceApi.GetParsing().FunctionTemplate != "" {
+		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil)
+	} else {
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	blockData, err := parser.ParseMessageResponse((nodeMsg.(*RestMessage)), serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return "", err
+	}
+
+	// blockData is an interface array with the parsed result in index 0.
+	// we know to expect a string result for a hash.
+	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+}
+
+func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
+	if !ok {
+		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
+	}
+
+	params := []byte{}
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	_, err = nodeMsg.Send(ctx)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	blocknum, err := parser.ParseBlockFromReply(nodeMsg, serviceApi.Parsing.ResultParsing)
+	if err != nil {
+		return parser.NOT_APPLICABLE, err
+	}
+
+	return blocknum, nil
 }
 
 func (cp *RestChainProxy) GetSentry() *sentry.Sentry {
@@ -109,6 +212,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	return
 }
 
+func (nm *RestMessage) RequestedBlock() int64 {
+	return nm.requestedBlock
+}
+
 func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
@@ -143,5 +250,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	reply := &pairingtypes.RelayReply{
 		Data: body,
 	}
+	nm.Result = body
 	return reply, nil
 }

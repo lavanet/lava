@@ -3,6 +3,7 @@ module github.com/lavanet/lava
 go 1.18
 
 require (
+	github.com/99designs/keyring v1.1.6
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cosmos/cosmos-sdk v0.45.5
 	github.com/cosmos/ibc-go/v3 v3.0.0
@@ -24,11 +25,14 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/golang/protobuf v1.5.2
+require (
+	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
+	github.com/golang/protobuf v1.5.2
+	github.com/spf13/pflag v1.0.5
+)
 
 require (
 	filippo.io/edwards25519 v1.0.0-beta.2 // indirect
-	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
@@ -153,7 +157,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.8.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect

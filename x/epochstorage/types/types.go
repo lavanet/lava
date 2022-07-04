@@ -15,6 +15,7 @@ func (stksto StakeStorage) Copy() (returnedStorage StakeStorage) {
 			Endpoints:   endpoints,
 			Geolocation: stakeEntry.Geolocation,
 			Chain:       stakeEntry.Chain,
+			Vrfpk:       stakeEntry.Vrfpk,
 		}
 		returnedStorage.StakeEntries = append(returnedStorage.StakeEntries, newStakeEntry)
 	}

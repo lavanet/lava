@@ -10,6 +10,8 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
+	"github.com/spf13/pflag"
 )
 
 func PortalServer(
@@ -18,11 +20,16 @@ func PortalServer(
 	listenAddr string,
 	chainID string,
 	apiInterface string,
+	flagSet *pflag.FlagSet,
 ) {
 	//
+	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
+	if err != nil {
+		log.Fatalln("error: GetOrCreateVRFKey", err)
+	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface)
-	err := sentry.Init(ctx)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, apiInterface, sk, flagSet)
+	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}

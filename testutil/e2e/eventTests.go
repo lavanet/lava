@@ -16,10 +16,22 @@ func providers_ready(line string) TestResult {
 	contains := "listening"
 	return test_basic(line, contains)
 }
+
+func providers_ready_eth(line string) TestResult {
+	contains := "starting"
+	return test_basic(line, contains)
+}
+
 func found_rpc_reply(line string) TestResult {
 	contains := "reply JSONRPC_"
 	return test_basic(line, contains)
 }
+
+func client_finished(line string) TestResult {
+	contains := "Client finished"
+	return test_basic(line, contains)
+}
+
 func found_relay_payment(line string) TestResult {
 	contains := "lava_relay_payment"
 	return test_basic(line, contains)

@@ -1,8 +1,10 @@
 package relayer
 
 import (
+	"bytes"
 	gobytes "bytes"
 	context "context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -20,8 +22,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -36,12 +40,16 @@ var (
 	g_serverChainID  string
 	g_txFactory      tx.Factory
 	g_chainProxy     chainproxy.ChainProxy
+	g_chainSentry    *chainsentry.ChainSentry
 )
 
 type UserSessions struct {
 	UsedComputeUnits uint64
-	MaxComputeUnits  uint64
 	Sessions         map[uint64]*RelaySession
+	MaxComputeUnits  uint64
+	DataReliability  *pairingtypes.VRFData
+	VrfPk            utils.VrfPubKey
+	IsBlackListed    bool
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -49,6 +57,7 @@ type RelaySession struct {
 	UniqueIdentifier   uint64
 	Lock               sync.Mutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
+	RelayNum           uint64
 }
 
 type relayServer struct {
@@ -57,7 +66,6 @@ type relayServer struct {
 
 func askForRewards() {
 	g_sessions_mutex.Lock()
-	defer g_sessions_mutex.Unlock()
 
 	if len(g_sessions) > 0 {
 		log.Printf("active sessions: ")
@@ -68,6 +76,7 @@ func askForRewards() {
 	}
 
 	relays := []*pairingtypes.RelayRequest{}
+	reliability := false
 	for user, userSessions := range g_sessions {
 		validuser, _ := g_sentry.IsAuthorizedUser(context.Background(), user)
 		if validuser {
@@ -79,9 +88,18 @@ func askForRewards() {
 		// TODO: we can come up with a better locking mechanism
 		for k, sess := range userSessions.Sessions {
 			sess.Lock.Lock()
+			if sess.Proof == nil {
+				sess.Lock.Unlock()
+				continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
+			}
 			relay := sess.Proof
 			relays = append(relays, relay)
 			delete(userSessions.Sessions, k)
+			if userSessions.DataReliability != nil {
+				relay.DataReliability = userSessions.DataReliability
+				userSessions.DataReliability = nil
+				reliability = true
+			}
 			sess.Lock.Unlock()
 			userAccAddr, err := sdk.AccAddressFromBech32(user)
 			if err != nil {
@@ -89,16 +107,23 @@ func askForRewards() {
 			}
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
+
 		}
 		if len(userSessions.Sessions) == 0 {
 			delete(g_sessions, user)
 		}
 	}
+	g_sessions_mutex.Unlock()
+
 	if len(relays) == 0 {
 		// no rewards to ask for
 		return
 	}
-	log.Println("asking for rewards", g_sentry.Acc)
+	if reliability {
+		log.Println("asking for rewards", g_sentry.Acc, "with reliability")
+	} else {
+		log.Println("asking for rewards", g_sentry.Acc)
+	}
 	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
@@ -132,7 +157,7 @@ func askForRewards() {
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
-	pubKey, err := sigs.RecoverPubKeyFromRelay(in)
+	pubKey, err := sigs.RecoverPubKeyFromRelay(*in)
 	if err != nil {
 		return nil, err
 	}
@@ -148,40 +173,55 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
+func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		maxcuRes, err := g_sentry.GetMaxCUForUser(ctx, userAddr, req.ChainID)
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID)
 		if err != nil {
-			return nil, errors.New("failed to get the Max allowed compute units for the user")
+			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
 
-		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}}
+		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}, VrfPk: *vrf_pk}
 		log.Println("new user sessions " + strconv.FormatUint(maxcuRes, 10))
 	}
 
 	userSessions := g_sessions[userAddr]
-	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr]}
+
+	if userSessions.IsBlackListed {
+		return nil, nil, fmt.Errorf("User blacklisted! userAddr: %s", userAddr)
 	}
 
-	return userSessions.Sessions[req.SessionId], nil
+	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
+		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0}
+	}
+
+	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *pairingtypes.RelayRequest) error {
+func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest) error {
+	g_sessions_mutex.Lock()
+	defer g_sessions_mutex.Unlock()
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, in.SessionId, serviceApi.ComputeUnits, sess.CuSum, in.CuSum)
+	// Check that relaynum gets incremented by user
+	if sess.RelayNum+1 != request.RelayNum {
+		sess.userSessionsParent.IsBlackListed = true
+		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
+	}
+
+	sess.RelayNum = sess.RelayNum + 1
+
+	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, sess.CuSum, request.CuSum)
 
 	//
 	// TODO: do we worry about overflow here?
-	if sess.CuSum >= in.CuSum {
+	if sess.CuSum >= request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	if sess.CuSum+serviceApi.ComputeUnits != in.CuSum {
+	if sess.CuSum+serviceApi.ComputeUnits != request.CuSum {
 		return errors.New("bad cu sum")
 	}
 	if sess.userSessionsParent.UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.MaxComputeUnits {
@@ -189,19 +229,17 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, in *p
 	}
 
 	sess.userSessionsParent.UsedComputeUnits = sess.userSessionsParent.UsedComputeUnits + serviceApi.ComputeUnits
-	sess.CuSum = in.CuSum
+	sess.CuSum = request.CuSum
 
-	// TODO:
-	// save relay request here for reward submission at end of session
 	return nil
 }
 
-func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	log.Println("server got Relay")
 
 	//
 	// Checks
-	user, err := getRelayUser(in)
+	user, err := getRelayUser(request)
 	if err != nil {
 		// log.Println("Error: %s", err)
 		return nil, err
@@ -216,43 +254,146 @@ func (s *relayServer) Relay(ctx context.Context, in *pairingtypes.RelayRequest) 
 	if !validUser {
 		return nil, fmt.Errorf("user not authorized or bad signature, err: %s", err)
 	}
-	if !isSupportedSpec(in) {
+	if !isSupportedSpec(request) {
 		return nil, errors.New("spec not supported by server")
 	}
 
 	//
 	// Parse message, check valid api, etc
-	nodeMsg, err := g_chainProxy.ParseMsg(in.ApiUrl, in.Data)
+	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update session
-	relaySession, err := getOrCreateSession(ctx, userAddr.String(), in)
+	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request)
 	if err != nil {
 		return nil, err
 	}
 
-	err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), in)
-	if err != nil {
-		return nil, err
+	if request.DataReliability != nil {
+		g_sessions_mutex.Lock()
+		//data reliability message
+		if relaySession.userSessionsParent.DataReliability != nil {
+			g_sessions_mutex.Unlock()
+			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
+		}
+
+		g_sessions_mutex.Unlock()
+
+		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
+		if vrf_pk == nil {
+			return nil, fmt.Errorf("dataReliability Triggered with vrf_pk == nil")
+		}
+		// verify the providerSig is ineed a signature by a valid provider on this query
+		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
+		if err != nil {
+			return nil, err
+		}
+		if !valid {
+			return nil, fmt.Errorf("invalid DataReliability Provider signing")
+		}
+		//verify data reliability fields correspond to the right vrf
+		valid = utils.VerifyVrfProof(request, *vrf_pk)
+		if !valid {
+			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
+		}
+		//TODO: verify reliability result corresponds to this provider
+
+		log.Println("server got valid DataReliability request")
+
+		g_sessions_mutex.Lock()
+
+		//will get some rewards for this
+		relaySession.userSessionsParent.DataReliability = request.DataReliability
+		g_sessions_mutex.Unlock()
+
+	} else {
+		// Update session
+		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
+		if err != nil {
+			return nil, err
+		}
+
+		relaySession.Proof = request
 	}
-
-	relaySession.Proof = in
-
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update signature, return reply to user
-	sig, err := sigs.SignRelay(g_privKey, []byte(reply.String()))
+	latestBlock := int64(0)
+	finalizedBlockHashes := map[int64]interface{}{}
+
+	if g_sentry.GetSpecComparesHashes() {
+		// Add latest block and finalized
+		latestBlock, finalizedBlockHashes, err = g_chainSentry.GetLatestBlockData()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {
 		return nil, err
 	}
-	reply.Sig = sig
+
+	reply.FinalizedBlocksHashes = []byte(jsonStr)
+	reply.LatestBlock = latestBlock
+
+	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
+		// request is a copy of the original request, but won't modify it
+		// update relay request requestedBlock to the provided one in case it was arbitrary
+		sentry.UpdateRequestedBlock(&request, reply)
+		// Update signature,
+		sig, err := sigs.SignRelayResponse(g_privKey, reply, &request)
+		if err != nil {
+			return err
+		}
+		reply.Sig = sig
+
+		if g_sentry.GetSpecComparesHashes() {
+			//update sig blocks signature
+			sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
+			if err != nil {
+				return err
+			}
+			reply.SigBlocks = sigBlocks
+		}
+		return nil
+	}
+	err = getSignaturesFromRequest(*request)
+	if err != nil {
+		return nil, err
+	}
+
+	// return reply to user
 	return reply, nil
+}
+
+func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Context, consumer sdk.AccAddress, request *pairingtypes.RelayRequest) (valid bool, err error) {
+
+	queryHash := utils.CalculateQueryHash(*request)
+	if !bytes.Equal(queryHash, request.DataReliability.QueryHash) {
+		return false, fmt.Errorf("query hash mismatch on data reliability message: %s VS %s", queryHash, request.DataReliability.QueryHash)
+	}
+
+	//validate consumer signing on VRF data
+	valid, err = sigs.ValidateSignerOnVRFData(consumer, *request.DataReliability)
+	if err != nil {
+		return
+	}
+
+	//validate provider signing on query data
+	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
+	if err != nil {
+		return false, fmt.Errorf("RecoverProviderPubKeyFromVrfDataAndQuery: %w", err)
+	}
+	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	if err != nil {
+		return false, fmt.Errorf("AccAddressFromHex provider: %w", err)
+	}
+	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
 func Server(
@@ -275,17 +416,17 @@ func Server(
 	}()
 
 	//
-	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface)
-	err := sentry.Init(ctx)
+	// Start newSentry
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil)
+	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
-	go sentry.Start(ctx)
-	for sentry.GetBlockHeight() == 0 {
+	go newSentry.Start(ctx)
+	for newSentry.GetSpecHash() == nil {
 		time.Sleep(1 * time.Second)
 	}
-	g_sentry = sentry
+	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
 	g_serverChainID = ChainID
 	//allow more gas
@@ -293,7 +434,7 @@ func Server(
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", sentry.GetSpecName(), "chainID", sentry.GetChainID(), "api Interface", apiInterface)
+	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", newSentry.GetSpecName(), "chainID", newSentry.GetChainID(), "api Interface", apiInterface)
 
 	//
 	// Keys
@@ -312,12 +453,23 @@ func Server(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
+
+	if g_sentry.GetSpecComparesHashes() {
+		// Start chain sentry
+		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
+		err = chainSentry.Init(ctx)
+		if err != nil {
+			log.Fatalln("error sentry.Init", err)
+		}
+		chainSentry.Start(ctx)
+		g_chainSentry = chainSentry
+	}
 
 	//
 	// GRPC

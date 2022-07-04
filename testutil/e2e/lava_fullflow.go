@@ -117,7 +117,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		strict:           true}
 	providersTest := TestProcess{
 		expectedEvents:   []string{"listening"},
-		unexpectedEvents: []string{"refused"},
+		unexpectedEvents: []string{"ERROR", "refused", "Missing Payment"},
 		tests:            tests(),
 		strict:           true}
 	clientTest := TestProcess{
@@ -145,12 +145,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		requireAlive: false,
 		debug:        false,
 	}, t, &states)
-	// await(node, "node reset", node_reset, "awating for node reset to proceed...")
+	// await(node, "node reset", node_reset, "awaiting for node reset to proceed...")
 	if !usingLavad {
-		await(node, "node connected", node_ready, "awating for node api to proceed...")
+		await(node, "node connected", node_ready, "awaiting for node api to proceed...")
 	}
 
-	// await(node, "node ready", new_epoch, "awating for new epoch to proceed...")
+	// await(node, "node ready", new_epoch, "awaiting for new epoch to proceed...")
 	init_chain := true
 	if init_chain {
 		sleep(2, failed)
@@ -167,7 +167,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 				failed:       failed,
 				requireAlive: false,
 				debug:        false}, t, &states)
-			await(init, "get init done", init_done, "awating for init to proceed...")
+			await(init, "get init done", init_done, "awaiting for init to proceed...")
 		}
 	}
 	providerAsCMD := false
@@ -209,9 +209,9 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			dep:          &node,
 			failed:       failed,
 			requireAlive: false,
-			debug:        true}, t, &states)
+			debug:        false}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
-		await(prov_osm, "Osmosis providers ready", providers_ready, "awating for providers to listen to proceed...")
+		await(prov_osm, "Osmosis providers ready", providers_ready, "awaiting for providers to listen to proceed...")
 	}
 	run_providers_manual := false
 	if run_providers_manual {
@@ -281,15 +281,16 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Providers")
-		await(prov5, "providers ready", providers_ready, "awating for providers to proceed...")
+		await(prov5, "providers ready", providers_ready, "awaiting for providers to proceed...")
 	}
 
 	run_client_osmosis := true
 	if run_client_osmosis {
-		clientOsmosis := LogProcess(CMD{
+		// clientOsmosis := LogProcess(CMD{
+		LogProcess(CMD{
 			stateID:      "clientOsmo",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 1 :::\"",
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 ",
 			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
@@ -299,11 +300,11 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		// sleep(15, failed)
-		await(clientOsmosis, "osmosis client1 finished", osmosis_finished, "awating for osmosis1 to finish to proceed...")
+		// await(clientOsmosis, "osmosis client1 finished", osmosis_finished, "awaiting for osmosis1 to finish to proceed...")
 		clientOsmosis2 := LogProcess(CMD{
 			stateID:      "clientOsmo2",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 && echo \"::: osmosis finished 2 :::\"",
+			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 ",
 			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
@@ -312,9 +313,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			failed:       failed,
 			requireAlive: false,
 			debug:        true}, t, &states)
-		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
+		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
 		// TODO: check relay payment is COS3
-		await(node, "relay payment 2 osmosis", found_relay_payment, "awating for SECOND payment to proceed... "+clientOsmosis2.id)
+		await(node, "relay payment 2 osmosis", found_relay_payment, "awaiting for SECOND payment to proceed... "+clientOsmosis2.id)
+		// await(clientOsmosis2, "client_COS 2 finished", client_finished, "awaiting for client COS 2 to finish") //Client test complete
 		println(" ::: GOT OSMOSIS PAYMENT !!!")
 	}
 	run_providers_eth := true
@@ -325,7 +327,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			homepath: homepath,
 			// cmd:          homepath+"providers_eth.sh",
 			cmd:          homepath + "scripts/eth.sh", // with mock
-			filter:       []string{"updated", "server", "error"},
+			filter:       []string{"Server", "updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
 			results:      &results,
@@ -334,7 +336,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        true}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
-		await(prov_eth, "ETH providers ready", providers_ready, "awating for providers to listen to proceed...")
+		await(prov_eth, "ETH providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
 	}
 	run_client_eth := true
 	if run_client_eth {
@@ -354,9 +356,10 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			dep:          &node,
 			failed:       failed,
 			requireAlive: false,
-			debug:        true}, t, &states)
-		await(clientEth, "reply rpc", found_rpc_reply, "awating for rpc relpy to proceed...")
-		await(node, "relay payment 1 eth", found_relay_payment, "awating for FIRST payment to proceed...")
+			debug:        false}, t, &states)
+		await(clientEth, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+		await(node, "relay payment 1 eth", found_relay_payment, "awaiting for FIRST payment to proceed...")
+		// await(clientEth, "client_eth finished", client_finished, "awaiting ETH1 client to finish") //Client test complete
 		println(" ::: GOT FIRST PAYMENT !!!")
 	}
 

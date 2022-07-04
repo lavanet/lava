@@ -1,13 +1,18 @@
 package sigs
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
-
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"fmt"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/crypto"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -45,10 +50,83 @@ func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
 
-func SignRelay(pkey *btcSecp256k1.PrivateKey, msgData []byte) ([]byte, error) {
-	//
+func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) ([]byte, error) {
+	msgData := []byte(vrfData.String())
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelayRequest) ([]byte, error) {
+	//
+	request.DataReliability = nil //its not a part of the signature, its a separate part
+	msgData := []byte(request.String())
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+func AllDataHash(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (data_hash []byte) {
+	nonceBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(nonceBytes, relayResponse.Nonce)
+	data_hash = HashMsg(bytes.Join([][]byte{relayResponse.Data, nonceBytes, []byte(relayReq.String())}, nil))
+	return
+}
+
+func DataToSignRelayResponse(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (dataToSign []byte) {
+	// sign the data hash+query hash+nonce
+	queryHash := utils.CalculateQueryHash(*relayReq)
+	data_hash := AllDataHash(relayResponse, relayReq)
+	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
+	return
+}
+
+func DataToVerifyProviderSig(request *pairingtypes.RelayRequest) (dataToSign []byte) {
+	queryHash := utils.CalculateQueryHash(*request)
+	data_hash := request.DataReliability.AllDataHash
+	dataToSign = bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
+	return
+}
+
+func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
+	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+	latestBlockBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(relayResponse.LatestBlock))
+	sessionIdBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(sessionIdBytes, relayReq.SessionId)
+	blockHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(relayReq.BlockHeight))
+	relayNumBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(relayNumBytes, uint64(relayReq.RelayNum))
+	dataToSign = bytes.Join([][]byte{latestBlockBytes, relayResponse.FinalizedBlocksHashes, sessionIdBytes, blockHeightBytes, relayNumBytes, clientAddress}, nil)
+	return
+}
+
+func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+func SignResponseFinalizationData(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) ([]byte, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, clientAddress)
+	// Sign
+	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
 	if err != nil {
 		return nil, err
 	}
@@ -61,36 +139,94 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("RecoverCompact: %w len: %d", err, len(sig))
 	}
-
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
 }
 
-func RecoverPubKeyFromRelay(in *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	tmp := in.Sig
-	in.Sig = []byte{}
-	hash := HashMsg([]byte(in.String()))
-	in.Sig = tmp
-
-	pubKey, err := RecoverPubKey(in.Sig, hash)
+func RecoverPubKeyFromVRFData(vrfData pairingtypes.VRFData) (secp256k1.PubKey, error) {
+	signature := vrfData.Sig
+	vrfData.Sig = nil
+	msgDataHash := HashMsg([]byte(vrfData.String()))
+	pubKey, err := RecoverPubKey(signature, msgDataHash)
 	if err != nil {
 		return nil, err
 	}
 	return pubKey, nil
 }
 
-func RecoverPubKeyFromRelayReply(in *pairingtypes.RelayReply) (secp256k1.PubKey, error) {
-	tmp := in.Sig
-	in.Sig = []byte{}
-	hash := HashMsg([]byte(in.String()))
-	in.Sig = tmp
+func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes.VRFData) (valid bool, err error) {
+	pubKey, err := RecoverPubKeyFromVRFData(dataReliability)
+	if err != nil {
+		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
+	}
+	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //signer
+	if err != nil {
+		return false, fmt.Errorf("AccAddressFromHex : %w", err)
+	}
+	if !signerAccAddress.Equals(signer) {
+		return false, fmt.Errorf("signer on VRFData is not the same as on the original relay request %s, %s", signerAccAddress.String(), signer.String())
+	}
+	return true, nil
+}
 
-	pubKey, err := RecoverPubKey(in.Sig, hash)
+func RecoverProviderPubKeyFromVrfDataOnly(dataReliability *pairingtypes.VRFData) (providerAccAddress sdk.AccAddress, err error) {
+	queryHash := dataReliability.QueryHash
+	data_hash := dataReliability.AllDataHash
+	dataToSign := bytes.Join([][]byte{data_hash, queryHash}, nil)
+	dataToSign = HashMsg(dataToSign)
+	pubKey, err := RecoverPubKey(dataReliability.ProviderSig, dataToSign)
+	if err != nil {
+		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, dataReliability)
+	}
+	providerAccAddress, err = sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	return
+}
+
+func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	dataToSign := DataToVerifyProviderSig(request)
+	pubKey, err := RecoverPubKey(request.DataReliability.ProviderSig, dataToSign)
+	if err != nil {
+		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, request.DataReliability)
+	}
+	return pubKey, nil
+}
+
+func RecoverPubKeyFromRelay(in pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	signature := in.Sig
+	in.Sig = []byte{}
+	in.DataReliability = nil
+	hash := HashMsg([]byte(in.String()))
+	pubKey, err := RecoverPubKey(signature, hash)
 	if err != nil {
 		return nil, err
 	}
 	return pubKey, nil
+}
+
+func RecoverPubKeyFromRelayReply(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
+	pubKey, err := RecoverPubKey(relayResponse.Sig, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func RecoverPubKeyFromResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, addr sdk.AccAddress) (secp256k1.PubKey, error) {
+	dataToSign := DataToSignResponseFinalizationData(relayResponse, relayReq, addr)
+	pubKey, err := RecoverPubKey(relayResponse.SigBlocks, dataToSign)
+	if err != nil {
+		return nil, err
+	}
+	return pubKey, nil
+}
+
+func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
+	secretKey, _ = btcSecp256k1.NewPrivateKey(btcSecp256k1.S256())
+	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
+	addr, _ = sdk.AccAddressFromHex(publicBytes.Address().String())
+	return
 }

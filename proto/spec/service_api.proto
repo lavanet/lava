@@ -7,15 +7,43 @@ option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 
 message ServiceApi {
-  
   string name = 1; 
-  uint64 computeUnits = 2; 
-  bool enabled = 3; 
-  repeated ApiInterface apiInterfaces = 4 [(gogoproto.nullable) = false]; 
+  BlockParser blockParsing = 2 [(gogoproto.nullable) = false];
+  uint64 computeUnits = 3; 
+  bool enabled = 4; 
+  repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
+  SpecCategory category = 6;
+  Parsing parsing = 7 [(gogoproto.nullable) = false];
 }
 
+message Parsing {
+  string function_tag = 1;
+  string function_template = 2;
+  BlockParser result_parsing = 3 [(gogoproto.nullable) = false];
+}
 message ApiInterface {
   string interface = 1;
   string type = 2;
   uint64 extraComputeUnits = 3; 
 }
+
+message BlockParser {
+  repeated string parserArg = 1;
+  PARSER_FUNC parserFunc = 2;
+}
+
+enum PARSER_FUNC{
+  EMPTY = 0;
+  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index]
+  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
+  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
+  PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+}
+
+message SpecCategory{
+  bool deterministic = 1;
+  bool local = 2;
+  bool subscription = 3;
+  uint32 stateful = 4;
+}
+

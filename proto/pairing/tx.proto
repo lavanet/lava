@@ -35,6 +35,7 @@ message MsgStakeClient {
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   uint64 geolocation = 4;
+  string vrfpk = 5;
 }
 
 message MsgStakeClientResponse {
