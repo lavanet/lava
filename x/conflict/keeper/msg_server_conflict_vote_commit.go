@@ -30,5 +30,6 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 	conflictVote.VotersHash[msg.Creator] = types.Vote{Hash: msg.Hash, Result: types.Commit}
 	k.SetConflictVote(ctx, conflictVote)
 
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotCommitEventName, map[string]string{"voteID": strconv.FormatUint(msg.VoteID, 10), "provider": msg.Creator}, "conflict commit recieved")
 	return &types.MsgConflictVoteCommitResponse{}, nil
 }

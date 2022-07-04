@@ -47,5 +47,6 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	conflictVote.VotersHash[msg.Creator] = vote
 
 	k.SetConflictVote(ctx, conflictVote)
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotCommitEventName, map[string]string{"voteID": strconv.FormatUint(msg.VoteID, 10), "provider": msg.Creator}, "conflict reveal recieved")
 	return &types.MsgConflictVoteRevealResponse{}, nil
 }
