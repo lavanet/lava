@@ -75,7 +75,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Verify 'name' is unique
-		s, found := k.GetSpec(ctx, spec.Index)
+		_, found := k.GetSpec(ctx, spec.Index)
 
 		if found {
 			return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
@@ -106,7 +106,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 			}
 		}
 
-		if s.ComparesHashes {
+		if spec.ComparesHashes {
 			for _, tag := range []string{spectypes.GET_BLOCKNUM, spectypes.GET_BLOCK_BY_NUM} {
 				if found := functionTags[tag]; !found {
 					return utils.LavaError(ctx, logger, "spec_add_ch_mis", details, fmt.Sprintf("missing tagged functions for hash comparison: %s", tag))
