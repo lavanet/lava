@@ -41,7 +41,12 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		//3. accept incoming commit transactions for this vote,
 		//4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
 		//5. majority wins, minority gets penalised
-		index := k.Keeper.AllocateNewConflictVote(ctx)
+		epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
+		index := msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.Provider + msg.ResponseConflict.ConflictRelayData1.Request.Provider + strconv.FormatUint(epochStart, 10)
+		found := k.Keeper.AllocateNewConflictVote(ctx, index)
+		if found {
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator}, "conflict with is already open for this client and providers in this epoch")
+		}
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit

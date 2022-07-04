@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/x/conflict/types"
-	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )
 
@@ -19,10 +18,8 @@ func CmdConflictVoteCommit() *cobra.Command {
 		Short: "Broadcast message ConflictVoteCommit",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argVoteID, err := cast.ToUint64E(args[0])
-			if err != nil {
-				return err
-			}
+			argVoteID := args[0]
+
 			argHash := []byte(args[1])
 
 			clientCtx, err := client.GetClientTxContext(cmd)

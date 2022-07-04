@@ -10,14 +10,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func (k Keeper) AllocateNewConflictVote(ctx sdk.Context) string {
-	var index uint64 = 0
-	sIndex := strconv.FormatUint(index, 10)
-	for _, found := k.GetConflictVote(ctx, sIndex); found; {
-		index++
-		sIndex = strconv.FormatUint(index, 10)
-	}
-	return sIndex
+func (k Keeper) AllocateNewConflictVote(ctx sdk.Context, key string) bool {
+	_, found := k.GetConflictVote(ctx, key)
+
+	return found
 }
 
 func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {

@@ -30,7 +30,7 @@ message MsgDetectionResponse {
 
 message MsgConflictVoteCommit {
   string creator = 1;
-  uint64 voteID = 2;
+  string voteID = 2;
   bytes hash = 3;
 }
 
@@ -39,7 +39,7 @@ message MsgConflictVoteCommitResponse {
 
 message MsgConflictVoteReveal {
   string creator = 1;
-  uint64 voteID = 2;
+  string voteID = 2;
   int64 nonce = 3;
   bytes hash = 4;
 }

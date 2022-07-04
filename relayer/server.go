@@ -39,7 +39,7 @@ var (
 	g_privKey         *btcSecp256k1.PrivateKey
 	g_sessions        map[string]*UserSessions
 	g_sessions_mutex  sync.Mutex
-	g_votes           map[uint64]*voteData
+	g_votes           map[string]*voteData
 	g_votes_mutex     sync.Mutex
 	g_sentry          *sentry.Sentry
 	g_serverChainID   string
@@ -379,7 +379,7 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
-func SendVoteCommitment(voteID uint64, vote *voteData) {
+func SendVoteCommitment(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteCommit(g_sentry.Acc, voteID, vote.CommitHash)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
@@ -389,7 +389,7 @@ func SendVoteCommitment(voteID uint64, vote *voteData) {
 	}
 }
 
-func SendVoteReveal(voteID uint64, vote *voteData) {
+func SendVoteReveal(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteReveal(g_sentry.Acc, voteID, vote.Nonce, vote.RelayDataHash)
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
@@ -399,7 +399,7 @@ func SendVoteReveal(voteID uint64, vote *voteData) {
 	}
 }
 
-func voteEventHandler(ctx context.Context, voteID uint64, voteDeadline uint64, voteParams *sentry.VoteParams) {
+func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, voteParams *sentry.VoteParams) {
 	//got a vote event, handle the cases here
 
 	if !voteParams.GetCloseVote() {
@@ -510,7 +510,7 @@ func Server(
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
-	g_votes = map[uint64]*voteData{}
+	g_votes = map[string]*voteData{}
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)

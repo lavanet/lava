@@ -19,7 +19,7 @@ func CmdConflictVoteReveal() *cobra.Command {
 		Short: "Broadcast message ConflictVoteReveal",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argVoteID, err := cast.ToUint64E(args[0])
+			argVoteID := args[0]
 			if err != nil {
 				return err
 			}

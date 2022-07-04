@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -14,26 +13,26 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Keeper.Logger(ctx)
 
-	conflictVote, found := k.GetConflictVote(ctx, strconv.FormatUint(msg.VoteID, 10))
+	conflictVote, found := k.GetConflictVote(ctx, msg.VoteID)
 	if !found {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "invalid vote id")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "invalid vote id")
 	}
 	if conflictVote.VoteState != types.StateReveal {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "vote is not in reveal state")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "vote is not in reveal state")
 	}
 	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider is not in the voters list")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider is not in the voters list")
 	}
 	if conflictVote.VotersHash[msg.Creator].Hash == nil {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider did not commit")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider did not commit")
 	}
 	if conflictVote.VotersHash[msg.Creator].Result != types.Commit {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider already revealed")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider already revealed")
 	}
 
 	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash)
 	if !bytes.Equal(commitHash, conflictVote.VotersHash[msg.Creator].Hash) {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": strconv.FormatUint(msg.VoteID, 10)}, "provider reveal does not match the commit")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider reveal does not match the commit")
 	}
 
 	vote := conflictVote.VotersHash[msg.Creator]
@@ -47,6 +46,6 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	conflictVote.VotersHash[msg.Creator] = vote
 
 	k.SetConflictVote(ctx, conflictVote)
-	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotCommitEventName, map[string]string{"voteID": strconv.FormatUint(msg.VoteID, 10), "provider": msg.Creator}, "conflict reveal recieved")
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotRevealEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "conflict reveal recieved")
 	return &types.MsgConflictVoteRevealResponse{}, nil
 }
