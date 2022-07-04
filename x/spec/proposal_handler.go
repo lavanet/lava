@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const minCU = 1
@@ -79,10 +81,36 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 			return utils.LavaError(ctx, logger, "spec_add_dup", details, "found duplicate spec name")
 		}
 
+		functionTags := map[string]bool{}
+
 		for _, api := range spec.Apis {
 			if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
 				details["api"] = api.Name
 				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
+			}
+
+			if api.Parsing.FunctionTag != "" {
+				// Validate tag name
+				result := false
+				for _, tag := range spectypes.SupportedTags {
+					if tag == api.Parsing.FunctionTag {
+						result = true
+						functionTags[api.Parsing.FunctionTag] = true
+					}
+				}
+
+				if !result {
+					details["api"] = api.Name
+					return utils.LavaError(ctx, logger, "spec_add_ft_inv", details, "Unsupported function tag")
+				}
+			}
+		}
+
+		if spec.ComparesHashes {
+			for _, tag := range []string{spectypes.GET_BLOCKNUM, spectypes.GET_BLOCK_BY_NUM} {
+				if found := functionTags[tag]; !found {
+					return utils.LavaError(ctx, logger, "spec_add_ch_mis", details, fmt.Sprintf("missing tagged functions for hash comparison: %s", tag))
+				}
 			}
 		}
 

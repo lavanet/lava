@@ -9,6 +9,13 @@ const NOT_APPLICABLE int64 = -1
 const LATEST_BLOCK int64 = -2
 const EARLIEST_BLOCK int64 = -3
 const PENDING_BLOCK int64 = -4
+const (
+	GET_BLOCKNUM                = "getBlockNumber"
+	GET_BLOCK_BY_NUM            = "getBlockByNumber"
+	DEFAULT_PARSED_RESULT_INDEX = 0
+)
+
+var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
 
 //allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {

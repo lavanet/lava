@@ -40,9 +40,9 @@ func (m TendemintRpcMessage) ParseBlock(inp string) (int64, error) {
 }
 
 func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockNumber") //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
-		return spectypes.NOT_APPLICABLE, errors.New("getBlockNumber tag function not found")
+		return spectypes.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []interface{}{}
@@ -65,20 +65,15 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 }
 
 func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockByNumber") //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
 	if !ok {
-		return "", errors.New("getBlockNumber tag function not found")
+		return "", errors.New(spectypes.GET_BLOCK_BY_NUM + " tag function not found")
 	}
 
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		// if serviceApi.ApiInterfaces[0].
-		if serviceApi.ApiInterfaces[0].Interface == "tendermintrpc" {
-			nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
-		} else {
-			nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum), []byte(""))
-		}
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -93,14 +88,15 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	if err != nil {
 		return "", err
 	}
-	// log.Println("%s", reply)
 
 	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return "", err
 	}
 
-	hash, ok := blockData[0].(string)
+	// blockData is an interface array with the parsed result in index 0.
+	// we know to expect a string result for a hash.
+	hash, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
 	if !ok {
 		return "", errors.New("hash not string parseable")
 	}
@@ -244,12 +240,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		return c.SendString(string(reply.Data))
 	})
 
-	app.Use(func(c *fiber.Ctx) error {
-		path := c.OriginalURL()
-		if len(path) > 1 && path[0] == '/' {
-			path = path[1:]
-		}
-		log.Println("urirpc in <<< ", string(path))
+	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
+		path := c.Params("*")
+		log.Println("urirpc in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "")
 		if err != nil {
 			log.Println(err)

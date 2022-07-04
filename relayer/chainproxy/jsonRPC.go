@@ -62,9 +62,9 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 }
 
 func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockNumber") //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
-		return spectypes.NOT_APPLICABLE, errors.New("getBlockNumber tag function not found")
+		return spectypes.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []interface{}{}
@@ -87,9 +87,9 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 }
 
 func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	serviceApi, ok := cp.GetSentry().GetSpecApiByTag("getBlockByNumber") //TODO:: move to const
+	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
 	if !ok {
-		return "", errors.New("getBlockNumber tag function not found")
+		return "", errors.New(spectypes.GET_BLOCK_BY_NUM + " tag function not found")
 	}
 
 	var nodeMsg NodeMessage
@@ -117,7 +117,9 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", err
 	}
 
-	return blockData[0].(string), nil
+	// blockData is an interface array with the parsed result in index 0.
+	// we know to expect a string result for a hash.
+	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
 }
 
 func (cp JsonrpcMessage) GetParams() []interface{} {
