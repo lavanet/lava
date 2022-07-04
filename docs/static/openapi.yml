@@ -29719,6 +29719,8 @@ paths:
                     type: string
                   dataReliabilityReward:
                     type: string
+                  QoSWeight:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51268,6 +51270,8 @@ definitions:
         type: string
       dataReliabilityReward:
         type: string
+      QoSWeight:
+        type: string
     description: Params defines the parameters for the module.
   lavanet.lava.pairing.QualityOfServiceReport:
     type: object
@@ -51626,6 +51630,8 @@ definitions:
           slashLimit:
             type: string
           dataReliabilityReward:
+            type: string
+          QoSWeight:
             type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:

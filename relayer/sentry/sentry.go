@@ -941,8 +941,10 @@ func (s *Sentry) SendRelay(
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
-	if err != nil && clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-		s.movePairingEntryToPurge(wrap, index)
+	if err != nil {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			s.movePairingEntryToPurge(wrap, index)
+		}
 		return reply, err
 	}
 
