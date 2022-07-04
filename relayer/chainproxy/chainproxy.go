@@ -126,8 +126,11 @@ func SendRelay(
 
 		relaySentTime := time.Now()
 		clientSession.QoSInfo.TotalRelays++
+		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
 
-		reply, err := c.Relay(ctx, relayRequest)
+		reply, err := c.Relay(connectCtx, relayRequest)
+
 		if err != nil {
 			if err.Error() == context.DeadlineExceeded.Error() { //check if this is right
 				clientSession.QoSInfo.ConsecutiveTimeOut++
@@ -215,5 +218,6 @@ func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error 
 	clientSession.CuSum += apiCu
 	clientSession.Client.UsedComputeUnits += apiCu
 	clientSession.RelayNum += 1
+
 	return nil
 }

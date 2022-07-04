@@ -30179,7 +30179,6 @@ paths:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
-                                - PARSE_PLAIN
                               default: EMPTY
                         computeUnits:
                           type: string
@@ -30232,7 +30231,6 @@ paths:
                                     - PARSE_CANONICAL
                                     - PARSE_DICTIONARY
                                     - PARSE_DICTIONARY_OR_ORDERED
-                                    - PARSE_PLAIN
                                   default: EMPTY
                   enabled:
                     type: boolean
@@ -30362,7 +30360,6 @@ paths:
                                   - PARSE_CANONICAL
                                   - PARSE_DICTIONARY
                                   - PARSE_DICTIONARY_OR_ORDERED
-                                  - PARSE_PLAIN
                                 default: EMPTY
                           computeUnits:
                             type: string
@@ -30415,7 +30412,6 @@ paths:
                                       - PARSE_CANONICAL
                                       - PARSE_DICTIONARY
                                       - PARSE_DICTIONARY_OR_ORDERED
-                                      - PARSE_PLAIN
                                     default: EMPTY
                     enabled:
                       type: boolean
@@ -30579,7 +30575,6 @@ paths:
                                 - PARSE_CANONICAL
                                 - PARSE_DICTIONARY
                                 - PARSE_DICTIONARY_OR_ORDERED
-                                - PARSE_PLAIN
                               default: EMPTY
                         computeUnits:
                           type: string
@@ -30632,7 +30627,6 @@ paths:
                                     - PARSE_CANONICAL
                                     - PARSE_DICTIONARY
                                     - PARSE_DICTIONARY_OR_ORDERED
-                                    - PARSE_PLAIN
                                   default: EMPTY
                   enabled:
                     type: boolean
@@ -51886,7 +51880,6 @@ definitions:
           - PARSE_CANONICAL
           - PARSE_DICTIONARY
           - PARSE_DICTIONARY_OR_ORDERED
-          - PARSE_PLAIN
         default: EMPTY
   lavanet.lava.spec.PARSER_FUNC:
     type: string
@@ -51896,7 +51889,6 @@ definitions:
       - PARSE_CANONICAL
       - PARSE_DICTIONARY
       - PARSE_DICTIONARY_OR_ORDERED
-      - PARSE_PLAIN
     default: EMPTY
   lavanet.lava.spec.Params:
     type: object
@@ -51930,7 +51922,6 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
-              - PARSE_PLAIN
             default: EMPTY
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
@@ -51966,7 +51957,6 @@ definitions:
                           - PARSE_CANONICAL
                           - PARSE_DICTIONARY
                           - PARSE_DICTIONARY_OR_ORDERED
-                          - PARSE_PLAIN
                         default: EMPTY
                   computeUnits:
                     type: string
@@ -52019,7 +52009,6 @@ definitions:
                               - PARSE_CANONICAL
                               - PARSE_DICTIONARY
                               - PARSE_DICTIONARY_OR_ORDERED
-                              - PARSE_PLAIN
                             default: EMPTY
             enabled:
               type: boolean
@@ -52097,7 +52086,6 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
-                        - PARSE_PLAIN
                       default: EMPTY
                 computeUnits:
                   type: string
@@ -52150,7 +52138,6 @@ definitions:
                             - PARSE_CANONICAL
                             - PARSE_DICTIONARY
                             - PARSE_DICTIONARY_OR_ORDERED
-                            - PARSE_PLAIN
                           default: EMPTY
           enabled:
             type: boolean
@@ -52203,7 +52190,6 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
-                        - PARSE_PLAIN
                       default: EMPTY
                 computeUnits:
                   type: string
@@ -52256,7 +52242,6 @@ definitions:
                             - PARSE_CANONICAL
                             - PARSE_DICTIONARY
                             - PARSE_DICTIONARY_OR_ORDERED
-                            - PARSE_PLAIN
                           default: EMPTY
           enabled:
             type: boolean
@@ -52311,7 +52296,6 @@ definitions:
               - PARSE_CANONICAL
               - PARSE_DICTIONARY
               - PARSE_DICTIONARY_OR_ORDERED
-              - PARSE_PLAIN
             default: EMPTY
       computeUnits:
         type: string
@@ -52364,7 +52348,6 @@ definitions:
                   - PARSE_CANONICAL
                   - PARSE_DICTIONARY
                   - PARSE_DICTIONARY_OR_ORDERED
-                  - PARSE_PLAIN
                 default: EMPTY
   lavanet.lava.spec.Spec:
     type: object
@@ -52395,7 +52378,6 @@ definitions:
                     - PARSE_CANONICAL
                     - PARSE_DICTIONARY
                     - PARSE_DICTIONARY_OR_ORDERED
-                    - PARSE_PLAIN
                   default: EMPTY
             computeUnits:
               type: string
@@ -52448,7 +52430,6 @@ definitions:
                         - PARSE_CANONICAL
                         - PARSE_DICTIONARY
                         - PARSE_DICTIONARY_OR_ORDERED
-                        - PARSE_PLAIN
                       default: EMPTY
       enabled:
         type: boolean

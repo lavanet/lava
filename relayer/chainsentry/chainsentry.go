@@ -2,7 +2,6 @@ package chainsentry
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -29,21 +28,6 @@ type ChainSentry struct {
 	blocksQueue  []string
 }
 
-type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-type jsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-}
-
 func (cs *ChainSentry) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
@@ -62,7 +46,7 @@ func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error
 	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
 
 	for i := 0; i < cs.numFinalBlocks; i++ {
-		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i)
+		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i+1)
 		hashes[blockNum] = cs.blocksQueue[i]
 	}
 	return latestBlockNum, hashes, nil
@@ -88,7 +72,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	cs.SetLatestBlockNum(latestBlock)
 	log.Printf("latest %v block %v", cs.ChainID, latestBlock)
 	cs.blockQueueMu.Lock()
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks); i <= latestBlock-int64(cs.finalizedBlockDistance)-1; i++ {
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock-int64(cs.finalizedBlockDistance); i++ {
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
 			log.Fatalln("error: Start", err)
@@ -106,13 +90,12 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx) // get actual latest from chain
 	if err != nil {
-		log.Printf("error: chainSentry block fetcher", err)
+		log.Printf("error: chainSentry block fetcher: %w", err)
+		return nil // fmt.Errorf("error: chainSentry block fetcher", err)
 	}
 
-	// TODO:: dont lock for this entire process. create a temp list and replace blocksqueue. like in sentry service api
 	if cs.latestBlockNum != latestBlock {
-		cs.blockQueueMu.Lock()
-
+		tempArr := cs.blocksQueue // should copy array
 		prevLatestBlock := cs.GetLatestBlockNum()
 		// Get all missing blocks
 		i := prevLatestBlock + 1
@@ -121,21 +104,23 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 		}
 
 		for ; i <= latestBlock; i++ {
-			blockData, err := cs.fetchBlockHashByNum(ctx, i)
+			blockHash, err := cs.fetchBlockHashByNum(ctx, i)
 			if err != nil {
-				log.Fatalln("error: Start", err)
+				log.Printf("error fetching block hash for block %d: %w", i, err)
 				return err
 			}
 
-			cs.blocksQueue = append(cs.blocksQueue, blockData) //save entire block data for now
+			tempArr = append(tempArr, blockHash)
 		}
 
 		// remove the first entries from the queue (oldest ones)
-		if len(cs.blocksQueue) > cs.numFinalBlocks {
-			cs.blocksQueue = cs.blocksQueue[(len(cs.blocksQueue) - cs.numFinalBlocks):]
+		if len(tempArr) > cs.numFinalBlocks {
+			tempArr = tempArr[(len(tempArr) - cs.numFinalBlocks):]
 		}
-		log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
+		cs.blockQueueMu.Lock()
+		cs.blocksQueue = tempArr
 		atomic.StoreInt64(&cs.latestBlockNum, latestBlock)
+		log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
 		cs.blockQueueMu.Unlock()
 	}
 	return nil

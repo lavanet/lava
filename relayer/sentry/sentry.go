@@ -39,12 +39,14 @@ import (
 )
 
 type ClientSession struct {
-	CuSum     uint64
-	QoSInfo   QoSInfo
-	SessionId int64
-	Client    *RelayerClientWrapper
-	Lock      sync.Mutex
-	RelayNum  uint64
+	CuSum                 uint64
+	QoSInfo               QoSInfo
+	SessionId             int64
+	Client                *RelayerClientWrapper
+	Lock                  sync.Mutex
+	RelayNum              uint64
+	LatestBlock           int64
+	FinalizedBlocksHashes map[int64]string
 }
 
 type QoSInfo struct {
@@ -111,6 +113,7 @@ type PaymentRequest struct {
 }
 
 type providerDataContainer struct {
+	// keep all data used to sign sigblocks
 	LatestFinalizedBlock  int64
 	LatestBlockTime       time.Time
 	FinalizedBlocksHashes map[int64]string
@@ -120,8 +123,6 @@ type providerDataContainer struct {
 	RelayNum              uint64
 	LatestBlock           int64
 	//TODO:: keep relay request for conflict reporting
-	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-
 }
 
 type ProviderHashesConsensus struct {
@@ -629,7 +630,6 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 }
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
-
 	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
@@ -653,7 +653,6 @@ func (s *Sentry) CheckAndMarkReliabilityForThisPairing(wrap *RelayerClientWrappe
 }
 
 func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerClientWrapper, int, error) {
-
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
@@ -671,7 +670,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 			// TODO: we should retry with another addr
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
-				return nil, -1, err
+				return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
 			}
 			wrap.Client = conn
 		}
@@ -700,8 +699,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 		// TODO: we should retry with another addr
 		conn, err := s.connectRawClient(ctx, wrap.Addr)
 		if err != nil {
-
-			return nil, -1, err
+			return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
 		}
 		wrap.Client = conn
 	}
@@ -788,16 +786,21 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 	return false, nil
 }
 
-func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string) error {
+func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestBlock int64, providerAcc string, session *ClientSession) error {
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
-	for blockNum := range finalizedBlocks {
+	maxBlockNum := int64(0)
+	for blockNum, _ := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
 			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
 			return errors.New("provider returned non finalized block reply")
 		}
 
 		sorted[idx] = blockNum
+
+		if blockNum > maxBlockNum {
+			maxBlockNum = blockNum
+		}
 		idx++
 		// check blockhash length and format?
 	}
@@ -811,13 +814,13 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		}
 	}
 
-	// TODO check that latest finalized block address + 1 points to a non finalized block
+	// check that latest finalized block address + 1 points to a non finalized block
+	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
+		return errors.New("provider returned finalized hashes for an older latest block")
+	}
 
 	// New reply should have blocknum >= from block same provider
-	consensus := s.getConsensusByProvider(providerAcc)
-	if consensus != nil && consensus.agreeingProviders[providerAcc].LatestFinalizedBlock > latestBlock {
-		log.Println("Provider supplied an older latest block than it has previously")
-
+	if session.LatestBlock > latestBlock {
 		//
 		// Report same provider discrepancy
 		// TODO:: Fill msg with incriminating data
@@ -825,6 +828,8 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		s.ClientCtx.SkipConfirm = true
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+
+		return fmt.Errorf("Provider supplied an older latest block than it has previously")
 	}
 
 	return nil
@@ -857,7 +862,7 @@ func findMinKey(blockMap map[int64]string) int64 {
 
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
-		LatestFinalizedBlock:  latestBlock,
+		LatestFinalizedBlock:  s.GetLatestFinalizedBlock(latestBlock),
 		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
@@ -876,7 +881,7 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 
 func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
-		LatestFinalizedBlock:  latestBlock,
+		LatestFinalizedBlock:  s.GetLatestFinalizedBlock(latestBlock),
 		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
@@ -928,7 +933,6 @@ func (s *Sentry) SendRelay(
 		}
 		clientSession.Lock.Lock()
 		wrap.Sessions[clientSession.SessionId] = clientSession
-
 		return clientSession
 	}
 	// Get or create session and lock it
@@ -955,21 +959,21 @@ func (s *Sentry) SendRelay(
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
-		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc)
+		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
 			log.Println("Provider reply error, ", err)
 			return nil, err
 		}
+		// Save in current session and compare in the next
+		clientSession.FinalizedBlocksHashes = finalizedBlocks
+		clientSession.LatestBlock = latestBlock
 
 		//
 		// Compare finalized block hashes with previous providers
-		// Looks for discrepancy wit current epoch providers
+		// Looks for discrepancy with current epoch providers
 		// if no conflicts, insert into consensus and break
-		// if no discrepency with this group -> insert into consensus and break
-		// TODO:: Add more increminiating data to consensus
 		// create new consensus group if no consensus matched
 		// check for discrepancy with old epoch
-		// if no conflicts, insert into consensus and break
 		_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
 			return nil, err
@@ -1108,10 +1112,7 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 				return false, err
 			}
 
-			// if no conflicts, insert into consensus and break
-			if !discrepancyResult {
-				matchWithExistingConsensus = true
-			} else {
+			if discrepancyResult {
 				log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
 			}
 		}
@@ -1137,6 +1138,11 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 		}
 	}
 	return false
+}
+
+func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
+	finalization_criteria := int64(s.GetSpecFinalizationCriteria())
+	return latestBlock - finalization_criteria
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
