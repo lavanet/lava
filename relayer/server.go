@@ -49,7 +49,7 @@ type UserSessions struct {
 	MaxComputeUnits  uint64
 	DataReliability  *pairingtypes.VRFData
 	VrfPk            utils.VrfPubKey
-	IsBlackListed    bool
+	IsBlockListed    bool
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -189,7 +189,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 
 	userSessions := g_sessions[userAddr]
 
-	if userSessions.IsBlackListed {
+	if userSessions.IsBlockListed {
 		return nil, nil, fmt.Errorf("User blacklisted! userAddr: %s", userAddr)
 	}
 
@@ -208,7 +208,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, reque
 
 	// Check that relaynum gets incremented by user
 	if sess.RelayNum+1 != request.RelayNum {
-		sess.userSessionsParent.IsBlackListed = true
+		sess.userSessionsParent.IsBlockListed = true
 		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
 	}
 
@@ -421,6 +421,7 @@ func Server(
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
+		return
 	}
 	go newSentry.Start(ctx)
 	for newSentry.GetSpecHash() == nil {
