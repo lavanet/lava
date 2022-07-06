@@ -30250,7 +30250,7 @@ paths:
                   averageBlockTime:
                     type: string
                     format: int64
-                  blochHeightThreshold:
+                  allowedBlockLagForQosSync:
                     type: string
                     format: int64
         default:
@@ -30431,7 +30431,7 @@ paths:
                     averageBlockTime:
                       type: string
                       format: int64
-                    blochHeightThreshold:
+                    allowedBlockLagForQosSync:
                       type: string
                       format: int64
               pagination:
@@ -30646,7 +30646,7 @@ paths:
                   averageBlockTime:
                     type: string
                     format: int64
-                  blochHeightThreshold:
+                  allowedBlockLagForQosSync:
                     type: string
                     format: int64
         default:
@@ -52032,7 +52032,7 @@ definitions:
             averageBlockTime:
               type: string
               format: int64
-            blochHeightThreshold:
+            allowedBlockLagForQosSync:
               type: string
               format: int64
       pagination:
@@ -52161,7 +52161,7 @@ definitions:
           averageBlockTime:
             type: string
             format: int64
-          blochHeightThreshold:
+          allowedBlockLagForQosSync:
             type: string
             format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
@@ -52265,7 +52265,7 @@ definitions:
           averageBlockTime:
             type: string
             format: int64
-          blochHeightThreshold:
+          allowedBlockLagForQosSync:
             type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
@@ -52453,7 +52453,7 @@ definitions:
       averageBlockTime:
         type: string
         format: int64
-      blochHeightThreshold:
+      allowedBlockLagForQosSync:
         type: string
         format: int64
   lavanet.lava.spec.SpecCategory:

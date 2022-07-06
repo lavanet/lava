@@ -151,7 +151,7 @@ func SendRelay(
 		}
 
 		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().PairingServicersToPairCount))
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, cp.GetSentry().GetServicersToPairCount())
 
 		return reply, relayRequest, nil
 	}
