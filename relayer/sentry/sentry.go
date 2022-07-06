@@ -69,7 +69,7 @@ const (
 	LatencyThresholdSlope        = 1 * time.Millisecond
 )
 
-func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
@@ -96,7 +96,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
-	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
 		if blockHeightDiff <= 0 {
 			cs.QoSInfo.SyncScoreSum++
 		}
@@ -299,6 +299,8 @@ func (s *Sentry) GetSpecHash() []byte {
 }
 
 func (s *Sentry) GetServicersToPairCount() int64 {
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
 	return int64(len(s.pairingAddresses))
 }
 
