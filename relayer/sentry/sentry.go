@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"regexp"
 	"sort"
@@ -33,17 +34,78 @@ import (
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tenderminttypes "github.com/tendermint/tendermint/types"
+	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 )
 
 type ClientSession struct {
 	CuSum                 uint64
+	QoSInfo               QoSInfo
 	SessionId             int64
 	Client                *RelayerClientWrapper
 	Lock                  sync.Mutex
 	RelayNum              uint64
 	LatestBlock           int64
 	FinalizedBlocksHashes map[int64]string
+}
+
+type QoSInfo struct {
+	LastQoSReport      *pairingtypes.QualityOfServiceReport
+	LatencyScoreList   []sdk.Dec
+	SyncScoreSum       int64
+	TotalSyncScore     int64
+	TotalRelays        uint64
+	AnsweredRelays     uint64
+	ConsecutiveTimeOut uint64
+}
+
+//Constants
+
+var AvailabilityPrecentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+const (
+	PercentileToCalculateLatency = 0.9
+	MinProvidersForSync          = 0.6
+	LatencyThresholdStatic       = 1 * time.Second
+	LatencyThresholdSlope        = 1 * time.Millisecond
+)
+
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+
+	if cs.QoSInfo.LastQoSReport == nil {
+		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
+	}
+
+	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+
+	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+
+	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+		index := sort.Search(len(list), func(i int) bool {
+			return list[i].GTE(value)
+		})
+		if len(list) == index { // nil or empty slice or after last element
+			return append(list, value)
+		}
+		list = append(list[:index+1], list[index:]...) // index < len(a)
+		list[index] = value
+		return list
+	}
+	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
+
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
+
+	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+		if blockHeightDiff <= 0 {
+			cs.QoSInfo.SyncScoreSum++
+		}
+	} else {
+		cs.QoSInfo.SyncScoreSum++
+	}
+	cs.QoSInfo.TotalSyncScore++
+
+	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
 }
 
 type RelayerClientWrapper struct {
@@ -68,6 +130,7 @@ type PaymentRequest struct {
 type providerDataContainer struct {
 	// keep all data used to sign sigblocks
 	LatestFinalizedBlock  int64
+	LatestBlockTime       time.Time
 	FinalizedBlocksHashes map[int64]string
 	SigBlocks             []byte
 	SessionId             uint64
@@ -233,6 +296,12 @@ func (s *Sentry) GetSpecHash() []byte {
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
 	return s.specHash
+}
+
+func (s *Sentry) GetServicersToPairCount() int64 {
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+	return int64(len(s.pairingAddresses))
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
@@ -794,6 +863,7 @@ func findMinKey(blockMap map[int64]string) int64 {
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  s.GetLatestFinalizedBlock(latestBlock),
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -812,6 +882,7 @@ func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int
 func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  s.GetLatestFinalizedBlock(latestBlock),
+		LatestBlockTime:       time.Now(),
 		FinalizedBlocksHashes: finalizedBlocks,
 		SigBlocks:             reply.SigBlocks,
 		SessionId:             req.SessionId,
@@ -871,7 +942,9 @@ func (s *Sentry) SendRelay(
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
 	if err != nil {
-		s.movePairingEntryToPurge(wrap, index)
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			s.movePairingEntryToPurge(wrap, index)
+		}
 		return reply, err
 	}
 
@@ -951,7 +1024,9 @@ func (s *Sentry) SendRelay(
 							relay_rep, err = cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
 								log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
-								s.movePairingEntryToPurge(wrap, index)
+								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+									s.movePairingEntryToPurge(wrap, index)
+								}
 								return nil, err
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
@@ -1217,6 +1292,43 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 	vrfPk = &utils.VrfPubKey{}
 	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
 	return vrfPk, UserEntryRes.GetMaxCU(), err
+}
+
+func (s *Sentry) ExpecedBlockHeight() (int64, int) {
+
+	averageBlockTime_ms := s.serverSpec.AverageBlockTime
+	listExpectedBlockHeights := []int64{}
+
+	now := time.Now()
+	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
+		listExpectedBH := []int64{}
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				listExpectedBH = append(listExpectedBH, expected)
+			}
+		}
+		return listExpectedBH
+	}
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.prevEpochProviderHashesConsensus)...)
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.providerHashesConsensus)...)
+
+	median := func(data []int64) int64 {
+		slices.Sort(data)
+
+		var median int64
+		l := len(data)
+		if l == 0 {
+			return 0
+		} else if l%2 == 0 {
+			median = int64((data[l/2-1] + data[l/2]) / 2.0)
+		} else {
+			median = int64(data[l/2])
+		}
+		return median
+	}
+
+	return median(listExpectedBlockHeights) - s.serverSpec.AllowedBlockLagForQosSync, len(listExpectedBlockHeights)
 }
 
 func NewSentry(

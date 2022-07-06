@@ -29719,6 +29719,8 @@ paths:
                     type: string
                   dataReliabilityReward:
                     type: string
+                  QoSWeight:
+                    type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30245,6 +30247,12 @@ paths:
                   saved_blocks:
                     type: integer
                     format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  allowedBlockLagForQosSync:
+                    type: string
+                    format: int64
         default:
           description: An unexpected error response.
           schema:
@@ -30419,6 +30427,12 @@ paths:
                       format: int64
                     saved_blocks:
                       type: integer
+                      format: int64
+                    averageBlockTime:
+                      type: string
+                      format: int64
+                    allowedBlockLagForQosSync:
+                      type: string
                       format: int64
               pagination:
                 type: object
@@ -30628,6 +30642,12 @@ paths:
                     format: int64
                   saved_blocks:
                     type: integer
+                    format: int64
+                  averageBlockTime:
+                    type: string
+                    format: int64
+                  allowedBlockLagForQosSync:
+                    type: string
                     format: int64
         default:
           description: An unexpected error response.
@@ -51250,7 +51270,18 @@ definitions:
         type: string
       dataReliabilityReward:
         type: string
+      QoSWeight:
+        type: string
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.QualityOfServiceReport:
+    type: object
+    properties:
+      latency:
+        type: string
+      availability:
+        type: string
+      sync:
+        type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -51600,6 +51631,8 @@ definitions:
             type: string
           dataReliabilityReward:
             type: string
+          QoSWeight:
+            type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -51785,6 +51818,15 @@ definitions:
           sig:
             type: string
             format: byte
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -51987,6 +52029,12 @@ definitions:
             saved_blocks:
               type: integer
               format: int64
+            averageBlockTime:
+              type: string
+              format: int64
+            allowedBlockLagForQosSync:
+              type: string
+              format: int64
       pagination:
         type: object
         properties:
@@ -52110,6 +52158,12 @@ definitions:
           saved_blocks:
             type: integer
             format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          allowedBlockLagForQosSync:
+            type: string
+            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:
@@ -52207,6 +52261,12 @@ definitions:
             format: int64
           saved_blocks:
             type: integer
+            format: int64
+          averageBlockTime:
+            type: string
+            format: int64
+          allowedBlockLagForQosSync:
+            type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
@@ -52389,6 +52449,12 @@ definitions:
         format: int64
       saved_blocks:
         type: integer
+        format: int64
+      averageBlockTime:
+        type: string
+        format: int64
+      allowedBlockLagForQosSync:
+        type: string
         format: int64
   lavanet.lava.spec.SpecCategory:
     type: object

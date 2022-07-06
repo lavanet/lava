@@ -113,6 +113,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    nodeMsg.RequestedBlock(),
+			QoSReport:       clientSession.QoSInfo.LastQoSReport,
 			DataReliability: nil,
 		}
 
@@ -123,13 +124,23 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *clientSession.Client.Client
 
+		relaySentTime := time.Now()
+		clientSession.QoSInfo.TotalRelays++
 		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		reply, err := c.Relay(connectCtx, relayRequest)
+
 		if err != nil {
+			if err.Error() == context.DeadlineExceeded.Error() {
+				clientSession.QoSInfo.ConsecutiveTimeOut++
+			}
 			return nil, nil, err
 		}
+		currentLatency := time.Since(relaySentTime)
+		clientSession.QoSInfo.ConsecutiveTimeOut = 0
+		clientSession.QoSInfo.AnsweredRelays++
+
 		//update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(relayRequest, reply)
 		requestedBlock = relayRequest.RequestBlock
@@ -138,6 +149,9 @@ func SendRelay(
 		if err != nil {
 			return nil, nil, err
 		}
+
+		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, cp.GetSentry().GetServicersToPairCount())
 
 		return reply, relayRequest, nil
 	}
@@ -158,6 +172,7 @@ func SendRelay(
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    requestedBlock,
+			QoSReport:       nil,
 			DataReliability: dataReliability,
 		}
 

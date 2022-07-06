@@ -171,8 +171,23 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if reward.IsZero() {
 			continue
 		}
+
 		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap)}
+
+		if relay.QoSReport != nil {
+			QoS, err := relay.QoSReport.ComputeQoS()
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_QoS", details, "bad QoSReport")
+			}
+			details["QoSReport"] = "Latency: " + relay.QoSReport.Latency.String() + ", Availability: " + relay.QoSReport.Availability.String() + ", Sync: " + relay.QoSReport.Sync.String()
+			details["QoSScore"] = QoS.String()
+
+			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
+			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
+		}
+
 		//first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 
@@ -202,21 +217,24 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// Mint to module
-		err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-		if err != nil {
-			details["error"] = err.Error()
-			utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
-			panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
-		}
-		//
-		// Send to provider
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
-		if err != nil {
-			details["error"] = err.Error()
-			utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
-			panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+		if !reward.IsZero() {
+			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
+			if err != nil {
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "MintCoins Failed,")
+				panic(fmt.Sprintf("module failed to mint coins to give to provider: %s", err))
+			}
+			//
+			// Send to provider
+			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
+			if err != nil {
+				details["error"] = err.Error()
+				utils.LavaError(ctx, logger, "relay_payment", details, "SendCoinsFromModuleToAccount Failed,")
+				panic(fmt.Sprintf("failed to transfer minted new coins to provider, %s account: %s", err, providerAddr))
+			}
 		}
 		details["clientFee"] = burnAmount.String()
+		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 
 	}
