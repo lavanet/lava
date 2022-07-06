@@ -2,6 +2,7 @@ package chainsentry
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -65,7 +66,6 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx)
 	// TODO:: chekc if we have at least x blocknums before forloop
 	if err != nil {
-		log.Fatalln("error: Start", err)
 		return err
 	}
 
@@ -90,8 +90,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx) // get actual latest from chain
 	if err != nil {
-		log.Printf("error: chainSentry block fetcher: %w", err)
-		return nil // fmt.Errorf("error: chainSentry block fetcher", err)
+		return fmt.Errorf("error: chainSentry fetchLatestBlockNum: %w", err)
 	}
 
 	if cs.latestBlockNum != latestBlock {
@@ -106,8 +105,7 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 		for ; i <= latestBlock; i++ {
 			blockHash, err := cs.fetchBlockHashByNum(ctx, i)
 			if err != nil {
-				log.Printf("error fetching block hash for block %d: %w", i, err)
-				return err
+				return fmt.Errorf("error fetchBlockHashByNum for block %d: %w", i, err)
 			}
 
 			tempArr = append(tempArr, blockHash)
@@ -135,7 +133,10 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 		for {
 			select {
 			case <-ticker.C:
-				cs.catchupOnFinalizedBlocks(ctx)
+				err := cs.catchupOnFinalizedBlocks(ctx)
+				if err != nil {
+					log.Println(err)
+				}
 			case <-quit:
 				ticker.Stop()
 				return
