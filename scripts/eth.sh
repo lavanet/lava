@@ -1,3 +1,7 @@
+#!/bin/bash
+__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. ${__dir}/variables.sh
+
 echo ""
 echo " ::: STARTING ETH PROVIDERS :::"
 
@@ -26,10 +30,10 @@ go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PO
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 http://0.0.0.0:2005/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
 
 # NO MOCK PROXY
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5 
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 $ETH_RPC_WS ETH1 jsonrpc --from servicer4 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 $ETH_RPC_WS ETH1 jsonrpc --from servicer5 
 
 echo " ::: ETH PROVIDERS DONE! :::"
