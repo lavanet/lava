@@ -51,7 +51,8 @@ type ClientSession struct {
 type QoSInfo struct {
 	LastQoSReport      *pairingtypes.QualityOfServiceReport
 	LatencyScoreList   []sdk.Dec
-	SyncScoreList      []sdk.Dec
+	SyncScoreSum       int64
+	TotalSyncScore     int64
 	TotalRelays        uint64
 	AnsweredRelays     uint64
 	ConsecutiveTimeOut uint64
@@ -74,39 +75,53 @@ func (vp *VoteParams) GetCloseVote() bool {
 	return vp.CloseVote
 }
 
-func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfPorivders int, servicersToCount int64) {
+//Constants
+
+var AvailabilityPrecentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+const (
+	PercentileToCalculateLatency = 0.9
+	MinProvidersForSync          = 0.6
+	LatencyThresholdStatic       = 1 * time.Second
+	LatencyThresholdSlope        = 1 * time.Millisecond
+)
+
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
-	AvailabilityPrecentage := sdk.NewDecWithPrec(5, 2)
+
 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
 
-	var latencyThreshold time.Duration = 1*time.Second + time.Duration(cu)*time.Millisecond
+	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
-	cs.QoSInfo.LatencyScoreList = append(cs.QoSInfo.LatencyScoreList, latencyScore)
-	sort.SliceStable(cs.QoSInfo.LatencyScoreList, func(i, j int) bool {
-		return cs.QoSInfo.LatencyScoreList[i].LT(cs.QoSInfo.LatencyScoreList[j])
-	})
-	const LatencyScorePercentage = 0.9
-	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*LatencyScorePercentage)]
 
-	const MinProvidersForSync = 0.6
-	if int64(numOfPorivders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) {
-		if blockHeightDiff > 0 {
-			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.ZeroDec())
-		} else {
-			cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+		index := sort.Search(len(list), func(i int) bool {
+			return list[i].GTE(value)
+		})
+		if len(list) == index { // nil or empty slice or after last element
+			return append(list, value)
+		}
+		list = append(list[:index+1], list[index:]...) // index < len(a)
+		list[index] = value
+		return list
+	}
+	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
+
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
+
+	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+		if blockHeightDiff <= 0 {
+			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {
-		cs.QoSInfo.SyncScoreList = append(cs.QoSInfo.SyncScoreList, sdk.OneDec())
+		cs.QoSInfo.SyncScoreSum++
 	}
+	cs.QoSInfo.TotalSyncScore++
 
-	sum := sdk.ZeroDec()
-	for _, element := range cs.QoSInfo.SyncScoreList {
-		sum = sum.Add(element)
-	}
-	cs.QoSInfo.LastQoSReport.Sync = sum.QuoInt64(int64(len(cs.QoSInfo.SyncScoreList)))
+	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
 }
 
 type RelayerClientWrapper struct {
@@ -184,15 +199,14 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu                   sync.RWMutex
-	PairingServicersToPairCount uint64
-	pairingHash                 []byte
-	pairing                     []*RelayerClientWrapper
-	pairingAddresses            []string
-	pairingPurgeLock            sync.Mutex
-	pairingPurge                []*RelayerClientWrapper
-	VrfSkMu                     sync.Mutex
-	VrfSk                       vrf.PrivateKey
+	pairingMu        sync.RWMutex
+	pairingHash      []byte
+	pairing          []*RelayerClientWrapper
+	pairingAddresses []string
+	pairingPurgeLock sync.Mutex
+	pairingPurge     []*RelayerClientWrapper
+	VrfSkMu          sync.Mutex
+	VrfSk            vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
@@ -301,17 +315,10 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) getServicersToPairCount(ctx context.Context) error {
-	paramsReply, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
-	if err != nil {
-		return err
-	}
-
+func (s *Sentry) GetServicersToPairCount() int64 {
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
-	s.PairingServicersToPairCount = paramsReply.Params.GetServicersToPairCount()
-
-	return nil
+	return int64(len(s.pairingAddresses))
 }
 
 func (s *Sentry) getSpec(ctx context.Context) error {
@@ -404,13 +411,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	// Get spec for the first time
 	err = s.getSpec(ctx)
-	if err != nil {
-		return err
-	}
-
-	//
-	// Get ServicersToPairCount for the first time
-	err = s.getServicersToPairCount(ctx)
 	if err != nil {
 		return err
 	}
@@ -1093,7 +1093,9 @@ func (s *Sentry) SendRelay(
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
 								log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
-								s.movePairingEntryToPurge(wrap, index)
+								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+									s.movePairingEntryToPurge(wrap, index)
+								}
 								return nil, nil, err
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
@@ -1353,11 +1355,11 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	listExpectedBlockHeights := []int64{}
 
 	now := time.Now()
-	calcExpectedBlocks := func(listPHC []ProviderHashesConsensus) []int64 {
+	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
 		listExpectedBH := []int64{}
-		for _, PHC := range listPHC {
-			for _, element := range PHC.agreeingProviders {
-				expected := element.LatestFinalizedBlock + (now.Sub(element.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
 				listExpectedBH = append(listExpectedBH, expected)
 			}
 		}
@@ -1381,7 +1383,7 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		return median
 	}
 
-	return median(listExpectedBlockHeights) - s.serverSpec.BlochHeightThreshold, len(listExpectedBlockHeights)
+	return median(listExpectedBlockHeights) - s.serverSpec.AllowedBlockLagForQosSync, len(listExpectedBlockHeights)
 }
 
 func NewSentry(

@@ -18,5 +18,5 @@ message Spec {
   uint32 finalizationCriteria = 7;
   uint32 saved_blocks = 8;
   int64 averageBlockTime =9;
-  int64 blochHeightThreshold = 10;
+  int64 allowedBlockLagForQosSync = 10;
 }

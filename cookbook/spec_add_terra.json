@@ -7,7 +7,7 @@
       "enabled": true,
       "reliability_threshold" : 268435455,
       "average_block_time": "6000",
-      "block_height_threshold": "5",
+      "allowed_block_lag_for_qos_sync": "5",
       "apis": [{
           "name": "abci_info",
           "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
