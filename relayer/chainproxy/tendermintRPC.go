@@ -292,6 +292,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 			Message: fmt.Sprintf("%s", err),
 		}
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, err
 	} else {
 		replyMsg.Result = result
 		nm.msg.Result = result

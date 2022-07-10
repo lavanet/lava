@@ -308,6 +308,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 			Message: fmt.Sprintf("%s", err),
 		}
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, err
 	} else {
 		replyMsg.Result = result
 		nm.msg.Result = result

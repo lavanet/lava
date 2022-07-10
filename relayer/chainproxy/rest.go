@@ -230,6 +230,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	msgBuffer := bytes.NewBuffer(nm.msg)
 	req, err := http.NewRequest(http.MethodGet, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
+		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
 	}
 
@@ -245,6 +246,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
 	}
 

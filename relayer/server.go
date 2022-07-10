@@ -190,7 +190,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	userSessions := g_sessions[userAddr]
 
 	if userSessions.IsBlockListed {
-		return nil, nil, fmt.Errorf("User blacklisted! userAddr: %s", userAddr)
+		return nil, nil, fmt.Errorf("User blocklisted! userAddr: %s", userAddr)
 	}
 
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
