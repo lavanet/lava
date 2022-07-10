@@ -164,7 +164,7 @@ func terraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 
 func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) {
 	if apiInterface == "rest" {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
 			if err != nil {
 				log.Println("1:" + err.Error())
@@ -179,7 +179,7 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 			}
 		}
 	} else if apiInterface == "tendermintrpc" {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS)
 			if err != nil {
 				log.Println(err)

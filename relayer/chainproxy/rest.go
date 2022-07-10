@@ -222,7 +222,7 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 
 func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
-		Timeout: time.Second * 2, // Timeout after 2 seconds
+		Timeout: time.Second * 5, // Timeout after 5 seconds
 	}
 
 	//
@@ -235,6 +235,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	res, err := httpClient.Do(req)
 	if err != nil {
+		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
 	}
 
