@@ -194,7 +194,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0}
+		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0, UniqueIdentifier: req.SessionId}
 	}
 
 	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
@@ -308,6 +308,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		g_sessions_mutex.Unlock()
 
 	} else {
+		// Validate
+		if request.SessionId == 0 {
+			return nil, fmt.Errorf("SessionID cannot be 0 for non-data reliability requests")
+		}
+
 		// Update session
 		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
 		if err != nil {
@@ -414,6 +419,9 @@ func Server(
 		signal.Stop(signalChan)
 		cancel()
 	}()
+
+	// Init random seed
+	rand.Seed(time.Now().UnixNano())
 
 	//
 	// Start newSentry
