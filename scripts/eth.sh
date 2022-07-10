@@ -1,6 +1,6 @@
 #!/bin/bash
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. ${__dir}/variables.sh
+. ${__dir}/scripts/variables.sh
 
 echo ""
 echo " ::: STARTING ETH PROVIDERS :::"
