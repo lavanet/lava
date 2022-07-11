@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -29,6 +31,15 @@ func main() {
 		app.ModuleBasics,
 		app.New,
 	)
+
+	// If envs arent set well (inexisting hosts for example) you cant ctrl+c out of this process
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
+		fmt.Println(sig)
+		os.Exit(3)
+	}()
 
 	var cmdServer = &cobra.Command{
 		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id] [api-interface]",
