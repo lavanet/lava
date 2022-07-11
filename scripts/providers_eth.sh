@@ -1,8 +1,8 @@
 
-
 #!/bin/bash
-__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. ${__dir}/scripts/variables.sh
+
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+. ${__dir}/variables.sh
 echo "---------------Setup Providers------------------"
 # killall screen
 #Eth providers

@@ -1,7 +1,7 @@
+#!/bin/bash 
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source ${__dir}/variables.sh
 
-#!/bin/bash
-__dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. ${__dir}/scripts/variables.sh
 echo "---------------Setup Providers------------------"
 
 # killall screen
