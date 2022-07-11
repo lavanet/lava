@@ -11,6 +11,7 @@ import (
 	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -38,13 +39,23 @@ func handleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 		if !ok {
 			return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, c.Subspace)
 		}
+
 		logger := k.Logger(ctx)
 		details := map[string]string{"param": c.Key, "value": c.Value}
+		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
+			details["error"] = "tried to modify " + string(epochstoragetypes.KeyLatestParamChange)
+			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
+		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
 			details["error"] = err.Error()
 			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
 		}
-		//TODO: set param change callbacks here
+		// set param change callback
+		if c.Subspace == epochstoragetypes.ModuleName {
+			details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
+			ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
+		}
+
 		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")
 	}
 

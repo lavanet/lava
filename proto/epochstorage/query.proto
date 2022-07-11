@@ -1,13 +1,15 @@
 syntax = "proto3";
 package lavanet.lava.epochstorage;
 
-import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "epochstorage/params.proto";
 import "epochstorage/stake_storage.proto";
 import "epochstorage/epoch_details.proto";
+import "epochstorage/epoch_params.proto";
 // this line is used by starport scaffolding # 1
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/lavanet/lava/x/epochstorage/types";
 
@@ -31,6 +33,16 @@ service Query {
 	rpc EpochDetails(QueryGetEpochDetailsRequest) returns (QueryGetEpochDetailsResponse) {
 		option (google.api.http).get = "/lavanet/lava/epochstorage/epoch_details";
 	}
+// Queries a EpochParams by index.
+	rpc EpochParams(QueryGetEpochParamsRequest) returns (QueryGetEpochParamsResponse) {
+		option (google.api.http).get = "/lavanet/lava/epochstorage/epoch_params/{index}";
+	}
+
+	// Queries a list of EpochParams items.
+	rpc EpochParamsAll(QueryAllEpochParamsRequest) returns (QueryAllEpochParamsResponse) {
+		option (google.api.http).get = "/lavanet/lava/epochstorage/epoch_params";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -66,4 +78,22 @@ message QueryGetEpochDetailsRequest {}
 message QueryGetEpochDetailsResponse {
 	EpochDetails EpochDetails = 1 [(gogoproto.nullable) = false];
 }
+message QueryGetEpochParamsRequest {
+	  string index = 1;
+
+}
+
+message QueryGetEpochParamsResponse {
+	EpochParams epochParams = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllEpochParamsRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllEpochParamsResponse {
+	repeated EpochParams epochParams = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
 // this line is used by starport scaffolding # 3
