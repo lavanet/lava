@@ -12,7 +12,7 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.UnstakeHoldBlocks(ctx),
-		k.EpochBlocks(ctx),
+		k.EpochBlocksTmp(ctx),
 		k.EpochsToSave(ctx),
 		k.LatestParamChange(ctx),
 	)
@@ -30,7 +30,13 @@ func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context) (res uint64) {
 }
 
 // EpochBlocks returns the EpochBlocks param
-func (k Keeper) EpochBlocks(ctx sdk.Context) (res uint64) {
+func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
+	res = k.GetFixatedParamsForBlock(ctx, block).EpochBlocks
+	return
+}
+
+// EpochBlocks returns the EpochBlocks param
+func (k Keeper) EpochBlocksTmp(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyEpochBlocks, &res)
 	return
 }
@@ -49,24 +55,24 @@ func (k Keeper) GetEpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
 	return
 }
 
-// return the next epoch start
+// return if this block is an epoch start
 func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
-	blocksCycle := k.EpochBlocks(ctx)
 	currentBlock := uint64(ctx.BlockHeight())
+	blocksCycle := k.EpochBlocks(ctx, currentBlock)
 	//current block modulu blocks cycle returns how many block in the current epoch we are, if its 0 we are at epoch start
 	if blocksCycle == 0 {
 		return false
 	}
-	return (currentBlock % blocksCycle) == 0
+	return ((currentBlock - k.GetEpochStart(ctx)) % blocksCycle) == 0
 }
 
 func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
-	blocksToSave := k.EpochsToSave(ctx) * k.EpochBlocks(ctx)
+	blocksToSave := k.EpochsToSave(ctx) * k.EpochBlocksTmp(ctx)
 	return blocksToSave
 }
 
 func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64) {
-	blocksCycle := k.GetEpochBlocks(ctx, block)
+	blocksCycle := k.EpochBlocks(ctx, block)
 	return block % blocksCycle
 }
 
@@ -97,25 +103,17 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 		utils.LavaError(ctx, k.Logger(ctx), "invalid_latest_param_change", map[string]string{"error": "latestParamChange > block", "latestParamChange": strconv.FormatUint(latestParamChange, 10)}, "latest param change cant be in the future")
 		return
 	}
-	if latestParamChange < k.GetEarliestEpochStart(ctx) {
+	earliestEpochStart := k.GetEarliestEpochStart(ctx)
+	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
 		k.paramstore.Set(ctx, types.KeyLatestParamChange, 0)
 		//clean up older fixated params, they no longer matter
-		k.CleanOlderFixatedParams(ctx)
+		k.CleanOlderFixatedParams(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return
 	}
 	// we have a param change, is it in the last epoch?
 	if latestParamChange > k.GetPreviousEpochStartForBlock(ctx, block) {
 		// this is a recent change so we need to move the current fixation backwards
-		k.PushFixatedParams(ctx, block)
+		k.PushFixatedParams(ctx, block, earliestEpochStart)
 	}
-}
-
-func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64) {
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), "fixated_params_after_change", map[string]string{"moduleName": types.ModuleName, "block": strconv.FormatUint(block, 10)}, "params fixated after a change")
-}
-
-func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context) {
-	//TODO:
 }
