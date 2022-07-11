@@ -199,6 +199,8 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	// Get request body
 	rawBody := getDataFromIORead(&req.Body, true)
+	// TODO: set all ids to 1
+
 	println()
 	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", string(rawBody))
 

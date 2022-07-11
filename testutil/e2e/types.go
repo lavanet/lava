@@ -57,4 +57,13 @@ type TestProcess struct {
 	unexpectedEvents []string                              `json:"unexpectedEvents"`
 	tests            map[string](func(LogLine) TestResult) `json:"tests"`
 	strict           bool                                  `json:"strict"`
+	filter           []string                              `json:"filter"`
+}
+
+type Common struct {
+	expectedEvents   []string                              `json:"expectedEvents"`
+	unexpectedEvents []string                              `json:"unexpectedEvents"`
+	tests            map[string](func(LogLine) TestResult) `json:"tests"`
+	strict           bool                                  `json:"strict"`
+	filter           []string                              `json:"filter"`
 }

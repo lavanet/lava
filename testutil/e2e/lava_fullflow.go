@@ -104,26 +104,32 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		usingLavad = true
 	}
 
+	// TODO: Make common
+
 	// Test Configs
 	nodeTest := TestProcess{
 		expectedEvents:   []string{"🔄", "🌍", "lava_spec_add", "lava_provider_stake_new", "lava_client_stake_new", "lava_relay_payment"},
 		unexpectedEvents: []string{"exit status", "cannot build app", "connection refused", "ERR_client_entries_pairing", "ERR"},
 		tests:            tests(),
-		strict:           false}
+		// filter:            nodeFilter,
+		strict: false}
 	initTest := TestProcess{
 		expectedEvents:   []string{"init done"},
 		unexpectedEvents: []string{"Error"},
 		tests:            tests(),
-		strict:           true}
+		// filter:            initFilter,
+		strict: true}
 	providersTest := TestProcess{
 		expectedEvents:   []string{"listening"},
 		unexpectedEvents: []string{"ERROR", "refused", "Missing Payment"},
 		tests:            tests(),
-		strict:           true}
+		// filter:            providerFilter,
+		strict: true}
 	clientTest := TestProcess{
 		expectedEvents:   []string{"update pairing list!", "Client pubkey"},
 		unexpectedEvents: []string{"no pairings available", "Error", "signal: interrupt"},
 		// unexpectedEvents: []string{"no pairings available", "error", "Error", "signal: interrupt"},
+		// filter:            clientFilter,
 		tests:  tests(),
 		strict: true}
 	testfailed := false

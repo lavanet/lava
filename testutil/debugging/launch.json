@@ -34,7 +34,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "relayer/cmd/relayer/main.go",
-            "args": ["server", "127.0.0.1", "2242", "http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@157.90.213.235/rpc/", "COS3", "tendermintrpc", "--from", "servicer2"]
+            "args": ["server", "127.0.0.1", "2242", "http://DiHj7kLfX6hNhECG:66JiESmAke6RHte3AKqDAyt966nNAcm7yMiYbLet@5.161.109.138/rpc/", "COS3", "tendermintrpc", "--from", "servicer2"]
         }
     ]
 }
