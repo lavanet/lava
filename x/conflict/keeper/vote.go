@@ -16,6 +16,22 @@ func (k Keeper) AllocateNewConflictVote(ctx sdk.Context, key string) bool {
 	return found
 }
 
+func (k Keeper) CheckAndHandleAllVotes(ctx sdk.Context) {
+	if k.IsEpochStart(ctx) {
+		conflictVotes := k.GetAllConflictVote(ctx)
+		for _, conflictVote := range conflictVotes {
+			if conflictVote.VoteDeadline <= uint64(ctx.BlockHeight()) {
+				switch conflictVote.VoteState {
+				case types.StateCommit:
+					k.TransitionVoteToReveal(ctx, conflictVote)
+				case types.StateReveal:
+					k.HandleAndCloseVote(ctx, conflictVote)
+				}
+			}
+		}
+	}
+}
+
 func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictVote) {
 	logger := k.Logger(ctx)
 	eventData := map[string]string{"voteID": ConflictVote.Index}

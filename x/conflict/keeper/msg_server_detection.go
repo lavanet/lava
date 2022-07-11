@@ -12,6 +12,9 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+func DetectionIndex(msg *types.MsgDetection, epochStart uint64) string {
+	return msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.Provider + msg.ResponseConflict.ConflictRelayData1.Request.Provider + strconv.FormatUint(epochStart, 10)
+}
 func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*types.MsgDetectionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Keeper.Logger(ctx)
@@ -42,7 +45,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		//4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
 		//5. majority wins, minority gets penalised
 		epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
-		index := msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.Provider + msg.ResponseConflict.ConflictRelayData1.Request.Provider + strconv.FormatUint(epochStart, 10)
+		index := DetectionIndex(msg, epochStart)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator}, "conflict with is already open for this client and providers in this epoch")

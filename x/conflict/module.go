@@ -167,19 +167,7 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	if am.keeper.IsEpochStart(ctx) {
-		conflictVotes := am.keeper.GetAllConflictVote(ctx)
-		for _, conflictVote := range conflictVotes {
-			if conflictVote.VoteDeadline <= uint64(ctx.BlockHeight()) {
-				switch conflictVote.VoteState {
-				case types.StateCommit:
-					am.keeper.TransitionVoteToReveal(ctx, conflictVote)
-				case types.StateReveal:
-					am.keeper.HandleAndCloseVote(ctx, conflictVote)
-				}
-			}
-		}
-	}
+	am.keeper.CheckAndHandleAllVotes(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
