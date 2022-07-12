@@ -1,22 +1,21 @@
 #!/bin/bash -x
 
-# OSMO_RPC=https://mainnet.infura.io
-ETH_RPC_HTTP=GET_ETH_VARIBLE_FROM_ENV
+ETH_HOST=GET_ETH_VARIBLE_FROM_ENV
 ETH_URL_PATH=GET_URL_VARIBLE_FROM_ENV
-# __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-# . ${__dir}/variables.sh
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+. ${__dir}/vars/variables.sh
 
 echo ""
-echo " ::: STARTING ETH PROVIDERS :::" $Endpoint $URL_PATH
+echo " ::: STARTING ETH PROVIDERS :::" $ETH_RPC_HTTP $URL_PATH
 
 # SINGLE PROXY
 MOCK_PORT=2001
-go run ./testutil/e2e/proxy/. $ETH_RPC_HTTP  -p $MOCK_PORT -cache -id eth &
+go run ./testutil/e2e/proxy/. $ETH_HOST  -p $MOCK_PORT -cache -id eth &
 
 # Multi Port Proxy
 # sh ./mock_proxy_eth.sh &
 
-echo " ::: DONE ETHMOCK PROXY ::: "
+# echo " ::: DONE ETHMOCK PROXY ::: "
 
 echo " ::: RUNNING ETH PROVIDERS :::"
 # SINGLE MOCK PROXY

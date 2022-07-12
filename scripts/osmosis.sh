@@ -1,8 +1,8 @@
 #!/bin/bash -x
 
 OSMO_HOST=GET_OSMO_VARIBLE_FROM_ENV
-# __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-# . ${__dir}/variables.sh 
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+. ${__dir}/vars/variables.sh 
 
 echo ""
 echo " ::: STARTING OSMOSIS PROVIDERS :::" $OSMO_HOST
@@ -35,9 +35,9 @@ go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://0.0.0.0:$MOCK_PO
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 
 
 # NO MOCK PROXY
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 OSMO_REST COS3 rest --from servicer1 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2232 OSMO_REST COS3 rest --from servicer2 &
-# go run relayer/cmd/relayer/main.go server 127.0.0.1 2233 OSMO_REST COS3 rest --from servicer3 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2232 $OSMO_REST COS3 rest --from servicer2 &
+# go run relayer/cmd/relayer/main.go server 127.0.0.1 2233 $OSMO_REST COS3 rest --from servicer3 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc --from servicer1 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2242 $OSMO_RPC COS3 tendermintrpc --from servicer2 &
 # go run relayer/cmd/relayer/main.go server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc --from servicer3 
