@@ -190,7 +190,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// logPath := home + logFile
 		end := " 2>&1"
 		// println("home", home)
-		cmd := "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
+		cmd := "lavad server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1"
 		full := "cd " + home + " && " + cmd + " >> " + logPath + end
 		// println("full", full)
 		fullCMD := exec.Command("sh", "-c", full)
@@ -226,7 +226,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov1 := LogProcess(CMD{
 			stateID:      "provider1",
 			homepath:     homepath,
-			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1",
+			cmd:          "lavad server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -239,7 +239,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		LogProcess(CMD{
 			stateID:      "provider2",
 			homepath:     homepath,
-			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2",
+			cmd:          "lavad server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -252,7 +252,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		LogProcess(CMD{
 			stateID:      "provider3",
 			homepath:     homepath,
-			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3",
+			cmd:          "lavad server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -265,7 +265,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		LogProcess(CMD{
 			stateID:      "provider4",
 			homepath:     homepath,
-			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4",
+			cmd:          "lavad server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -278,7 +278,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		prov5 := LogProcess(CMD{
 			stateID:      "provider5",
 			homepath:     homepath,
-			cmd:          "go run relayer/cmd/relayer/main.go server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5",
+			cmd:          "lavad server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5",
 			filter:       []string{"updated", "server", "error"},
 			testing:      true,
 			test:         providersTest,
@@ -297,7 +297,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		LogProcess(CMD{
 			stateID:      "clientOsmo",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client COS3 tendermintrpc --from user2 ",
+			cmd:          "lavad test_client COS3 tendermintrpc --from user2 ",
 			filter:       []string{":::", "reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,
@@ -358,7 +358,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		clientEth := LogProcess(CMD{
 			stateID:      "clientEth",
 			homepath:     homepath,
-			cmd:          "go run " + homepath + "relayer/cmd/relayer/main.go test_client ETH1 jsonrpc --from user1",
+			cmd:          "lavad test_client ETH1 jsonrpc --from user1",
 			filter:       []string{"reply", "no pairings available", "update", "connect", "rpc", "pubkey", "signal", "Error", "error", "panic"},
 			testing:      true,
 			test:         clientTest,

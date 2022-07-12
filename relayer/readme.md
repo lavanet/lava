@@ -11,20 +11,20 @@ bash ./relayer/compile_proto.sh
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go server 127.0.0.1 2222 wss://mainnet.infura.io/ws/v3/<your_token> 0 --from bob
+lavad server 127.0.0.1 2222 wss://mainnet.infura.io/ws/v3/<your_token> 0 --from bob
 ```
 
 ## Run relayer test client
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go test_client 0 --from alice
+lavad test_client 0 --from alice
 ```
 
 ## Run portal server
 
 ```bash
 # in lava folder
-go run relayer/cmd/relayer/main.go portal_server 127.0.0.1 3333 0 --from user2
+lavad portal_server 127.0.0.1 3333 0 --from user2
 geth attach ws://127.0.0.1:3333/ws
 ```

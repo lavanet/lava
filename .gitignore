@@ -20,4 +20,5 @@ relayer/cmd/relayer/__debug_bin
 testutil/e2e/logs/
 ptnet/
 scripts/vars/
+testutil/debugging/
 

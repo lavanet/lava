@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -273,7 +272,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 	//
 	// Call our node
 	var result json.RawMessage
-	connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
 
