@@ -325,7 +325,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		// await(clientOsmosis, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
 		// TODO: check relay payment is COS3
 		// await(node, "relay payment 2 osmosis", found_relay_payment, "awaiting for SECOND payment to proceed... "+clientOsmosis2.id)
-		await(node, "relay payment 0/2 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
+		await(node, "relay payment 1/2 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
 		// await(clientOsmosis2, "client_COS 2 finished", client_finished, "awaiting for client COS 2 to finish") //Client test complete
 		println(" ::: GOT OSMOSIS PAYMENT !!!")
 	}
@@ -368,7 +368,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			requireAlive: false,
 			debug:        false}, t, &states)
 		await(clientEth, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
-		await(node, "relay payment 1/2 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
+		await(node, "relay payment 2/2 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
 		// await(clientEth, "client_eth finished", client_finished, "awaiting ETH1 client to finish") //Client test complete
 		println(" ::: GOT FIRST PAYMENT !!!")
 	}
