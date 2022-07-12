@@ -13,6 +13,10 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	DefaultTimeout = 5 * time.Second
+)
+
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
@@ -126,7 +130,7 @@ func SendRelay(
 
 		relaySentTime := time.Now()
 		clientSession.QoSInfo.TotalRelays++
-		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
 		reply, err := c.Relay(connectCtx, relayRequest)

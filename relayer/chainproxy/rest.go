@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -222,7 +221,7 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 
 func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
-		Timeout: time.Second * 5, // Timeout after 5 seconds
+		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
 
 	//
