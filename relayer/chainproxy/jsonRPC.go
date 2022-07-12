@@ -288,7 +288,9 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	//
 	// Call our node
 	var result json.RawMessage
-	err = rpc.CallContext(ctx, &result, nm.msg.Method, nm.msg.Params...)
+	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	defer cancel()
+	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
 
 	//
 	// Wrap result back to json
@@ -304,6 +306,8 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 			Code:    1, // TODO
 			Message: fmt.Sprintf("%s", err),
 		}
+		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, err
 	} else {
 		replyMsg.Result = result
 		nm.msg.Result = result
