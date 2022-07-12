@@ -31,7 +31,7 @@ func exit(states []State) bool {
 }
 
 func ExitLavaProcess() {
-	cmd := exec.Command("sh", "-c", "killall lavad ; killall ignite ; killall starport ; killall main ; killall lavad")
+	cmd := exec.Command("sh", "-c", "killall lavad ; killall ignite ; killall starport ; killall main ; killall proxy")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(fmt.Errorf(err.Error()).Error())
@@ -138,6 +138,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	results := map[string][]TestResult{}
 
 	// Test Full Flow
+	ExitLavaProcess()
 	node := LogProcess(CMD{
 		stateID:      "ignite",
 		homepath:     homepath,
@@ -340,7 +341,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			dep:          &node,
 			failed:       failed,
 			requireAlive: false,
-			debug:        true}, t, &states)
+			debug:        false}, t, &states)
 		println(" ::: Providers Processes Started ::: ")
 		await(prov_eth, "ETH providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
 	}

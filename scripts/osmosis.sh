@@ -1,10 +1,11 @@
-#!/bin/bash 
+#!/bin/bash -x
 
-__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-. ${__dir}/variables.sh 
+OSMO_HOST=GET_OSMO_VARIBLE_FROM_ENV
+# __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# . ${__dir}/variables.sh 
 
 echo ""
-echo " ::: STARTING OSMOSIS PROVIDERS :::"
+echo " ::: STARTING OSMOSIS PROVIDERS :::" $OSMO_HOST
 
     # SINGLE PROXY
 MOCK_PORT_A=2031
