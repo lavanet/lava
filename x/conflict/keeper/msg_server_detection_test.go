@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -90,6 +89,7 @@ func TestDetection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var msg conflicttypes.MsgDetection
 			msg.Creator = ts.consumer.Addr.String()
+			//request 0
 			msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
 			msg.ResponseConflict.ConflictRelayData0.Request.ApiId = 0
 			msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
@@ -102,38 +102,49 @@ func TestDetection(t *testing.T) {
 			msg.ResponseConflict.ConflictRelayData0.Request.RelayNum = 1
 			msg.ResponseConflict.ConflictRelayData0.Request.SessionId = 1
 			msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock = 100
-			msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = &types.VRFData{}
-			msg.ResponseConflict.ConflictRelayData1.Request = msg.ResponseConflict.ConflictRelayData0.Request
-			msg.ResponseConflict.ConflictRelayData1.Request.Provider = ts.Providers[1].Addr.String()
+			msg.ResponseConflict.ConflictRelayData0.Request.DataReliability = nil
+			msg.ResponseConflict.ConflictRelayData0.Request.Sig = []byte{}
 
 			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData0.Request.Sig = sig
 
+			//request 1
+			temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
+			msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
+			msg.ResponseConflict.ConflictRelayData1.Request.Provider = ts.Providers[1].Addr.String()
+			msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
 			sig, err = sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
 
+			//reply 0
 			msg.ResponseConflict.ConflictRelayData0.Reply.Nonce = 10
 			msg.ResponseConflict.ConflictRelayData0.Reply.FinalizedBlocksHashes = []byte{}
 			msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(ts.spec.FinalizationCriteria)
 			msg.ResponseConflict.ConflictRelayData0.Reply.Data = []byte("DUMMYREPLY")
-			msg.ResponseConflict.ConflictRelayData0.Reply.SigBlocks = []byte{}
-
-			msg.ResponseConflict.ConflictRelayData1.Reply = msg.ResponseConflict.ConflictRelayData0.Reply
-
 			sig, err = sigs.SignRelayResponse(ts.Providers[0].SK, msg.ResponseConflict.ConflictRelayData0.Reply, msg.ResponseConflict.ConflictRelayData0.Request)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData0.Reply.Sig = sig
+			sigBlocks, err := sigs.SignResponseFinalizationData(ts.Providers[0].SK, msg.ResponseConflict.ConflictRelayData0.Reply, msg.ResponseConflict.ConflictRelayData0.Request, ts.consumer.Addr)
+			require.Nil(t, err)
+			msg.ResponseConflict.ConflictRelayData0.Reply.SigBlocks = sigBlocks
 
+			//reply 1
+			temp, _ = msg.ResponseConflict.ConflictRelayData0.Reply.Marshal()
+			msg.ResponseConflict.ConflictRelayData1.Reply.Unmarshal(temp)
+			msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, []byte("DIFF")...)
 			sig, err = sigs.SignRelayResponse(ts.Providers[1].SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Reply.Sig = sig
+			sigBlocks, err = sigs.SignResponseFinalizationData(ts.Providers[1].SK, msg.ResponseConflict.ConflictRelayData1.Reply, msg.ResponseConflict.ConflictRelayData1.Request, ts.consumer.Addr)
+			require.Nil(t, err)
+			msg.ResponseConflict.ConflictRelayData1.Reply.SigBlocks = sigBlocks
 
+			//send detection msg
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 			require.Nil(t, err)
 			sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()
-			fmt.Printf("yarom event \n %+v ", sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())
 		})
 	}
 }

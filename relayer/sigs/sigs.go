@@ -64,6 +64,7 @@ func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) (
 func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelayRequest) ([]byte, error) {
 	//
 	request.DataReliability = nil //its not a part of the signature, its a separate part
+	request.Sig = []byte{}
 	msgData := []byte(request.String())
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, HashMsg(msgData), false)
@@ -116,6 +117,7 @@ func DataToSignResponseFinalizationDataInner(latestBlock int64, sessionID uint64
 }
 
 func SignRelayResponse(pkey *btcSecp256k1.PrivateKey, relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest) ([]byte, error) {
+	relayResponse.Sig = []byte{}
 	dataToSign := DataToSignRelayResponse(relayResponse, relayReq)
 	// Sign
 	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, dataToSign, false)
