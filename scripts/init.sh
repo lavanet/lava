@@ -33,6 +33,7 @@ echo "---------------COS3 Queries------------------"
 lavad query pairing providers "COS3"
 lavad query pairing clients "COS3"
 echo "---------------------------------------------"
+sleep 4
 
 # killall screen
 #Eth providers
