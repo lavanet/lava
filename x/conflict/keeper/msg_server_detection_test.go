@@ -80,15 +80,30 @@ func TestDetection(t *testing.T) {
 	ts := setupForConflictTests(t)
 
 	tests := []struct {
-		name string
+		name         string
+		Creator      string
+		ApiId        uint32
+		ApiUrl       string
+		BlockHeight  int64
+		ChainID      string
+		Data         []byte
+		RequestBlock int64
+		Valid        bool
 	}{
-		{"HappyFlow"},
+		{"HappyFlow", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, true},
+		{"BadCreator", ts.Providers[4].Addr.String(), 0, "", 0, "", []byte{}, 0, false},
+		{"BadApiId", ts.consumer.Addr.String(), 1, "", 0, "", []byte{}, 0, false},
+		{"BadURL", ts.consumer.Addr.String(), 0, "DIFF", 0, "", []byte{}, 0, false},
+		{"BadBlockHeight", ts.consumer.Addr.String(), 0, "", 10, "", []byte{}, 0, false},
+		{"BadChainID", ts.consumer.Addr.String(), 0, "", 0, "DIFF", []byte{}, 0, false},
+		{"BadData", ts.consumer.Addr.String(), 0, "", 0, "", []byte("DIFF"), 0, false},
+		{"BadRequestBlock", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 10, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var msg conflicttypes.MsgDetection
-			msg.Creator = ts.consumer.Addr.String()
+			msg.Creator = tt.Creator
 			//request 0
 			msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
 			msg.ResponseConflict.ConflictRelayData0.Request.ApiId = 0
@@ -112,6 +127,12 @@ func TestDetection(t *testing.T) {
 			//request 1
 			temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
 			msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
+			msg.ResponseConflict.ConflictRelayData1.Request.ApiId += tt.ApiId
+			msg.ResponseConflict.ConflictRelayData1.Request.ApiUrl += tt.ApiUrl
+			msg.ResponseConflict.ConflictRelayData1.Request.BlockHeight += tt.BlockHeight
+			msg.ResponseConflict.ConflictRelayData1.Request.ChainID += tt.ChainID
+			msg.ResponseConflict.ConflictRelayData1.Request.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.Data, tt.Data...)
+			msg.ResponseConflict.ConflictRelayData1.Request.RequestBlock += tt.RequestBlock
 			msg.ResponseConflict.ConflictRelayData1.Request.Provider = ts.Providers[1].Addr.String()
 			msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
 			sig, err = sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
@@ -143,8 +164,12 @@ func TestDetection(t *testing.T) {
 
 			//send detection msg
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
-			require.Nil(t, err)
-			sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()
+			if tt.Valid {
+				require.Nil(t, err)
+				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, conflicttypes.ConflictVoteDetectionEventName)
+			} else {
+
+			}
 		})
 	}
 }
