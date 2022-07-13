@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -218,6 +219,9 @@ func TestClient(
 	apiInterface string,
 	flagSet *pflag.FlagSet,
 ) {
+	// Every client must preseed
+	rand.Seed(time.Now().UnixNano())
+
 	//
 	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 	if err != nil {

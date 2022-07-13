@@ -1347,7 +1347,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: %s", err)
+		log.Fatal("Invalid block height, error: ", err)
 		currentBlock = 0
 	}
 	return &Sentry{
