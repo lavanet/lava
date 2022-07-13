@@ -124,7 +124,6 @@ func main() {
 }
 
 func startProxyProcess(process proxyProcess) {
-	fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX") // HOST ", process.host)
 	process.mock.requests = jsonFileToMap(process.mockfile)
 	if process.mock.requests == nil {
 		process.mock.requests = map[string]string{}
