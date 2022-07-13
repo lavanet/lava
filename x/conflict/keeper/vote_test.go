@@ -72,10 +72,10 @@ func setupForCommitTests(t *testing.T) (testStruct, string, conflicttypes.MsgDet
 	//send detection msg
 	_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 	require.Nil(t, err)
-	EventAttributes := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
 
 	var voteID string
-	for _, attr := range EventAttributes.Attributes {
+	for _, attr := range LastEvent.Attributes {
 		if string(attr.Key) == "voteID" {
 			voteID = string(attr.GetValue())
 		}
@@ -264,4 +264,134 @@ func TestRevealExpired(t *testing.T) {
 
 	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
 	require.NotNil(t, err)
+}
+
+func TestFullVote(t *testing.T) {
+	ts, voteID, detection := setupForCommitTests(t)
+
+	msg := conflicttypes.MsgConflictVoteCommit{}
+
+	msg.VoteID = voteID
+
+	nonce := rand.Int63()
+	replyDataHash := sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
+	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
+	for i := 2; i < NUM_OF_PROVIDERS; i++ {
+		msg.Creator = ts.Providers[i].Addr.String()
+		_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
+		require.Nil(t, err)
+	}
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	msgReveal := conflicttypes.MsgConflictVoteReveal{}
+	msgReveal.VoteID = voteID
+	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
+	msgReveal.Nonce = nonce
+
+	for i := 2; i < NUM_OF_PROVIDERS; i++ {
+		msgReveal.Creator = ts.Providers[i].Addr.String()
+		_, err := ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
+		require.Nil(t, err)
+	}
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	_, found := ts.keepers.Conflict.GetConflictVote(sdk.UnwrapSDKContext(ts.ctx), voteID)
+	require.False(t, found)
+
+	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteResolvedEventName)
+}
+
+func TestNoVotersConflict(t *testing.T) {
+	ts, voteID, _ := setupForCommitTests(t)
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	_, found := ts.keepers.Conflict.GetConflictVote(sdk.UnwrapSDKContext(ts.ctx), voteID)
+	require.False(t, found)
+
+	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteUnresolvedEventName)
+}
+
+func TestNoDecisionVote(t *testing.T) {
+	ts, voteID, detection := setupForCommitTests(t)
+
+	msg := conflicttypes.MsgConflictVoteCommit{}
+	msg.VoteID = voteID
+	nonce := rand.Int63()
+
+	//first vote for provider 0
+	replyDataHash := sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
+	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
+
+	msg.Creator = ts.Providers[2].Addr.String()
+	_, err := ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
+	require.Nil(t, err)
+
+	//first vote for provider 1
+	replyDataHash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
+	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
+
+	msg.Creator = ts.Providers[3].Addr.String()
+	_, err = ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
+	require.Nil(t, err)
+
+	//first vote for none
+	noneData := "FAKE"
+	replyDataHash = sigs.HashMsg([]byte(noneData))
+	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash)
+
+	msg.Creator = ts.Providers[4].Addr.String()
+	_, err = ts.servers.ConflictServer.ConflictVoteCommit(ts.ctx, &msg)
+	require.Nil(t, err)
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	//reveal
+	msgReveal := conflicttypes.MsgConflictVoteReveal{}
+	msgReveal.VoteID = voteID
+	msgReveal.Nonce = nonce
+
+	//reveal vote provider 0
+	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData0.Reply.Data)
+	msgReveal.Creator = ts.Providers[2].Addr.String()
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
+	require.Nil(t, err)
+
+	//reveal vote provider 1
+	msgReveal.Hash = sigs.HashMsg(detection.ResponseConflict.ConflictRelayData1.Reply.Data)
+	msgReveal.Creator = ts.Providers[3].Addr.String()
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
+	require.Nil(t, err)
+
+	//reveal vote none
+	msgReveal.Hash = sigs.HashMsg([]byte(noneData))
+	msgReveal.Creator = ts.Providers[4].Addr.String()
+	_, err = ts.servers.ConflictServer.ConflictVoteReveal(ts.ctx, &msgReveal)
+	require.Nil(t, err)
+
+	for i := 0; i < int(ts.keepers.Conflict.VotePeriod(sdk.UnwrapSDKContext(ts.ctx)))+1; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	_, found := ts.keepers.Conflict.GetConflictVote(sdk.UnwrapSDKContext(ts.ctx), voteID)
+	require.False(t, found)
+
+	LastEvent := sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1]
+	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteUnresolvedEventName)
 }
