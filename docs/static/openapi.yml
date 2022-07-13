@@ -28837,18 +28837,19 @@ paths:
                     parameters:
                       type: object
                       properties:
-                        denom:
+                        unstakeHoldBlocks:
                           type: string
-                        amount:
+                          format: uint64
+                        epochBlocks:
                           type: string
-                      description: >-
-                        Coin defines a token with a denomination and an amount.
-
-
-                        NOTE: The amount field is an Int which implements the
-                        custom method
-
-                        signatures required by gogoproto.
+                          format: uint64
+                        epochsToSave:
+                          type: string
+                          format: uint64
+                        latestParamChange:
+                          type: string
+                          format: uint64
+                      description: Params defines the parameters for the module.
                     fixationBlock:
                       type: string
                       format: uint64
@@ -28974,18 +28975,19 @@ paths:
                   parameters:
                     type: object
                     properties:
-                      denom:
+                      unstakeHoldBlocks:
                         type: string
-                      amount:
+                        format: uint64
+                      epochBlocks:
                         type: string
-                    description: >-
-                      Coin defines a token with a denomination and an amount.
-
-
-                      NOTE: The amount field is an Int which implements the
-                      custom method
-
-                      signatures required by gogoproto.
+                        format: uint64
+                      epochsToSave:
+                        type: string
+                        format: uint64
+                      latestParamChange:
+                        type: string
+                        format: uint64
+                    description: Params defines the parameters for the module.
                   fixationBlock:
                     type: string
                     format: uint64
@@ -29025,7 +29027,6 @@ paths:
             type: object
             properties:
               params:
-                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   unstakeHoldBlocks:
@@ -29040,6 +29041,7 @@ paths:
                   latestParamChange:
                     type: string
                     format: uint64
+                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51128,15 +51130,19 @@ definitions:
       parameters:
         type: object
         properties:
-          denom:
+          unstakeHoldBlocks:
             type: string
-          amount:
+            format: uint64
+          epochBlocks:
             type: string
-        description: |-
-          Coin defines a token with a denomination and an amount.
-
-          NOTE: The amount field is an Int which implements the custom method
-          signatures required by gogoproto.
+            format: uint64
+          epochsToSave:
+            type: string
+            format: uint64
+          latestParamChange:
+            type: string
+            format: uint64
+        description: Params defines the parameters for the module.
       fixationBlock:
         type: string
         format: uint64
@@ -51169,18 +51175,19 @@ definitions:
             parameters:
               type: object
               properties:
-                denom:
+                unstakeHoldBlocks:
                   type: string
-                amount:
+                  format: uint64
+                epochBlocks:
                   type: string
-              description: >-
-                Coin defines a token with a denomination and an amount.
-
-
-                NOTE: The amount field is an Int which implements the custom
-                method
-
-                signatures required by gogoproto.
+                  format: uint64
+                epochsToSave:
+                  type: string
+                  format: uint64
+                latestParamChange:
+                  type: string
+                  format: uint64
+              description: Params defines the parameters for the module.
             fixationBlock:
               type: string
               format: uint64
@@ -51311,18 +51318,19 @@ definitions:
           parameters:
             type: object
             properties:
-              denom:
+              unstakeHoldBlocks:
                 type: string
-              amount:
+                format: uint64
+              epochBlocks:
                 type: string
-            description: >-
-              Coin defines a token with a denomination and an amount.
-
-
-              NOTE: The amount field is an Int which implements the custom
-              method
-
-              signatures required by gogoproto.
+                format: uint64
+              epochsToSave:
+                type: string
+                format: uint64
+              latestParamChange:
+                type: string
+                format: uint64
+            description: Params defines the parameters for the module.
           fixationBlock:
             type: string
             format: uint64
@@ -51382,7 +51390,6 @@ definitions:
     type: object
     properties:
       params:
-        description: params holds all the parameters of this module.
         type: object
         properties:
           unstakeHoldBlocks:
@@ -51397,6 +51404,7 @@ definitions:
           latestParamChange:
             type: string
             format: uint64
+        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.epochstorage.StakeEntry:
     type: object
