@@ -4,6 +4,34 @@ import (
 	"fmt"
 )
 
+func events() map[string]func(LogLine) TestResult {
+	tests := map[string](func(LogLine) TestResult){
+		"🔄":                          test_start,
+		"🌍":                          test_found_pass,
+		"lava_spec_add":              test_found_pass,
+		"lava_provider_stake_new":    test_found_pass,
+		"lava_client_stake_new":      test_found_pass,
+		"lava_relay_payment":         test_found_pass,
+		"ERR_client_entries_pairing": test_ERR_client_entries_pairing,
+		"update pairing list!":       test_found_pass,
+		"Client pubkey":              test_found_pass,
+		"no pairings available":      test_found_fail,
+		"rpc error":                  test_found_pass,
+		"reply":                      test_found_pass,
+		"refused":                    test_found_fail,
+		"listening":                  test_found_pass,
+		"init done":                  test_found_pass,
+		"connection refused":         test_found_fail_now,
+		"cannot build app":           test_found_fail_now,
+		"exit status":                test_found_fail_now,
+	}
+	return tests
+}
+
+func lava_up(line string) TestResult {
+	contains := "Token faucet"
+	return test_basic(line, contains)
+}
 func init_done(line string) TestResult {
 	contains := "init done"
 	return test_basic(line, contains)

@@ -22,12 +22,13 @@ type CMD struct {
 	cmd          string                   `json:"cmd"`
 	filter       []string                 `json:"filter"`
 	testing      bool                     `json:"testing"`
-	test         TestProcess              `json:"test"`
+	test         TestProc                 `json:"test"`
 	results      *map[string][]TestResult `json:"results"`
 	dep          *State                   `json:"dep"`
 	failed       *bool                    `json:"failed"`
 	requireAlive bool                     `json:"requireAlive"`
-	debug        bool                     `json:"debug"`
+	debug        *bool                    `json:"debug"`
+	stdout       *bool                    `json:"debug"`
 }
 
 type State struct {
@@ -35,14 +36,15 @@ type State struct {
 	finished     *bool                    `json:"finished"`
 	awaiting     map[string]Await         `json:"awating"`
 	testing      bool                     `json:"testing"`
-	test         TestProcess              `json:"test"`
+	test         TestProc                 `json:"test"`
 	results      *map[string][]TestResult `json:"results"`
 	depending    *[]*State                `json:"depending"`
 	cmd          *exec.Cmd                `json:"cmd"`
 	failed       *bool                    `json:"failed"`
 	requireAlive bool                     `json:"requireAlive"`
 	lastLine     *string                  `json:"lastLine"`
-	debug        bool                     `json:"debug"`
+	debug        *bool                    `json:"debug"`
+	stdout       *bool                    `json:"debug"`
 }
 
 type Await struct {
@@ -52,7 +54,7 @@ type Await struct {
 	msg  string                  `json:"msg"`
 }
 
-type TestProcess struct {
+type TestProc struct {
 	expectedEvents   []string                              `json:"expectedEvents"`
 	unexpectedEvents []string                              `json:"unexpectedEvents"`
 	tests            map[string](func(LogLine) TestResult) `json:"tests"`
