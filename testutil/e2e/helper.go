@@ -119,6 +119,15 @@ func stdout(state State) {
 	*state.stdout = true
 }
 
+func run_providers_manual() {
+	TestProcess("provider1", "lavad server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1", providersTest)
+	TestProcess("provider2", "lavad server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2", providersTest)
+	TestProcess("provider3", "lavad server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3", providersTest)
+	TestProcess("provider4", "lavad server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4", providersTest)
+	prov5 := TestProcess("provider5", "lavad server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5", providersTest)
+	await(prov5, "providers ready", providers_ready, "awaiting for providers to proceed...")
+}
+
 func ExitLavaProcess() {
 	cmd := exec.Command("sh", "-c", "killall lavad ; killall ignite ; killall starport ; killall main ; killall proxy")
 	stdoutStderr, err := cmd.CombinedOutput()

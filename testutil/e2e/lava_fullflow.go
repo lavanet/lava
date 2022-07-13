@@ -38,13 +38,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	// Test Configs
 	resetGenesis := true
 	init_chain := true
-	run_providers_manual := false
 	run_providers_osmosis := true
 	run_providers_eth := true
 	run_client_osmosis := true
 	run_client_eth := true
 
-	start_lava := "killall ignite; cd " + homepath + " && ignite chain serve -v -r  "
+	start_lava := "killall ignite; killall lavad; cd " + homepath + " && ignite chain serve -v -r  "
 	if !resetGenesis {
 		start_lava = "lavad start "
 	}
@@ -59,14 +58,6 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 		await(init, "get init done", init_done, "awaiting for init to proceed...")
 	}
 
-	if run_providers_manual {
-		TestProcess("provider1", "lavad server 127.0.0.1 2221 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer1", providersTest)
-		TestProcess("provider2", "lavad server 127.0.0.1 2222 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer2", providersTest)
-		TestProcess("provider3", "lavad server 127.0.0.1 2223 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer3", providersTest)
-		TestProcess("provider4", "lavad server 127.0.0.1 2224 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer4", providersTest)
-		prov5 := TestProcess("provider5", "lavad server 127.0.0.1 2225 ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/ws/ ETH1 jsonrpc --from servicer5", providersTest)
-		await(prov5, "providers ready", providers_ready, "awaiting for providers to proceed...")
-	}
 	if run_providers_osmosis {
 		fmt.Println(" ::: Starting Providers Processes [Osmosis] ::: ")
 		prov_osm := TestProcess("providers_osmosis", homepath+"scripts/osmosis.sh", providersTest)
