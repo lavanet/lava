@@ -166,7 +166,7 @@ func TestDetection(t *testing.T) {
 			_, err = ts.servers.ConflictServer.Detection(ts.ctx, &msg)
 			if tt.Valid {
 				require.Nil(t, err)
-				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, conflicttypes.ConflictVoteDetectionEventName)
+				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
 			} else {
 
 			}
