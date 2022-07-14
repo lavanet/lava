@@ -6,3 +6,4 @@ ETH_RPC_WS=ws://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb
 ETH_RPC_HTTP=http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/eth/
 TERRA_RPC_LCD=http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/lcd/
 TERRA_RPC_TENDERMINT=http://kololo8ex9:ifififkwqlspAFJIjfdMCsdmasdgAKoakdFOAKSFOakfaSEFkbntb311esad@168.119.211.250/terra/rpc/
+FTM_RPC_HTTPS=https://rpc.ftm.tools/
