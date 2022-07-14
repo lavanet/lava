@@ -16,15 +16,12 @@
       "subspace": "pairing",
       "key": "StakeToMaxCUList",
       "value": [
-        {
-          "StakeThreshold" : 100,
-          "MaxComputeUnits" : 100
-        },
-        {
-          "StakeThreshold" : 200,
-          "MaxComputeUnits" : 100
-        }
-      ]
+        {"StakeThreshold":{"denom":"ulava","amount":"0"},"MaxComputeUnits":5001},
+        {"StakeThreshold":{"denom":"ulava","amount":"500"},"MaxComputeUnits":15001},
+        {"StakeThreshold":{"denom":"ulava","amount":"2000"},"MaxComputeUnits":50001},
+        {"StakeThreshold":{"denom":"ulava","amount":"5000"},"MaxComputeUnits":250001},
+        {"StakeThreshold":{"denom":"ulava","amount":"100000"},"MaxComputeUnits":500001},
+        {"StakeThreshold":{"denom":"ulava","amount":"9999900000"},"MaxComputeUnits":9999999991}]  
     }
   ],
   "deposit": "10000000ulava"

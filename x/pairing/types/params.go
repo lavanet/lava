@@ -339,7 +339,7 @@ func validateStakeToMaxCUList(v interface{}) error {
 		if i > 0 {
 			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
 				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
-				return fmt.Errorf("invalid parameter order: %T", v)
+				return fmt.Errorf("invalid parameter stakeToMaxCUList order, the order must be ascending: index %d value %+v and index %d value %+v", i, stakeToMaxCU.StakeThreshold, i-1, stakeToMaxCUList.List[i-1].StakeThreshold)
 			}
 		}
 	}
