@@ -66,8 +66,10 @@ jobs:
       run: cat ./testutil/e2e/logs/providers_eth.log
   
     # Show OSMOSIS Logs
-    - name: cat clientOsmo.log
-      run: cat ./testutil/e2e/logs/clientOsmo.log
+    - name: cat clientOsmoRest.log
+      run: cat ./testutil/e2e/logs/clientOsmoRest.log
+    - name: cat clientOsmoRPC.log
+      run: cat ./testutil/e2e/logs/clientOsmoRPC.log
     - name: cat providers_osmosis.log
       run: cat ./testutil/e2e/logs/providers_eth.log
     # - name: docker build 
