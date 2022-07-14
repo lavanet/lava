@@ -14,8 +14,8 @@ go run ./testutil/e2e/proxy/. $OSMO_HOST -p $MOCK_PORT_A -cache -id osmosis_rest
 go run ./testutil/e2e/proxy/. $OSMO_HOST -p $MOCK_PORT_B -cache -id osmosis_rpc  &
 
 # Multi Port Proxy
-# sh ./mock_proxy_osmosis.sh &
-
+# bash ./scripts/mock_proxy_osmosis.sh &
+# sleep 2
 
 echo " ::: RUNNING OSMOSIS PROVIDERS :::"
 # SINGLE MOCK PROXY

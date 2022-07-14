@@ -19,7 +19,7 @@ var initTest = TestProc{
 	tests:            events(),
 	strict:           true}
 var providersTest = TestProc{
-	filter:           []string{"Server", "updated", "server", "error"},
+	filter:           []string{"sent (new/from cache)", "Server", "updated", "server", "error"},
 	expectedEvents:   []string{"listening"},
 	unexpectedEvents: []string{"ERROR", "refused", "Missing Payment"},
 	tests:            events(),
@@ -61,16 +61,21 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	if run_providers_osmosis {
 		fmt.Println(" ::: Starting Providers Processes [Osmosis] ::: ")
 		prov_osm := TestProcess("providers_osmosis", homepath+"scripts/osmosis.sh", providersTest)
+		// debugOn(prov_osm)
 		println(" ::: Providers Processes Started ::: ")
 		await(prov_osm, "Osmosis providers ready", providers_ready, "awaiting for providers to listen to proceed...")
 
 		if run_client_osmosis {
 			sleep(1)
 			fmt.Println(" ::: Starting Client Process [ETH] ::: ")
-			clientOsmo := TestProcess("clientOsmo", "lavad test_client COS3 tendermintrpc --from user2", clientTest)
-			await(node, "relay payment 1/2 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
+			clientOsmoRPC := TestProcess("clientOsmoRPC", "lavad test_client COS3 tendermintrpc --from user2", clientTest)
+			await(node, "relay payment 1/3 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
-			silent(clientOsmo)
+			silent(clientOsmoRPC)
+			clientOsmoRest := TestProcess("clientOsmoRest", "lavad test_client COS3 rest --from user2", clientTest)
+			await(node, "relay payment 1/3 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
+			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
+			silent(clientOsmoRest)
 			silent(prov_osm)
 		}
 	}
@@ -85,7 +90,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 			fmt.Println(" ::: Starting Client Process [COS3] ::: ")
 			clientEth := TestProcess("clientEth", "lavad test_client ETH1 jsonrpc --from user1", clientTest)
 			await(clientEth, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
-			await(node, "relay payment 2/2 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
+			await(node, "relay payment 3/3 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
 			fmt.Println(" ::: GOT ETH PAYMENT !!!")
 			silent(clientEth)
 			silent(prov_eth)

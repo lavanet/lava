@@ -13,7 +13,8 @@ MOCK_PORT=2001
 go run ./testutil/e2e/proxy/. $ETH_HOST  -p $MOCK_PORT -cache -id eth &
 
 # Multi Port Proxy
-# sh ./mock_proxy_eth.sh &
+# sh ./scripts/mock_proxy_eth.sh &
+# sleep 2
 
 # echo " ::: DONE ETHMOCK PROXY ::: "
 

@@ -45,6 +45,8 @@ func getDomain(s string) (domain string) {
 	return s
 }
 
+var current *proxyProcess
+
 func main() {
 
 	// CLI ARGS
@@ -109,6 +111,7 @@ func main() {
 		strict:    *strict,
 		noSave:    *noSave,
 	}
+	current = &process
 	proxies = append(proxies, process)
 
 	if !malicious {
@@ -313,5 +316,11 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	println("_________________________________", realCount, "/", cacheCount, "\n")
+	if realCount > 0 || cacheCount > 0 {
+		id := ""
+		if current != nil {
+			id = current.id + ":" + current.port
+		}
+		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id, "\n")
+	}
 }
