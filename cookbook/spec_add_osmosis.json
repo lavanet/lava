@@ -11,7 +11,7 @@
       "finalization_criteria": 0,
       "saved_blocks": 1,
       "average_block_time": "6500",
-      "block_height_threshold": "5",
+      "allowed_block_lag_for_qos_sync": "5",
       "apis": [{
           "name": "abci_info",
           "category": {

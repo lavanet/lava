@@ -55,7 +55,7 @@ type UserSessions struct {
 	MaxComputeUnits  uint64
 	DataReliability  *pairingtypes.VRFData
 	VrfPk            utils.VrfPubKey
-	IsBlackListed    bool
+	IsBlockListed    bool
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -201,12 +201,12 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 
 	userSessions := g_sessions[userAddr]
 
-	if userSessions.IsBlackListed {
-		return nil, nil, fmt.Errorf("User blacklisted! userAddr: %s", userAddr)
+	if userSessions.IsBlockListed {
+		return nil, nil, fmt.Errorf("User blocklisted! userAddr: %s", userAddr)
 	}
 
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0}
+		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0, UniqueIdentifier: req.SessionId}
 	}
 
 	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
@@ -220,7 +220,7 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, reque
 
 	// Check that relaynum gets incremented by user
 	if sess.RelayNum+1 != request.RelayNum {
-		sess.userSessionsParent.IsBlackListed = true
+		sess.userSessionsParent.IsBlockListed = true
 		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
 	}
 
@@ -320,6 +320,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		g_sessions_mutex.Unlock()
 
 	} else {
+		// Validate
+		if request.SessionId == 0 {
+			return nil, fmt.Errorf("SessionID cannot be 0 for non-data reliability requests")
+		}
+
 		// Update session
 		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
 		if err != nil {
@@ -526,12 +531,16 @@ func Server(
 		cancel()
 	}()
 
+	// Init random seed
+	rand.Seed(time.Now().UnixNano())
+
 	//
 	// Start newSentry
 	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, voteEventHandler, apiInterface, nil, nil)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
+		return
 	}
 	go newSentry.Start(ctx)
 	for newSentry.GetSpecHash() == nil {
