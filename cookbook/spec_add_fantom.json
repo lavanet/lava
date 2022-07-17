@@ -9,7 +9,7 @@
       "reliability_threshold": 268435455,
       "compares_hashes": true,
       "finalization_criteria": 0,
-      "saved_blocks": 3,
+      "saved_blocks": 1,
       "average_block_time": "1500",
       "allowed_block_lag_for_qos_sync": "5",
       "apis": [
@@ -1601,7 +1601,7 @@
       "reliability_threshold": 268435455,
       "compares_hashes": true,
       "finalization_criteria": 0,
-      "saved_blocks": 3,
+      "saved_blocks": 1,
       "average_block_time": "1500",
       "allowed_block_lag_for_qos_sync": "5",
       "apis": [
