@@ -1,3 +1,5 @@
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+. ${__dir}/vars/variables.sh
 
 echo "---------------Setup Providers------------------"
 # killall screen
@@ -12,11 +14,11 @@ echo "---------------Setup Providers------------------"
 
 echo " ::: STARTING ETH PROVIDERS :::"
 # lavad server 127.0.0.1 2221 http://0.0.0.0:2200 ETH1 jsonrpc --from servicer1 &
-lavad server 127.0.0.1 2221 http://0.0.0.0:2001/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer1 &
-lavad server 127.0.0.1 2222 http://0.0.0.0:2002/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer2 &
-lavad server 127.0.0.1 2223 http://0.0.0.0:2003/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer3 &
-lavad server 127.0.0.1 2224 http://0.0.0.0:2004/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer4 &
-lavad server 127.0.0.1 2225 http://0.0.0.0:2005/v3/3755a1321ab24f938589412403c46455 ETH1 jsonrpc --from servicer5 
+lavad server 127.0.0.1 2221 http://0.0.0.0:2001/$ETH_URL_PATH ETH1 jsonrpc --from servicer1 &
+lavad server 127.0.0.1 2222 http://0.0.0.0:2002/$ETH_URL_PATH ETH1 jsonrpc --from servicer2 &
+lavad server 127.0.0.1 2223 http://0.0.0.0:2003/$ETH_URL_PATH ETH1 jsonrpc --from servicer3 &
+lavad server 127.0.0.1 2224 http://0.0.0.0:2004/$ETH_URL_PATH ETH1 jsonrpc --from servicer4 &
+lavad server 127.0.0.1 2225 http://0.0.0.0:2005/$ETH_URL_PATH ETH1 jsonrpc --from servicer5 
 # lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 &
 # lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2 &
 # lavad server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3 &

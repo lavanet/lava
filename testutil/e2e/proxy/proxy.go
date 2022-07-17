@@ -45,6 +45,8 @@ func getDomain(s string) (domain string) {
 	return s
 }
 
+var current *proxyProcess
+
 func main() {
 
 	// CLI ARGS
@@ -109,6 +111,7 @@ func main() {
 		strict:    *strict,
 		noSave:    *noSave,
 	}
+	current = &process
 	proxies = append(proxies, process)
 
 	if !malicious {
@@ -199,19 +202,27 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	// Get request body
 	rawBody := getDataFromIORead(&req.Body, true)
+	// TODO: set all ids to 1
+	rawBodyS := string(rawBody)
+	// sep := "id\":"
+	// first := strings.Split(rawBodyS, sep)[0]
+	// second := strings.Split(rawBodyS, sep)[1]
+	// second = strings.Join(strings.Split(second, ",")[1:], ",")
+	// rawBodyS = first + sep + "1," + second
+
 	println()
-	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", string(rawBody))
+	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
 
 	// TODO: make generic
 	// Check if asking for blockNumber
-	if fakeResponse && strings.Contains(string(rawBody), "blockNumber") {
+	if fakeResponse && strings.Contains(rawBodyS, "blockNumber") {
 		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
 		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
 
 	} else {
 		// Return Cached data if found in history and fromCache is set on
-		if val, ok := mock.requests[string(rawBody)]; ok && p.cache {
+		if val, ok := mock.requests[rawBodyS]; ok && p.cache {
 			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
 			cacheCount += 1
 
@@ -222,12 +233,13 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				println(p.port+" ::: Fake Response ::: ", val)
 				fakeCount += 1
 			}
+			time.Sleep(500 * time.Millisecond)
 			rw.WriteHeader(200)
 			rw.Write([]byte(val))
 
 		} else {
 			// Recreating Request
-			proxyRequest, err := createProxyRequest(req, host, string(rawBody))
+			proxyRequest, err := createProxyRequest(req, host, rawBodyS)
 			if err != nil {
 				println(err.Error())
 			} else {
@@ -245,7 +257,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					status = proxyRes.StatusCode
 					respBody = getDataFromIORead(&proxyRes.Body, true)
 					respBodyStr = string(respBody)
-					mock.requests[string(rawBody)] = respBodyStr
+					mock.requests[rawBodyS] = respBodyStr
 					realCount += 1
 					println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", respBodyStr)
 				}
@@ -255,7 +267,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Got error in response - retrying request")
 
 					// Recreating Request
-					proxyRequest, err = createProxyRequest(req, host, string(rawBody))
+					proxyRequest, err = createProxyRequest(req, host, rawBodyS)
 					if err != nil {
 						println(err.Error())
 						respBody = []byte(err.Error())
@@ -268,7 +280,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 							respBody = []byte("error: " + err.Error())
 						} else {
 							respBody = getDataFromIORead(&proxyRes.Body, true)
-							mock.requests[string(rawBody)] = string(respBody)
+							mock.requests[rawBodyS] = string(respBody)
 							status = proxyRes.StatusCode
 						}
 						realCount += 1
@@ -299,9 +311,16 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				if respBody == nil {
 					respBody = []byte("error")
 				}
+				// time.Sleep(500 * time.Millisecond)
 				returnResponse(rw, status, respBody)
 			}
 		}
 	}
-	println("_________________________________", realCount, "/", cacheCount, "\n")
+	if realCount > 0 || cacheCount > 0 {
+		id := ""
+		if current != nil {
+			id = current.id + ":" + current.port
+		}
+		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id, "\n")
+	}
 }
