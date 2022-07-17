@@ -88,16 +88,23 @@ func TestDetection(t *testing.T) {
 		ChainID      string
 		Data         []byte
 		RequestBlock int64
-		Valid        bool
+		Cusum        uint64
+		RelayNum     uint64
+		QoSReport    *types.QualityOfServiceReport
+
+		Valid bool
 	}{
-		{"HappyFlow", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, true},
-		{"BadCreator", ts.Providers[4].Addr.String(), 0, "", 0, "", []byte{}, 0, false},
-		{"BadApiId", ts.consumer.Addr.String(), 1, "", 0, "", []byte{}, 0, false},
-		{"BadURL", ts.consumer.Addr.String(), 0, "DIFF", 0, "", []byte{}, 0, false},
-		{"BadBlockHeight", ts.consumer.Addr.String(), 0, "", 10, "", []byte{}, 0, false},
-		{"BadChainID", ts.consumer.Addr.String(), 0, "", 0, "DIFF", []byte{}, 0, false},
-		{"BadData", ts.consumer.Addr.String(), 0, "", 0, "", []byte("DIFF"), 0, false},
-		{"BadRequestBlock", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 10, false},
+		{"HappyFlow", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, 100, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, true},
+		{"CuSumChange", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, 0, 100, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, true},
+		{"RelayNumChange", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, true},
+		{"QoSNil", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 0, 0, 0, nil, true},
+		{"BadCreator", ts.Providers[4].Addr.String(), 0, "", 0, "", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadApiId", ts.consumer.Addr.String(), 1, "", 0, "", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadURL", ts.consumer.Addr.String(), 0, "DIFF", 0, "", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadBlockHeight", ts.consumer.Addr.String(), 0, "", 10, "", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadChainID", ts.consumer.Addr.String(), 0, "", 0, "DIFF", []byte{}, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadData", ts.consumer.Addr.String(), 0, "", 0, "", []byte("DIFF"), 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
+		{"BadRequestBlock", ts.consumer.Addr.String(), 0, "", 0, "", []byte{}, 10, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, false},
 	}
 
 	for _, tt := range tests {
@@ -133,6 +140,9 @@ func TestDetection(t *testing.T) {
 			msg.ResponseConflict.ConflictRelayData1.Request.ChainID += tt.ChainID
 			msg.ResponseConflict.ConflictRelayData1.Request.Data = append(msg.ResponseConflict.ConflictRelayData1.Request.Data, tt.Data...)
 			msg.ResponseConflict.ConflictRelayData1.Request.RequestBlock += tt.RequestBlock
+			msg.ResponseConflict.ConflictRelayData1.Request.CuSum += tt.Cusum
+			msg.ResponseConflict.ConflictRelayData1.Request.QoSReport = tt.QoSReport
+			msg.ResponseConflict.ConflictRelayData1.Request.RelayNum += tt.RelayNum
 			msg.ResponseConflict.ConflictRelayData1.Request.Provider = ts.Providers[1].Addr.String()
 			msg.ResponseConflict.ConflictRelayData1.Request.Sig = []byte{}
 			sig, err = sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request)
