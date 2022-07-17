@@ -810,13 +810,13 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	for index, _ := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			return errors.New("provider returned non consecutive finalized blocks reply")
+			return errors.New("Reliability ERROR: provider returned non consecutive finalized blocks reply")
 		}
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
-		return errors.New("provider returned finalized hashes for an older latest block")
+		return errors.New("Reliability ERROR: provider returned finalized hashes for an older latest block")
 	}
 
 	// New reply should have blocknum >= from block same provider
@@ -829,7 +829,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
 
-		return fmt.Errorf("Provider supplied an older latest block than it has previously")
+		return fmt.Errorf("Reliability ERROR: Provider supplied an older latest block than it has previously")
 	}
 
 	return nil
@@ -955,7 +955,7 @@ func (s *Sentry) SendRelay(
 		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
 		if err != nil {
-			log.Println("Finalized Block reply err", err)
+			log.Println("Reliability ERROR: Finalized Block reply err", err)
 			return nil, err
 		}
 		latestBlock := reply.LatestBlock
@@ -1023,7 +1023,7 @@ func (s *Sentry) SendRelay(
 							clientSession = getClientSessionFromWrap(wrap)
 							relay_rep, err = cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
-								log.Println("error: Could not get reply to reliability relay from provider: ", address, err)
+								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 									s.movePairingEntryToPurge(wrap, index)
 								}
@@ -1041,7 +1041,7 @@ func (s *Sentry) SendRelay(
 						//send reliability on the client's expense
 						log.Println("secure flag Not Implemented, TODO:")
 					}
-					return nil, fmt.Errorf("is not a valid reliability VRF address result")
+					return nil, fmt.Errorf("Reliability ERROR: is not a valid reliability VRF address result")
 				}
 			}
 
@@ -1083,7 +1083,7 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.providerHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Discrepancy Checker err", err)
+				log.Println("Reliability ERROR: Discrepancy Checker err", err)
 				return false, err
 			}
 
@@ -1112,12 +1112,12 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.prevEpochProviderHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Discrepancy Checker err", err)
+				log.Println("Reliability ERROR: Discrepancy Checker err", err)
 				return false, err
 			}
 
 			if discrepancyResult {
-				log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
+				log.Println("Reliability ERROR: Conflict found between consensus %d and provider %s", idx, providerAcc)
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 #!/bin/bash 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source ${__dir}/variables.sh
+source ${__dir}/vars/variables.sh
 
 echo "---------------Setup Providers------------------"
 
