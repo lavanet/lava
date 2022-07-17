@@ -740,7 +740,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 			// TODO: we should retry with another addr
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
-				return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
+				return nil, -1, fmt.Errorf("error making initial connection to provider: %s, error: %w", wrap.Addr, err)
 			}
 			wrap.Client = conn
 		}
@@ -774,7 +774,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
 					s.movePairingEntryToPurge(wrap, index, false)
 				}
-				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
+				fmt.Printf("error making initial connection to provider: %s, error: %s \n", wrap.Addr, err.Error())
 				wrap.SessionsLock.Unlock()
 				continue
 			}
