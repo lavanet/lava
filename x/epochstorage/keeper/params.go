@@ -106,7 +106,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 	earliestEpochStart := k.GetEarliestEpochStart(ctx)
 	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
-		k.paramstore.Set(ctx, types.KeyLatestParamChange, 0)
+		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
 		//clean up older fixated params, they no longer matter
 		k.CleanOlderFixatedParams(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return

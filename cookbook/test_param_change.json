@@ -13,6 +13,11 @@
       "value": "100"
     },
     {
+      "subspace": "epochstorage",
+      "key": "UnstakeHoldBlocks",
+      "value": "110"
+    },
+    {
       "subspace": "pairing",
       "key": "StakeToMaxCUList",
       "value": [

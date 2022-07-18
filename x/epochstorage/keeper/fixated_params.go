@@ -98,7 +98,8 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 }
 
 func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
-	for idx := uint64(startIdx); true; idx++ { //we limit to 100 but never expect to get there
+	var idx uint64
+	for idx = uint64(startIdx); true; idx++ {
 		thisIdxKey := k.fixatedParamsKey(idx)
 		_, found := k.GetFixatedParams(ctx, thisIdxKey)
 		if !found {
@@ -106,6 +107,7 @@ func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 		}
 		k.RemoveFixatedParams(ctx, thisIdxKey)
 	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": strconv.FormatUint(idx, 10)}, "fixation cleaned")
 }
 
 func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, block uint64) types.Params {
