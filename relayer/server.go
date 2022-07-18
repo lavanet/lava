@@ -48,7 +48,7 @@ type UserSessions struct {
 	UsedComputeUnits uint64
 	Sessions         map[uint64]*RelaySession
 	MaxComputeUnits  uint64
-	DataReliability  *pairingtypes.VRFData
+	DataReliability  map[uint64]*pairingtypes.VRFData
 	VrfPk            utils.VrfPubKey
 	IsBlockListed    bool
 	user             string
@@ -67,7 +67,6 @@ type relayServer struct {
 }
 
 func askForRewards(staleEpochHeight int64) {
-
 	if len(g_rewardsSessions) > 0 {
 		log.Printf("reward sessions: ")
 		// for _, userSessions := range g_rewardsSessions {
@@ -80,34 +79,38 @@ func askForRewards(staleEpochHeight int64) {
 	reliability := false
 	sessionsToDelete := make([]*RelaySession, 0)
 
-	// ARITODO:: check that g_rewardsSessions[staleEpochHeight] exists
-	for sessionID, session := range g_rewardsSessions[staleEpochHeight] {
-		session.Lock.Lock()
-		if session.Proof == nil {
+	for epoch := range g_rewardsSessions {
+		if int64(epoch) > staleEpochHeight {
+			continue
+		}
+
+		for _, session := range g_rewardsSessions[epoch] {
+			session.Lock.Lock()
+			if session.Proof == nil {
+				session.Lock.Unlock()
+				continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
+				// ARITODO:: do we need to do something with this session or do we just discard it?
+			}
+			relay := session.Proof
+			relays = append(relays, relay)
+			// delete(g_rewardsSessions[epoch], sessionID)
+			sessionsToDelete = append(sessionsToDelete, session)
+
+			if _, ok := session.userSessionsParent.DataReliability[uint64(epoch)]; ok {
+				relay.DataReliability = session.userSessionsParent.DataReliability[uint64(epoch)]
+				session.userSessionsParent.DataReliability = nil
+				reliability = true
+			}
 			session.Lock.Unlock()
-			continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
-			// ARITODO:: We need to do something with this session....
+			userAccAddr, err := sdk.AccAddressFromBech32(session.userSessionsParent.user)
+			if err != nil {
+				log.Println(fmt.Sprintf("invalid user address: %s\n", session.userSessionsParent.user))
+			}
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
-		relay := session.Proof
-		relays = append(relays, relay)
-		delete(g_rewardsSessions[staleEpochHeight], sessionID)
-		sessionsToDelete = append(sessionsToDelete, session)
-
-		if session.userSessionsParent.DataReliability != nil {
-			relay.DataReliability = session.userSessionsParent.DataReliability
-			session.userSessionsParent.DataReliability = nil
-			reliability = true
-		}
-		session.Lock.Unlock()
-		userAccAddr, err := sdk.AccAddressFromBech32(session.userSessionsParent.user)
-		if err != nil {
-			log.Println(fmt.Sprintf("invalid user address: %s\n", session.userSessionsParent.user))
-		}
-		g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
-		g_sentry.UpdateCUServiced(relay.CuSum)
+		delete(g_rewardsSessions, epoch) // All rewards handles for that epoch
 	}
-
-	delete(g_rewardsSessions, staleEpochHeight) // All rewards handles for that epoch
 
 	g_sessions_mutex.Lock()
 	for _, session := range sessionsToDelete {
@@ -189,7 +192,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
 
-		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}, VrfPk: *vrf_pk, user: userAddr}
+		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}, VrfPk: *vrf_pk, user: userAddr, DataReliability: make(map[uint64]*pairingtypes.VRFData)}
 		log.Println("new user sessions " + strconv.FormatUint(maxcuRes, 10))
 	}
 
@@ -204,6 +207,10 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		sessionEpoch := g_sentry.GetCurrentEpochHeight()
 		if isOverlap {
 			sessionEpoch = sessionEpoch - int64(g_sentry.EpochSize)
+		}
+
+		if _, ok := g_rewardsSessions[sessionEpoch]; !ok {
+			g_rewardsSessions[sessionEpoch] = make(map[uint64]*RelaySession)
 		}
 		g_rewardsSessions[sessionEpoch][req.SessionId] = userSessions.Sessions[req.SessionId]
 	}
@@ -269,6 +276,10 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 	//TODO: cache this client, no need to run the query every time
 	res, err := isAuthorizedUser(ctx, userAddr.String())
+	if err != nil {
+		return nil, fmt.Errorf("user not authorized or error occured, err: %s", err)
+	}
+
 	if !res.Valid {
 		return nil, fmt.Errorf("user not authorized or bad signature, err: %s", err)
 	}
@@ -283,7 +294,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
-	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request, res.Overlap)
+	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request, res.GetOverlap())
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +332,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		g_sessions_mutex.Lock()
 
+		// round to nearest epoch
+		epoch := request.BlockHeight - request.BlockHeight%int64(g_sentry.EpochSize)
+
 		//will get some rewards for this
-		relaySession.userSessionsParent.DataReliability = request.DataReliability
+		relaySession.userSessionsParent.DataReliability[uint64(epoch)] = request.DataReliability
 		g_sessions_mutex.Unlock()
 
 	} else {
@@ -455,6 +469,7 @@ func Server(
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
+	g_rewardsSessions = map[int64]map[uint64]*RelaySession{}
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
