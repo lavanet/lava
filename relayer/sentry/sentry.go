@@ -77,6 +77,9 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
+		fmt.Printf("QoS Availibility: %s, downtime precent : %s \n", cs.QoSInfo.LastQoSReport.Availability.String(), downtimePrecentage.String())
+	}
 
 	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -93,7 +96,6 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 		return list
 	}
 	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
-
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
@@ -106,6 +108,10 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	cs.QoSInfo.TotalSyncScore++
 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+		fmt.Printf("QoS Sync: %s, block diff: %d , sync score: %d / %d \n", cs.QoSInfo.LastQoSReport.Sync.String(), blockHeightDiff, cs.QoSInfo.SyncScoreSum, cs.QoSInfo.TotalSyncScore)
+	}
 }
 
 type RelayerClientWrapper struct {
