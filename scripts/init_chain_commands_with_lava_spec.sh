@@ -46,7 +46,7 @@ lavad tx pairing stake-provider "LAV1" 2000ulava "127.0.0.1:2262,tendermintrpc,1
 lavad tx pairing stake-provider "LAV1" 2050ulava "127.0.0.1:2263,tendermintrpc,1" 1 -y --from servicer3
 lavad tx pairing stake-provider "LAV1" 2020ulava "127.0.0.1:2264,rest,1" 1 -y --from servicer4
 lavad tx pairing stake-provider "LAV1" 2030ulava "127.0.0.1:2265,rest,1" 1 -y --from servicer5
-lavad tx pairing stake-provider "LAV1" 2030ulava "127.0.0.1:2266,rest,1" 1 -y --from servicer6
+lavad tx pairing stake-provider "LAV1" 2060ulava "127.0.0.1:2266,rest,1" 1 -y --from servicer6
 
 echo "---------------Queries------------------"
 lavad query pairing providers "ETH1"
@@ -88,8 +88,8 @@ screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2"
 screen -S portals -X screen -t win11 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3335 COS3 tendermintrpc --from user2"
 screen -S portals -X screen -t win12 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3336 FTM250 jsonrpc --from user3"
-screen -S portals -X screen -t win13 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3336 LAV1 rest --from user4"
-screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3336 LAV1 tendermintrpc --from user4"
+screen -S portals -X screen -t win13 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3337 LAV1 rest --from user4"
+screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3338 LAV1 tendermintrpc --from user4"
 
 echo "--- setting up screens done ---"
 screen -ls
