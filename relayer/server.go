@@ -33,25 +33,31 @@ import (
 )
 
 var (
-	g_privKey         *btcSecp256k1.PrivateKey
-	g_sessions        map[string]*UserSessions
-	g_sessions_mutex  sync.Mutex
-	g_sentry          *sentry.Sentry
-	g_serverChainID   string
-	g_txFactory       tx.Factory
-	g_chainProxy      chainproxy.ChainProxy
-	g_chainSentry     *chainsentry.ChainSentry
-	g_rewardsSessions map[int64]map[uint64]*RelaySession
+	g_privKey               *btcSecp256k1.PrivateKey
+	g_sessions              map[string]*UserSessions
+	g_sessions_mutex        sync.Mutex
+	g_sentry                *sentry.Sentry
+	g_serverChainID         string
+	g_txFactory             tx.Factory
+	g_chainProxy            chainproxy.ChainProxy
+	g_chainSentry           *chainsentry.ChainSentry
+	g_rewardsSessions       map[uint64][]*RelaySession
+	g_rewardsSessions_mutex sync.Mutex
 )
 
-type UserSessions struct {
+type UserSessionsEpochData struct {
 	UsedComputeUnits uint64
-	Sessions         map[uint64]*RelaySession
 	MaxComputeUnits  uint64
-	DataReliability  map[uint64]*pairingtypes.VRFData
+	DataReliability  *pairingtypes.VRFData
 	VrfPk            utils.VrfPubKey
-	IsBlockListed    bool
-	user             string
+}
+
+type UserSessions struct {
+	Sessions      map[uint64]*RelaySession
+	IsBlockListed bool
+	user          string
+	dataByEpoch   map[uint64]*UserSessionsEpochData
+	Lock          sync.Mutex
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
@@ -60,6 +66,7 @@ type RelaySession struct {
 	Lock               sync.Mutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
+	PairingEpoch       uint64
 }
 
 type relayServer struct {
@@ -67,41 +74,54 @@ type relayServer struct {
 }
 
 func askForRewards(staleEpochHeight int64) {
-	if len(g_rewardsSessions) > 0 {
-		log.Printf("reward sessions: ")
-		// for _, userSessions := range g_rewardsSessions {
-		log.Printf("%+v ", g_rewardsSessions)
-		// }
-		log.Printf("\n")
+	staleEpochs := []uint64{uint64(staleEpochHeight)}
+	if len(g_rewardsSessions) > sentry.StaleEpochDistance {
+		// go over all epochs and look for stale unhandled epochs
+		for epoch, _ := range g_rewardsSessions {
+			if epoch < uint64(staleEpochHeight) {
+				staleEpochs = append(staleEpochs, epoch)
+			}
+		}
 	}
 
 	relays := []*pairingtypes.RelayRequest{}
 	reliability := false
 	sessionsToDelete := make([]*RelaySession, 0)
 
-	for epoch := range g_rewardsSessions {
-		if int64(epoch) > staleEpochHeight {
-			continue
-		}
+	for staleEpoch := range staleEpochs {
 
-		for _, session := range g_rewardsSessions[epoch] {
-			session.Lock.Lock()
+		g_rewardsSessions_mutex.Lock()
+		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
+		if !ok {
+			g_rewardsSessions_mutex.Unlock()
+			return
+		}
+		g_rewardsSessions_mutex.Unlock()
+
+		for _, session := range staleEpochSessions {
+			session.Lock.Lock() // TODO:: is it ok to lock session without g_sessions_mutex?
 			if session.Proof == nil {
+				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
 				session.Lock.Unlock()
-				continue //this can happen if the data reliability created a session, we dont save a proof on data reliability message
-				// ARITODO:: do we need to do something with this session or do we just discard it?
+				if session.UniqueIdentifier == 0 {
+					fmt.Printf("Error: Missing proof, cannot get rewards for this session: %d", session.UniqueIdentifier)
+				}
+				continue
 			}
 			relay := session.Proof
 			relays = append(relays, relay)
-			// delete(g_rewardsSessions[epoch], sessionID)
 			sessionsToDelete = append(sessionsToDelete, session)
 
-			if _, ok := session.userSessionsParent.DataReliability[uint64(epoch)]; ok {
-				relay.DataReliability = session.userSessionsParent.DataReliability[uint64(epoch)]
-				session.userSessionsParent.DataReliability = nil
+			session.Lock.Unlock()
+
+			session.userSessionsParent.Lock.Lock()
+			if userSessionsEpochData, ok := session.userSessionsParent.dataByEpoch[uint64(staleEpoch)]; ok && userSessionsEpochData.DataReliability != nil {
+				relay.DataReliability = userSessionsEpochData.DataReliability
+				userSessionsEpochData.DataReliability = nil
 				reliability = true
 			}
-			session.Lock.Unlock()
+			session.userSessionsParent.Lock.Unlock()
+
 			userAccAddr, err := sdk.AccAddressFromBech32(session.userSessionsParent.user)
 			if err != nil {
 				log.Println(fmt.Sprintf("invalid user address: %s\n", session.userSessionsParent.user))
@@ -109,18 +129,24 @@ func askForRewards(staleEpochHeight int64) {
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
-		delete(g_rewardsSessions, epoch) // All rewards handles for that epoch
+
+		g_rewardsSessions_mutex.Lock()
+		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
+		g_rewardsSessions_mutex.Unlock()
 	}
 
 	g_sessions_mutex.Lock()
 	for _, session := range sessionsToDelete {
+		session.userSessionsParent.Lock.Lock()
 		session.Lock.Lock()
 		delete(session.userSessionsParent.Sessions, session.UniqueIdentifier)
-		session.Lock.Unlock()
 
 		if len(session.userSessionsParent.Sessions) == 0 {
 			delete(g_sessions, session.userSessionsParent.user)
 		}
+
+		session.Lock.Unlock()
+		session.userSessionsParent.Lock.Unlock()
 	}
 	g_sessions_mutex.Unlock()
 
@@ -137,16 +163,6 @@ func askForRewards(staleEpochHeight int64) {
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
-
-	// #o set doubleSendTest to true to test sending payment twice
-	doubleSendTest := false
-	if doubleSendTest { // wait between 0.5-1.5 seconds and resend tx for testing purposes
-		n := rand.Float32() // n will be between 0 and 10
-		fmt.Printf("Sleeping %d seconds...\n", n)
-		time.Sleep(time.Duration(n*1+0.5) * time.Second)
-		fmt.Println("Done")
-		err = tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
-	}
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
 	}
@@ -182,45 +198,62 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
+// TODO:: Dont calc. ge tthis info from blockchain
+func getEpochFromBlockHeight(blockHeight int64) uint64 {
+	return uint64(blockHeight - blockHeight%int64(g_sentry.EpochSize))
+}
+
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest, isOverlap bool) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
 	defer g_sessions_mutex.Unlock()
+	userReportedEpoch := getEpochFromBlockHeight(req.BlockHeight)
 
 	if _, ok := g_sessions[userAddr]; !ok {
-		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
-		}
-
-		g_sessions[userAddr] = &UserSessions{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, Sessions: map[uint64]*RelaySession{}, VrfPk: *vrf_pk, user: userAddr, DataReliability: make(map[uint64]*pairingtypes.VRFData)}
-		log.Println("new user sessions " + strconv.FormatUint(maxcuRes, 10))
+		newUserSessions := &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
+		g_sessions[userAddr] = newUserSessions
 	}
 
 	userSessions := g_sessions[userAddr]
 
+	userSessions.Lock.Lock()
+	defer userSessions.Lock.Unlock()
 	if userSessions.IsBlockListed {
 		return nil, nil, fmt.Errorf("User blocklisted! userAddr: %s", userAddr)
 	}
 
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
 		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0, UniqueIdentifier: req.SessionId}
-		sessionEpoch := g_sentry.GetCurrentEpochHeight()
+		sessionEpoch := userReportedEpoch
 		if isOverlap {
-			sessionEpoch = sessionEpoch - int64(g_sentry.EpochSize)
+			sessionEpoch = sessionEpoch - g_sentry.EpochSize
 		}
+		userSessions.Sessions[req.SessionId].PairingEpoch = sessionEpoch
 
+		g_rewardsSessions_mutex.Lock()
 		if _, ok := g_rewardsSessions[sessionEpoch]; !ok {
-			g_rewardsSessions[sessionEpoch] = make(map[uint64]*RelaySession)
+			g_rewardsSessions[sessionEpoch] = make([]*RelaySession, 0)
 		}
-		g_rewardsSessions[sessionEpoch][req.SessionId] = userSessions.Sessions[req.SessionId]
+		g_rewardsSessions[sessionEpoch] = append(g_rewardsSessions[sessionEpoch], userSessions.Sessions[req.SessionId])
+		g_rewardsSessions_mutex.Unlock()
+
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
+		if err != nil {
+			//ARITODO:: is anything still locked before this return?
+			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
+		}
+		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
+			userSessions.dataByEpoch[userReportedEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
+			log.Println("new user sessions in epoch " + strconv.FormatUint(maxcuRes, 10))
+		}
 	}
 
-	return userSessions.Sessions[req.SessionId], &userSessions.VrfPk, nil
+	session := userSessions.Sessions[req.SessionId]
+	return session, &userSessions.dataByEpoch[session.PairingEpoch].VrfPk, nil
 }
 
 func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest) error {
-	g_sessions_mutex.Lock()
-	defer g_sessions_mutex.Unlock()
+	sess.userSessionsParent.Lock.Lock()
+	defer sess.userSessionsParent.Lock.Unlock()
 	sess.Lock.Lock()
 	defer sess.Lock.Unlock()
 
@@ -242,11 +275,11 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, reque
 	if sess.CuSum+serviceApi.ComputeUnits != request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	if sess.userSessionsParent.UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.MaxComputeUnits {
+	if sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].MaxComputeUnits {
 		return errors.New("client cu overflow")
 	}
 
-	sess.userSessionsParent.UsedComputeUnits = sess.userSessionsParent.UsedComputeUnits + serviceApi.ComputeUnits
+	sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits = sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits + serviceApi.ComputeUnits
 	sess.CuSum = request.CuSum
 
 	return nil
@@ -300,14 +333,14 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	if request.DataReliability != nil {
-		g_sessions_mutex.Lock()
+		relaySession.userSessionsParent.Lock.Lock()
 		//data reliability message
-		if relaySession.userSessionsParent.DataReliability != nil {
-			g_sessions_mutex.Unlock()
+		if relaySession.userSessionsParent.dataByEpoch[relaySession.PairingEpoch].DataReliability != nil {
+			relaySession.userSessionsParent.Lock.Unlock()
 			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
 		}
 
-		g_sessions_mutex.Unlock()
+		relaySession.userSessionsParent.Lock.Unlock()
 
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
@@ -330,14 +363,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		log.Println("server got valid DataReliability request")
 
-		g_sessions_mutex.Lock()
-
-		// round to nearest epoch
-		epoch := request.BlockHeight - request.BlockHeight%int64(g_sentry.EpochSize)
+		relaySession.userSessionsParent.Lock.Lock()
 
 		//will get some rewards for this
-		relaySession.userSessionsParent.DataReliability[uint64(epoch)] = request.DataReliability
-		g_sessions_mutex.Unlock()
+		relaySession.userSessionsParent.dataByEpoch[relaySession.PairingEpoch].DataReliability = request.DataReliability
+		relaySession.userSessionsParent.Lock.Unlock()
 
 	} else {
 		// Validate
@@ -469,7 +499,7 @@ func Server(
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
-	g_rewardsSessions = map[int64]map[uint64]*RelaySession{}
+	g_rewardsSessions = map[uint64][]*RelaySession{}
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
