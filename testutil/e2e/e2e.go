@@ -10,6 +10,38 @@ import (
 	"time"
 )
 
+var results = map[string][]TestResult{}
+var homepath, isGithubAction = prepHomePath()
+var testfailed = false
+var failed = &testfailed
+var states = []State{}
+var options = map[string]*bool{}
+var tt *testing.T = nil
+
+func TestProcess(id string, exec string, test TestProc) (state State) {
+	cmd := CMD{}
+	cmd.stateID = id
+	cmd.cmd = exec
+	cmd.testing = true
+	cmd.dep = nil
+	cmd.requireAlive = false
+	cmd.results = &results
+	cmd.homepath = homepath
+	cmd.failed = failed
+	cmd.test = test
+	cmd.filter = test.filter
+	debug := false
+	stdout := true
+	options[id+"_debug"] = &debug
+	options[id+"_stdout"] = &stdout
+	cmd.debug = options[id+"_debug"]
+	cmd.stdout = options[id+"_stdout"]
+	// cmd = options[id+"_debug"]
+
+	state = LogProcess(cmd, tt, &states)
+	return
+}
+
 func awaitState(state State) {
 	fin := false
 	markForDelete := []string{}
@@ -86,7 +118,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			*state.lastLine = line
 			if _, found := passingFilter(line, filter); found {
 				processLog(line, state, t)
-			} else if state.debug || showAll {
+			} else if *state.debug || showAll {
 				if len(line) > 200 {
 					line = line[:200] + "..." //too long is ugly
 				}
@@ -230,7 +262,9 @@ func processLog(line string, state State, t *testing.T) {
 			}
 		}
 		log := parent + " ::: " + runtype + pre + line
-		fmt.Println(log)
+		if *state.stdout {
+			fmt.Println(log)
+		}
 		if fail_now {
 			*state.failed = true
 			*state.finished = true
@@ -283,12 +317,12 @@ func printTestResult(res TestResult, t *testing.T) {
 }
 
 func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
-	newState := logProcess(t, cmd.stateID, cmd.homepath, cmd.cmd, cmd.filter, cmd.testing, cmd.test, cmd.results, cmd.dep, cmd.failed, cmd.requireAlive, cmd.debug)
+	newState := logProcess(t, cmd.stateID, cmd.homepath, cmd.cmd, cmd.filter, cmd.testing, cmd.test, cmd.results, cmd.dep, cmd.failed, cmd.requireAlive, cmd.debug, cmd.stdout)
 	*states = append(*states, newState)
 	return newState
 }
 
-func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test TestProcess, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug bool) State {
+func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test TestProc, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug *bool, stdout *bool) State {
 	finished := false
 	lastLine := "init"
 	state := State{
@@ -304,6 +338,7 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 		requireAlive: requireAlive,
 		lastLine:     &lastLine,
 		debug:        debug,
+		stdout:       stdout,
 	}
 	os.Chdir(home)
 	logFile := id + ".log"
@@ -318,4 +353,99 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 	go readFile(logPath, state, filter, t)
 
 	return state
+}
+
+func finalizeResults(t *testing.T) []TestResult {
+
+	fmt.Println(string("================================================="))
+	fmt.Println(string("================ TEST DONE! ====================="))
+	fmt.Println(string("================================================="))
+	fmt.Println(string("=============== Expected Events ================="))
+
+	finalExpectedTests := []TestResult{}
+	finalUnexpectedTests := []TestResult{}
+	count := 1
+	for _, expected := range getExpectedEvents(states) {
+		if testList, foundEvent := results[expected]; foundEvent {
+			for _, res := range testList {
+				finalExpectedTests = append(finalExpectedTests, res)
+				printTestResult(res, t)
+				count += 1
+			}
+		}
+		delete(results, expected)
+	}
+
+	count = 1
+	fmt.Println(string("============== Unexpected Events ================"))
+	for key, testList := range results {
+		for _, res := range testList {
+			count += 1
+			printTestResult(res, t)
+			finalUnexpectedTests = append(finalUnexpectedTests, res)
+		}
+		delete(results, key)
+	}
+	fmt.Println(string("================================================="))
+	if *failed && t != nil {
+		t.Errorf(" ::: Test Failed ::: ")
+		t.FailNow()
+	}
+
+	exit(states)
+	final := append(finalExpectedTests, finalUnexpectedTests...)
+	return final
+}
+
+func prepTest(t *testing.T) {
+	tt = t
+	if t != nil {
+		t.Logf(" ::: Test Homepath ::: %s", homepath)
+	}
+
+	*failed = false
+	states = []State{}
+	results = map[string][]TestResult{}
+
+}
+
+func wrapGoTest(t *testing.T, finalresults []TestResult, err error) {
+	if err != nil {
+		t.Errorf("expected no error but got %v", err)
+	}
+	for _, res := range finalresults {
+		end := res.line
+		if res.err != nil {
+			if !res.passed {
+				t.Errorf(res.err.Error())
+			}
+			end = res.err.Error() + " :  " + res.line
+		}
+		if res.passed {
+			t.Log(" ::: PASSED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
+		} else {
+			t.Log(" ::: FAILED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
+			t.Fail()
+		}
+	}
+}
+
+func exit(states []State) bool {
+	processList := []*os.Process{}
+	for _, state := range states {
+		*state.finished = true
+		if state.cmd.Process != nil {
+			processList = append(processList, state.cmd.Process)
+		}
+	}
+	sleep(2)
+	killProcessess := false
+	if killProcessess {
+		for _, process := range processList {
+			killPid(process.Pid)
+			process.Kill()
+		}
+	}
+	ExitLavaProcess()
+	return true
 }

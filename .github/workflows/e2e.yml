@@ -57,7 +57,7 @@ jobs:
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 960s
-      run: go test ./testutil/e2e/ -v -timeout 660s # 11mins
+      run: go test ./testutil/e2e/ -v -timeout 960s # 11mins
 
     # Show ETH Logs
     - name: cat clientEth.log
@@ -66,10 +66,10 @@ jobs:
       run: cat ./testutil/e2e/logs/providers_eth.log
   
     # Show OSMOSIS Logs
-    - name: cat clientOsmo.log
-      run: cat ./testutil/e2e/logs/clientOsmo.log
-    - name: cat clientOsmo2.log
-      run: cat ./testutil/e2e/logs/clientOsmo2.log
+    - name: cat clientOsmoRest.log
+      run: cat ./testutil/e2e/logs/clientOsmoRest.log
+    - name: cat clientOsmoRPC.log
+      run: cat ./testutil/e2e/logs/clientOsmoRPC.log
     - name: cat providers_osmosis.log
       run: cat ./testutil/e2e/logs/providers_eth.log
     # - name: docker build 

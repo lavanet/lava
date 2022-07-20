@@ -1,10 +1,11 @@
-#!/bin/bash 
+#!/bin/bash -x
 
+OSMO_HOST=GET_OSMO_VARIBLE_FROM_ENV
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-. ${__dir}/variables.sh 
+. ${__dir}/vars/variables.sh 
 
 echo ""
-echo " ::: STARTING OSMOSIS PROVIDERS :::"
+echo " ::: STARTING OSMOSIS PROVIDERS :::" $OSMO_HOST
 
     # SINGLE PROXY
 MOCK_PORT_A=2031
@@ -13,8 +14,8 @@ go run ./testutil/e2e/proxy/. $OSMO_HOST -p $MOCK_PORT_A -cache -id osmosis_rest
 go run ./testutil/e2e/proxy/. $OSMO_HOST -p $MOCK_PORT_B -cache -id osmosis_rpc  &
 
 # Multi Port Proxy
-# sh ./mock_proxy_osmosis.sh &
-
+# bash ./scripts/mock_proxy_osmosis.sh &
+# sleep 2
 
 echo " ::: RUNNING OSMOSIS PROVIDERS :::"
 # SINGLE MOCK PROXY
@@ -34,9 +35,9 @@ lavad server 127.0.0.1 2243 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc 
 # lavad server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 
 
 # NO MOCK PROXY
-# lavad server 127.0.0.1 2231 OSMO_REST COS3 rest --from servicer1 &
-# lavad server 127.0.0.1 2232 OSMO_REST COS3 rest --from servicer2 &
-# lavad server 127.0.0.1 2233 OSMO_REST COS3 rest --from servicer3 &
+# lavad server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1 &
+# lavad server 127.0.0.1 2232 $OSMO_REST COS3 rest --from servicer2 &
+# lavad server 127.0.0.1 2233 $OSMO_REST COS3 rest --from servicer3 &
 # lavad server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc --from servicer1 &
 # lavad server 127.0.0.1 2242 $OSMO_RPC COS3 tendermintrpc --from servicer2 &
 # lavad server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc --from servicer3 

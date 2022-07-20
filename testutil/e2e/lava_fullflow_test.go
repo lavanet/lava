@@ -15,25 +15,8 @@ func TestLava(t *testing.T) {
 }
 
 func LavaTestFullflow(t *testing.T) {
-	finalresults, err := XTestX(t)
-	if err != nil {
-		t.Errorf("expected no error but got %v", err)
-	}
-	for _, res := range finalresults {
-		end := res.line
-		if res.err != nil {
-			if !res.passed {
-				t.Errorf(res.err.Error())
-			}
-			end = res.err.Error() + " :  " + res.line
-		}
-		if res.passed {
-			t.Log(" ::: PASSED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
-		} else {
-			t.Log(" ::: FAILED ::: " + res.parent + " ::: " + res.eventID + " ::: " + end)
-			t.Fail()
-		}
-	}
+	finalresults, err := FullFlowTest(t)
+	wrapGoTest(t, finalresults, err)
 }
 
 func LavaTestFullflowWithTimeOut(t *testing.T) {
@@ -51,9 +34,4 @@ func LavaTestFullflowWithTimeOut(t *testing.T) {
 		t.Fatal("Test didn't finish in time")
 	case <-done:
 	}
-}
-
-func XTestX(t *testing.T) ([]TestResult, error) {
-	return FullFlowTest(t)
-	// return InitTest(t)
 }
