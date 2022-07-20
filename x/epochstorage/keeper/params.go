@@ -58,12 +58,7 @@ func (k Keeper) GetEpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
 // return if this block is an epoch start
 func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	currentBlock := uint64(ctx.BlockHeight())
-	blocksCycle := k.EpochBlocks(ctx, currentBlock)
-	//current block modulu blocks cycle returns how many block in the current epoch we are, if its 0 we are at epoch start
-	if blocksCycle == 0 {
-		return false
-	}
-	return ((currentBlock - k.GetEpochStart(ctx)) % blocksCycle) == 0
+	return k.BlockInEpoch(ctx, currentBlock) == 0
 }
 
 func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
@@ -73,6 +68,7 @@ func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
 
 func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64) {
 	blocksCycle := k.EpochBlocks(ctx, block)
+
 	return block % blocksCycle
 }
 
