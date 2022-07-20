@@ -97,7 +97,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 {
+		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {
@@ -1299,12 +1299,30 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	averageBlockTime_ms := s.serverSpec.AverageBlockTime
 	listExpectedBlockHeights := []int64{}
 
+	var highestBlockNumber int64 = 0
+	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				if highestBlockNumber < providerDataContainer.LatestFinalizedBlock {
+					highestBlockNumber = providerDataContainer.LatestFinalizedBlock
+				}
+
+			}
+		}
+		return highestBlockNumber
+	}
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus)
+	highestBlockNumber = FindHighestBlockNumber(s.providerHashesConsensus)
+
 	now := time.Now()
 	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
 		listExpectedBH := []int64{}
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
 				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				if expected > highestBlockNumber {
+					expected = highestBlockNumber
+				}
 				listExpectedBH = append(listExpectedBH, expected)
 			}
 		}
