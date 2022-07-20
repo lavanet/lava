@@ -24,7 +24,7 @@ func checkSpecProposal(spec Spec) error {
 			return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
 		}
 		if _, ok := checkUnique[api.Name]; ok {
-			return sdkerrors.Wrap(ErrDuplicateApiName, "api name must be unique")
+			return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))
 		}
 		if len(api.ApiInterfaces) == 0 {
 			return sdkerrors.Wrap(ErrDuplicateApiName, "api interface cannot be empty")

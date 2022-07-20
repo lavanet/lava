@@ -12,6 +12,8 @@ accounts:
     coins: ["200000000ulava"]
   - name: user3
     coins: ["200000000ulava"]
+  - name: user4
+    coins: ["200000000ulava"]
   - name: servicer1
     coins: ["200000000ulava"]
   - name: servicer2
