@@ -899,7 +899,7 @@
             }
           ],
           "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"mftmod\":\"ftm_blockNumber\",\"params\":[],\"id\":1}",
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_blockNumber\",\"params\":[],\"id\":1}",
             "function_tag": "getBlockNumber",
             "result_parsing": {
               "parserArg": [
@@ -1125,7 +1125,7 @@
             }
           ],
           "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"mftmod\":\"ftm_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
             "function_tag": "getBlockByNumber",
             "result_parsing": {
               "parserArg": [
@@ -2491,7 +2491,7 @@
             }
           ],
           "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"mftmod\":\"ftm_blockNumber\",\"params\":[],\"id\":1}",
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_blockNumber\",\"params\":[],\"id\":1}",
             "function_tag": "getBlockNumber",
             "result_parsing": {
               "parserArg": [
@@ -2717,7 +2717,7 @@
             }
           ],
           "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"mftmod\":\"ftm_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
             "function_tag": "getBlockByNumber",
             "result_parsing": {
               "parserArg": [
