@@ -77,12 +77,12 @@ screen -S ftm250_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad s
 screen -S ftm250_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2255 $FTM_RPC_HTTPS FTM250 jsonrpc --from servicer5"
 
 # Lava providers
-screen -d -m -S lav1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC_HTTPS LAV1 rest --from servicer1"
-screen -S lav1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC_HTTPS LAV1 rest --from servicer2"
-screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC_HTTPS LAV1 rest --from servicer3"
-screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2264 $LAVA_RPC_HTTPS LAV1 tendermintrpc --from servicer4"
-screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2265 $LAVA_RPC_HTTPS LAV1 tendermintrpc --from servicer5"
-screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2266 $LAVA_RPC_HTTPS LAV1 tendermintrpc --from servicer6"
+screen -d -m -S lav1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_REST LAV1 rest --from servicer1"
+screen -S lav1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_REST LAV1 rest --from servicer2"
+screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_REST LAV1 rest --from servicer3"
+screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2264 $LAVA_RPC LAV1 tendermintrpc --from servicer4"
+screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2265 $LAVA_RPC LAV1 tendermintrpc --from servicer5"
+screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2266 $LAVA_RPC LAV1 tendermintrpc --from servicer6"
 
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2"
