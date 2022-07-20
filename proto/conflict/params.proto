@@ -9,8 +9,8 @@ option go_package = "github.com/lavanet/lava/x/conflict/types";
 message Params {
   option (gogoproto.goproto_stringer) = false;
   
-  string majorityPercent = 1[
-    (gogoproto.moretags) = "yaml:\"majority_percent\"",
+  string majorityPrecent = 1[
+    (gogoproto.moretags) = "yaml:\"majority_precent\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
     ];

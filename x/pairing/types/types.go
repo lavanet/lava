@@ -5,7 +5,7 @@ type ClientUsedCU struct {
 	Providers map[string]uint64
 }
 
-type ClientProviderOverusedCUPercent struct {
-	TotalOverusedPercent    float64
-	OverusedPercentProvider float64
+type ClientProviderOverusedCUPrecent struct {
+	TotalOverusedPrecent    float64
+	OverusedPrecentProvider float64
 }

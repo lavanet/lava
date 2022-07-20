@@ -11,8 +11,8 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMajorityPercent             = []byte("MajorityPercent")
-	DefaultMajorityPercent sdk.Dec = sdk.NewDecWithPrec(95, 2)
+	KeyMajorityPrecent             = []byte("MajorityPrecent")
+	DefaultMajorityPrecent sdk.Dec = sdk.NewDecWithPrec(95, 2)
 )
 
 var (
@@ -47,21 +47,21 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64, winnerRewardPercent sdk.Dec, clientRewardPercent sdk.Dec, votersRewardPercent sdk.Dec) Params {
+	majorityPrecent sdk.Dec, voteStartSpan uint64, votePeriod uint64, winnerRewardPrecent sdk.Dec, clientRewardPrecent sdk.Dec, votersRewardPrecent sdk.Dec) Params {
 	return Params{
-		MajorityPercent:     majorityPercent,
+		MajorityPrecent:     majorityPrecent,
 		VoteStartSpan:       voteStartSpan,
 		VotePeriod:          votePeriod,
-		WinnerRewardPrecent: winnerRewardPercent,
-		ClientRewardPrecent: clientRewardPercent,
-		VotersRewardPrecent: votersRewardPercent,
+		WinnerRewardPrecent: winnerRewardPrecent,
+		ClientRewardPrecent: clientRewardPrecent,
+		VotersRewardPrecent: votersRewardPrecent,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		DefaultMajorityPercent,
+		DefaultMajorityPrecent,
 		DefaultVoteStartSpan,
 		DefaultVotePeriod,
 		DefaultWinnerRewardPrecent,
@@ -73,7 +73,7 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyMajorityPercent, &p.MajorityPercent, validateMajorityPercent),
+		paramtypes.NewParamSetPair(KeyMajorityPrecent, &p.MajorityPrecent, validateMajorityPrecent),
 		paramtypes.NewParamSetPair(KeyVoteStartSpan, &p.VoteStartSpan, validateVoteStartSpan),
 		paramtypes.NewParamSetPair(KeyVotePeriod, &p.VotePeriod, validateVotePeriod),
 		paramtypes.NewParamSetPair(KeyWinnerRewardPrecent, &p.WinnerRewardPrecent, validateWinnerRewardPrecent),
@@ -84,7 +84,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateMajorityPercent(p.MajorityPercent); err != nil {
+	if err := validateMajorityPrecent(p.MajorityPrecent); err != nil {
 		return err
 	}
 
@@ -116,15 +116,15 @@ func (p Params) String() string {
 	return string(out)
 }
 
-// validateMajorityPercent validates the MajorityPercent param
-func validateMajorityPercent(v interface{}) error {
-	majorityPercent, ok := v.(sdk.Dec)
+// validateMajorityPrecent validates the majorityPrecent param
+func validateMajorityPrecent(v interface{}) error {
+	majorityPrecent, ok := v.(sdk.Dec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if majorityPercent.GT(sdk.OneDec()) || majorityPercent.LT(sdk.ZeroDec()) {
-		return fmt.Errorf("invalid parameter majorityPercent")
+	if majorityPrecent.GT(sdk.OneDec()) || majorityPrecent.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter majorityPrecent")
 	}
 
 	return nil
