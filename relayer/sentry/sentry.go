@@ -80,7 +80,7 @@ func (vp *VoteParams) GetCloseVote() bool {
 var AvailabilityPrecentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
 const (
 	MaxConsecutiveConnectionAttemts = 3
-	PercentileToCalculateLatency    = 0.9
+	PrecentileToCalculateLatency    = 0.9
 	MinProvidersForSync             = 0.6
 	LatencyThresholdStatic          = 1 * time.Second
 	LatencyThresholdSlope           = 1 * time.Millisecond
@@ -111,7 +111,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	}
 	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
 
-	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PrecentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
 		if blockHeightDiff <= 0 {
