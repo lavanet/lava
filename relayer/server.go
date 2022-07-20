@@ -88,13 +88,12 @@ func askForRewards(staleEpochHeight int64) {
 	reliability := false
 	sessionsToDelete := make([]*RelaySession, 0)
 
-	for staleEpoch := range staleEpochs {
-
+	for _, staleEpoch := range staleEpochs {
 		g_rewardsSessions_mutex.Lock()
 		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
 		if !ok {
 			g_rewardsSessions_mutex.Unlock()
-			return
+			continue
 		}
 		g_rewardsSessions_mutex.Unlock()
 
