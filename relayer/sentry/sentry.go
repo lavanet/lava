@@ -736,8 +736,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 		if wrap.Client == nil {
 			wrap.SessionsLock.Lock()
 			defer wrap.SessionsLock.Unlock()
-			//
-			// TODO: we should retry with another addr
+
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
 				return nil, -1, fmt.Errorf("error making initial connection to provider: %s, error: %w", wrap.Addr, err)

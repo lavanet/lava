@@ -15,5 +15,5 @@ func TestGetParams(t *testing.T) {
 	k.SetParams(ctx, params)
 
 	require.EqualValues(t, params, k.GetParams(ctx))
-	require.EqualValues(t, params.MajorityPrecent, k.MajorityPrecent(ctx))
+	require.EqualValues(t, params.MajorityPercent, k.MajorityPrecent(ctx))
 }

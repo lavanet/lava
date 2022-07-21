@@ -61,7 +61,7 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 	conflictParams := types.DefaultParams()
 	return []simtypes.ParamChange{
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMajorityPrecent), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(conflictParams.MajorityPrecent))
+			return string(types.Amino.MustMarshalJSON(conflictParams.MajorityPercent))
 		}),
 	}
 }

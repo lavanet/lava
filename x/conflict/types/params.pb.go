@@ -26,12 +26,12 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Params defines the parameters for the module.
 type Params struct {
-	MajorityPrecent     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=majorityPrecent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"majorityPrecent" yaml:"majority_precent"`
+	MajorityPercent     github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=majorityPercent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"majorityPercent" yaml:"majority_percent"`
 	VoteStartSpan       uint64                                 `protobuf:"varint,2,opt,name=voteStartSpan,proto3" json:"voteStartSpan,omitempty"`
 	VotePeriod          uint64                                 `protobuf:"varint,3,opt,name=votePeriod,proto3" json:"votePeriod,omitempty"`
-	WinnerRewardPrecent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=winnerRewardPrecent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"winnerRewardPrecent" yaml:"winner_reward_precent"`
-	ClientRewardPrecent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=clientRewardPrecent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"clientRewardPrecent" yaml:"client_reward_precent"`
-	VotersRewardPrecent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,6,opt,name=votersRewardPrecent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"votersRewardPrecent" yaml:"voters_reward_precent"`
+	WinnerRewardPercent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,4,opt,name=winnerRewardPercent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"winnerRewardPercent" yaml:"winner_reward_percent"`
+	ClientRewardPercent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,5,opt,name=clientRewardPercent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"clientRewardPercent" yaml:"client_reward_percent"`
+	VotersRewardPercent github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,6,opt,name=votersRewardPercent,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"votersRewardPercent" yaml:"voters_reward_percent"`
 }
 
 func (m *Params) Reset()      { *m = Params{} }
@@ -93,7 +93,7 @@ var fileDescriptor_c0f4d28c7457960e = []byte{
 	0xc9, 0x17, 0x12, 0xcd, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x30, 0x35,
 	0x52, 0x22, 0xe9, 0xf9, 0xe9, 0xf9, 0x60, 0x15, 0xfa, 0x20, 0x16, 0x44, 0xb1, 0xd2, 0x25, 0x16,
 	0x2e, 0xb6, 0x00, 0xb0, 0x6e, 0xa1, 0x62, 0x2e, 0xfe, 0xdc, 0xc4, 0xac, 0xfc, 0xa2, 0xcc, 0x92,
-	0xca, 0x80, 0xa2, 0xd4, 0xe4, 0xd4, 0xbc, 0x12, 0x09, 0x46, 0x05, 0x46, 0x0d, 0x4e, 0x27, 0xcf,
+	0xca, 0x80, 0xd4, 0xa2, 0xe4, 0xd4, 0xbc, 0x12, 0x09, 0x46, 0x05, 0x46, 0x0d, 0x4e, 0x27, 0xcf,
 	0x13, 0xf7, 0xe4, 0x19, 0x6e, 0xdd, 0x93, 0x57, 0x4b, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b,
 	0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0xce, 0xcd, 0x2f, 0x86, 0x52, 0xba, 0xc5, 0x29, 0xd9, 0xfa,
 	0x25, 0x95, 0x05, 0xa9, 0xc5, 0x7a, 0x2e, 0xa9, 0xc9, 0x9f, 0xee, 0xc9, 0x8b, 0x57, 0x26, 0xe6,
@@ -109,7 +109,7 @@ var fileDescriptor_c0f4d28c7457960e = []byte{
 	0x83, 0x93, 0xd3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38,
 	0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44, 0x69, 0x20, 0x59,
 	0x0e, 0x4d, 0xa6, 0x60, 0x5a, 0xbf, 0x42, 0x1f, 0x9e, 0x98, 0xc1, 0x4e, 0x48, 0x62, 0x03, 0xa7,
-	0x4f, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x9a, 0xc2, 0x6e, 0x07, 0xe5, 0x02, 0x00, 0x00,
+	0x4f, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa7, 0x73, 0xfe, 0x60, 0xe5, 0x02, 0x00, 0x00,
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -133,9 +133,9 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
-		size := m.VotersRewardPrecent.Size()
+		size := m.VotersRewardPercent.Size()
 		i -= size
-		if _, err := m.VotersRewardPrecent.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.VotersRewardPercent.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintParams(dAtA, i, uint64(size))
@@ -143,9 +143,9 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i--
 	dAtA[i] = 0x32
 	{
-		size := m.ClientRewardPrecent.Size()
+		size := m.ClientRewardPercent.Size()
 		i -= size
-		if _, err := m.ClientRewardPrecent.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.ClientRewardPercent.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintParams(dAtA, i, uint64(size))
@@ -153,9 +153,9 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i--
 	dAtA[i] = 0x2a
 	{
-		size := m.WinnerRewardPrecent.Size()
+		size := m.WinnerRewardPercent.Size()
 		i -= size
-		if _, err := m.WinnerRewardPrecent.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.WinnerRewardPercent.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintParams(dAtA, i, uint64(size))
@@ -173,9 +173,9 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x10
 	}
 	{
-		size := m.MajorityPrecent.Size()
+		size := m.MajorityPercent.Size()
 		i -= size
-		if _, err := m.MajorityPrecent.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.MajorityPercent.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintParams(dAtA, i, uint64(size))
@@ -202,7 +202,7 @@ func (m *Params) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.MajorityPrecent.Size()
+	l = m.MajorityPercent.Size()
 	n += 1 + l + sovParams(uint64(l))
 	if m.VoteStartSpan != 0 {
 		n += 1 + sovParams(uint64(m.VoteStartSpan))
@@ -210,11 +210,11 @@ func (m *Params) Size() (n int) {
 	if m.VotePeriod != 0 {
 		n += 1 + sovParams(uint64(m.VotePeriod))
 	}
-	l = m.WinnerRewardPrecent.Size()
+	l = m.WinnerRewardPercent.Size()
 	n += 1 + l + sovParams(uint64(l))
-	l = m.ClientRewardPrecent.Size()
+	l = m.ClientRewardPercent.Size()
 	n += 1 + l + sovParams(uint64(l))
-	l = m.VotersRewardPrecent.Size()
+	l = m.VotersRewardPercent.Size()
 	n += 1 + l + sovParams(uint64(l))
 	return n
 }
@@ -256,7 +256,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MajorityPrecent", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MajorityPercent", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -284,7 +284,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.MajorityPrecent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.MajorityPercent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -328,7 +328,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			}
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WinnerRewardPrecent", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WinnerRewardPercent", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -356,13 +356,13 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.WinnerRewardPrecent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.WinnerRewardPercent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientRewardPrecent", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientRewardPercent", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -390,13 +390,13 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.ClientRewardPrecent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ClientRewardPercent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VotersRewardPrecent", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field VotersRewardPercent", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -424,7 +424,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.VotersRewardPrecent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.VotersRewardPercent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

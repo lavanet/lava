@@ -66,7 +66,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
 		conflictVote.SecondProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData1.Reply.Data)
 		conflictVote.VotersHash = map[string]types.Vote{}
-		voters := k.Keeper.LotteryVoters(goCtx, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
+		voters := k.Keeper.LotteryVoters(goCtx, epochStart, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
 		for _, voter := range voters {
 			conflictVote.VotersHash[voter] = types.Vote{Hash: []byte{}, Result: types.NoVote}
 		}
@@ -91,10 +91,9 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	return &types.MsgDetectionResponse{}, nil
 }
 
-func (k Keeper) LotteryVoters(goCtx context.Context, chainID string, exemptions []string) []string {
+func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID string, exemptions []string) []string {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epochStart)
+	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epoch) //TODO if this is overlap and get the previous epoch
 
 	if err != nil {
 		return make([]string, 0)

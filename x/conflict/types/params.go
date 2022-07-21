@@ -49,12 +49,12 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(
 	majorityPrecent sdk.Dec, voteStartSpan uint64, votePeriod uint64, winnerRewardPrecent sdk.Dec, clientRewardPrecent sdk.Dec, votersRewardPrecent sdk.Dec) Params {
 	return Params{
-		MajorityPrecent:     majorityPrecent,
+		MajorityPercent:     majorityPrecent,
 		VoteStartSpan:       voteStartSpan,
 		VotePeriod:          votePeriod,
-		WinnerRewardPrecent: winnerRewardPrecent,
-		ClientRewardPrecent: clientRewardPrecent,
-		VotersRewardPrecent: votersRewardPrecent,
+		WinnerRewardPercent: winnerRewardPrecent,
+		ClientRewardPercent: clientRewardPrecent,
+		VotersRewardPercent: votersRewardPrecent,
 	}
 }
 
@@ -73,18 +73,18 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyMajorityPrecent, &p.MajorityPrecent, validateMajorityPrecent),
+		paramtypes.NewParamSetPair(KeyMajorityPrecent, &p.MajorityPercent, validateMajorityPrecent),
 		paramtypes.NewParamSetPair(KeyVoteStartSpan, &p.VoteStartSpan, validateVoteStartSpan),
 		paramtypes.NewParamSetPair(KeyVotePeriod, &p.VotePeriod, validateVotePeriod),
-		paramtypes.NewParamSetPair(KeyWinnerRewardPrecent, &p.WinnerRewardPrecent, validateWinnerRewardPrecent),
-		paramtypes.NewParamSetPair(KeyClientRewardPrecent, &p.ClientRewardPrecent, validateClientRewardPrecent),
-		paramtypes.NewParamSetPair(KeyVotersRewardPrecent, &p.VotersRewardPrecent, validateVotersRewardPrecent),
+		paramtypes.NewParamSetPair(KeyWinnerRewardPrecent, &p.WinnerRewardPercent, validateWinnerRewardPrecent),
+		paramtypes.NewParamSetPair(KeyClientRewardPrecent, &p.ClientRewardPercent, validateClientRewardPrecent),
+		paramtypes.NewParamSetPair(KeyVotersRewardPrecent, &p.VotersRewardPercent, validateVotersRewardPrecent),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateMajorityPrecent(p.MajorityPrecent); err != nil {
+	if err := validateMajorityPrecent(p.MajorityPercent); err != nil {
 		return err
 	}
 
@@ -96,15 +96,15 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateWinnerRewardPrecent(p.WinnerRewardPrecent); err != nil {
+	if err := validateWinnerRewardPrecent(p.WinnerRewardPercent); err != nil {
 		return err
 	}
 
-	if err := validateClientRewardPrecent(p.ClientRewardPrecent); err != nil {
+	if err := validateClientRewardPrecent(p.ClientRewardPercent); err != nil {
 		return err
 	}
 
-	if err := validateVotersRewardPrecent(p.VotersRewardPrecent); err != nil {
+	if err := validateVotersRewardPrecent(p.VotersRewardPercent); err != nil {
 		return err
 	}
 	return nil
