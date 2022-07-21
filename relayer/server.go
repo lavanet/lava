@@ -41,7 +41,7 @@ var (
 	g_txFactory             tx.Factory
 	g_chainProxy            chainproxy.ChainProxy
 	g_chainSentry           *chainsentry.ChainSentry
-	g_rewardsSessions       map[uint64][]*RelaySession
+	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
 )
 
@@ -75,9 +75,11 @@ type relayServer struct {
 
 func askForRewards(staleEpochHeight int64) {
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
-	if len(g_rewardsSessions) > sentry.StaleEpochDistance {
+	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
+		fmt.Printf("Warning: Some epochs were not rewarded, catching up and asking for rewards...")
+
 		// go over all epochs and look for stale unhandled epochs
-		for epoch, _ := range g_rewardsSessions {
+		for epoch := range g_rewardsSessions {
 			if epoch < uint64(staleEpochHeight) {
 				staleEpochs = append(staleEpochs, epoch)
 			}
@@ -91,11 +93,10 @@ func askForRewards(staleEpochHeight int64) {
 	for _, staleEpoch := range staleEpochs {
 		g_rewardsSessions_mutex.Lock()
 		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
+		g_rewardsSessions_mutex.Unlock()
 		if !ok {
-			g_rewardsSessions_mutex.Unlock()
 			continue
 		}
-		g_rewardsSessions_mutex.Unlock()
 
 		for _, session := range staleEpochSessions {
 			session.Lock.Lock() // TODO:: is it ok to lock session without g_sessions_mutex?
@@ -108,23 +109,38 @@ func askForRewards(staleEpochHeight int64) {
 				continue
 			}
 			relay := session.Proof
+			session.Proof = &pairingtypes.RelayRequest{} // Just in case askForRewards is running more than once at the same time and it might ask to be rewarded for this relay twice
 			relays = append(relays, relay)
 			sessionsToDelete = append(sessionsToDelete, session)
 
+			userSessions := session.userSessionsParent
 			session.Lock.Unlock()
 
-			session.userSessionsParent.Lock.Lock()
-			if userSessionsEpochData, ok := session.userSessionsParent.dataByEpoch[uint64(staleEpoch)]; ok && userSessionsEpochData.DataReliability != nil {
+			userSessions.Lock.Lock()
+			userAccAddr, err := sdk.AccAddressFromBech32(userSessions.user)
+			if err != nil {
+				log.Println(fmt.Sprintf("invalid user address: %s\n", userSessions.user))
+				// ARITODO:: unlock+continue?
+			}
+
+			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
+			if !ok {
+				log.Printf("Error: Missing epoch data for this user: %s, Epoch: %d\n", userAccAddr, staleEpoch)
+				userSessions.Lock.Unlock()
+				continue
+			}
+
+			if userSessionsEpochData.DataReliability != nil {
 				relay.DataReliability = userSessionsEpochData.DataReliability
 				userSessionsEpochData.DataReliability = nil
 				reliability = true
+			} else {
+				log.Printf("Error: Missing reliability data for this user+epoch: %s, Epoch: %d\n", userAccAddr, staleEpoch)
+				userSessions.Lock.Unlock()
+				continue
 			}
-			session.userSessionsParent.Lock.Unlock()
+			userSessions.Lock.Unlock()
 
-			userAccAddr, err := sdk.AccAddressFromBech32(session.userSessionsParent.user)
-			if err != nil {
-				log.Println(fmt.Sprintf("invalid user address: %s\n", session.userSessionsParent.user))
-			}
 			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
@@ -134,18 +150,23 @@ func askForRewards(staleEpochHeight int64) {
 		g_rewardsSessions_mutex.Unlock()
 	}
 
-	g_sessions_mutex.Lock()
+	userSessionObjsToDelete := make([]string, 0)
 	for _, session := range sessionsToDelete {
-		session.userSessionsParent.Lock.Lock()
 		session.Lock.Lock()
-		delete(session.userSessionsParent.Sessions, session.UniqueIdentifier)
-
-		if len(session.userSessionsParent.Sessions) == 0 {
-			delete(g_sessions, session.userSessionsParent.user)
-		}
-
+		userSessions := session.userSessionsParent
+		sessionID := session.UniqueIdentifier
 		session.Lock.Unlock()
-		session.userSessionsParent.Lock.Unlock()
+		userSessions.Lock.Lock()
+		delete(userSessions.Sessions, sessionID)
+		if len(userSessions.Sessions) == 0 {
+			userSessionObjsToDelete = append(userSessionObjsToDelete, userSessions.user)
+		}
+		userSessions.Lock.Unlock()
+	}
+
+	g_sessions_mutex.Lock()
+	for _, user := range userSessionObjsToDelete {
+		delete(g_sessions, user)
 	}
 	g_sessions_mutex.Unlock()
 
@@ -197,15 +218,17 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-// TODO:: Dont calc. ge tthis info from blockchain
-func getEpochFromBlockHeight(blockHeight int64) uint64 {
-	return uint64(blockHeight - blockHeight%int64(g_sentry.EpochSize))
+// TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
+func getEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
+	epoch := uint64(blockHeight - blockHeight%int64(g_sentry.EpochSize))
+	if isOverlap {
+		epoch = epoch - g_sentry.EpochSize
+	}
+	return epoch
 }
 
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest, isOverlap bool) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
-	defer g_sessions_mutex.Unlock()
-	userReportedEpoch := getEpochFromBlockHeight(req.BlockHeight)
 
 	if _, ok := g_sessions[userAddr]; !ok {
 		newUserSessions := &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
@@ -213,6 +236,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	userSessions := g_sessions[userAddr]
+	g_sessions_mutex.Unlock()
 
 	userSessions.Lock.Lock()
 	defer userSessions.Lock.Unlock()
@@ -221,11 +245,8 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: g_sessions[userAddr], RelayNum: 0, UniqueIdentifier: req.SessionId}
-		sessionEpoch := userReportedEpoch
-		if isOverlap {
-			sessionEpoch = sessionEpoch - g_sentry.EpochSize
-		}
+		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId}
+		sessionEpoch := getEpochFromBlockHeight(req.BlockHeight, isOverlap)
 		userSessions.Sessions[req.SessionId].PairingEpoch = sessionEpoch
 
 		g_rewardsSessions_mutex.Lock()
@@ -241,7 +262,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
 		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
-			userSessions.dataByEpoch[userReportedEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
+			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
 			log.Println("new user sessions in epoch " + strconv.FormatUint(maxcuRes, 10))
 		}
 	}
@@ -332,6 +353,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	if request.DataReliability != nil {
+		// ARITODO:: lock before deref?
 		relaySession.userSessionsParent.Lock.Lock()
 		//data reliability message
 		if relaySession.userSessionsParent.dataByEpoch[relaySession.PairingEpoch].DataReliability != nil {
@@ -362,6 +384,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		log.Println("server got valid DataReliability request")
 
+		// ARITODO:: lock before deref?
 		relaySession.userSessionsParent.Lock.Lock()
 
 		//will get some rewards for this

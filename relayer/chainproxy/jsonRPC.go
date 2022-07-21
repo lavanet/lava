@@ -291,7 +291,6 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
-
 	//
 	// Wrap result back to json
 	replyMsg := JsonrpcMessage{
@@ -304,7 +303,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		// of the error or the error code if json (we need smarter error handling)
 		replyMsg.Error = &jsonError{
 			Code:    1, // TODO
-			Message: fmt.Sprintf("%s", err),
+			Message: fmt.Sprintf("Error relaying to %s", err),
 		}
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
