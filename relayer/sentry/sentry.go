@@ -1339,7 +1339,7 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		}
 		return highestBlockNumber
 	}
-	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus)
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) //update the highest in place
 	highestBlockNumber = FindHighestBlockNumber(s.providerHashesConsensus)
 
 	now := time.Now()
@@ -1347,7 +1347,8 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		listExpectedBH := []int64{}
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
-				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) //interpolation
+				//limit the interpolation to the highest seen block height
 				if expected > highestBlockNumber {
 					expected = highestBlockNumber
 				}
