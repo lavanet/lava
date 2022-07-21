@@ -15,7 +15,7 @@ func (k Keeper) BailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bo
 	return nil
 }
 
-func (k Keeper) SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, precentage sdk.Dec) (sdk.Coin, error) {
+func (k Keeper) SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, percentage sdk.Dec) (sdk.Coin, error) {
 	//TODO: jail user, and count problems
 	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()), nil
 }

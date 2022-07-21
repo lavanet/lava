@@ -15,7 +15,7 @@ const (
 	MajorityDiv  = 2 //50%
 )
 
-var SlashStakePrecent = sdk.NewDecWithPrec(5, 2) //0.05
+var SlashStakePercent = sdk.NewDecWithPrec(5, 2) //0.05
 
 func (k Keeper) AllocateNewConflictVote(ctx sdk.Context, key string) bool {
 	_, found := k.GetConflictVote(ctx, key)
@@ -91,7 +91,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
 			k.pairingKeeper.JailEntry(ctx, accAddress, true, ConflictVote.ChainID, uint64(ConflictVote.VoteStartBlock), ConflictVote.VoteStartBlock+k.epochstorageKeeper.BlocksToSave(ctx), sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
-			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, ConflictVote.ChainID, SlashStakePrecent)
+			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, ConflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
 				utils.LavaError(ctx, logger, "slash_failed_vote", map[string]string{"error": err.Error()}, "slashing failed at vote conflict")
@@ -134,7 +134,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 
 		//punish the frauds(the provider that was found lying and all the voters that voted for him) and fill the reward pool
 		//we need to finish the punishment before rewarding to fill up the reward pool
-		if ConsensusVote && winnerVotersStake.ToDec().QuoInt(totalVotes).GTE(k.MajorityPrecent(ctx)) {
+		if ConsensusVote && winnerVotersStake.ToDec().QuoInt(totalVotes).GTE(k.MajorityPercent(ctx)) {
 			for address, vote := range ConflictVote.VotersHash {
 				if vote.Result != winner && !slices.Contains(providersWithoutVote, address) { //punish those who voted wrong, voters that didnt vote already got punished
 					accAddress, err := sdk.AccAddressFromBech32(address)
@@ -158,8 +158,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		}
 
 		//give reward to voters
-		votersRewardPoolPrecentage := k.VotersRewardPrecent(ctx)
-		rewardAllWinningVoters := votersRewardPoolPrecentage.MulInt(rewardPool.Amount)
+		votersRewardPoolPercentage := k.VotersRewardPercent(ctx)
+		rewardAllWinningVoters := votersRewardPoolPercentage.MulInt(rewardPool.Amount)
 		for address, vote := range ConflictVote.VotersHash {
 			if vote.Result == winner {
 				//calculate the reward for the voter relative part (rewardpool*stake/stakesum)
@@ -179,8 +179,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 
 		//reward winner provider
 		if winner != types.None {
-			winnerRewardPoolPrecentage := k.WinnerRewardPrecent(ctx)
-			winnerReward := winnerRewardPoolPrecentage.MulInt(rewardPool.Amount)
+			winnerRewardPoolPercentage := k.WinnerRewardPercent(ctx)
+			winnerReward := winnerRewardPoolPercentage.MulInt(rewardPool.Amount)
 			accWinnerAddress, err := sdk.AccAddressFromBech32(winnersAddr)
 			if err != nil {
 				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
@@ -197,8 +197,8 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	}
 
 	//reward client
-	clientRewardPoolPrecentage := k.ClientRewardPrecent(ctx)
-	clientReward := clientRewardPoolPrecentage.MulInt(rewardPool.Amount)
+	clientRewardPoolPercentage := k.ClientRewardPercent(ctx)
+	clientReward := clientRewardPoolPercentage.MulInt(rewardPool.Amount)
 	accClientAddress, err := sdk.AccAddressFromBech32(ConflictVote.ClientAddress)
 	if err != nil {
 		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")

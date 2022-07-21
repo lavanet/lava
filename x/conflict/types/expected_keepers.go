@@ -12,7 +12,7 @@ type PairingKeeper interface {
 	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
 	JailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
 	BailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, bail sdk.Coin) error
-	SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, precentage sdk.Dec) (sdk.Coin, error)
+	SlashEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, percentage sdk.Dec) (sdk.Coin, error)
 }
 
 type EpochstorageKeeper interface {

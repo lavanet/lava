@@ -29018,11 +29018,11 @@ paths:
                   votePeriod:
                     type: string
                     format: uint64
-                  winnerRewardPrecent:
+                  winnerRewardPercent:
                     type: string
-                  clientRewardPrecent:
+                  clientRewardPercent:
                     type: string
-                  votersRewardPrecent:
+                  votersRewardPercent:
                     type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
@@ -51356,11 +51356,11 @@ definitions:
       votePeriod:
         type: string
         format: uint64
-      winnerRewardPrecent:
+      winnerRewardPercent:
         type: string
-      clientRewardPrecent:
+      clientRewardPercent:
         type: string
-      votersRewardPrecent:
+      votersRewardPercent:
         type: string
     description: Params defines the parameters for the module.
   lavanet.lava.conflict.Provider:
@@ -51525,11 +51525,11 @@ definitions:
           votePeriod:
             type: string
             format: uint64
-          winnerRewardPrecent:
+          winnerRewardPercent:
             type: string
-          clientRewardPrecent:
+          clientRewardPercent:
             type: string
-          votersRewardPrecent:
+          votersRewardPercent:
             type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.conflict.ResponseConflict:
