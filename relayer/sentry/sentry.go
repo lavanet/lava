@@ -78,6 +78,9 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
+		fmt.Printf("QoS Availibility: %s, downtime precent : %s \n", cs.QoSInfo.LastQoSReport.Availability.String(), downtimePrecentage.String())
+	}
 
 	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -94,11 +97,10 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 		return list
 	}
 	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
-
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 {
+		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {
@@ -107,6 +109,10 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	cs.QoSInfo.TotalSyncScore++
 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+		fmt.Printf("QoS Sync: %s, block diff: %d , sync score: %d / %d \n", cs.QoSInfo.LastQoSReport.Sync.String(), blockHeightDiff, cs.QoSInfo.SyncScoreSum, cs.QoSInfo.TotalSyncScore)
+	}
 }
 
 type RelayerClientWrapper struct {
@@ -1321,12 +1327,31 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	averageBlockTime_ms := s.serverSpec.AverageBlockTime
 	listExpectedBlockHeights := []int64{}
 
+	var highestBlockNumber int64 = 0
+	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				if highestBlockNumber < providerDataContainer.LatestFinalizedBlock {
+					highestBlockNumber = providerDataContainer.LatestFinalizedBlock
+				}
+
+			}
+		}
+		return highestBlockNumber
+	}
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) //update the highest in place
+	highestBlockNumber = FindHighestBlockNumber(s.providerHashesConsensus)
+
 	now := time.Now()
 	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
 		listExpectedBH := []int64{}
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
-				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms)
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) //interpolation
+				//limit the interpolation to the highest seen block height
+				if expected > highestBlockNumber {
+					expected = highestBlockNumber
+				}
 				listExpectedBH = append(listExpectedBH, expected)
 			}
 		}
