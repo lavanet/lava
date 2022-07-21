@@ -63,10 +63,11 @@ type QoSInfo struct {
 
 var AvailabilityPrecentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
 const (
-	PercentileToCalculateLatency = 0.9
-	MinProvidersForSync          = 0.6
-	LatencyThresholdStatic       = 1 * time.Second
-	LatencyThresholdSlope        = 1 * time.Millisecond
+	MaxConsecutiveConnectionAttemts = 3
+	PercentileToCalculateLatency    = 0.9
+	MinProvidersForSync             = 0.6
+	LatencyThresholdStatic          = 1 * time.Second
+	LatencyThresholdSlope           = 1 * time.Millisecond
 )
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
@@ -77,6 +78,9 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
 	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
+		fmt.Printf("QoS Availibility: %s, downtime precent : %s \n", cs.QoSInfo.LastQoSReport.Availability.String(), downtimePrecentage.String())
+	}
 
 	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
@@ -93,7 +97,6 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 		return list
 	}
 	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
-
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
@@ -106,6 +109,10 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	cs.QoSInfo.TotalSyncScore++
 
 	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+		fmt.Printf("QoS Sync: %s, block diff: %d , sync score: %d / %d \n", cs.QoSInfo.LastQoSReport.Sync.String(), blockHeightDiff, cs.QoSInfo.SyncScoreSum, cs.QoSInfo.TotalSyncScore)
+	}
 }
 
 type RelayerClientWrapper struct {
@@ -113,11 +120,12 @@ type RelayerClientWrapper struct {
 	Acc    string
 	Addr   string
 
-	SessionsLock     sync.Mutex
-	Sessions         map[int64]*ClientSession
-	MaxComputeUnits  uint64
-	UsedComputeUnits uint64
-	ReliabilitySent  bool
+	ConnectionRefusals uint64
+	SessionsLock       sync.Mutex
+	Sessions           map[int64]*ClientSession
+	MaxComputeUnits    uint64
+	UsedComputeUnits   uint64
+	ReliabilitySent    bool
 }
 
 type PaymentRequest struct {
@@ -268,11 +276,12 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:             servicer.Address,
-			Addr:            relevantEndpoints[0].IPPORT,
-			Sessions:        map[int64]*ClientSession{},
-			MaxComputeUnits: maxcu,
-			ReliabilitySent: false,
+			Acc:                servicer.Address,
+			Addr:               relevantEndpoints[0].IPPORT,
+			Sessions:           map[int64]*ClientSession{},
+			MaxComputeUnits:    maxcu,
+			ReliabilitySent:    false,
+			ConnectionRefusals: 0,
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
@@ -684,26 +693,42 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	s.pairingMu.RLock()
 
 	defer s.pairingMu.RUnlock()
-	if len(s.pairing) == 0 {
+	if len(s.pairing) <= 0 {
 		return nil, -1, errors.New("no pairings available")
 	}
 
 	//
-	index := rand.Intn(len(s.pairing))
-	wrap := s.pairing[index]
-
-	if wrap.Client == nil {
-		wrap.SessionsLock.Lock()
-		defer wrap.SessionsLock.Unlock()
-		//
-		// TODO: we should retry with another addr
-		conn, err := s.connectRawClient(ctx, wrap.Addr)
-		if err != nil {
-			return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
+		if len(s.pairing) == 0 {
+			return nil, -1, fmt.Errorf("pairing list is empty")
 		}
-		wrap.Client = conn
+
+		index := rand.Intn(len(s.pairing))
+		wrap := s.pairing[index]
+
+		if wrap.Client == nil {
+			wrap.SessionsLock.Lock()
+
+			conn, err := s.connectRawClient(ctx, wrap.Addr)
+			if err != nil {
+				wrap.ConnectionRefusals++
+				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
+				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
+					s.movePairingEntryToPurge(wrap, index, false)
+					fmt.Printf("moving %s to purge list after max consecutive tries\n", wrap.Addr)
+				}
+
+				wrap.SessionsLock.Unlock()
+				continue
+			}
+			wrap.ConnectionRefusals = 0
+			wrap.Client = conn
+			wrap.SessionsLock.Unlock()
+		}
+		return wrap, index, nil
 	}
-	return wrap, index, nil
+	return nil, -1, fmt.Errorf("error getting pairing from all providers in pairing")
 }
 
 func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, reply1 *pairingtypes.RelayReply) (ok bool) {
@@ -942,8 +967,8 @@ func (s *Sentry) SendRelay(
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
 	if err != nil {
-		if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index)
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			s.movePairingEntryToPurge(wrap, index, true)
 		}
 		return reply, err
 	}
@@ -1025,7 +1050,7 @@ func (s *Sentry) SendRelay(
 							if err != nil {
 								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-									s.movePairingEntryToPurge(wrap, index)
+									s.movePairingEntryToPurge(wrap, index, true)
 								}
 								return nil, err
 							}
@@ -1149,11 +1174,14 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	return latestBlock - finalization_criteria
 }
 
-func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, lockpairing bool) {
 	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	s.pairingMu.Lock()
+	if lockpairing {
+		s.pairingMu.Lock()
+		defer s.pairingMu.Unlock()
+	}
+
 	s.pairingPurgeLock.Lock()
-	defer s.pairingMu.Unlock()
 	defer s.pairingPurgeLock.Unlock()
 	//move to purge list
 	s.pairingPurge = append(s.pairingPurge, wrap)
