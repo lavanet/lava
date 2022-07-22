@@ -39,7 +39,7 @@ func TestUnstakeClient(t *testing.T) {
 	require.Nil(t, err)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-	epochsToSave := keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ctx))
+	epochsToSave := keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	tests := []struct {
 		name    string
 		chainID string

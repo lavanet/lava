@@ -13,7 +13,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.UnstakeHoldBlocks(ctx),
 		k.EpochBlocksTmp(ctx),
-		k.EpochsToSave(ctx),
+		k.EpochsToSaveTmp(ctx),
 		k.LatestParamChange(ctx),
 	)
 }
@@ -29,9 +29,9 @@ func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context) (res uint64) {
 	return
 }
 
-// EpochBlocks returns the EpochBlocks param
+// EpochBlocks returns the EpochBlocks fixated param
 func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	res = k.GetFixatedParamsForBlock(ctx, block).EpochBlocks
+	res = k.GetFixatedParamsForBlock(ctx, block).Parameters.EpochBlocks
 	return
 }
 
@@ -41,17 +41,16 @@ func (k Keeper) EpochBlocksTmp(ctx sdk.Context) (res uint64) {
 	return
 }
 
-// EpochsToSave returns the EpochsToSave param
-func (k Keeper) EpochsToSave(ctx sdk.Context) (res uint64) {
-	//TODO: change to support param change
-	k.paramstore.Get(ctx, types.KeyEpochsToSave, &res)
+// EpochsToSave returns the EpochsToSave fixated param
+func (k Keeper) EpochsToSave(ctx sdk.Context, block uint64) (res uint64) {
+	res = k.GetFixatedParamsForBlock(ctx, block).Parameters.EpochsToSave
 	return
 }
 
-// EpochBlocks returns the EpochBlocks param
-func (k Keeper) GetEpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	//TODO: modify to support param change
-	k.paramstore.Get(ctx, types.KeyEpochBlocks, &res)
+// EpochsToSaveTmp returns the EpochsToSave param
+func (k Keeper) EpochsToSaveTmp(ctx sdk.Context) (res uint64) {
+	//TODO: change to support param change
+	k.paramstore.Get(ctx, types.KeyEpochsToSave, &res)
 	return
 }
 
@@ -61,15 +60,18 @@ func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	return k.BlockInEpoch(ctx, currentBlock) == 0
 }
 
-func (k Keeper) BlocksToSave(ctx sdk.Context) (res uint64) {
-	blocksToSave := k.EpochsToSave(ctx) * k.EpochBlocksTmp(ctx)
+func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64) {
+	blocksToSave := k.EpochsToSave(ctx, block) * k.EpochBlocks(ctx, block)
 	return blocksToSave
 }
 
 func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64) {
-	blocksCycle := k.EpochBlocks(ctx, block)
-
-	return block % blocksCycle
+	//get epochBlocks directly because we also need an epoch start for the current grid and when fixation was saved is an epoch start
+	fixtedParams := k.GetFixatedParamsForBlock(ctx, block)
+	blocksCycle := fixtedParams.Parameters.EpochBlocks
+	epochStartInGrid := fixtedParams.FixationBlock //fixation block is always <= block
+	blockRelativeToGrid := block - epochStartInGrid
+	return blockRelativeToGrid % blocksCycle
 }
 
 func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {
@@ -77,11 +79,11 @@ func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {
 	return
 }
 
-// GetSessionStartForBlock gets a session start supports one param change
+// GetEpochStartForBlock gets a session start supports one param change
 func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64) {
-	blocksInTargetSession := k.BlockInEpoch(ctx, block)
-	targetBlockStart := block - blocksInTargetSession
-	return targetBlockStart, blocksInTargetSession
+	blockInTargetEpoch := k.BlockInEpoch(ctx, block)
+	targetEpochStart := block - blockInTargetEpoch
+	return targetEpochStart, blockInTargetEpoch
 }
 
 func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64) {

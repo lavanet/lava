@@ -68,12 +68,12 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 }
 
 func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err error) {
-
-	if uint64(ctx.BlockHeight()) < k.BlocksToSave(ctx) {
+	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	blocksToSaveAtEarliestEpoch := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if uint64(ctx.BlockHeight()) < blocksToSaveAtEarliestEpoch {
 		return nil
 	}
-	block := uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	block := uint64(ctx.BlockHeight()) - blocksToSaveAtEarliestEpoch
 	if earliestEpochBlock > block {
 		return nil
 	}
@@ -88,17 +88,18 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err err
 
 func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
-	blocksToSave := k.BlocksToSave(ctx)
-	if currentBlock <= blocksToSave {
+	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	blocksToSaveAtEarliestEpoch := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
-	block := currentBlock - blocksToSave
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	block := currentBlock - blocksToSaveAtEarliestEpoch
+
 	if earliestEpochBlock >= block {
 		return
 	}
 	logger := k.Logger(ctx)
-	//now update the earliest session start
+	//now update the earliest epoch start
 	epochBlocks := k.EpochBlocks(ctx, earliestEpochBlock)
 	earliestEpochBlock += epochBlocks
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")

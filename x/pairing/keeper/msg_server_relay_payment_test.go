@@ -281,7 +281,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
 	require.Nil(t, err)
 
-	epochToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
+	epochToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
 
 	tests := []struct {
 		name    string
@@ -313,9 +313,9 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 
 func TestRelayPaymentOldEpochs(t *testing.T) {
 	ts := setupForPaymentTest(t)
-
-	epochsToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
-	blocksInEpoch := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	currBlock := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+	epochsToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), currBlock)
+	blocksInEpoch := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), currBlock)
 	for i := 0; i < int(epochsToSave+1); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
