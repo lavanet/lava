@@ -68,6 +68,7 @@ const (
 	MinProvidersForSync             = 0.6
 	LatencyThresholdStatic          = 1 * time.Second
 	LatencyThresholdSlope           = 1 * time.Millisecond
+	StaleEpochDistance              = 3 // relays done 3 epochs back are ready to be rewarded
 )
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
@@ -164,7 +165,7 @@ type Sentry struct {
 	NewBlockEvents          <-chan ctypes.ResultEvent
 	isUser                  bool
 	Acc                     string // account address (bech32)
-	newBlockCb              func()
+	newEpochCb              func(epochHeight int64)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	//
@@ -178,7 +179,9 @@ type Sentry struct {
 	// server Blocks To Save (atomic)
 	earliestSavedBlock uint64
 	// Block storage (atomic)
-	blockHeight int64
+	blockHeight  int64
+	currentEpoch int64
+	EpochSize    uint64
 
 	//
 	// Spec storage (rw mutex)
@@ -203,6 +206,15 @@ type Sentry struct {
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.Mutex
+}
+
+func (s *Sentry) GetEpochSize(ctx context.Context) error {
+	res, err := s.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.EpochSize, res.GetParams().EpochBlocks)
+	return nil
 }
 
 func (s *Sentry) getEarliestSession(ctx context.Context) error {
@@ -435,6 +447,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 		}
 	}
 
+	s.GetEpochSize(ctx) // ARITODO:: Tell omer tihs has to be here since we use epoch size early on
+
 	return nil
 }
 
@@ -587,12 +601,15 @@ func (s *Sentry) Start(ctx context.Context) {
 			// Update block
 			s.SetBlockHeight(data.Block.Height)
 
-			if s.newBlockCb != nil {
-				go s.newBlockCb()
-			}
-
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
-				fmt.Printf("New session: Height: %d \n", data.Block.Height)
+				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
+
+				s.SetCurrentEpochHeight(data.Block.Height)
+				s.GetEpochSize(ctx)
+
+				if s.newEpochCb != nil {
+					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
+				}
 
 				//
 				// Update specs
@@ -815,10 +832,10 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
 	maxBlockNum := int64(0)
-	for blockNum, _ := range finalizedBlocks {
+	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
 			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
-			return errors.New("provider returned non finalized block reply")
+			return errors.New("Reliability ERROR: provider returned non finalized block reply")
 		}
 
 		sorted[idx] = blockNum
@@ -832,7 +849,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 
 	// check for consecutive blocks
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-	for index, _ := range sorted {
+	for index := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
 			return errors.New("Reliability ERROR: provider returned non consecutive finalized blocks reply")
@@ -873,16 +890,6 @@ func (s *Sentry) getConsensusByProvider(providerId string) *ProviderHashesConsen
 		}
 	}
 	return nil
-}
-
-func findMinKey(blockMap map[int64]string) int64 {
-	min := int64(-1)
-	for address, _ := range blockMap {
-		if (min == -1) || address < min {
-			min = address
-		}
-	}
-	return min
 }
 
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
@@ -1097,6 +1104,7 @@ func (s *Sentry) SendRelay(
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {
 	s.providerDataContainersMu.Lock()
+	defer s.providerDataContainersMu.Unlock()
 
 	if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
 		newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply, req)
@@ -1116,7 +1124,7 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 			if !discrepancyResult {
 				matchWithExistingConsensus = true
 			} else {
-				log.Println("Conflict found between consensus %d and provider %s", idx, providerAcc)
+				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
 			}
 
 			// if no discrepency with this group -> insert into consensus and break
@@ -1142,12 +1150,11 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 			}
 
 			if discrepancyResult {
-				log.Println("Reliability ERROR: Conflict found between consensus %d and provider %s", idx, providerAcc)
+				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
 			}
 		}
 	}
 
-	s.providerDataContainersMu.Unlock()
 	return false, nil
 }
 
@@ -1189,10 +1196,9 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error) {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	//
 	// TODO: cache results!
-
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   user,
@@ -1200,12 +1206,12 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (bool, error
 		Block:    uint64(s.GetBlockHeight()),
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	if res.Valid {
-		return true, nil
+	if res.GetValid() {
+		return res, nil
 	}
-	return false, fmt.Errorf("invalid pairing with user CurrentBlock: %d", s.GetBlockHeight())
+	return nil, fmt.Errorf("invalid pairing with user. CurrentBlock: %d", s.GetBlockHeight())
 }
 
 func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provider string, block uint64) (bool, error) {
@@ -1221,7 +1227,7 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 	if err != nil {
 		return false, err
 	}
-	if res.Valid {
+	if res.GetValid() {
 		return true, nil
 	}
 	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
@@ -1288,6 +1294,14 @@ func (s *Sentry) SetBlockHeight(blockHeight int64) {
 	atomic.StoreInt64(&s.blockHeight, blockHeight)
 }
 
+func (s *Sentry) GetCurrentEpochHeight() int64 {
+	return atomic.LoadInt64(&s.currentEpoch)
+}
+
+func (s *Sentry) SetCurrentEpochHeight(blockHeight int64) {
+	atomic.StoreInt64(&s.currentEpoch, blockHeight)
+}
+
 func (s *Sentry) GetCUServiced() uint64 {
 	return atomic.LoadUint64(&s.totalCUServiced)
 }
@@ -1312,8 +1326,8 @@ func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID st
 	return UserEntryRes.GetMaxCU(), err
 }
 
-func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, chainID string) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
-	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(s.GetBlockHeight())})
+func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, chainID string, requestBlock int64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
+	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(requestBlock)})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1382,7 +1396,7 @@ func NewSentry(
 	clientCtx client.Context,
 	chainID string,
 	isUser bool,
-	newBlockCb func(),
+	newEpochCb func(epochHeight int64),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
@@ -1406,7 +1420,7 @@ func NewSentry(
 		ChainID:                 chainID,
 		isUser:                  isUser,
 		Acc:                     acc,
-		newBlockCb:              newBlockCb,
+		newEpochCb:              newEpochCb,
 		ApiInterface:            apiInterface,
 		VrfSk:                   vrf_sk,
 		blockHeight:             currentBlock,
