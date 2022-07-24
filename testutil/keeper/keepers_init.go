@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
@@ -17,14 +18,13 @@ import (
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
+	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/rpc/core"
 	tmdb "github.com/tendermint/tm-db"
-
-	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 )
 
 type Keepers struct {
@@ -33,6 +33,7 @@ type Keepers struct {
 	Pairing       pairingkeeper.Keeper
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
+	ParamsKeeper  paramskeeper.Keeper
 }
 
 type Servers struct {
@@ -63,28 +64,23 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	paramsStoreKey := sdk.NewKVStoreKey(paramtypes.StoreKey)
+	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
+	tkey := sdk.NewTransientStoreKey(paramtypes.TStoreKey)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	epochparamsSubspace := paramtypes.NewSubspace(cdc,
-		pairingtypes.Amino,
-		epochStoreKey,
-		epochMemStoreKey,
-		"EpochstorageParams",
-	)
+	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
+	paramsKeeper.Subspace(spectypes.ModuleName)
+	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
+	paramsKeeper.Subspace(pairingtypes.ModuleName)
+	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
-	pairingparamsSubspace := paramtypes.NewSubspace(cdc,
-		pairingtypes.Amino,
-		pairingStoreKey,
-		pairingMemStoreKey,
-		"PairingParams",
-	)
+	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
 
-	specparamsSubspace := paramtypes.NewSubspace(cdc,
-		pairingtypes.Amino,
-		specStoreKey,
-		specMemStoreKey,
-		"SpecParams",
-	)
+	pairingparamsSubspace, _ := paramsKeeper.GetSubspace(pairingtypes.ModuleName)
+
+	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
 
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
@@ -92,6 +88,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
+	ks.ParamsKeeper = paramsKeeper
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
