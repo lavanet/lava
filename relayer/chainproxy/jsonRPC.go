@@ -303,7 +303,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		// of the error or the error code if json (we need smarter error handling)
 		replyMsg.Error = &jsonError{
 			Code:    1, // TODO
-			Message: fmt.Sprintf("Error relaying to %s", err),
+			Message: fmt.Sprintf("%s", err),
 		}
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err

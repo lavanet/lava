@@ -139,7 +139,7 @@ func SendRelay(
 			if err.Error() == context.DeadlineExceeded.Error() {
 				clientSession.QoSInfo.ConsecutiveTimeOut++
 			}
-			return nil, nil, fmt.Errorf("Error relaying to provider %s: %w", relayRequest.GetProvider(), err)
+			return nil, nil, err
 		}
 		currentLatency := time.Since(relaySentTime)
 		clientSession.QoSInfo.ConsecutiveTimeOut = 0
@@ -194,7 +194,7 @@ func SendRelay(
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, fmt.Errorf("Error relaying to provider %s: %w", relayRequest.GetProvider(), err)
+			return nil, err
 		}
 
 		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
