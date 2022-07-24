@@ -76,7 +76,7 @@ type relayServer struct {
 func askForRewards(staleEpochHeight int64) {
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
-		fmt.Printf("Warning: Some epochs were not rewarded, catching up and asking for rewards...")
+		fmt.Printf("Error: Some epochs were not rewarded, catching up and asking for rewards...")
 
 		// go over all epochs and look for stale unhandled epochs
 		for epoch := range g_rewardsSessions {
@@ -118,7 +118,7 @@ func askForRewards(staleEpochHeight int64) {
 			userSessions.Lock.Lock()
 			userAccAddr, err := sdk.AccAddressFromBech32(userSessions.user)
 			if err != nil {
-				log.Println(fmt.Sprintf("invalid user address: %s\n", userSessions.user))
+				log.Println(fmt.Sprintf("invalid user address: %s\n We can continue without the addr but the it shouldnt be invalid.", userSessions.user))
 			}
 
 			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
@@ -233,69 +233,92 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	g_sessions_mutex.Unlock()
 
 	userSessions.Lock.Lock()
-	defer userSessions.Lock.Unlock()
 	if userSessions.IsBlockListed {
+		userSessions.Lock.Unlock()
 		return nil, nil, fmt.Errorf("User blocklisted! userAddr: %s", userAddr)
 	}
 
-	if _, ok := userSessions.Sessions[req.SessionId]; !ok {
-		userSessions.Sessions[req.SessionId] = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId}
-		sessionEpoch := getEpochFromBlockHeight(req.BlockHeight, isOverlap)
-		userSessions.Sessions[req.SessionId].PairingEpoch = sessionEpoch
+	var sessionEpoch uint64
+	var vrf_pk *utils.VrfPubKey
+	session, ok := userSessions.Sessions[req.SessionId]
+	userSessions.Lock.Unlock()
+
+	if ok {
+		session.Lock.Lock()
+		sessionEpoch = session.PairingEpoch
+		session.Lock.Unlock()
+
+		userSessions.Lock.Lock()
+		vrf_pk = &userSessions.dataByEpoch[sessionEpoch].VrfPk
+		userSessions.Lock.Unlock()
+	} else {
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
+		}
+
+		sessionEpoch = getEpochFromBlockHeight(req.BlockHeight, isOverlap)
+
+		userSessions.Lock.Lock()
+		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
+		userSessions.Sessions[req.SessionId] = session
+		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
+			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
+			log.Println("new user sessions in epoch " + strconv.FormatUint(maxcuRes, 10))
+		}
+		userSessions.Lock.Unlock()
 
 		g_rewardsSessions_mutex.Lock()
 		if _, ok := g_rewardsSessions[sessionEpoch]; !ok {
 			g_rewardsSessions[sessionEpoch] = make([]*RelaySession, 0)
 		}
-		g_rewardsSessions[sessionEpoch] = append(g_rewardsSessions[sessionEpoch], userSessions.Sessions[req.SessionId])
+		g_rewardsSessions[sessionEpoch] = append(g_rewardsSessions[sessionEpoch], session)
 		g_rewardsSessions_mutex.Unlock()
-
-		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
-		}
-		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
-			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
-			log.Println("new user sessions in epoch " + strconv.FormatUint(maxcuRes, 10))
-		}
 	}
 
-	session := userSessions.Sessions[req.SessionId]
-	return session, &userSessions.dataByEpoch[session.PairingEpoch].VrfPk, nil
+	return session, vrf_pk, nil
 }
 
 func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
 	sess.Lock.Lock()
+	relayNum := sess.RelayNum
+	cuSum := sess.CuSum
+	sess.Lock.Unlock()
 	// Check that relaynum gets incremented by user
-	if sess.RelayNum+1 != request.RelayNum {
-		sess.Lock.Unlock()
+	if relayNum+1 != request.RelayNum {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
-		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
+		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
 	}
 
-	sess.RelayNum = sess.RelayNum + 1
+	sess.Lock.Lock()
+	sess.RelayNum = sess.RelayNum + 1 // ARITODO:: Should go up even if errors are returned below?
+	sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, sess.CuSum, request.CuSum)
+	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, cuSum, request.CuSum)
 
 	//
 	// TODO: do we worry about overflow here?
-	if sess.CuSum >= request.CuSum {
+	if cuSum >= request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	if sess.CuSum+serviceApi.ComputeUnits != request.CuSum {
+	if cuSum+serviceApi.ComputeUnits != request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	sess.Lock.Unlock()
 
 	userSessions.Lock.Lock()
-	if userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits+serviceApi.ComputeUnits > userSessions.dataByEpoch[pairingEpoch].MaxComputeUnits {
-		userSessions.Lock.Unlock()
+	epochData := userSessions.dataByEpoch[pairingEpoch]
+	userSessions.Lock.Unlock()
+
+	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
 		return errors.New("client cu overflow")
 	}
-	userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits = userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits + serviceApi.ComputeUnits
+
+	userSessions.Lock.Lock()
+	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
 	userSessions.Lock.Unlock()
+
 	sess.Lock.Lock()
 	sess.CuSum = request.CuSum
 	sess.Lock.Unlock()
@@ -306,10 +329,10 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	log.Println("server got Relay")
 
-	blockHeightDiff := g_sentry.GetBlockHeight() - request.BlockHeight
+	prevEpochStart := g_sentry.GetCurrentEpochHeight() - int64(g_sentry.EpochSize)
 
-	// client can only be at a previous blockheight that is within epoch+overlap
-	if blockHeightDiff > int64(g_sentry.EpochSize+pairingtypes.DefaultEpochBlocksOverlap) { // DefaultEpochBlocksOverlap is the correct overlap value?
+	// client blockheight can only be at at prev epoch but not ealier
+	if request.BlockHeight < int64(prevEpochStart) {
 		return nil, fmt.Errorf("user reported very old lava block height: %d vs %d", g_sentry.GetBlockHeight(), request.BlockHeight)
 	}
 
