@@ -115,17 +115,15 @@ func askForRewards(staleEpochHeight int64) {
 
 			userSessions := session.userSessionsParent
 			session.Lock.Unlock()
-
 			userSessions.Lock.Lock()
 			userAccAddr, err := sdk.AccAddressFromBech32(userSessions.user)
 			if err != nil {
 				log.Println(fmt.Sprintf("invalid user address: %s\n", userSessions.user))
-				// ARITODO:: unlock+continue?
 			}
 
 			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
 			if !ok {
-				log.Printf("Error: Missing epoch data for this user: %s, Epoch: %d\n", userAccAddr, staleEpoch)
+				log.Printf("Error: Missing epoch data for this user: %s, Epoch: %d\n", userSessions.user, staleEpoch)
 				userSessions.Lock.Unlock()
 				continue
 			}
@@ -134,10 +132,6 @@ func askForRewards(staleEpochHeight int64) {
 				relay.DataReliability = userSessionsEpochData.DataReliability
 				userSessionsEpochData.DataReliability = nil
 				reliability = true
-			} else {
-				log.Printf("Error: Missing reliability data for this user+epoch: %s, Epoch: %d\n", userAccAddr, staleEpoch)
-				userSessions.Lock.Unlock()
-				continue
 			}
 			userSessions.Lock.Unlock()
 
@@ -258,7 +252,6 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
 		if err != nil {
-			//ARITODO:: is anything still locked before this return?
 			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
 		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
@@ -271,15 +264,14 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	return session, &userSessions.dataByEpoch[session.PairingEpoch].VrfPk, nil
 }
 
-func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest) error {
-	sess.userSessionsParent.Lock.Lock()
-	defer sess.userSessionsParent.Lock.Unlock()
+func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
 	sess.Lock.Lock()
-	defer sess.Lock.Unlock()
-
 	// Check that relaynum gets incremented by user
 	if sess.RelayNum+1 != request.RelayNum {
-		sess.userSessionsParent.IsBlockListed = true
+		sess.Lock.Unlock()
+		userSessions.Lock.Lock()
+		userSessions.IsBlockListed = true
+		userSessions.Lock.Unlock()
 		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", sess.RelayNum+1, request.RelayNum)
 	}
 
@@ -295,12 +287,18 @@ func updateSessionCu(sess *RelaySession, serviceApi *spectypes.ServiceApi, reque
 	if sess.CuSum+serviceApi.ComputeUnits != request.CuSum {
 		return errors.New("bad cu sum")
 	}
-	if sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits+serviceApi.ComputeUnits > sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].MaxComputeUnits {
+	sess.Lock.Unlock()
+
+	userSessions.Lock.Lock()
+	if userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits+serviceApi.ComputeUnits > userSessions.dataByEpoch[pairingEpoch].MaxComputeUnits {
+		userSessions.Lock.Unlock()
 		return errors.New("client cu overflow")
 	}
-
-	sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits = sess.userSessionsParent.dataByEpoch[sess.PairingEpoch].UsedComputeUnits + serviceApi.ComputeUnits
+	userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits = userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits + serviceApi.ComputeUnits
+	userSessions.Lock.Unlock()
+	sess.Lock.Lock()
 	sess.CuSum = request.CuSum
+	sess.Lock.Unlock()
 
 	return nil
 }
@@ -333,9 +331,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, fmt.Errorf("user not authorized or error occured, err: %s", err)
 	}
 
-	if !res.Valid {
-		return nil, fmt.Errorf("user not authorized or bad signature, err: %s", err)
-	}
 	if !isSupportedSpec(request) {
 		return nil, errors.New("spec not supported by server")
 	}
@@ -352,16 +347,20 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, err
 	}
 
+	relaySession.Lock.Lock()
+	pairingEpoch := relaySession.PairingEpoch
+	userSessions := relaySession.userSessionsParent
+	relaySession.Lock.Unlock()
+
 	if request.DataReliability != nil {
-		// ARITODO:: lock before deref?
-		relaySession.userSessionsParent.Lock.Lock()
+		userSessions.Lock.Lock()
+		dataReliability := userSessions.dataByEpoch[pairingEpoch].DataReliability
+		userSessions.Lock.Unlock()
+
 		//data reliability message
-		if relaySession.userSessionsParent.dataByEpoch[relaySession.PairingEpoch].DataReliability != nil {
-			relaySession.userSessionsParent.Lock.Unlock()
+		if dataReliability != nil {
 			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
 		}
-
-		relaySession.userSessionsParent.Lock.Unlock()
 
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
@@ -384,12 +383,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		log.Println("server got valid DataReliability request")
 
-		// ARITODO:: lock before deref?
-		relaySession.userSessionsParent.Lock.Lock()
+		userSessions.Lock.Lock()
 
 		//will get some rewards for this
-		relaySession.userSessionsParent.dataByEpoch[relaySession.PairingEpoch].DataReliability = request.DataReliability
-		relaySession.userSessionsParent.Lock.Unlock()
+		userSessions.dataByEpoch[pairingEpoch].DataReliability = request.DataReliability
+		userSessions.Lock.Unlock()
 
 	} else {
 		// Validate
@@ -398,12 +396,14 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		}
 
 		// Update session
-		err = updateSessionCu(relaySession, nodeMsg.GetServiceApi(), request)
+		err = updateSessionCu(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
 		if err != nil {
 			return nil, err
 		}
 
+		relaySession.Lock.Lock()
 		relaySession.Proof = request
+		relaySession.Lock.Unlock()
 	}
 	// Send
 	reply, err := nodeMsg.Send(ctx)
