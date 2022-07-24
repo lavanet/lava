@@ -252,10 +252,11 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		vrf_pk = &userSessions.dataByEpoch[sessionEpoch].VrfPk
 		userSessions.Lock.Unlock()
 	} else {
-		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
+		tmp_vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
 		}
+		vrf_pk = tmp_vrf_pk
 
 		sessionEpoch = getEpochFromBlockHeight(req.BlockHeight, isOverlap)
 
