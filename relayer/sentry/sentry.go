@@ -1104,6 +1104,7 @@ func (s *Sentry) SendRelay(
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {
 	s.providerDataContainersMu.Lock()
+	defer s.providerDataContainersMu.Unlock()
 
 	if len(s.providerHashesConsensus) == 0 && len(s.prevEpochProviderHashesConsensus) == 0 {
 		newHashConsensus := s.initProviderHashesConsensus(providerAcc, latestBlock, finalizedBlocks, reply, req)
@@ -1154,7 +1155,6 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		}
 	}
 
-	s.providerDataContainersMu.Unlock()
 	return false, nil
 }
 
