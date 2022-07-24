@@ -223,13 +223,11 @@ func getEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
 
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest, isOverlap bool) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
-
-	if _, ok := g_sessions[userAddr]; !ok {
-		newUserSessions := &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
-		g_sessions[userAddr] = newUserSessions
+	userSessions, ok := g_sessions[userAddr]
+	if !ok {
+		userSessions = &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
+		g_sessions[userAddr] = userSessions
 	}
-
-	userSessions := g_sessions[userAddr]
 	g_sessions_mutex.Unlock()
 
 	userSessions.Lock.Lock()
@@ -294,7 +292,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	}
 
 	sess.Lock.Lock()
-	sess.RelayNum = sess.RelayNum + 1 // ARITODO:: Should go up even if errors are returned below?
+	sess.RelayNum = sess.RelayNum + 1
 	sess.Lock.Unlock()
 
 	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, cuSum, request.CuSum)
