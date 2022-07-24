@@ -10,10 +10,13 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/spec"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -33,9 +36,9 @@ type Keepers struct {
 }
 
 type Servers struct {
-	EpochServer   epochtypes.MsgServer
+	EpochServer   epochstoragetypes.MsgServer
 	SpecServer    spectypes.MsgServer
-	PairingServer types.MsgServer
+	PairingServer pairingtypes.MsgServer
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
@@ -45,8 +48,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	pairingStoreKey := sdk.NewKVStoreKey(types.StoreKey)
-	pairingMemStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
+	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
 	stateStore.MountStoreWithDB(pairingStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(pairingMemStoreKey, sdk.StoreTypeMemory, nil)
 
@@ -55,29 +58,29 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(specStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(specMemStoreKey, sdk.StoreTypeMemory, nil)
 
-	epochStoreKey := sdk.NewKVStoreKey(epochtypes.StoreKey)
-	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochtypes.MemStoreKey)
+	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
+	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
 	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	epochparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
+		pairingtypes.Amino,
 		epochStoreKey,
 		epochMemStoreKey,
 		"EpochstorageParams",
 	)
 
 	pairingparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
+		pairingtypes.Amino,
 		pairingStoreKey,
 		pairingMemStoreKey,
 		"PairingParams",
 	)
 
 	specparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
+		pairingtypes.Amino,
 		specStoreKey,
 		specMemStoreKey,
 		"SpecParams",
@@ -92,10 +95,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
-	// Initialize params
-	ks.Pairing.SetParams(ctx, types.DefaultParams())
-	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
-	ks.Epochstorage.SetParams(ctx, epochtypes.DefaultParams())
+	// Initialize Genesis
+	spec.InitGenesis(ctx, ks.Spec, *spectypes.DefaultGenesis())
+	epochstorage.InitGenesis(ctx, ks.Epochstorage, *epochstoragetypes.DefaultGenesis())
+	pairing.InitGenesis(ctx, ks.Pairing, *pairingtypes.DefaultGenesis())
 
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
@@ -131,17 +134,18 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 		block := uint64(unwrapedCtx.BlockHeight())
 
+		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		//begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ProviderKey)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ClientKey)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
 
 		//end block
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ProviderKey)
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ClientKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
 		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 	}
 

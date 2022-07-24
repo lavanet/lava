@@ -115,7 +115,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 		utils.LavaError(ctx, k.Logger(ctx), "invalid_latest_param_change", map[string]string{"error": "latestParamChange > block", "latestParamChange": strconv.FormatUint(latestParamChange, 10)}, "latest param change cant be in the future")
 		return
 	}
-	earliestEpochStart := k.GetEarliestEpochStart(ctx)
+	earliestEpochStart := k.GetEarliestEpochStart(ctx) //this is the previous epoch start, before we update it to the current block
 	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
 		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
