@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -67,6 +68,14 @@ type RelaySession struct {
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64
+}
+
+func (r *RelaySession) GetPairingEpoch() uint64 {
+	return atomic.LoadUint64(&r.PairingEpoch)
+}
+
+func (r *RelaySession) SetPairingEpoch(epoch uint64) {
+	atomic.StoreUint64(&r.PairingEpoch, epoch)
 }
 
 type relayServer struct {
@@ -242,9 +251,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	userSessions.Lock.Unlock()
 
 	if ok {
-		session.Lock.Lock()
-		sessionEpoch = session.PairingEpoch
-		session.Lock.Unlock()
+		sessionEpoch = session.GetPairingEpoch()
 
 		userSessions.Lock.Lock()
 		vrf_pk = &userSessions.dataByEpoch[sessionEpoch].VrfPk
@@ -308,13 +315,12 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 
 	userSessions.Lock.Lock()
 	epochData := userSessions.dataByEpoch[pairingEpoch]
-	userSessions.Lock.Unlock()
 
 	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
+		userSessions.Lock.Unlock()
 		return errors.New("client cu overflow")
 	}
 
-	userSessions.Lock.Lock()
 	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
 	userSessions.Lock.Unlock()
 
@@ -329,6 +335,10 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	log.Println("server got Relay")
 
 	prevEpochStart := g_sentry.GetCurrentEpochHeight() - int64(g_sentry.EpochSize)
+
+	if prevEpochStart < 0 {
+		prevEpochStart = 0
+	}
 
 	// client blockheight can only be at at prev epoch but not ealier
 	if request.BlockHeight < int64(prevEpochStart) {
@@ -370,7 +380,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	relaySession.Lock.Lock()
-	pairingEpoch := relaySession.PairingEpoch
+	pairingEpoch := relaySession.GetPairingEpoch()
 	userSessions := relaySession.userSessionsParent
 	relaySession.Lock.Unlock()
 
