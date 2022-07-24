@@ -15,7 +15,7 @@ func TestGetParams(t *testing.T) {
 	k.SetParams(ctx, params)
 
 	require.EqualValues(t, params, k.GetParams(ctx))
-	require.EqualValues(t, params.UnstakeHoldBlocks, k.UnstakeHoldBlocks(ctx))
-	require.EqualValues(t, params.EpochBlocks, k.EpochBlocksTmp(ctx))
-	require.EqualValues(t, params.EpochsToSave, k.EpochsToSaveTmp(ctx))
+	require.EqualValues(t, params.UnstakeHoldBlocks, k.UnstakeHoldBlocksRaw(ctx))
+	require.EqualValues(t, params.EpochBlocks, k.EpochBlocksRaw(ctx))
+	require.EqualValues(t, params.EpochsToSave, k.EpochsToSaveRaw(ctx))
 }

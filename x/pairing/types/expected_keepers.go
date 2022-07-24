@@ -20,7 +20,7 @@ type EpochstorageKeeper interface {
 	// Methods imported from bank should be defined here
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
-	UnstakeHoldBlocks(ctx sdk.Context) (res uint64)
+	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64)
@@ -33,7 +33,6 @@ type EpochstorageKeeper interface {
 	AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry)
 	RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64)
 	StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	EpochBlocks(ctx sdk.Context, block uint64) (res uint64)
 	UnstakeEntryByAddress(ctx sdk.Context, storageType string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
 	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, found bool)

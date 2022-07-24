@@ -100,8 +100,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	}
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
-	epochBlocks := k.EpochBlocks(ctx, earliestEpochBlock)
-	earliestEpochBlock += epochBlocks
+	earliestEpochBlock = k.GetNextEpoch(ctx, earliestEpochBlock)
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }
@@ -375,15 +374,6 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
 		k.SetStakeStorage(ctx, newStorage)
 	}
-}
-
-func (k Keeper) GetNextEpoch(ctx sdk.Context, epoch uint64) uint64 {
-	epochBlocks := k.EpochBlocks(ctx, epoch)
-	if epochBlocks == 0 {
-		panic(fmt.Errorf("lava_get_epoch_blocks_error epochBlocks == 0"))
-	}
-	epoch += epochBlocks
-	return epoch
 }
 
 func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {

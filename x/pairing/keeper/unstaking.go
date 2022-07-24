@@ -38,7 +38,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	k.epochStorageKeeper.RemoveStakeEntry(ctx, stake_type(), chainID, indexInStakeStorage)
 	blockHeight := uint64(ctx.BlockHeight())
 	existingEntry.Deadline = blockHeight + k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
-	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx)
+	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx, blockHeight)
 	if existingEntry.Deadline < holdBlocks {
 		existingEntry.Deadline = holdBlocks
 	}
