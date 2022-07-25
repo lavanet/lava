@@ -291,7 +291,6 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
-
 	//
 	// Wrap result back to json
 	replyMsg := JsonrpcMessage{
