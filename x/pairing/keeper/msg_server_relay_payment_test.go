@@ -5,58 +5,85 @@ import (
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	utils "github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
-type testStruct struct {
-	ctx        context.Context
-	keepers    *testkeeper.Keepers
-	servers    *testkeeper.Servers
-	proSK      *btcSecp256k1.PrivateKey
-	proAddr    sdk.AccAddress
-	clientSK   *btcSecp256k1.PrivateKey
-	clientAddr sdk.AccAddress
-	spec       spectypes.Spec
+var (
+	balance int64 = 100000
+	stake   int64 = 1000
+)
+
+type account struct {
+	secretKey *btcSecp256k1.PrivateKey
+	address   sdk.AccAddress
+	vrfSk     vrf.PrivateKey
+	vrfPk     vrf.PublicKey
 }
 
-func setupForPaymentTest(t *testing.T) testStruct {
-	ts := testStruct{}
+type testStruct struct {
+	ctx       context.Context
+	keepers   *testkeeper.Keepers
+	servers   *testkeeper.Servers
+	providers []*account
+	clients   []*account
+	spec      spectypes.Spec
+}
+
+func (ts *testStruct) addClient(amount int) error {
+	for i := 0; i < amount; i++ {
+		sk, address := sigs.GenerateFloatingKey()
+		vrfSk, vrfPk, _ := utils.GeneratePrivateVRFKey()
+		ts.clients = append(ts.clients, &account{secretKey: sk, address: address, vrfSk: vrfSk, vrfPk: vrfPk})
+		err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
+		if err != nil {
+			return err
+		}
+		vrfPkStr := &utils.VrfPubKey{}
+		vrfPkStr.Unmarshal(vrfPk)
+		_, err = ts.servers.PairingServer.StakeClient(ts.ctx, &types.MsgStakeClient{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPkStr.String()})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ts *testStruct) addProvider(amount int) error {
+	for i := 0; i < amount; i++ {
+		sk, address := sigs.GenerateFloatingKey()
+		ts.providers = append(ts.providers, &account{secretKey: sk, address: address})
+		err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
+		if err != nil {
+			return err
+		}
+		endpoints := []epochstoragetypes.Endpoint{}
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
+		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func setupForPaymentTest(t *testing.T) *testStruct {
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	//init keepers state
-	ts.proSK, ts.proAddr = sigs.GenerateFloatingKey()
-	ts.clientSK, ts.clientAddr = sigs.GenerateFloatingKey()
 
-	var balance int64 = 100000
-	ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
-	ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.clientAddr, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
+	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochtypes.DefaultGenesis().EpochDetails)
-
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	var stake int64 = 1000
-	_, pk, _ := utils.GeneratePrivateVRFKey()
-	vrfPk := &utils.VrfPubKey{}
-	vrfPk.Unmarshal(pk)
-	_, err := ts.servers.PairingServer.StakeClient(ts.ctx, &types.MsgStakeClient{Creator: ts.clientAddr.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
-	require.Nil(t, err)
-
-	endpoints := []epochtypes.Endpoint{}
-	endpoints = append(endpoints, epochtypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
-	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: ts.proAddr.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
-	require.Nil(t, err)
-
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	return ts
 }
 
@@ -76,9 +103,16 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			ts := setupForPaymentTest(t) //reset the keepers state before each state
+			ts.spec = common.CreateMockSpec()
+			ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+			err := ts.addClient(1)
+			require.Nil(t, err)
+			err = ts.addProvider(1)
+			require.Nil(t, err)
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 			relayRequest := &types.RelayRequest{
-				Provider:        ts.proAddr.String(),
+				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(1),
@@ -90,18 +124,18 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				DataReliability: nil,
 			}
 
-			sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			var Relays []*types.RelayRequest
 			Relays = append(Relays, relayRequest)
 
-			balanceProvider := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
-			stakeClient, found, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+			balanceProvider := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+			stakeClient, found, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 			require.Equal(t, true, found)
 
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 
 			if tt.valid {
 				require.Nil(t, err)
@@ -110,10 +144,10 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				want := mint.MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
 
 				require.Equal(t, balanceProvider+want.TruncateInt64(),
-					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
+					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
 
 				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
-				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 				require.Nil(t, err)
 				require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
@@ -128,15 +162,23 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 func TestRelayPaymentOverUse(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
 	epoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-	entry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clientAddr, epoch)
+	entry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[0].address, epoch)
 	require.Nil(t, err)
 
 	maxcu, err := ts.keepers.Pairing.GetAllowedCU(sdk.UnwrapSDKContext(ts.ctx), entry)
 	require.Nil(t, err)
 
 	relayRequest := &types.RelayRequest{
-		Provider:        ts.proAddr.String(),
+		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -148,27 +190,35 @@ func TestRelayPaymentOverUse(t *testing.T) {
 		DataReliability: nil,
 	}
 
-	sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
 	var Relays []*types.RelayRequest
 	Relays = append(Relays, relayRequest)
 
-	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
+	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
-	balance = balance - ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
+	balance = balance - ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 	require.Zero(t, balance)
 }
 
 func TestRelayPaymentDoubleSpending(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
 	cuSum := ts.spec.GetApis()[0].ComputeUnits * 10
 	relayRequest := &types.RelayRequest{
-		Provider:        ts.proAddr.String(),
+		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -180,7 +230,7 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 		DataReliability: nil,
 	}
 
-	sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -189,19 +239,19 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 	relayRequest2 := *relayRequest
 	Relays = append(Relays, &relayRequest2)
 
-	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
-	stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.NotNil(t, err)
 
 	mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
 	want := mint.MulInt64(int64(cuSum))
 	require.Equal(t, balance+want.TruncateInt64(),
-		ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
+		ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
 
 	burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
-	newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+	newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 	require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 }
@@ -209,8 +259,16 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 func TestRelayPaymentDataModification(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
 	relayRequest := &types.RelayRequest{
-		Provider:        ts.proAddr.String(),
+		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -222,7 +280,7 @@ func TestRelayPaymentDataModification(t *testing.T) {
 		DataReliability: nil,
 	}
 
-	sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -232,9 +290,9 @@ func TestRelayPaymentDataModification(t *testing.T) {
 		cu       uint64
 		id       int64
 	}{
-		{"ModifiedProvider", ts.clientAddr.String(), ts.spec.Apis[0].ComputeUnits * 10, 1},
-		{"ModifiedCU", ts.proAddr.String(), ts.spec.Apis[0].ComputeUnits * 9, 1},
-		{"ModifiedID", ts.proAddr.String(), ts.spec.Apis[0].ComputeUnits * 10, 2},
+		{"ModifiedProvider", ts.clients[0].address.String(), ts.spec.Apis[0].ComputeUnits * 10, 1},
+		{"ModifiedCU", ts.providers[0].address.String(), ts.spec.Apis[0].ComputeUnits * 9, 1},
+		{"ModifiedID", ts.providers[0].address.String(), ts.spec.Apis[0].ComputeUnits * 10, 2},
 	}
 
 	for _, tt := range tests {
@@ -247,7 +305,7 @@ func TestRelayPaymentDataModification(t *testing.T) {
 			var Relays []*types.RelayRequest
 			Relays = append(Relays, relayRequest)
 
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 
 			require.NotNil(t, err)
 		})
@@ -257,8 +315,16 @@ func TestRelayPaymentDataModification(t *testing.T) {
 func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
 	relayRequest := &types.RelayRequest{
-		Provider:        ts.proAddr.String(),
+		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -270,7 +336,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 		DataReliability: nil,
 	}
 
-	sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	relayRequest.Sig = sig
 	require.Nil(t, err)
 
@@ -278,7 +344,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	relay := *relayRequest
 	Relays = append(Relays, &relay)
 
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 
 	epochToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
@@ -304,7 +370,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 			relay := *relayRequest
 			Relays = append(Relays, &relay)
 
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 			require.NotNil(t, err)
 
 		})
@@ -313,6 +379,14 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 
 func TestRelayPaymentOldEpochs(t *testing.T) {
 	ts := setupForPaymentTest(t)
+
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	epochsToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
 	blocksInEpoch := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx))
@@ -336,7 +410,7 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 			relayRequest := &types.RelayRequest{
-				Provider:        ts.proAddr.String(),
+				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       tt.sid,
@@ -348,25 +422,25 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 				DataReliability: nil,
 			}
 
-			sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
 			var Relays []*types.RelayRequest
 			Relays = append(Relays, relayRequest)
 
-			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
-			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 			if tt.valid {
 				mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
 				want := mint.MulInt64(int64(cuSum))
 				require.Equal(t, balance+want.TruncateInt64(),
-					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
+					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
 
 				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
-				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 				require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 			} else {
@@ -397,11 +471,19 @@ func TestRelayPaymentQoS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ts := setupForPaymentTest(t)
 
+			ts.spec = common.CreateMockSpec()
+			ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+			err := ts.addClient(1)
+			require.Nil(t, err)
+			err = ts.addProvider(1)
+			require.Nil(t, err)
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availebility, Sync: tt.sync}
 
 			relayRequest := &types.RelayRequest{
-				Provider:        ts.proAddr.String(),
+				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
 				SessionId:       uint64(1),
@@ -414,7 +496,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 				DataReliability: nil,
 			}
 			QoS.ComputeQoS()
-			sig, err := sigs.SignRelay(ts.clientSK, *relayRequest)
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
 
@@ -422,10 +504,10 @@ func TestRelayPaymentQoS(t *testing.T) {
 			relay := *relayRequest
 			Relays = append(Relays, &relay)
 
-			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64()
-			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+			balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+			stakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 
-			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.proAddr.String(), Relays: Relays})
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 			if tt.valid {
 				require.Nil(t, err)
 
@@ -436,10 +518,10 @@ func TestRelayPaymentQoS(t *testing.T) {
 				want := mint.MulInt64(int64(cuSum))
 				want = want.Mul(score.Mul(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx))).Add(sdk.OneDec().Sub(ts.keepers.Pairing.QoSWeight(sdk.UnwrapSDKContext(ts.ctx)))))
 				require.Equal(t, balance+want.TruncateInt64(),
-					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.proAddr, epochstoragetypes.TokenDenom).Amount.Int64())
+					ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
 
 				burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(cuSum))
-				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochtypes.ClientKey, ts.spec.Index, ts.clientAddr)
+				newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 				require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 
 			} else {
