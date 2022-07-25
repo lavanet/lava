@@ -97,12 +97,12 @@ func TestParamFixation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			for i := 0; i < int(tt.blocksToUpdate); i++ {
-				keepertest.AdvanceBlock(ctx, keepers)
+				ctx = keepertest.AdvanceBlock(ctx, keepers)
 			}
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, len(allFixatedParams), 1) // no matter how many epochs we want only one fixation since we didnt change the params
 			epochStart, _ := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-			require.Equal(t, epochStart, tt.expectedEpochStart)
+			require.Equal(t, tt.expectedEpochStart, epochStart)
 
 		})
 	}
@@ -148,21 +148,22 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 
 			blocksToLoop := int(tt.wanted_block) - prevBlock
 			for i := 0; i < blocksToLoop; i++ {
-				keepertest.AdvanceBlock(ctx, keepers)
+				ctx = keepertest.AdvanceBlock(ctx, keepers)
 				prevBlock++
 			}
 			//check the amount of fixations
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, len(allFixatedParams), tt.expectedFixation) // no matter how many epochs we want only one fixation since we didnt change the params
+			require.Equal(t, tt.expectedFixation, uint64(len(allFixatedParams)), "FixatedParamsLength VS expectedFixationLength") // no matter how many epochs we want only one fixation since we didnt change the params
 
 			//check epoch grid is correct
 			epochStart, _ := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-			require.Equal(t, epochStart, tt.expectedEpochStart)
+			require.Equal(t, tt.expectedEpochStart, epochStart, "GetEpochStartForBlock VS expectedEpochStart")
 			//TODO: check pas epochs before tt.expectedEpochStart
 
 			if tt.epochBlocksDiff != 0 {
 				newEpochBlocksVal = tt.epochBlocksDiff + newEpochBlocksVal
-				SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", strconv.FormatUint(newEpochBlocksVal, 10))
+				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", strconv.FormatUint(newEpochBlocksVal, 10))
+				require.NoError(t, err)
 			}
 
 		})
@@ -170,7 +171,8 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) {
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
 }

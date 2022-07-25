@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -108,6 +109,7 @@ func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (pr
 
 func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 	latestParamChange := k.LatestParamChange(ctx)
+	fmt.Printf("fixate params was called with latestParamChange: %s\n", latestParamChange)
 	if latestParamChange == 0 { // no change
 		return
 	}

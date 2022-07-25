@@ -10,7 +10,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -64,10 +64,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
 
-	paramsStoreKey := sdk.NewKVStoreKey(paramtypes.StoreKey)
+	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
-	tkey := sdk.NewTransientStoreKey(paramtypes.TStoreKey)
-
+	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+	stateStore.MountStoreWithDB(tkey, sdk.StoreTypeIAVL, db)
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
