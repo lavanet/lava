@@ -46,9 +46,10 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		//5. majority wins, minority gets penalised
 		epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
 		index := DetectionIndex(msg, epochStart)
+		//fmt.Printf("%s \n", index)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator}, "conflict with is already open for this client and providers in this epoch")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "conflict with is already open for this client and providers in this epoch")
 		}
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index

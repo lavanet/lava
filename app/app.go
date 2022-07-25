@@ -502,7 +502,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
-		conflictmoduletypes.ModuleName,
+		conflictmoduletypes.ModuleName, //conflict needs to change state before pairing changes stakes
 		pairingmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,

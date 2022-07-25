@@ -57,6 +57,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	noneProviderVotes := sdk.ZeroInt()
 	var providersWithoutVote []string
 	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
+	rewardCount := sdk.ZeroInt()
 	votersStake := map[string]sdk.Int{} //this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
 
@@ -83,7 +84,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			firstProviderVotes = firstProviderVotes.Add(stake)
 		case types.Provider1:
 			secondProviderVotes = secondProviderVotes.Add(stake)
-		case types.None:
+		case types.NoneOfTheProviders:
 			noneProviderVotes = noneProviderVotes.Add(stake)
 		default:
 			//punish providers that didnt vote
@@ -124,7 +125,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			winnersAddr = ConflictVote.SecondProvider.Account
 			winnerVotersStake = secondProviderVotes
 		} else {
-			winner = types.None
+			winner = types.NoneOfTheProviders
 			winnerVotersStake = noneProviderVotes
 			winnersAddr = "None"
 		}
@@ -164,6 +165,10 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			if vote.Result == winner {
 				//calculate the reward for the voter relative part (rewardpool*stake/stakesum)
 				rewardVoter := rewardAllWinningVoters.MulInt(votersStake[address]).QuoInt(winnerVotersStake)
+				rewardCount = rewardCount.Add(rewardVoter.TruncateInt())
+				if rewardCount.GT(rewardPool.Amount) {
+					panic("Paying overflow")
+				}
 				accAddress, err := sdk.AccAddressFromBech32(address)
 				if err != nil {
 					utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
@@ -178,9 +183,13 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		}
 
 		//reward winner provider
-		if winner != types.None {
+		if winner != types.NoneOfTheProviders {
 			winnerRewardPoolPercentage := k.WinnerRewardPercent(ctx)
 			winnerReward := winnerRewardPoolPercentage.MulInt(rewardPool.Amount)
+			rewardCount = rewardCount.Add(winnerReward.TruncateInt())
+			if rewardCount.GT(rewardPool.Amount) {
+				panic("Paying overflow")
+			}
 			accWinnerAddress, err := sdk.AccAddressFromBech32(winnersAddr)
 			if err != nil {
 				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
@@ -199,6 +208,10 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	//reward client
 	clientRewardPoolPercentage := k.ClientRewardPercent(ctx)
 	clientReward := clientRewardPoolPercentage.MulInt(rewardPool.Amount)
+	rewardCount = rewardCount.Add(clientReward.TruncateInt())
+	if rewardCount.GT(rewardPool.Amount) {
+		panic("Paying overflow")
+	}
 	accClientAddress, err := sdk.AccAddressFromBech32(ConflictVote.ClientAddress)
 	if err != nil {
 		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")

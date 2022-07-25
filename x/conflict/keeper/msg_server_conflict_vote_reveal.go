@@ -41,7 +41,7 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	} else if bytes.Equal(msg.Hash, conflictVote.SecondProvider.Response) {
 		vote.Result = types.Provider1
 	} else {
-		vote.Result = types.None
+		vote.Result = types.NoneOfTheProviders
 	}
 	conflictVote.VotersHash[msg.Creator] = vote
 

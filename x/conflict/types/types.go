@@ -11,12 +11,13 @@ const (
 	StateReveal = 1
 )
 
+//vote status for each voter
 const (
-	NoVote    = 0
-	Commit    = 1
-	Provider0 = 2
-	Provider1 = 3
-	None      = 4
+	NoVote             = 0
+	Commit             = 1
+	Provider0          = 2
+	Provider1          = 3
+	NoneOfTheProviders = 4
 )
 
 const (
