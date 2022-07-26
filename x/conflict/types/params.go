@@ -26,18 +26,8 @@ var (
 )
 
 var (
-	KeyWinnerRewardPercent             = []byte("WinnerRewardPercent")
-	DefaultWinnerRewardPercent sdk.Dec = sdk.NewDecWithPrec(15, 2)
-)
-
-var (
-	KeyClientRewardPercent             = []byte("ClientRewardPercent")
-	DefaultClientRewardPercent sdk.Dec = sdk.NewDecWithPrec(10, 2)
-)
-
-var (
-	KeyVotersRewardPercent             = []byte("VotersRewardPercent")
-	DefaultVotersRewardPercent sdk.Dec = sdk.NewDecWithPrec(15, 2)
+	KeyRewards             = []byte("WinnerRewardPercent")
+	DefaultRewards Rewards = Rewards{WinnerRewardPercent: sdk.NewDecWithPrec(15, 2), ClientRewardPercent: sdk.NewDecWithPrec(10, 2), VotersRewardPercent: sdk.NewDecWithPrec(15, 2)}
 )
 
 // ParamKeyTable the param key table for launch module
@@ -47,14 +37,12 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64, winnerRewardPercent sdk.Dec, clientRewardPercent sdk.Dec, votersRewardPercent sdk.Dec) Params {
+	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64, rewards Rewards) Params {
 	return Params{
-		MajorityPercent:     majorityPercent,
-		VoteStartSpan:       voteStartSpan,
-		VotePeriod:          votePeriod,
-		WinnerRewardPercent: winnerRewardPercent,
-		ClientRewardPercent: clientRewardPercent,
-		VotersRewardPercent: votersRewardPercent,
+		MajorityPercent: majorityPercent,
+		VoteStartSpan:   voteStartSpan,
+		VotePeriod:      votePeriod,
+		Rewards:         rewards,
 	}
 }
 
@@ -64,9 +52,7 @@ func DefaultParams() Params {
 		DefaultMajorityPercent,
 		DefaultVoteStartSpan,
 		DefaultVotePeriod,
-		DefaultWinnerRewardPercent,
-		DefaultClientRewardPercent,
-		DefaultVotersRewardPercent,
+		DefaultRewards,
 	)
 }
 
@@ -76,9 +62,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyMajorityPercent, &p.MajorityPercent, validateMajorityPercent),
 		paramtypes.NewParamSetPair(KeyVoteStartSpan, &p.VoteStartSpan, validateVoteStartSpan),
 		paramtypes.NewParamSetPair(KeyVotePeriod, &p.VotePeriod, validateVotePeriod),
-		paramtypes.NewParamSetPair(KeyWinnerRewardPercent, &p.WinnerRewardPercent, validateWinnerRewardPercent),
-		paramtypes.NewParamSetPair(KeyClientRewardPercent, &p.ClientRewardPercent, validateClientRewardPercent),
-		paramtypes.NewParamSetPair(KeyVotersRewardPercent, &p.VotersRewardPercent, validateVotersRewardPercent),
+		paramtypes.NewParamSetPair(KeyRewards, &p.Rewards, validateRewards),
 	}
 }
 
@@ -96,17 +80,10 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateWinnerRewardPercent(p.WinnerRewardPercent); err != nil {
+	if err := validateRewards(p.Rewards); err != nil {
 		return err
 	}
 
-	if err := validateClientRewardPercent(p.ClientRewardPercent); err != nil {
-		return err
-	}
-
-	if err := validateVotersRewardPercent(p.VotersRewardPercent); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -154,40 +131,26 @@ func validateVotePeriod(v interface{}) error {
 	return nil
 }
 
-func validateWinnerRewardPercent(v interface{}) error {
-	winnerRewardPercent, ok := v.(sdk.Dec)
+func validateRewards(v interface{}) error {
+	rewards, ok := v.(Rewards)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	if winnerRewardPercent.GT(sdk.OneDec()) || winnerRewardPercent.LT(sdk.ZeroDec()) {
-		return fmt.Errorf("invalid parameter winnerRewardPercent")
+	if rewards.ClientRewardPercent.GT(sdk.OneDec()) || rewards.ClientRewardPercent.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter ClientRewardPercent")
 	}
 
-	return nil
-}
-
-func validateClientRewardPercent(v interface{}) error {
-	clientRewardPercent, ok := v.(sdk.Dec)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
+	if rewards.VotersRewardPercent.GT(sdk.OneDec()) || rewards.VotersRewardPercent.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter VotersRewardPercent")
 	}
 
-	if clientRewardPercent.GT(sdk.OneDec()) || clientRewardPercent.LT(sdk.ZeroDec()) {
-		return fmt.Errorf("invalid parameter clientRewardPercent")
+	if rewards.WinnerRewardPercent.GT(sdk.OneDec()) || rewards.WinnerRewardPercent.LT(sdk.ZeroDec()) {
+		return fmt.Errorf("invalid parameter WinnerRewardPercent")
 	}
 
-	return nil
-}
-
-func validateVotersRewardPercent(v interface{}) error {
-	votersRewardPercent, ok := v.(sdk.Dec)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	if votersRewardPercent.GT(sdk.OneDec()) || votersRewardPercent.LT(sdk.ZeroDec()) {
-		return fmt.Errorf("invalid parameter votersRewardPercent")
+	if rewards.ClientRewardPercent.Add(rewards.VotersRewardPercent).Add(rewards.WinnerRewardPercent).GT(sdk.OneDec()) {
+		return fmt.Errorf("sum of all rewards is bigger than 100%")
 	}
 
 	return nil

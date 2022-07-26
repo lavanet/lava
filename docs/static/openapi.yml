@@ -29018,12 +29018,15 @@ paths:
                   votePeriod:
                     type: string
                     format: uint64
-                  winnerRewardPercent:
-                    type: string
-                  clientRewardPercent:
-                    type: string
-                  votersRewardPercent:
-                    type: string
+                  Rewards:
+                    type: object
+                    properties:
+                      winnerRewardPercent:
+                        type: string
+                      clientRewardPercent:
+                        type: string
+                      votersRewardPercent:
+                        type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51356,12 +51359,15 @@ definitions:
       votePeriod:
         type: string
         format: uint64
-      winnerRewardPercent:
-        type: string
-      clientRewardPercent:
-        type: string
-      votersRewardPercent:
-        type: string
+      Rewards:
+        type: object
+        properties:
+          winnerRewardPercent:
+            type: string
+          clientRewardPercent:
+            type: string
+          votersRewardPercent:
+            type: string
     description: Params defines the parameters for the module.
   lavanet.lava.conflict.Provider:
     type: object
@@ -51525,12 +51531,15 @@ definitions:
           votePeriod:
             type: string
             format: uint64
-          winnerRewardPercent:
-            type: string
-          clientRewardPercent:
-            type: string
-          votersRewardPercent:
-            type: string
+          Rewards:
+            type: object
+            properties:
+              winnerRewardPercent:
+                type: string
+              clientRewardPercent:
+                type: string
+              votersRewardPercent:
+                type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.conflict.ResponseConflict:
     type: object
@@ -51713,6 +51722,15 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+  lavanet.lava.conflict.Rewards:
+    type: object
+    properties:
+      winnerRewardPercent:
+        type: string
+      clientRewardPercent:
+        type: string
+      votersRewardPercent:
+        type: string
   lavanet.lava.conflict.Vote:
     type: object
     properties:

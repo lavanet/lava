@@ -60,6 +60,11 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	rewardCount := sdk.ZeroInt()
 	votersStake := map[string]sdk.Int{} //this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
+	var majorityMet bool
+
+	var winner int64
+	var winnersAddr string
+	var winnerVotersStake sdk.Int
 
 	//count votes and punish jury that didnt vote
 	epochVoteStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.RequestBlock) //TODO check if we need to check for overlap
@@ -109,13 +114,11 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	eventData["NoneProviderVotes"] = noneProviderVotes.String()
 
 	halfTotalVotes := totalVotes.Quo(sdk.NewIntFromUint64(MajorityDiv))
-	if firstProviderVotes.GT(halfTotalVotes) || secondProviderVotes.GT(halfTotalVotes) || noneProviderVotes.GT(halfTotalVotes) {
+	majorityMet = firstProviderVotes.GT(halfTotalVotes) || secondProviderVotes.GT(halfTotalVotes) || noneProviderVotes.GT(halfTotalVotes)
+	if majorityMet {
 		eventName = types.ConflictVoteResolvedEventName
 		//we have enough votes for a valid vote
 		//find the winner
-		var winner int64
-		var winnersAddr string
-		var winnerVotersStake sdk.Int
 		if firstProviderVotes.GT(secondProviderVotes) && firstProviderVotes.GT(noneProviderVotes) {
 			winner = types.Provider0
 			winnersAddr = ConflictVote.FirstProvider.Account
@@ -158,8 +161,54 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			}
 		}
 
+	} else {
+		eventName = types.ConflictVoteUnresolvedEventName
+		eventData["voteFailed"] = "not_enough_voters"
+	}
+
+	//reward client
+	clientRewardPoolPercentage := k.Rewards(ctx).ClientRewardPercent
+	clientReward := clientRewardPoolPercentage.MulInt(rewardPool.Amount)
+	rewardCount = rewardCount.Add(clientReward.TruncateInt())
+	if rewardCount.GT(rewardPool.Amount) {
+		utils.LavaError(ctx, logger, "VoteFail", eventData, "Reward overflow from the reward pool")
+		k.RemoveConflictVote(ctx, ConflictVote.Index)
+		return
+	}
+	accClientAddress, err := sdk.AccAddressFromBech32(ConflictVote.ClientAddress)
+	if err != nil {
+		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
+	} else {
+		ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accClientAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, clientReward.TruncateInt()), false)
+		if !ok || err != nil {
+			utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit client")
+		}
+	}
+
+	if majorityMet {
+		//reward winner provider
+		if winner != types.NoneOfTheProviders {
+			winnerRewardPoolPercentage := k.Rewards(ctx).WinnerRewardPercent
+			winnerReward := winnerRewardPoolPercentage.MulInt(rewardPool.Amount)
+			rewardCount = rewardCount.Add(winnerReward.TruncateInt())
+			if rewardCount.GT(rewardPool.Amount) {
+				utils.LavaError(ctx, logger, "VoteFail", eventData, "Reward overflow from the reward pool")
+				k.RemoveConflictVote(ctx, ConflictVote.Index)
+				return
+			}
+			accWinnerAddress, err := sdk.AccAddressFromBech32(winnersAddr)
+			if err != nil {
+				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
+			} else {
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()), true)
+				if !ok || err != nil {
+					utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit provider")
+				}
+			}
+		}
+
 		//give reward to voters
-		votersRewardPoolPercentage := k.VotersRewardPercent(ctx)
+		votersRewardPoolPercentage := k.Rewards(ctx).VotersRewardPercent
 		rewardAllWinningVoters := votersRewardPoolPercentage.MulInt(rewardPool.Amount)
 		for address, vote := range ConflictVote.VotersHash {
 			if vote.Result == winner {
@@ -167,7 +216,9 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 				rewardVoter := rewardAllWinningVoters.MulInt(votersStake[address]).QuoInt(winnerVotersStake)
 				rewardCount = rewardCount.Add(rewardVoter.TruncateInt())
 				if rewardCount.GT(rewardPool.Amount) {
-					panic("Paying overflow")
+					utils.LavaError(ctx, logger, "VoteFail", eventData, "Reward overflow from the reward pool")
+					k.RemoveConflictVote(ctx, ConflictVote.Index)
+					return
 				}
 				accAddress, err := sdk.AccAddressFromBech32(address)
 				if err != nil {
@@ -180,45 +231,6 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 					continue
 				}
 			}
-		}
-
-		//reward winner provider
-		if winner != types.NoneOfTheProviders {
-			winnerRewardPoolPercentage := k.WinnerRewardPercent(ctx)
-			winnerReward := winnerRewardPoolPercentage.MulInt(rewardPool.Amount)
-			rewardCount = rewardCount.Add(winnerReward.TruncateInt())
-			if rewardCount.GT(rewardPool.Amount) {
-				panic("Paying overflow")
-			}
-			accWinnerAddress, err := sdk.AccAddressFromBech32(winnersAddr)
-			if err != nil {
-				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
-			} else {
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()), true)
-				if !ok || err != nil {
-					utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit provider")
-				}
-			}
-		}
-	} else {
-		eventName = types.ConflictVoteUnresolvedEventName
-		eventData["voteFailed"] = "not_enough_voters"
-	}
-
-	//reward client
-	clientRewardPoolPercentage := k.ClientRewardPercent(ctx)
-	clientReward := clientRewardPoolPercentage.MulInt(rewardPool.Amount)
-	rewardCount = rewardCount.Add(clientReward.TruncateInt())
-	if rewardCount.GT(rewardPool.Amount) {
-		panic("Paying overflow")
-	}
-	accClientAddress, err := sdk.AccAddressFromBech32(ConflictVote.ClientAddress)
-	if err != nil {
-		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
-	} else {
-		ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accClientAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, clientReward.TruncateInt()), false)
-		if !ok || err != nil {
-			utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit client")
 		}
 	}
 

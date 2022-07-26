@@ -11,9 +11,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.MajorityPercent(ctx),
 		k.VoteStartSpan(ctx),
 		k.VotePeriod(ctx),
-		k.WinnerRewardPercent(ctx),
-		k.ClientRewardPercent(ctx),
-		k.VotersRewardPercent(ctx),
+		k.Rewards(ctx),
 	)
 }
 
@@ -38,17 +36,7 @@ func (k Keeper) VotePeriod(ctx sdk.Context) (res uint64) {
 	return
 }
 
-func (k Keeper) WinnerRewardPercent(ctx sdk.Context) (res sdk.Dec) {
-	k.paramstore.Get(ctx, types.KeyWinnerRewardPercent, &res)
-	return
-}
-
-func (k Keeper) ClientRewardPercent(ctx sdk.Context) (res sdk.Dec) {
-	k.paramstore.Get(ctx, types.KeyClientRewardPercent, &res)
-	return
-}
-
-func (k Keeper) VotersRewardPercent(ctx sdk.Context) (res sdk.Dec) {
-	k.paramstore.Get(ctx, types.KeyVotersRewardPercent, &res)
+func (k Keeper) Rewards(ctx sdk.Context) (res types.Rewards) {
+	k.paramstore.Get(ctx, types.KeyRewards, &res)
 	return
 }
