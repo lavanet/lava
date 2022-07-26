@@ -67,7 +67,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	var winnerVotersStake sdk.Int
 
 	//count votes and punish jury that didnt vote
-	epochVoteStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.RequestBlock) //TODO check if we need to check for overlap
+	epochVoteStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.VoteStartBlock) //TODO check if we need to check for overlap
 	for address, vote := range ConflictVote.VotersHash {
 		accAddress, err := sdk.AccAddressFromBech32(address)
 		if err != nil {
@@ -105,7 +105,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			}
 		}
 	}
-	eventData["NumOfNoneVoters"] = strconv.FormatInt(int64(len(providersWithoutVote)), 10)
+	eventData["NumOfNoVoters"] = strconv.FormatInt(int64(len(providersWithoutVote)), 10)
 	eventData["NumOfVoters"] = strconv.FormatInt(int64(len(ConflictVote.VotersHash)-len(providersWithoutVote)), 10)
 
 	eventData["TotalVotes"] = totalVotes.String()
