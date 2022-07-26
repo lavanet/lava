@@ -60,6 +60,7 @@ message MsgUnstakeClientResponse {
 message MsgRelayPayment {
   string creator = 1;
   repeated RelayRequest relays = 2;
+  string descriptionString = 3;
 }
 
 message MsgRelayPaymentResponse {
