@@ -177,7 +177,7 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 				} else {
 					require.Error(t, err)
 				}
-				require.Equal(t, tt.expectedEpochStart, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
+				require.Equal(t, epochComapre.Epoch, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
 			}
 
 			//add the current block to blocks we compare, future tests will need to check this
