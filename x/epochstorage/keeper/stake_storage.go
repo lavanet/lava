@@ -69,7 +69,10 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 
 func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err error) {
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if err != nil {
+		return err
+	}
 	if uint64(ctx.BlockHeight()) < blocksToSaveAtEarliestEpoch {
 		return nil
 	}
@@ -89,7 +92,11 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err err
 func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if err != nil {
+		// this is critical, no recovery from this
+		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+	}
 	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
@@ -100,7 +107,11 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	}
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
-	earliestEpochBlock = k.GetNextEpoch(ctx, earliestEpochBlock)
+	earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+	if err != nil {
+		// this is critical, no recovery from this
+		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+	}
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }

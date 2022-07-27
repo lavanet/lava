@@ -107,8 +107,12 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 	epochs_participated := 0.0
 	epochs_participated_provider := 0.0
 	// for every epoch in memory
-	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
+	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch, err = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
 		// get epochPayments for this client
+
+		if err != nil {
+			return
+		}
 
 		clientProvidersEpochUsedCUMap := k.GetEpochClientUsedCUMap(ctx, chainID, epoch, clientAddr)
 		if clientProvidersEpochUsedCUMap.TotalUsed == 0 {

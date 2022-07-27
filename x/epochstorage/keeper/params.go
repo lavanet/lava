@@ -26,7 +26,8 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 
 func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64) {
 	//Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	res = k.GetFixatedParamsForBlock(ctx, block).Parameters.UnstakeHoldBlocks
+	fixation, _ := k.GetFixatedParamsForBlock(ctx, block) //we ignore the error here because this must succeed, and we are logging
+	res = fixation.Parameters.UnstakeHoldBlocks
 	return
 }
 
@@ -38,9 +39,9 @@ func (k Keeper) UnstakeHoldBlocksRaw(ctx sdk.Context) (res uint64) {
 }
 
 // EpochBlocks returns the EpochBlocks fixated param
-func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	res = k.GetFixatedParamsForBlock(ctx, block).Parameters.EpochBlocks
-	return
+func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error) {
+	fixation, err := k.GetFixatedParamsForBlock(ctx, block)
+	return fixation.Parameters.EpochBlocks, err //in case of error we still have default fixation object
 }
 
 // EpochBlocks returns the EpochBlocks param
@@ -50,9 +51,9 @@ func (k Keeper) EpochBlocksRaw(ctx sdk.Context) (res uint64) {
 }
 
 // EpochsToSave returns the EpochsToSave fixated param
-func (k Keeper) EpochsToSave(ctx sdk.Context, block uint64) (res uint64) {
-	res = k.GetFixatedParamsForBlock(ctx, block).Parameters.EpochsToSave
-	return
+func (k Keeper) EpochsToSave(ctx sdk.Context, block uint64) (res uint64, err error) {
+	fixation, err := k.GetFixatedParamsForBlock(ctx, block)
+	return fixation.Parameters.EpochsToSave, err
 }
 
 // EpochsToSaveRaw returns the EpochsToSave param
@@ -65,21 +66,31 @@ func (k Keeper) EpochsToSaveRaw(ctx sdk.Context) (res uint64) {
 // return if this block is an epoch start
 func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	currentBlock := uint64(ctx.BlockHeight())
-	return k.BlockInEpoch(ctx, currentBlock) == 0
+	blockInEpoch, err := k.BlockInEpoch(ctx, currentBlock)
+	if err != nil {
+		utils.LavaError(ctx, k.Logger(ctx), "IsEpochStart", map[string]string{"error": err.Error()}, "can't get block in epoch")
+		return false
+	}
+	return blockInEpoch == 0
 }
 
-func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64) {
-	blocksToSave := k.EpochsToSave(ctx, block) * k.EpochBlocks(ctx, block)
-	return blocksToSave
+func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error) {
+	epochsToSave, err := k.EpochsToSave(ctx, block)
+	epochBlocks, err2 := k.EpochBlocks(ctx, block)
+	blocksToSave := epochsToSave * epochBlocks
+	if err != nil {
+		erro = fmt.Errorf("Erros %w, %w", err, err2)
+	}
+	return blocksToSave, erro
 }
 
-func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64) {
+func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64, err error) {
 	//get epochBlocks directly because we also need an epoch start on the current grid and when fixation was saved is an epoch start
-	fixtedParams := k.GetFixatedParamsForBlock(ctx, block)
+	fixtedParams, err := k.GetFixatedParamsForBlock(ctx, block)
 	blocksCycle := fixtedParams.Parameters.EpochBlocks
 	epochStartInGrid := fixtedParams.FixationBlock //fixation block is always <= block
 	blockRelativeToGrid := block - epochStartInGrid
-	return blockRelativeToGrid % blocksCycle
+	return blockRelativeToGrid % blocksCycle, err
 }
 
 func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {
@@ -88,22 +99,32 @@ func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {
 }
 
 // GetEpochStartForBlock gets a session start supports one param change
-func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64) {
-	blockInTargetEpoch := k.BlockInEpoch(ctx, block)
+func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error) {
+	blockInTargetEpoch, err := k.BlockInEpoch(ctx, block)
 	targetEpochStart := block - blockInTargetEpoch
-	return targetEpochStart, blockInTargetEpoch
+	return targetEpochStart, blockInTargetEpoch, err
 }
 
-func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) uint64 {
-	epochBlocks := k.EpochBlocks(ctx, block)
-	epochStart, _ := k.GetEpochStartForBlock(ctx, block)
-	nextEpoch := epochStart + epochBlocks
-	return nextEpoch
+func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error) {
+	epochBlocks, err := k.EpochBlocks(ctx, block)
+	epochStart, _, err2 := k.GetEpochStartForBlock(ctx, block)
+	nextEpoch = epochStart + epochBlocks
+	if err != nil {
+		erro = err
+	} else if err2 != nil {
+		erro = err2
+	}
+	return nextEpoch, erro
 }
 
-func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64) {
-	epochStart, _ := k.GetEpochStartForBlock(ctx, block)
-	previousEpochStart, _ = k.GetEpochStartForBlock(ctx, epochStart-1) //we take one block before the target epoch so it belongs to the previous epoch
+func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error) {
+	epochStart, _, err := k.GetEpochStartForBlock(ctx, block)
+	previousEpochStart, _, err2 := k.GetEpochStartForBlock(ctx, epochStart-1) //we take one block before the target epoch so it belongs to the previous epoch
+	if err != nil {
+		erro = err
+	} else if err2 != nil {
+		erro = err2
+	}
 	return
 }
 
@@ -126,7 +147,10 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 		return
 	}
 	// we have a param change, is it in the last epoch?
-	if latestParamChange > k.GetPreviousEpochStartForBlock(ctx, block) {
+	prevEpochStart, err := k.GetPreviousEpochStartForBlock(ctx, block)
+	if err != nil {
+		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
+	} else if latestParamChange > prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedParams(ctx, block, earliestEpochStart)
 	}

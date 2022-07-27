@@ -101,7 +101,8 @@ func TestParamFixation(t *testing.T) {
 			}
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, len(allFixatedParams), 1) // no matter how many epochs we want only one fixation since we didnt change the params
-			epochStart, _ := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.NoError(t, err)
 			require.Equal(t, tt.expectedEpochStart, epochStart)
 
 		})
@@ -143,6 +144,13 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 	}
 	prevBlock := 0
 	newEpochBlocksVal := blocksInEpochInitial
+
+	type EpochCompare struct {
+		Block uint64
+		Epoch uint64
+	}
+	pastEpochsToCompare := []EpochCompare{}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -156,9 +164,24 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 			require.Equal(t, tt.expectedFixation, uint64(len(allFixatedParams)), "FixatedParamsLength VS expectedFixationLength") // no matter how many epochs we want only one fixation since we didnt change the params
 
 			//check epoch grid is correct
-			epochStart, _ := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			currBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+			epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), currBlock)
+			require.NoError(t, err)
 			require.Equal(t, tt.expectedEpochStart, epochStart, "GetEpochStartForBlock VS expectedEpochStart")
-			//TODO: check pas epochs before tt.expectedEpochStart
+
+			for _, epochComapre := range pastEpochsToCompare {
+				epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+				earliestEpochStart := keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx))
+				if epochComapre.Block >= earliestEpochStart {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+				}
+				require.Equal(t, tt.expectedEpochStart, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
+			}
+
+			//add the current block to blocks we compare, future tests will need to check this
+			pastEpochsToCompare = append(pastEpochsToCompare, EpochCompare{Block: currBlock, Epoch: epochStart})
 
 			if tt.epochBlocksDiff != 0 {
 				newEpochBlocksVal = tt.epochBlocksDiff + newEpochBlocksVal

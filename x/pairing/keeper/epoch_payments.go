@@ -67,7 +67,10 @@ func (k Keeper) GetAllEpochPayments(ctx sdk.Context) (list []types.EpochPayments
 
 func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) (err error) {
 	earliestEpochBlock := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
-	blocksToSave := k.epochStorageKeeper.BlocksToSave(ctx, earliestEpochBlock)
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, earliestEpochBlock)
+	if err != nil {
+		return err
+	}
 	if uint64(ctx.BlockHeight()) < blocksToSave {
 		return nil
 	}
