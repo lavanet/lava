@@ -649,6 +649,7 @@ func Server(
 
 	// Init random seed
 	rand.Seed(time.Now().UnixNano())
+	g_serverID = uint64(rand.Int63())
 
 	//
 	// Start newSentry
@@ -669,7 +670,6 @@ func Server(
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
-	g_serverID = uint64(rand.Int63())
 
 	//
 	// Info
