@@ -125,7 +125,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			if index != int64(thisProviderIndex) {
 				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
 				details["VRF_index"] = strconv.FormatInt(index, 10)
-				errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
+				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
 			}
 			//all checks passed
 			payReliability = true
