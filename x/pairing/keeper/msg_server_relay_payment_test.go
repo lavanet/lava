@@ -462,13 +462,13 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 func TestRelayPaymentQoS(t *testing.T) {
 	tests := []struct {
 		name         string
-		availebility sdk.Dec
+		availability sdk.Dec
 		latency      sdk.Dec
 		sync         sdk.Dec
 		valid        bool
 	}{
 		{"InvalidLatency", sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), false},
-		{"InvalidAvailebility", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), false},
+		{"InvalidAvailability", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), sdk.NewDecWithPrec(1, 0), false},
 		{"Invalidsync", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(2, 0), false},
 		{"PerfectScore", sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
 		{"MediumScore", sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(1, 0), sdk.NewDecWithPrec(1, 0), true},
@@ -488,7 +488,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
-			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availebility, Sync: tt.sync}
+			QoS := &types.QualityOfServiceReport{Latency: tt.latency, Availability: tt.availability, Sync: tt.sync}
 
 			relayRequest := &types.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
