@@ -541,101 +541,137 @@ func TestRelayPaymentQoS(t *testing.T) {
 }
 
 func TestRelayPaymentDataReliability(t *testing.T) {
-	ts := setupForPaymentTest(t)
-
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
-	params.ServicersToPairCount = 100
-	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(100)
-	require.Nil(t, err)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-
-	cuSum := ts.spec.Apis[0].ComputeUnits * 10
-
-	relayRequest := &types.RelayRequest{
-		Provider:        ts.providers[0].address.String(),
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: nil,
+	tests := []struct {
+		name           string
+		valid          bool
+		corruptedField string
+	}{
+		{name: "Honest", corruptedField: "", valid: true},
+		{name: "InvalidVrfValue", corruptedField: "VrfValue", valid: false},
+		{name: "InvalidVrfProof", corruptedField: "VrfProof", valid: false},
+		{name: "InvalidProviderSig", corruptedField: "ProviderSig", valid: false},
+		{name: "InvalidAllDataHash", corruptedField: "AllDataHash", valid: false},
+		{name: "InvalidQueryHash", corruptedField: "QueryHash", valid: false},
+		{name: "InvalidSig", corruptedField: "Sig", valid: false},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := setupForPaymentTest(t)
 
-	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-	require.Nil(t, err)
+			ts.spec = common.CreateMockSpec()
+			ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+			params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
+			params.ServicersToPairCount = 100
+			ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+			err := ts.addClient(1)
+			require.Nil(t, err)
+			err = ts.addProvider(100)
+			require.Nil(t, err)
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	var index0 int64
-	var providers []epochstoragetypes.StakeEntry
-	var relayReply *types.RelayReply
-	var nonce uint32
-	for {
-		relayReply = &types.RelayReply{
-			Nonce: nonce,
-		}
-		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
-		require.Nil(t, err)
+			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 
-		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+			relayRequest := &types.RelayRequest{
+				Provider:        ts.providers[0].address.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(1),
+				ChainID:         ts.spec.Name,
+				CuSum:           cuSum,
+				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: nil,
+			}
 
-		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+			relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			require.Nil(t, err)
 
-		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
-		require.Nil(t, err)
+			var index0 int64
+			var providers []epochstoragetypes.StakeEntry
+			var relayReply *types.RelayReply
+			var nonce uint32
+			for {
+				relayReply = &types.RelayReply{
+					Nonce: nonce,
+				}
+				relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
+				require.Nil(t, err)
 
-		if providers[index0].Address != ts.providers[0].address.String() {
-			break
-		} else {
-			nonce += 1
-		}
+				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+
+				index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+
+				providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+				require.Nil(t, err)
+
+				if providers[index0].Address != ts.providers[0].address.String() {
+					break
+				} else {
+					nonce += 1
+				}
+			}
+
+			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+			dataReliability0 := &types.VRFData{
+				Differentiator: false,
+				VrfValue:       vrf_res0,
+				VrfProof:       vrf_proof0,
+				ProviderSig:    relayReply.Sig,
+				AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
+				QueryHash:      utils.CalculateQueryHash(*relayRequest),
+				Sig:            nil,
+			}
+			dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
+			require.Nil(t, err)
+
+			switch tt.corruptedField {
+			case "VrfValue":
+				dataReliability0.VrfValue = nil
+			case "VrfProof":
+				dataReliability0.VrfProof = nil
+			case "ProviderSig":
+				dataReliability0.ProviderSig = nil
+			case "AllDataHash":
+				dataReliability0.AllDataHash = nil
+			case "QueryHash":
+				dataReliability0.QueryHash = nil
+			case "Sig":
+				dataReliability0.Sig = nil
+			}
+
+			relayRequestWithDataReliability0 := &types.RelayRequest{
+				Provider:        providers[index0].Address,
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(1),
+				ChainID:         ts.spec.Name,
+				CuSum:           cuSum,
+				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: dataReliability0,
+			}
+			relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
+			require.Nil(t, err)
+
+			provider := ts.getProvider(providers[index0].Address)
+			relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
+
+			balanceBefore := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), provider.address, epochstoragetypes.TokenDenom).Amount.Int64()
+			_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+			if tt.valid {
+				require.Nil(t, err)
+
+				balanceAfter := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), provider.address, epochstoragetypes.TokenDenom).Amount.Int64()
+
+				mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
+				want := mint.MulInt64(int64(cuSum))
+				reward := want.MustFloat64() * (1 + params.DataReliabilityReward.MustFloat64())
+				require.Equal(t, balanceBefore+int64(reward), balanceAfter)
+			} else {
+				require.NotNil(t, err)
+			}
+		})
 	}
-
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
-	dataReliability0 := &types.VRFData{
-		Differentiator: false,
-		VrfValue:       vrf_res0,
-		VrfProof:       vrf_proof0,
-		ProviderSig:    relayReply.Sig,
-		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
-		QueryHash:      utils.CalculateQueryHash(*relayRequest),
-		Sig:            nil,
-	}
-	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
-	require.Nil(t, err)
-
-	relayRequestWithDataReliability0 := &types.RelayRequest{
-		Provider:        providers[index0].Address,
-		ApiUrl:          "",
-		Data:            []byte(ts.spec.Apis[0].Name),
-		SessionId:       uint64(1),
-		ChainID:         ts.spec.Name,
-		CuSum:           cuSum,
-		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
-		RelayNum:        0,
-		RequestBlock:    -1,
-		DataReliability: dataReliability0,
-	}
-	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
-	require.Nil(t, err)
-
-	provider := ts.getProvider(providers[index0].Address)
-	relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
-
-	balanceBefore := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), provider.address, epochstoragetypes.TokenDenom).Amount.Int64()
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
-	require.Nil(t, err)
-
-	balanceAfter := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), provider.address, epochstoragetypes.TokenDenom).Amount.Int64()
-
-	mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-	want := mint.MulInt64(int64(cuSum))
-	reward := want.MustFloat64() * (1 + params.DataReliabilityReward.MustFloat64())
-	require.Equal(t, balanceBefore+int64(reward), balanceAfter)
 }
