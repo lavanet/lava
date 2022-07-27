@@ -109,3 +109,11 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (E
 	}
 	return
 }
+
+func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {
+	spec, found := k.GetSpec(ctx, chainID)
+	if !found {
+		return false
+	}
+	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.FinalizationCriteria)
+}

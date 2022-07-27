@@ -28739,6 +28739,263 @@ paths:
           format: uint64
       tags:
         - Query
+  /lavanet/lava/conflict/conflict_vote:
+    get:
+      summary: Queries a list of ConflictVote items.
+      operationId: LavanetLavaConflictConflictVoteAll
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              conflictVote:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    index:
+                      type: string
+                    clientAddress:
+                      type: string
+                    voteDeadline:
+                      type: string
+                      format: uint64
+                    voteStartBlock:
+                      type: string
+                      format: uint64
+                    voteState:
+                      type: string
+                      format: int64
+                    chainID:
+                      type: string
+                    apiUrl:
+                      type: string
+                    requestData:
+                      type: string
+                      format: byte
+                    requestBlock:
+                      type: string
+                      format: uint64
+                    firstProvider:
+                      type: object
+                      properties:
+                        account:
+                          type: string
+                        response:
+                          type: string
+                          format: byte
+                    secondProvider:
+                      type: object
+                      properties:
+                        account:
+                          type: string
+                        response:
+                          type: string
+                          format: byte
+                    votersHash:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          Hash:
+                            type: string
+                            format: byte
+                          Result:
+                            type: string
+                            format: int64
+              pagination:
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  '/lavanet/lava/conflict/conflict_vote/{index}':
+    get:
+      summary: Queries a ConflictVote by index.
+      operationId: LavanetLavaConflictConflictVote
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              conflictVote:
+                type: object
+                properties:
+                  index:
+                    type: string
+                  clientAddress:
+                    type: string
+                  voteDeadline:
+                    type: string
+                    format: uint64
+                  voteStartBlock:
+                    type: string
+                    format: uint64
+                  voteState:
+                    type: string
+                    format: int64
+                  chainID:
+                    type: string
+                  apiUrl:
+                    type: string
+                  requestData:
+                    type: string
+                    format: byte
+                  requestBlock:
+                    type: string
+                    format: uint64
+                  firstProvider:
+                    type: object
+                    properties:
+                      account:
+                        type: string
+                      response:
+                        type: string
+                        format: byte
+                  secondProvider:
+                    type: object
+                    properties:
+                      account:
+                        type: string
+                      response:
+                        type: string
+                        format: byte
+                  votersHash:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        Hash:
+                          type: string
+                          format: byte
+                        Result:
+                          type: string
+                          format: int64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: index
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/conflict/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -28755,6 +29012,21 @@ paths:
                 properties:
                   majorityPercent:
                     type: string
+                  voteStartSpan:
+                    type: string
+                    format: uint64
+                  votePeriod:
+                    type: string
+                    format: uint64
+                  Rewards:
+                    type: object
+                    properties:
+                      winnerRewardPercent:
+                        type: string
+                      clientRewardPercent:
+                        type: string
+                      votersRewardPercent:
+                        type: string
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -50883,6 +51155,197 @@ definitions:
     description: |-
       Version defines the versioning scheme used to negotiate the IBC verison in
       the connection handshake.
+  lavanet.lava.conflict.ConflictRelayData:
+    type: object
+    properties:
+      request:
+        type: object
+        properties:
+          chainID:
+            type: string
+          api_id:
+            type: integer
+            format: int64
+          api_url:
+            type: string
+          session_id:
+            type: string
+            format: uint64
+          cu_sum:
+            type: string
+            format: uint64
+          data:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
+          provider:
+            type: string
+          block_height:
+            type: string
+            format: int64
+          relay_num:
+            type: string
+            format: uint64
+          request_block:
+            type: string
+            format: int64
+          DataReliability:
+            type: object
+            properties:
+              differentiator:
+                type: boolean
+              vrf_value:
+                type: string
+                format: byte
+              vrf_proof:
+                type: string
+                format: byte
+              provider_sig:
+                type: string
+                format: byte
+              allDataHash:
+                type: string
+                format: byte
+              queryHash:
+                type: string
+                format: byte
+              sig:
+                type: string
+                format: byte
+          QoSReport:
+            type: object
+            properties:
+              latency:
+                type: string
+              availability:
+                type: string
+              sync:
+                type: string
+      reply:
+        type: object
+        properties:
+          data:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
+          nonce:
+            type: integer
+            format: int64
+          latest_block:
+            type: string
+            format: int64
+          finalized_blocks_hashes:
+            type: string
+            format: byte
+          sig_blocks:
+            type: string
+            format: byte
+  lavanet.lava.conflict.ConflictVote:
+    type: object
+    properties:
+      index:
+        type: string
+      clientAddress:
+        type: string
+      voteDeadline:
+        type: string
+        format: uint64
+      voteStartBlock:
+        type: string
+        format: uint64
+      voteState:
+        type: string
+        format: int64
+      chainID:
+        type: string
+      apiUrl:
+        type: string
+      requestData:
+        type: string
+        format: byte
+      requestBlock:
+        type: string
+        format: uint64
+      firstProvider:
+        type: object
+        properties:
+          account:
+            type: string
+          response:
+            type: string
+            format: byte
+      secondProvider:
+        type: object
+        properties:
+          account:
+            type: string
+          response:
+            type: string
+            format: byte
+      votersHash:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            Hash:
+              type: string
+              format: byte
+            Result:
+              type: string
+              format: int64
+  lavanet.lava.conflict.FinalizationConflict:
+    type: object
+    properties:
+      relayReply0:
+        type: object
+        properties:
+          data:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
+          nonce:
+            type: integer
+            format: int64
+          latest_block:
+            type: string
+            format: int64
+          finalized_blocks_hashes:
+            type: string
+            format: byte
+          sig_blocks:
+            type: string
+            format: byte
+      relayReply1:
+        type: object
+        properties:
+          data:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
+          nonce:
+            type: integer
+            format: int64
+          latest_block:
+            type: string
+            format: int64
+          finalized_blocks_hashes:
+            type: string
+            format: byte
+          sig_blocks:
+            type: string
+            format: byte
+  lavanet.lava.conflict.MsgConflictVoteCommitResponse:
+    type: object
+  lavanet.lava.conflict.MsgConflictVoteRevealResponse:
+    type: object
   lavanet.lava.conflict.MsgDetectionResponse:
     type: object
   lavanet.lava.conflict.Params:
@@ -50890,7 +51353,169 @@ definitions:
     properties:
       majorityPercent:
         type: string
+      voteStartSpan:
+        type: string
+        format: uint64
+      votePeriod:
+        type: string
+        format: uint64
+      Rewards:
+        type: object
+        properties:
+          winnerRewardPercent:
+            type: string
+          clientRewardPercent:
+            type: string
+          votersRewardPercent:
+            type: string
     description: Params defines the parameters for the module.
+  lavanet.lava.conflict.Provider:
+    type: object
+    properties:
+      account:
+        type: string
+      response:
+        type: string
+        format: byte
+  lavanet.lava.conflict.QueryAllConflictVoteResponse:
+    type: object
+    properties:
+      conflictVote:
+        type: array
+        items:
+          type: object
+          properties:
+            index:
+              type: string
+            clientAddress:
+              type: string
+            voteDeadline:
+              type: string
+              format: uint64
+            voteStartBlock:
+              type: string
+              format: uint64
+            voteState:
+              type: string
+              format: int64
+            chainID:
+              type: string
+            apiUrl:
+              type: string
+            requestData:
+              type: string
+              format: byte
+            requestBlock:
+              type: string
+              format: uint64
+            firstProvider:
+              type: object
+              properties:
+                account:
+                  type: string
+                response:
+                  type: string
+                  format: byte
+            secondProvider:
+              type: object
+              properties:
+                account:
+                  type: string
+                response:
+                  type: string
+                  format: byte
+            votersHash:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  Hash:
+                    type: string
+                    format: byte
+                  Result:
+                    type: string
+                    format: int64
+      pagination:
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+  lavanet.lava.conflict.QueryGetConflictVoteResponse:
+    type: object
+    properties:
+      conflictVote:
+        type: object
+        properties:
+          index:
+            type: string
+          clientAddress:
+            type: string
+          voteDeadline:
+            type: string
+            format: uint64
+          voteStartBlock:
+            type: string
+            format: uint64
+          voteState:
+            type: string
+            format: int64
+          chainID:
+            type: string
+          apiUrl:
+            type: string
+          requestData:
+            type: string
+            format: byte
+          requestBlock:
+            type: string
+            format: uint64
+          firstProvider:
+            type: object
+            properties:
+              account:
+                type: string
+              response:
+                type: string
+                format: byte
+          secondProvider:
+            type: object
+            properties:
+              account:
+                type: string
+              response:
+                type: string
+                format: byte
+          votersHash:
+            type: object
+            additionalProperties:
+              type: object
+              properties:
+                Hash:
+                  type: string
+                  format: byte
+                Result:
+                  type: string
+                  format: int64
   lavanet.lava.conflict.QueryParamsResponse:
     type: object
     properties:
@@ -50900,7 +51525,339 @@ definitions:
         properties:
           majorityPercent:
             type: string
+          voteStartSpan:
+            type: string
+            format: uint64
+          votePeriod:
+            type: string
+            format: uint64
+          Rewards:
+            type: object
+            properties:
+              winnerRewardPercent:
+                type: string
+              clientRewardPercent:
+                type: string
+              votersRewardPercent:
+                type: string
     description: QueryParamsResponse is response type for the Query/Params RPC method.
+  lavanet.lava.conflict.ResponseConflict:
+    type: object
+    properties:
+      conflictRelayData0:
+        type: object
+        properties:
+          request:
+            type: object
+            properties:
+              chainID:
+                type: string
+              api_id:
+                type: integer
+                format: int64
+              api_url:
+                type: string
+              session_id:
+                type: string
+                format: uint64
+              cu_sum:
+                type: string
+                format: uint64
+              data:
+                type: string
+                format: byte
+              sig:
+                type: string
+                format: byte
+              provider:
+                type: string
+              block_height:
+                type: string
+                format: int64
+              relay_num:
+                type: string
+                format: uint64
+              request_block:
+                type: string
+                format: int64
+              DataReliability:
+                type: object
+                properties:
+                  differentiator:
+                    type: boolean
+                  vrf_value:
+                    type: string
+                    format: byte
+                  vrf_proof:
+                    type: string
+                    format: byte
+                  provider_sig:
+                    type: string
+                    format: byte
+                  allDataHash:
+                    type: string
+                    format: byte
+                  queryHash:
+                    type: string
+                    format: byte
+                  sig:
+                    type: string
+                    format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
+          reply:
+            type: object
+            properties:
+              data:
+                type: string
+                format: byte
+              sig:
+                type: string
+                format: byte
+              nonce:
+                type: integer
+                format: int64
+              latest_block:
+                type: string
+                format: int64
+              finalized_blocks_hashes:
+                type: string
+                format: byte
+              sig_blocks:
+                type: string
+                format: byte
+      conflictRelayData1:
+        type: object
+        properties:
+          request:
+            type: object
+            properties:
+              chainID:
+                type: string
+              api_id:
+                type: integer
+                format: int64
+              api_url:
+                type: string
+              session_id:
+                type: string
+                format: uint64
+              cu_sum:
+                type: string
+                format: uint64
+              data:
+                type: string
+                format: byte
+              sig:
+                type: string
+                format: byte
+              provider:
+                type: string
+              block_height:
+                type: string
+                format: int64
+              relay_num:
+                type: string
+                format: uint64
+              request_block:
+                type: string
+                format: int64
+              DataReliability:
+                type: object
+                properties:
+                  differentiator:
+                    type: boolean
+                  vrf_value:
+                    type: string
+                    format: byte
+                  vrf_proof:
+                    type: string
+                    format: byte
+                  provider_sig:
+                    type: string
+                    format: byte
+                  allDataHash:
+                    type: string
+                    format: byte
+                  queryHash:
+                    type: string
+                    format: byte
+                  sig:
+                    type: string
+                    format: byte
+              QoSReport:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
+          reply:
+            type: object
+            properties:
+              data:
+                type: string
+                format: byte
+              sig:
+                type: string
+                format: byte
+              nonce:
+                type: integer
+                format: int64
+              latest_block:
+                type: string
+                format: int64
+              finalized_blocks_hashes:
+                type: string
+                format: byte
+              sig_blocks:
+                type: string
+                format: byte
+  lavanet.lava.conflict.Rewards:
+    type: object
+    properties:
+      winnerRewardPercent:
+        type: string
+      clientRewardPercent:
+        type: string
+      votersRewardPercent:
+        type: string
+  lavanet.lava.conflict.Vote:
+    type: object
+    properties:
+      Hash:
+        type: string
+        format: byte
+      Result:
+        type: string
+        format: int64
+  lavanet.lava.pairing.QualityOfServiceReport:
+    type: object
+    properties:
+      latency:
+        type: string
+      availability:
+        type: string
+      sync:
+        type: string
+  lavanet.lava.pairing.RelayReply:
+    type: object
+    properties:
+      data:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
+      nonce:
+        type: integer
+        format: int64
+      latest_block:
+        type: string
+        format: int64
+      finalized_blocks_hashes:
+        type: string
+        format: byte
+      sig_blocks:
+        type: string
+        format: byte
+  lavanet.lava.pairing.RelayRequest:
+    type: object
+    properties:
+      chainID:
+        type: string
+      api_id:
+        type: integer
+        format: int64
+      api_url:
+        type: string
+      session_id:
+        type: string
+        format: uint64
+      cu_sum:
+        type: string
+        format: uint64
+      data:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
+      provider:
+        type: string
+      block_height:
+        type: string
+        format: int64
+      relay_num:
+        type: string
+        format: uint64
+      request_block:
+        type: string
+        format: int64
+      DataReliability:
+        type: object
+        properties:
+          differentiator:
+            type: boolean
+          vrf_value:
+            type: string
+            format: byte
+          vrf_proof:
+            type: string
+            format: byte
+          provider_sig:
+            type: string
+            format: byte
+          allDataHash:
+            type: string
+            format: byte
+          queryHash:
+            type: string
+            format: byte
+          sig:
+            type: string
+            format: byte
+      QoSReport:
+        type: object
+        properties:
+          latency:
+            type: string
+          availability:
+            type: string
+          sync:
+            type: string
+  lavanet.lava.pairing.VRFData:
+    type: object
+    properties:
+      differentiator:
+        type: boolean
+      vrf_value:
+        type: string
+        format: byte
+      vrf_proof:
+        type: string
+        format: byte
+      provider_sig:
+        type: string
+        format: byte
+      allDataHash:
+        type: string
+        format: byte
+      queryHash:
+        type: string
+        format: byte
+      sig:
+        type: string
+        format: byte
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
@@ -51273,15 +52230,6 @@ definitions:
       QoSWeight:
         type: string
     description: Params defines the parameters for the module.
-  lavanet.lava.pairing.QualityOfServiceReport:
-    type: object
-    properties:
-      latency:
-        type: string
-      availability:
-        type: string
-      sync:
-        type: string
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -51741,92 +52689,6 @@ definitions:
       index:
         type: string
         format: int64
-  lavanet.lava.pairing.RelayReply:
-    type: object
-    properties:
-      data:
-        type: string
-        format: byte
-      sig:
-        type: string
-        format: byte
-      nonce:
-        type: integer
-        format: int64
-      latest_block:
-        type: string
-        format: int64
-      finalized_blocks_hashes:
-        type: string
-        format: byte
-      sig_blocks:
-        type: string
-        format: byte
-  lavanet.lava.pairing.RelayRequest:
-    type: object
-    properties:
-      chainID:
-        type: string
-      api_id:
-        type: integer
-        format: int64
-      api_url:
-        type: string
-      session_id:
-        type: string
-        format: uint64
-      cu_sum:
-        type: string
-        format: uint64
-      data:
-        type: string
-        format: byte
-      sig:
-        type: string
-        format: byte
-      provider:
-        type: string
-      block_height:
-        type: string
-        format: int64
-      relay_num:
-        type: string
-        format: uint64
-      request_block:
-        type: string
-        format: int64
-      DataReliability:
-        type: object
-        properties:
-          differentiator:
-            type: boolean
-          vrf_value:
-            type: string
-            format: byte
-          vrf_proof:
-            type: string
-            format: byte
-          provider_sig:
-            type: string
-            format: byte
-          allDataHash:
-            type: string
-            format: byte
-          queryHash:
-            type: string
-            format: byte
-          sig:
-            type: string
-            format: byte
-      QoSReport:
-        type: object
-        properties:
-          latency:
-            type: string
-          availability:
-            type: string
-          sync:
-            type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
@@ -51838,29 +52700,6 @@ definitions:
       usedCU:
         type: string
         format: uint64
-  lavanet.lava.pairing.VRFData:
-    type: object
-    properties:
-      differentiator:
-        type: boolean
-      vrf_value:
-        type: string
-        format: byte
-      vrf_proof:
-        type: string
-        format: byte
-      provider_sig:
-        type: string
-        format: byte
-      allDataHash:
-        type: string
-        format: byte
-      queryHash:
-        type: string
-        format: byte
-      sig:
-        type: string
-        format: byte
   lavanet.lava.spec.ApiInterface:
     type: object
     properties:

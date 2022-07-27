@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/types"
 )
 
 func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressToBurn sdk.AccAddress, burnAmount sdk.Coin, failBurnOnLeftover bool) (bool, error) {
@@ -57,6 +58,44 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		//reduce the requested burn from the entry
 		clientEntry.Stake = clientEntry.Stake.Sub(burnAmount)
 		k.epochStorageKeeper.ModifyUnstakeEntry(ctx, epochstoragetypes.ClientKey, clientEntry, indexFound)
+		return true, nil
+	}
+	//didn't find user
+	return false, nil
+}
+
+func (k Keeper) CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin, isProvider bool) (bool, error) {
+	if creditAmount.Denom != epochstoragetypes.TokenDenom {
+		return false, fmt.Errorf("burn coin isn't right denom: %s", creditAmount.Denom)
+	}
+	//find the user in the stake list
+	var storageType string
+	switch isProvider {
+	case true:
+		storageType = epochstoragetypes.ProviderKey
+	case false:
+		storageType = epochstoragetypes.ClientKey
+	}
+	entry, found, indexFound := k.epochStorageKeeper.StakeEntryByAddress(ctx, storageType, chainID, lookUpAddress)
+	if found {
+		//add the requested credit to the entry
+		entry.Stake = entry.Stake.Add(creditAmount)
+		//now we need to save the entry
+		k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(creditAmount))
+		k.epochStorageKeeper.ModifyStakeEntry(ctx, storageType, chainID, entry, indexFound)
+		return true, nil
+	}
+
+	//didnt find user in staked users
+	entry, found, _ = k.epochStorageKeeper.UnstakeEntryByAddress(ctx, epochstoragetypes.ClientKey, lookUpAddress)
+	if found {
+		//add the requested credit to the entry
+		//appending new unstake entry in order to delay liquidity of the reward
+		entry.Stake = creditAmount
+
+		//now we need to save the entry
+		k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(creditAmount))
+		k.epochStorageKeeper.AppendUnstakeEntry(ctx, storageType, entry)
 		return true, nil
 	}
 	//didn't find user

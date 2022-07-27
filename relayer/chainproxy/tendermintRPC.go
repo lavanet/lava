@@ -42,23 +42,23 @@ func (m TendemintRpcMessage) ParseBlock(inp string) (int64, error) {
 func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
-		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
+		return spectypes.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []interface{}{}
-	nodeMsg, err := cp.newMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	nodeMsg, err := cp.newMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	_, err = nodeMsg.Send(ctx)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg.GetMsg().(*JsonrpcMessage), serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	return blocknum, nil
@@ -77,7 +77,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
-		nodeMsg, err = cp.newMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+		nodeMsg, err = cp.newMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
 	}
 
 	if err != nil {
