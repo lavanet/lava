@@ -49,6 +49,7 @@ var (
 	g_chainSentry           *chainsentry.ChainSentry
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
+	g_serverID              uint64
 )
 
 type UserSessionsEpochData struct {
@@ -155,7 +156,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 			userSessions.Lock.Unlock()
 
-			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr, UniqueIdentifier: relay.SessionId})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
 
@@ -193,7 +194,7 @@ func askForRewards(staleEpochHeight int64) {
 	} else {
 		log.Println("asking for rewards", g_sentry.Acc)
 	}
-	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
+	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
@@ -576,25 +577,25 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		if voteParams != nil {
 			if voteParams.GetCloseVote() {
 				//we are closing the vote, so its okay we ahve this voteID
-				log.Printf("[+] Received Vote termination event for voteID: %d, Cleared entry\n", voteID)
+				log.Printf("[+] Received Vote termination event for voteID: %s, Cleared entry\n", voteID)
 				delete(g_votes, voteID)
 				return
 			}
 			//expected to start a new vote but found an existing one
-			log.Printf("Error: new vote Request for vote %+v and voteID: %d had existing entry %v\n", voteParams, voteID, vote)
+			log.Printf("Error: new vote Request for vote %+v and voteID: %s had existing entry %v\n", voteParams, voteID, vote)
 			return
 		}
-		log.Printf("[+] Received Vote Reveal for voteID: %d, sending Reveal for result: %v \n", voteID, vote)
+		log.Printf("[+] Received Vote Reveal for voteID: %s, sending Reveal for result: %v \n", voteID, vote)
 		SendVoteReveal(voteID, vote)
 		return
 	} else {
 		// new vote
 		if voteParams == nil {
-			log.Printf("Error: vote reveal Request voteID: %d didn't have a vote entry\n", voteID)
+			log.Printf("Error: vote reveal Request voteID: %s didn't have a vote entry\n", voteID)
 			return
 		}
 		if voteParams.GetCloseVote() {
-			log.Printf("Error: vote closing received for voteID: %d but didn't have a vote entry\n", voteID)
+			log.Printf("Error: vote closing received for voteID: %s but didn't have a vote entry\n", voteID)
 			return
 		}
 		//try to find this provider in the jury
@@ -621,7 +622,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
-		log.Printf("[+] Received Vote start for voteID: %d, sending commit for result: %v \n", voteID, vote)
+		log.Printf("[+] Received Vote start for voteID: %s, sending commit for result: %v \n", voteID, vote)
 		SendVoteCommitment(voteID, vote)
 		return
 	}
@@ -651,7 +652,7 @@ func Server(
 
 	//
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil)
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -668,6 +669,7 @@ func Server(
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
+	g_serverID = uint64(rand.Int63())
 
 	//
 	// Info

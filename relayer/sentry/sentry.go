@@ -150,6 +150,7 @@ type PaymentRequest struct {
 	BlockHeightDeadline int64
 	Amount              sdk.Coin
 	Client              sdk.AccAddress
+	UniqueIdentifier    uint64
 }
 
 type providerDataContainer struct {
@@ -185,6 +186,7 @@ type Sentry struct {
 	newEpochCb              func(epochHeight int64)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
+	serverID                uint64
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -501,15 +503,27 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
 							continue
 						}
-						s.UpdatePaidCU(paidCU)
-						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
-						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
-						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s\n", s.PrintExpectedPAyments())
-						} else {
-							fmt.Printf("SUCCESS: payment received as expected\n")
+						uniqueID, err := strconv.ParseUint(e.Events["lava_relay_payment.uniqueIdentifier"][idx], 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.uniqueIdentifier"])
+							continue
+						}
+						serverID, err := strconv.ParseUint(e.Events["lava_relay_payment.descriptionString"][idx], 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.descriptionString"])
+							continue
 						}
 
+						if serverID == s.serverID {
+							s.UpdatePaidCU(paidCU)
+							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr, UniqueIdentifier: uniqueID})
+							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height, uniqueID)
+							if !found {
+								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add support for partial payment\n %s", s.PrintExpectedPAyments())
+							} else {
+								fmt.Printf("SUCCESS: payment received as expected\n")
+							}
+						}
 					}
 				}
 			}
@@ -544,12 +558,12 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 	}
 }
 
-func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64) bool {
+func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64, uniqueID uint64) bool {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	for idx, expectedPayment := range s.expectedPayments {
 		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
-		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) {
+		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) && uniqueID == expectedPayment.UniqueIdentifier {
 			//found payment for expected payment
 			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
 			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
@@ -1455,6 +1469,7 @@ func NewSentry(
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
+	serverID uint64,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -1482,6 +1497,7 @@ func NewSentry(
 		specHash:                nil,
 		cmdFlags:                flagSet,
 		voteInitiationCb:        voteInitiationCb,
+		serverID:                serverID,
 	}
 }
 
