@@ -159,8 +159,8 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	overusedSumTotalPercent := clientOverusedCU.TotalOverusedPercent
 	overusedSumProviderPercent := clientOverusedCU.OverusedPercentProvider
 	if overusedSumTotalPercent > slashLimitPercent.MustFloat64() || overusedSumProviderPercent > slashLimitPercent.MustFloat64() {
-		k.SlashUser(ctx, clientAddr)
-		eventType = "lava_slash_user"
+		k.SlashEntry(ctx, clientAddr, false, chainID, sdk.OneDec())
+		eventType = "slash_consumer"
 		utils.LogLavaEvent(ctx, logger, eventType, map[string]string{"block": strconv.FormatUint(epochStart, 10),
 			"relay.CuSum":                strconv.FormatUint(CuSum, 10),
 			"overusedSumTotalPercent":    strconv.FormatFloat(overusedSumTotalPercent, 'f', 6, 64),
@@ -205,10 +205,6 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 		"overuse is above the unpayLimit - paying provider upto the unpayLimit ")
 
 	return finalPay, nil
-}
-
-func (k Keeper) SlashUser(ctx sdk.Context, clientAddr sdk.AccAddress) {
-	//TODO: jail user, and count problems
 }
 
 func (k Keeper) ClientMaxCUProvider(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) (uint64, error) {

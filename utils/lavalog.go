@@ -8,6 +8,10 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
+const (
+	EventPrefix = "lava_"
+)
+
 func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
 	attributes_str := ""
 	eventAttrs := []sdk.Attribute{}
@@ -15,8 +19,8 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 		attributes_str += fmt.Sprintf("%s: %s,", key, val)
 		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
 	}
-	logger.Info(fmt.Sprintf("lava_%s: %s %s", name, description, attributes_str))
-	ctx.EventManager().EmitEvent(sdk.NewEvent("lava_"+name, eventAttrs...))
+	logger.Info(fmt.Sprintf("%s%s: %s %s", EventPrefix, name, description, attributes_str))
+	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
 
 func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) error {
