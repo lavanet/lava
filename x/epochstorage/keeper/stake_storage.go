@@ -185,7 +185,6 @@ func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID st
 	}
 	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
-	return
 }
 
 func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {

@@ -162,7 +162,7 @@ func TestParamFixationWithEpochChange(t *testing.T) {
 
 			if tt.epochBlocksDiff != 0 {
 				newEpochBlocksVal = tt.epochBlocksDiff + newEpochBlocksVal
-				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", strconv.FormatUint(newEpochBlocksVal, 10))
+				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", "\""+strconv.FormatUint(newEpochBlocksVal, 10)+"\"")
 				require.NoError(t, err)
 			}
 
