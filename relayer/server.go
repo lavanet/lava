@@ -44,6 +44,7 @@ var (
 	g_chainSentry           *chainsentry.ChainSentry
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
+	g_serverID              uint64
 )
 
 type UserSessionsEpochData struct {
@@ -144,7 +145,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 			userSessions.Lock.Unlock()
 
-			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr, UniqueIdentifier: relay.SessionId})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
 
@@ -182,7 +183,7 @@ func askForRewards(staleEpochHeight int64) {
 	} else {
 		log.Println("asking for rewards", g_sentry.Acc)
 	}
-	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
+	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
@@ -541,7 +542,7 @@ func Server(
 
 	//
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil)
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -557,6 +558,7 @@ func Server(
 	g_serverChainID = ChainID
 	//allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
+	g_serverID = uint64(rand.Int63())
 
 	//
 	// Info
