@@ -541,6 +541,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 	}
 }
 
+// Data Reliability test for field corruption
 func TestRelayPaymentDataReliability(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -592,6 +593,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			var providers []epochstoragetypes.StakeEntry
 			var relayReply *types.RelayReply
 			var nonce uint32
+			// increasing the nonce changes the hash of the reply which in turn produces a different vrfRes resulting to a different index
 			for {
 				relayReply = &types.RelayReply{
 					Nonce: nonce,
@@ -677,7 +679,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 	}
 }
 
-// client sends data reliability to a different provider collaborating to get more rewards //bug??
+// client sends data reliability to a different provider collaborating to get more rewards
 func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
@@ -774,6 +776,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	require.NotNil(t, err)
 }
 
+// provider attempts to do a datareliability even though it is not triggered (below the threshold)
 func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
