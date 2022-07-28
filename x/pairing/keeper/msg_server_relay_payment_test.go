@@ -784,11 +784,11 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	ts.spec.ReliabilityThreshold = 0
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
-	params.ServicersToPairCount = 100
+	params.ServicersToPairCount = 5
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
 	err := ts.addClient(1)
 	require.Nil(t, err)
-	err = ts.addProvider(100)
+	err = ts.addProvider(5)
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
@@ -825,6 +825,41 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 
 	require.Equal(t, index0, int64(-1))
 	require.Equal(t, index1, int64(-1))
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	dataReliability0 := &types.VRFData{
+		Differentiator: false,
+		VrfValue:       vrf_res0,
+		VrfProof:       vrf_proof0,
+		ProviderSig:    relayReply.Sig,
+		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		Sig:            nil,
+	}
+	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
+	require.Nil(t, err)
+
+	// make all providers send a datareliability payment request. Everyone should fail
+	for _, provider := range ts.providers {
+		relayRequestWithDataReliability0 := &types.RelayRequest{
+			Provider:        provider.address.String(),
+			ApiUrl:          "",
+			Data:            []byte(ts.spec.Apis[0].Name),
+			SessionId:       uint64(1),
+			ChainID:         ts.spec.Name,
+			CuSum:           cuSum,
+			BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:        0,
+			RequestBlock:    -1,
+			DataReliability: dataReliability0,
+		}
+		relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
+		require.Nil(t, err)
+
+		relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
+
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+		require.NotNil(t, err)
+	}
 }
 
 // provider crafts datareliability with a client he has access to
