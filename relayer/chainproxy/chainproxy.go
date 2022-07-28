@@ -159,11 +159,11 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
-	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error) {
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 
 		if blockHeight < 0 {
-			return nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
@@ -182,27 +182,27 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		relayRequest.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
 		c := *clientSession.Client.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		return reply, nil
+		return reply, relayRequest, nil
 	}
 	//
 	//

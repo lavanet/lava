@@ -18,6 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -27,6 +29,7 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -37,6 +40,8 @@ var (
 	g_privKey               *btcSecp256k1.PrivateKey
 	g_sessions              map[string]*UserSessions
 	g_sessions_mutex        sync.Mutex
+	g_votes                 map[string]*voteData
+	g_votes_mutex           sync.Mutex
 	g_sentry                *sentry.Sentry
 	g_serverChainID         string
 	g_txFactory             tx.Factory
@@ -44,6 +49,7 @@ var (
 	g_chainSentry           *chainsentry.ChainSentry
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
+	g_serverID              uint64
 )
 
 type UserSessionsEpochData struct {
@@ -76,6 +82,12 @@ func (r *RelaySession) GetPairingEpoch() uint64 {
 
 func (r *RelaySession) SetPairingEpoch(epoch uint64) {
 	atomic.StoreUint64(&r.PairingEpoch, epoch)
+}
+
+type voteData struct {
+	RelayDataHash []byte
+	Nonce         int64
+	CommitHash    []byte
 }
 
 type relayServer struct {
@@ -144,7 +156,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 			userSessions.Lock.Unlock()
 
-			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr})
+			g_sentry.AddExpectedPayment(sentry.PaymentRequest{CU: relay.CuSum, BlockHeightDeadline: relay.BlockHeight, Amount: sdk.Coin{}, Client: userAccAddr, UniqueIdentifier: relay.SessionId})
 			g_sentry.UpdateCUServiced(relay.CuSum)
 		}
 
@@ -182,7 +194,7 @@ func askForRewards(staleEpochHeight int64) {
 	} else {
 		log.Println("asking for rewards", g_sentry.Acc)
 	}
-	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays)
+	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
@@ -517,6 +529,105 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
 
+func SendVoteCommitment(voteID string, vote *voteData) {
+	msg := conflicttypes.NewMsgConflictVoteCommit(g_sentry.Acc, voteID, vote.CommitHash)
+	myWriter := gobytes.Buffer{}
+	g_sentry.ClientCtx.Output = &myWriter
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Printf("Error: failed to send vote commitment! error: %s\n", err)
+	}
+}
+
+func SendVoteReveal(voteID string, vote *voteData) {
+	msg := conflicttypes.NewMsgConflictVoteReveal(g_sentry.Acc, voteID, vote.Nonce, vote.RelayDataHash)
+	myWriter := gobytes.Buffer{}
+	g_sentry.ClientCtx.Output = &myWriter
+	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	if err != nil {
+		log.Printf("Error: failed to send vote Reveal! error: %s\n", err)
+	}
+}
+
+func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, voteParams *sentry.VoteParams) {
+	//got a vote event, handle the cases here
+
+	if !voteParams.GetCloseVote() {
+		//meaning we dont close a vote, so we should check stuff
+		if voteParams != nil {
+			//chainID is sent only on new votes
+			chainID := voteParams.ChainID
+			if chainID != g_serverChainID {
+				// not our chain ID
+				return
+			}
+		}
+		nodeHeight := uint64(g_sentry.GetBlockHeight())
+		if voteDeadline < nodeHeight {
+			// its too late to vote
+			log.Printf("Error: Vote Event received for deadline %d but current block is %d\n", voteDeadline, nodeHeight)
+			return
+		}
+	}
+	g_votes_mutex.Lock()
+	defer g_votes_mutex.Unlock()
+	vote, ok := g_votes[voteID]
+	if ok {
+		//we have an existing vote with this ID
+		if voteParams != nil {
+			if voteParams.GetCloseVote() {
+				//we are closing the vote, so its okay we ahve this voteID
+				log.Printf("[+] Received Vote termination event for voteID: %s, Cleared entry\n", voteID)
+				delete(g_votes, voteID)
+				return
+			}
+			//expected to start a new vote but found an existing one
+			log.Printf("Error: new vote Request for vote %+v and voteID: %s had existing entry %v\n", voteParams, voteID, vote)
+			return
+		}
+		log.Printf("[+] Received Vote Reveal for voteID: %s, sending Reveal for result: %v \n", voteID, vote)
+		SendVoteReveal(voteID, vote)
+		return
+	} else {
+		// new vote
+		if voteParams == nil {
+			log.Printf("Error: vote reveal Request voteID: %s didn't have a vote entry\n", voteID)
+			return
+		}
+		if voteParams.GetCloseVote() {
+			log.Printf("Error: vote closing received for voteID: %s but didn't have a vote entry\n", voteID)
+			return
+		}
+		//try to find this provider in the jury
+		found := slices.Contains(voteParams.Voters, g_sentry.Acc)
+		if !found {
+			// this is a new vote but not for us
+			return
+		}
+		// we need to send a commit, first we need to use the chainProxy and get the response
+		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
+		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData)
+		if err != nil {
+			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", voteParams.ChainID, err)
+			return
+		}
+		reply, err := nodeMsg.Send(ctx)
+		if err != nil {
+			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", voteParams.ApiURL, voteParams.RequestData, err)
+			return
+		}
+		nonce := rand.Int63()
+		replyDataHash := sigs.HashMsg(reply.Data)
+		commitHash := conflicttypes.CommitVoteData(nonce, replyDataHash)
+
+		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
+		g_votes[voteID] = vote
+		log.Printf("[+] Received Vote start for voteID: %s, sending commit for result: %v \n", voteID, vote)
+		SendVoteCommitment(voteID, vote)
+		return
+	}
+}
+
 func Server(
 	ctx context.Context,
 	clientCtx client.Context,
@@ -538,10 +649,11 @@ func Server(
 
 	// Init random seed
 	rand.Seed(time.Now().UnixNano())
+	g_serverID = uint64(rand.Int63())
 
 	//
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, ChainID, false, askForRewards, apiInterface, nil, nil)
+	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -553,6 +665,7 @@ func Server(
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
+	g_votes = map[string]*voteData{}
 	g_rewardsSessions = map[uint64][]*RelaySession{}
 	g_serverChainID = ChainID
 	//allow more gas

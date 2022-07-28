@@ -11,6 +11,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/x/conflict"
+	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	"github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -31,15 +34,17 @@ type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
 	Spec          speckeeper.Keeper
 	Pairing       pairingkeeper.Keeper
+	Conflict      conflictkeeper.Keeper
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
 }
 
 type Servers struct {
-	EpochServer   epochstoragetypes.MsgServer
-	SpecServer    spectypes.MsgServer
-	PairingServer pairingtypes.MsgServer
+	EpochServer    epochstoragetypes.MsgServer
+	SpecServer     spectypes.MsgServer
+	PairingServer  pairingtypes.MsgServer
+	ConflictServer conflicttypes.MsgServer
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
@@ -68,6 +73,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
 	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
 	stateStore.MountStoreWithDB(tkey, sdk.StoreTypeIAVL, db)
+	conflictStoreKey := sdk.NewKVStoreKey(conflicttypes.StoreKey)
+	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
+	stateStore.MountStoreWithDB(conflictStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(conflictMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
@@ -82,6 +92,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
 
+	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
+		conflicttypes.Amino,
+		conflictStoreKey,
+		conflictMemStoreKey,
+		"ConflictParams",
+	)
+
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins), moduleBank: make(map[string]map[string]sdk.Coins)}
@@ -89,6 +106,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
+	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
@@ -96,11 +114,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	spec.InitGenesis(ctx, ks.Spec, *spectypes.DefaultGenesis())
 	epochstorage.InitGenesis(ctx, ks.Epochstorage, *epochstoragetypes.DefaultGenesis())
 	pairing.InitGenesis(ctx, ks.Pairing, *pairingtypes.DefaultGenesis())
+	conflict.InitGenesis(ctx, ks.Conflict, *conflicttypes.DefaultGenesis())
 
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
+	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
@@ -127,8 +147,9 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 }
 
 func NewBlock(ctx context.Context, ks *Keepers) {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
 		block := uint64(unwrapedCtx.BlockHeight())
 
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
@@ -145,6 +166,8 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
 		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 	}
+
+	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
 
 	blockstore := MockBlockStore{}
 	blockstore.SetHeight(sdk.UnwrapSDKContext(ctx).BlockHeight())

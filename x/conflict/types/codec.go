@@ -9,12 +9,20 @@ import (
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgDetection{}, "conflict/Detection", nil)
+	cdc.RegisterConcrete(&MsgConflictVoteCommit{}, "conflict/ConflictVoteCommit", nil)
+	cdc.RegisterConcrete(&MsgConflictVoteReveal{}, "conflict/ConflictVoteReveal", nil)
 	// this line is used by starport scaffolding # 2
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgDetection{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgConflictVoteCommit{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgConflictVoteReveal{},
 	)
 	// this line is used by starport scaffolding # 3
 

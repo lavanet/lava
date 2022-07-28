@@ -22,7 +22,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -59,9 +58,26 @@ type QoSInfo struct {
 	ConsecutiveTimeOut uint64
 }
 
+type VoteParams struct {
+	CloseVote    bool
+	ChainID      string
+	ApiURL       string
+	RequestData  []byte
+	RequestBlock uint64
+	Voters       []string
+}
+
+func (vp *VoteParams) GetCloseVote() bool {
+	if vp == nil {
+		//default returns false
+		return false
+	}
+	return vp.CloseVote
+}
+
 //Constants
 
-var AvailabilityPrecentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
 const (
 	MaxConsecutiveConnectionAttemts = 3
 	PercentileToCalculateLatency    = 0.9
@@ -78,7 +94,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	}
 
 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPrecentage.Sub(downtimePrecentage).Quo(AvailabilityPrecentage))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePrecentage).Quo(AvailabilityPercentage))
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
 		fmt.Printf("QoS Availibility: %s, downtime precent : %s \n", cs.QoSInfo.LastQoSReport.Availability.String(), downtimePrecentage.String())
 	}
@@ -134,6 +150,7 @@ type PaymentRequest struct {
 	BlockHeightDeadline int64
 	Amount              sdk.Coin
 	Client              sdk.AccAddress
+	UniqueIdentifier    uint64
 }
 
 type providerDataContainer struct {
@@ -165,9 +182,11 @@ type Sentry struct {
 	NewBlockEvents          <-chan ctypes.ResultEvent
 	isUser                  bool
 	Acc                     string // account address (bech32)
+	voteInitiationCb        func(ctx context.Context, voteID string, voteDeadline uint64, voteParams *VoteParams)
 	newEpochCb              func(epochHeight int64)
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
+	serverID                uint64
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -484,16 +503,54 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
 							continue
 						}
-						s.UpdatePaidCU(paidCU)
-						s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr})
-						found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height)
-						if !found {
-							fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add suppot for partial payment\n %s", s.PrintExpectedPAyments())
-						} else {
-							fmt.Printf("SUCCESS: payment received as expected\n")
+						uniqueID, err := strconv.ParseUint(e.Events["lava_relay_payment.uniqueIdentifier"][idx], 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.uniqueIdentifier"])
+							continue
+						}
+						serverID, err := strconv.ParseUint(e.Events["lava_relay_payment.descriptionString"][idx], 10, 64)
+						if err != nil {
+							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.descriptionString"])
+							continue
 						}
 
+						if serverID == s.serverID {
+							s.UpdatePaidCU(paidCU)
+							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr, UniqueIdentifier: uniqueID})
+							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height, uniqueID)
+							if !found {
+								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add support for partial payment\n %s", s.PrintExpectedPAyments())
+							} else {
+								fmt.Printf("SUCCESS: payment received as expected\n")
+							}
+						}
 					}
+				}
+			}
+
+			eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteDetectionEventName
+			// listen for vote commit event from tx handler on conflict/detection
+			if newVotesList, ok := e.Events[eventToListen+".voteID"]; ok {
+				for idx, voteID := range newVotesList {
+					chainID := e.Events[eventToListen+".chainID"][idx]
+					apiURL := e.Events[eventToListen+".apiURL"][idx]
+					requestData := []byte(e.Events[eventToListen+".requestData"][idx])
+					num_str := e.Events[eventToListen+".requestBlock"][idx]
+					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
+					if err != nil {
+						log.Printf("Error: requested block could not be parsed as uint64 %s\n", num_str)
+						continue
+					}
+					num_str = e.Events[eventToListen+".voteDeadline"][idx]
+					voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+					if err != nil {
+						log.Printf("Error: parsing vote deadline %s, err:%s\n", num_str, err)
+						continue
+					}
+					voters_st := e.Events[eventToListen+".voters"][idx]
+					voters := strings.Split(voters_st, ",")
+					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters, CloseVote: false}
+					go s.voteInitiationCb(ctx, voteID, voteDeadline, voteParams)
 				}
 			}
 
@@ -501,12 +558,12 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 	}
 }
 
-func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64) bool {
+func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64, uniqueID uint64) bool {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	for idx, expectedPayment := range s.expectedPayments {
 		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
-		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) {
+		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) && uniqueID == expectedPayment.UniqueIdentifier {
 			//found payment for expected payment
 			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
 			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
@@ -632,6 +689,30 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 			}
 
+			if !s.isUser {
+				// listen for vote reveal event from new block handler on conflict/module.go
+				eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for idx, voteID := range votesList {
+						num_str := e.Events[eventToListen+".voteDeadline"][idx]
+						voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+						if err != nil {
+							fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+							continue
+						}
+						go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
+					}
+				}
+
+				eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for _, voteID := range votesList {
+						voteParams := &VoteParams{CloseVote: true}
+						go s.voteInitiationCb(ctx, voteID, 0, voteParams)
+					}
+				}
+			}
+
 		}
 	}
 }
@@ -692,11 +773,10 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 		if wrap.Client == nil {
 			wrap.SessionsLock.Lock()
 			defer wrap.SessionsLock.Unlock()
-			//
-			// TODO: we should retry with another addr
+
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
-				return nil, -1, fmt.Errorf("Error getting pairing from: %s, error: %w", wrap.Addr, err)
+				return nil, -1, fmt.Errorf("error making initial connection to provider: %s, error: %w", wrap.Addr, err)
 			}
 			wrap.Client = conn
 		}
@@ -748,7 +828,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 	return nil, -1, fmt.Errorf("error getting pairing from all providers in pairing")
 }
 
-func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, reply1 *pairingtypes.RelayReply) (ok bool) {
+func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
 	compare_result := bytes.Compare(reply0.Data, reply1.Data)
 	if compare_result == 0 {
 		//they have equal data
@@ -756,7 +836,9 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	//they have different data! report!
 	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s\nReporting...", reply0.Data, reply1.Data))
-	msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
+		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
+	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -813,7 +895,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 			if blockHash != otherHash {
 				//
 				// TODO:: Fill msg with incriminating data
-				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -866,7 +948,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		//
 		// Report same provider discrepancy
 		// TODO:: Fill msg with incriminating data
-		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil)
+		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
@@ -932,7 +1014,7 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, error),
+	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory, // TODO::
 ) (*pairingtypes.RelayReply, error) {
 	//
@@ -1031,13 +1113,13 @@ func (s *Sentry) SendRelay(
 			// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
 			// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
 
-			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, err error) {
+			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
 				if address != "" && address != providerAcc {
 					wrap, index, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
 						log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
-						return nil, err
+						return nil, nil, err
 					} else {
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
 						if canSendReliability {
@@ -1053,19 +1135,19 @@ func (s *Sentry) SendRelay(
 								Sig:         nil,                                //calculated in cb_send_reliability
 							}
 							clientSession = getClientSessionFromWrap(wrap)
-							relay_rep, err = cb_send_reliability(clientSession, dataReliability)
+							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
 								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 									s.movePairingEntryToPurge(wrap, index, true)
 								}
-								return nil, err
+								return nil, nil, err
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-							return relay_rep, nil
+							return relay_rep, relay_req, nil
 						} else {
 							log.Println("Reliability already Sent in this epoch to this provider")
-							return nil, nil
+							return nil, nil, nil
 						}
 					}
 				} else {
@@ -1073,24 +1155,24 @@ func (s *Sentry) SendRelay(
 						//send reliability on the client's expense
 						log.Println("secure flag Not Implemented, TODO:")
 					}
-					return nil, fmt.Errorf("Reliability ERROR: is not a valid reliability VRF address result")
+					return nil, nil, fmt.Errorf("reliability ERROR: is not a valid reliability VRF address result")
 				}
 			}
 
 			checkReliability := func() {
-				reply0, err0 := sendReliabilityRelay(address0, false)
-				reply1, err1 := sendReliabilityRelay(address1, true)
+				reply0, request0, err0 := sendReliabilityRelay(address0, false)
+				reply1, request1, err1 := sendReliabilityRelay(address1, true)
 				ok := true
 				check0 := err0 == nil && reply0 != nil
 				check1 := err1 == nil && reply1 != nil
 				if check0 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, reply0)
+					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply0, request0)
 				}
 				if check1 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, reply1)
+					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply1, request1)
 				}
 				if !ok && check0 && check1 {
-					s.CompareRelaysAndReportConflict(reply0, reply1)
+					s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
 				}
 				if (ok && check0) || (ok && check1) {
 					log.Printf("[+] Reliability verified and Okay! ----\n\n")
@@ -1159,21 +1241,7 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 }
 
 func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool {
-	//TODO: implement this for the chain, make a method for spec to verify this on chain?
-	switch requestedBlock {
-	case parser.NOT_APPLICABLE:
-		return false
-	default:
-		//TODO: load this from spec
-		//TODO: regard earliest block from spec
-		finalization_criteria := int64(s.GetSpecFinalizationCriteria())
-		if requestedBlock <= latestBlock-finalization_criteria {
-			// log.Println("requestedBlock <= latestBlock-finalization_criteria returns true: ", requestedBlock, latestBlock)
-			return true
-			// return false
-		}
-	}
-	return false
+	return spectypes.IsFinalizedBlock(requestedBlock, latestBlock, s.GetSpecFinalizationCriteria())
 }
 
 func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
@@ -1396,10 +1464,12 @@ func NewSentry(
 	clientCtx client.Context,
 	chainID string,
 	isUser bool,
+	voteInitiationCb func(ctx context.Context, voteID string, voteDeadline uint64, voteParams *VoteParams),
 	newEpochCb func(epochHeight int64),
 	apiInterface string,
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
+	serverID uint64,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -1426,15 +1496,17 @@ func NewSentry(
 		blockHeight:             currentBlock,
 		specHash:                nil,
 		cmdFlags:                flagSet,
+		voteInitiationCb:        voteInitiationCb,
+		serverID:                serverID,
 	}
 }
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
 	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
 	switch request.RequestBlock {
-	case parser.LATEST_BLOCK:
+	case spectypes.LATEST_BLOCK:
 		request.RequestBlock = response.LatestBlock
-	case parser.EARLIEST_BLOCK:
-		request.RequestBlock = parser.NOT_APPLICABLE // TODO: add support for earliest block reliability
+	case spectypes.EARLIEST_BLOCK:
+		request.RequestBlock = spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
 }

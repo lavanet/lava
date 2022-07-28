@@ -9,11 +9,12 @@ const TypeMsgDetection = "detection"
 
 var _ sdk.Msg = &MsgDetection{}
 
-func NewMsgDetection(creator string, finalizationConflict *sdk.Coin, responseConflict *sdk.Coin) *MsgDetection {
+func NewMsgDetection(creator string, finalizationConflict *FinalizationConflict, responseConflict *ResponseConflict, sameProviderConflict *FinalizationConflict) *MsgDetection {
 	return &MsgDetection{
 		Creator:              creator,
 		FinalizationConflict: finalizationConflict,
 		ResponseConflict:     responseConflict,
+		SameProviderConflict: sameProviderConflict,
 	}
 }
 
