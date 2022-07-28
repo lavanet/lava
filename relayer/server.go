@@ -209,13 +209,15 @@ func askForRewards(staleEpochHeight int64) {
 	transactionResults := strings.Split(transactionResult, "\n")
 	returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
 	if returnCode != 0 {
+		// TODO:: get rid of this code
+		// This code retries asking for rewards when getting an 'incorrect sequence' error.
+		// The transaction should work after a new lava block.
 		fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
 		if strings.Contains(transactionResult, "incorrect account sequence") {
 			fmt.Printf("incorrect account sequence detected. retrying transaction... \n")
 			idx := 1
 			noSequenceError := false
 			for idx < RETRY_INCORRECT_SEQUENCE && !noSequenceError {
-				fmt.Printf("Retry number: %d\n", idx)
 				time.Sleep(1 * time.Second)
 				myWriter.Reset()
 				err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
@@ -227,17 +229,24 @@ func askForRewards(staleEpochHeight int64) {
 				idx++
 
 				if !strings.Contains(transactionResult, "incorrect account sequence") {
-					noSequenceError = true
 					transactionResult := strings.ReplaceAll(transactionResult, ": ", ":")
 					transactionResults := strings.Split(transactionResult, "\n")
 					returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
 					if err != nil {
 						fmt.Printf("ERR: %s", err)
 					}
-					if returnCode != 0 {
-						return
+					if returnCode == 0 { // if we get some other error which isnt  then keep retrying
+						noSequenceError = true
 					}
 				}
+			}
+
+			if !noSequenceError {
+				fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
+				fmt.Printf("incorrect account sequence detected but and no success after %d retries \n", RETRY_INCORRECT_SEQUENCE)
+				return
+			} else {
+				fmt.Printf("success in %d retries after incorrect account sequence detected \n", idx)
 			}
 		} else {
 			return
