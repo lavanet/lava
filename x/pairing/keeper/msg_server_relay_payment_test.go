@@ -954,3 +954,106 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
 	require.NotNil(t, err)
 }
+
+// provider resends the same data reliability on the next epoch
+func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
+	ts := setupForPaymentTest(t)
+
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
+	params.ServicersToPairCount = 100
+	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(100)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	cuSum := ts.spec.Apis[0].ComputeUnits * 10
+
+	relayRequest := &types.RelayRequest{
+		Provider:        ts.providers[0].address.String(),
+		ApiUrl:          "",
+		Data:            []byte(ts.spec.Apis[0].Name),
+		SessionId:       uint64(1),
+		ChainID:         ts.spec.Name,
+		CuSum:           cuSum,
+		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:        0,
+		RequestBlock:    -1,
+		DataReliability: nil,
+	}
+
+	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	require.Nil(t, err)
+
+	var index0 int64
+	var providers []epochstoragetypes.StakeEntry
+	var relayReply *types.RelayReply
+	var nonce uint32
+	for {
+		relayReply = &types.RelayReply{
+			Nonce: nonce,
+		}
+		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
+		require.Nil(t, err)
+
+		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+
+		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+
+		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
+		require.Nil(t, err)
+
+		if providers[index0].Address != ts.providers[0].address.String() {
+			break
+		} else {
+			nonce += 1
+		}
+	}
+
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	dataReliability0 := &types.VRFData{
+		Differentiator: false,
+		VrfValue:       vrf_res0,
+		VrfProof:       vrf_proof0,
+		ProviderSig:    relayReply.Sig,
+		AllDataHash:    sigs.AllDataHash(relayReply, relayRequest),
+		QueryHash:      utils.CalculateQueryHash(*relayRequest),
+		Sig:            nil,
+	}
+	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
+	require.Nil(t, err)
+
+	relayRequestWithDataReliability0 := &types.RelayRequest{
+		Provider:        providers[index0].Address,
+		ApiUrl:          "",
+		Data:            []byte(ts.spec.Apis[0].Name),
+		SessionId:       uint64(1),
+		ChainID:         ts.spec.Name,
+		CuSum:           cuSum,
+		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:        0,
+		RequestBlock:    -1,
+		DataReliability: dataReliability0,
+	}
+	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
+	require.Nil(t, err)
+
+	provider := ts.getProvider(providers[index0].Address)
+	relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
+
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	require.Nil(t, err)
+
+	// Advance Epoch and set block height and resign the tx
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	relayRequestWithDataReliability0.BlockHeight = sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
+	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
+	require.Nil(t, err)
+
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
+	require.NotNil(t, err)
+}
