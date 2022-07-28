@@ -36,6 +36,8 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+const RETRY_INCORRECT_SEQUENCE = 3
+
 var (
 	g_privKey               *btcSecp256k1.PrivateKey
 	g_sessions              map[string]*UserSessions
@@ -206,14 +208,42 @@ func askForRewards(staleEpochHeight int64) {
 	transactionResult := strings.ReplaceAll(myWriter.String(), ": ", ":")
 	transactionResults := strings.Split(transactionResult, "\n")
 	returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
-	if err != nil {
-		fmt.Printf("ERR: %s", err)
-	}
 	if returnCode != 0 {
 		fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
-	} else {
-		fmt.Printf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String())
+		if strings.Contains(transactionResult, "incorrect account sequence") {
+			fmt.Printf("incorrect account sequence detected. retrying transaction... \n")
+			idx := 1
+			noSequenceError := false
+			for idx < RETRY_INCORRECT_SEQUENCE && !noSequenceError {
+				fmt.Printf("Retry number: %d\n", idx)
+				time.Sleep(1 * time.Second)
+				myWriter.Reset()
+				err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+				if err != nil {
+					log.Println("GenerateOrBroadcastTxWithFactory", err)
+					break
+				}
+				transactionResult = myWriter.String()
+				idx++
+
+				if !strings.Contains(transactionResult, "incorrect account sequence") {
+					noSequenceError = true
+					transactionResult := strings.ReplaceAll(transactionResult, ": ", ":")
+					transactionResults := strings.Split(transactionResult, "\n")
+					returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
+					if err != nil {
+						fmt.Printf("ERR: %s", err)
+					}
+					if returnCode != 0 {
+						return
+					}
+				}
+			}
+		} else {
+			return
+		}
 	}
+	fmt.Printf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String())
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
