@@ -78,8 +78,8 @@ func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro er
 	epochsToSave, err := k.EpochsToSave(ctx, block)
 	epochBlocks, err2 := k.EpochBlocks(ctx, block)
 	blocksToSave := epochsToSave * epochBlocks
-	if err != nil {
-		erro = fmt.Errorf("Erros %w, %w", err, err2)
+	if err != nil || err2 != nil {
+		erro = fmt.Errorf("BlocksToSave param read errors %s, %s", err.Error(), err2.Error())
 	}
 	return blocksToSave, erro
 }

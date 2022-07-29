@@ -95,13 +95,12 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
 	if err != nil {
 		// this is critical, no recovery from this
-		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
 	}
 	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
 	block := currentBlock - blocksToSaveAtEarliestEpoch
-
 	if earliestEpochBlock >= block {
 		return
 	}
