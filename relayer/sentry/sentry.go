@@ -729,7 +729,7 @@ func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 	fmt.Printf("total CU serviced: %d, total CU paid: %d\n", s.GetCUServiced(), s.GetPaidCU())
 }
 
-//expecting caller to lock
+// expecting caller to lock
 func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
@@ -875,8 +875,6 @@ func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (ad
 	return
 }
 
-//
-//
 func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (bool, error) {
 	var toIterate map[int64]string   // the smaller map between the two to compare
 	var otherBlocks map[int64]string // the other map
@@ -1104,7 +1102,8 @@ func (s *Sentry) SendRelay(
 			}
 
 			s.VrfSkMu.Lock()
-			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk)
+			currentEpoch := s.GetCurrentEpochHeight()
+			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
 
@@ -1124,7 +1123,8 @@ func (s *Sentry) SendRelay(
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
-							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator)
+							currentEpoch := s.GetCurrentEpochHeight()
+							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
 							s.VrfSkMu.Unlock()
 							dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
 								VrfValue:    vrf_res,

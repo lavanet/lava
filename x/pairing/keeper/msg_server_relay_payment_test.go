@@ -589,6 +589,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			require.Nil(t, err)
 
+			currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 			var index0 int64
 			var providers []epochstoragetypes.StakeEntry
 			var relayReply *types.RelayReply
@@ -601,7 +602,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 				relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 				require.Nil(t, err)
 
-				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, int64(currentEpoch))
 
 				index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
@@ -614,8 +615,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 					nonce += 1
 				}
 			}
-
-			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+			vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, int64(currentEpoch))
 			dataReliability0 := &types.VRFData{
 				Differentiator: false,
 				VrfValue:       vrf_res0,
@@ -712,6 +712,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
 
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 	var index0 int64
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
@@ -723,7 +724,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, int64(currentEpoch))
 
 		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 		index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
@@ -741,7 +742,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	}
 	index0 += 1 //send to wrong provider
 
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, int64(currentEpoch))
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
@@ -818,14 +819,15 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 	require.Nil(t, err)
 
-	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, int64(currentEpoch))
 
 	index0 := utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 	index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 	require.Equal(t, index0, int64(-1))
 	require.Equal(t, index1, int64(-1))
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, int64(currentEpoch))
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
@@ -895,6 +897,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
 
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 	var index0 int64
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
@@ -906,21 +909,20 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, int64(currentEpoch))
 
 		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
 
-		fmt.Println(index0)
 		if providers[index0].Address != ts.providers[0].address.String() {
 			break
 		}
 		nonce += 1
 	}
 
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, int64(currentEpoch))
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
@@ -955,6 +957,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	require.NotNil(t, err)
 }
 
+// TODO Fix double send data reliability on different epochs
 // provider resends the same data reliability on the next epoch
 func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	ts := setupForPaymentTest(t)
@@ -988,6 +991,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
 
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 	var index0 int64
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
@@ -999,7 +1003,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		relayReply.Sig, err = sigs.SignRelayResponse(ts.providers[0].secretKey, relayReply, relayRequest)
 		require.Nil(t, err)
 
-		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk)
+		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, int64(currentEpoch))
 
 		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
@@ -1013,7 +1017,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		}
 	}
 
-	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false)
+	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, int64(currentEpoch))
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
 		VrfValue:       vrf_res0,
@@ -1051,6 +1055,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	relayRequestWithDataReliability0.BlockHeight = sdk.UnwrapSDKContext(ts.ctx).BlockHeight()
+	relayRequestWithDataReliability0.SessionId = uint64(2)
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 

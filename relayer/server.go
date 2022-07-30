@@ -419,7 +419,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			return nil, fmt.Errorf("invalid DataReliability Provider signing")
 		}
 		//verify data reliability fields correspond to the right vrf
-		valid = utils.VerifyVrfProof(request, *vrf_pk)
+		relayEpochStart := getEpochFromBlockHeight(request.BlockHeight, false)
+		valid = utils.VerifyVrfProof(request, *vrf_pk, relayEpochStart)
 		if !valid {
 			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
 		}

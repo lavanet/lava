@@ -110,7 +110,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			//signatures valid, validate VRF signing
-			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk)
+			relayEpochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk, relayEpochStart)
 			if !valid {
 				details["error"] = "vrf signing is invalid, proof result mismatch"
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
