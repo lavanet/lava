@@ -1,6 +1,7 @@
 #!/bin/bash 
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 
 # lavad tx gov submit-proposal spec-add ./cookbook/spec_add_terra.json --from alice --gas-adjustment "1.5" --gas "auto" -y
@@ -13,14 +14,10 @@ lavad tx gov vote 3 yes -y --from alice
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 lavad tx gov vote 4 yes -y --from alice
 sleep 4
-
 lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
 lavad tx pairing stake-client "COS3" 200000ulava 1 -y --from user2
 lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user3
 lavad tx pairing stake-client "LAV1" 200000ulava 1 -y --from user4
-
-# we need to wait for the next epoch for the stake to take action.
-sleep 20 
 
 # Ethereum providers
 lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1
@@ -54,6 +51,9 @@ lavad query pairing clients "ETH1"
 echo "---------------Setup Providers------------------"
 killall screen
 
+# we need to wait for the next epoch for the stake to take action.
+sleep_until_next_epoch
+
 # Eth providers
 screen -d -m -S eth1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1"
 screen -S eth1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2"
@@ -83,7 +83,6 @@ screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1"
 screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2"
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3"
-
 
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2"

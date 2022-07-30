@@ -543,7 +543,7 @@
         {
           "name": "status",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -749,7 +749,7 @@
         {
           "name": "/node_info",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
