@@ -76,6 +76,10 @@ func (k Keeper) fixatedParamsKey(index uint64) string {
 	}
 }
 
+func (k Keeper) LatestFixatedParams(ctx sdk.Context) (fixation types.FixatedParams, found bool) {
+	return k.GetFixatedParams(ctx, k.fixatedParamsKey(0))
+}
+
 func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 	currentParams := k.GetParams(ctx)
 	fixatedParamsToPush := types.FixatedParams{Parameters: currentParams, FixationBlock: block}
@@ -87,12 +91,13 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 		olderParams, found = k.GetFixatedParams(ctx, thisIdxKey)
 		fixatedParamsToPush.Index = thisIdxKey
 		k.SetFixatedParams(ctx, fixatedParamsToPush)
-		fixatedParamsToPush = olderParams
-		if olderParams.FixationBlock < limit {
+		//check if what we just set is enough to keep all the memory
+		if fixatedParamsToPush.FixationBlock < limit {
 			// if the fixatedParams we have in the list are too old, we dont need to store them any more
 			k.CleanOlderFixatedParams(ctx, idx+1)
 			break
 		}
+		fixatedParamsToPush = olderParams
 	}
 	utils.LogLavaEvent(ctx, k.Logger(ctx), "fixated_params_after_change", map[string]string{"moduleName": types.ModuleName, "block": strconv.FormatUint(block, 10), "fixatedParametersListLen": strconv.FormatUint(idx, 10)}, "params fixated after a change")
 }
@@ -110,19 +115,24 @@ func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": strconv.FormatUint(idx, 10)}, "fixation cleaned")
 }
 
-func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, block uint64) types.FixatedParams {
+func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, block uint64) (fixated types.FixatedParams, err error) {
 	for idx := uint64(0); true; idx++ {
 		thisIdxKey := k.fixatedParamsKey(idx)
 		fixatedParams, found := k.GetFixatedParams(ctx, thisIdxKey)
+		if !found {
+			earliestEpochStart := k.GetEarliestEpochStart(ctx)
+			if block < earliestEpochStart {
+				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_too_early", map[string]string{"error": "tried to read for block that is earlier than earliest_epoch_start", "block": strconv.FormatUint(block, 10), "earliest": strconv.FormatUint(earliestEpochStart, 10)}, "invalid block requested, that is lower than earliest block in memory")
+			} else {
+				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_for_block_empty", map[string]string{"error": "tried to read index: " + thisIdxKey + " but wasn't found", "block": strconv.FormatUint(block, 10)}, "invalid block requested, that is lower than saved fixation memory")
+			}
+			break
+		}
 		if fixatedParams.FixationBlock <= block {
 			// this means that the requested block is newer than the fixation, so we dont need to check older fixations
-			return fixatedParams
-		}
-		if !found {
-			utils.LavaError(ctx, k.Logger(ctx), "fixated_params_for_block_empty", map[string]string{"error": "tried to read index: " + thisIdxKey + " but wasn't found", "block": strconv.FormatUint(block, 10)}, "invalid block requested, that is lower than saved fixation memory")
-			break
+			return fixatedParams, nil
 		}
 	}
 	//handle case of error with current params
-	return types.FixatedParams{Parameters: k.GetParams(ctx), FixationBlock: block}
+	return types.FixatedParams{Parameters: k.GetParams(ctx), FixationBlock: block}, err
 }

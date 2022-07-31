@@ -67,7 +67,20 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	var winnerVotersStake sdk.Int
 
 	//count votes and punish jury that didnt vote
-	epochVoteStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.VoteStartBlock) //TODO check if we need to check for overlap
+	epochVoteStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.VoteStartBlock) //TODO check if we need to check for overlap
+	if err != nil {
+		k.CleanUpVote(ctx, ConflictVote.Index)
+		utils.LavaError(ctx, logger, "vote_epoch_get_fail", map[string]string{"voteID": ConflictVote.Index, "block": strconv.FormatUint(ConflictVote.VoteStartBlock, 10)}, "failed to get epoch start")
+		return
+	}
+
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, ConflictVote.VoteStartBlock)
+	if err != nil {
+		k.CleanUpVote(ctx, ConflictVote.Index)
+		utils.LavaError(ctx, logger, "vote_blockstosave_get_fail", map[string]string{"voteID": ConflictVote.Index, "block": strconv.FormatUint(ConflictVote.VoteStartBlock, 10)}, "failed to get blocks to save")
+		return
+	}
+
 	for address, vote := range ConflictVote.VotersHash {
 		accAddress, err := sdk.AccAddressFromBech32(address)
 		if err != nil {
@@ -96,7 +109,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			k.pairingKeeper.JailEntry(ctx, accAddress, true, ConflictVote.ChainID, uint64(ConflictVote.VoteStartBlock), ConflictVote.VoteStartBlock+k.epochstorageKeeper.BlocksToSave(ctx, ConflictVote.VoteStartBlock), sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
+			k.pairingKeeper.JailEntry(ctx, accAddress, true, ConflictVote.ChainID, uint64(ConflictVote.VoteStartBlock), blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
 			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, ConflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
@@ -244,11 +257,20 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 func (k Keeper) TransitionVoteToReveal(ctx sdk.Context, conflictVote types.ConflictVote) {
 	logger := k.Logger(ctx)
 	conflictVote.VoteState = types.StateReveal
-	conflictVote.VoteDeadline = uint64(ctx.BlockHeight()) + k.VotePeriod(ctx)*k.epochstorageKeeper.EpochBlocks(ctx, conflictVote.VoteStartBlock)
+	epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		k.CleanUpVote(ctx, conflictVote.Index)
+	}
+
+	conflictVote.VoteDeadline = uint64(ctx.BlockHeight()) + k.VotePeriod(ctx)*epochBlocks
 	k.SetConflictVote(ctx, conflictVote)
 
 	eventData := map[string]string{}
 	eventData["voteID"] = conflictVote.Index
 	eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 	utils.LogLavaEvent(ctx, logger, types.ConflictVoteRevealEventName, eventData, "Vote is now in reveal state")
+}
+
+func (k Keeper) CleanUpVote(ctx sdk.Context, index string) {
+	k.RemoveConflictVote(ctx, index)
 }

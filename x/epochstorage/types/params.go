@@ -111,7 +111,9 @@ func validateEpochBlocks(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
+	if epochBlocks == 0 {
+		return fmt.Errorf("invalid parameter epochBlocks- cant be 0")
+	}
 	// TODO implement validation
 	_ = epochBlocks
 

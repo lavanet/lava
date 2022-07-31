@@ -44,7 +44,11 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		//3. accept incoming commit transactions for this vote,
 		//4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
 		//5. majority wins, minority gets penalised
-		epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
+		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
+		if err != nil {
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "could not get EpochStart for specific block")
+
+		}
 		index := DetectionIndex(msg, epochStart)
 		//fmt.Printf("%s \n", index)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
@@ -55,7 +59,12 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit
 		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight)
-		conflictVote.VoteDeadline = k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+k.VotePeriod(ctx)*k.Keeper.epochstorageKeeper.EpochBlocks(ctx, conflictVote.VoteStartBlock))
+		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+epochStart)
+		if err != nil {
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "could not get NextEpoch")
+
+		}
+		conflictVote.VoteDeadline = voteDeadline
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl
 		conflictVote.ClientAddress = msg.Creator
 		conflictVote.ChainID = msg.ResponseConflict.ConflictRelayData0.Request.ChainID

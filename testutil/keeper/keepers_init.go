@@ -136,16 +136,21 @@ func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
+//Make sure you save the new context
 func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
-	nextEpochBlockNum := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
+	nextEpochBlockNum, err := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
+	if err != nil {
+		panic(err)
+	}
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(nextEpochBlockNum))
 
 	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
+//Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {

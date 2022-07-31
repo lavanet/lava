@@ -131,15 +131,23 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			payReliability = true
 		}
 
-		epochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+		if err != nil {
+			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
+			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
+		}
 		if isOverlap {
-			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+			epochStart, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+			if err != nil {
+				details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
+				return errorLogAndFormat("relay_payment_epoch_start_overlap", details, "problem getting epoch start")
+			}
 		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
 		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			//double spending on user detected!
-			details := map[string]string{"session": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(),
+			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(),
 				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
@@ -152,7 +160,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			//TODO: maybe give provider money but burn user, colluding?
 			//TODO: display correct totalCU and usedCU for provider
 			details := map[string]string{
-				"session":                       strconv.FormatUint(epochStart, 10),
+				"epoch":                         strconv.FormatUint(epochStart, 10),
 				"client":                        clientAddr.String(),
 				"provider":                      providerAddr.String(),
 				"error":                         err.Error(),

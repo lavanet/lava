@@ -37,13 +37,17 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	}
 	k.epochStorageKeeper.RemoveStakeEntry(ctx, stake_type(), chainID, indexInStakeStorage)
 	blockHeight := uint64(ctx.BlockHeight())
-	existingEntry.Deadline = blockHeight + k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
+	if err != nil {
+		details := map[string]string{stake_type(): creator, "error": err.Error()}
+		return utils.LavaError(ctx, logger, "unstake_param_read", details, "invalid "+stake_type()+" param read failure")
+	}
+	existingEntry.Deadline = blockHeight + blocksToSave
 	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx, blockHeight)
 	if existingEntry.Deadline < holdBlocks {
 		existingEntry.Deadline = holdBlocks
 	}
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
-	return nil
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
