@@ -573,6 +573,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 
 			cuSum := ts.spec.Apis[0].ComputeUnits * 10
 
+			QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 			relayRequest := &types.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
@@ -583,8 +584,10 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 				BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
 				RelayNum:        0,
 				RequestBlock:    -1,
+				QoSReport:       QoS,
 				DataReliability: nil,
 			}
+			QoS.ComputeQoS()
 
 			relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			require.Nil(t, err)
@@ -643,6 +646,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 				dataReliability0.Sig = nil
 			}
 
+			QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 			relayRequestWithDataReliability0 := &types.RelayRequest{
 				Provider:        providers[index0].Address,
 				ApiUrl:          "",
@@ -654,7 +658,9 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 				RelayNum:        0,
 				RequestBlock:    -1,
 				DataReliability: dataReliability0,
+				QoSReport:       QoSDR,
 			}
+			QoSDR.ComputeQoS()
 			relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 			require.Nil(t, err)
 
@@ -696,6 +702,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
 
+	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequest := &types.RelayRequest{
 		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
@@ -707,7 +714,9 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: nil,
+		QoSReport:       QoS,
 	}
+	QoS.ComputeQoS()
 
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
@@ -755,6 +764,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
 	require.Nil(t, err)
 
+	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelayRequest{
 		Provider:        providers[index0].Address,
 		ApiUrl:          "",
@@ -766,7 +776,9 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: dataReliability0,
+		QoSReport:       QoSDR,
 	}
+	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 
@@ -794,7 +806,7 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
-
+	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequest := &types.RelayRequest{
 		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
@@ -806,8 +818,9 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: nil,
+		QoSReport:       QoS,
 	}
-
+	QoS.ComputeQoS()
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
 
@@ -842,6 +855,7 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 
 	// make all providers send a datareliability payment request. Everyone should fail
 	for _, provider := range ts.providers {
+		QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 		relayRequestWithDataReliability0 := &types.RelayRequest{
 			Provider:        provider.address.String(),
 			ApiUrl:          "",
@@ -853,7 +867,9 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 			RelayNum:        0,
 			RequestBlock:    -1,
 			DataReliability: dataReliability0,
+			QoSReport:       QoSDR,
 		}
+		QoSDR.ComputeQoS()
 		relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 		require.Nil(t, err)
 
@@ -880,7 +896,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
-
+	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequest := &types.RelayRequest{
 		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
@@ -892,8 +908,9 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: nil,
+		QoSReport:       QoS,
 	}
-
+	QoS.ComputeQoS()
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
 
@@ -935,6 +952,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[1].secretKey, dataReliability0)
 	require.Nil(t, err)
 
+	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelayRequest{
 		Provider:        providers[index0].Address,
 		ApiUrl:          "",
@@ -946,7 +964,9 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: dataReliability0,
+		QoSReport:       QoSDR,
 	}
+	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[1].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 
@@ -957,7 +977,6 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-// TODO Fix double send data reliability on different epochs
 // provider resends the same data reliability on the next epoch
 func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	ts := setupForPaymentTest(t)
@@ -974,7 +993,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	cuSum := ts.spec.Apis[0].ComputeUnits * 10
-
+	QoS := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequest := &types.RelayRequest{
 		Provider:        ts.providers[0].address.String(),
 		ApiUrl:          "",
@@ -986,7 +1005,9 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: nil,
+		QoSReport:       QoS,
 	}
+	QoS.ComputeQoS()
 
 	relayRequest.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 	require.Nil(t, err)
@@ -1030,6 +1051,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
 	require.Nil(t, err)
 
+	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelayRequest{
 		Provider:        providers[index0].Address,
 		ApiUrl:          "",
@@ -1041,7 +1063,9 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 		RelayNum:        0,
 		RequestBlock:    -1,
 		DataReliability: dataReliability0,
+		QoSReport:       QoSDR,
 	}
+	QoSDR.ComputeQoS()
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 
