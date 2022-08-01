@@ -1123,7 +1123,6 @@ func (s *Sentry) SendRelay(
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
-							currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
 							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
 							s.VrfSkMu.Unlock()
 							dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
