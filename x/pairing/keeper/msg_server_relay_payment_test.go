@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -544,17 +543,22 @@ func TestRelayPaymentQoS(t *testing.T) {
 // Data Reliability test for field corruption
 func TestRelayPaymentDataReliability(t *testing.T) {
 	tests := []struct {
-		name           string
-		valid          bool
-		corruptedField string
+		name  string
+		valid bool
 	}{
-		{name: "Honest", corruptedField: "", valid: true},
-		{name: "InvalidVrfValue", corruptedField: "VrfValue", valid: false},
-		{name: "InvalidVrfProof", corruptedField: "VrfProof", valid: false},
-		{name: "InvalidProviderSig", corruptedField: "ProviderSig", valid: false},
-		{name: "InvalidAllDataHash", corruptedField: "AllDataHash", valid: false},
-		{name: "InvalidQueryHash", corruptedField: "QueryHash", valid: false},
-		{name: "InvalidSig", corruptedField: "Sig", valid: false},
+		{name: "Honest", valid: true},
+		{name: "VrfValueNil", valid: false},
+		{name: "VrfProofNil", valid: false},
+		{name: "ProviderSigNil", valid: false},
+		{name: "AllDataHashNil", valid: false},
+		{name: "QueryHashNil", valid: false},
+		{name: "SigNil", valid: false},
+		{name: "VrfValueCorrupt", valid: false},
+		{name: "VrfProofCorrupt", valid: false},
+		{name: "ProviderSigCorrupt", valid: false},
+		{name: "AllDataHashCorrupt", valid: false},
+		{name: "QueryHashCorrupt", valid: false},
+		{name: "SigCorrupt", valid: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -631,19 +635,31 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			dataReliability0.Sig, err = sigs.SignVRFData(ts.clients[0].secretKey, dataReliability0)
 			require.Nil(t, err)
 
-			switch tt.corruptedField {
-			case "VrfValue":
+			switch tt.name {
+			case "VrfValueNil":
 				dataReliability0.VrfValue = nil
-			case "VrfProof":
+			case "VrfProofNil":
 				dataReliability0.VrfProof = nil
-			case "ProviderSig":
+			case "ProviderSigNil":
 				dataReliability0.ProviderSig = nil
-			case "AllDataHash":
+			case "AllDataHashNil":
 				dataReliability0.AllDataHash = nil
-			case "QueryHash":
+			case "QueryHashNil":
 				dataReliability0.QueryHash = nil
-			case "Sig":
+			case "SigNil":
 				dataReliability0.Sig = nil
+			case "VrfValueCorrupt":
+				dataReliability0.VrfValue = dataReliability0.VrfValue[0 : len(dataReliability0.VrfValue)-1]
+			case "VrfProofCorrupt":
+				dataReliability0.VrfProof = dataReliability0.VrfProof[0 : len(dataReliability0.VrfProof)-1]
+			case "ProviderSigCorrupt":
+				dataReliability0.ProviderSig = dataReliability0.ProviderSig[0 : len(dataReliability0.ProviderSig)-1]
+			case "AllDataHashCorrupt":
+				dataReliability0.AllDataHash = dataReliability0.AllDataHash[0 : len(dataReliability0.AllDataHash)-1]
+			case "QueryHashCorrupt":
+				dataReliability0.QueryHash = dataReliability0.QueryHash[0 : len(dataReliability0.QueryHash)-1]
+			case "SigCorrupt":
+				dataReliability0.Sig = dataReliability0.Sig[0 : len(dataReliability0.Sig)-1]
 			}
 
 			QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
@@ -742,7 +758,6 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 		require.Nil(t, err)
 
 		if providers[index0].Address != ts.providers[0].address.String() {
-			fmt.Println(providers[index0].Address)
 			if providers[index0+1].Address != ts.providers[0].address.String() && index0+1 != index1 {
 				break
 			}
