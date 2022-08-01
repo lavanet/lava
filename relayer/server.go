@@ -233,15 +233,6 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-// TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func getEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
-	epoch := uint64(blockHeight - blockHeight%int64(g_sentry.EpochSize))
-	if isOverlap {
-		epoch = epoch - g_sentry.EpochSize
-	}
-	return epoch
-}
-
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest, isOverlap bool) (*RelaySession, *utils.VrfPubKey, error) {
 	g_sessions_mutex.Lock()
 	userSessions, ok := g_sessions[userAddr]
@@ -275,7 +266,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		}
 		vrf_pk = tmp_vrf_pk
 
-		sessionEpoch = getEpochFromBlockHeight(req.BlockHeight, isOverlap)
+		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight, isOverlap)
 
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
@@ -419,7 +410,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			return nil, fmt.Errorf("invalid DataReliability Provider signing")
 		}
 		//verify data reliability fields correspond to the right vrf
-		relayEpochStart := getEpochFromBlockHeight(request.BlockHeight, false)
+		relayEpochStart := g_sentry.GetEpochFromBlockHeight(request.BlockHeight, false)
 		valid = utils.VerifyVrfProof(request, *vrf_pk, relayEpochStart)
 		if !valid {
 			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")

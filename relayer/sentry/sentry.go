@@ -1102,7 +1102,7 @@ func (s *Sentry) SendRelay(
 			}
 
 			s.VrfSkMu.Lock()
-			currentEpoch := s.GetCurrentEpochHeight()
+			currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
@@ -1123,7 +1123,7 @@ func (s *Sentry) SendRelay(
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
-							currentEpoch := s.GetCurrentEpochHeight()
+							currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
 							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
 							s.VrfSkMu.Unlock()
 							dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
@@ -1458,6 +1458,15 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	}
 
 	return median(listExpectedBlockHeights) - s.serverSpec.AllowedBlockLagForQosSync, len(listExpectedBlockHeights)
+}
+
+// TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
+func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
+	epoch := uint64(blockHeight - blockHeight%int64(s.EpochSize))
+	if isOverlap {
+		epoch = epoch - s.EpochSize
+	}
+	return epoch
 }
 
 func NewSentry(

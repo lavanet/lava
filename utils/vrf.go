@@ -53,13 +53,13 @@ func VerifyVrfProof(request *pairingtypes.RelayRequest, vrf_pk VrfPubKey, relayE
 	return verifyVRF(queryHash, request.DataReliability, vrf_pk, relayEpochStart)
 }
 
-func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, currentEpoch int64) ([]byte, []byte) {
+func CalculateVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, currentEpoch uint64) ([]byte, []byte) {
 	vrfData0 := FormatDataForVrf(request, response, false, currentEpoch)
 	vrfData1 := FormatDataForVrf(request, response, true, currentEpoch)
 	return vrf_sk.Compute(vrfData0), vrf_sk.Compute(vrfData1)
 }
 
-func ProveVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, differentiator bool, currentEpoch int64) (vrf_res []byte, proof []byte) {
+func ProveVrfOnRelay(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, vrf_sk vrf.PrivateKey, differentiator bool, currentEpoch uint64) (vrf_res []byte, proof []byte) {
 	vrfData := FormatDataForVrf(request, response, differentiator, currentEpoch)
 	return vrf_sk.Prove(vrfData)
 }
@@ -76,11 +76,11 @@ func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
 	return
 }
 
-func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool, currentEpoch int64) (data []byte) {
+func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool, currentEpoch uint64) (data []byte) {
 	//vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
 	currentEpochBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(currentEpochBytes, uint64(currentEpoch))
+	binary.LittleEndian.PutUint64(currentEpochBytes, currentEpoch)
 	if differentiator {
 		data = bytes.Join([][]byte{queryHash, currentEpochBytes, response.Sig, []uint8{1}}, nil)
 	} else {
