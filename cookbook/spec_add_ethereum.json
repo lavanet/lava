@@ -37,54 +37,6 @@
           ]
         },
         {
-          "name": "eth_submitWork",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_submitHashrate",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
           "name": "net_version",
           "category": {
             "deterministic": true,
@@ -385,7 +337,7 @@
         {
           "name": "eth_subscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -409,7 +361,7 @@
         {
           "name": "eth_unsubscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
