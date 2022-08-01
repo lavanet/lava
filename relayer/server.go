@@ -124,8 +124,8 @@ func askForRewards(staleEpochHeight int64) {
 			if session.Proof == nil {
 				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
 				session.Lock.Unlock()
-				if session.UniqueIdentifier == 0 {
-					fmt.Printf("Error: Missing proof, cannot get rewards for this session: %d", session.UniqueIdentifier)
+				if session.UniqueIdentifier != 0 {
+					fmt.Printf("Error: Missing proof, cannot get rewards for this session: %d\n", session.UniqueIdentifier)
 				}
 				continue
 			}
