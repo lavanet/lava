@@ -29,12 +29,12 @@ screen -S ftm250_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad s
 screen -S ftm250_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2255 $FTM_RPC_HTTPS FTM250 jsonrpc --from servicer5"
 
 #osmosis testnet providers
-screen -d -m -S cos4_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4231 $OSMO_TESTNET_REST COS4 rest --from servicer1"
-screen -S cos4_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4232 $OSMO_TESTNET_REST COS4 rest --from servicer2"
-screen -S cos4_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4233 $OSMO_TESTNET_REST COS4 rest --from servicer3"
-screen -S cos4_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4241 $OSMO_TESTNET_RPC COS4 tendermintrpc --from servicer1"
-screen -S cos4_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4242 $OSMO_TESTNET_RPC COS4 tendermintrpc --from servicer2"
-screen -S cos4_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4243 $OSMO_TESTNET_RPC COS4 tendermintrpc --from servicer3"
+screen -d -m -S cos4_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4231 $OSMO_TEST_REST COS4 rest --from servicer1"
+screen -S cos4_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4232 $OSMO_TEST_REST COS4 rest --from servicer2"
+screen -S cos4_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4233 $OSMO_TEST_REST COS4 rest --from servicer3"
+screen -S cos4_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4241 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1"
+screen -S cos4_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4242 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer2"
+screen -S cos4_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4243 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer3"
 
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2"
