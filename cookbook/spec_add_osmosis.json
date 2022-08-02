@@ -15,7 +15,7 @@
       "apis": [{
           "name": "abci_info",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -39,7 +39,7 @@
         {
           "name": "abci_query",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -65,7 +65,7 @@
         {
           "name": "block",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -103,7 +103,7 @@
         {
           "name": "block_by_hash",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -127,7 +127,7 @@
         {
           "name": "block_results",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -153,7 +153,7 @@
         {
           "name": "block_search",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -177,7 +177,7 @@
         {
           "name": "blockchain",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -203,7 +203,7 @@
         {
           "name": "broadcast_evidence",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -227,7 +227,7 @@
         {
           "name": "broadcast_tx_async",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -251,7 +251,7 @@
         {
           "name": "broadcast_tx_commit",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -275,7 +275,7 @@
         {
           "name": "broadcast_tx_sync",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -299,7 +299,7 @@
         {
           "name": "check_tx",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -323,7 +323,7 @@
         {
           "name": "commit",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -349,7 +349,7 @@
         {
           "name": "consensus_params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -375,7 +375,7 @@
         {
           "name": "consensus_state",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -399,7 +399,7 @@
         {
           "name": "dump_consensus_state",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -423,7 +423,7 @@
         {
           "name": "genesis",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -447,7 +447,7 @@
         {
           "name": "genesis_chunked",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -471,7 +471,7 @@
         {
           "name": "health",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -495,7 +495,7 @@
         {
           "name": "net_info",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -519,7 +519,7 @@
         {
           "name": "num_unconfirmed_txs",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -543,7 +543,7 @@
         {
           "name": "status",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -579,7 +579,7 @@
         {
           "name": "subscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -603,7 +603,7 @@
         {
           "name": "tx",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -627,7 +627,7 @@
         {
           "name": "tx_search",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -651,7 +651,7 @@
         {
           "name": "unconfirmed_txs",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -675,7 +675,7 @@
         {
           "name": "unsubscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -699,7 +699,7 @@
         {
           "name": "unsubscribe_all",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -723,7 +723,7 @@
         {
           "name": "validators",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -749,7 +749,7 @@
         {
           "name": "/node_info",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -773,7 +773,7 @@
         {
           "name": "/syncing",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -841,9 +841,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -918,7 +918,7 @@
         {
           "name": "/txs",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -942,7 +942,7 @@
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -966,7 +966,7 @@
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -990,7 +990,7 @@
         {
           "name": "/cosmos/auth/v1beta1/accounts",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1014,7 +1014,7 @@
         {
           "name": "/cosmos/auth/v1beta1/accounts/{address}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1045,9 +1045,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1069,9 +1069,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1086,7 +1086,7 @@
         {
           "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1110,7 +1110,7 @@
         {
           "name": "/cosmos/bank/v1beta1/denom_owners/{denom}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1134,7 +1134,7 @@
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1158,7 +1158,7 @@
         {
           "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1182,7 +1182,7 @@
         {
           "name": "/cosmos/bank/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1206,7 +1206,7 @@
         {
           "name": "/cosmos/bank/v1beta1/supply",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1230,7 +1230,7 @@
         {
           "name": "/cosmos/bank/v1beta1/supply/{denom}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1254,7 +1254,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/community_pool",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1278,7 +1278,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1302,7 +1302,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1326,7 +1326,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1350,7 +1350,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1374,7 +1374,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1398,7 +1398,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1422,7 +1422,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1446,7 +1446,7 @@
         {
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1470,7 +1470,7 @@
         {
           "name": "/cosmos/evidence/v1beta1/evidence",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1494,7 +1494,7 @@
         {
           "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1518,7 +1518,7 @@
         {
           "name": "/cosmos/gov/v1beta1/params/{params_type}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1549,9 +1549,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1566,7 +1566,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1590,7 +1590,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1614,7 +1614,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1638,7 +1638,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1662,7 +1662,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1686,7 +1686,7 @@
         {
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1710,7 +1710,7 @@
         {
           "name": "/cosmos/mint/v1beta1/annual_provisions",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1741,9 +1741,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1758,7 +1758,7 @@
         {
           "name": "/cosmos/mint/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1782,7 +1782,7 @@
         {
           "name": "/cosmos/params/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1813,9 +1813,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1830,7 +1830,7 @@
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1854,7 +1854,7 @@
         {
           "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1878,7 +1878,7 @@
         {
           "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1902,7 +1902,7 @@
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1926,7 +1926,7 @@
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1950,7 +1950,7 @@
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1974,7 +1974,7 @@
         {
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1998,7 +1998,7 @@
         {
           "name": "/cosmos/staking/v1beta1/historical_info/{height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2022,7 +2022,7 @@
         {
           "name": "/cosmos/staking/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2046,7 +2046,7 @@
         {
           "name": "/cosmos/staking/v1beta1/pool",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2070,7 +2070,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2094,7 +2094,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2118,7 +2118,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2142,7 +2142,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2166,7 +2166,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2190,7 +2190,7 @@
         {
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2214,7 +2214,7 @@
         {
           "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2238,7 +2238,7 @@
         {
           "name": "/cosmos/upgrade/v1beta1/current_plan",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2262,7 +2262,7 @@
         {
           "name": "/cosmos/upgrade/v1beta1/module_versions",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2286,7 +2286,7 @@
         {
           "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2310,7 +2310,7 @@
         {
           "name": "/cosmos/authz/v1beta1/grants",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2334,7 +2334,7 @@
         {
           "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2358,7 +2358,7 @@
         {
           "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2389,9 +2389,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2406,7 +2406,7 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2430,7 +2430,7 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/node_info",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2454,7 +2454,7 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/syncing",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2478,7 +2478,7 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2502,7 +2502,7 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2526,7 +2526,7 @@
         {
           "name": "/cosmos/tx/v1beta1/simulate",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2550,7 +2550,7 @@
         {
           "name": "/cosmos/tx/v1beta1/txs",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2579,7 +2579,7 @@
         {
           "name": "/cosmos/tx/v1beta1/txs/{hash}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2603,7 +2603,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/num_pools",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2634,9 +2634,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2651,7 +2651,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/pools/{poolId}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2675,7 +2675,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/pools/{poolId}/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2699,7 +2699,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/pools/{poolId}/prices",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2723,7 +2723,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/pools/{poolId}/tokens",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2747,7 +2747,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/pools/{poolId}/total_share",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2771,7 +2771,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/total_liquidity",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2795,7 +2795,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/{poolId}/estimate/swap_exact_amount_in",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2819,7 +2819,7 @@
         {
           "name": "/osmosis/gamm/v1beta1/{poolId}/estimate/swap_exact_amount_out",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2843,7 +2843,7 @@
         {
           "name": "/osmosis/epochs/v1beta1/current_epoch",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2874,9 +2874,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2898,9 +2898,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2915,7 +2915,7 @@
         {
           "name": "/osmosis/pool-incentives/v1beta1/gauge-ids/{pool_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2946,9 +2946,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2963,7 +2963,7 @@
         {
           "name": "/osmosis/pool-incentives/v1beta1/lockable_durations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2987,7 +2987,7 @@
         {
           "name": "/osmosis/pool-incentives/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3011,7 +3011,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_coins/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3035,7 +3035,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3059,7 +3059,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3083,7 +3083,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3107,7 +3107,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_pasttime/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3131,7 +3131,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3155,7 +3155,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3179,7 +3179,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_unlockable_coins/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3203,7 +3203,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_unlocked_before_time/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3227,7 +3227,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/account_unlocking_coins/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3251,7 +3251,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/locked_by_id/{lock_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3275,7 +3275,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/module_balance",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3299,7 +3299,7 @@
         {
           "name": "/osmosis/lockup/v1beta1/module_locked_amount",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3323,7 +3323,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/active_gauges",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3333,6 +3333,30 @@
               ""
             ],
             "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "rest",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },
+        {
+          "name": "/osmosis/superfluid/v1beta1/all_assets",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3354,9 +3378,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3371,7 +3395,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/gauges",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3395,7 +3419,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/module_distributed_coins",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3419,7 +3443,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/module_to_distribute_coins",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3443,7 +3467,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/rewards_est/{owner}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3467,7 +3491,7 @@
         {
           "name": "/osmosis/incentives/v1beta1/upcoming_gauges",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3491,7 +3515,7 @@
         {
           "name": "/osmosis/claim/v1beta1/claim_record/{address}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3515,7 +3539,7 @@
         {
           "name": "/osmosis/claim/v1beta1/claimable_for_action/{address}/{action}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3539,7 +3563,7 @@
         {
           "name": "/osmosis/claim/v1beta1/module_account_balance",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3563,7 +3587,7 @@
         {
           "name": "/osmosis/claim/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3587,7 +3611,7 @@
         {
           "name": "/osmosis/claim/v1beta1/total_claimable/{address}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3618,9 +3642,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3635,7 +3659,7 @@
         {
           "name": "/osmosis/mint/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3659,7 +3683,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3683,7 +3707,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3707,7 +3731,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/client_state",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3731,7 +3755,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3755,7 +3779,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/next_sequence",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3779,7 +3803,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3803,7 +3827,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3827,7 +3851,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3851,7 +3875,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3875,7 +3899,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3899,7 +3923,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3923,7 +3947,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3947,7 +3971,7 @@
         {
           "name": "/ibc/core/channel/v1beta1/connections/{connection}/channels",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3971,7 +3995,7 @@
         {
           "name": "/ibc/client/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3995,7 +4019,7 @@
         {
           "name": "/ibc/core/client/v1beta1/client_states",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4019,7 +4043,7 @@
         {
           "name": "/ibc/core/client/v1beta1/client_states/{client_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4043,7 +4067,7 @@
         {
           "name": "/ibc/core/client/v1beta1/consensus_states/{client_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4067,7 +4091,7 @@
         {
           "name": "/ibc/core/client/v1beta1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4091,7 +4115,7 @@
         {
           "name": "/ibc/core/connection/v1beta1/client_connections/{client_id}s",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4115,7 +4139,7 @@
         {
           "name": "/ibc/core/connection/v1beta1/connections",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4139,7 +4163,7 @@
         {
           "name": "/ibc/core/connection/v1beta1/connections/{connection_id}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4163,7 +4187,7 @@
         {
           "name": "/ibc/core/connection/v1beta1/connections/{connection_id}/client_state",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4187,7 +4211,7 @@
         {
           "name": "/ibc/core/connection/v1beta1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4211,7 +4235,7 @@
         {
           "name": "/ibc/applications/transfer/v1beta1/denom_traces",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4235,7 +4259,7 @@
         {
           "name": "/ibc/applications/transfer/v1beta1/denom_traces/{hash}",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -4259,7 +4283,7 @@
         {
           "name": "/ibc/applications/transfer/v1beta1/params",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
