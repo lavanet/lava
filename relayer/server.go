@@ -133,7 +133,7 @@ func askForRewards() {
 	doubleSendTest := false
 	if doubleSendTest { // wait between 0.5-1.5 seconds and resend tx for testing purposes
 		n := rand.Float32() // n will be between 0 and 10
-		fmt.Printf("Sleeping %d seconds...\n", n)
+		fmt.Printf("Sleeping %f seconds...\n", n)
 		time.Sleep(time.Duration(n*1+0.5) * time.Second)
 		fmt.Println("Done")
 		err = tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
