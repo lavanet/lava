@@ -63,7 +63,9 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		retval, err = ParseDictionary(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_ORDERED:
 		retval, err = ParseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
-
+	case spectypes.PARSER_FUNC_DEFAULT:
+		retval = ParseDefault(rpcInput, blockParser.ParserArg, dataSource)
+		// case default -> retval, err = ParseByArg(rpcInput, blockParser.ParserArg, dataSource) with default.
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
 	}
@@ -74,6 +76,12 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 
 	return retval, nil
 
+}
+
+func ParseDefault(rpcInput RPCInput, input []string, dataSource int) []interface{} {
+	retArr := make([]interface{}, 0)
+	retArr = append(retArr, fmt.Sprintf("%s", input[0]))
+	return retArr
 }
 
 //this function returns the block that was requested,

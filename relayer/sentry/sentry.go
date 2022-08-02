@@ -179,7 +179,7 @@ type Sentry struct {
 	specMu     sync.RWMutex
 	specHash   []byte
 	serverSpec spectypes.Spec
-	serverApis map[string]spectypes.ServiceApi
+	ServerApis map[string]spectypes.ServiceApi
 	taggedApis map[string]spectypes.ServiceApi
 
 	// (client only)
@@ -329,7 +329,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	// Update
 
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
-	serverApis := map[string]spectypes.ServiceApi{}
+	ServerApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
 		for _, api := range spec.Spec.Apis {
@@ -348,9 +348,9 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
 					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-					serverApis[processedName] = api
+					ServerApis[processedName] = api
 				} else {
-					serverApis[api.Name] = api
+					ServerApis[api.Name] = api
 				}
 
 				if api.Parsing.GetFunctionTag() != "" {
@@ -362,7 +362,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
 	s.serverSpec = spec.Spec
-	s.serverApis = serverApis
+	s.ServerApis = ServerApis
 	s.taggedApis = taggedApis
 
 	return nil
@@ -1245,7 +1245,7 @@ func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
 	//TODO: make it faster and better by not doing a regex instead using a better algorithm
-	for apiName, api := range s.serverApis {
+	for apiName, api := range s.ServerApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
 			log.Println("error: Compile", apiName, err)
@@ -1262,7 +1262,7 @@ func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
 
-	val, ok := s.serverApis[name]
+	val, ok := s.ServerApis[name]
 	return val, ok
 }
 

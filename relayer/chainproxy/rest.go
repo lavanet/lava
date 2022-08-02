@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -73,12 +72,8 @@ func (m RestMessage) GetResult() json.RawMessage {
 	return m.Result
 }
 
-func (m RestMessage) ParseBlock(block string) (int64, error) {
-	blockNum, err := strconv.ParseInt(block, 0, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
-	}
-	return blockNum, nil
+func (m RestMessage) ParseBlock(inp string) (int64, error) {
+	return parser.ParseDefaultBlockParameter(inp)
 }
 
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {

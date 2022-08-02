@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -212,6 +213,54 @@ func osmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 
 }
 
+// LavaTests
+func lavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
+	if apiInterface == "rest" {
+		serverApis := s.ServerApis
+		clientAdress := clientCtx.FromAddress
+		mostImportantApisToTest := []string{
+			"/blocks/latest",
+			"/lavanet/lava/pairing/providers/LAV1",
+			"/lavanet/lava/pairing/clients/LAV1",
+			fmt.Sprintf("/lavanet/lava/pairing/get_pairing/LAV1/%s", clientAdress),
+			fmt.Sprintf("/lavanet/lava/pairing/verify_pairing/LAV1/%s/%s/%d", clientAdress, clientAdress, 78),
+			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
+			"/cosmos/gov/v1beta1/proposals",
+			"/lavanet/lava/spec/spec",
+			"/blocks/latest",
+			"/blocks/1"}
+
+		for _, api := range mostImportantApisToTest {
+			for i := 0; i < 100; i++ {
+				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
+				if err != nil {
+					log.Println(err)
+					return err
+				} else {
+					prettyPrintReply(*reply, "LavaTestsResponse")
+				}
+			}
+		}
+		// finish with testing all other API methods that dont require parameters
+		for _, api := range serverApis {
+			if strings.Contains(api.Name, "/{") {
+				continue
+			}
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api.Name, "")
+			if err != nil {
+				log.Println(err)
+				return err
+			} else {
+				prettyPrintReply(*reply, "LavaTestsResponse")
+			}
+		}
+		return nil
+	} else {
+		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
+		return nil
+	}
+}
+
 func TestClient(
 	ctx context.Context,
 	clientCtx client.Context,
@@ -263,6 +312,7 @@ func TestClient(
 
 	//
 	// Run tests
+	var testErrors error = nil
 	switch chainID {
 	case "ETH1", "ETH4":
 		ethTests(ctx, chainProxy, privKey)
@@ -270,7 +320,13 @@ func TestClient(
 		terraTests(ctx, chainProxy, privKey, apiInterface)
 	case "COS3":
 		osmosisTests(ctx, chainProxy, privKey, apiInterface)
+	case "LAV1":
+		testErrors = lavaTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
 	}
 
-	log.Printf("%s Client test  complete \n", chainID)
+	if testErrors != nil {
+		log.Fatalln(fmt.Sprintf("%s Client test failed with errors %s", chainID, testErrors))
+	} else {
+		log.Printf("%s Client test  complete \n", chainID)
+	}
 }

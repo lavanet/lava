@@ -38,6 +38,7 @@ enum PARSER_FUNC{
   PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
   PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
   PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
+  DEFAULT = 5; //means parameters are non related to block, and should fetch latest block
 }
 
 message SpecCategory{
