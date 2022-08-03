@@ -46,7 +46,7 @@ func TestUnstakeClient(t *testing.T) {
 		valid   bool
 	}{
 		{"HappyFlow", specName, true},
-		{"WrongChain", "Not" + specName, false}, //todo yarom
+		{"WrongChain", "Not" + specName, false},
 	}
 
 	for _, tt := range tests {
@@ -97,7 +97,7 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 		chainID string
 	}{
 		{"SameChain", specName},
-		{"WrongChain", "not" + specName}, //todo yarom
+		{"WrongChain", "not" + specName},
 	}
 
 	for _, tt := range tests {

@@ -64,23 +64,23 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) Chain
 func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCKNUM)
 	if !ok {
-		return parser.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
+		return spectypes.NOT_APPLICABLE, errors.New(spectypes.GET_BLOCKNUM + " tag function not found")
 	}
 
 	params := []interface{}{}
-	nodeMsg, err := cp.NewMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+	nodeMsg, err := cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	_, err = nodeMsg.Send(ctx)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg.msg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return parser.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, err
 	}
 
 	return blocknum, nil
@@ -99,7 +99,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
-		nodeMsg, err = cp.NewMessage(&serviceApi, serviceApi.GetName(), parser.LATEST_BLOCK, params)
+		nodeMsg, err = cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
 	}
 
 	if err != nil {
@@ -291,7 +291,6 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
-
 	//
 	// Wrap result back to json
 	replyMsg := JsonrpcMessage{

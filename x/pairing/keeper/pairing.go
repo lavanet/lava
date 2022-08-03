@@ -14,7 +14,7 @@ import (
 
 const INVALID_INDEX = -2
 
-func (k Keeper) verifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, isNew bool, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
 	logger := k.Logger(ctx)
 	//TODO: add support for spec changes
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
@@ -57,7 +57,7 @@ func (k Keeper) verifyPairingData(ctx sdk.Context, chainID string, clientAddress
 //first argument has all metadata, second argument is only the addresses
 func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
-	clientStakeEntry, err := k.verifyPairingData(ctx, chainID, clientAddress, true, currentEpoch)
+	clientStakeEntry, err := k.VerifyPairingData(ctx, chainID, clientAddress, currentEpoch)
 	if err != nil {
 		//user is not valid for pairing
 		return nil, fmt.Errorf("invalid user for pairing: %s", err)
@@ -74,8 +74,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, block uint64) (isValidPairing bool, isOverlap bool, userStake *epochstoragetypes.StakeEntry, foundIndex int, errorRet error) {
 
 	epochStart, blockInEpoch := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
-	//TODO: this is by spec ID but spec might change, and we validate a past spec, and all our stuff are by specName, this can be a problem
-	userStake, err := k.verifyPairingData(ctx, chainID, clientAddress, false, epochStart)
+	userStake, err := k.VerifyPairingData(ctx, chainID, clientAddress, epochStart)
 	if err != nil {
 		//user is not valid for pairing
 		return false, false, nil, INVALID_INDEX, fmt.Errorf("invalid user for pairing: %s", err)

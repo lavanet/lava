@@ -34,9 +34,9 @@ message BlockParser {
 
 enum PARSER_FUNC{
   EMPTY = 0;
-  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index]
-  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object]
-  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator]
+  PARSE_BY_ARG = 1; //means parameters are ordered and flat expected areguments are: [param index] (example: PARAMS: [<#BlockNum>,"banana"])
+  PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
+  PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
   PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
   DEFAULT = 5; //means parameters are non related to block, and should fetch latest block
 }

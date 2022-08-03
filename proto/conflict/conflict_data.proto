@@ -1,0 +1,23 @@
+syntax = "proto3";
+package lavanet.lava.conflict;
+
+option go_package = "github.com/lavanet/lava/x/conflict/types";
+import "gogoproto/gogo.proto";
+import "pairing/relay.proto";
+
+
+message ResponseConflict { 
+    ConflictRelayData conflictRelayData0 = 1;
+    ConflictRelayData conflictRelayData1 =2;
+}
+
+
+message ConflictRelayData {
+    lavanet.lava.pairing.RelayRequest request = 1;
+    lavanet.lava.pairing.RelayReply  reply = 2;
+}
+
+message FinalizationConflict {
+    lavanet.lava.pairing.RelayReply relayReply0 =1;
+    lavanet.lava.pairing.RelayReply relayReply1 =2;
+}
