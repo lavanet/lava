@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -17,7 +18,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 	if apiInterface == "rest" {
 		serverApis := s.ServerApis
 		clientAdress := clientCtx.FromAddress
-		mostImportantApisToTest := []string{
+		mostImportantApisToTest := map[string][]string{http.MethodGet: {
 			"/blocks/latest",
 			"/lavanet/lava/pairing/providers/LAV1",
 			"/lavanet/lava/pairing/clients/LAV1",
@@ -26,16 +27,20 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
 			"/cosmos/gov/v1beta1/proposals",
 			"/lavanet/lava/spec/spec",
-			"/blocks/1"}
+			"/blocks/1"},
+			http.MethodPost: {},
+		}
 
-		for _, api := range mostImportantApisToTest {
-			for i := 0; i < 100; i++ {
-				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
-				if err != nil {
-					log.Println(err)
-					return err
-				} else {
-					prettyPrintReply(*reply, "LavaTestsResponse")
+		for key, api := range mostImportantApisToTest {
+			for _, api_value := range api {
+				for i := 0; i < 100; i++ {
+					reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", key)
+					if err != nil {
+						log.Println(err)
+						return err
+					} else {
+						prettyPrintReply(*reply, "LavaTestsResponse")
+					}
 				}
 			}
 		}
