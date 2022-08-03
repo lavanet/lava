@@ -51,7 +51,7 @@ screen -S portals -X screen -t win11 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win12 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3336 FTM250 jsonrpc --from user3"
 screen -S portals -X screen -t win13 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3337 COS4 rest --from user2"
 screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3338 COS4 tendermintrpc --from user2"
-screen -S portals -X screen -t win13 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3337 LAV1 rest --from user4"
-screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3338 LAV1 tendermintrpc --from user4"
+screen -S portals -X screen -t win13 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3339 LAV1 rest --from user4"
+screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user4"
 echo "--- setting up screens done ---"
 screen -ls

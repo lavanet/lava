@@ -3769,12 +3769,12 @@
           "enabled": true,
           "apiInterfaces": [
             {
-            "interface": "rest",
-            "type": "get",
-            "extra_compute_units": "0"
+              "interface": "rest",
+              "type": "get",
+              "extra_compute_units": "0"
             }
           ]
-          }
+        }
       ]
     }
   ],
