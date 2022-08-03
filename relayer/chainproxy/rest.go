@@ -26,7 +26,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
-	headerType     string
+	connectionType string
 }
 
 type RestChainProxy struct {
@@ -154,19 +154,20 @@ func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
-func (cp *RestChainProxy) ParseMsg(path string, data []byte, headerType string) (NodeMessage, error) {
+func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
+
 	nodeMsg := &RestMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
-		headerType: headerType, // POST,GET etc..
+		cp:             cp,
+		serviceApi:     serviceApi,
+		path:           path,
+		msg:            data,
+		connectionType: connectionType, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -190,7 +191,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data))
+		return c.SendString(string(reply.Data) + "testPost")
 	})
 
 	//
@@ -205,7 +206,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data))
+		return c.SendString(string(reply.Data) + "testGet")
 	})
 	//
 	// Go
@@ -224,19 +225,27 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *RestMessage) GetHeader() string {
+	return nm.connectionType
+}
+
 func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
 
-	var headerTypeSlected string = http.MethodGet
-	// if headerType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	if nm.headerType != "" {
-		headerTypeSlected = nm.headerType
+	var connectionTypeSlected string = http.MethodGet
+	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
+	if nm.connectionType != "" {
+		connectionTypeSlected = nm.connectionType
 	}
+	more_data := ""
 
+	more_data += fmt.Sprintf("headerType: %s\n", connectionTypeSlected)
+	more_data += fmt.Sprintf("headerTypeInStruct: %s\n", nm.connectionType)
+	more_data += fmt.Sprintf("data_sent: %s %s\n", (nm.cp.nodeUrl + nm.path), nm.msg)
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(headerTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
+	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
@@ -253,6 +262,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
@@ -262,5 +272,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Data: body,
 	}
 	nm.Result = body
+
+	reply.Data = []byte(string(reply.Data) + more_data)
 	return reply, nil
 }

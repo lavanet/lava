@@ -51841,6 +51841,8 @@ definitions:
             type: string
           sync:
             type: string
+      connection_type:
+        type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:

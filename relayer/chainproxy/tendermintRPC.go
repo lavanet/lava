@@ -27,6 +27,10 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 }
 
+func (nm *TendemintRpcMessage) GetHeader() string {
+	return ""
+}
+
 func (m TendemintRpcMessage) GetParams() []interface{} {
 	return m.msg.Params
 }
@@ -129,8 +133,8 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 	return nodeMsg, nil
 }
 
-func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, headerType string) (NodeMessage, error) {
-	// headerType is currently only used only in rest api
+func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used only in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {

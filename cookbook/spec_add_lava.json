@@ -930,7 +930,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": true,
+          "enabled": false,
           "apiInterfaces": [
             {
               "interface": "rest",
@@ -954,7 +954,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "rest",
@@ -978,7 +978,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "rest",
@@ -1374,7 +1374,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
             "interface": "rest",

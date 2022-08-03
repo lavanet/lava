@@ -77,6 +77,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData := map[string]string{"client": msg.Creator}
 		eventData["voteID"] = conflictVote.Index
 		eventData["chainID"] = conflictVote.ChainID
+		eventData["connectionType"] = msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType
 		eventData["apiURL"] = conflictVote.ApiUrl
 		eventData["requestData"] = string(conflictVote.RequestData)
 		eventData["requestBlock"] = strconv.FormatUint(conflictVote.RequestBlock, 10)

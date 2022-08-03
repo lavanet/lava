@@ -158,8 +158,8 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 	return nil, errors.New("api not supported")
 }
 
-func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, headerType string) (NodeMessage, error) {
-	// headerType is currently only used in rest API.
+func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used in rest API.
 	// Unmarshal request
 	var msg JsonrpcMessage
 	err := json.Unmarshal(data, &msg)
@@ -274,6 +274,10 @@ func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 
 func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
+}
+
+func (nm *JrpcMessage) GetHeader() string {
+	return ""
 }
 
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
