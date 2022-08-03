@@ -44,6 +44,11 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			if strings.Contains(api.Name, "/{") {
 				continue
 			}
+
+			for _, api_interface := range api.ApiInterfaces {
+
+			}
+
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api.Name, "")
 			if err != nil {
 				log.Println(err)

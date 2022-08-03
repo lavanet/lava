@@ -95,7 +95,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)))
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -158,8 +158,8 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 	return nil, errors.New("api not supported")
 }
 
-func (cp *JrpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
-	//
+func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, headerType string) (NodeMessage, error) {
+	// headerType is currently only used in rest API.
 	// Unmarshal request
 	var msg JsonrpcMessage
 	err := json.Unmarshal(data, &msg)
@@ -233,7 +233,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			}
 			log.Println("in <<< ", string(msg))
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
+			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				log.Println(err)
 				break
@@ -249,7 +249,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Post("/:dappId", func(c *fiber.Ctx) error {
 		log.Println("in <<< ", string(c.Body()))
-		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
 			return nil

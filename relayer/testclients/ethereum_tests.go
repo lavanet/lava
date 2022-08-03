@@ -22,14 +22,14 @@ func EthTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 		blockNumReply = nil
 		for i := 0; i < 10; i++ {
 
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_BLOCKNUMBER)
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_BLOCKNUMBER, "")
 			if err != nil {
 				log.Println(err)
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_ETH_BLOCKNUMBER")
 				blockNumReply = reply
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE)
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_GETBALANCE, "")
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -58,13 +58,13 @@ func EthTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 		}
 		for i := 0; i < 10; i++ {
 			request_data := fmt.Sprintf(JSONRPC_ETH_GETBLOCK_FORMAT, latestBlock-7)
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", request_data)
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", request_data, "")
 			if err != nil {
 				log.Println(err)
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_ETH_GETBLOCKBYNUMBER")
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_NEWFILTER)
+			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_ETH_NEWFILTER, "")
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -76,7 +76,7 @@ func EthTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 
 	//
 	// Expected unsupported API:
-	reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_UNSUPPORTED)
+	reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_UNSUPPORTED, "")
 	if err != nil {
 		log.Println(err)
 	} else {

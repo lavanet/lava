@@ -27,7 +27,7 @@ type NodeMessage interface {
 type ChainProxy interface {
 	Start(context.Context) error
 	GetSentry() *sentry.Sentry
-	ParseMsg(string, []byte) (NodeMessage, error)
+	ParseMsg(string, []byte, string) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
@@ -89,11 +89,12 @@ func SendRelay(
 	privKey *btcec.PrivateKey,
 	url string,
 	req string,
+	headerType string,
 ) (*pairingtypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
-	nodeMsg, err := cp.ParseMsg(url, []byte(req))
+	nodeMsg, err := cp.ParseMsg(url, []byte(req), headerType)
 	if err != nil {
 		return nil, err
 	}

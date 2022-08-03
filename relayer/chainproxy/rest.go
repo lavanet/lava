@@ -26,6 +26,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
+	headerType     string
 }
 
 type RestChainProxy struct {
@@ -85,7 +86,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil)
+		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
 	} else {
 		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
 	}
@@ -153,7 +154,7 @@ func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
-func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
+func (cp *RestChainProxy) ParseMsg(path string, data []byte, headerType string) (NodeMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
@@ -165,6 +166,7 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error
 		serviceApi: serviceApi,
 		path:       path,
 		msg:        data,
+		headerType: headerType, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -181,7 +183,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		path := "/" + c.Params("*")
 
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
@@ -196,7 +198,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
@@ -227,11 +229,14 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
 
-	//
-	// TODO: some APIs use POST!
+	var headerTypeSlected string = http.MethodGet
+	// if headerType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
+	if nm.headerType != "" {
+		headerTypeSlected = nm.headerType
+	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(http.MethodGet, nm.cp.nodeUrl+nm.path, msgBuffer)
+	req, err := http.NewRequest(headerTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err

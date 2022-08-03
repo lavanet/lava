@@ -416,7 +416,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	//
 	// Parse message, check valid api, etc
-	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data)
+	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, "")
 	if err != nil {
 		return nil, err
 	}
@@ -642,7 +642,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		}
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
-		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData)
+		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData, "")
 		if err != nil {
 			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", voteParams.ChainID, err)
 			return
