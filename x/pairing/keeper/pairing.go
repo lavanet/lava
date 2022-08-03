@@ -22,8 +22,23 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 		return nil, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}
 	earliestSavedEpoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
-	if earliestSavedEpoch > block {
+	if block < earliestSavedEpoch {
 		return nil, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
+	}
+
+	requestedEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+	if err != nil {
+		return nil, err
+	}
+
+	currentEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
+
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
+	if requestedEpochStart+blocksToSave < currentEpochStart {
+		return nil, err
 	}
 	verifiedUser := false
 
