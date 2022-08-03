@@ -176,17 +176,15 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app := fiber.New(fiber.Config{})
 
 	//
-	// Catch all
-	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+	// Catch Post
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()))
 		if err != nil {
 			log.Println(err)
-			//
-			// TODO: better errors
-			return c.SendString(`{"error": "unsupported api"}`)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
@@ -194,9 +192,19 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	})
 
 	//
-	// TODO: add POST support
-	//app.Post("/", func(c *fiber.Ctx) error {})
+	// Catch the others
+	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+		path := "/" + c.Params("*")
+		log.Println("in <<< ", path)
+		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		if err != nil {
+			log.Println(err)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
+		}
 
+		log.Println("out >>> len", len(string(reply.Data)))
+		return c.SendString(string(reply.Data))
+	})
 	//
 	// Go
 	err := app.Listen(listenAddr)
@@ -221,6 +229,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	//
 	// TODO: some APIs use POST!
+
 	msgBuffer := bytes.NewBuffer(nm.msg)
 	req, err := http.NewRequest(http.MethodGet, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {

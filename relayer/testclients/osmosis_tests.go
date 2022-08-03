@@ -35,7 +35,7 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 					log.Println(err)
 					return err
 				} else {
-					prettyPrintReply(*reply, "LavaTestsResponse")
+					prettyPrintReply(*reply, "OsmosisTestsResponse")
 				}
 			}
 		}
