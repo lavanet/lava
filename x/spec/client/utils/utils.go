@@ -2,8 +2,10 @@ package utils
 
 import (
 	"os"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -79,19 +81,36 @@ func (pcj SpecAddProposalJSON) ToSpecs() []types.Spec {
 }
 
 // Parse spec add proposal JSON form file
-func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (SpecAddProposalJSON, error) {
-	proposal := SpecAddProposalJSON{}
+func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret SpecAddProposalJSON, err error) {
+	for _, fileName := range strings.Split(proposalFile, ",") {
+		proposal := SpecAddProposalJSON{}
 
-	contents, err := os.ReadFile(proposalFile)
-	if err != nil {
-		return proposal, err
+		contents, err := os.ReadFile(fileName)
+		if err != nil {
+			return proposal, err
+		}
+
+		if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
+			return proposal, err
+		}
+		if len(ret.Specs) > 0 {
+			ret.Specs = append(ret.Specs, proposal.Specs...)
+			ret.Description = proposal.Description + " " + ret.Description
+			ret.Title = proposal.Title + " " + ret.Title
+			retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
+			if err != nil {
+				return proposal, err
+			}
+			proposalDeposit, err := sdk.ParseCoinNormalized(proposal.Deposit)
+			if err != nil {
+				return proposal, err
+			}
+			ret.Deposit = retDeposit.Add(proposalDeposit).String()
+		} else {
+			ret = proposal
+		}
 	}
-
-	if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
-		return proposal, err
-	}
-
-	return proposal, nil
+	return ret, nil
 }
 
 func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
