@@ -742,6 +742,9 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	var providers []epochstoragetypes.StakeEntry
 	var relayReply *types.RelayReply
 	var nonce uint32
+
+	wrongProviderIndex := 1
+GetWrongProvider:
 	for {
 		relayReply = &types.RelayReply{
 			Nonce: nonce,
@@ -756,16 +759,26 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 
 		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
-
-		if providers[index0].Address != ts.providers[0].address.String() {
-			if providers[index0+1].Address != ts.providers[0].address.String() && index0+1 != index1 {
-				break
+		// two providers returned by GetIndexForVrf and the provider getting tested need 1 more to perform this test properly
+		require.Greater(t, len(providers), 3)
+		nonce += 1
+		// recalculate if for some reason vrf function returned the provider getting tested's index (should not happen but just to be safe)
+		if providers[index0].Address == ts.providers[0].address.String() {
+			continue
+		} else if providers[index1].Address == ts.providers[0].address.String() {
+			continue
+		}
+		// loop through all the providers and use the first one that is not getting asked to do vrf
+		for i := 1; i < len(providers); i++ {
+			if i == int(index0) || i == int(index1) {
+				continue
+			} else {
+				wrongProviderIndex = i
+				break GetWrongProvider
 			}
 		}
-		nonce += 1
-	}
-	index0 += 1 //send to wrong provider
 
+	}
 	vrf_res0, vrf_proof0 := utils.ProveVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, false, currentEpoch)
 	dataReliability0 := &types.VRFData{
 		Differentiator: false,
@@ -781,7 +794,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 
 	QoSDR := &types.QualityOfServiceReport{Latency: sdk.NewDecWithPrec(1, 0), Availability: sdk.NewDecWithPrec(1, 0), Sync: sdk.NewDecWithPrec(1, 0)}
 	relayRequestWithDataReliability0 := &types.RelayRequest{
-		Provider:        providers[index0].Address,
+		Provider:        providers[wrongProviderIndex].Address,
 		ApiUrl:          "",
 		Data:            []byte(ts.spec.Apis[0].Name),
 		SessionId:       uint64(1),
@@ -797,7 +810,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	relayRequestWithDataReliability0.Sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequestWithDataReliability0)
 	require.Nil(t, err)
 
-	provider := ts.getProvider(providers[index0].Address)
+	provider := ts.getProvider(providers[wrongProviderIndex].Address)
 	relaysRequests := []*types.RelayRequest{relayRequestWithDataReliability0}
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
