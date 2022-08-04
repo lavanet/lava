@@ -4,11 +4,8 @@ __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json --from alice --gas-adjustment "1.5" --gas "auto" -y
-lavad tx gov vote 1 yes -y --from alice
-# first vote is too much gas consumption with another spec so seperated to another vote.
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json --from alice --gas-adjustment "1.5" --gas "auto" -y
-lavad tx gov vote 2 yes -y --from alice
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json --from alice --gas-adjustment "1.5" --gas "auto" -y
+lavad tx gov vote 1 yes -y --from alice --gas "auto"
 
 sleep 4
 lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
