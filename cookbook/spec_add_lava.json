@@ -39,7 +39,7 @@
         {
           "name": "abci_query",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -65,7 +65,7 @@
         {
           "name": "block",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -103,7 +103,7 @@
         {
           "name": "block_by_hash",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -127,7 +127,7 @@
         {
           "name": "block_results",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -153,7 +153,7 @@
         {
           "name": "block_search",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -177,7 +177,7 @@
         {
           "name": "blockchain",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -203,7 +203,7 @@
         {
           "name": "broadcast_evidence",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -227,7 +227,7 @@
         {
           "name": "broadcast_tx_async",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -251,7 +251,7 @@
         {
           "name": "broadcast_tx_commit",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -275,7 +275,7 @@
         {
           "name": "broadcast_tx_sync",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -299,7 +299,7 @@
         {
           "name": "check_tx",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -323,7 +323,7 @@
         {
           "name": "commit",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -349,7 +349,7 @@
         {
           "name": "consensus_params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -375,7 +375,7 @@
         {
           "name": "consensus_state",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -399,7 +399,7 @@
         {
           "name": "dump_consensus_state",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -423,7 +423,7 @@
         {
           "name": "genesis",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -447,7 +447,7 @@
         {
           "name": "genesis_chunked",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -471,7 +471,7 @@
         {
           "name": "health",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -495,7 +495,7 @@
         {
           "name": "net_info",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -519,7 +519,7 @@
         {
           "name": "num_unconfirmed_txs",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -579,7 +579,7 @@
         {
           "name": "subscribe",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -603,7 +603,7 @@
         {
           "name": "tx",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -627,7 +627,7 @@
         {
           "name": "tx_search",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -651,7 +651,7 @@
         {
           "name": "unconfirmed_txs",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -675,7 +675,7 @@
         {
           "name": "unsubscribe",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -699,7 +699,7 @@
         {
           "name": "unsubscribe_all",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -723,7 +723,7 @@
         {
           "name": "validators",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -773,16 +773,16 @@
         {
           "name": "/syncing",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -877,9 +877,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -901,9 +901,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -918,7 +918,7 @@
         {
           "name": "/txs",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -942,7 +942,7 @@
         {
           "name": "/staking/delegators/{delegatorAddr}/delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -966,7 +966,7 @@
         {
           "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -996,9 +996,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1035,7 +1035,7 @@
           },{
           "name": "/ibc/apps/interchain_accounts/controller/v1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1058,7 +1058,7 @@
           },{
           "name": "/ibc/core/connection/v1/client_connections/{client_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1088,9 +1088,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1111,9 +1111,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1134,9 +1134,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1157,9 +1157,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1180,9 +1180,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1196,7 +1196,7 @@
           },{
           "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1219,7 +1219,7 @@
           },{
           "name": "/ibc/client/v1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1249,9 +1249,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1323,9 +1323,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1346,9 +1346,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1385,7 +1385,7 @@
           },{
           "name": "/ibc/apps/transfer/v1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1415,9 +1415,9 @@
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1431,7 +1431,7 @@
           },{
           "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1454,16 +1454,16 @@
           },{
           "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1477,16 +1477,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1500,16 +1500,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1523,16 +1523,16 @@
           },{
           "name": "/lavanet/lava/conflict/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1569,16 +1569,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/supply",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1592,16 +1592,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/community_pool",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1615,16 +1615,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1638,7 +1638,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1661,16 +1661,16 @@
           },{
           "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1684,7 +1684,7 @@
           },{
           "name": "/ibc/core/client/v1/upgraded_consensus_states",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1730,16 +1730,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1753,7 +1753,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1776,16 +1776,16 @@
           },{
           "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1799,16 +1799,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/params/{params_type}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1822,16 +1822,16 @@
           },{
           "name": "/cosmos/mint/v1beta1/annual_provisions",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1845,7 +1845,7 @@
           },{
           "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1868,16 +1868,16 @@
           },{
           "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1891,16 +1891,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1914,16 +1914,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -1937,7 +1937,7 @@
           },{
           "name": "/ibc/core/channel/v1/connections/{connection}/channels",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -1960,7 +1960,7 @@
           },{
           "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2006,16 +2006,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2029,16 +2029,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/historical_info/{height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2052,7 +2052,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2075,16 +2075,16 @@
           },{
           "name": "/lavanet/lava/epochstorage/epoch_details",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2098,16 +2098,16 @@
           },{
           "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2121,16 +2121,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2144,16 +2144,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2167,16 +2167,16 @@
           },{
           "name": "/cosmos/upgrade/v1beta1/module_versions",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2190,16 +2190,16 @@
           },{
           "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2213,7 +2213,7 @@
           },{
           "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2236,16 +2236,16 @@
           },{
           "name": "/lavanet/lava/pairing/client_payment_storage/{index}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2259,16 +2259,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2282,16 +2282,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2305,16 +2305,16 @@
           },{
           "name": "/cosmos/slashing/v1beta1/signing_infos",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2328,7 +2328,7 @@
           },{
           "name": "/ibc/core/connection/v1/connections/{connection_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2351,16 +2351,16 @@
           },{
           "name": "/lavanet/lava/pairing/epoch_payments",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2374,16 +2374,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/denoms_metadata",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2397,16 +2397,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2420,16 +2420,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2443,16 +2443,16 @@
           },{
           "name": "/cosmos/params/v1beta1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2466,7 +2466,7 @@
           },{
           "name": "/ibc/core/client/v1/client_status/{client_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2489,16 +2489,16 @@
           },{
           "name": "/lavanet/lava/pairing/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2512,16 +2512,16 @@
           },{
           "name": "/cosmos/auth/v1beta1/accounts",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2535,16 +2535,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2581,16 +2581,16 @@
           },{
           "name": "/cosmos/tx/v1beta1/txs/block/{height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2604,7 +2604,7 @@
           },{
           "name": "/ibc/apps/interchain_accounts/host/v1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2627,7 +2627,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2650,16 +2650,16 @@
           },{
           "name": "/lavanet/lava/epochstorage/stake_storage",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2673,16 +2673,16 @@
           },{
           "name": "/cosmos/auth/v1beta1/accounts/{address}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2696,16 +2696,16 @@
           },{
           "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2719,7 +2719,7 @@
           },{
           "name": "/ibc/core/connection/v1/connections",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2742,16 +2742,16 @@
           },{
           "name": "/lavanet/lava/spec/spec/{index}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2765,16 +2765,16 @@
           },{
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "0"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "PARSE_BY_ARG"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2788,16 +2788,16 @@
           },{
           "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2811,16 +2811,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2834,7 +2834,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2857,16 +2857,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2880,16 +2880,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2903,16 +2903,16 @@
           },{
           "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2926,16 +2926,16 @@
           },{
           "name": "/cosmos/evidence/v1beta1/evidence",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2949,16 +2949,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/pool",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2972,7 +2972,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -2995,16 +2995,16 @@
           },{
           "name": "/lavanet/lava/epochstorage/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3018,16 +3018,16 @@
           },{
           "name": "/cosmos/tx/v1beta1/txs/{hash}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3041,16 +3041,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3064,16 +3064,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3087,16 +3087,16 @@
           },{
           "name": "/lavanet/lava/spec/chain/{chainID}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3110,7 +3110,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3133,7 +3133,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3156,16 +3156,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3179,16 +3179,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3202,7 +3202,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3248,7 +3248,7 @@
           },{
           "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3271,16 +3271,16 @@
           },{
           "name": "/cosmos/base/tendermint/v1beta1/syncing",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3294,16 +3294,16 @@
           },{
           "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3317,7 +3317,7 @@
           },{
           "name": "/ibc/apps/transfer/v1/denom_traces",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3340,16 +3340,16 @@
           },{
           "name": "/lavanet/lava/spec/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3363,16 +3363,16 @@
           },{
           "name": "/cosmos/distribution/v1beta1/params",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3386,7 +3386,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3409,7 +3409,7 @@
           },{
           "name": "/ibc/core/client/v1/client_states/{client_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3432,7 +3432,7 @@
           },{
           "name": "/ibc/core/client/v1/upgraded_client_states",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3455,7 +3455,7 @@
           },{
           "name": "/ibc/core/client/v1/client_states",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3478,7 +3478,7 @@
           },{
           "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3501,16 +3501,16 @@
           },{
           "name": "/cosmos/upgrade/v1beta1/current_plan",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3524,7 +3524,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3570,16 +3570,16 @@
           },{
           "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3593,16 +3593,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3616,7 +3616,7 @@
           },{
           "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3639,7 +3639,7 @@
           },{
           "name": "/ibc/core/client/v1/consensus_states/{client_id}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -3662,16 +3662,16 @@
           },{
           "name": "/lavanet/lava/pairing/epoch_payments/{index}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3708,16 +3708,16 @@
           },{
           "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3731,16 +3731,16 @@
           },{
           "name": "/cosmos/staking/v1beta1/validators",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
@@ -3754,16 +3754,16 @@
           },{
           "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
           "category": {
-            "deterministic": false,
+            "deterministic": true,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            ""
+            "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,

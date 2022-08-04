@@ -2,18 +2,22 @@ package testclients
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/relayer/chainproxy"
 )
 
-func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) {
+func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) error {
+	errors := []string{}
 	if apiInterface == "rest" {
 		for i := 0; i < 10; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST)
 			if err != nil {
 				log.Println("1:" + err.Error())
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
@@ -23,18 +27,21 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS)
 			if err != nil {
 				log.Println(err)
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH)
 			if err != nil {
 				log.Println(err)
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "")
 			if err != nil {
 				log.Println(err)
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 				log.Println("reply URIRPC_TERRA_STATUS", reply)
@@ -42,6 +49,7 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "")
 			if err != nil {
 				log.Println(err)
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "URIRPC_TERRA_HEALTH")
 			}
@@ -49,5 +57,12 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 	} else {
 		log.Println("ERROR: not supported apiInterface: ", apiInterface)
 	}
+
+	// if we had any errors we return them here
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+
+	return nil
 
 }

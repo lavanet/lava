@@ -14,8 +14,10 @@ import (
 
 // LavaTests
 func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
+	errors := []string{}
 	if apiInterface == "rest" {
-		serverApis := s.ServerApis
+
+		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
 		mostImportantApisToTest := []string{
 			"/blocks/latest",
@@ -30,31 +32,46 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 
 		for _, api := range mostImportantApisToTest {
 			for i := 0; i < 100; i++ {
+				log.Println(fmt.Sprintf("%s", api))
 				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
 				if err != nil {
 					log.Println(err)
-					return err
+					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "LavaTestsResponse")
 				}
 			}
 		}
+		log.Println("continuing to other spec apis")
 		// finish with testing all other API methods that dont require parameters
-		for _, api := range serverApis {
-			if strings.Contains(api.Name, "/{") {
+		allSpecNames, err := s.GetAllSpecNames(ctx)
+		if err != nil {
+			log.Println(err)
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		for _, api := range allSpecNames {
+			if strings.Contains(api, "/{") {
 				continue
 			}
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api.Name, "")
+			log.Println(fmt.Sprintf("%s", api))
+			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
 			if err != nil {
 				log.Println(err)
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "LavaTestsResponse")
 			}
 		}
-		return nil
+
 	} else {
 		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
 		return nil
 	}
+
+	// if we had any errors we return them here
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+
+	return nil
 }

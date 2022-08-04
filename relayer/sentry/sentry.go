@@ -207,7 +207,7 @@ type Sentry struct {
 	specMu     sync.RWMutex
 	specHash   []byte
 	serverSpec spectypes.Spec
-	ServerApis map[string]spectypes.ServiceApi
+	serverApis map[string]spectypes.ServiceApi
 	taggedApis map[string]spectypes.ServiceApi
 
 	// (client only)
@@ -344,6 +344,55 @@ func (s *Sentry) GetServicersToPairCount() int64 {
 	return int64(len(s.pairingAddresses))
 }
 
+func (s *Sentry) GetAllSpecNames(ctx context.Context) ([]string, error) {
+	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+		ChainID: s.ChainID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	serverApis, _ := s.getSpecPopulated(spec)
+	var allSpecNames []string
+	for _, api := range serverApis {
+		allSpecNames = append(allSpecNames, api.Name)
+	}
+	return allSpecNames, nil
+}
+
+func (s *Sentry) getSpecPopulated(spec *spectypes.QueryChainResponse) (map[string]spectypes.ServiceApi, map[string]spectypes.ServiceApi) {
+	serverApis := map[string]spectypes.ServiceApi{}
+	taggedApis := map[string]spectypes.ServiceApi{}
+	if spec.Spec.Enabled {
+		for _, api := range spec.Spec.Apis {
+			if !api.Enabled {
+				continue
+			}
+			//
+			// TODO: find a better spot for this (more optimized, precompile regex, etc)
+			for _, apiInterface := range api.ApiInterfaces {
+				if apiInterface.Interface != s.ApiInterface {
+					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					continue
+				}
+				if apiInterface.Interface == "rest" {
+					re := regexp.MustCompile(`{[^}]+}`)
+					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
+					processedName = regexp.QuoteMeta(processedName)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					serverApis[processedName] = api
+				} else {
+					serverApis[api.Name] = api
+				}
+
+				if api.Parsing.GetFunctionTag() != "" {
+					taggedApis[api.Parsing.GetFunctionTag()] = api
+				}
+			}
+		}
+	}
+	return serverApis, taggedApis
+}
+
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
@@ -364,42 +413,13 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	//
 	// Update
-
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
-	ServerApis := map[string]spectypes.ServiceApi{}
-	taggedApis := map[string]spectypes.ServiceApi{}
-	if spec.Spec.Enabled {
-		for _, api := range spec.Spec.Apis {
-			if !api.Enabled {
-				continue
-			}
-			//
-			// TODO: find a better spot for this (more optimized, precompile regex, etc)
-			for _, apiInterface := range api.ApiInterfaces {
-				if apiInterface.Interface != s.ApiInterface {
-					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
-					continue
-				}
-				if apiInterface.Interface == "rest" {
-					re := regexp.MustCompile(`{[^}]+}`)
-					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
-					processedName = regexp.QuoteMeta(processedName)
-					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-					ServerApis[processedName] = api
-				} else {
-					ServerApis[api.Name] = api
-				}
+	serverApis, taggedApis := s.getSpecPopulated(spec)
 
-				if api.Parsing.GetFunctionTag() != "" {
-					taggedApis[api.Parsing.GetFunctionTag()] = api
-				}
-			}
-		}
-	}
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
 	s.serverSpec = spec.Spec
-	s.ServerApis = ServerApis
+	s.serverApis = serverApis
 	s.taggedApis = taggedApis
 
 	return nil
@@ -1324,7 +1344,7 @@ func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
 	//TODO: make it faster and better by not doing a regex instead using a better algorithm
-	for apiName, api := range s.ServerApis {
+	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
 			log.Println("error: Compile", apiName, err)
@@ -1341,7 +1361,7 @@ func (s *Sentry) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
 
-	val, ok := s.ServerApis[name]
+	val, ok := s.serverApis[name]
 	return val, ok
 }
 

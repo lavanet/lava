@@ -70,9 +70,9 @@ func TestClient(
 	var testErrors error = nil
 	switch chainID {
 	case "ETH1", "ETH4":
-		testclients.EthTests(ctx, chainProxy, privKey)
+		testErrors = testclients.EthTests(ctx, chainProxy, privKey)
 	case "COS1":
-		testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
+		testErrors = testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
 	case "COS3":
 		testErrors = testclients.OsmosisTests(ctx, chainProxy, privKey, apiInterface)
 	case "LAV1":
