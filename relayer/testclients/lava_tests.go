@@ -15,8 +15,10 @@ import (
 
 // LavaTests
 func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
+	errors := []string{}
 	if apiInterface == "rest" {
-		serverApis := s.ServerApis
+
+		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
 		mostImportantApisToTest := map[string][]string{http.MethodGet: {
 			"/blocks/latest",
@@ -37,39 +39,54 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 					reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod)
 					if err != nil {
 						log.Println(err)
-						return err
+						errors = append(errors, fmt.Sprintf("%s", err))
 					} else {
 						prettyPrintReply(*reply, "LavaTestsResponse")
 					}
 				}
 			}
 		}
+
+		log.Println("continuing to other spec apis")
 		// finish with testing all other API methods that dont require parameters
-		for _, api := range serverApis {
-			if strings.Contains(api.Name, "/{") {
+		allSpecNames, err := s.GetAllSpecNames(ctx)
+		if err != nil {
+			log.Println(err)
+			errors = append(errors, fmt.Sprintf("%s", err))
+		}
+		for apiName, apiInterfaceList := range allSpecNames {
+			if strings.Contains(apiName, "/{") {
 				continue
 			}
 
-			for _, api_interface := range api.ApiInterfaces {
+			for _, api_interface := range apiInterfaceList {
 				httpMethod := http.MethodGet
 				if api_interface.Type == "post" {
 					httpMethod = http.MethodPost
+					// for now we dont want to run the post apis in this test
+					continue
 				}
-
-				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api.Name, "", httpMethod)
+				log.Println(fmt.Sprintf("%s", apiName))
+				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod)
 				if err != nil {
 					log.Println(err)
-					return err
+					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "LavaTestsResponse")
 				}
 
 			}
-
 		}
-		return nil
+
 	} else {
 		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
 		return nil
 	}
+
+	// if we had any errors we return them here
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+
+	return nil
 }

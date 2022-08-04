@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/relayer/chainproxy"
 )
 
 func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) error {
+	errors := []string{}
 	if apiInterface == "rest" {
 		// most important api test
 		mostImportantApisToTest := map[string][]string{
@@ -38,7 +40,7 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 					reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod)
 					if err != nil {
 						log.Println(err)
-						return err
+						errors = append(errors, fmt.Sprintf("%s", err))
 					} else {
 						prettyPrintReply(*reply, "OsmosisTestsResponse")
 					}
@@ -51,45 +53,46 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet)
 			if err != nil {
 				log.Println("1:" + err.Error())
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST, http.MethodGet)
 			if err != nil {
 				log.Println("1:" + err.Error())
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "OSMOSIS_NUM_POOLS_URL_REST")
 			}
 		}
+
 	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 100; i++ {
 			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet)
 			if err != nil {
 				log.Println(err)
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet)
 			if err != nil {
 				log.Println(err)
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet)
 			if err != nil {
 				log.Println(err)
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 			}
 			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet)
 			if err != nil {
 				log.Println(err)
-				return err
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "URIRPC_TERRA_HEALTH")
 			}
@@ -98,5 +101,11 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 		log.Println("ERROR: not supported apiInterface: ", apiInterface)
 		return nil
 	}
+
+	// if we had any errors we return them here
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+
 	return nil
 }
