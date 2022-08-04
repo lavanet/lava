@@ -264,7 +264,7 @@ func TestClient(
 	//
 	// Run tests
 	switch chainID {
-	case "ETH1", "ETH4":
+	case "ETH1", "ETH4", "GTH":
 		ethTests(ctx, chainProxy, privKey)
 	case "COS1":
 		terraTests(ctx, chainProxy, privKey, apiInterface)
