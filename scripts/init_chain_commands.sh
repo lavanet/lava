@@ -3,11 +3,12 @@
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
 
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json --from alice --gas-adjustment "1.5" --gas "auto" -y
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_goerli.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 lavad tx gov vote 1 yes -y --from alice
 sleep 4
 
 lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
+lavad tx pairing stake-client "GTH1" 200000ulava 1 -y --from user1
 lavad tx pairing stake-client "COS3" 200000ulava 1 -y --from user2
 lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user3
 lavad tx pairing stake-client "COS4" 200000ulava 1 -y --from user2
@@ -18,6 +19,13 @@ lavad tx pairing stake-provider "ETH1" 2000ulava "127.0.0.1:2222,jsonrpc,1" 1 -y
 lavad tx pairing stake-provider "ETH1" 2050ulava "127.0.0.1:2223,jsonrpc,1" 1 -y --from servicer3
 lavad tx pairing stake-provider "ETH1" 2020ulava "127.0.0.1:2224,jsonrpc,1" 1 -y --from servicer4
 lavad tx pairing stake-provider "ETH1" 2030ulava "127.0.0.1:2225,jsonrpc,1" 1 -y --from servicer5
+
+#Goerli providers
+lavad tx pairing stake-provider "GTH1" 2010ulava "127.0.0.1:2121,jsonrpc,1" 1 -y --from servicer1
+lavad tx pairing stake-provider "GTH1" 2000ulava "127.0.0.1:2122,jsonrpc,1" 1 -y --from servicer2
+lavad tx pairing stake-provider "GTH1" 2050ulava "127.0.0.1:2123,jsonrpc,1" 1 -y --from servicer3
+lavad tx pairing stake-provider "GTH1" 2020ulava "127.0.0.1:2124,jsonrpc,1" 1 -y --from servicer4
+lavad tx pairing stake-provider "GTH1" 2030ulava "127.0.0.1:2125,jsonrpc,1" 1 -y --from servicer5
 
 #Osmosis providers
 lavad tx pairing stake-provider "COS3" 2010ulava "127.0.0.1:2241,tendermintrpc,1 127.0.0.1:2231,rest,1" 1 -y --from servicer1
