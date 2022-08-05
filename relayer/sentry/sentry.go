@@ -737,7 +737,7 @@ func (s *Sentry) AddExpectedPayment(expectedPay PaymentRequest) {
 }
 
 func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
-	connectCtx, cancel := context.WithTimeout(ctx, 1100*time.Millisecond)
+	connectCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
