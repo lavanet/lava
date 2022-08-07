@@ -183,6 +183,9 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 
+		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
+		// contentType := string(c.Context().Request.Header.ContentType())
+
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
@@ -191,7 +194,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data) + "testPost")
+		return c.SendString(string(reply.Data))
 	})
 
 	//
@@ -206,7 +209,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data) + "testGet")
+		return c.SendString(string(reply.Data))
 	})
 	//
 	// Go
@@ -239,11 +242,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	if nm.connectionType != "" {
 		connectionTypeSlected = nm.connectionType
 	}
-	more_data := ""
 
-	more_data += fmt.Sprintf("headerType: %s\n", connectionTypeSlected)
-	more_data += fmt.Sprintf("headerTypeInStruct: %s\n", nm.connectionType)
-	more_data += fmt.Sprintf("data_sent: %s %s\n", (nm.cp.nodeUrl + nm.path), nm.msg)
 	msgBuffer := bytes.NewBuffer(nm.msg)
 	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
@@ -252,7 +251,9 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
-	req.Header.Set("Content-Type", "application/json")
+	if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
@@ -275,6 +276,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	nm.Result = body
 
-	reply.Data = []byte(string(reply.Data) + more_data)
+	reply.Data = []byte(string(reply.Data))
 	return reply, nil
 }
