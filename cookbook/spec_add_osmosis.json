@@ -773,16 +773,16 @@
         {
           "name": "/syncing",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-              "latest"
+              ""
             ],
-            "parserFunc": "DEFAULT"
+            "parserFunc": "EMPTY"
           },
           "compute_units": "10",
           "enabled": true,
@@ -2454,16 +2454,16 @@
         {
           "name": "/cosmos/base/tendermint/v1beta1/syncing",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
             "parserArg": [
-            "latest"
+              ""
             ],
-            "parserFunc": "DEFAULT"
+            "parserFunc": "EMPTY"
           },
           "compute_units": "10",
           "enabled": true,
@@ -5053,16 +5053,16 @@
       {
         "name": "/syncing",
         "category": {
-          "deterministic": true,
+          "deterministic": false,
           "local": false,
           "subscription": false,
           "stateful": 0
         },
         "block_parsing": {
           "parserArg": [
-            "latest"
+            ""
           ],
-          "parserFunc": "DEFAULT"
+          "parserFunc": "EMPTY"
         },
         "compute_units": "10",
         "enabled": true,
@@ -6734,16 +6734,16 @@
       {
         "name": "/cosmos/base/tendermint/v1beta1/syncing",
         "category": {
-          "deterministic": true,
+          "deterministic": false,
           "local": false,
           "subscription": false,
           "stateful": 0
         },
         "block_parsing": {
           "parserArg": [
-          "latest"
+          ""
           ],
-          "parserFunc": "DEFAULT"
+          "parserFunc": "EMPTY"
         },
         "compute_units": "10",
         "enabled": true,
