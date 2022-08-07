@@ -69,7 +69,7 @@ func TestClient(
 	// Run tests
 	var testErrors error = nil
 	switch chainID {
-	case "ETH1", "ETH4":
+	case "ETH1", "ETH4", "GTH":
 		testErrors = testclients.EthTests(ctx, chainProxy, privKey)
 	case "COS1":
 		testErrors = testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
