@@ -251,6 +251,8 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		return nil, err
 	}
 
+	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
+	req.Header.Set("Content-Type", "application/json")
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
