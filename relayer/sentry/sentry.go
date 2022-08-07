@@ -353,7 +353,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 	if err != nil {
 		return nil, err
 	}
-	serverApis, _ := s.getSpecPopulated(spec)
+	serverApis, _ := s.getServiceApis(spec)
 	var allSpecNames map[string][]types.ApiInterface
 	for _, api := range serverApis {
 		allSpecNames[api.Name] = api.ApiInterfaces
@@ -361,7 +361,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 	return allSpecNames, nil
 }
 
-func (s *Sentry) getSpecPopulated(spec *spectypes.QueryChainResponse) (map[string]spectypes.ServiceApi, map[string]spectypes.ServiceApi) {
+func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (map[string]spectypes.ServiceApi, map[string]spectypes.ServiceApi) {
 	serverApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
@@ -416,7 +416,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// Update
 	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
-	serverApis, taggedApis := s.getSpecPopulated(spec)
+	serverApis, taggedApis := s.getServiceApis(spec)
 
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
