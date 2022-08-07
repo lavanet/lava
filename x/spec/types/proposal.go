@@ -24,7 +24,7 @@ func checkSpecProposal(spec Spec) error {
 			return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
 		}
 		if _, ok := checkUnique[api.Name]; ok {
-			return sdkerrors.Wrap(ErrDuplicateApiName, "api name must be unique")
+			return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))
 		}
 		if len(api.ApiInterfaces) == 0 {
 			return sdkerrors.Wrap(ErrDuplicateApiName, "api interface cannot be empty")
@@ -37,12 +37,12 @@ func checkSpecProposal(spec Spec) error {
 func stringSpec(spec Spec, b strings.Builder) strings.Builder {
 
 	b.WriteString(fmt.Sprintf(`    Spec name:
-	Name: %s, Spec index: %s, Enabled: %s, Apis: %d
+	Name: %s, Spec index: %s, Enabled: %t, Apis: %d
 `, spec.Name, spec.Index, spec.Enabled, len(spec.Apis)))
 
 	for _, api := range spec.Apis {
 		b.WriteString(fmt.Sprintf(`        Api:
-		      Name: %s, Enabled: %s, ComputeUntis: %d
+		      Name: %s, Enabled: %t, ComputeUntis: %d
 		`, api.Name, api.Enabled, api.ComputeUnits))
 	}
 
