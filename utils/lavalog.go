@@ -36,3 +36,36 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	//TODO: add error types, create them here and return
 	return errors.New(err_msg)
 }
+
+func LavaFormatLog(err error, description string, extraAttributes *map[string]any, severity uint) error {
+	var prefix string
+	switch severity {
+	case 2:
+		prefix = "Error:"
+	case 1:
+		prefix = "Warning:"
+	case 0:
+		prefix = "Info:"
+	}
+	output := prefix + " " + description
+	if err != nil {
+		output = fmt.Sprintf("%s Error: %s", output, err.Error())
+	}
+	if extraAttributes != nil {
+		output = fmt.Sprintf("%s Extra: %v", output, extraAttributes)
+	}
+	fmt.Printf(output)
+	return nil
+}
+
+func LavaFormatError(err error, description string, extraAttributes *map[string]any) error {
+	return LavaFormatLog(err, description, extraAttributes, 2)
+}
+
+func LavaFormatWarning(err error, description string, extraAttributes *map[string]any) error {
+	return LavaFormatLog(err, description, extraAttributes, 1)
+}
+
+func LavaFormatInfo(err error, description string, extraAttributes *map[string]any) error {
+	return LavaFormatLog(err, description, extraAttributes, 0)
+}
