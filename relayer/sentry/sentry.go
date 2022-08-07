@@ -832,7 +832,9 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 				wrap.ConnectionRefusals++
 				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
 				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
-					s.movePairingEntryToPurge(wrap, index, false)
+					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+					s.movePairingEntryToPurge(wrap, index)
+					s.pairingMu.RLock() // we resume read lock here, so we can continue
 					fmt.Printf("moving %s to purge list after max consecutive tries\n", wrap.Addr)
 				}
 
@@ -1075,7 +1077,7 @@ func (s *Sentry) SendRelay(
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index, true)
+			s.movePairingEntryToPurge(wrap, index)
 		}
 		return reply, err
 	}
@@ -1158,7 +1160,7 @@ func (s *Sentry) SendRelay(
 							if err != nil {
 								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-									s.movePairingEntryToPurge(wrap, index, true)
+									s.movePairingEntryToPurge(wrap, index)
 								}
 								return nil, nil, err
 							}
@@ -1268,11 +1270,13 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	return latestBlock - finalization_criteria
 }
 
-func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, lockpairing bool) {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
 	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	if lockpairing {
-		s.pairingMu.Lock()
-		defer s.pairingMu.Unlock()
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+
+	if len(s.pairing) == 0 {
+		return
 	}
 
 	s.pairingPurgeLock.Lock()
@@ -1287,7 +1291,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 		}
 		return false
 	}
-	if index >= len(s.pairing) {
+	if index >= len(s.pairing) || index < 0 {
 		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
 		if !findPairingIndex() {
 			return
