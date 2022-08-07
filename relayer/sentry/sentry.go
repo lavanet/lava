@@ -344,28 +344,22 @@ func (s *Sentry) GetServicersToPairCount() int64 {
 	return int64(len(s.pairingAddresses))
 }
 
-func (s *Sentry) getSpec(ctx context.Context) error {
-	//
-	// TODO: decide if it's fatal to not have spec (probably!)
+func (s *Sentry) GetAllSpecNames(ctx context.Context) ([]string, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	//
-	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.specHash, hash) {
-		return nil
+	serverApis, _ := s.getServiceApis(spec)
+	var allSpecNames []string
+	for _, api := range serverApis {
+		allSpecNames = append(allSpecNames, api.Name)
 	}
-	s.specHash = hash
+	return allSpecNames, nil
+}
 
-	//
-	// Update
-
-	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
+func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (map[string]spectypes.ServiceApi, map[string]spectypes.ServiceApi) {
 	serverApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
@@ -396,6 +390,32 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 			}
 		}
 	}
+	return serverApis, taggedApis
+}
+
+func (s *Sentry) getSpec(ctx context.Context) error {
+	//
+	// TODO: decide if it's fatal to not have spec (probably!)
+	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+		ChainID: s.ChainID,
+	})
+	if err != nil {
+		return err
+	}
+
+	//
+	// Check if updated
+	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
+	if bytes.Equal(s.specHash, hash) {
+		return nil
+	}
+	s.specHash = hash
+
+	//
+	// Update
+	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
+	serverApis, taggedApis := s.getServiceApis(spec)
+
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
 	s.serverSpec = spec.Spec
