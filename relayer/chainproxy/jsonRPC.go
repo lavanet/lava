@@ -229,17 +229,20 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				log.Println("read:", err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 			log.Println("in <<< ", string(msg))
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
 			if err != nil {
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				log.Println(err)
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				log.Println("write:", err)
 				break
 			}
