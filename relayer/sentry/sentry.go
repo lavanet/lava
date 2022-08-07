@@ -134,8 +134,8 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 
 type RelayerClientWrapper struct {
 	Client *pairingtypes.RelayerClient
-	Acc    string
-	Addr   string
+	Acc    string //public lava address
+	Addr   string //ip:port
 
 	ConnectionRefusals uint64
 	SessionsLock       sync.Mutex
@@ -1278,6 +1278,27 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 	s.pairingPurgeLock.Lock()
 	defer s.pairingPurgeLock.Unlock()
 	//move to purge list
+	findPairingIndex := func() bool {
+		for idx, entry := range s.pairing {
+			if entry.Acc == wrap.Acc {
+				index = idx
+				return true
+			}
+		}
+		return false
+	}
+	if index >= len(s.pairing) {
+		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
+		if !findPairingIndex() {
+			return
+		}
+	}
+	if s.pairing[index].Acc != wrap.Acc {
+		log.Printf("Info! Trying to move pairing entry to purge but expected address is different! provider: endpoint: %s address: %s index: %d, length: %d, current index address:%s \n", wrap.Addr, wrap.Acc, index, len(s.pairing), s.pairing[index].Addr)
+		if !findPairingIndex() {
+			return
+		}
+	}
 	s.pairingPurge = append(s.pairingPurge, wrap)
 	s.pairing[index] = s.pairing[len(s.pairing)-1]
 	s.pairing = s.pairing[:len(s.pairing)-1]
