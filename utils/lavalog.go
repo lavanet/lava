@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -37,9 +38,11 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	return errors.New(err_msg)
 }
 
-func LavaFormatLog(err error, description string, extraAttributes *map[string]any, severity uint) error {
+func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	var prefix string
 	switch severity {
+	case 3:
+		prefix = "Fatal:"
 	case 2:
 		prefix = "Error:"
 	case 1:
@@ -52,20 +55,25 @@ func LavaFormatLog(err error, description string, extraAttributes *map[string]an
 		output = fmt.Sprintf("%s Error: %s", output, err.Error())
 	}
 	if extraAttributes != nil {
-		output = fmt.Sprintf("%s Extra: %v", output, extraAttributes)
+		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
 	}
-	fmt.Printf(output)
-	return nil
+	fmt.Println(output)
+	return fmt.Errorf(output)
 }
 
-func LavaFormatError(err error, description string, extraAttributes *map[string]any) error {
-	return LavaFormatLog(err, description, extraAttributes, 2)
+func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
+	LavaFormatLog(description, err, extraAttributes, 3)
+	os.Exit(1)
 }
 
-func LavaFormatWarning(err error, description string, extraAttributes *map[string]any) error {
-	return LavaFormatLog(err, description, extraAttributes, 1)
+func LavaFormatError(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 2)
 }
 
-func LavaFormatInfo(err error, description string, extraAttributes *map[string]any) error {
-	return LavaFormatLog(err, description, extraAttributes, 0)
+func LavaFormatWarning(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 1)
+}
+
+func LavaFormatInfo(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 0)
 }

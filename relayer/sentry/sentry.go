@@ -1531,7 +1531,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: ", err)
+		utils.LavaFormatError("Sentry failed to get chain height", err, &map[string]string{"account": acc, "ChainID": chainID, "apiInterface": apiInterface})
 		currentBlock = 0
 	}
 	return &Sentry{

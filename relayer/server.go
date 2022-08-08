@@ -99,7 +99,11 @@ type relayServer struct {
 func askForRewards(staleEpochHeight int64) {
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
-		fmt.Printf("Error: Some epochs were not rewarded, catching up and asking for rewards...")
+		utils.LavaFormatError("Some epochs were not rewarded, catching up and asking for rewards...", nil, &map[string]string{
+			"epoch":                strconv.FormatInt(staleEpochHeight, 10),
+			"provider block":       strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
+			"rewards to claim len": strconv.FormatInt(int64(len(g_rewardsSessions)), 10),
+		})
 
 		// go over all epochs and look for stale unhandled epochs
 		for epoch := range g_rewardsSessions {
@@ -127,7 +131,9 @@ func askForRewards(staleEpochHeight int64) {
 				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
 				session.Lock.Unlock()
 				if session.UniqueIdentifier != 0 {
-					fmt.Printf("Error: Missing proof, cannot get rewards for this session: %d\n", session.UniqueIdentifier)
+					utils.LavaFormatError("Missing proof, cannot get rewards for this session", nil, &map[string]string{
+						"UniqueIdentifier": strconv.FormatUint(session.UniqueIdentifier, 10),
+					})
 				}
 				continue
 			}
@@ -141,12 +147,17 @@ func askForRewards(staleEpochHeight int64) {
 			userSessions.Lock.Lock()
 			userAccAddr, err := sdk.AccAddressFromBech32(userSessions.user)
 			if err != nil {
-				log.Println(fmt.Sprintf("invalid user address: %s\n We can continue without the addr but the it shouldnt be invalid.", userSessions.user))
+				utils.LavaFormatError("get rewards invalid user address", err, &map[string]string{
+					"address": userSessions.user,
+				})
 			}
 
 			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
 			if !ok {
-				log.Printf("Error: Missing epoch data for this user: %s, Epoch: %d\n", userSessions.user, staleEpoch)
+				utils.LavaFormatError("get rewards Missing epoch data for this user", err, &map[string]string{
+					"address": userSessions.user,
+					"epoch":   strconv.FormatUint(staleEpoch, 10),
+				})
 				userSessions.Lock.Unlock()
 				continue
 			}
@@ -191,30 +202,44 @@ func askForRewards(staleEpochHeight int64) {
 		// no rewards to ask for
 		return
 	}
-	if reliability {
-		log.Println("asking for rewards", g_sentry.Acc, "with reliability")
-	} else {
-		log.Println("asking for rewards", g_sentry.Acc)
-	}
+
+	utils.LavaFormatInfo("asking for rewards", nil, &map[string]string{
+		"account":     g_sentry.Acc,
+		"reliability": fmt.Sprintf("%t", reliability),
+	})
+
 	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := gobytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		log.Println("GenerateOrBroadcastTxWithFactory", err)
+		utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
+			"msg": fmt.Sprintf("%+v", msg),
+		})
 	}
 
 	//EWW, but unmarshalingJson doesn't work because keys aren't in quotes
 	transactionResult := strings.ReplaceAll(myWriter.String(), ": ", ":")
 	transactionResults := strings.Split(transactionResult, "\n")
 	returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
+	if err != nil {
+		utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+			"parsing data": strings.Join(transactionResults, ","),
+		})
+		return
+	}
 	if returnCode != 0 {
 		// TODO:: get rid of this code
 		// This code retries asking for rewards when getting an 'incorrect sequence' error.
 		// The transaction should work after a new lava block.
-		fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
+
+		utils.LavaFormatError(fmt.Sprintf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String()),
+			nil, &map[string]string{
+				"returnCode": strconv.FormatUint(returnCode, 10),
+			})
 		if strings.Contains(transactionResult, "incorrect account sequence") {
-			fmt.Printf("incorrect account sequence detected. retrying transaction... \n")
+			utils.LavaFormatError("incorrect account sequence detected. retrying transaction...", nil, nil)
 			idx := 1
 			success := false
 			for idx < RETRY_INCORRECT_SEQUENCE && !success {
@@ -222,7 +247,9 @@ func askForRewards(staleEpochHeight int64) {
 				myWriter.Reset()
 				err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 				if err != nil {
-					log.Println("GenerateOrBroadcastTxWithFactory", err)
+					utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
+						"msg": fmt.Sprintf("%+v", msg),
+					})
 					break
 				}
 				idx++
@@ -232,7 +259,9 @@ func askForRewards(staleEpochHeight int64) {
 				transactionResults := strings.Split(transactionResult, "\n")
 				returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
 				if err != nil {
-					fmt.Printf("ERR: %s", err)
+					utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+						"parsing data": strings.Join(transactionResults, ","),
+					})
 					returnCode = 1 // just not zero
 				}
 
@@ -240,24 +269,29 @@ func askForRewards(staleEpochHeight int64) {
 					success = true
 				} else {
 					if !strings.Contains(transactionResult, "incorrect account sequence") {
-						fmt.Printf("Expected an incorrect account sequence error when retrying rewards transaction but received another error: %s\n", transactionResult)
-						fmt.Printf("Retrying anyway\n")
+						utils.LavaFormatError("Unexpected Failure during retry", nil, &map[string]string{
+							"response": transactionResult,
+						})
 					}
 				}
 			}
 
 			if !success {
-				fmt.Printf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String())
-				fmt.Printf("incorrect account sequence detected but and no success after %d retries \n", RETRY_INCORRECT_SEQUENCE)
+				utils.LavaFormatError(fmt.Sprintf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\nincorrect account sequence and no success after retries", myWriter.String()),
+					nil, &map[string]string{
+						"retries": strconv.FormatUint(RETRY_INCORRECT_SEQUENCE, 10),
+					})
 				return
 			} else {
-				fmt.Printf("success in %d retries after incorrect account sequence detected \n", idx)
+				utils.LavaFormatInfo("Success after incorrect account sequence detected", nil, &map[string]string{
+					"retries": strconv.FormatInt(int64(idx), 10),
+				})
 			}
 		} else {
 			return
 		}
 	}
-	fmt.Printf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String())
+	utils.LavaFormatInfo(fmt.Sprintf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String()), nil, nil)
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
@@ -289,7 +323,9 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	userSessions.Lock.Lock()
 	if userSessions.IsBlockListed {
 		userSessions.Lock.Unlock()
-		return nil, nil, fmt.Errorf("User blocklisted! userAddr: %s", userAddr)
+		return nil, nil, utils.LavaFormatError("User blocklisted!", nil, &map[string]string{
+			"userAddr": userAddr,
+		})
 	}
 
 	var sessionEpoch uint64
@@ -692,7 +728,7 @@ func Server(
 	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
 	if err != nil {
-		log.Fatalln("error sentry.Init", err)
+		utils.LavaFormatError("sentry init failure to initialize", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 		return
 	}
 	go newSentry.Start(ctx)
@@ -709,28 +745,28 @@ func Server(
 
 	//
 	// Info
-	log.Println("Server starting", listenAddr, "node", nodeUrl, "spec", newSentry.GetSpecName(), "chainID", newSentry.GetChainID(), "api Interface", apiInterface)
+	utils.LavaFormatInfo("Server starting", nil, &map[string]string{"listenAddr": listenAddr, "ChainID": newSentry.GetChainID(), "node": nodeUrl, "spec": newSentry.GetSpecName(), "api Interface": apiInterface})
 
 	//
 	// Keys
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
-		log.Fatalln("error: getKeyName", err)
+		utils.LavaFormatFatal("provider failure to getKeyName", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
 
 	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 	if err != nil {
-		log.Fatalln("error: getPrivKey", err)
+		utils.LavaFormatFatal("provider failure to getPrivKey", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
 	g_privKey = privKey
 	serverKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Server pubkey", serverKey.GetPubKey().Address())
-
+	utils.LavaFormatInfo("Server loaded keys", nil, &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry)
 	if err != nil {
-		log.Fatalln("error: GetChainProxy", err)
+		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
@@ -740,7 +776,7 @@ func Server(
 		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
 		err = chainSentry.Init(ctx)
 		if err != nil {
-			log.Fatalln("error sentry.Init", err)
+			utils.LavaFormatFatal("provider failure initializing chainSentry", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID, "nodeUrl": nodeUrl})
 		}
 		chainSentry.Start(ctx)
 		g_chainSentry = chainSentry
@@ -750,17 +786,16 @@ func Server(
 	// GRPC
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr, "ChainID": ChainID})
 	}
 	s := grpc.NewServer()
 	go func() {
 		select {
 		case <-ctx.Done():
-			log.Println("server ctx.Done")
+			utils.LavaFormatInfo("Provider Server ctx.Done", nil, nil)
 		case <-signalChan:
-			log.Println("signalChan")
+			utils.LavaFormatInfo("Provider Server signalChan", nil, nil)
 		}
-
 		cancel()
 		s.Stop()
 	}()
@@ -768,10 +803,10 @@ func Server(
 	Server := &relayServer{}
 	pairingtypes.RegisterRelayerServer(s, Server)
 
-	log.Printf("server listening at %v", lis.Addr())
+	utils.LavaFormatInfo("Server listening", nil, &map[string]string{"Address": lis.Addr().String()})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
+		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
 	}
-
 	askForRewards(g_sentry.GetCurrentEpochHeight())
 }
