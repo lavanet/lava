@@ -46,6 +46,14 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
+				FixatedServicersToPairList: []types.FixatedServicersToPair{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -82,6 +90,20 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated epochPayments",
 			genState: &types.GenesisState{
 				EpochPaymentsList: []types.EpochPayments{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated fixatedServicersToPair",
+			genState: &types.GenesisState{
+				FixatedServicersToPairList: []types.FixatedServicersToPair{
 					{
 						Index: "0",
 					},

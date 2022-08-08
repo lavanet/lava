@@ -161,7 +161,11 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	}
 
 	//calculates a hash and randomly chooses the providers
-	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, k.ServicersToPairCount(ctx), epochStartBlock, chainID)
+	servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, epochStartBlock)
+	if err != nil {
+		return nil, nil, err
+	}
+	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, servicersToPairCount.ServicersToPairCount, epochStartBlock, chainID)
 
 	for _, stakeEntry := range validProviders {
 		providerAddress := stakeEntry.Address

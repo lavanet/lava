@@ -13,6 +13,7 @@ func DefaultGenesis() *GenesisState {
 		UniquePaymentStorageClientProviderList: []UniquePaymentStorageClientProvider{},
 		ClientPaymentStorageList:               []ClientPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
+		FixatedServicersToPairList:             []FixatedServicersToPair{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -50,6 +51,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for epochPayments")
 		}
 		epochPaymentsIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in fixatedServicersToPair
+	fixatedServicersToPairIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.FixatedServicersToPairList {
+		index := string(FixatedServicersToPairKey(elem.Index))
+		if _, ok := fixatedServicersToPairIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for fixatedServicersToPair")
+		}
+		fixatedServicersToPairIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

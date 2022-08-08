@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
+import "pairing/fixated_servicers_to_pair.proto";
 // this line is used by starport scaffolding # 1
 import "pairing/client_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
@@ -72,6 +73,16 @@ service Query {
 // Queries a UserEntry items.
 	rpc UserEntry(QueryUserEntryRequest) returns (QueryUserEntryResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/user_entry/{address}/{chainID}";
+	}
+
+// Queries a FixatedServicersToPair by index.
+	rpc FixatedServicersToPair(QueryGetFixatedServicersToPairRequest) returns (QueryGetFixatedServicersToPairResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_servicers_to_pair/{index}";
+	}
+
+	// Queries a list of FixatedServicersToPair items.
+	rpc FixatedServicersToPairAll(QueryAllFixatedServicersToPairRequest) returns (QueryAllFixatedServicersToPairResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_servicers_to_pair";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -189,6 +200,24 @@ message QueryUserEntryRequest {
 message QueryUserEntryResponse {
   lavanet.lava.epochstorage.StakeEntry consumer = 1 [(gogoproto.nullable) = false];
   uint64 maxCU =2;
+}
+
+message QueryGetFixatedServicersToPairRequest {
+	  string index = 1;
+
+}
+
+message QueryGetFixatedServicersToPairResponse {
+	FixatedServicersToPair fixatedServicersToPair = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllFixatedServicersToPairRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllFixatedServicersToPairResponse {
+	repeated FixatedServicersToPair fixatedServicersToPair = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // this line is used by starport scaffolding # 3

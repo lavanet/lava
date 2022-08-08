@@ -38,6 +38,14 @@ func TestGenesis(t *testing.T) {
 				Index: "1",
 			},
 		},
+		FixatedServicersToPairList: []types.FixatedServicersToPair{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -52,5 +60,6 @@ func TestGenesis(t *testing.T) {
 	require.ElementsMatch(t, genesisState.UniquePaymentStorageClientProviderList, got.UniquePaymentStorageClientProviderList)
 	require.ElementsMatch(t, genesisState.ClientPaymentStorageList, got.ClientPaymentStorageList)
 	require.ElementsMatch(t, genesisState.EpochPaymentsList, got.EpochPaymentsList)
+	require.ElementsMatch(t, genesisState.FixatedServicersToPairList, got.FixatedServicersToPairList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

@@ -30,7 +30,12 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, ChainID string, Cu
 	if allowedCU == 0 {
 		return 0, fmt.Errorf("user %s, no allowedCU were found epoch: %d", clientAddr, epochStart)
 	}
-	allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
+
+	servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, uint64(blockHeight))
+	if err != nil {
+		return 0, err
+	}
+	allowedCUProvider := allowedCU / servicersToPairCount.ServicersToPairCount
 	if totalCUInEpochForUserProvider > allowedCUProvider {
 		return k.LimitClientPairingsAndMarkForPenalty(ctx, clientAddr, ChainID, CuSum, totalCUInEpochForUserProvider, allowedCU, allowedCUProvider, providerAddr, epochStart)
 	}
@@ -75,8 +80,12 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 	totalOverusedPercent := float64(clientProvidersEpochUsedCUMap.TotalUsed / allowedCU)
 	if usedCU, exist := clientProvidersEpochUsedCUMap.Providers[providerAddr.String()]; exist {
 		// TODO: ServicersToPairCount needs epoch !
-		if k.ServicersToPairCount(ctx) > 0 {
-			allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
+		servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return 0, 0, err
+		}
+		if servicersToPairCount.ServicersToPairCount > 0 {
+			allowedCUProvider := allowedCU / servicersToPairCount.ServicersToPairCount
 			if allowedCUProvider > 0 {
 				overusedCU := sdk.ZeroUint()
 				if usedCU > allowedCUProvider {
@@ -216,7 +225,11 @@ func (k Keeper) ClientMaxCUProvider(ctx sdk.Context, clientEntry *epochstoragety
 	if err != nil {
 		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
-	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
+	servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return 0, err
+	}
+	allowedCU = allowedCU / servicersToPairCount.ServicersToPairCount
 
 	return allowedCU, nil
 }

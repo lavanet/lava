@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message FixatedServicersToPair {
+  string index = 1; 
+  uint64 servicersToPairCount = 2; 
+  uint64 fixationBlock = 3; 
+  
+}
+
