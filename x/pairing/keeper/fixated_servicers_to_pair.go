@@ -112,7 +112,7 @@ func (k Keeper) CleanOlderFixatedServicersToPair(ctx sdk.Context, startIdx uint6
 		}
 		k.RemoveFixatedServicersToPair(ctx, thisIdxKey)
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": strconv.FormatUint(idx, 10)}, "fixation cleaned")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_servicerstopair", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": strconv.FormatUint(idx, 10)}, "fixation cleaned")
 }
 
 func (k Keeper) GetFixatedServicersToPairForBlock(ctx sdk.Context, block uint64) (fixated types.FixatedServicersToPair, err error) {
@@ -122,9 +122,9 @@ func (k Keeper) GetFixatedServicersToPairForBlock(ctx sdk.Context, block uint64)
 		if !found {
 			earliestEpochStart := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 			if block < earliestEpochStart {
-				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_too_early", map[string]string{"error": "tried to read for block that is earlier than earliest_epoch_start", "block": strconv.FormatUint(block, 10), "earliest": strconv.FormatUint(earliestEpochStart, 10)}, "invalid block requested, that is lower than earliest block in memory")
+				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_servicerstopair_too_early", map[string]string{"error": "tried to read for block that is earlier than earliest_epoch_start", "block": strconv.FormatUint(block, 10), "earliest": strconv.FormatUint(earliestEpochStart, 10)}, "invalid block requested, that is lower than earliest block in memory")
 			} else {
-				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_params_for_block_empty", map[string]string{"error": "tried to read index: " + thisIdxKey + " but wasn't found", "block": strconv.FormatUint(block, 10)}, "invalid block requested, that is lower than saved fixation memory")
+				err = utils.LavaError(ctx, k.Logger(ctx), "fixated_servicerstopair_for_block_empty", map[string]string{"error": "tried to read index: " + thisIdxKey + " but wasn't found", "block": strconv.FormatUint(block, 10)}, "invalid block requested, that is lower than saved fixation memory")
 			}
 			break
 		}
