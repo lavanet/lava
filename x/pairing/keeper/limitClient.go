@@ -12,11 +12,14 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) GetAllowedCU(ctx sdk.Context, entry *epochstoragetypes.StakeEntry) (uint64, error) {
+func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry *epochstoragetypes.StakeEntry) (uint64, error) {
 	var allowedCU uint64 = 0
-	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
+	stakeToMaxCUMap, err := k.GetFixatedStakeToMaxCuForBlock(ctx, blockHeight)
+	if err != nil {
+		return 0, err
+	}
 
-	for _, stakeToCU := range stakeToMaxCUMap {
+	for _, stakeToCU := range stakeToMaxCUMap.StakeToMaxCUList.List {
 		if entry.Stake.IsGTE(stakeToCU.StakeThreshold) {
 			allowedCU = stakeToCU.MaxComputeUnits
 		} else {
@@ -65,7 +68,7 @@ func (k Keeper) GetAllowedCUClientEpoch(ctx sdk.Context, chainID string, epoch u
 		return 0, stakeErr
 	}
 	// get allowed of client for this epoch
-	allowedCU, allowedCUErr := k.GetAllowedCU(ctx, currentStakeEntry)
+	allowedCU, allowedCUErr := k.GetAllowedCUForBlock(ctx, epoch, currentStakeEntry)
 	if allowedCUErr != nil {
 		return 0, allowedCUErr
 	}
@@ -220,8 +223,8 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	return finalPay, nil
 }
 
-func (k Keeper) ClientMaxCUProvider(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) (uint64, error) {
-	allowedCU, err := k.GetAllowedCU(ctx, clientEntry)
+func (k Keeper) ClientMaxCUProviderForBlock(ctx sdk.Context, blockHeight uint64, clientEntry *epochstoragetypes.StakeEntry) (uint64, error) {
+	allowedCU, err := k.GetAllowedCUForBlock(ctx, blockHeight, clientEntry)
 	if err != nil {
 		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
