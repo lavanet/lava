@@ -1,4 +1,4 @@
-//file_pipe.go
+// file_pipe.go
 package main
 
 import (
@@ -32,7 +32,7 @@ var clientTest = TestProc{
 	tests:            events(),
 	strict:           true}
 
-func FullFlowTest(t *testing.T) ([]TestResult, error) {
+func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 	prepTest(t)
 
 	// Test Configs
