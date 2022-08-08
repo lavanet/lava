@@ -1,13 +1,15 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 
-import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
 import "pairing/fixated_servicers_to_pair.proto";
+import "pairing/fixated_stake_to_max_cu.proto";
 // this line is used by starport scaffolding # 1
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 import "pairing/client_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "epochstorage/stake_entry.proto";
@@ -83,6 +85,16 @@ service Query {
 	// Queries a list of FixatedServicersToPair items.
 	rpc FixatedServicersToPairAll(QueryAllFixatedServicersToPairRequest) returns (QueryAllFixatedServicersToPairResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/fixated_servicers_to_pair";
+	}
+
+// Queries a FixatedStakeToMaxCu by index.
+	rpc FixatedStakeToMaxCu(QueryGetFixatedStakeToMaxCuRequest) returns (QueryGetFixatedStakeToMaxCuResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_stake_to_max_cu/{index}";
+	}
+
+	// Queries a list of FixatedStakeToMaxCu items.
+	rpc FixatedStakeToMaxCuAll(QueryAllFixatedStakeToMaxCuRequest) returns (QueryAllFixatedStakeToMaxCuResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_stake_to_max_cu";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -217,6 +229,24 @@ message QueryAllFixatedServicersToPairRequest {
 
 message QueryAllFixatedServicersToPairResponse {
 	repeated FixatedServicersToPair fixatedServicersToPair = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetFixatedStakeToMaxCuRequest {
+	  string index = 1;
+
+}
+
+message QueryGetFixatedStakeToMaxCuResponse {
+	FixatedStakeToMaxCu fixatedStakeToMaxCu = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllFixatedStakeToMaxCuRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllFixatedStakeToMaxCuResponse {
+	repeated FixatedStakeToMaxCu fixatedStakeToMaxCu = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

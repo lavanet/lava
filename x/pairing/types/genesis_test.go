@@ -54,6 +54,14 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
+				FixatedStakeToMaxCuList: []types.FixatedStakeToMaxCu{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -104,6 +112,20 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated fixatedServicersToPair",
 			genState: &types.GenesisState{
 				FixatedServicersToPairList: []types.FixatedServicersToPair{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated fixatedStakeToMaxCu",
+			genState: &types.GenesisState{
+				FixatedStakeToMaxCuList: []types.FixatedStakeToMaxCu{
 					{
 						Index: "0",
 					},

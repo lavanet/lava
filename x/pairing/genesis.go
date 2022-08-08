@@ -25,6 +25,10 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.FixatedServicersToPairList {
 		k.SetFixatedServicersToPair(ctx, elem)
 	}
+	// Set all the fixatedStakeToMaxCu
+	for _, elem := range genState.FixatedStakeToMaxCuList {
+		k.SetFixatedStakeToMaxCu(ctx, elem)
+	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -38,6 +42,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.ClientPaymentStorageList = k.GetAllClientPaymentStorage(ctx)
 	genesis.EpochPaymentsList = k.GetAllEpochPayments(ctx)
 	genesis.FixatedServicersToPairList = k.GetAllFixatedServicersToPair(ctx)
+	genesis.FixatedStakeToMaxCuList = k.GetAllFixatedStakeToMaxCu(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

@@ -7,6 +7,7 @@ import "pairing/unique_payment_storage_client_provider.proto";
 import "pairing/client_payment_storage.proto";
 import "pairing/epoch_payments.proto";
 import "pairing/fixated_servicers_to_pair.proto";
+import "pairing/fixated_stake_to_max_cu.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
@@ -18,5 +19,6 @@ message GenesisState {
   repeated ClientPaymentStorage clientPaymentStorageList = 3 [(gogoproto.nullable) = false];
   repeated EpochPayments epochPaymentsList = 4 [(gogoproto.nullable) = false];
   repeated FixatedServicersToPair fixatedServicersToPairList = 5 [(gogoproto.nullable) = false];
+  repeated FixatedStakeToMaxCu fixatedStakeToMaxCuList = 6 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

@@ -14,6 +14,7 @@ func DefaultGenesis() *GenesisState {
 		ClientPaymentStorageList:               []ClientPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
 		FixatedServicersToPairList:             []FixatedServicersToPair{},
+		FixatedStakeToMaxCuList:                []FixatedStakeToMaxCu{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -61,6 +62,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for fixatedServicersToPair")
 		}
 		fixatedServicersToPairIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in fixatedStakeToMaxCu
+	fixatedStakeToMaxCuIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.FixatedStakeToMaxCuList {
+		index := string(FixatedStakeToMaxCuKey(elem.Index))
+		if _, ok := fixatedStakeToMaxCuIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for fixatedStakeToMaxCu")
+		}
+		fixatedStakeToMaxCuIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

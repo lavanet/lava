@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+message FixatedStakeToMaxCu {
+  string index = 1; 
+  string stakeToMaxCUList = 2 [
+    (gogoproto.moretags) = "yaml:\"stake_to_computeunits_list\"",
+    (gogoproto.customtype) = "StakeToMaxCUList",
+    (gogoproto.nullable)   = false
+    ];
+  uint64 fixationBlock = 3; 
+  
+}
+
