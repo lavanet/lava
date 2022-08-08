@@ -58,9 +58,6 @@ func awaitState(state State) {
 				for key, await := range state.awaiting {
 					if !*state.failed {
 						last := " :::(log tail)::: " + string(*state.lastLine)
-						if len(last) > 120 {
-							last = last[:120] + "..."
-						}
 						println(" ::: " + state.id + " ::: " + await.msg + last)
 					}
 					if *await.done {
