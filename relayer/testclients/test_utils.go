@@ -34,3 +34,9 @@ func prettyPrintReply(reply types.RelayReply, name string) {
 	}
 	log.Printf("reply %s, %s", name, reply.String())
 }
+
+type apiReqRes struct {
+	name string
+	req  string
+	res  string
+}
