@@ -64,7 +64,7 @@ var ethApis = []apiReqRes{
 	{
 		name: "eth_getTransactionByHash",
 		req:  "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"eth_getTransactionByHash\",\"params\":[\"0xcfbe3622a9ee9d5509796b5d3ddd8732776afa21e962cea96fc80066d0f19a69\"]}",
-		res:  "{\"jsonrpc\":\"2.0\",\"id\":11,\"result\":{\"blockHash\":\"0x9caced4314dc7724ca2d2294f4711987683f31f3058b58294b6f158cbb822ba1\",\"blockNumber\":\"0xd2d40b\",\"from\":\"0xea67496ec49da827a12f14f683a0b0d18865d0ce\",\"gas\":\"0x90c2\",\"gasPrice\":\"0x138eca4800\",\"hash\":\"0xcfbe3622a9ee9d5509796b5d3ddd8732776afa21e962cea96fc80066d0f19a69\",\"input\":\"0xa9059cbb000000000000000000000000ea674fdde714fd979de3edf0f56aa9716b898ec8000000000000000000000000000000000000000000000000085f33bdffe25404\",\"nonce\":\"0x2b\",\"to\":\"0xd26114cd6ee289accf82350c8d8487fedb8a0c07\",\"transactionIndex\":\"0x5\",\"value\":\"0x0\",\"type\":\"0x0\",\"v\":\"0x25\",\"r\":\"0x85767e7c237a18d65db9a5d815653bdeb4364cd90fb787997ae8594e894d4153\",\"s\":\"0x682c74f69465dc00800e9508a93565c29722e5729480d6a140d344e00b5cfcf0\"}}",
+		res:  "{\"jsonrpc\":\"2.0\",\"id\":11,\"result\":{\"blockHash\":\"0x9caced4314dc7724ca2d2294f4711987683f31f3058b58294b6f158cbb822ba1\",\"blockNumber\":\"0xd2d40b\",\"from\":\"0xea67496ec49da827a12f14f683a0b0d18865d0ce\",\"gas\":\"0x90c2\",\"gasPrice\":\"0x138eca4800\",\"hash\":\"0xcfbe3622a9ee9d5509796b5d3ddd8732776afa21e962cea96fc80066d0f19a69\",\"input\":\"0xa9059cbb000000000000000000000000ea674fdde714fd979de3edf0f56aa9716b898ec8000000000000000000000000000000000000000000000000085f33bdffe25404\",\"nonce\":\"0x2b\",\"to\":\"0xd26114cd6ee289accf82350c8d8487fedb8a0c07\",\"transactionIndex\":\"0x5\",\"value\":\"0x0\",\"type\":\"0x0\",\"chainId\":\"0x1\",\"v\":\"0x25\",\"r\":\"0x85767e7c237a18d65db9a5d815653bdeb4364cd90fb787997ae8594e894d4153\",\"s\":\"0x682c74f69465dc00800e9508a93565c29722e5729480d6a140d344e00b5cfcf0\"}}",
 	},
 	{
 		name: "eth_getTransactionReceipt",
@@ -97,7 +97,7 @@ func EthTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 			} else {
 				log.Println("ERROR API CHECK FAILED", ethApi.name, "RESPONSE MISMATCH")
 				log.Println(ethApi.req, string(reply.Data), ethApi.res)
-				errors = append(errors, fmt.Sprintf("%s RESPONSE MISMATCH", ethApi.name))
+				errors = append(errors, fmt.Sprintf("%s RESPONSE MISMATCH %s", ethApi.name, string(reply.Data)))
 			}
 		}
 	}
