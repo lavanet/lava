@@ -1,5 +1,8 @@
 #!/bin/bash -x
 
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $__dir/useful_commands.sh
+
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 # lavad tx gov submit-proposal spec-add ./cookbook/spec_add_terra.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_osmosis.json --from alice --gas-adjustment "1.5" --gas "auto" -y
@@ -7,7 +10,7 @@ wait
 lavad tx gov vote 1 yes -y --from alice
 lavad tx gov vote 2 yes -y --from alice
 # lavad tx gov vote 3 yes -y --from alice
-sleep 4
+sleep_until_next_epoch
 
 #Ethereum providers
 lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 &
@@ -26,6 +29,7 @@ lavad tx pairing stake-provider "COS3" 2050ulava "127.0.0.1:2243,tendermintrpc,1
 lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
 lavad tx pairing stake-client "COS3" 200000ulava 1 -y --from user2
 
+sleep_until_next_epoch
 echo "---------------ETH1 Queries------------------"
 lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
@@ -33,7 +37,6 @@ echo "---------------COS3 Queries------------------"
 lavad query pairing providers "COS3"
 lavad query pairing clients "COS3"
 echo "---------------------------------------------"
-sleep 4
 
 # killall screen
 #Eth providers
