@@ -250,7 +250,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		if err != nil {
 			log.Println(err)
 			if string(c.Body()) != "" {
-				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": for jsonRPC use POST,"more_information" %s}`, err))
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, err))
 			}
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
