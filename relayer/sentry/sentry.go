@@ -200,9 +200,10 @@ type Sentry struct {
 	// server Blocks To Save (atomic)
 	earliestSavedBlock uint64
 	// Block storage (atomic)
-	blockHeight  int64
-	currentEpoch int64
-	EpochSize    uint64
+	blockHeight        int64
+	currentEpoch       uint64
+	EpochSize          uint64
+	EpochBlocksOverlap uint64
 
 	//
 	// Spec storage (rw mutex)
@@ -214,14 +215,18 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu        sync.RWMutex
-	pairingHash      []byte
-	pairing          []*RelayerClientWrapper
-	pairingAddresses []string
-	pairingPurgeLock sync.Mutex
-	pairingPurge     []*RelayerClientWrapper
-	VrfSkMu          sync.Mutex
-	VrfSk            vrf.PrivateKey
+	pairingMu            sync.RWMutex
+	pairingNextMu        sync.RWMutex
+	pairingNextHash      []byte
+	pairing              []*RelayerClientWrapper
+	PairingBlockStart    int64
+	pairingAddresses     []string
+	pairingPurgeLock     sync.Mutex
+	pairingPurge         []*RelayerClientWrapper
+	pairingNext          []*RelayerClientWrapper
+	pairingNextAddresses []string
+	VrfSkMu              sync.Mutex
+	VrfSk                vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
@@ -229,7 +234,7 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
-func (s *Sentry) GetEpochSize(ctx context.Context) error {
+func (s *Sentry) FetchEpochSize(ctx context.Context) error {
 	res, err := s.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {
 		return err
@@ -238,13 +243,62 @@ func (s *Sentry) GetEpochSize(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) getEarliestSession(ctx context.Context) error {
+func (s *Sentry) FetchOverlapSize(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.EpochBlocksOverlap, res.GetParams().EpochBlocksOverlap)
+	return nil
+}
+
+func (s *Sentry) FetchEpochParams(ctx context.Context) error {
 	res, err := s.epochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
 	if err != nil {
 		return err
 	}
 	earliestBlock := res.GetEpochDetails().EarliestStart
+	currentEpoch := res.GetEpochDetails().StartBlock
 	atomic.StoreUint64(&s.earliestSavedBlock, earliestBlock)
+	atomic.StoreUint64(&s.currentEpoch, currentEpoch)
+	return nil
+}
+
+func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) error {
+	if !s.isUser {
+		return nil
+	}
+
+	// switch pairing every epochSize blocks
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() {
+		return nil
+	}
+
+	s.pairingNextMu.Lock()
+	defer s.pairingNextMu.Unlock()
+
+	// If we entered this handler more than once then the pairing was already changed
+	if len(s.pairingNext) == 0 {
+		return nil
+	}
+
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+	s.pairingPurgeLock.Lock()
+	defer s.pairingPurgeLock.Unlock()
+
+	s.pairingPurge = append(s.pairingPurge, s.pairing...) // append old connections to purge list
+	s.PairingBlockStart = blockHeight
+	s.pairing = s.pairingNext
+	s.pairingAddresses = s.pairingNextAddresses
+	s.pairingNext = []*RelayerClientWrapper{}
+	log.Printf("Pairing list switched. CurrentBlockHeight: %d \n", s.GetBlockHeight())
+
+	// Time to reset the consensuses for this pairing epoch
+	s.providerDataContainersMu.Lock()
+	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
+	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
+	s.providerDataContainersMu.Unlock()
 	return nil
 }
 
@@ -264,6 +318,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	servicers := res.GetProviders()
 	if servicers == nil || len(servicers) == 0 {
 		return errors.New("no servicers found")
@@ -272,10 +327,10 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	//
 	// Check if updated
 	hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.pairingHash, hash) {
+	if bytes.Equal(s.pairingNextHash, hash) {
 		return nil
 	}
-	s.pairingHash = hash
+	s.pairingNextHash = hash
 
 	//
 	// Set
@@ -318,19 +373,12 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
-	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	s.pairingPurgeLock.Lock()
-	defer s.pairingPurgeLock.Unlock()
-	s.pairingPurge = append(s.pairingPurge, s.pairing...) // append old connections to purge list
-	s.pairing = pairing                                   // replace with new connections
-	s.pairingAddresses = pairingAddresses
-	log.Println("update pairing list!", pairing)
 
-	// TODO:: new epoch, reset field containing previous finalizedBlocks of providers of epoch - 2
-	// TODO:: keep latest provider finalized blocks and prev finalied from epoch - 1
-	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
-
+	// replace previous pairing with new providers
+	s.pairingNextMu.Lock()
+	s.pairingNext = pairing
+	s.pairingNextAddresses = pairingAddresses
+	s.pairingNextMu.Unlock()
 	return nil
 }
 
@@ -467,6 +515,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
+	s.handlePairingChange(ctx, 0)
+
 	//
 	// Sanity
 	if !s.isUser {
@@ -488,7 +538,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 		}
 	}
 
-	s.GetEpochSize(ctx) // ARITODO:: Tell omer tihs has to be here since we use epoch size early on
+	s.FetchEpochSize(ctx)
+	s.FetchOverlapSize(ctx)
 
 	return nil
 }
@@ -693,7 +744,9 @@ func (s *Sentry) Start(ctx context.Context) {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
 				s.SetCurrentEpochHeight(data.Block.Height)
-				s.GetEpochSize(ctx)
+				s.FetchEpochSize(ctx)
+				s.FetchOverlapSize(ctx)
+				s.FetchEpochParams(ctx)
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
@@ -708,7 +761,6 @@ func (s *Sentry) Start(ctx context.Context) {
 
 				//update expected payments deadline, and log missing payments
 				//TODO: make this from the event lava_earliest_epoch instead
-				s.getEarliestSession(ctx)
 				if !s.isUser {
 					s.IdentifyMissingPayments(ctx)
 				}
@@ -719,6 +771,8 @@ func (s *Sentry) Start(ctx context.Context) {
 					log.Println("error: getPairing", err)
 				}
 			}
+
+			s.handlePairingChange(ctx, data.Block.Height)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -1330,6 +1384,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtyp
 	if res.GetValid() {
 		return res, nil
 	}
+
 	return nil, fmt.Errorf("invalid pairing with user. CurrentBlock: %d", s.GetBlockHeight())
 }
 
@@ -1413,12 +1468,16 @@ func (s *Sentry) SetBlockHeight(blockHeight int64) {
 	atomic.StoreInt64(&s.blockHeight, blockHeight)
 }
 
-func (s *Sentry) GetCurrentEpochHeight() int64 {
-	return atomic.LoadInt64(&s.currentEpoch)
+func (s *Sentry) GetCurrentEpochHeight() uint64 {
+	return atomic.LoadUint64(&s.currentEpoch)
 }
 
 func (s *Sentry) SetCurrentEpochHeight(blockHeight int64) {
-	atomic.StoreInt64(&s.currentEpoch, blockHeight)
+	atomic.StoreUint64(&s.currentEpoch, uint64(blockHeight))
+}
+
+func (s *Sentry) GetOverlapSize() uint64 {
+	return atomic.LoadUint64(&s.EpochBlocksOverlap)
 }
 
 func (s *Sentry) GetCUServiced() uint64 {
