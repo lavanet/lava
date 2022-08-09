@@ -98,6 +98,7 @@ type relayServer struct {
 
 func askForRewards(staleEpochHeight int64) {
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
+	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
 		fmt.Printf("Error: Some epochs were not rewarded, catching up and asking for rewards...")
 
@@ -108,6 +109,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 		}
 	}
+	g_rewardsSessions_mutex.Unlock()
 
 	relays := []*pairingtypes.RelayRequest{}
 	reliability := false
@@ -338,7 +340,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	cuSum := sess.CuSum
 	sess.Lock.Unlock()
 	// Check that relaynum gets incremented by user
-	if relayNum+1 != request.RelayNum {
+	if relayNum+1 > request.RelayNum {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
@@ -381,7 +383,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	log.Println("server got Relay")
 
-	prevEpochStart := g_sentry.GetCurrentEpochHeight() - int64(g_sentry.EpochSize)
+	prevEpochStart := int64(g_sentry.GetCurrentEpochHeight()) - int64(g_sentry.EpochSize)
 
 	if prevEpochStart < 0 {
 		prevEpochStart = 0
@@ -773,5 +775,5 @@ func Server(
 		log.Fatalf("failed to serve: %v", err)
 	}
 
-	askForRewards(g_sentry.GetCurrentEpochHeight())
+	askForRewards(int64(g_sentry.GetCurrentEpochHeight()))
 }
