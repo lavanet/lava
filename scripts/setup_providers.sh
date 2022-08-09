@@ -2,32 +2,34 @@
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
+LOGS_DIR=~/.lava/logs
+mkdir -p $LOGS_DIR
 
 echo "---------------Setup Providers------------------"
 killall screen
 screen -wipe
 
 #ETH providers
-screen -d -m -S eth1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1"
-screen -S eth1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2"
-screen -S eth1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3"
-screen -S eth1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2224 $ETH_RPC_WS ETH1 jsonrpc --from servicer4"
-screen -S eth1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2225 $ETH_RPC_WS ETH1 jsonrpc --from servicer5"
+screen -d -m -S eth1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 &>1 | tee $LOGS_DIR/ETH1_2221.log"
+screen -S eth1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2 &>1 | tee $LOGS_DIR/ETH1_2222.log"
+screen -S eth1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3 &>1 | tee $LOGS_DIR/ETH1_2223.log"
+screen -S eth1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2224 $ETH_RPC_WS ETH1 jsonrpc --from servicer4 &>1 | tee $LOGS_DIR/ETH1_2224.log"
+screen -S eth1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2225 $ETH_RPC_WS ETH1 jsonrpc --from servicer5 &>1 | tee $LOGS_DIR/ETH1_2225.log"
 
 #GTH providers
-screen -d -m -S gth_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2121 $GTH_RPC_WS GTH1 jsonrpc --from servicer1"
-screen -S gth_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2122 $GTH_RPC_WS GTH1 jsonrpc --from servicer2"
-screen -S gth_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2123 $GTH_RPC_WS GTH1 jsonrpc --from servicer3"
-screen -S gth_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2124 $GTH_RPC_WS GTH1 jsonrpc --from servicer4"
-screen -S gth_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2125 $GTH_RPC_WS GTH1 jsonrpc --from servicer5"
+screen -d -m -S gth_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2121 $GTH_RPC_WS GTH1 jsonrpc --from servicer1 &>1 | tee $LOGS_DIR/GTH1_2121.log"
+screen -S gth_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2122 $GTH_RPC_WS GTH1 jsonrpc --from servicer2 &>1 | tee $LOGS_DIR/GTH1_2122.log"
+screen -S gth_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2123 $GTH_RPC_WS GTH1 jsonrpc --from servicer3 &>1 | tee $LOGS_DIR/GTH1_2123.log"
+screen -S gth_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2124 $GTH_RPC_WS GTH1 jsonrpc --from servicer4 &>1 | tee $LOGS_DIR/GTH1_2124.log"
+screen -S gth_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2125 $GTH_RPC_WS GTH1 jsonrpc --from servicer5 &>1 | tee $LOGS_DIR/GTH1_2125.log"
 
 #osmosis providers
-screen -d -m -S cos3_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1"
-screen -S cos3_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2232 $OSMO_REST COS3 rest --from servicer2"
-screen -S cos3_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2233 $OSMO_REST COS3 rest --from servicer3"
-screen -S cos3_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc --from servicer1"
-screen -S cos3_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2242 $OSMO_RPC COS3 tendermintrpc --from servicer2"
-screen -S cos3_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc --from servicer3"
+screen -d -m -S cos3_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1 &>1 | tee $LOGS_DIR/COS3_2121.log"
+screen -S cos3_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2232 $OSMO_REST COS3 rest --from servicer2 &>1 | tee $LOGS_DIR/COS3_2232.log"
+screen -S cos3_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2233 $OSMO_REST COS3 rest --from servicer3 &>1 | tee $LOGS_DIR/COS3_2233.log"
+screen -S cos3_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc --from servicer1 &>1 | tee $LOGS_DIR/COS3_2241.log"
+screen -S cos3_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2242 $OSMO_RPC COS3 tendermintrpc --from servicer2 &>1 | tee $LOGS_DIR/COS3_2242.log"
+screen -S cos3_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc --from servicer3 &>1 | tee $LOGS_DIR/COS3_2243.log"
 
 #FTM providers
 screen -d -m -S ftm250_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2251 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer1"
