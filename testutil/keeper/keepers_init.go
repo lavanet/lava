@@ -144,9 +144,10 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	if err != nil {
 		panic(err)
 	}
-	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(nextEpochBlockNum))
-
-	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	for i := unwrapedCtx.BlockHeight(); uint64(i) <= nextEpochBlockNum; i++ {
+		unwrapedCtx = unwrapedCtx.WithBlockHeight(i)
+		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	}
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 

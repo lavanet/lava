@@ -228,7 +228,7 @@ func (k Keeper) ClientMaxCUProviderForBlock(ctx sdk.Context, blockHeight uint64,
 	if err != nil {
 		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
-	servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, uint64(ctx.BlockHeight()))
+	servicersToPairCount, err := k.GetFixatedServicersToPairForBlock(ctx, blockHeight)
 	if err != nil {
 		return 0, err
 	}

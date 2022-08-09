@@ -29,6 +29,12 @@ func createNFixatedParams(keeper *keeper.Keeper, ctx sdk.Context, n int) []types
 	return items
 }
 
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
+	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
+}
+
 func TestFixatedParamsGet(t *testing.T) {
 	keeper, ctx := keepertest.EpochstorageKeeper(t)
 	items := createNFixatedParams(keeper, ctx, 10)
@@ -108,7 +114,6 @@ func TestParamFixation(t *testing.T) {
 
 		})
 	}
-
 }
 
 func TestParamFixationWithEpochBlocksChange(t *testing.T) {
@@ -274,8 +279,32 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
+func TestEarliestEpochSave(t *testing.T) {
+	_, keepers, ctx := keepertest.InitAllKeepers(t)
+
+	//init keepers state
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
+	blocksInEpoch := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
+	earliestEpochSaved := keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx))
+
+	//fill memory
+	for i := 0; uint64(i) < epochsToSaveInitial; i++ {
+		ctx = keepertest.AdvanceEpoch(ctx, keepers)
+	}
+
+	err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(epochsToSaveInitial/2, 10)+"\"")
+	require.NoError(t, err)
+
+	ctx = keepertest.AdvanceEpoch(ctx, keepers)
+	ctx = keepertest.AdvanceEpoch(ctx, keepers)
+	earliestEpochSaved += 2 * blocksInEpoch
+	require.Equal(t, earliestEpochSaved, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
+
+	for i := 0; uint64(i) < 2*epochsToSaveInitial; i++ {
+		ctx = keepertest.AdvanceEpoch(ctx, keepers)
+		earliestEpochSaved += blocksInEpoch
+	}
+
+	require.Equal(t, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())-blocksInEpoch*epochsToSaveInitial/2, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
 }
