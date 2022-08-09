@@ -26,6 +26,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
+	connectionType string
 }
 
 type RestChainProxy struct {
@@ -85,7 +86,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil)
+		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
 	} else {
 		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
 	}
@@ -153,18 +154,20 @@ func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
-func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
+func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
+
 	nodeMsg := &RestMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
+		cp:             cp,
+		serviceApi:     serviceApi,
+		path:           path,
+		msg:            data,
+		connectionType: connectionType, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -180,8 +183,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 
+		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
+		// contentType := string(c.Context().Request.Header.ContentType())
+
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
@@ -196,7 +202,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
@@ -227,16 +233,23 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
 
-	//
-	// TODO: some APIs use POST!
+	var connectionTypeSlected string = http.MethodGet
+	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
+	if nm.connectionType != "" {
+		connectionTypeSlected = nm.connectionType
+	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(http.MethodGet, nm.cp.nodeUrl+nm.path, msgBuffer)
+	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
 	}
 
+	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
+	if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
@@ -248,6 +261,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
@@ -257,5 +271,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Data: body,
 	}
 	nm.Result = body
+
 	return reply, nil
 }

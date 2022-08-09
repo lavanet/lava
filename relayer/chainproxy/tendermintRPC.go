@@ -73,7 +73,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)), "")
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -129,8 +129,8 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 	return nodeMsg, nil
 }
 
-func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
-	//
+func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used only in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {
@@ -210,18 +210,21 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				log.Println("read:", err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 			log.Println("ws: in <<< ", string(msg))
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
+			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				log.Println(err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				log.Println("write:", err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 			log.Println("out >>> ", string(reply.Data))
@@ -230,7 +233,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Post("/:dappId", func(c *fiber.Ctx) error {
 		log.Println("jsonrpc in <<< ", string(c.Body()))
-		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
 			return nil
@@ -243,12 +246,13 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		path := c.Params("*")
 		log.Println("urirpc in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
-			//
-			// TODO: better errors
-			return c.SendString(`{"error": "unsupported api"}`)
+			if string(c.Body()) != "" {
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, err))
+			}
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 		log.Println("out >>> ", string(reply.Data))
 		return c.SendString(string(reply.Data))

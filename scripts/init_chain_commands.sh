@@ -1,8 +1,10 @@
 #!/bin/bash 
-
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
+# Making sure old screens are not running
+killall screen
+screen -wipe
 
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 lavad tx gov vote 1 yes -y --from alice --gas "auto"

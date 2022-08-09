@@ -27,7 +27,7 @@ type NodeMessage interface {
 type ChainProxy interface {
 	Start(context.Context) error
 	GetSentry() *sentry.Sentry
-	ParseMsg(string, []byte) (NodeMessage, error)
+	ParseMsg(string, []byte, string) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
@@ -89,11 +89,12 @@ func SendRelay(
 	privKey *btcec.PrivateKey,
 	url string,
 	req string,
+	connectionType string,
 ) (*pairingtypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
-	nodeMsg, err := cp.ParseMsg(url, []byte(req))
+	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +103,7 @@ func SendRelay(
 	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
+
 		if err != nil {
 			return nil, nil, err
 		}
@@ -109,6 +111,7 @@ func SendRelay(
 		blockHeight = cp.GetSentry().GetBlockHeight()
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
+			ConnectionType:  connectionType,
 			ApiUrl:          url,
 			Data:            []byte(req),
 			SessionId:       uint64(clientSession.SessionId),
@@ -178,6 +181,7 @@ func SendRelay(
 			RequestBlock:    requestedBlock,
 			QoSReport:       nil,
 			DataReliability: dataReliability,
+			ConnectionType:  connectionType,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)

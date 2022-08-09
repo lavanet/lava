@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -35,6 +36,13 @@ type proxyProcess struct {
 	cache     bool
 	strict    bool
 	noSave    bool
+}
+
+type jsonStruct struct {
+	Jsonrpc string        `json:"jsonrpc"`
+	ID      int           `json:"id,omitempty"`
+	Method  string        `json:"method"`
+	Params  []interface{} `json:"params,omitempty"`
 }
 
 func getDomain(s string) (domain string) {
@@ -222,7 +230,11 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
 	} else {
 		// Return Cached data if found in history and fromCache is set on
-		if val, ok := mock.requests[rawBodyS]; ok && p.cache {
+		jStruct := &jsonStruct{}
+		json.Unmarshal([]byte(rawBodyS), jStruct)
+		jStruct.ID = 0
+		rawBodySNoID, _ := json.Marshal(jStruct)
+		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
 			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
 			cacheCount += 1
 

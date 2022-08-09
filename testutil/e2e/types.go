@@ -23,7 +23,7 @@ type CMD struct {
 	filter       []string                 `json:"filter"`
 	testing      bool                     `json:"testing"`
 	test         TestProc                 `json:"test"`
-	results      *map[string][]TestResult `json:"results"`
+	results      map[string][]*TestResult `json:"results"`
 	dep          *State                   `json:"dep"`
 	failed       *bool                    `json:"failed"`
 	requireAlive bool                     `json:"requireAlive"`
@@ -37,8 +37,8 @@ type State struct {
 	awaiting     map[string]Await         `json:"awating"`
 	testing      bool                     `json:"testing"`
 	test         TestProc                 `json:"test"`
-	results      *map[string][]TestResult `json:"results"`
-	depending    *[]*State                `json:"depending"`
+	results      map[string][]*TestResult `json:"results"`
+	depending    []*State                 `json:"depending"`
 	cmd          *exec.Cmd                `json:"cmd"`
 	failed       *bool                    `json:"failed"`
 	requireAlive bool                     `json:"requireAlive"`
