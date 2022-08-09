@@ -86,14 +86,14 @@ func EthTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *bt
 		reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", ethApi.req)
 		if err != nil {
 			if ethApi.name == "eth_unsupported" {
-				log.Println("API ERROR CHECK OK", ethApi.name)
+				log.Println("reply JSON_eth_unsupported")
 			} else {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			}
 		} else {
 			if strings.Compare(ethApi.res, string(reply.Data)) == 0 {
-				prettyPrintReply(*reply, ethApi.name)
+				prettyPrintReply(*reply, "JSONRPC_"+ethApi.name)
 			} else {
 				log.Println("ERROR API CHECK FAILED", ethApi.name, "RESPONSE MISMATCH")
 				log.Println(ethApi.req, string(reply.Data), ethApi.res)
