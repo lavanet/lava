@@ -32,27 +32,27 @@ screen -S cos3_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S cos3_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/COS3_2243.log"
 
 #FTM providers
-screen -d -m -S ftm250_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2251 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer1"
-screen -S ftm250_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2252 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer2"
-screen -S ftm250_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2253 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer3"
-screen -S ftm250_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2254 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer4"
-screen -S ftm250_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2255 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer5"
+screen -d -m -S ftm250_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2251 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/FTM250_2251.log"
+screen -S ftm250_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2252 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/FTM250_2252.log"
+screen -S ftm250_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2253 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/FTM250_2253.log"
+screen -S ftm250_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2254 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer4 2>&1 | tee $LOGS_DIR/FTM250_2254.log"
+screen -S ftm250_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2255 $FTM_RPC_HTTP FTM250 jsonrpc --from servicer5 2>&1 | tee $LOGS_DIR/FTM250_2255.log"
 
 #osmosis testnet providers
-screen -d -m -S cos4_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4231 $OSMO_TEST_REST COS4 rest --from servicer1"
-screen -S cos4_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4232 $OSMO_TEST_REST COS4 rest --from servicer2"
-screen -S cos4_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4233 $OSMO_TEST_REST COS4 rest --from servicer3"
-screen -S cos4_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4241 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1"
-screen -S cos4_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4242 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer2"
-screen -S cos4_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4243 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer3"
+screen -d -m -S cos4_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4231 $OSMO_TEST_REST COS4 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4231.log"
+screen -S cos4_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4232 $OSMO_TEST_REST COS4 rest --from servicer2 2>&1 | tee $LOGS_DIR/COS4_4232.log"
+screen -S cos4_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4233 $OSMO_TEST_REST COS4 rest --from servicer3 2>&1 | tee $LOGS_DIR/COS4_4233.log"
+screen -S cos4_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4241 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4241.log"
+screen -S cos4_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4242 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/COS4_4242.log"
+screen -S cos4_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4243 $OSMO_TEST_RPC COS4 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/COS4_4243.log"
 
 # Lava providers
-screen -d -m -S lav1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1"
-screen -S lav1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2"
-screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3"
-screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1"
-screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2"
-screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3"
+screen -d -m -S lav1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2271.log"
+screen -S lav1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2272.log"
+screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2273.log"
+screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
+screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
+screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
 
 # Setup Portals
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
