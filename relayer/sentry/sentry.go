@@ -200,10 +200,10 @@ type Sentry struct {
 	// server Blocks To Save (atomic)
 	earliestSavedBlock uint64
 	// Block storage (atomic)
-	blockHeight  int64
-	currentEpoch int64
-	EpochSize    uint64
-
+	blockHeight    int64
+	currentEpoch   int64
+	EpochSize      uint64
+	providersCount uint64
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
@@ -227,6 +227,19 @@ type Sentry struct {
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.Mutex
+}
+
+func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.providersCount, res.GetParams().ServicersToPairCount)
+	return nil
+}
+
+func (s *Sentry) GetProvidersCount() uint64 {
+	return atomic.LoadUint64(&s.providersCount)
 }
 
 func (s *Sentry) GetEpochSize(ctx context.Context) error {
@@ -489,7 +502,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	s.GetEpochSize(ctx) // ARITODO:: Tell omer tihs has to be here since we use epoch size early on
-
+	s.FetchProvidersCount(ctx)
 	return nil
 }
 
@@ -694,6 +707,7 @@ func (s *Sentry) Start(ctx context.Context) {
 
 				s.SetCurrentEpochHeight(data.Block.Height)
 				s.GetEpochSize(ctx)
+				s.FetchProvidersCount(ctx)
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
@@ -1354,6 +1368,10 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 		return true, nil
 	}
 	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
+}
+
+func (s *Sentry) GetReliabilityThreshold() uint32 {
+	return s.serverSpec.ReliabilityThreshold
 }
 
 func (s *Sentry) GetSpecName() string {

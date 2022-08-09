@@ -393,7 +393,6 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.RelayNum = sess.RelayNum + 1
 	sess.Lock.Unlock()
 
-	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, cuSum, request.CuSum)
 	utils.LavaFormatInfo("updateSessionCu", nil, &map[string]string{
 		"serviceApi.Name":   serviceApi.Name,
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
@@ -466,9 +465,9 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 	//TODO: cache this client, no need to run the query every time
-	res, err := isAuthorizedUser(ctx, userAddr.String())
+	authorisedUserResponse, err := isAuthorizedUser(ctx, userAddr.String())
 	if err != nil {
-		return nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{})
+		return nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String()})
 	}
 
 	if !isSupportedSpec(request) {
@@ -479,10 +478,10 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	// Parse message, check valid api, etc
 	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data)})
+		return nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data), "userAddr": userAddr.String()})
 	}
 
-	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request, res.GetOverlap())
+	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request, authorisedUserResponse.GetOverlap())
 	if err != nil {
 		return nil, err
 	}
@@ -499,30 +498,42 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		//data reliability message
 		if dataReliability != nil {
-			return nil, fmt.Errorf("dataReliability can only be used once per client per epoch")
+			return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
 		}
 
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
-			return nil, fmt.Errorf("dataReliability Triggered with vrf_pk == nil")
+			return nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String()})
 		}
 		// verify the providerSig is ineed a signature by a valid provider on this query
 		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
 		if err != nil {
-			return nil, err
+			return nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
 		}
 		if !valid {
-			return nil, fmt.Errorf("invalid DataReliability Provider signing")
+			return nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
 		}
 		//verify data reliability fields correspond to the right vrf
 		relayEpochStart := g_sentry.GetEpochFromBlockHeight(request.BlockHeight, false)
 		valid = utils.VerifyVrfProof(request, *vrf_pk, relayEpochStart)
 		if !valid {
-			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
+			return nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability), "relayEpochStart": strconv.FormatUint(relayEpochStart, 10)})
 		}
-		//TODO: verify reliability result corresponds to this provider
 
-		log.Println("server got valid DataReliability request")
+		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		if authorisedUserResponse.Index != vrfIndex {
+			return nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
+					"dataReliability": fmt.Sprintf("%v", dataReliability), "relayEpochStart": strconv.FormatUint(relayEpochStart, 10),
+					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
+					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
+		}
+		utils.LavaFormatInfo("server got valid DataReliability request", nil, nil)
 
 		userSessions.Lock.Lock()
 
@@ -533,7 +544,9 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	} else {
 		// Validate
 		if request.SessionId == 0 {
-			return nil, fmt.Errorf("SessionID cannot be 0 for non-data reliability requests")
+			return nil, utils.LavaFormatError("SessionID cannot be 0 for non-data reliability requests", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
+					"relay request": fmt.Sprintf("%v", request)})
 		}
 
 		// Update session
@@ -549,7 +562,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	// Send
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("Sending nodeMsg failed", err,
+			nil)
 	}
 
 	latestBlock := int64(0)
@@ -557,15 +571,13 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	if g_sentry.GetSpecComparesHashes() {
 		// Add latest block and finalized
-		latestBlock, finalizedBlockHashes, err = g_chainSentry.GetLatestBlockData()
-		if err != nil {
-			return nil, err
-		}
+		latestBlock, finalizedBlockHashes = g_chainSentry.GetLatestBlockData()
 	}
 
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err,
+			&map[string]string{"finalizedBlockHashes": fmt.Sprintf("%v", finalizedBlockHashes)})
 	}
 
 	reply.FinalizedBlocksHashes = []byte(jsonStr)
@@ -578,7 +590,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		// Update signature,
 		sig, err := sigs.SignRelayResponse(g_privKey, reply, &request)
 		if err != nil {
-			return err
+			return utils.LavaFormatError("failed signing relay response", err,
+				&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply)})
 		}
 		reply.Sig = sig
 
@@ -586,7 +599,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			//update sig blocks signature
 			sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
 			if err != nil {
-				return err
+				return utils.LavaFormatError("failed signing finalization data", err,
+					&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply), "userAddr": userAddr.String()})
 			}
 			reply.SigBlocks = sigBlocks
 		}
@@ -605,23 +619,27 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 
 	queryHash := utils.CalculateQueryHash(*request)
 	if !bytes.Equal(queryHash, request.DataReliability.QueryHash) {
-		return false, fmt.Errorf("query hash mismatch on data reliability message: %s VS %s", queryHash, request.DataReliability.QueryHash)
+		return false, utils.LavaFormatError("query hash mismatch on data reliability message", nil,
+			&map[string]string{"queryHash": string(queryHash), "request QueryHash": string(request.DataReliability.QueryHash)})
 	}
 
 	//validate consumer signing on VRF data
 	valid, err = sigs.ValidateSignerOnVRFData(consumer, *request.DataReliability)
 	if err != nil {
-		return
+		return false, utils.LavaFormatError("failed to Validate Signer On VRF Data", err,
+			&map[string]string{"consumer": consumer.String(), "request.DataReliability": fmt.Sprintf("%v", request.DataReliability)})
 	}
 
 	//validate provider signing on query data
 	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
-		return false, fmt.Errorf("RecoverProviderPubKeyFromVrfDataAndQuery: %w", err)
+		return false, utils.LavaFormatError("failed to Recover Provider PubKey From Vrf Data And Query", err,
+			&map[string]string{"consumer": consumer.String(), "request": fmt.Sprintf("%v", request)})
 	}
 	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
 	if err != nil {
-		return false, fmt.Errorf("AccAddressFromHex provider: %w", err)
+		return false, utils.LavaFormatError("failed converting signer to address", err,
+			&map[string]string{"consumer": consumer.String(), "PubKey": pubKey.Address().String()})
 	}
 	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
 }
@@ -632,7 +650,7 @@ func SendVoteCommitment(voteID string, vote *voteData) {
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
-		log.Printf("Error: failed to send vote commitment! error: %s\n", err)
+		utils.LavaFormatError("failed to send vote commitment", err, nil)
 	}
 }
 
@@ -642,7 +660,7 @@ func SendVoteReveal(voteID string, vote *voteData) {
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
-		log.Printf("Error: failed to send vote Reveal! error: %s\n", err)
+		utils.LavaFormatError("failed to send vote Reveal", err, nil)
 	}
 }
 
@@ -662,7 +680,8 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		nodeHeight := uint64(g_sentry.GetBlockHeight())
 		if voteDeadline < nodeHeight {
 			// its too late to vote
-			log.Printf("Error: Vote Event received for deadline %d but current block is %d\n", voteDeadline, nodeHeight)
+			utils.LavaFormatError("Vote Event received but it's too late to vote", nil,
+				&map[string]string{"deadline": strconv.FormatUint(voteDeadline, 10), "nodeHeight": strconv.FormatUint(nodeHeight, 10)})
 			return
 		}
 	}
@@ -674,7 +693,8 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		if voteParams != nil {
 			if voteParams.GetCloseVote() {
 				//we are closing the vote, so its okay we ahve this voteID
-				log.Printf("[+] Received Vote termination event for voteID: %s, Cleared entry\n", voteID)
+				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry", nil,
+					&map[string]string{"voteID": voteID})
 				delete(g_votes, voteID)
 				return
 			}
