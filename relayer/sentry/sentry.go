@@ -268,7 +268,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) err
 	}
 
 	// switch pairing every epochSize blocks
-	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() { //ARITODO:: export
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() {
 		return nil
 	}
 
@@ -366,16 +366,14 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
+
+	// replace previous pairing with new providers
 	s.pairingNextMu.Lock()
-	s.pairingNext = pairing // replace with new connections
+	s.pairingNext = pairing
 	s.pairingNextAddresses = pairingAddresses
 	s.pairingNextMu.Unlock()
-	//log.Printf("new pairing list received %d. should switch at %d \n", s.GetBlockHeight(), s.PairingBlockStart+int64(s.EpochSize)) // ARITODO:: export GetNextEpocStart func
 
-	// TODO:: new epoch, reset field containing previous finalizedBlocks of providers of epoch - 2
-	// TODO:: keep latest provider finalized blocks and prev finalied from epoch - 1
-	// TODO:: consensus also has to change with pairing changes?
-
+	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
 	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
 	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)

@@ -339,12 +339,17 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	relayNum := sess.RelayNum
 	cuSum := sess.CuSum
 	sess.Lock.Unlock()
+
+	if relayNum+1 != request.RelayNum {
+		fmt.Printf("ERROR: consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
+	}
+
 	// Check that relaynum gets incremented by user
 	if relayNum+1 > request.RelayNum {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
-		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
+		return fmt.Errorf("consumer requested a larger relaynum than expected. expected: %d, received: %d", relayNum+1, request.RelayNum)
 	}
 
 	sess.Lock.Lock()
