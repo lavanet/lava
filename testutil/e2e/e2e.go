@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var results = map[string][]TestResult{}
+var results = map[string][]*TestResult{}
 var homepath, isGithubAction = prepHomePath()
 var testfailed = false
 var failed = &testfailed
@@ -25,7 +25,7 @@ func TestProcess(id string, exec string, test TestProc) (state State) {
 	cmd.testing = true
 	cmd.dep = nil
 	cmd.requireAlive = false
-	cmd.results = &results
+	cmd.results = results
 	cmd.homepath = homepath
 	cmd.failed = failed
 	cmd.test = test
@@ -58,9 +58,6 @@ func awaitState(state State) {
 				for key, await := range state.awaiting {
 					if !*state.failed {
 						last := " :::(log tail)::: " + string(*state.lastLine)
-						if len(last) > 120 {
-							last = last[:120] + "..."
-						}
 						println(" ::: " + state.id + " ::: " + await.msg + last)
 					}
 					if *await.done {
@@ -140,7 +137,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			pid := state.cmd.Process.Pid
 			if checkTerminated && !*state.finished && state.requireAlive && !isPidAlive(pid) {
 				log := state.id + " ::: PROCESS HAS TERMINATED ::: "
-				(*state.results)["TERMINATED"] = []TestResult{{
+				(state.results)["TERMINATED"] = []*TestResult{{
 					eventID: "TERMINATED",
 					found:   true,
 					passed:  false,
@@ -168,7 +165,7 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 	}
 	fmt.Printf(" ::: exiting %s ::: \n", state.id)
 	*state.failed = true
-	for _, dep := range *state.depending {
+	for _, dep := range state.depending {
 		if dep != nil {
 			*dep.finished = true
 		}
@@ -197,14 +194,14 @@ func processLog(line string, state State, t *testing.T) {
 	if state.testing {
 		runtype = "!!! testing !!! "
 		foundExpected := false
-		results := *state.results
+		results := state.results
 		failed := false
 		fail_now := false
 		for _, event := range state.test.expectedEvents {
 			//TODO: match with regex
 			if strings.Contains(line, event) {
 				if _, ok := results[event]; !ok {
-					results[event] = []TestResult{}
+					results[event] = []*TestResult{}
 				} else {
 					// reacurring event
 				}
@@ -214,9 +211,9 @@ func processLog(line string, state State, t *testing.T) {
 						fail_now = true
 					}
 					res, err := testRes.passed, testRes.err
-					results[event] = append(results[event], TestResult{event, true, res, line, err, state.id, fail_now})
+					results[event] = append(results[event], &TestResult{event, true, res, line, err, state.id, fail_now})
 				} else {
-					results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event), state.id, fail_now})
+					results[event] = append(results[event], &TestResult{event, true, false, line, fmt.Errorf("Test not implemented for event %s", event), state.id, fail_now})
 					failed = true
 				}
 				foundExpected = true
@@ -237,7 +234,7 @@ func processLog(line string, state State, t *testing.T) {
 				//TODO: match with regex
 				if strings.Contains(line, event) {
 					if _, ok := results[event]; !ok { // first time event
-						results[event] = []TestResult{}
+						results[event] = []*TestResult{}
 					}
 					if test, test_exists := state.test.tests[event]; test_exists {
 						testRes := test(LogLine{line: line, parent: state.id})
@@ -249,9 +246,9 @@ func processLog(line string, state State, t *testing.T) {
 							failed = true
 							fail_now = true
 						}
-						results[event] = append(results[event], TestResult{event, true, res, line, err, state.id, fail_now})
+						results[event] = append(results[event], &TestResult{event, true, res, line, err, state.id, fail_now})
 					} else {
-						results[event] = append(results[event], TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line), state.id, fail_now})
+						results[event] = append(results[event], &TestResult{event, true, false, line, fmt.Errorf("Unexpected event %s ::: %s", event, line), state.id, fail_now})
 						if state.test.strict {
 							failed = true
 						}
@@ -276,7 +273,7 @@ func processLog(line string, state State, t *testing.T) {
 				println(" ::: FAILED TEST WITH STRICT CONDITION ::: EXITING " + state.id + " ::: ")
 				*state.finished = true
 				*state.failed = true
-				for _, dep := range *state.depending {
+				for _, dep := range state.depending {
 					if dep != nil {
 						println(" ::: FAILED TEST WITH STRICT CONDITION ::: EXITING " + dep.id + " ::: ")
 						*dep.finished = true
@@ -294,7 +291,7 @@ func processLog(line string, state State, t *testing.T) {
 	}
 }
 
-func printTestResult(res TestResult, t *testing.T) {
+func printTestResult(res *TestResult, t *testing.T) {
 	status := "FAILED"
 	err := res.err
 	if res.passed {
@@ -322,7 +319,7 @@ func LogProcess(cmd CMD, t *testing.T, states *[]State) State {
 	return newState
 }
 
-func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test TestProc, results *map[string][]TestResult, depends *State, failed *bool, requireAlive bool, debug *bool, stdout *bool) State {
+func logProcess(t *testing.T, id string, home string, cmd string, filter []string, testing bool, test TestProc, results map[string][]*TestResult, depends *State, failed *bool, requireAlive bool, debug *bool, stdout *bool) State {
 	finished := false
 	lastLine := "init"
 	state := State{
@@ -332,7 +329,7 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 		testing:      testing,
 		test:         test,
 		results:      results,
-		depending:    &[]*State{depends},
+		depending:    []*State{depends},
 		cmd:          nil,
 		failed:       failed,
 		requireAlive: requireAlive,
@@ -355,15 +352,15 @@ func logProcess(t *testing.T, id string, home string, cmd string, filter []strin
 	return state
 }
 
-func finalizeResults(t *testing.T) []TestResult {
+func finalizeResults(t *testing.T) []*TestResult {
 
 	fmt.Println(string("================================================="))
 	fmt.Println(string("================ TEST DONE! ====================="))
 	fmt.Println(string("================================================="))
 	fmt.Println(string("=============== Expected Events ================="))
 
-	finalExpectedTests := []TestResult{}
-	finalUnexpectedTests := []TestResult{}
+	finalExpectedTests := []*TestResult{}
+	finalUnexpectedTests := []*TestResult{}
 	count := 1
 	for _, expected := range getExpectedEvents(states) {
 		if testList, foundEvent := results[expected]; foundEvent {
@@ -405,11 +402,11 @@ func prepTest(t *testing.T) {
 
 	*failed = false
 	states = []State{}
-	results = map[string][]TestResult{}
+	results = map[string][]*TestResult{}
 
 }
 
-func wrapGoTest(t *testing.T, finalresults []TestResult, err error) {
+func wrapGoTest(t *testing.T, finalresults []*TestResult, err error) {
 	if err != nil {
 		t.Errorf("expected no error but got %v", err)
 	}
