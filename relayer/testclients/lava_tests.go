@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -19,7 +20,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 
 		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
-		mostImportantApisToTest := []string{
+		mostImportantApisToTest := map[string][]string{http.MethodGet: {
 			"/blocks/latest",
 			"/lavanet/lava/pairing/providers/LAV1",
 			"/lavanet/lava/pairing/clients/LAV1",
@@ -28,20 +29,24 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
 			"/cosmos/gov/v1beta1/proposals",
 			"/lavanet/lava/spec/spec",
-			"/blocks/1"}
+			"/blocks/1"},
+			http.MethodPost: {},
+		}
 
-		for _, api := range mostImportantApisToTest {
-			for i := 0; i < 100; i++ {
-				log.Println(fmt.Sprintf("%s", api))
-				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
-				if err != nil {
-					log.Println(err)
-					errors = append(errors, fmt.Sprintf("%s", err))
-				} else {
-					prettyPrintReply(*reply, "LavaTestsResponse")
+		for httpMethod, api := range mostImportantApisToTest {
+			for _, api_value := range api {
+				for i := 0; i < 100; i++ {
+					reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod)
+					if err != nil {
+						log.Println(err)
+						errors = append(errors, fmt.Sprintf("%s", err))
+					} else {
+						prettyPrintReply(*reply, "LavaTestsResponse")
+					}
 				}
 			}
 		}
+
 		log.Println("continuing to other spec apis")
 		// finish with testing all other API methods that dont require parameters
 		allSpecNames, err := s.GetAllSpecNames(ctx)
@@ -49,17 +54,27 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			log.Println(err)
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
-		for _, api := range allSpecNames {
-			if strings.Contains(api, "/{") {
+		for apiName, apiInterfaceList := range allSpecNames {
+			if strings.Contains(apiName, "/{") {
 				continue
 			}
-			log.Println(fmt.Sprintf("%s", api))
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api, "")
-			if err != nil {
-				log.Println(err)
-				errors = append(errors, fmt.Sprintf("%s", err))
-			} else {
-				prettyPrintReply(*reply, "LavaTestsResponse")
+
+			for _, api_interface := range apiInterfaceList {
+				httpMethod := http.MethodGet
+				if api_interface.Type == "post" {
+					httpMethod = http.MethodPost
+					// for now we dont want to run the post apis in this test
+					continue
+				}
+				log.Println(fmt.Sprintf("%s", apiName))
+				reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod)
+				if err != nil {
+					log.Println(err)
+					errors = append(errors, fmt.Sprintf("%s", err))
+				} else {
+					prettyPrintReply(*reply, "LavaTestsResponse")
+				}
+
 			}
 		}
 

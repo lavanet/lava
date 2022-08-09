@@ -61,36 +61,36 @@ func setupForConflictTests(t *testing.T, NumOfProviders int) testStruct {
 func TestDetection(t *testing.T) {
 	ts := setupForConflictTests(t, NUM_OF_PROVIDERS)
 	tests := []struct {
-		name         string
-		Creator      common.Account
-		Provider0    common.Account
-		Provider1    common.Account
-		ApiId        uint32
-		ApiUrl       string
-		BlockHeight  int64
-		ChainID      string
-		Data         []byte
-		RequestBlock int64
-		Cusum        uint64
-		RelayNum     uint64
-		SeassionID   uint64
-		QoSReport    *types.QualityOfServiceReport
-		ReplyData    []byte
-		Valid        bool
+		name           string
+		Creator        common.Account
+		Provider0      common.Account
+		Provider1      common.Account
+		ConnectionType string
+		ApiUrl         string
+		BlockHeight    int64
+		ChainID        string
+		Data           []byte
+		RequestBlock   int64
+		Cusum          uint64
+		RelayNum       uint64
+		SeassionID     uint64
+		QoSReport      *types.QualityOfServiceReport
+		ReplyData      []byte
+		Valid          bool
 	}{
-		{"HappyFlow", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 0, "", []byte{}, 0, 100, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"CuSumChange", ts.consumer, ts.Providers[0], ts.Providers[2], 0, "", 0, "", []byte{}, 0, 0, 100, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"RelayNumChange", ts.consumer, ts.Providers[0], ts.Providers[3], 0, "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"SessionIDChange", ts.consumer, ts.Providers[0], ts.Providers[4], 0, "", 0, "", []byte{}, 0, 0, 0, 1, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"QoSNil", ts.consumer, ts.Providers[2], ts.Providers[3], 0, "", 0, "", []byte{}, 0, 0, 0, 0, nil, []byte("DIFF"), true},
-		{"BadCreator", ts.Providers[4], ts.Providers[0], ts.Providers[1], 0, "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadApiId", ts.consumer, ts.Providers[0], ts.Providers[1], 1, "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadURL", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "DIFF", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadBlockHeight", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 10, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadChainID", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 0, "DIFF", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadData", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 0, "", []byte("DIFF"), 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadRequestBlock", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"SameReplyData", ts.consumer, ts.Providers[0], ts.Providers[1], 0, "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte{}, false},
+		{"HappyFlow", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 0, 100, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"CuSumChange", ts.consumer, ts.Providers[0], ts.Providers[2], "", "", 0, "", []byte{}, 0, 0, 100, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"RelayNumChange", ts.consumer, ts.Providers[0], ts.Providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"SessionIDChange", ts.consumer, ts.Providers[0], ts.Providers[4], "", "", 0, "", []byte{}, 0, 0, 0, 1, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"QoSNil", ts.consumer, ts.Providers[2], ts.Providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, nil, []byte("DIFF"), true},
+		{"BadCreator", ts.Providers[4], ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadConnectionType", ts.consumer, ts.Providers[0], ts.Providers[1], "DIFF", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadURL", ts.consumer, ts.Providers[0], ts.Providers[1], "", "DIFF", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadBlockHeight", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 10, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadChainID", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "DIFF", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadData", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte("DIFF"), 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadRequestBlock", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"SameReplyData", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte{}, false},
 	}
 
 	for _, tt := range tests {
@@ -101,7 +101,7 @@ func TestDetection(t *testing.T) {
 			msg.Creator = tt.Creator.Addr.String()
 
 			//changes to request1 according to test
-			msg.ResponseConflict.ConflictRelayData1.Request.ApiId += tt.ApiId
+			msg.ResponseConflict.ConflictRelayData1.Request.ConnectionType += tt.ConnectionType
 			msg.ResponseConflict.ConflictRelayData1.Request.ApiUrl += tt.ApiUrl
 			msg.ResponseConflict.ConflictRelayData1.Request.BlockHeight += tt.BlockHeight
 			msg.ResponseConflict.ConflictRelayData1.Request.ChainID += tt.ChainID

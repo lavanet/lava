@@ -24,8 +24,8 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if block != conflictData.ConflictRelayData1.Request.BlockHeight {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", block, conflictData.ConflictRelayData1.Request.BlockHeight)
 	}
-	if conflictData.ConflictRelayData0.Request.ApiId != conflictData.ConflictRelayData1.Request.ApiId {
-		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.ApiId, conflictData.ConflictRelayData1.Request.ApiId)
+	if conflictData.ConflictRelayData0.Request.ConnectionType != conflictData.ConflictRelayData1.Request.ConnectionType {
+		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.ConnectionType, conflictData.ConflictRelayData1.Request.ConnectionType)
 	}
 	if conflictData.ConflictRelayData0.Request.ApiUrl != conflictData.ConflictRelayData1.Request.ApiUrl {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.ApiUrl, conflictData.ConflictRelayData1.Request.ApiUrl)

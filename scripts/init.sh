@@ -10,7 +10,7 @@ wait
 lavad tx gov vote 1 yes -y --from alice
 lavad tx gov vote 2 yes -y --from alice
 # lavad tx gov vote 3 yes -y --from alice
-sleep_until_next_epoch
+sleep 4
 
 #Ethereum providers
 lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 &

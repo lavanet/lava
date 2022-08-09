@@ -27,6 +27,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -59,12 +60,13 @@ type QoSInfo struct {
 }
 
 type VoteParams struct {
-	CloseVote    bool
-	ChainID      string
-	ApiURL       string
-	RequestData  []byte
-	RequestBlock uint64
-	Voters       []string
+	CloseVote      bool
+	ChainID        string
+	ApiURL         string
+	RequestData    []byte
+	RequestBlock   uint64
+	Voters         []string
+	ConnectionType string
 }
 
 func (vp *VoteParams) GetCloseVote() bool {
@@ -344,7 +346,7 @@ func (s *Sentry) GetServicersToPairCount() int64 {
 	return int64(len(s.pairingAddresses))
 }
 
-func (s *Sentry) GetAllSpecNames(ctx context.Context) ([]string, error) {
+func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
 	})
@@ -352,9 +354,9 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	serverApis, _ := s.getServiceApis(spec)
-	var allSpecNames []string
+	var allSpecNames map[string][]types.ApiInterface
 	for _, api := range serverApis {
-		allSpecNames = append(allSpecNames, api.Name)
+		allSpecNames[api.Name] = api.ApiInterfaces
 	}
 	return allSpecNames, nil
 }
@@ -555,6 +557,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					chainID := e.Events[eventToListen+".chainID"][idx]
 					apiURL := e.Events[eventToListen+".apiURL"][idx]
 					requestData := []byte(e.Events[eventToListen+".requestData"][idx])
+					connectionType := e.Events[eventToListen+".connectionType"][idx]
 					num_str := e.Events[eventToListen+".requestBlock"][idx]
 					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
@@ -569,7 +572,15 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					}
 					voters_st := e.Events[eventToListen+".voters"][idx]
 					voters := strings.Split(voters_st, ",")
-					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters, CloseVote: false}
+					voteParams := &VoteParams{
+						ChainID:        chainID,
+						ApiURL:         apiURL,
+						RequestData:    requestData,
+						RequestBlock:   requestBlock,
+						Voters:         voters,
+						CloseVote:      false,
+						ConnectionType: connectionType,
+					}
 					go s.voteInitiationCb(ctx, voteID, voteDeadline, voteParams)
 				}
 			}

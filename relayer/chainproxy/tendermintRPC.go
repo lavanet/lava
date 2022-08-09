@@ -73,7 +73,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)), "")
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -129,8 +129,8 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 	return nodeMsg, nil
 }
 
-func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
-	//
+func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used only in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {
@@ -214,7 +214,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			log.Println("ws: in <<< ", string(msg))
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
+			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				log.Println(err)
 				break
@@ -230,7 +230,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Post("/:dappId", func(c *fiber.Ctx) error {
 		log.Println("jsonrpc in <<< ", string(c.Body()))
-		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
+		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
 			return nil
@@ -243,7 +243,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		path := c.Params("*")
 		log.Println("urirpc in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
 			//

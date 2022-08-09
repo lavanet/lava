@@ -65,7 +65,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	msg.Creator = consumer.Addr.String()
 	//request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
-	msg.ResponseConflict.ConflictRelayData0.Request.ApiId = 0
+	msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight = sdk.UnwrapSDKContext(ctx).BlockHeight()
 	msg.ResponseConflict.ConflictRelayData0.Request.ChainID = spec.Index
