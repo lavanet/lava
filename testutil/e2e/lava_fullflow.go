@@ -59,7 +59,7 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 	}
 
 	if run_providers_osmosis {
-		fmt.Println(" ::: Starting Providers Processes [Osmosis] ::: ")
+		fmt.Println(" ::: Starting Providers Processes [OSMOSIS] ::: ")
 		prov_osm := TestProcess("providers_osmosis", homepath+"scripts/osmosis.sh", providersTest)
 		// debugOn(prov_osm)
 		println(" ::: Providers Processes Started ::: ")
@@ -67,7 +67,7 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 
 		if run_client_osmosis {
 			sleep(1)
-			fmt.Println(" ::: Starting Client Process [ETH] ::: ")
+			fmt.Println(" ::: Starting Client Process [OSMOSIS] ::: ")
 			clientOsmoRPC := TestProcess("clientOsmoRPC", "lavad test_client COS3 tendermintrpc --from user2", clientTest)
 			await(node, "relay payment 1/3 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
@@ -87,7 +87,7 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 
 		if run_client_eth {
 			sleep(1)
-			fmt.Println(" ::: Starting Client Process [COS3] ::: ")
+			fmt.Println(" ::: Starting Client Process [ETH] ::: ")
 			clientEth := TestProcess("clientEth", "lavad test_client ETH1 jsonrpc --from user1", clientTest)
 			await(clientEth, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
 			await(node, "relay payment 3/3 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
