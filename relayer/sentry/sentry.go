@@ -292,6 +292,11 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) err
 	s.pairingNext = []*RelayerClientWrapper{}
 	log.Printf("Pairing list switched. CurrentBlockHeight: %d \n", s.GetBlockHeight())
 
+	// Time to reset the consensuses for this pairing epoch
+	s.providerDataContainersMu.Lock()
+	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
+	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
+	s.providerDataContainersMu.Unlock()
 	return nil
 }
 
@@ -372,12 +377,6 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	s.pairingNext = pairing
 	s.pairingNextAddresses = pairingAddresses
 	s.pairingNextMu.Unlock()
-
-	// Time to reset the consensuses for this pairing epoch
-	s.providerDataContainersMu.Lock()
-	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
-	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
-	s.providerDataContainersMu.Unlock()
 	return nil
 }
 
