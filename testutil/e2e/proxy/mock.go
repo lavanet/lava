@@ -56,7 +56,11 @@ func jsonFileToMap(jsonfile string) (m map[string]string) {
 	count := 0
 	for key, body := range newMock.requests {
 		// println(" ::: ", key, " ::: ", body)
-		m[key] = body
+		jStruct := &jsonStruct{}
+		json.Unmarshal([]byte(key), jStruct)
+		jStruct.ID = 0
+		keyNoId, _ := json.Marshal(jStruct)
+		m[string(keyNoId)] = body
 		count += 1
 	}
 	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
