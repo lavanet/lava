@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/testutil/common"
 )
 
 const (
@@ -25,7 +25,7 @@ type ChainSentry struct {
 	ChainID                string
 
 	// Spec blockQueueMu (rw mutex)
-	blockQueueMu sync.RWMutex
+	blockQueueMu common.LavaMutex
 	blocksQueue  []string
 }
 
@@ -35,7 +35,7 @@ func (cs *ChainSentry) GetLatestBlockNum() int64 {
 
 func (cs *ChainSentry) SetLatestBlockNum(value int64) {
 	cs.blockQueueMu.Lock()
-	defer cs.blockQueueMu.Unlock()
+	// defer cs.blockQueueMu.Unlock()
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
