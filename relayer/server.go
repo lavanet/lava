@@ -5,7 +5,6 @@ import (
 	gobytes "bytes"
 	context "context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -342,7 +341,9 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	} else {
 		tmp_vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get the Max allowed compute units for the user! %s", err)
+			return nil, nil, utils.LavaFormatError("failed to get the Max allowed compute units for the user!", err, &map[string]string{
+				"userAddr": userAddr,
+			})
 		}
 		vrf_pk = tmp_vrf_pk
 
@@ -353,7 +354,11 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		userSessions.Sessions[req.SessionId] = session
 		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
 			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
-			log.Println("new user sessions in epoch " + strconv.FormatUint(maxcuRes, 10))
+			utils.LavaFormatInfo("new user sessions in epoch", err, &map[string]string{
+				"userAddr": userAddr,
+				"maxcuRes": strconv.FormatUint(maxcuRes, 10),
+				"epoch":    strconv.FormatUint(sessionEpoch, 10),
+			})
 		}
 		userSessions.Lock.Unlock()
 
@@ -378,7 +383,10 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
-		return fmt.Errorf("consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
+		return utils.LavaFormatError("consumer requested incorrect relaynum.", nil, &map[string]string{
+			"expected": strconv.FormatUint(relayNum+1, 10),
+			"received": strconv.FormatUint(request.RelayNum, 10),
+		})
 	}
 
 	sess.Lock.Lock()
@@ -386,14 +394,24 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.Lock.Unlock()
 
 	log.Println("updateSessionCu", serviceApi.Name, request.SessionId, serviceApi.ComputeUnits, cuSum, request.CuSum)
-
+	utils.LavaFormatInfo("updateSessionCu", nil, &map[string]string{
+		"serviceApi.Name":   serviceApi.Name,
+		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+	})
 	//
 	// TODO: do we worry about overflow here?
 	if cuSum >= request.CuSum {
-		return errors.New("bad cu sum")
+		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
+			"cuSum":         strconv.FormatUint(cuSum, 10),
+			"request.CuSum": strconv.FormatUint(request.CuSum, 10),
+		})
 	}
 	if cuSum+serviceApi.ComputeUnits != request.CuSum {
-		return errors.New("bad cu sum")
+		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
+			"cuSum":                   strconv.FormatUint(cuSum, 10),
+			"request.CuSum":           strconv.FormatUint(request.CuSum, 10),
+			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.ComputeUnits, 10),
+		})
 	}
 
 	userSessions.Lock.Lock()
@@ -401,7 +419,11 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 
 	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
 		userSessions.Lock.Unlock()
-		return errors.New("client cu overflow")
+		return utils.LavaFormatError("client cu overflow", nil, &map[string]string{
+			"epochData.MaxComputeUnits":  strconv.FormatUint(epochData.MaxComputeUnits, 10),
+			"epochData.UsedComputeUnits": strconv.FormatUint(epochData.UsedComputeUnits, 10),
+			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
+		})
 	}
 
 	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
@@ -415,7 +437,9 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	log.Println("server got Relay")
+	utils.LavaFormatInfo("Provider got relay request", nil, &map[string]string{
+		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+	})
 
 	prevEpochStart := g_sentry.GetCurrentEpochHeight() - int64(g_sentry.EpochSize)
 
@@ -425,36 +449,37 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	// client blockheight can only be at at prev epoch but not ealier
 	if request.BlockHeight < int64(prevEpochStart) {
-		return nil, fmt.Errorf("user reported very old lava block height: %d vs %d", g_sentry.GetBlockHeight(), request.BlockHeight)
+		return nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
+			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
+			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
+		})
 	}
 
 	//
 	// Checks
 	user, err := getRelayUser(request)
 	if err != nil {
-		// log.Println("Error: %s", err)
-		return nil, err
+		return nil, utils.LavaFormatError("get relay user", err, &map[string]string{})
 	}
 	userAddr, err := sdk.AccAddressFromHex(user.String())
 	if err != nil {
-		// log.Println("Error: %s", err)
-		return nil, err
+		return nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 	//TODO: cache this client, no need to run the query every time
 	res, err := isAuthorizedUser(ctx, userAddr.String())
 	if err != nil {
-		return nil, fmt.Errorf("user not authorized or error occured, err: %s", err)
+		return nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{})
 	}
 
 	if !isSupportedSpec(request) {
-		return nil, errors.New("spec not supported by server")
+		return nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 
 	//
 	// Parse message, check valid api, etc
 	nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data)})
 	}
 
 	relaySession, vrf_pk, err := getOrCreateSession(ctx, userAddr.String(), request, res.GetOverlap())
