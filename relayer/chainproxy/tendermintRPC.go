@@ -210,6 +210,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				log.Println("read:", err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 			log.Println("ws: in <<< ", string(msg))
@@ -217,11 +218,13 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				log.Println(err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				log.Println("write:", err)
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 			log.Println("out >>> ", string(reply.Data))
@@ -246,9 +249,10 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
-			//
-			// TODO: better errors
-			return c.SendString(`{"error": "unsupported api"}`)
+			if string(c.Body()) != "" {
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, err))
+			}
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 		log.Println("out >>> ", string(reply.Data))
 		return c.SendString(string(reply.Data))
