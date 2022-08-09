@@ -136,6 +136,30 @@ func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
+func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int) context.Context {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
+	for i := 0; i < blocks; i++ {
+		block := uint64(unwrapedCtx.BlockHeight() + 1)
+		unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
+
+		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	}
+
+	return sdk.WrapSDKContext(unwrapedCtx)
+}
+
+func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Context {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
+	for i := unwrapedCtx.BlockHeight(); uint64(i) <= block; i++ {
+		unwrapedCtx = unwrapedCtx.WithBlockHeight(i)
+		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	}
+
+	return sdk.WrapSDKContext(unwrapedCtx)
+}
+
 //Make sure you save the new context
 func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
@@ -144,11 +168,8 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	if err != nil {
 		panic(err)
 	}
-	for i := unwrapedCtx.BlockHeight(); uint64(i) <= nextEpochBlockNum; i++ {
-		unwrapedCtx = unwrapedCtx.WithBlockHeight(i)
-		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
-	}
-	return sdk.WrapSDKContext(unwrapedCtx)
+
+	return AdvanceToBlock(ctx, ks, nextEpochBlockNum)
 }
 
 //Make sure you save the new context

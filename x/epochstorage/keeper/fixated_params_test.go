@@ -273,38 +273,45 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", "\""+strconv.FormatUint(newEpochBlocksVal, 10)+"\"")
 				require.NoError(t, err)
 			}
-
 		})
 	}
-
 }
 
-func TestEarliestEpochSave(t *testing.T) {
+func TestParamFixationWithEpochToSaveChange(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
 
 	//init keepers state
 	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
-	blocksInEpoch := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
-	earliestEpochSaved := keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx))
 
-	//fill memory
-	for i := 0; uint64(i) < epochsToSaveInitial; i++ {
-		ctx = keepertest.AdvanceEpoch(ctx, keepers)
+	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
+	tests := []struct {
+		name          string
+		Block         uint64 //advance test to this block
+		EarliestEpoch uint64 //expected earliest epoch for the test
+		EpochsToSave  uint64 //set this if not zero at the start of the test
+		MumOfFixation uint64 //expected number of fixations in the memory
+	}{
+		{"FillHalfMemory", epochsMemory_initial * blocksInEpochInitial / 2, 0, 0, 1},
+		{"FixateNewParam", (epochsMemory_initial/2 + 1) * blocksInEpochInitial, 0, epochsMemory_initial / 2, 2},
+		{"FillMemory", epochsMemory_initial * blocksInEpochInitial, 0, 0, 2},
+		{"FillMemory+epoch", (epochsMemory_initial + 1) * blocksInEpochInitial, (epochsMemory_initial + 1 - epochsMemory_initial) * blocksInEpochInitial, 0, 2},
+		{"MemoryLengthChange", (epochsMemory_initial + epochsMemory_initial/2 + 1) * blocksInEpochInitial, (epochsMemory_initial + epochsMemory_initial/2 + 1 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 2},
+		{"FutureTest", (epochsMemory_initial * 2) * blocksInEpochInitial, (epochsMemory_initial*2 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 1},
 	}
 
-	err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(epochsToSaveInitial/2, 10)+"\"")
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.EpochsToSave != 0 {
+				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(tt.EpochsToSave, 10)+"\"")
+				require.NoError(t, err)
+			}
 
-	ctx = keepertest.AdvanceEpoch(ctx, keepers)
-	ctx = keepertest.AdvanceEpoch(ctx, keepers)
-	earliestEpochSaved += 2 * blocksInEpoch
-	require.Equal(t, earliestEpochSaved, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
-
-	for i := 0; uint64(i) < 2*epochsToSaveInitial; i++ {
-		ctx = keepertest.AdvanceEpoch(ctx, keepers)
-		earliestEpochSaved += blocksInEpoch
+			ctx = keepertest.AdvanceToBlock(ctx, keepers, tt.Block)
+			require.Equal(t, tt.Block, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.Equal(t, tt.EarliestEpoch, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
+			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
+			require.Equal(t, tt.MumOfFixation, uint64(len(allFixatedParams)))
+		})
 	}
-
-	require.Equal(t, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())-blocksInEpoch*epochsToSaveInitial/2, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
 }
