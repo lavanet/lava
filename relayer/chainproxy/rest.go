@@ -228,10 +228,6 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *RestMessage) GetHeader() string {
-	return nm.connectionType
-}
-
 func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
@@ -276,6 +272,5 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	nm.Result = body
 
-	reply.Data = []byte(string(reply.Data))
 	return reply, nil
 }

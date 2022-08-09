@@ -22,7 +22,6 @@ type NodeMessage interface {
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
 	RequestedBlock() int64
 	GetMsg() interface{}
-	GetHeader() string
 }
 
 type ChainProxy interface {

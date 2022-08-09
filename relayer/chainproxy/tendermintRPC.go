@@ -27,10 +27,6 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 }
 
-func (nm *TendemintRpcMessage) GetHeader() string {
-	return ""
-}
-
 func (m TendemintRpcMessage) GetParams() []interface{} {
 	return m.msg.Params
 }

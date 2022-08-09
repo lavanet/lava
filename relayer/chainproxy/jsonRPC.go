@@ -276,10 +276,6 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }
 
-func (nm *JrpcMessage) GetHeader() string {
-	return ""
-}
-
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	//
 	// Get node
