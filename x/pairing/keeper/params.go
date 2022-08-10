@@ -102,3 +102,30 @@ func (k Keeper) QoSWeight(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyQoSWeight, &res)
 	return
 }
+
+// func (k Keeper) FixateServicersToPair(ctx sdk.Context, block uint64) {
+// 	latestParamChange := k.lates(ctx)
+// 	if latestParamChange == 0 { // no change
+// 		return
+// 	}
+// 	if latestParamChange > block {
+// 		utils.LavaError(ctx, k.Logger(ctx), "invalid_latest_param_change", map[string]string{"error": "latestParamChange > block", "latestParamChange": strconv.FormatUint(latestParamChange, 10)}, "latest param change cant be in the future")
+// 		return
+// 	}
+// 	earliestEpochStart := k.GetEarliestEpochStart(ctx) //this is the previous epoch start, before we update it to the current block
+// 	if latestParamChange < earliestEpochStart {
+// 		//latest param change is older than memory, so remove it
+// 		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
+// 		//clean up older fixated params, they no longer matter
+// 		k.CleanOlderFixatedParams(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
+// 		return
+// 	}
+// 	// we have a param change, is it in the last epoch?
+// 	prevEpochStart, err := k.GetPreviousEpochStartForBlock(ctx, block)
+// 	if err != nil {
+// 		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
+// 	} else if latestParamChange > prevEpochStart {
+// 		// this is a recent change so we need to move the current fixation backwards
+// 		k.PushFixatedParams(ctx, block, earliestEpochStart)
+// 	}
+// }
