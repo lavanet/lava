@@ -212,7 +212,6 @@ func askForRewards(staleEpochHeight int64) {
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
-		log.Println("GenerateOrBroadcastTxWithFactory", err)
 		utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
 			"msg": fmt.Sprintf("%+v", msg),
 		})
@@ -699,25 +698,30 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 				return
 			}
 			//expected to start a new vote but found an existing one
-			log.Printf("Error: new vote Request for vote %+v and voteID: %s had existing entry %v\n", voteParams, voteID, vote)
+			utils.LavaFormatError("new vote Request for vote had existing entry", nil,
+				&map[string]string{"voteParams": fmt.Sprintf("%+v", voteParams), "voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 			return
 		}
-		log.Printf("[+] Received Vote Reveal for voteID: %s, sending Reveal for result: %v \n", voteID, vote)
+		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result", nil,
+			&map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 		SendVoteReveal(voteID, vote)
 		return
 	} else {
 		// new vote
 		if voteParams == nil {
-			log.Printf("Error: vote reveal Request voteID: %s didn't have a vote entry\n", voteID)
+			utils.LavaFormatError("vote reveal Request didn't have a vote entry", nil,
+				&map[string]string{"voteID": voteID})
 			return
 		}
 		if voteParams.GetCloseVote() {
-			log.Printf("Error: vote closing received for voteID: %s but didn't have a vote entry\n", voteID)
+			utils.LavaFormatError("vote closing received but didn't have a vote entry", nil,
+				&map[string]string{"voteID": voteID})
 			return
 		}
 		//try to find this provider in the jury
 		found := slices.Contains(voteParams.Voters, g_sentry.Acc)
 		if !found {
+			utils.LavaFormatInfo("new vote initiated but not for this provider to vote", nil, nil)
 			// this is a new vote but not for us
 			return
 		}
@@ -725,12 +729,14 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType)
 		if err != nil {
-			log.Printf("Error: vote Request for chainID %s did not pass the api check on chain proxy error: %s\n", voteParams.ChainID, err)
+			utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
+				&map[string]string{"voteID": voteID, "chainID": voteParams.ChainID})
 			return
 		}
 		reply, err := nodeMsg.Send(ctx)
 		if err != nil {
-			log.Printf("Error: vote relay send was failed for: api URL:%s and data: %s, error: %s\n", voteParams.ApiURL, voteParams.RequestData, err)
+			utils.LavaFormatError("vote relay send has failed", err,
+				&map[string]string{"ApiURL": voteParams.ApiURL, "RequestData": string(voteParams.RequestData)})
 			return
 		}
 		nonce := rand.Int63()
@@ -739,7 +745,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
-		log.Printf("[+] Received Vote start for voteID: %s, sending commit for result: %v \n", voteID, vote)
+		utils.LavaFormatInfo("Received Vote start, sending commitment for result", nil, &map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 		SendVoteCommitment(voteID, vote)
 		return
 	}
