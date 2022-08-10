@@ -205,7 +205,7 @@ type Sentry struct {
 	currentEpoch       uint64
 	EpochSize          uint64
 	EpochBlocksOverlap uint64
-
+	providersCount     uint64
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
@@ -233,6 +233,19 @@ type Sentry struct {
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.Mutex
+}
+
+func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.providersCount, res.GetParams().ServicersToPairCount)
+	return nil
+}
+
+func (s *Sentry) GetProvidersCount() uint64 {
+	return atomic.LoadUint64(&s.providersCount)
 }
 
 func (s *Sentry) FetchEpochSize(ctx context.Context) error {
@@ -391,12 +404,6 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) GetServicersToPairCount() int64 {
-	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	return int64(len(s.pairingAddresses))
-}
-
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
@@ -405,7 +412,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 		return nil, err
 	}
 	serverApis, _ := s.getServiceApis(spec)
-	var allSpecNames map[string][]types.ApiInterface
+	allSpecNames := make(map[string][]types.ApiInterface)
 	for _, api := range serverApis {
 		allSpecNames[api.Name] = api.ApiInterfaces
 	}
@@ -745,7 +752,10 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
-				s.FetchChainParams(ctx)
+				s.SetCurrentEpochHeight(data.Block.Height)
+				s.FetchEpochSize(ctx)
+				s.FetchOverlapSize(ctx)
+				s.FetchEpochParams(ctx)
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
@@ -805,6 +815,7 @@ func (s *Sentry) FetchChainParams(ctx context.Context) {
 	s.FetchEpochSize(ctx)
 	s.FetchOverlapSize(ctx)
 	s.FetchEpochParams(ctx)
+	s.FetchProvidersCount(ctx)
 }
 
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
@@ -902,7 +913,9 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 				wrap.ConnectionRefusals++
 				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
 				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
-					s.movePairingEntryToPurge(wrap, index, false)
+					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+					s.movePairingEntryToPurge(wrap, index)
+					s.pairingMu.RLock() // we resume read lock here, so we can continue
 					fmt.Printf("moving %s to purge list after max consecutive tries\n", wrap.Addr)
 				}
 
@@ -1145,7 +1158,7 @@ func (s *Sentry) SendRelay(
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index, true)
+			s.movePairingEntryToPurge(wrap, index)
 		}
 		return reply, err
 	}
@@ -1228,7 +1241,7 @@ func (s *Sentry) SendRelay(
 							if err != nil {
 								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-									s.movePairingEntryToPurge(wrap, index, true)
+									s.movePairingEntryToPurge(wrap, index)
 								}
 								return nil, nil, err
 							}
@@ -1338,11 +1351,13 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	return latestBlock - finalization_criteria
 }
 
-func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, lockpairing bool) {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
 	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	if lockpairing {
-		s.pairingMu.Lock()
-		defer s.pairingMu.Unlock()
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+
+	if len(s.pairing) == 0 {
+		return
 	}
 
 	s.pairingPurgeLock.Lock()
@@ -1357,7 +1372,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 		}
 		return false
 	}
-	if index >= len(s.pairing) {
+	if index >= len(s.pairing) || index < 0 {
 		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
 		if !findPairingIndex() {
 			return
@@ -1410,6 +1425,10 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 		return true, nil
 	}
 	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
+}
+
+func (s *Sentry) GetReliabilityThreshold() uint32 {
+	return s.serverSpec.ReliabilityThreshold
 }
 
 func (s *Sentry) GetSpecName() string {
@@ -1602,7 +1621,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: ", err)
+		utils.LavaFormatError("Sentry failed to get chain height", err, &map[string]string{"account": acc, "ChainID": chainID, "apiInterface": apiInterface})
 		currentBlock = 0
 	}
 	return &Sentry{
