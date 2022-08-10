@@ -24,7 +24,8 @@ lavad server 127.0.0.1 2221 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc
 lavad server 127.0.0.1 2222 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer2 &
 lavad server 127.0.0.1 2223 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer3 &
 lavad server 127.0.0.1 2224 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer4 &
-lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer5 
+lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer5 &
+lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1
 
 # Multi Port Proxy
 # lavad server 127.0.0.1 2221 http://0.0.0.0:2001/$ETH_URL_PATH ETH1 jsonrpc --from servicer1 &
