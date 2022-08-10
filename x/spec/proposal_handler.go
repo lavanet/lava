@@ -12,6 +12,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -42,7 +43,7 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 
 		logger := k.Logger(ctx)
 		details := map[string]string{"param": c.Key, "value": c.Value}
-		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
+		if c.Key == string(epochstoragetypes.KeyLatestParamChange) || c.Key == string(pairingtypes.KeyLatestParamChange) {
 			details["error"] = "tried to modify " + string(epochstoragetypes.KeyLatestParamChange)
 			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
 		}
@@ -54,6 +55,31 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 		if c.Subspace == epochstoragetypes.ModuleName {
 			details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
 			ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
+		}
+		if c.Subspace == pairingtypes.ModuleName {
+			switch c.Key {
+			case string(pairingtypes.KeyServicersToPairCount):
+				details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
+				var latestchanges pairingtypes.LatestParamsChange
+				ss.Get(ctx, epochstoragetypes.KeyLatestParamChange, &latestchanges)
+				latestchanges.ServicersToPairCount = uint64(ctx.BlockHeight())
+				ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, latestchanges)
+
+			case string(pairingtypes.KeyEpochBlocksOverlap):
+				details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
+				var latestchanges pairingtypes.LatestParamsChange
+				ss.Get(ctx, epochstoragetypes.KeyLatestParamChange, &latestchanges)
+				latestchanges.EpochBlocksOverlap = uint64(ctx.BlockHeight())
+				ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, latestchanges)
+
+			case string(pairingtypes.KeyStakeToMaxCUList):
+				details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
+				var latestchanges pairingtypes.LatestParamsChange
+				ss.Get(ctx, epochstoragetypes.KeyLatestParamChange, &latestchanges)
+				latestchanges.StakeToMaxCUList = uint64(ctx.BlockHeight())
+				ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, latestchanges)
+			}
+
 		}
 
 		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")

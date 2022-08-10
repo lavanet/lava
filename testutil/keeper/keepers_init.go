@@ -180,7 +180,9 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		block := uint64(unwrapedCtx.BlockHeight())
 
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
-		//ks.Pairing.fixateove(unwrapedCtx, block)yarom
+		ks.Pairing.FixateEpochBlocksOverlap(unwrapedCtx, block)
+		ks.Pairing.FixateServicersToPair(unwrapedCtx, block)
+		ks.Pairing.FixateStakeToMaxCU(unwrapedCtx, block)
 		//begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
 		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)

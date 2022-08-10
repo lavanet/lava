@@ -88,6 +88,11 @@ var (
 	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) //0.5
 )
 
+var (
+	KeyLatestParamChange                        = []byte("LatestParamChange")
+	DefaultLatestParamChange LatestParamsChange = LatestParamsChange{ServicersToPairCount: 0, StakeToMaxCUList: 0, EpochBlocksOverlap: 0}
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -108,6 +113,7 @@ func NewParams(
 	slashLimit sdk.Dec,
 	dataReliabilityReward sdk.Dec,
 	qoSWeight sdk.Dec,
+	latestParamsChange LatestParamsChange,
 ) Params {
 	return Params{
 		MinStakeProvider:         minStakeProvider,
@@ -123,6 +129,7 @@ func NewParams(
 		SlashLimit:               slashLimit,
 		DataReliabilityReward:    dataReliabilityReward,
 		QoSWeight:                qoSWeight,
+		LatestParamsChange:       latestParamsChange,
 	}
 }
 
@@ -142,6 +149,7 @@ func DefaultParams() Params {
 		DefaultSlashLimit,
 		DefaultDataReliabilityReward,
 		DefaultQoSWeight,
+		DefaultLatestParamChange,
 	)
 }
 
@@ -161,6 +169,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
 		paramtypes.NewParamSetPair(KeyQoSWeight, &p.QoSWeight, validateQoSWeight),
+		paramtypes.NewParamSetPair(KeyLatestParamChange, &p.LatestParamsChange, validatLatestParamChange),
 	}
 }
 
@@ -399,6 +408,18 @@ func validateQoSWeight(v interface{}) error {
 	if QoSWeight.GT(sdk.OneDec()) || QoSWeight.LT(sdk.ZeroDec()) {
 		return fmt.Errorf("invalid parameter QoSWeight")
 	}
+
+	return nil
+}
+
+func validatLatestParamChange(v interface{}) error {
+	latestParamsChange, ok := v.(LatestParamsChange)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = latestParamsChange
 
 	return nil
 }

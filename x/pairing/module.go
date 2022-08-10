@@ -176,6 +176,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		}
 	}
 	if am.keeper.IsEpochStart(ctx) {
+		block := uint64(ctx.BlockHeight())
+		am.keeper.FixateEpochBlocksOverlap(ctx, block)
+		am.keeper.FixateServicersToPair(ctx, block)
+		am.keeper.FixateStakeToMaxCU(ctx, block)
 		//on session start we need to do:
 		// 1. remove old session payments
 		// 2. unstake any unstaking providers

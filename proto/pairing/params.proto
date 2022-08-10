@@ -60,4 +60,12 @@ message Params {
       (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
       (gogoproto.nullable)   = false
       ];
+    LatestParamsChange latestParamsChange = 14[(gogoproto.nullable)   = false];
+}
+
+message LatestParamsChange {
+  uint64 servicersToPairCount = 1;
+  uint64 stakeToMaxCUList = 2;
+  uint64 epochBlocksOverlap = 3;
+
 }

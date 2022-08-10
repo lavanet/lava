@@ -43,7 +43,7 @@ func TestServicersToPair(t *testing.T) {
 	}{
 		{"FillHalfMemory", blocksInMemory / 2, 0, servicersToParCount, 1},
 		{"ParamChange", blocksInMemory / 2, 2 * servicersToParCount, servicersToParCount, 1},
-		{"ParamChange + eoch", blocksInMemory/2 + 2*blocksInEpoch, 0, servicersToParCount, 2},
+		{"ParamChange + epoch", blocksInMemory/2 + 2*blocksInEpoch, 0, servicersToParCount, 2},
 	}
 
 	pastTests := []struct {
@@ -63,8 +63,9 @@ func TestServicersToPair(t *testing.T) {
 			require.Equal(t, tt.Block, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			servicersToPair, err := keepers.Pairing.GetFixatedServicersToPairForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.Nil(t, err)
+
+			allFixatedParams := keepers.Pairing.GetAllFixatedServicersToPair(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, tt.ExpectedServicersToPair, servicersToPair.ServicersToPairCount)
-			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, tt.NumOfFixation, uint64(len(allFixatedParams)))
 
 			for _, pasttest := range pastTests {
