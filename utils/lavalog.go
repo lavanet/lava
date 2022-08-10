@@ -52,7 +52,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	}
 	output := prefix + " " + description
 	if err != nil {
-		output = fmt.Sprintf("%s Error: %s", output, err.Error())
+		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
 	}
 	if extraAttributes != nil {
 		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
