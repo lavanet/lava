@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	golog "log"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -57,7 +59,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	if extraAttributes != nil {
 		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
 	}
-	fmt.Println(output)
+	golog.Println(output)
 	return fmt.Errorf(output)
 }
 
