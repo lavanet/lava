@@ -5,7 +5,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 message FixatedEpochBlocksOverlap {
   string index = 1; 
-  uint64 servicersToPairCount = 2; 
+  uint64 epochBlocksOverlap = 2; 
   uint64 fixationBlock = 3; 
   
 }
