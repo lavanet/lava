@@ -2577,6 +2577,30 @@
           ]
         },
         {
+          "name": "/osmosis/superfluid/v1beta1/all_assets",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+            "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "rest",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },
+        {
           "name": "/cosmos/tx/v1beta1/txs/{hash}",
           "category": {
             "deterministic": true,
@@ -6849,6 +6873,30 @@
             "type": "post",
             "extra_compute_units": "0"
           },
+          {
+            "interface": "rest",
+            "type": "get",
+            "extra_compute_units": "0"
+          }
+        ]
+      },
+      {
+        "name": "/osmosis/superfluid/v1beta1/all_assets",
+        "category": {
+          "deterministic": true,
+          "local": false,
+          "subscription": false,
+          "stateful": 0
+        },
+        "block_parsing": {
+          "parserArg": [
+          "latest"
+          ],
+          "parserFunc": "DEFAULT"
+        },
+        "compute_units": "10",
+        "enabled": true,
+        "apiInterfaces": [
           {
             "interface": "rest",
             "type": "get",

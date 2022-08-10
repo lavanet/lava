@@ -409,7 +409,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 		return nil, err
 	}
 	serverApis, _ := s.getServiceApis(spec)
-	var allSpecNames map[string][]types.ApiInterface
+	allSpecNames := make(map[string][]types.ApiInterface)
 	for _, api := range serverApis {
 		allSpecNames[api.Name] = api.ApiInterfaces
 	}
