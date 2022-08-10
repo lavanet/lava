@@ -505,6 +505,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		dataReliability := userSessions.dataByEpoch[pairingEpoch].DataReliability
 		userSessions.Lock.Unlock()
 
+		utils.LavaFormatInfo("request.DataReliability.Epoch: "+strconv.FormatUint(request.DataReliability.GetEpoch(), 10), nil, nil)
+
 		//data reliability message
 		if dataReliability != nil {
 			return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
@@ -520,24 +522,24 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
 		if err != nil {
 			return nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
-				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		if !valid {
 			return nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
-				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		//verify data reliability fields correspond to the right vrf
-		valid = utils.VerifyVrfProof(request, *vrf_pk, relaySession.PairingEpoch)
+		valid = utils.VerifyVrfProof(request, *vrf_pk, pairingEpoch)
 		if !valid {
 			return nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
-				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability), "relayEpochStart": strconv.FormatUint(relayEpochStart, 10)})
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 
 		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
 		if authorisedUserResponse.Index != vrfIndex {
 			return nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
 				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
-					"dataReliability": fmt.Sprintf("%v", dataReliability), "relayEpochStart": strconv.FormatUint(relayEpochStart, 10),
+					"dataReliability": fmt.Sprintf("%v", dataReliability), "relayEpochStart": strconv.FormatUint(pairingEpoch, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}

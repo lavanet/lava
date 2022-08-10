@@ -752,10 +752,7 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
-				s.SetCurrentEpochHeight(data.Block.Height)
-				s.FetchEpochSize(ctx)
-				s.FetchOverlapSize(ctx)
-				s.FetchEpochParams(ctx)
+				s.FetchChainParams(ctx)
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
@@ -1137,13 +1134,13 @@ func (s *Sentry) SendRelay(
 			}
 		}
 
-		randomSessId := int64(0)
-		for randomSessId == 0 { //we don't allow 0
-			randomSessId = rand.Int63()
-		}
+		// randomSessId := int64(0)
+		// for randomSessId == 0 { //we don't allow 0
+		// 	randomSessId = rand.Int63()
+		// }
 
 		clientSession := &ClientSession{
-			SessionId: randomSessId,
+			SessionId: 0,
 			Client:    wrap,
 		}
 		clientSession.Lock.Lock()
@@ -1235,6 +1232,7 @@ func (s *Sentry) SendRelay(
 								AllDataHash: sigs.AllDataHash(reply, request),
 								QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 								Sig:         nil,                                //calculated in cb_send_reliability
+								Epoch:       currentEpoch,
 							}
 							clientSession = getClientSessionFromWrap(wrap)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
