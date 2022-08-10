@@ -2,7 +2,9 @@
 MYDIR="$(dirname "$(realpath "$0")")"
 echo "$MYDIR"
 source $MYDIR/env_vars_for_upgrade.sh
-# git checkout some branch here
+
+git checkout upgrade_module_to
+
 ignite chain build
 
 echo "mkdir -p $DAEMON_HOME/cosmovisor/upgrades/$UPRADE_NAME/bin"
