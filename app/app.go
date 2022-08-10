@@ -578,7 +578,7 @@ func New(
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.mm.RegisterServices(module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter()))
 
-	// setupUpgradeHandlers.
+	// setupUpgradeHandlers. must be called before LoadLatestVersion as storeloader is sealed after that
 	app.setupUpgradeHandlers()
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
@@ -642,6 +642,7 @@ func New(
 	return app
 }
 
+// setupUpgradeStoreLoaders when intoducing new modules.
 func (app *LavaApp) setupUpgradeStoreLoaders() {
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
@@ -659,6 +660,7 @@ func (app *LavaApp) setupUpgradeStoreLoaders() {
 	}
 }
 
+// setupUpgradeHandlers when modifing already existing modules
 func (app *LavaApp) setupUpgradeHandlers() {
 	for _, upgrade := range Upgrades {
 		app.UpgradeKeeper.SetUpgradeHandler(

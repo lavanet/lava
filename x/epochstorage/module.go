@@ -169,6 +169,9 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
+	details_test := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
+	logger_test := am.keeper.Logger(ctx)
+	utils.LogLavaEvent(ctx, logger_test, "new_block", details_test, "New Block Stated: PRE_CHANGES")
 	if am.keeper.IsEpochStart(ctx) {
 
 		block := uint64(ctx.BlockHeight())

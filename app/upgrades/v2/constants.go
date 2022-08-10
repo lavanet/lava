@@ -1,4 +1,4 @@
-package v3
+package v2
 
 import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
@@ -6,7 +6,7 @@ import (
 )
 
 // UpgradeName defines the on-chain upgrade name for the Osmosis v11 upgrade.
-const UpgradeName = "v11"
+const UpgradeName = "v2"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
