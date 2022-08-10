@@ -401,12 +401,6 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) GetServicersToPairCount() int64 {
-	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	return int64(len(s.pairingAddresses))
-}
-
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
