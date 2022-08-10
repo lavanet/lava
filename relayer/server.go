@@ -323,33 +323,24 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	var sessionEpoch uint64
-	var vrf_pk *utils.VrfPubKey
 	session, ok := userSessions.Sessions[req.SessionId]
 	userSessions.Lock.Unlock()
 
-	if ok {
-		sessionEpoch = session.GetPairingEpoch()
-
-		userSessions.Lock.Lock()
-		vrf_pk = &userSessions.dataByEpoch[sessionEpoch].VrfPk
-		userSessions.Lock.Unlock()
-	} else {
-		_, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
+	if !ok {
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr, req.ChainID, req.BlockHeight)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed to get the Max allowed compute units for the user!", err, &map[string]string{
 				"userAddr": userAddr,
 			})
 		}
-
 		// TODO:: dont use GetEpochFromBlockHeight
 		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight, isOverlap)
-
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
 		userSessions.Sessions[req.SessionId] = session
 		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
 			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
-			utils.LavaFormatInfo("new user sessions in epoch", err, &map[string]string{
+			utils.LavaFormatInfo("new user sessions in epoch", nil, &map[string]string{
 				"userAddr": userAddr,
 				"maxcuRes": strconv.FormatUint(maxcuRes, 10),
 				"epoch":    strconv.FormatUint(sessionEpoch, 10),

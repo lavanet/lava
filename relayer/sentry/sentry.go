@@ -290,7 +290,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 
 	// switch pairing every epochSize blocks
 	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && !init {
-		log.Printf("PairingNext is empty. blockheight: %d, switching at %d, \n")
 		return nil
 	}
 
@@ -299,7 +298,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 
 	// If we entered this handler more than once then the pairing was already changed
 	if len(s.pairingNext) == 0 {
-		log.Printf("PairingNext is empty, bailing\n")
 		return nil
 	}
 
