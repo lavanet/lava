@@ -1134,13 +1134,13 @@ func (s *Sentry) SendRelay(
 			}
 		}
 
-		// randomSessId := int64(0)
-		// for randomSessId == 0 { //we don't allow 0
-		// 	randomSessId = rand.Int63()
-		// }
+		randomSessId := int64(0)
+		for randomSessId == 0 { //we don't allow 0
+			randomSessId = rand.Int63()
+		}
 
 		clientSession := &ClientSession{
-			SessionId: 0,
+			SessionId: randomSessId,
 			Client:    wrap,
 		}
 		clientSession.Lock.Lock()
