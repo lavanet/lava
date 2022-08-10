@@ -24,7 +24,7 @@ screen -S gth_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad serv
 screen -S gth_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2125 $GTH_RPC_WS GTH1 jsonrpc --from servicer5 2>&1 | tee $LOGS_DIR/GTH1_2125.log"
 
 #osmosis providers
-screen -d -m -S cos3_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2121.log"
+screen -d -m -S cos3_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2231 $OSMO_REST COS3 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2231.log"
 screen -S cos3_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2232 $OSMO_REST COS3 rest --from servicer2 2>&1 | tee $LOGS_DIR/COS3_2232.log"
 screen -S cos3_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2233 $OSMO_REST COS3 rest --from servicer3 2>&1 | tee $LOGS_DIR/COS3_2233.log"
 screen -S cos3_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2241.log"
