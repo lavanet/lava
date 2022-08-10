@@ -312,6 +312,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		}
 		vrf_pk = tmp_vrf_pk
 
+		// TODO:: dont use GetEpochFromBlockHeight
 		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight, isOverlap)
 
 		userSessions.Lock.Lock()
@@ -461,8 +462,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			return nil, fmt.Errorf("invalid DataReliability Provider signing")
 		}
 		//verify data reliability fields correspond to the right vrf
-		relayEpochStart := g_sentry.GetEpochFromBlockHeight(request.BlockHeight, false)
-		valid = utils.VerifyVrfProof(request, *vrf_pk, relayEpochStart)
+		valid = utils.VerifyVrfProof(request, *vrf_pk, relaySession.PairingEpoch)
 		if !valid {
 			return nil, fmt.Errorf("invalid DataReliability fields, VRF wasn't verified with provided proof")
 		}

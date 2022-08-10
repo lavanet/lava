@@ -145,6 +145,7 @@ type RelayerClientWrapper struct {
 	MaxComputeUnits    uint64
 	UsedComputeUnits   uint64
 	ReliabilitySent    bool
+	PairingEpoch       uint64
 }
 
 type PaymentRequest struct {
@@ -264,13 +265,13 @@ func (s *Sentry) FetchEpochParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) error {
+func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, init bool) error {
 	if !s.isUser {
 		return nil
 	}
 
 	// switch pairing every epochSize blocks
-	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() {
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && init == false {
 		return nil
 	}
 
@@ -370,6 +371,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			MaxComputeUnits:    maxcu,
 			ReliabilitySent:    false,
 			ConnectionRefusals: 0,
+			PairingEpoch:       s.GetCurrentEpochHeight(),
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
@@ -515,7 +517,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
-	s.handlePairingChange(ctx, 0)
+	s.handlePairingChange(ctx, 0, true)
 
 	//
 	// Sanity
@@ -772,7 +774,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 			}
 
-			s.handlePairingChange(ctx, data.Block.Height)
+			s.handlePairingChange(ctx, data.Block.Height, false)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -1166,7 +1168,6 @@ func (s *Sentry) SendRelay(
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
 		clientSession.LatestBlock = latestBlock
-
 		//
 		// Compare finalized block hashes with previous providers
 		// Looks for discrepancy with current epoch providers
@@ -1187,7 +1188,8 @@ func (s *Sentry) SendRelay(
 			}
 
 			s.VrfSkMu.Lock()
-			currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
+
+			currentEpoch := clientSession.Client.PairingEpoch
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
