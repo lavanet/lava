@@ -116,7 +116,11 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	}
 	//Support overlap
 	//if overlap blocks is X then this is an overlap block if the residue, i.e blockInEpoch, is X-1 or lower
-	if blockInEpoch < k.EpochBlocksOverlap(ctx) {
+	epochBlocksOverlap, err := k.GetFixatedEpochBlocksOverlapForBlock(ctx, block)
+	if err != nil {
+		return false, false, nil, INVALID_INDEX, err
+	}
+	if blockInEpoch < epochBlocksOverlap.EpochBlocksOverlap {
 		//this is a block that can have overlap
 		previousEpochBlock, errorRet := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
 		if errorRet != nil {
