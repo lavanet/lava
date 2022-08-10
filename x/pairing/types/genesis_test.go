@@ -62,6 +62,14 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
+				FixatedEpochBlocksOverlapList: []types.FixatedEpochBlocksOverlap{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -126,6 +134,20 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated fixatedStakeToMaxCu",
 			genState: &types.GenesisState{
 				FixatedStakeToMaxCuList: []types.FixatedStakeToMaxCu{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated fixatedEpochBlocksOverlap",
+			genState: &types.GenesisState{
+				FixatedEpochBlocksOverlapList: []types.FixatedEpochBlocksOverlap{
 					{
 						Index: "0",
 					},

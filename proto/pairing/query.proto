@@ -7,6 +7,7 @@ import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
 import "pairing/fixated_servicers_to_pair.proto";
 import "pairing/fixated_stake_to_max_cu.proto";
+import "pairing/fixated_epoch_blocks_overlap.proto";
 // this line is used by starport scaffolding # 1
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -95,6 +96,16 @@ service Query {
 	// Queries a list of FixatedStakeToMaxCu items.
 	rpc FixatedStakeToMaxCuAll(QueryAllFixatedStakeToMaxCuRequest) returns (QueryAllFixatedStakeToMaxCuResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/fixated_stake_to_max_cu";
+	}
+
+// Queries a FixatedEpochBlocksOverlap by index.
+	rpc FixatedEpochBlocksOverlap(QueryGetFixatedEpochBlocksOverlapRequest) returns (QueryGetFixatedEpochBlocksOverlapResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_epoch_blocks_overlap/{index}";
+	}
+
+	// Queries a list of FixatedEpochBlocksOverlap items.
+	rpc FixatedEpochBlocksOverlapAll(QueryAllFixatedEpochBlocksOverlapRequest) returns (QueryAllFixatedEpochBlocksOverlapResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/fixated_epoch_blocks_overlap";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -247,6 +258,24 @@ message QueryAllFixatedStakeToMaxCuRequest {
 
 message QueryAllFixatedStakeToMaxCuResponse {
 	repeated FixatedStakeToMaxCu fixatedStakeToMaxCu = 1 [(gogoproto.nullable) = false];
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetFixatedEpochBlocksOverlapRequest {
+	  string index = 1;
+
+}
+
+message QueryGetFixatedEpochBlocksOverlapResponse {
+	FixatedEpochBlocksOverlap fixatedEpochBlocksOverlap = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryAllFixatedEpochBlocksOverlapRequest {
+	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllFixatedEpochBlocksOverlapResponse {
+	repeated FixatedEpochBlocksOverlap fixatedEpochBlocksOverlap = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

@@ -54,6 +54,14 @@ func TestGenesis(t *testing.T) {
 				Index: "1",
 			},
 		},
+		FixatedEpochBlocksOverlapList: []types.FixatedEpochBlocksOverlap{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -70,5 +78,6 @@ func TestGenesis(t *testing.T) {
 	require.ElementsMatch(t, genesisState.EpochPaymentsList, got.EpochPaymentsList)
 	require.ElementsMatch(t, genesisState.FixatedServicersToPairList, got.FixatedServicersToPairList)
 	require.ElementsMatch(t, genesisState.FixatedStakeToMaxCuList, got.FixatedStakeToMaxCuList)
+	require.ElementsMatch(t, genesisState.FixatedEpochBlocksOverlapList, got.FixatedEpochBlocksOverlapList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

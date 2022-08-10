@@ -45,6 +45,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdShowFixatedServicersToPair())
 	cmd.AddCommand(CmdListFixatedStakeToMaxCu())
 	cmd.AddCommand(CmdShowFixatedStakeToMaxCu())
+	cmd.AddCommand(CmdListFixatedEpochBlocksOverlap())
+	cmd.AddCommand(CmdShowFixatedEpochBlocksOverlap())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

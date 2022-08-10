@@ -15,6 +15,7 @@ func DefaultGenesis() *GenesisState {
 		EpochPaymentsList:                      []EpochPayments{},
 		FixatedServicersToPairList:             []FixatedServicersToPair{},
 		FixatedStakeToMaxCuList:                []FixatedStakeToMaxCu{},
+		FixatedEpochBlocksOverlapList:          []FixatedEpochBlocksOverlap{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -72,6 +73,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for fixatedStakeToMaxCu")
 		}
 		fixatedStakeToMaxCuIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in fixatedEpochBlocksOverlap
+	fixatedEpochBlocksOverlapIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.FixatedEpochBlocksOverlapList {
+		index := string(FixatedEpochBlocksOverlapKey(elem.Index))
+		if _, ok := fixatedEpochBlocksOverlapIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for fixatedEpochBlocksOverlap")
+		}
+		fixatedEpochBlocksOverlapIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 
