@@ -85,7 +85,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			if relay.DataReliability.Epoch != epochStart {
 				details["dataReliabilityEpoch"] = strconv.FormatUint(relay.DataReliability.Epoch, 10)
 				details["epochStart"] = strconv.FormatUint(epochStart, 10)
-				errorLogAndFormat("", details, "data reliability and request epoch mismatch")
+				errorLogAndFormat("data_reliability_epoch_mismatch", details, "data reliability and request epoch mismatch")
 			}
 			if spec.ComparesHashes == false {
 				details["chainID"] = relay.ChainID
