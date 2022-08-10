@@ -483,14 +483,14 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 
-	// (ctx, userAddr.String(), uint64(request.BlockHeight), authorizedHeight uint64)
-
-	authorizeAndParseMessage := func(ctx context.Context, userAddr sdk.AccAddress, request *pairingtypes.RelayRequest) (*pairingtypes.QueryVerifyPairingResponse, chainproxy.NodeMessage, error) {
-		authorisedUserResponse, err := g_sentry.IsAuthorizedUser(ctx, userAddr.String(), uint64(request.BlockHeight))
+	var nodeMsg chainproxy.NodeMessage
+	authorizeAndParseMessage := func(ctx context.Context, userAddr sdk.AccAddress, request *pairingtypes.RelayRequest, blockHeighToAutherise uint64) (*pairingtypes.QueryVerifyPairingResponse, chainproxy.NodeMessage, error) {
+		//TODO: cache this client, no need to run the query every time
+		authorisedUserResponse, err := g_sentry.IsAuthorizedUser(ctx, userAddr.String(), blockHeighToAutherise)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String()})
+			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeighToAutherise, 10)})
 		}
-
+		// Parse message, check valid api, etc
 		nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data), "userAddr": userAddr.String()})
@@ -498,16 +498,14 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return authorisedUserResponse, nodeMsg, nil
 	}
 
-	//TODO: cache this client, no need to run the query every time
-	//
-	// Parse message, check valid api, etc
-	authorisedUserResponse, nodeMsg, err := authorizeAndParseMessage(ctx, userAddr, request, epoch)
-	if err != nil {
-		return nil, err
-	}
-
 	if request.DataReliability != nil {
 		epoch := request.DataReliability.GetEpoch()
+		var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
+		authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, epoch)
+		if err != nil {
+			utils.LavaFormatError("data reliability failed autherising user request", nil, nil)
+			return nil, err
+		}
 
 		// client blockheight can only be at at prev epoch but not ealier
 		if epoch < uint64(prevEpochStart) {
@@ -578,6 +576,13 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		userSessions.Lock.Unlock()
 
 	} else {
+		var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
+		authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
+
+		if err != nil {
+			return nil, err
+		}
+
 		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request, authorisedUserResponse.GetOverlap())
 		if err != nil {
 			return nil, err

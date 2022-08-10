@@ -248,6 +248,10 @@ func (s *Sentry) GetProvidersCount() uint64 {
 	return atomic.LoadUint64(&s.providersCount)
 }
 
+func (s *Sentry) GetEpochSize() uint64 {
+	return atomic.LoadUint64(&s.EpochSize)
+}
+
 func (s *Sentry) FetchEpochSize(ctx context.Context) error {
 	res, err := s.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {
@@ -757,7 +761,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				s.FetchChainParams(ctx)
 
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
+					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
 				}
 
 				//
@@ -1596,9 +1600,10 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 
 // TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
 func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
-	epoch := uint64(blockHeight - blockHeight%int64(s.EpochSize))
+	epochSize := s.GetEpochSize()
+	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
 	if isOverlap {
-		epoch = epoch - s.EpochSize
+		epoch = epoch - epochSize
 	}
 	return epoch
 }
