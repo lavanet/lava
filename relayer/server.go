@@ -6,7 +6,6 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -381,15 +380,18 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.Lock.Unlock()
 
 	if relayNum+1 != request.RelayNum {
-		fmt.Printf("ERROR: consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
+		utils.LavaFormatError("consumer requested incorrect relaynum, expected it to increment by 1", nil, &map[string]string{
+			"expected": strconv.FormatUint(relayNum+1, 10),
+			"received": strconv.FormatUint(request.RelayNum, 10),
+		})
 	}
 
 	// Check that relaynum gets incremented by user
-	if relayNum+1 != request.RelayNum {
+	if relayNum+1 > request.RelayNum {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
-		return utils.LavaFormatError("consumer requested a larger relaynum than expected", nil, &map[string]string{
+		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
 			"received": strconv.FormatUint(request.RelayNum, 10),
 		})
@@ -818,7 +820,6 @@ func Server(
 	}
 	g_privKey = privKey
 	serverKey, _ := clientCtx.Keyring.Key(keyName)
-	log.Println("Server pubkey", serverKey.GetPubKey().Address())
 	utils.LavaFormatInfo("Server loaded keys", nil, &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
@@ -863,7 +864,6 @@ func Server(
 
 	utils.LavaFormatInfo("Server listening", nil, &map[string]string{"Address": lis.Addr().String()})
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
 	}
 
