@@ -286,6 +286,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 
 	// switch pairing every epochSize blocks
 	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && !init {
+		log.Printf("PairingNext is empty. blockheight: %d, switching at %d, \n")
 		return nil
 	}
 
@@ -294,6 +295,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 
 	// If we entered this handler more than once then the pairing was already changed
 	if len(s.pairingNext) == 0 {
+		log.Printf("PairingNext is empty, bailing\n")
 		return nil
 	}
 
@@ -1387,14 +1389,14 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtypes.QueryVerifyPairingResponse, error) {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	//
 	// TODO: cache results!
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   user,
 		Provider: s.Acc,
-		Block:    uint64(s.GetBlockHeight()),
+		Block:    blockheight,
 	})
 	if err != nil {
 		return nil, err
