@@ -241,6 +241,7 @@ func (s *Sentry) FetchEpochSize(ctx context.Context) error {
 		return err
 	}
 	atomic.StoreUint64(&s.EpochSize, res.GetParams().EpochBlocks)
+
 	return nil
 }
 
@@ -271,7 +272,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	}
 
 	// switch pairing every epochSize blocks
-	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && init == false {
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && !init {
 		return nil
 	}
 
@@ -510,6 +511,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
+	s.FetchChainParams(ctx)
+
 	//
 	// Get pairing for the first time, for clients
 	err = s.getPairing(ctx)
@@ -539,9 +542,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
 		}
 	}
-
-	s.FetchEpochSize(ctx)
-	s.FetchOverlapSize(ctx)
 
 	return nil
 }
@@ -745,10 +745,7 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
-				s.SetCurrentEpochHeight(data.Block.Height)
-				s.FetchEpochSize(ctx)
-				s.FetchOverlapSize(ctx)
-				s.FetchEpochParams(ctx)
+				s.FetchChainParams(ctx)
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
@@ -802,6 +799,12 @@ func (s *Sentry) Start(ctx context.Context) {
 
 		}
 	}
+}
+
+func (s *Sentry) FetchChainParams(ctx context.Context) {
+	s.FetchEpochSize(ctx)
+	s.FetchOverlapSize(ctx)
+	s.FetchEpochParams(ctx)
 }
 
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {

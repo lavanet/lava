@@ -2,8 +2,9 @@
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
-LOGS_DIR=~/.lava/logs
+LOGS_DIR=${__dir}/../testutil/debugging/logs
 mkdir -p $LOGS_DIR
+rm $LOGS_DIR/*.log
 
 echo "---------------Setup Providers------------------"
 killall screen
