@@ -97,6 +97,7 @@ type relayServer struct {
 
 func askForRewards(staleEpochHeight int64) {
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
+	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
 		utils.LavaFormatError("Some epochs were not rewarded, catching up and asking for rewards...", nil, &map[string]string{
 			"epoch":                strconv.FormatInt(staleEpochHeight, 10),
@@ -111,6 +112,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 		}
 	}
+	g_rewardsSessions_mutex.Unlock()
 
 	relays := []*pairingtypes.RelayRequest{}
 	reliability := false
@@ -377,12 +379,17 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	relayNum := sess.RelayNum
 	cuSum := sess.CuSum
 	sess.Lock.Unlock()
+
+	if relayNum+1 != request.RelayNum {
+		fmt.Printf("ERROR: consumer requested incorrect relaynum. expected: %d, received: %d", relayNum+1, request.RelayNum)
+	}
+
 	// Check that relaynum gets incremented by user
 	if relayNum+1 != request.RelayNum {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
-		return utils.LavaFormatError("consumer requested incorrect relaynum.", nil, &map[string]string{
+		return utils.LavaFormatError("consumer requested a larger relaynum than expected", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
 			"received": strconv.FormatUint(request.RelayNum, 10),
 		})
@@ -439,7 +446,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
 
-	prevEpochStart := g_sentry.GetCurrentEpochHeight() - int64(g_sentry.EpochSize)
+	prevEpochStart := int64(g_sentry.GetCurrentEpochHeight()) - int64(g_sentry.EpochSize)
 
 	if prevEpochStart < 0 {
 		prevEpochStart = 0
@@ -859,5 +866,6 @@ func Server(
 		log.Fatalf("failed to serve: %v", err)
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
 	}
-	askForRewards(g_sentry.GetCurrentEpochHeight())
+
+	askForRewards(int64(g_sentry.GetCurrentEpochHeight()))
 }
