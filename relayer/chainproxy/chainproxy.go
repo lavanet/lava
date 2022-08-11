@@ -110,7 +110,8 @@ func SendRelay(
 			return nil, nil, err
 		}
 
-		blockHeight = cp.GetSentry().GetBlockHeight()
+		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
+
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ConnectionType:  connectionType,

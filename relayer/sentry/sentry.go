@@ -235,6 +235,10 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
+func (r *RelayerClientWrapper) GetPairingEpoch() uint64 {
+	return atomic.LoadUint64(&r.PairingEpoch)
+}
+
 func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
 	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
 	if err != nil {
@@ -347,6 +351,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	// Check if updated
 	hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
 	if bytes.Equal(s.pairingNextHash, hash) {
+		utils.LavaFormatError("pairing hash equal, bailing", nil, nil)
 		return nil
 	}
 	s.pairingNextHash = hash
@@ -1152,7 +1157,7 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}
 	// Get or create session and lock it
-	clientSession := getClientSessionFromWrap(wrap)
+	clientSession := getClientSessionFromWrap(wrap) // clientSession is LOCKED!
 
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
@@ -1164,8 +1169,8 @@ func (s *Sentry) SendRelay(
 		return reply, err
 	}
 
-	providerAcc := clientSession.Client.Acc
-	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
+	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
 		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
@@ -1206,7 +1211,7 @@ func (s *Sentry) SendRelay(
 
 			s.VrfSkMu.Lock()
 
-			currentEpoch := clientSession.Client.PairingEpoch
+			currentEpoch := clientSession.Client.GetPairingEpoch()
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
@@ -1597,12 +1602,9 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 }
 
 // TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
+func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64) uint64 {
 	epochSize := s.GetEpochSize()
 	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
-	if isOverlap {
-		epoch = epoch - epochSize
-	}
 	return epoch
 }
 

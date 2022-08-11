@@ -172,6 +172,13 @@ func askForRewards(staleEpochHeight int64) {
 				continue
 			}
 
+			if relay.BlockHeight != int64(staleEpoch) {
+				utils.LavaFormatError("relay proof is under incorrect epoch in relay rewards", err, &map[string]string{
+					"relay epoch": strconv.FormatInt(relay.BlockHeight, 10),
+					"epoch":       strconv.FormatUint(staleEpoch, 10),
+				})
+			}
+
 			if userSessionsEpochData.DataReliability != nil {
 				if staleEpoch != userSessionsEpochData.DataReliability.GetEpoch() {
 					utils.LavaFormatError("data reliability is under incorrect epoch in userSessionsEpochData", err, &map[string]string{
@@ -327,7 +334,7 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
-func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest, isOverlap bool) (*RelaySession, error) {
+func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
 	userSessions := getOrCreateUserSessions(userAddr)
 
 	userSessions.Lock.Lock()
@@ -350,7 +357,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			})
 		}
 		// TODO:: dont use GetEpochFromBlockHeight
-		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight, isOverlap)
+		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight)
 
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
@@ -358,7 +365,6 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			"userAddr":            userAddr,
 			"created for epoch":   strconv.FormatUint(sessionEpoch, 10),
 			"request blockheight": strconv.FormatInt(req.BlockHeight, 10),
-			"isOverlap":           fmt.Sprintf("%t", isOverlap),
 			"req.SessionId":       strconv.FormatUint(req.SessionId, 10),
 		})
 		userSessions.Sessions[req.SessionId] = session
@@ -381,9 +387,10 @@ func getOrCreateDataByEpoch(userSessions *UserSessions, sessionEpoch uint64, max
 	if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
 		userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
 		utils.LavaFormatInfo("new user sessions in epoch", nil, &map[string]string{
-			"userAddr": userAddr,
-			"maxcuRes": strconv.FormatUint(maxcuRes, 10),
-			"epoch":    strconv.FormatUint(sessionEpoch, 10),
+			"userAddr":          userAddr,
+			"maxcuRes":          strconv.FormatUint(maxcuRes, 10),
+			"saved under epoch": strconv.FormatUint(sessionEpoch, 10),
+			"sentry epoch":      strconv.FormatUint(g_sentry.GetCurrentEpochHeight(), 10),
 		})
 	}
 	return userSessions.dataByEpoch[sessionEpoch]
@@ -518,15 +525,15 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		}
 		return authorisedUserResponse, nodeMsg, nil
 	}
+	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
+	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
+	if err != nil {
+		utils.LavaFormatError("failed autherising user request", nil, nil)
+		return nil, err
+	}
 
 	if request.DataReliability != nil {
 		epoch := request.DataReliability.GetEpoch()
-		var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
-		authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, epoch)
-		if err != nil {
-			utils.LavaFormatError("data reliability failed autherising user request", nil, nil)
-			return nil, err
-		}
 
 		// client blockheight can only be at at prev epoch but not ealier
 		if epoch < uint64(prevEpochStart) {
@@ -596,20 +603,27 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		userSessions.Lock.Unlock()
 
 	} else {
-		var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
-		authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
+		_, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 
 		if err != nil {
 			return nil, err
 		}
 
-		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request, authorisedUserResponse.GetOverlap())
+		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
 			return nil, err
 		}
 
 		relaySession.Lock.Lock()
 		pairingEpoch := relaySession.GetPairingEpoch()
+
+		if request.BlockHeight != int64(pairingEpoch) {
+			relaySession.Lock.Unlock()
+			return nil, utils.LavaFormatError("request blockheight mismatch to session epoch", nil,
+				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
+					"relay blockheight": strconv.FormatInt(request.BlockHeight, 10)})
+		}
+
 		userSessions := relaySession.userSessionsParent
 		relaySession.Lock.Unlock()
 
