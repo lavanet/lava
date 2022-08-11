@@ -20,7 +20,7 @@ do
     fi 
 done
 
-BLOCK_HEIGHT_CHOSEN=$(echo "$((BLOCK_HEIGHT + 20))")
+BLOCK_HEIGHT_CHOSEN=$(echo "$((BLOCK_HEIGHT + 60))")
 
 lavad tx gov submit-proposal software-upgrade $UPRADE_NAME --title upgrade --description upgrade --upgrade-height $BLOCK_HEIGHT_CHOSEN --from alice --yes --gas "auto"
 lavad tx gov deposit 1 10000000ulava --from alice --yes --gas "auto"
