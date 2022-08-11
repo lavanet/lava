@@ -349,12 +349,12 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 
 	//
 	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.pairingNextHash, hash) {
-		utils.LavaFormatError("pairing hash equal, bailing", nil, nil)
-		return nil
-	}
-	s.pairingNextHash = hash
+	// hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
+	// if bytes.Equal(s.pairingNextHash, hash) {
+	// 	utils.LavaFormatError("pairing hash equal, bailing", nil, nil)
+	// 	return nil
+	// }
+	// s.pairingNextHash = hash
 
 	//
 	// Set

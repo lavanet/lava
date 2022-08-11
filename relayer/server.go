@@ -557,6 +557,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		if epochData, ok := userSessions.dataByEpoch[epoch]; ok {
 			//data reliability message
 			if epochData.DataReliability != nil {
+				userSessions.Lock.Unlock()
+
 				return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
 					&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
 			}
