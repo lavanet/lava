@@ -314,7 +314,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	s.pairing = s.pairingNext
 	s.pairingAddresses = s.pairingNextAddresses
 	s.pairingNext = []*RelayerClientWrapper{}
-	log.Printf("Pairing list switched. CurrentBlockHeight: %d \n", s.GetBlockHeight())
 
 	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
