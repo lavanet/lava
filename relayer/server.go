@@ -574,11 +574,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		userSessions.Lock.Unlock()
 
 	} else {
-		_, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
-
-		if err != nil {
-			return nil, err
-		}
 
 		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {

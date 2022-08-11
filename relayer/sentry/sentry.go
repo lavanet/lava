@@ -218,7 +218,6 @@ type Sentry struct {
 	// Pairing storage (rw mutex)
 	pairingMu            sync.RWMutex
 	pairingNextMu        sync.RWMutex
-	pairingNextHash      []byte
 	pairing              []*RelayerClientWrapper
 	PairingBlockStart    int64
 	pairingAddresses     []string
@@ -346,15 +345,6 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	if servicers == nil || len(servicers) == 0 {
 		return errors.New("no servicers found")
 	}
-
-	//
-	// Check if updated
-	// hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
-	// if bytes.Equal(s.pairingNextHash, hash) {
-	// 	utils.LavaFormatError("pairing hash equal, bailing", nil, nil)
-	// 	return nil
-	// }
-	// s.pairingNextHash = hash
 
 	//
 	// Set
