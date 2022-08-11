@@ -352,14 +352,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			"req.SessionId":       strconv.FormatUint(req.SessionId, 10),
 		})
 		userSessions.Sessions[req.SessionId] = session
-		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
-			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
-			utils.LavaFormatInfo("new user sessions in epoch", nil, &map[string]string{
-				"userAddr": userAddr,
-				"maxcuRes": strconv.FormatUint(maxcuRes, 10),
-				"epoch":    strconv.FormatUint(sessionEpoch, 10),
-			})
-		}
+		getOrCreateDataByEpoch(userSessions, sessionEpoch, maxcuRes, vrf_pk, userAddr)
 		userSessions.Lock.Unlock()
 
 		g_rewardsSessions_mutex.Lock()
@@ -371,6 +364,19 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	}
 
 	return session, nil
+}
+
+// Must lock UserSessions before using this func
+func getOrCreateDataByEpoch(userSessions *UserSessions, sessionEpoch uint64, maxcuRes uint64, vrf_pk *utils.VrfPubKey, userAddr string) *UserSessionsEpochData {
+	if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
+		userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
+		utils.LavaFormatInfo("new user sessions in epoch", nil, &map[string]string{
+			"userAddr": userAddr,
+			"maxcuRes": strconv.FormatUint(maxcuRes, 10),
+			"epoch":    strconv.FormatUint(sessionEpoch, 10),
+		})
+	}
+	return userSessions.dataByEpoch[sessionEpoch]
 }
 
 func getOrCreateUserSessions(userAddr string) *UserSessions {
@@ -523,7 +529,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		}
 
 		userSessions := getOrCreateUserSessions(userAddr.String())
-		vrf_pk, _, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed to get vrfpk for data reliability!", err, &map[string]string{
 				"userAddr": userAddr.String(),
@@ -575,8 +581,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		utils.LavaFormatInfo("server got valid DataReliability request", nil, nil)
 
 		userSessions.Lock.Lock()
-
-		//will get some rewards for this
+		getOrCreateDataByEpoch(userSessions, epoch, maxcuRes, vrf_pk, userAddr.String())
 		userSessions.dataByEpoch[epoch].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
 
