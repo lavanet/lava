@@ -677,7 +677,9 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 		return false, utils.LavaFormatError("failed to Validate Signer On VRF Data", err,
 			&map[string]string{"consumer": consumer.String(), "request.DataReliability": fmt.Sprintf("%v", request.DataReliability)})
 	}
-
+	if !valid {
+		return false, nil
+	}
 	//validate provider signing on query data
 	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
