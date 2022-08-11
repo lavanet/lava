@@ -184,10 +184,6 @@ func askForRewards(staleEpochHeight int64) {
 		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
 
-		utils.LavaFormatInfo("g_rewardsSessions remaining", nil, &map[string]string{
-			"g_rewardsSessions": fmt.Sprintf("%v", g_rewardsSessions),
-		})
-
 	}
 
 	userSessionObjsToDelete := make([]string, 0)
