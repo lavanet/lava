@@ -137,6 +137,16 @@ func askForRewards(staleEpochHeight int64) {
 				}
 				continue
 			}
+
+			//DEBUGGING
+			pairingEpochFromSession := session.PairingEpoch
+			blockHeight := session.Proof.BlockHeight
+			utils.LavaFormatWarning("Printing Bunch of stuff!", nil,
+				&map[string]string{"pairingEpochFromSession": strconv.FormatUint(pairingEpochFromSession, 10),
+					"blockHeight": strconv.FormatInt(blockHeight, 10),
+					"staleEpoch":  strconv.FormatUint(staleEpoch, 10),
+				})
+
 			relay := session.Proof
 			session.Proof = &pairingtypes.RelayRequest{} // Just in case askForRewards is running more than once at the same time and it might ask to be rewarded for this relay twice
 			relays = append(relays, relay)
