@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -13,6 +14,7 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +35,7 @@ func main() {
 		Long:  `server`,
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo("Provider process started", nil, &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -67,6 +70,7 @@ func main() {
 		Long:  `portal server`,
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo("Gateway Proxy process started", nil, &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -94,6 +98,7 @@ func main() {
 		Long:  `test client`,
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo("Test consumer process started", nil, &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

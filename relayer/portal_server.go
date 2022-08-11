@@ -2,7 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"fmt"
 	"log"
 	"time"
 
@@ -49,7 +48,7 @@ func PortalServer(
 
 	//
 	// Set up a connection to the server.
-	log.Println(fmt.Sprintf("PortalServer %s", apiInterface))
+	log.Printf("PortalServer %s\n", apiInterface)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
