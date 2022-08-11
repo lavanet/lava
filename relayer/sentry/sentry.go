@@ -1241,7 +1241,6 @@ func (s *Sentry) SendRelay(
 								AllDataHash: sigs.AllDataHash(reply, request),
 								QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 								Sig:         nil,                                //calculated in cb_send_reliability
-								Epoch:       currentEpoch,
 							}
 							clientSession = getClientSessionFromWrap(wrap)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)

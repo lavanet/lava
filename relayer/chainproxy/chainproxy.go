@@ -3,14 +3,12 @@ package chainproxy
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
-	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -185,11 +183,6 @@ func SendRelay(
 			QoSReport:       nil,
 			DataReliability: dataReliability,
 			ConnectionType:  connectionType,
-		}
-
-		if (requestedBlock - int64(dataReliability.Epoch)) > int64(sentry.GetEpochSize())+int64(sentry.GetOverlapSize()) {
-			return nil, nil, utils.LavaFormatError("data reliability message, requested block and data reliability block mismatch", nil,
-				&map[string]string{"requestedBlock": strconv.FormatInt(requestedBlock, 10), "dataReliability Epoch": strconv.FormatUint(dataReliability.Epoch, 10)})
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)

@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"bytes"
-	gobytes "bytes"
 	context "context"
 	"encoding/json"
 	"fmt"
@@ -99,7 +98,7 @@ func askForRewards(staleEpochHeight int64) {
 	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
 		utils.LavaFormatError("Some epochs were not rewarded, catching up and asking for rewards...", nil, &map[string]string{
-			"epoch":                strconv.FormatInt(staleEpochHeight, 10),
+			"requested epoch":      strconv.FormatInt(staleEpochHeight, 10),
 			"provider block":       strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"rewards to claim len": strconv.FormatInt(int64(len(g_rewardsSessions)), 10),
 		})
@@ -138,15 +137,6 @@ func askForRewards(staleEpochHeight int64) {
 				continue
 			}
 
-			//DEBUGGING
-			pairingEpochFromSession := session.PairingEpoch
-			blockHeight := session.Proof.BlockHeight
-			utils.LavaFormatWarning("Printing Bunch of stuff!", nil,
-				&map[string]string{"pairingEpochFromSession": strconv.FormatUint(pairingEpochFromSession, 10),
-					"blockHeight": strconv.FormatInt(blockHeight, 10),
-					"staleEpoch":  strconv.FormatUint(staleEpoch, 10),
-				})
-
 			relay := session.Proof
 			session.Proof = &pairingtypes.RelayRequest{} // Just in case askForRewards is running more than once at the same time and it might ask to be rewarded for this relay twice
 			relays = append(relays, relay)
@@ -165,8 +155,8 @@ func askForRewards(staleEpochHeight int64) {
 			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
 			if !ok {
 				utils.LavaFormatError("get rewards Missing epoch data for this user", err, &map[string]string{
-					"address": userSessions.user,
-					"epoch":   strconv.FormatUint(staleEpoch, 10),
+					"address":         userSessions.user,
+					"requested epoch": strconv.FormatUint(staleEpoch, 10),
 				})
 				userSessions.Lock.Unlock()
 				continue
@@ -174,18 +164,12 @@ func askForRewards(staleEpochHeight int64) {
 
 			if relay.BlockHeight != int64(staleEpoch) {
 				utils.LavaFormatError("relay proof is under incorrect epoch in relay rewards", err, &map[string]string{
-					"relay epoch": strconv.FormatInt(relay.BlockHeight, 10),
-					"epoch":       strconv.FormatUint(staleEpoch, 10),
+					"relay epoch":     strconv.FormatInt(relay.BlockHeight, 10),
+					"requested epoch": strconv.FormatUint(staleEpoch, 10),
 				})
 			}
 
 			if userSessionsEpochData.DataReliability != nil {
-				if staleEpoch != userSessionsEpochData.DataReliability.GetEpoch() {
-					utils.LavaFormatError("data reliability is under incorrect epoch in userSessionsEpochData", err, &map[string]string{
-						"datarel epoch": strconv.FormatUint(userSessionsEpochData.DataReliability.GetEpoch(), 10),
-						"epoch":         strconv.FormatUint(staleEpoch, 10),
-					})
-				}
 				relay.DataReliability = userSessionsEpochData.DataReliability
 				userSessionsEpochData.DataReliability = nil
 				reliability = true
@@ -237,7 +221,7 @@ func askForRewards(staleEpochHeight int64) {
 	})
 
 	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
-	myWriter := gobytes.Buffer{}
+	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
@@ -533,75 +517,60 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	if request.DataReliability != nil {
-		epoch := request.DataReliability.GetEpoch()
-
-		// client blockheight can only be at at prev epoch but not ealier
-		if epoch < uint64(prevEpochStart) {
-			return nil, utils.LavaFormatError("user reported very old data reliability epoch", nil, &map[string]string{
-				"current lava block":     strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
-				"requested lava block":   strconv.FormatInt(request.BlockHeight, 10),
-				"prev epoch start":       strconv.FormatInt(prevEpochStart, 10),
-				"reliability lava epoch": strconv.FormatUint(epoch, 10),
-			})
-		}
 
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed to get vrfpk for data reliability!", err, &map[string]string{
+			return nil, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err, &map[string]string{
 				"userAddr": userAddr.String(),
 			})
 		}
 
 		userSessions.Lock.Lock()
-		if epochData, ok := userSessions.dataByEpoch[epoch]; ok {
+		if epochData, ok := userSessions.dataByEpoch[uint64(request.BlockHeight)]; ok {
 			//data reliability message
 			if epochData.DataReliability != nil {
 				userSessions.Lock.Unlock()
-
 				return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
-					&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
+					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
 			}
 		}
 		userSessions.Lock.Unlock()
-
-		utils.LavaFormatInfo("request.DataReliability.Epoch: "+strconv.FormatUint(request.DataReliability.GetEpoch(), 10), nil, nil)
-
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
 			return nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String()})
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String()})
 		}
 		// verify the providerSig is ineed a signature by a valid provider on this query
 		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
 		if err != nil {
 			return nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		if !valid {
 			return nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		//verify data reliability fields correspond to the right vrf
-		valid = utils.VerifyVrfProof(request, *vrf_pk, epoch)
+		valid = utils.VerifyVrfProof(request, *vrf_pk, uint64(request.BlockHeight))
 		if !valid {
 			return nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 
 		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
 		if authorisedUserResponse.Index != vrfIndex {
 			return nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(),
-					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatUint(epoch, 10),
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
+					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
 		utils.LavaFormatInfo("server got valid DataReliability request", nil, nil)
 
 		userSessions.Lock.Lock()
-		getOrCreateDataByEpoch(userSessions, epoch, maxcuRes, vrf_pk, userAddr.String())
-		userSessions.dataByEpoch[epoch].DataReliability = request.DataReliability
+		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
+		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
 
 	} else {
@@ -735,7 +704,7 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 
 func SendVoteCommitment(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteCommit(g_sentry.Acc, voteID, vote.CommitHash)
-	myWriter := gobytes.Buffer{}
+	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
@@ -745,7 +714,7 @@ func SendVoteCommitment(voteID string, vote *voteData) {
 
 func SendVoteReveal(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteReveal(g_sentry.Acc, voteID, vote.Nonce, vote.RelayDataHash)
-	myWriter := gobytes.Buffer{}
+	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
 	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {

@@ -43,7 +43,6 @@ message VRFData {
     bytes allDataHash = 5;
     bytes queryHash = 6; //we only need it for payment later
     bytes sig =7;
-    uint64 epoch = 8;
 }
 
 message QualityOfServiceReport{

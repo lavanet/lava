@@ -79,13 +79,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-			if relay.DataReliability.Epoch != epochStart {
-				details["dataReliabilityEpoch"] = strconv.FormatUint(relay.DataReliability.Epoch, 10)
-				details["epochStart"] = strconv.FormatUint(epochStart, 10)
-				details["isOverlap"] = fmt.Sprintf("%t", isOverlap)
-				details["requestBlockHeight"] = strconv.FormatInt(relay.BlockHeight, 10)
-				errorLogAndFormat("data_reliability_epoch_mismatch", details, "data reliability and request epoch mismatch")
-			}
 			if !spec.ComparesHashes {
 				details["chainID"] = relay.ChainID
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
