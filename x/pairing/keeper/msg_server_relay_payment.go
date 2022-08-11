@@ -86,6 +86,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["dataReliabilityEpoch"] = strconv.FormatUint(relay.DataReliability.Epoch, 10)
 				details["epochStart"] = strconv.FormatUint(epochStart, 10)
 				details["isOverlap"] = fmt.Sprintf("%t", isOverlap)
+				details["requestBlockHeight"] = strconv.FormatInt(relay.BlockHeight, 10)
 				errorLogAndFormat("data_reliability_epoch_mismatch", details, "data reliability and request epoch mismatch")
 			}
 			if !spec.ComparesHashes {

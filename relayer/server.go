@@ -568,7 +568,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		if authorisedUserResponse.Index != vrfIndex {
 			return nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
 				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(),
-					"dataReliability": fmt.Sprintf("%v", request.DataReliability), "relayEpochStart": strconv.FormatUint(epoch, 10),
+					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatUint(epoch, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
@@ -685,7 +685,9 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 		return false, utils.LavaFormatError("failed to Validate Signer On VRF Data", err,
 			&map[string]string{"consumer": consumer.String(), "request.DataReliability": fmt.Sprintf("%v", request.DataReliability)})
 	}
-
+	if !valid {
+		return false, nil
+	}
 	//validate provider signing on query data
 	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
