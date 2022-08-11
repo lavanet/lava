@@ -341,8 +341,16 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		}
 		// TODO:: dont use GetEpochFromBlockHeight
 		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight, isOverlap)
+
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
+		utils.LavaFormatInfo("new session for user", nil, &map[string]string{
+			"userAddr":            userAddr,
+			"created for epoch":   strconv.FormatUint(sessionEpoch, 10),
+			"request blockheight": strconv.FormatInt(req.BlockHeight, 10),
+			"isOverlap":           fmt.Sprintf("%t", isOverlap),
+			"req.SessionId":       strconv.FormatUint(req.SessionId, 10),
+		})
 		userSessions.Sessions[req.SessionId] = session
 		if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
 			userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
