@@ -163,6 +163,12 @@ func askForRewards(staleEpochHeight int64) {
 			}
 
 			if userSessionsEpochData.DataReliability != nil {
+				if staleEpoch != userSessionsEpochData.DataReliability.GetEpoch() {
+					utils.LavaFormatError("data reliability is under incorrect epoch in userSessionsEpochData", err, &map[string]string{
+						"datarel epoch": strconv.FormatUint(userSessionsEpochData.DataReliability.GetEpoch(), 10),
+						"epoch":         strconv.FormatUint(staleEpoch, 10),
+					})
+				}
 				relay.DataReliability = userSessionsEpochData.DataReliability
 				userSessionsEpochData.DataReliability = nil
 				reliability = true
@@ -517,16 +523,16 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		}
 
 		userSessions.Lock.Lock()
-		dataReliability := userSessions.dataByEpoch[epoch].DataReliability
+		if epochData, ok := userSessions.dataByEpoch[epoch]; ok {
+			//data reliability message
+			if epochData.DataReliability != nil {
+				return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
+					&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
+			}
+		}
 		userSessions.Lock.Unlock()
 
 		utils.LavaFormatInfo("request.DataReliability.Epoch: "+strconv.FormatUint(request.DataReliability.GetEpoch(), 10), nil, nil)
-
-		//data reliability message
-		if dataReliability != nil {
-			return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
-				&map[string]string{"epoch": strconv.FormatUint(epoch, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", dataReliability)})
-		}
 
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
