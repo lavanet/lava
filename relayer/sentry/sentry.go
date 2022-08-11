@@ -1426,7 +1426,7 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 	if res.GetValid() {
 		return true, nil
 	}
-	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
+	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d, provider block height: %d", consumer, provider, block, s.GetBlockHeight())
 }
 
 func (s *Sentry) GetReliabilityThreshold() uint32 {
