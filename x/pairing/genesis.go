@@ -37,6 +37,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	k.SetParams(ctx, genState.Params)
 
 	k.PushFixatedServicersToPair(ctx, 0, 0)
+	k.PushFixatedEpochBlocksOverlap(ctx, 0, 0)
 	k.PushFixatedStakeToMaxCu(ctx, 0, 0)
 }
 
