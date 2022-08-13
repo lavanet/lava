@@ -137,27 +137,26 @@ func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
 }
 
 func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int) context.Context {
-	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-
 	for i := 0; i < blocks; i++ {
-		block := uint64(unwrapedCtx.BlockHeight() + 1)
-		unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
-
-		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+		ctx = AdvanceBlock(ctx, ks)
 	}
 
-	return sdk.WrapSDKContext(unwrapedCtx)
+	return ctx
 }
 
 func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Context {
-	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
-	for i := unwrapedCtx.BlockHeight(); uint64(i) <= block; i++ {
-		unwrapedCtx = unwrapedCtx.WithBlockHeight(i)
-		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+	if uint64(unwrapedCtx.BlockHeight()) == block {
+		return ctx
 	}
 
-	return sdk.WrapSDKContext(unwrapedCtx)
+	for uint64(unwrapedCtx.BlockHeight()) < block {
+		ctx = AdvanceBlock(ctx, ks)
+		unwrapedCtx = sdk.UnwrapSDKContext(ctx)
+	}
+
+	return ctx
 }
 
 //Make sure you save the new context

@@ -149,7 +149,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 	prevEpochStart, err := k.GetPreviousEpochStartForBlock(ctx, block)
 	if err != nil {
 		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
-	} else if latestParamChange > prevEpochStart {
+	} else if latestParamChange >= prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedParams(ctx, block, earliestEpochStart)
 	}

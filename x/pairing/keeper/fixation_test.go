@@ -43,7 +43,19 @@ func TestServicersToPair(t *testing.T) {
 	}{
 		{"FillHalfMemory", blocksInMemory / 2, 0, servicersToParCount, 1},
 		{"ParamChange", blocksInMemory / 2, 2 * servicersToParCount, servicersToParCount, 1},
-		{"ParamChange + epoch", blocksInMemory/2 + 2*blocksInEpoch, 0, servicersToParCount, 2},
+		{"ParamChange + epoch +1", blocksInMemory/2 + blocksInEpoch, 0, servicersToParCount * 2, 2},
+		{"memory -1", blocksInMemory - 1, 0, servicersToParCount * 2, 2},
+		{"memory", blocksInMemory, 0, servicersToParCount * 2, 2},
+		{"memory + epoch", blocksInMemory + blocksInEpoch, 0, servicersToParCount * 2, 2},
+		{"memory and a half", blocksInMemory + blocksInMemory/2, 0, servicersToParCount * 2, 2},
+		{"memory and a half + epoch", blocksInMemory + blocksInMemory/2 + blocksInEpoch, 0, servicersToParCount * 2, 2},
+		{"memory and a half + 2epoch", blocksInMemory + blocksInMemory/2 + 2*blocksInEpoch, 0, servicersToParCount * 2, 1},
+		{"fill 2 memory and param change", 2 * blocksInMemory, servicersToParCount * 3, servicersToParCount * 3, 2},
+		{"fill 2 memory + 1 and param change", 2*blocksInMemory + 1, servicersToParCount * 4, servicersToParCount * 3, 2},
+		{"2 memory + epoch", 2*blocksInMemory + blocksInEpoch, 0, servicersToParCount * 4, 3},
+		{"3 memory", 3 * blocksInMemory, 0, servicersToParCount * 4, 3},
+		{"3 memory + 2epoch -1", 3*blocksInMemory + 2*blocksInEpoch - 1, 0, servicersToParCount * 4, 3},
+		{"3 memory + 2epoch", 3*blocksInMemory + 2*blocksInEpoch, 0, servicersToParCount * 4, 1},
 	}
 
 	pastTests := []struct {
@@ -69,6 +81,10 @@ func TestServicersToPair(t *testing.T) {
 			require.Equal(t, tt.NumOfFixation, uint64(len(allFixatedParams)))
 
 			for _, pasttest := range pastTests {
+				ealiestEpoch := keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx))
+				if ealiestEpoch > pasttest.Block {
+					continue
+				}
 				servicersToPair, err := keepers.Pairing.GetFixatedServicersToPairForBlock(sdk.UnwrapSDKContext(ctx), pasttest.Block)
 				require.Nil(t, err)
 				require.Equal(t, pasttest.ExpectedServicersToPair, servicersToPair.ServicersToPairCount)

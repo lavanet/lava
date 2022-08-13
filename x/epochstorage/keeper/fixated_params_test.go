@@ -202,7 +202,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 		{"[21]end memory -1", 2},           //before memory end
 		{"[22]end memory", 2},              //at memory end
 		{"[23]end memory +1", 2},           //after memory end +1
-		{"[24]end memory +fixation -1", 2}, //after memory end + diff fixation -1
+		{"[24]end memory +fixation -1", 1}, //after memory end + diff fixation -1
 		{"[25]end memory +fixation", 1},    //after memory end + diff fixation
 	}
 	prevBlock := 0

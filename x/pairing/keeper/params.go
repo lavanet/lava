@@ -113,7 +113,8 @@ func (k Keeper) LatestParamChanges(ctx sdk.Context) (res types.LatestParamsChang
 }
 
 func (k Keeper) FixateServicersToPair(ctx sdk.Context, block uint64) {
-	latestParamChange := k.LatestParamChanges(ctx).ServicersToPairCount
+	paramChangesStruct := k.LatestParamChanges(ctx)
+	latestParamChange := paramChangesStruct.ServicersToPairCount
 	if latestParamChange == 0 { // no change
 		return
 	}
@@ -124,7 +125,8 @@ func (k Keeper) FixateServicersToPair(ctx sdk.Context, block uint64) {
 	earliestEpochStart := k.epochStorageKeeper.GetEarliestEpochStart(ctx) //this is the previous epoch start, before we update it to the current block
 	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
-		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
+		paramChangesStruct.ServicersToPairCount = 0
+		k.paramstore.Set(ctx, types.KeyLatestParamChange, paramChangesStruct)
 		//clean up older fixated params, they no longer matter
 		k.CleanOlderFixatedServicersToPair(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return
@@ -133,7 +135,7 @@ func (k Keeper) FixateServicersToPair(ctx sdk.Context, block uint64) {
 	prevEpochStart, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
 	if err != nil {
 		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
-	} else if latestParamChange > prevEpochStart {
+	} else if latestParamChange >= prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedServicersToPair(ctx, block, earliestEpochStart)
 	}
@@ -160,7 +162,7 @@ func (k Keeper) FixateStakeToMaxCU(ctx sdk.Context, block uint64) {
 	prevEpochStart, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
 	if err != nil {
 		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
-	} else if latestParamChange > prevEpochStart {
+	} else if latestParamChange >= prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedStakeToMaxCu(ctx, block, earliestEpochStart)
 	}
@@ -187,7 +189,7 @@ func (k Keeper) FixateEpochBlocksOverlap(ctx sdk.Context, block uint64) {
 	prevEpochStart, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, block)
 	if err != nil {
 		utils.LavaError(ctx, k.Logger(ctx), "GetPreviousEpochStartForBlock_pushFixation", map[string]string{"error": err.Error(), "block": strconv.FormatUint(block, 10)}, "can't get block in epoch")
-	} else if latestParamChange > prevEpochStart {
+	} else if latestParamChange >= prevEpochStart {
 		// this is a recent change so we need to move the current fixation backwards
 		k.PushFixatedEpochBlocksOverlap(ctx, block, earliestEpochStart)
 	}
