@@ -517,6 +517,9 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	s.FetchChainParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	//
 	// Get pairing for the first time, for clients
@@ -750,7 +753,10 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
-				s.FetchChainParams(ctx)
+				err := s.FetchChainParams(ctx)
+				if err != nil {
+					log.Println("error: FetchChainParams", err)
+				}
 
 				if s.newEpochCb != nil {
 					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
@@ -758,7 +764,7 @@ func (s *Sentry) Start(ctx context.Context) {
 
 				//
 				// Update specs
-				err := s.getSpec(ctx)
+				err = s.getSpec(ctx)
 				if err != nil {
 					log.Println("error: getSpec", err)
 				}
@@ -806,11 +812,28 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 }
 
-func (s *Sentry) FetchChainParams(ctx context.Context) {
-	s.FetchEpochSize(ctx)
-	s.FetchOverlapSize(ctx)
-	s.FetchEpochParams(ctx)
-	s.FetchProvidersCount(ctx)
+func (s *Sentry) FetchChainParams(ctx context.Context) error {
+	err := s.FetchEpochSize(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchOverlapSize(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchEpochParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchProvidersCount(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
