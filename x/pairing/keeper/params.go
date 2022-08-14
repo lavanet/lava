@@ -142,7 +142,8 @@ func (k Keeper) FixateServicersToPair(ctx sdk.Context, block uint64) {
 }
 
 func (k Keeper) FixateStakeToMaxCU(ctx sdk.Context, block uint64) {
-	latestParamChange := k.LatestParamChanges(ctx).StakeToMaxCUList
+	latestParamChangeStruct := k.LatestParamChanges(ctx)
+	latestParamChange := latestParamChangeStruct.StakeToMaxCUList
 	if latestParamChange == 0 { // no change
 		return
 	}
@@ -153,7 +154,8 @@ func (k Keeper) FixateStakeToMaxCU(ctx sdk.Context, block uint64) {
 	earliestEpochStart := k.epochStorageKeeper.GetEarliestEpochStart(ctx) //this is the previous epoch start, before we update it to the current block
 	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
-		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
+		latestParamChangeStruct.StakeToMaxCUList = uint64(0)
+		k.paramstore.Set(ctx, types.KeyLatestParamChange, latestParamChangeStruct)
 		//clean up older fixated params, they no longer matter
 		k.CleanOlderFixatedStakeToMaxCu(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return
@@ -169,7 +171,8 @@ func (k Keeper) FixateStakeToMaxCU(ctx sdk.Context, block uint64) {
 }
 
 func (k Keeper) FixateEpochBlocksOverlap(ctx sdk.Context, block uint64) {
-	latestParamChange := k.LatestParamChanges(ctx).EpochBlocksOverlap
+	latestParamChangeStruct := k.LatestParamChanges(ctx)
+	latestParamChange := latestParamChangeStruct.EpochBlocksOverlap
 	if latestParamChange == 0 { // no change
 		return
 	}
@@ -180,7 +183,8 @@ func (k Keeper) FixateEpochBlocksOverlap(ctx sdk.Context, block uint64) {
 	earliestEpochStart := k.epochStorageKeeper.GetEarliestEpochStart(ctx) //this is the previous epoch start, before we update it to the current block
 	if latestParamChange < earliestEpochStart {
 		//latest param change is older than memory, so remove it
-		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
+		latestParamChangeStruct.EpochBlocksOverlap = uint64(0)
+		k.paramstore.Set(ctx, types.KeyLatestParamChange, latestParamChangeStruct)
 		//clean up older fixated params, they no longer matter
 		k.CleanOlderFixatedEpochBlocksOverlap(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return
