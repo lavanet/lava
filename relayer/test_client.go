@@ -2,7 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -84,7 +83,7 @@ func TestClient(
 	}
 
 	if testErrors != nil {
-		log.Fatalln(fmt.Sprintf("%s Client test failed with errors %s", chainID, testErrors))
+		log.Fatalf("%s Client test failed with errors %s\n", chainID, testErrors)
 	} else {
 		log.Printf("%s Client test  complete \n", chainID)
 	}

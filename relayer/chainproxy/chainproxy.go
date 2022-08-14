@@ -108,7 +108,8 @@ func SendRelay(
 			return nil, nil, err
 		}
 
-		blockHeight = cp.GetSentry().GetBlockHeight()
+		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
+
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
 			ConnectionType:  connectionType,
@@ -158,13 +159,13 @@ func SendRelay(
 		}
 
 		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, cp.GetSentry().GetServicersToPairCount())
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 
 		return reply, relayRequest, nil
 	}
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
-
+		sentry := cp.GetSentry()
 		if blockHeight < 0 {
 			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
@@ -174,7 +175,7 @@ func SendRelay(
 			ApiUrl:          url,
 			Data:            []byte(req),
 			SessionId:       uint64(0), //sessionID for reliability is 0
-			ChainID:         cp.GetSentry().ChainID,
+			ChainID:         sentry.ChainID,
 			CuSum:           clientSession.CuSum,
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,

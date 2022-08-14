@@ -145,6 +145,7 @@ type RelayerClientWrapper struct {
 	MaxComputeUnits    uint64
 	UsedComputeUnits   uint64
 	ReliabilitySent    bool
+	PairingEpoch       uint64
 }
 
 type PaymentRequest struct {
@@ -204,7 +205,7 @@ type Sentry struct {
 	currentEpoch       uint64
 	EpochSize          uint64
 	EpochBlocksOverlap uint64
-
+	providersCount     uint64
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
@@ -217,7 +218,6 @@ type Sentry struct {
 	// Pairing storage (rw mutex)
 	pairingMu            sync.RWMutex
 	pairingNextMu        sync.RWMutex
-	pairingNextHash      []byte
 	pairing              []*RelayerClientWrapper
 	PairingBlockStart    int64
 	pairingAddresses     []string
@@ -234,12 +234,34 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
+func (r *RelayerClientWrapper) GetPairingEpoch() uint64 {
+	return atomic.LoadUint64(&r.PairingEpoch)
+}
+
+func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.providersCount, res.GetParams().ServicersToPairCount)
+	return nil
+}
+
+func (s *Sentry) GetProvidersCount() uint64 {
+	return atomic.LoadUint64(&s.providersCount)
+}
+
+func (s *Sentry) GetEpochSize() uint64 {
+	return atomic.LoadUint64(&s.EpochSize)
+}
+
 func (s *Sentry) FetchEpochSize(ctx context.Context) error {
 	res, err := s.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {
 		return err
 	}
 	atomic.StoreUint64(&s.EpochSize, res.GetParams().EpochBlocks)
+
 	return nil
 }
 
@@ -264,13 +286,13 @@ func (s *Sentry) FetchEpochParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) error {
+func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, init bool) error {
 	if !s.isUser {
 		return nil
 	}
 
 	// switch pairing every epochSize blocks
-	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() {
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && !init {
 		return nil
 	}
 
@@ -292,7 +314,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) err
 	s.pairing = s.pairingNext
 	s.pairingAddresses = s.pairingNextAddresses
 	s.pairingNext = []*RelayerClientWrapper{}
-	log.Printf("Pairing list switched. CurrentBlockHeight: %d \n", s.GetBlockHeight())
 
 	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
@@ -323,14 +344,6 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	if servicers == nil || len(servicers) == 0 {
 		return errors.New("no servicers found")
 	}
-
-	//
-	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.pairingNextHash, hash) {
-		return nil
-	}
-	s.pairingNextHash = hash
 
 	//
 	// Set
@@ -370,6 +383,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			MaxComputeUnits:    maxcu,
 			ReliabilitySent:    false,
 			ConnectionRefusals: 0,
+			PairingEpoch:       s.GetCurrentEpochHeight(),
 		})
 		pairingAddresses = append(pairingAddresses, servicer.Address)
 	}
@@ -386,12 +400,6 @@ func (s *Sentry) GetSpecHash() []byte {
 	s.specMu.Lock()
 	defer s.specMu.Unlock()
 	return s.specHash
-}
-
-func (s *Sentry) GetServicersToPairCount() int64 {
-	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	return int64(len(s.pairingAddresses))
 }
 
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
@@ -508,6 +516,8 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
+	s.FetchChainParams(ctx)
+
 	//
 	// Get pairing for the first time, for clients
 	err = s.getPairing(ctx)
@@ -515,7 +525,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
-	s.handlePairingChange(ctx, 0)
+	s.handlePairingChange(ctx, 0, true)
 
 	//
 	// Sanity
@@ -537,9 +547,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
 		}
 	}
-
-	s.FetchEpochSize(ctx)
-	s.FetchOverlapSize(ctx)
 
 	return nil
 }
@@ -743,13 +750,10 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 
-				s.SetCurrentEpochHeight(data.Block.Height)
-				s.FetchEpochSize(ctx)
-				s.FetchOverlapSize(ctx)
-				s.FetchEpochParams(ctx)
+				s.FetchChainParams(ctx)
 
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
+					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
 				}
 
 				//
@@ -772,7 +776,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 			}
 
-			s.handlePairingChange(ctx, data.Block.Height)
+			s.handlePairingChange(ctx, data.Block.Height, false)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -800,6 +804,13 @@ func (s *Sentry) Start(ctx context.Context) {
 
 		}
 	}
+}
+
+func (s *Sentry) FetchChainParams(ctx context.Context) {
+	s.FetchEpochSize(ctx)
+	s.FetchOverlapSize(ctx)
+	s.FetchEpochParams(ctx)
+	s.FetchProvidersCount(ctx)
 }
 
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
@@ -897,7 +908,9 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 				wrap.ConnectionRefusals++
 				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
 				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
-					s.movePairingEntryToPurge(wrap, index, false)
+					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+					s.movePairingEntryToPurge(wrap, index)
+					s.pairingMu.RLock() // we resume read lock here, so we can continue
 					fmt.Printf("moving %s to purge list after max consecutive tries\n", wrap.Addr)
 				}
 
@@ -1133,20 +1146,20 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}
 	// Get or create session and lock it
-	clientSession := getClientSessionFromWrap(wrap)
+	clientSession := getClientSessionFromWrap(wrap) // clientSession is LOCKED!
 
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index, true)
+			s.movePairingEntryToPurge(wrap, index)
 		}
 		return reply, err
 	}
 
-	providerAcc := clientSession.Client.Acc
-	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
+	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
 		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
@@ -1166,7 +1179,6 @@ func (s *Sentry) SendRelay(
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
 		clientSession.LatestBlock = latestBlock
-
 		//
 		// Compare finalized block hashes with previous providers
 		// Looks for discrepancy with current epoch providers
@@ -1187,7 +1199,8 @@ func (s *Sentry) SendRelay(
 			}
 
 			s.VrfSkMu.Lock()
-			currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
+
+			currentEpoch := clientSession.Client.GetPairingEpoch()
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
@@ -1223,7 +1236,7 @@ func (s *Sentry) SendRelay(
 							if err != nil {
 								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-									s.movePairingEntryToPurge(wrap, index, true)
+									s.movePairingEntryToPurge(wrap, index)
 								}
 								return nil, nil, err
 							}
@@ -1333,11 +1346,13 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	return latestBlock - finalization_criteria
 }
 
-func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, lockpairing bool) {
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
 	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	if lockpairing {
-		s.pairingMu.Lock()
-		defer s.pairingMu.Unlock()
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+
+	if len(s.pairing) == 0 {
+		return
 	}
 
 	s.pairingPurgeLock.Lock()
@@ -1352,7 +1367,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 		}
 		return false
 	}
-	if index >= len(s.pairing) {
+	if index >= len(s.pairing) || index < 0 {
 		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
 		if !findPairingIndex() {
 			return
@@ -1369,14 +1384,14 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtypes.QueryVerifyPairingResponse, error) {
+func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	//
 	// TODO: cache results!
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   user,
 		Provider: s.Acc,
-		Block:    uint64(s.GetBlockHeight()),
+		Block:    blockheight,
 	})
 	if err != nil {
 		return nil, err
@@ -1404,7 +1419,11 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 	if res.GetValid() {
 		return true, nil
 	}
-	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
+	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d, provider block height: %d", consumer, provider, block, s.GetBlockHeight())
+}
+
+func (s *Sentry) GetReliabilityThreshold() uint32 {
+	return s.serverSpec.ReliabilityThreshold
 }
 
 func (s *Sentry) GetSpecName() string {
@@ -1571,11 +1590,9 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 }
 
 // TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
-	epoch := uint64(blockHeight - blockHeight%int64(s.EpochSize))
-	if isOverlap {
-		epoch = epoch - s.EpochSize
-	}
+func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64) uint64 {
+	epochSize := s.GetEpochSize()
+	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
 	return epoch
 }
 
@@ -1597,7 +1614,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: ", err)
+		utils.LavaFormatError("Sentry failed to get chain height", err, &map[string]string{"account": acc, "ChainID": chainID, "apiInterface": apiInterface})
 		currentBlock = 0
 	}
 	return &Sentry{

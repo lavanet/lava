@@ -3,6 +3,9 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
+
+	golog "log"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -35,4 +38,44 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	// ctx.EventManager().EmitEvent(sdk.NewEvent("ERR_"+name, eventAttrs...))
 	//TODO: add error types, create them here and return
 	return errors.New(err_msg)
+}
+
+func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
+	var prefix string
+	switch severity {
+	case 3:
+		prefix = "Fatal:"
+	case 2:
+		prefix = "Error:"
+	case 1:
+		prefix = "Warning:"
+	case 0:
+		prefix = "Info:"
+	}
+	output := prefix + " " + description
+	if err != nil {
+		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
+	}
+	if extraAttributes != nil {
+		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
+	}
+	golog.Println(output)
+	return fmt.Errorf(output)
+}
+
+func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
+	LavaFormatLog(description, err, extraAttributes, 3)
+	os.Exit(1)
+}
+
+func LavaFormatError(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 2)
+}
+
+func LavaFormatWarning(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 1)
+}
+
+func LavaFormatInfo(description string, err error, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, err, extraAttributes, 0)
 }
