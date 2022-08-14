@@ -6,7 +6,7 @@ __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
 
 echo ""
-echo " ::: STARTING ETH PROVIDERS :::" $ETH_RPC_HTTP $URL_PATH
+echo " ::: STARTING ETH PROVIDERS :::" $ETH_HOST $URL_PATH
 
 # SINGLE PROXY
 MOCK_PORT=2001
