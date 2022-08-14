@@ -1151,19 +1151,17 @@ func (s *Sentry) SendRelay(
 	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
-		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
-		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
+		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
+		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			log.Println("Reliability ERROR: Finalized Block reply err", err)
-			return nil, err
+			return nil, utils.LavaFormatError("unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
-			log.Println("Provider reply error, ", err)
-			return nil, err
+			return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
@@ -1184,7 +1182,8 @@ func (s *Sentry) SendRelay(
 
 			isSecure, err := s.cmdFlags.GetBool("secure")
 			if err != nil {
-				log.Println("Error: Could not get flag --secure")
+				utils.LavaFormatError("Could not get flag --secure", err, nil)
+				isSecure = false
 			}
 
 			s.VrfSkMu.Lock()
@@ -1204,10 +1203,9 @@ func (s *Sentry) SendRelay(
 					wrap, index, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
-						log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
-						return nil, nil, err
+						return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
 					} else {
-						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
+						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
 							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
@@ -1223,25 +1221,24 @@ func (s *Sentry) SendRelay(
 							clientSession = getClientSessionFromWrap(wrap)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
-								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 									s.movePairingEntryToPurge(wrap, index)
 								}
-								return nil, nil, err
+								return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 							return relay_rep, relay_req, nil
 						} else {
-							log.Println("Reliability already Sent in this epoch to this provider")
+							utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
 							return nil, nil, nil
 						}
 					}
 				} else {
 					if isSecure {
 						//send reliability on the client's expense
-						log.Println("secure flag Not Implemented, TODO:")
+						utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
 					}
-					return nil, nil, fmt.Errorf("reliability ERROR: is not a valid reliability VRF address result")
+					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
 				}
 			}
 
@@ -1261,7 +1258,7 @@ func (s *Sentry) SendRelay(
 					s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
 				}
 				if (ok && check0) || (ok && check1) {
-					log.Printf("[+] Reliability verified and Okay! ----\n\n")
+					utils.LavaFormatInfo("Reliability verified and Okay!", &map[string]string{"address0": address0, "address1": address1, "original address": providerAcc})
 				}
 			}
 			go checkReliability()
@@ -1284,15 +1281,14 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.providerHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Reliability ERROR: Discrepancy Checker err", err)
-				return false, err
+				return false, utils.LavaFormatError("Conflict found in discrepancyChecker", err, nil)
 			}
 
 			// if no conflicts, insert into consensus and break
 			if !discrepancyResult {
 				matchWithExistingConsensus = true
 			} else {
-				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
+				utils.LavaFormatError("Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 
 			// if no discrepency with this group -> insert into consensus and break
@@ -1313,12 +1309,11 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.prevEpochProviderHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Reliability ERROR: Discrepancy Checker err", err)
-				return false, err
+				return false, utils.LavaFormatError("prev epoch Conflict found in discrepancyChecker", err, nil)
 			}
 
 			if discrepancyResult {
-				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
+				utils.LavaFormatError("prev epoch Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 		}
 	}
@@ -1336,7 +1331,7 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
-	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
+	utils.LavaFormatWarning("Jailing provider for this epoch", nil, &map[string]string{"address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
 
@@ -1357,7 +1352,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 		return false
 	}
 	if index >= len(s.pairing) || index < 0 {
-		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoint": wrap.Acc, "address": wrap.Addr, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
