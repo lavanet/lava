@@ -76,6 +76,6 @@ func LavaFormatWarning(description string, err error, extraAttributes *map[strin
 	return LavaFormatLog(description, err, extraAttributes, 1)
 }
 
-func LavaFormatInfo(description string, err error, extraAttributes *map[string]string) error {
-	return LavaFormatLog(description, err, extraAttributes, 0)
+func LavaFormatInfo(description string, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, nil, extraAttributes, 0)
 }
