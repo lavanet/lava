@@ -9,7 +9,7 @@ echo ""
 echo " ::: STARTING GTH PROVIDERS :::" $GTH_HOST $GTH_URL_PATH
 
 # SINGLE PROXY
-MOCK_PORT=2001
+MOCK_PORT=2002
 go run ./testutil/e2e/proxy/. $GTH_HOST  -p $MOCK_PORT -cache -id gth &
 
 echo " ::: RUNNING GTH PROVIDERS :::"
@@ -18,6 +18,7 @@ lavad server 127.0.0.1 2121 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc
 lavad server 127.0.0.1 2122 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc --from servicer2 &
 lavad server 127.0.0.1 2123 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc --from servicer3 &
 lavad server 127.0.0.1 2124 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc --from servicer4 &
-lavad server 127.0.0.1 2125 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc --from servicer5 
+lavad server 127.0.0.1 2125 http://0.0.0.0:$MOCK_PORT/$GTH_URL_PATH GTH1 jsonrpc --from servicer5 &
+lavad portal_server 127.0.0.1 3339 GTH1 jsonrpc --from user1
 
 echo " ::: GTH PROVIDERS DONE! :::"
