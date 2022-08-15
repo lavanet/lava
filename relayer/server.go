@@ -283,22 +283,23 @@ func askForRewards(staleEpochHeight int64) {
 				}
 			}
 
-			if !success {
-				utils.LavaFormatError(fmt.Sprintf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\nincorrect account sequence and no success after retries", myWriter.String()),
-					nil, &map[string]string{
-						"retries": strconv.FormatUint(RETRY_INCORRECT_SEQUENCE, 10),
-					})
-				return
-			} else {
-				utils.LavaFormatInfo("Success after incorrect account sequence detected", &map[string]string{
-					"retries": strconv.FormatInt(int64(idx), 10),
-				})
-			}
-		} else {
-			return
+	if !success {
+		utils.LavaFormatError(fmt.Sprintf("askForRewards ERROR, transaction results: \n%s\n", summarizedTransactionResult), nil, nil)
+	} else {
+		utils.LavaFormatInfo(fmt.Sprintf("askForRewards SUCCESS!, transaction results: %s\n", summarizedTransactionResult), nil, nil)
+	}
+}
+
+func summarizeTransactionResult(transactionResult string) (string, []string) {
+	transactionResult = strings.ReplaceAll(transactionResult, ": ", ":")
+	transactionResults := strings.Split(transactionResult, "\n")
+	summarizedResult := ""
+	for _, str := range transactionResults {
+		if strings.Contains(str, "raw_log:") || strings.Contains(str, "txhash:") || strings.Contains(str, "code:") {
+			summarizedResult = summarizedResult + str + ", "
 		}
 	}
-	utils.LavaFormatInfo(fmt.Sprintf("----------SUCCESS-----------\ntransaction results: %s\n-----------SUCCESS-------------\n", myWriter.String()), nil)
+	return summarizedResult, transactionResults
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
