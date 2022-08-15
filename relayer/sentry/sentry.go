@@ -939,7 +939,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+	SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 	//report the conflict
 	return false
 }
@@ -994,7 +994,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+				SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 
 				// TODO:: should break here? is one enough or search for more?
 				log.Printf("reliability discrepancy - block %d has different hashes:[ %s, %s ]\n", blockNum, blockHash, otherHash)
@@ -1047,7 +1047,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+		SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 
 		return fmt.Errorf("Reliability ERROR: Provider supplied an older latest block than it has previously")
 	}

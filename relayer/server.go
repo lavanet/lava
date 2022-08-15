@@ -219,7 +219,7 @@ func askForRewards(staleEpochHeight int64) {
 	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
-	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	err := sentry.SimulateAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
 			"msg": fmt.Sprintf("%+v", msg),
@@ -252,7 +252,7 @@ func askForRewards(staleEpochHeight int64) {
 			for idx < RETRY_INCORRECT_SEQUENCE && !success {
 				time.Sleep(1 * time.Second)
 				myWriter.Reset()
-				err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+				err := sentry.SimulateAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 				if err != nil {
 					utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
 						"msg": fmt.Sprintf("%+v", msg),
@@ -697,7 +697,7 @@ func SendVoteCommitment(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteCommit(g_sentry.Acc, voteID, vote.CommitHash)
 	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
-	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	err := sentry.SimulateAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		utils.LavaFormatError("failed to send vote commitment", err, nil)
 	}
@@ -707,7 +707,7 @@ func SendVoteReveal(voteID string, vote *voteData) {
 	msg := conflicttypes.NewMsgConflictVoteReveal(g_sentry.Acc, voteID, vote.Nonce, vote.RelayDataHash)
 	myWriter := bytes.Buffer{}
 	g_sentry.ClientCtx.Output = &myWriter
-	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+	err := sentry.SimulateAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 	if err != nil {
 		utils.LavaFormatError("failed to send vote Reveal", err, nil)
 	}
