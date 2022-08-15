@@ -754,7 +754,7 @@ func (s *Sentry) Start(ctx context.Context) {
 
 				err := s.FetchChainParams(ctx)
 				if err != nil {
-					log.Println("error: FetchChainParams", err)
+					utils.LavaFormatError("failed in FetchChainParams", err, nil)
 				}
 
 				if s.newEpochCb != nil {

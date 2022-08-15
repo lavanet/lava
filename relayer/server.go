@@ -216,77 +216,76 @@ func askForRewards(staleEpochHeight int64) {
 		"reliability": fmt.Sprintf("%t", reliability),
 	})
 
-	msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 	myWriter := bytes.Buffer{}
-	g_sentry.ClientCtx.Output = &myWriter
-	err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
-	if err != nil {
-		utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
-			"msg": fmt.Sprintf("%+v", msg),
-		})
-	}
-
-	//EWW, but unmarshalingJson doesn't work because keys aren't in quotes
-	transactionResult := strings.ReplaceAll(myWriter.String(), ": ", ":")
-	transactionResults := strings.Split(transactionResult, "\n")
-	returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
-	if err != nil {
-		utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
-			"parsing data": strings.Join(transactionResults, ","),
-		})
-		return
-	}
-	if returnCode != 0 {
-		// TODO:: get rid of this code
-		// This code retries asking for rewards when getting an 'incorrect sequence' error.
-		// The transaction should work after a new lava block.
-
-		utils.LavaFormatError(fmt.Sprintf("----------ERROR-------------\ntransaction results: %s\n-------------ERROR-------------\n", myWriter.String()),
-			nil, &map[string]string{
-				"returnCode": strconv.FormatUint(returnCode, 10),
+	hasSequenceError := false
+	success := false
+	idx := -1
+	customSeqNum := uint64(0)
+	summarizedTransactionResult := ""
+	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
+		msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
+		g_sentry.ClientCtx.Output = &myWriter
+		if hasSequenceError { // a retry
+			g_txFactory = g_txFactory.WithSequence(customSeqNum)
+			myWriter.Reset()
+			utils.LavaFormatInfo("Retrying with parsed sequence number:", &map[string]string{
+				"customSeqNum": strconv.FormatUint(customSeqNum, 10),
 			})
-		if strings.Contains(transactionResult, "incorrect account sequence") {
-			utils.LavaFormatError("incorrect account sequence detected. retrying transaction...", nil, nil)
-			idx := 1
-			success := false
-			for idx < RETRY_INCORRECT_SEQUENCE && !success {
-				time.Sleep(1 * time.Second)
-				myWriter.Reset()
-				err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
-				if err != nil {
-					utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
-						"msg": fmt.Sprintf("%+v", msg),
-					})
-					break
-				}
-				idx++
+		}
+		err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+		if err != nil {
+			utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
+				"msg": fmt.Sprintf("%+v", msg),
+			})
+		}
 
-				transactionResult = myWriter.String()
-				transactionResult := strings.ReplaceAll(transactionResult, ": ", ":")
-				transactionResults := strings.Split(transactionResult, "\n")
-				returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
-				if err != nil {
-					utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
-						"parsing data": strings.Join(transactionResults, ","),
-					})
-					returnCode = 1 // just not zero
-				}
+		transactionResult := myWriter.String()
+		summarized, transactionResults := summarizeTransactionResult(transactionResult)
+		summarizedTransactionResult = summarized
 
-				if returnCode == 0 { // if we get some other error which isnt then keep retrying
-					success = true
-				} else {
-					if !strings.Contains(transactionResult, "incorrect account sequence") {
-						utils.LavaFormatError("Unexpected Failure during retry", nil, &map[string]string{
-							"response": transactionResult,
-						})
-					}
+		returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
+		if err != nil {
+			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+				"parsing data": transactionResult,
+			})
+			returnCode = 1 // just not zero
+		}
+
+		if returnCode == 0 { // if we get some other error which isnt then keep retrying
+			success = true
+		} else {
+			if strings.Contains(summarized, "incorrect account sequence") {
+				hasSequenceError = true
+				utils.LavaFormatWarning("Incorrect sequence number in transaction, retrying...", nil, &map[string]string{
+					"response": summarized,
+				})
+				seqErrorstr := "account sequence mismatch, expected "
+				seqNumIndex := strings.Index(summarized, seqErrorstr) + len(seqErrorstr)
+				strings.Index(summarized, seqErrorstr)
+				var expectedSeqNum bytes.Buffer
+				for ; summarized[seqNumIndex] != ','; seqNumIndex++ {
+					expectedSeqNum.WriteByte(summarized[seqNumIndex])
 				}
+				customSeqNum, err = strconv.ParseUint(expectedSeqNum.String(), 10, 32)
+				if err != nil {
+					utils.LavaFormatError("Cannot parse sequence number from error transaction", err, nil)
+				}
+			} else {
+				break // Break loop for other errors
 			}
+		}
+	}
+
+	if hasSequenceError {
+		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
+			"tries": strconv.FormatInt(int64(idx+1), 10),
+		})
+	}
 
 	if !success {
 		utils.LavaFormatError(fmt.Sprintf("askForRewards ERROR, transaction results: \n%s\n", summarizedTransactionResult), nil, nil)
 	} else {
-		utils.LavaFormatInfo(fmt.Sprintf("askForRewards SUCCESS!, transaction results: %s\n", summarizedTransactionResult), nil, nil)
+		utils.LavaFormatInfo(fmt.Sprintf("askForRewards SUCCESS!, transaction results: %s\n", summarizedTransactionResult), nil)
 	}
 }
 
