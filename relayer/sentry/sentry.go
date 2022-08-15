@@ -516,7 +516,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
-	s.FetchChainParams(ctx)
+	err = s.FetchChainParams(ctx)
 	if err != nil {
 		return err
 	}
