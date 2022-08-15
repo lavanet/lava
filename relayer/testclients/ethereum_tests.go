@@ -131,12 +131,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_call")
 
-	// eth_estimateGas
-	_, err = client.EstimateGas(ctx, callMsg)
-	if err != nil && !strings.Contains(err.Error(), "execution reverted") {
-		return fmt.Errorf("eth_estimateGas error %s", err.Error())
+	if chainID != "GTH1" {
+		// eth_estimateGas
+		_, err = client.EstimateGas(ctx, callMsg)
+		if err != nil && !strings.Contains(err.Error(), "execution reverted") {
+			return fmt.Errorf("eth_estimateGas error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_estimateGas")
 	}
-	log.Println("reply JSONRPC_eth_estimateGas")
 
 	return nil
 }
