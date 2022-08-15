@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	golog "log"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
@@ -43,28 +41,27 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 }
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
-	var prefix string
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	var logEvent *zerolog.Event
 	switch severity {
 	case 4:
-		prefix = "Fatal:"
+		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
 
 	case 3:
-		prefix = "Error:"
+		// prefix = "Error:"
 		logEvent = zerologlog.Error()
 	case 2:
-		prefix = "Warning:"
+		// prefix = "Warning:"
 		logEvent = zerologlog.Warn()
 	case 1:
 		logEvent = zerologlog.Info()
-		prefix = "Info:"
+		// prefix = "Info:"
 	case 0:
 		logEvent = zerologlog.Debug()
-		prefix = "Debug:"
+		// prefix = "Debug:"
 	}
-	output := prefix + " " + description
+	output := description
 	if err != nil {
 		logEvent = logEvent.Err(err)
 		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
@@ -77,23 +74,27 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	}
 	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	logEvent.Msg(description)
-	golog.Println(output)
+	// golog.Println(output)
 	return fmt.Errorf(output)
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
-	LavaFormatLog(description, err, extraAttributes, 3)
+	LavaFormatLog(description, err, extraAttributes, 4)
 	os.Exit(1)
 }
 
 func LavaFormatError(description string, err error, extraAttributes *map[string]string) error {
-	return LavaFormatLog(description, err, extraAttributes, 2)
+	return LavaFormatLog(description, err, extraAttributes, 3)
 }
 
 func LavaFormatWarning(description string, err error, extraAttributes *map[string]string) error {
-	return LavaFormatLog(description, err, extraAttributes, 1)
+	return LavaFormatLog(description, err, extraAttributes, 2)
 }
 
 func LavaFormatInfo(description string, extraAttributes *map[string]string) error {
+	return LavaFormatLog(description, nil, extraAttributes, 1)
+}
+
+func LavaFormatDebug(description string, extraAttributes *map[string]string) error {
 	return LavaFormatLog(description, nil, extraAttributes, 0)
 }
