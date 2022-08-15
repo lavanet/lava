@@ -1,12 +1,11 @@
 #!/bin/bash -x
 
 ETH_HOST=GET_ETH_VARIBLE_FROM_ENV
-ETH_URL_PATH=GET_URL_VARIBLE_FROM_ENV
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
 
 echo ""
-echo " ::: STARTING ETH PROVIDERS :::" $ETH_HOST $URL_PATH
+echo " ::: STARTING ETH PROVIDERS :::" $ETH_HOST
 
 # SINGLE PROXY
 MOCK_PORT=2001
@@ -20,11 +19,12 @@ go run ./testutil/e2e/proxy/. $ETH_HOST  -p $MOCK_PORT -cache -id eth &
 
 echo " ::: RUNNING ETH PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2221 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer1 &
-lavad server 127.0.0.1 2222 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer2 &
-lavad server 127.0.0.1 2223 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer3 &
-lavad server 127.0.0.1 2224 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer4 &
-lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT/$ETH_URL_PATH ETH1 jsonrpc --from servicer5 
+lavad server 127.0.0.1 2221 http://0.0.0.0:$MOCK_PORT/eth/ ETH1 jsonrpc --from servicer1 &
+lavad server 127.0.0.1 2222 http://0.0.0.0:$MOCK_PORT/eth/ ETH1 jsonrpc --from servicer2 &
+lavad server 127.0.0.1 2223 http://0.0.0.0:$MOCK_PORT/eth/ ETH1 jsonrpc --from servicer3 &
+lavad server 127.0.0.1 2224 http://0.0.0.0:$MOCK_PORT/eth/ ETH1 jsonrpc --from servicer4 &
+lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT/eth/ ETH1 jsonrpc --from servicer5 &
+lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1
 
 # Multi Port Proxy
 # lavad server 127.0.0.1 2221 http://0.0.0.0:2001/$ETH_URL_PATH ETH1 jsonrpc --from servicer1 &
