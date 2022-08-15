@@ -8,13 +8,7 @@ screen -wipe
 
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json --from alice --gas-adjustment "1.5" --gas "auto" -y
 lavad tx gov vote 1 yes -y --from alice --gas "auto"
-
 sleep 4
-lavad tx pairing stake-client "COS3" 200000ulava 1 -y --from user1
-lavad tx pairing stake-client "COS4" 200000ulava 1 -y --from user1
-lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
-lavad tx pairing stake-client "GTH1" 200000ulava 1 -y --from user1
-lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user1
 
 #Osmosis providers
 lavad tx pairing stake-provider "COS3" 2010ulava "127.0.0.1:2241,tendermintrpc,1 127.0.0.1:2231,rest,1" 1 -y --from servicer1
@@ -42,11 +36,25 @@ lavad tx pairing stake-provider "FTM250" 2050ulava "127.0.0.1:2253,jsonrpc,1" 1 
 lavad tx pairing stake-provider "FTM250" 2020ulava "127.0.0.1:2254,jsonrpc,1" 1 -y --from servicer4
 lavad tx pairing stake-provider "FTM250" 2030ulava "127.0.0.1:2255,jsonrpc,1" 1 -y --from servicer5
 
+lavad tx pairing stake-client "COS3" 200000ulava 1 -y --from user1
+lavad tx pairing stake-client "COS4" 200000ulava 1 -y --from user1
+lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
+lavad tx pairing stake-client "GTH1" 200000ulava 1 -y --from user1
+lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user1
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
 
-echo "---------------Queries------------------"
+echo "---------------ETH1 Queries------------------"
 lavad query pairing providers "ETH1"
 lavad query pairing clients "ETH1"
+echo "---------------COS3 Queries------------------"
+lavad query pairing providers "COS3"
+lavad query pairing clients "COS3"
+echo "---------------GTH1 Queries------------------"
+lavad query pairing providers "GTH1"
+lavad query pairing clients "GTH1"
+echo "---------------FTM250 Queries------------------"
+lavad query pairing providers "FTM250"
+lavad query pairing clients "FTM250"
 
 echo " ::: init done! :::"
