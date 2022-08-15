@@ -18,6 +18,6 @@ lavad server 127.0.0.1 2122 http://0.0.0.0:$MOCK_PORT/eth/ GTH1 jsonrpc --from s
 lavad server 127.0.0.1 2123 http://0.0.0.0:$MOCK_PORT/eth/ GTH1 jsonrpc --from servicer3 &
 lavad server 127.0.0.1 2124 http://0.0.0.0:$MOCK_PORT/eth/ GTH1 jsonrpc --from servicer4 &
 lavad server 127.0.0.1 2125 http://0.0.0.0:$MOCK_PORT/eth/ GTH1 jsonrpc --from servicer5 &
-lavad portal_server 127.0.0.1 3336 GTH1 jsonrpc --from user1
+lavad portal_server 127.0.0.1 3339 GTH1 jsonrpc --from user1
 
 echo " ::: GTH PROVIDERS DONE! :::"
