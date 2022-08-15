@@ -7,6 +7,10 @@ import (
 )
 
 func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
+	txf = txf.WithSimulateAndExecute(true)
 	err := tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
