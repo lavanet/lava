@@ -8,6 +8,8 @@ import (
 	golog "log"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	zerolog "github.com/rs/zerolog"
+	zerologlog "github.com/rs/zerolog/log"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -42,23 +44,39 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	var prefix string
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	var logEvent *zerolog.Event
 	switch severity {
-	case 3:
+	case 4:
 		prefix = "Fatal:"
-	case 2:
+		logEvent = zerologlog.Fatal()
+
+	case 3:
 		prefix = "Error:"
-	case 1:
+		logEvent = zerologlog.Error()
+	case 2:
 		prefix = "Warning:"
-	case 0:
+		logEvent = zerologlog.Warn()
+	case 1:
+		logEvent = zerologlog.Info()
 		prefix = "Info:"
+	case 0:
+		logEvent = zerologlog.Debug()
+		prefix = "Debug:"
 	}
 	output := prefix + " " + description
 	if err != nil {
+		logEvent = logEvent.Err(err)
 		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
 	}
 	if extraAttributes != nil {
+		for key, val := range *extraAttributes {
+			logEvent = logEvent.Str(key, val)
+		}
 		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
 	}
+	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	logEvent.Msg(description)
 	golog.Println(output)
 	return fmt.Errorf(output)
 }
