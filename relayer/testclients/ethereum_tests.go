@@ -54,12 +54,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_gasPrice")
 
-	// eth_getBlockByHash
-	_, err = client.BlockByHash(ctx, latestBlock.Hash())
-	if err != nil {
-		return fmt.Errorf("eth_getBlockByHash error %s", err.Error())
+	if chainID != "FTM250" {
+		// eth_getBlockByHash
+		_, err = client.BlockByHash(ctx, latestBlock.Hash())
+		if err != nil {
+			return fmt.Errorf("eth_getBlockByHash error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_getBlockByHash")
 	}
-	log.Println("reply JSONRPC_eth_getBlockByHash")
 
 	targetTx := latestBlockTxs[0]
 
@@ -93,13 +95,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_getStorageAt")
 
-	// eth_getTransactionCount
-	_, err = client.TransactionCount(ctx, latestBlock.Hash())
-	if err != nil {
-		return fmt.Errorf("eth_getTransactionCount error %s", err.Error())
+	if chainID != "FTM250" {
+		// eth_getTransactionCount
+		_, err = client.TransactionCount(ctx, latestBlock.Hash())
+		if err != nil {
+			return fmt.Errorf("eth_getTransactionCount error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_getTransactionCount")
 	}
-	log.Println("reply JSONRPC_eth_getTransactionCount")
-
 	// eth_getCode
 	_, err = client.CodeAt(ctx, *targetTx.To(), nil)
 	if err != nil {
