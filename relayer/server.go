@@ -494,7 +494,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var nodeMsg chainproxy.NodeMessage
 	authorizeAndParseMessage := func(ctx context.Context, userAddr sdk.AccAddress, request *pairingtypes.RelayRequest, blockHeighToAutherise uint64) (*pairingtypes.QueryVerifyPairingResponse, chainproxy.NodeMessage, error) {
 		//TODO: cache this client, no need to run the query every time
-		authorisedUserResponse, err := g_sentry.IsAuthorizedUser(ctx, userAddr.String(), blockHeighToAutherise)
+		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeighToAutherise)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeighToAutherise, 10)})
 		}

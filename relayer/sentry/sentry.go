@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"regexp"
@@ -1352,13 +1351,13 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 		return false
 	}
 	if index >= len(s.pairing) || index < 0 {
-		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoint": wrap.Acc, "address": wrap.Addr, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
 	}
 	if s.pairing[index].Acc != wrap.Acc {
-		log.Printf("Info! Trying to move pairing entry to purge but expected address is different! provider: endpoint: %s address: %s index: %d, length: %d, current index address:%s \n", wrap.Addr, wrap.Acc, index, len(s.pairing), s.pairing[index].Addr)
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but expected address is different!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index provider address": s.pairing[index].Addr, "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
@@ -1368,12 +1367,12 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
+func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	//
 	// TODO: cache results!
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
-		Client:   user,
+		Client:   consumer,
 		Provider: s.Acc,
 		Block:    blockheight,
 	})
@@ -1384,7 +1383,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string, blockheight 
 		return res, nil
 	}
 
-	return nil, fmt.Errorf("invalid pairing with user. CurrentBlock: %d", s.GetBlockHeight())
+	return nil, utils.LavaFormatError("invalid self pairing with consumer", nil, &map[string]string{"consumer address": consumer, "CurrentBlock": strconv.FormatInt(s.GetBlockHeight(), 10)})
 }
 
 func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provider string, block uint64) (bool, error) {
@@ -1403,7 +1402,7 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 	if res.GetValid() {
 		return true, nil
 	}
-	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d, provider block height: %d", consumer, provider, block, s.GetBlockHeight())
+	return false, utils.LavaFormatError("invalid pairing with consumer", nil, &map[string]string{"consumer address": consumer, "CurrentBlock": strconv.FormatInt(s.GetBlockHeight(), 10), "requested block": strconv.FormatUint(block, 10)})
 }
 
 func (s *Sentry) GetReliabilityThreshold() uint32 {
@@ -1437,7 +1436,7 @@ func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
-			log.Println("error: Compile", apiName, err)
+			utils.LavaFormatError("regex Compile api", err, &map[string]string{"apiName": apiName})
 			continue
 		}
 		if re.Match([]byte(name)) {
@@ -1502,18 +1501,21 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (maxCu uint64, err error) {
 	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(s.GetBlockHeight())})
 	if err != nil {
-		return 0, err
+		return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(s.GetBlockHeight(), 10)})
 	}
-	return UserEntryRes.GetMaxCU(), err
+	return UserEntryRes.GetMaxCU(), nil
 }
 
 func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, chainID string, requestBlock int64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
 	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(requestBlock)})
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(requestBlock, 10)})
 	}
 	vrfPk = &utils.VrfPubKey{}
 	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
+	if err != nil {
+		err = utils.LavaFormatError("decoding vrfpk from bech32", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(requestBlock, 10), "UserEntryRes": fmt.Sprintf("%v", UserEntryRes)})
+	}
 	return vrfPk, UserEntryRes.GetMaxCU(), err
 }
 
@@ -1559,13 +1561,13 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		slices.Sort(data)
 
 		var median int64
-		l := len(data)
-		if l == 0 {
+		data_len := len(data)
+		if data_len == 0 {
 			return 0
-		} else if l%2 == 0 {
-			median = int64((data[l/2-1] + data[l/2]) / 2.0)
+		} else if data_len%2 == 0 {
+			median = int64((data[data_len/2-1] + data[data_len/2]) / 2.0)
 		} else {
-			median = int64(data[l/2])
+			median = int64(data[data_len/2])
 		}
 		return median
 	}
