@@ -9,7 +9,7 @@ echo " ::: STARTING GTH PROVIDERS :::" $GTH_HOST
 
 # SINGLE PROXY
 MOCK_PORT=2002
-go run ./testutil/e2e/proxy/. $GTH_HOST  -p $MOCK_PORT -cache -id eth &
+go run ./testutil/e2e/proxy/. $GTH_HOST  -p $MOCK_PORT -cache -id gth &
 
 echo " ::: RUNNING GTH PROVIDERS :::"
 # SINGLE MOCK PROXY
