@@ -24,7 +24,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	if err != nil {
 		return fmt.Errorf("eth_blockNumber error %s", err.Error())
 	}
-	log.Println("reply JSONRPC_eth_blockNumber")
+	log.Printf("reply JSONRPC_eth_blockNumber %d\n", latestBlockNumberUint)
 
 	// put in a loop for cases that a block have no tx because
 	var latestBlock *types.Block
