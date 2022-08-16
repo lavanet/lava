@@ -211,7 +211,7 @@ func askForRewards(staleEpochHeight int64) {
 		return
 	}
 
-	utils.LavaFormatInfo("asking for rewards", nil, &map[string]string{
+	utils.LavaFormatInfo("asking for rewards", &map[string]string{
 		"account":     g_sentry.Acc,
 		"reliability": fmt.Sprintf("%t", reliability),
 	})
@@ -228,7 +228,7 @@ func askForRewards(staleEpochHeight int64) {
 		if hasSequenceError { // a retry
 			g_txFactory = g_txFactory.WithSequence(customSeqNum)
 			myWriter.Reset()
-			utils.LavaFormatInfo("Retrying with parsed sequence number:", nil, &map[string]string{
+			utils.LavaFormatInfo("Retrying with parsed sequence number:", &map[string]string{
 				"customSeqNum": strconv.FormatUint(customSeqNum, 10),
 			})
 		}
@@ -277,7 +277,7 @@ func askForRewards(staleEpochHeight int64) {
 	}
 
 	if hasSequenceError {
-		utils.LavaFormatInfo("Sequence number error handling: ", nil, &map[string]string{
+		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
 			"tries": strconv.FormatInt(int64(idx+1), 10),
 		})
 	}
@@ -285,7 +285,7 @@ func askForRewards(staleEpochHeight int64) {
 	if !success {
 		utils.LavaFormatError(fmt.Sprintf("askForRewards ERROR, transaction results: \n%s\n", summarizedTransactionResult), nil, nil)
 	} else {
-		utils.LavaFormatInfo(fmt.Sprintf("askForRewards SUCCESS!, transaction results: %s\n", summarizedTransactionResult), nil, nil)
+		utils.LavaFormatInfo(fmt.Sprintf("askForRewards SUCCESS!, transaction results: %s\n", summarizedTransactionResult), nil)
 	}
 }
 
@@ -341,7 +341,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
-		utils.LavaFormatInfo("new session for user", nil, &map[string]string{
+		utils.LavaFormatInfo("new session for user", &map[string]string{
 			"userAddr":            userAddr,
 			"created for epoch":   strconv.FormatUint(sessionEpoch, 10),
 			"request blockheight": strconv.FormatInt(req.BlockHeight, 10),
@@ -366,7 +366,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 func getOrCreateDataByEpoch(userSessions *UserSessions, sessionEpoch uint64, maxcuRes uint64, vrf_pk *utils.VrfPubKey, userAddr string) *UserSessionsEpochData {
 	if _, ok := userSessions.dataByEpoch[sessionEpoch]; !ok {
 		userSessions.dataByEpoch[sessionEpoch] = &UserSessionsEpochData{UsedComputeUnits: 0, MaxComputeUnits: maxcuRes, VrfPk: *vrf_pk}
-		utils.LavaFormatInfo("new user sessions in epoch", nil, &map[string]string{
+		utils.LavaFormatInfo("new user sessions in epoch", &map[string]string{
 			"userAddr":          userAddr,
 			"maxcuRes":          strconv.FormatUint(maxcuRes, 10),
 			"saved under epoch": strconv.FormatUint(sessionEpoch, 10),
@@ -415,7 +415,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.RelayNum = sess.RelayNum + 1
 	sess.Lock.Unlock()
 
-	utils.LavaFormatInfo("updateSessionCu", nil, &map[string]string{
+	utils.LavaFormatInfo("updateSessionCu", &map[string]string{
 		"serviceApi.Name":   serviceApi.Name,
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
@@ -458,7 +458,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	utils.LavaFormatInfo("Provider got relay request", nil, &map[string]string{
+	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
 
@@ -494,7 +494,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var nodeMsg chainproxy.NodeMessage
 	authorizeAndParseMessage := func(ctx context.Context, userAddr sdk.AccAddress, request *pairingtypes.RelayRequest, blockHeighToAutherise uint64) (*pairingtypes.QueryVerifyPairingResponse, chainproxy.NodeMessage, error) {
 		//TODO: cache this client, no need to run the query every time
-		authorisedUserResponse, err := g_sentry.IsAuthorizedUser(ctx, userAddr.String(), blockHeighToAutherise)
+		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeighToAutherise)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeighToAutherise, 10)})
 		}
@@ -562,7 +562,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
-		utils.LavaFormatInfo("server got valid DataReliability request", nil, nil)
+		utils.LavaFormatInfo("server got valid DataReliability request", nil)
 
 		userSessions.Lock.Lock()
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
@@ -742,7 +742,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		if voteParams != nil {
 			if voteParams.GetCloseVote() {
 				//we are closing the vote, so its okay we ahve this voteID
-				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry", nil,
+				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry",
 					&map[string]string{"voteID": voteID})
 				delete(g_votes, voteID)
 				return
@@ -752,7 +752,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 				&map[string]string{"voteParams": fmt.Sprintf("%+v", voteParams), "voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 			return
 		}
-		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result", nil,
+		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result",
 			&map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 		SendVoteReveal(voteID, vote)
 		return
@@ -771,7 +771,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		//try to find this provider in the jury
 		found := slices.Contains(voteParams.Voters, g_sentry.Acc)
 		if !found {
-			utils.LavaFormatInfo("new vote initiated but not for this provider to vote", nil, nil)
+			utils.LavaFormatInfo("new vote initiated but not for this provider to vote", nil)
 			// this is a new vote but not for us
 			return
 		}
@@ -795,7 +795,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 
 		vote = &voteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		g_votes[voteID] = vote
-		utils.LavaFormatInfo("Received Vote start, sending commitment for result", nil, &map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
+		utils.LavaFormatInfo("Received Vote start, sending commitment for result", &map[string]string{"voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 		SendVoteCommitment(voteID, vote)
 		return
 	}
@@ -846,7 +846,7 @@ func Server(
 
 	//
 	// Info
-	utils.LavaFormatInfo("Server starting", nil, &map[string]string{"listenAddr": listenAddr, "ChainID": newSentry.GetChainID(), "node": nodeUrl, "spec": newSentry.GetSpecName(), "api Interface": apiInterface})
+	utils.LavaFormatInfo("Server starting", &map[string]string{"listenAddr": listenAddr, "ChainID": newSentry.GetChainID(), "node": nodeUrl, "spec": newSentry.GetSpecName(), "api Interface": apiInterface})
 
 	//
 	// Keys
@@ -861,7 +861,7 @@ func Server(
 	}
 	g_privKey = privKey
 	serverKey, _ := clientCtx.Keyring.Key(keyName)
-	utils.LavaFormatInfo("Server loaded keys", nil, &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
+	utils.LavaFormatInfo("Server loaded keys", &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry)
@@ -892,9 +892,9 @@ func Server(
 	go func() {
 		select {
 		case <-ctx.Done():
-			utils.LavaFormatInfo("Provider Server ctx.Done", nil, nil)
+			utils.LavaFormatInfo("Provider Server ctx.Done", nil)
 		case <-signalChan:
-			utils.LavaFormatInfo("Provider Server signalChan", nil, nil)
+			utils.LavaFormatInfo("Provider Server signalChan", nil)
 		}
 		cancel()
 		s.Stop()
@@ -903,7 +903,7 @@ func Server(
 	Server := &relayServer{}
 	pairingtypes.RegisterRelayerServer(s, Server)
 
-	utils.LavaFormatInfo("Server listening", nil, &map[string]string{"Address": lis.Addr().String()})
+	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
 	if err := s.Serve(lis); err != nil {
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
 	}

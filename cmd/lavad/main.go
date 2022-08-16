@@ -35,7 +35,7 @@ func main() {
 		Long:  `server`,
 		Args:  cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("Provider process started", nil, &map[string]string{"args": strings.Join(args, ",")})
+			utils.LavaFormatInfo("Provider process started", &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -70,7 +70,7 @@ func main() {
 		Long:  `portal server`,
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("Gateway Proxy process started", nil, &map[string]string{"args": strings.Join(args, ",")})
+			utils.LavaFormatInfo("Gateway Proxy process started", &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -98,7 +98,7 @@ func main() {
 		Long:  `test client`,
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatInfo("Test consumer process started", nil, &map[string]string{"args": strings.Join(args, ",")})
+			utils.LavaFormatInfo("Test consumer process started", &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
