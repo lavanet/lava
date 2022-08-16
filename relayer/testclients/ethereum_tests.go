@@ -24,7 +24,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	if err != nil {
 		return fmt.Errorf("eth_blockNumber error %s", err.Error())
 	}
-	log.Println("reply JSONRPC_eth_blockNumber")
+	log.Printf("reply JSONRPC_eth_blockNumber %d\n", latestBlockNumberUint)
 
 	// put in a loop for cases that a block have no tx because
 	var latestBlock *types.Block
@@ -54,12 +54,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_gasPrice")
 
-	// eth_getBlockByHash
-	_, err = client.BlockByHash(ctx, latestBlock.Hash())
-	if err != nil {
-		return fmt.Errorf("eth_getBlockByHash error %s", err.Error())
+	if chainID != "FTM250" {
+		// eth_getBlockByHash
+		_, err = client.BlockByHash(ctx, latestBlock.Hash())
+		if err != nil {
+			return fmt.Errorf("eth_getBlockByHash error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_getBlockByHash")
 	}
-	log.Println("reply JSONRPC_eth_getBlockByHash")
 
 	targetTx := latestBlockTxs[0]
 
@@ -93,13 +95,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_getStorageAt")
 
-	// eth_getTransactionCount
-	_, err = client.TransactionCount(ctx, latestBlock.Hash())
-	if err != nil {
-		return fmt.Errorf("eth_getTransactionCount error %s", err.Error())
+	if chainID != "FTM250" {
+		// eth_getTransactionCount
+		_, err = client.TransactionCount(ctx, latestBlock.Hash())
+		if err != nil {
+			return fmt.Errorf("eth_getTransactionCount error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_getTransactionCount")
 	}
-	log.Println("reply JSONRPC_eth_getTransactionCount")
-
 	// eth_getCode
 	_, err = client.CodeAt(ctx, *targetTx.To(), nil)
 	if err != nil {
@@ -128,12 +131,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	}
 	log.Println("reply JSONRPC_eth_call")
 
-	// eth_estimateGas
-	_, err = client.EstimateGas(ctx, callMsg)
-	if err != nil && !strings.Contains(err.Error(), "execution reverted") {
-		return fmt.Errorf("eth_estimateGas error %s", err.Error())
+	if chainID != "GTH1" {
+		// eth_estimateGas
+		_, err = client.EstimateGas(ctx, callMsg)
+		if err != nil && !strings.Contains(err.Error(), "execution reverted") {
+			return fmt.Errorf("eth_estimateGas error %s", err.Error())
+		}
+		log.Println("reply JSONRPC_eth_estimateGas")
 	}
-	log.Println("reply JSONRPC_eth_estimateGas")
 
 	return nil
 }

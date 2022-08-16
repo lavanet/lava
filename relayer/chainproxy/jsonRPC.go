@@ -255,7 +255,8 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
+			// TODO Return errors properly
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
 		}
 
 		log.Println("out >>> ", string(reply.Data))
@@ -268,7 +269,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		log.Println(err)
 	}
-	return
 }
 
 func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
