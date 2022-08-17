@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -144,7 +145,10 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
-		return nil, fmt.Errorf("RecoverCompact: %w len: %d", err, len(sig))
+
+		return nil, utils.LavaFormatError("RecoverCompact", err, &map[string]string{
+			"sigLen": strconv.FormatInt(int64(len(sig)), 10),
+		})
 	}
 	pk := recPub.SerializeCompressed()
 

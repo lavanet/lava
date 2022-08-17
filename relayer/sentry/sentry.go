@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"regexp"
@@ -89,51 +87,6 @@ const (
 	StaleEpochDistance              = 3 // relays done 3 epochs back are ready to be rewarded
 )
 
-func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
-
-	if cs.QoSInfo.LastQoSReport == nil {
-		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
-	}
-
-	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePrecentage).Quo(AvailabilityPercentage))
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		fmt.Printf("QoS Availibility: %s, downtime precent : %s \n", cs.QoSInfo.LastQoSReport.Availability.String(), downtimePrecentage.String())
-	}
-
-	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
-
-	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
-		index := sort.Search(len(list), func(i int) bool {
-			return list[i].GTE(value)
-		})
-		if len(list) == index { // nil or empty slice or after last element
-			return append(list, value)
-		}
-		list = append(list[:index+1], list[index:]...) // index < len(a)
-		list[index] = value
-		return list
-	}
-	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
-	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
-
-	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
-			cs.QoSInfo.SyncScoreSum++
-		}
-	} else {
-		cs.QoSInfo.SyncScoreSum++
-	}
-	cs.QoSInfo.TotalSyncScore++
-
-	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
-
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-		fmt.Printf("QoS Sync: %s, block diff: %d , sync score: %d / %d \n", cs.QoSInfo.LastQoSReport.Sync.String(), blockHeightDiff, cs.QoSInfo.SyncScoreSum, cs.QoSInfo.TotalSyncScore)
-	}
-}
-
 type RelayerClientWrapper struct {
 	Client *pairingtypes.RelayerClient
 	Acc    string //public lava address
@@ -145,6 +98,7 @@ type RelayerClientWrapper struct {
 	MaxComputeUnits    uint64
 	UsedComputeUnits   uint64
 	ReliabilitySent    bool
+	PairingEpoch       uint64
 }
 
 type PaymentRequest struct {
@@ -204,7 +158,7 @@ type Sentry struct {
 	currentEpoch       uint64
 	EpochSize          uint64
 	EpochBlocksOverlap uint64
-
+	providersCount     uint64
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
@@ -217,7 +171,6 @@ type Sentry struct {
 	// Pairing storage (rw mutex)
 	pairingMu            sync.RWMutex
 	pairingNextMu        sync.RWMutex
-	pairingNextHash      []byte
 	pairing              []*RelayerClientWrapper
 	PairingBlockStart    int64
 	pairingAddresses     []string
@@ -234,12 +187,82 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
+func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+
+	if cs.QoSInfo.LastQoSReport == nil {
+		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
+	}
+
+	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePrecentage).Quo(AvailabilityPercentage))
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
+		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availibility": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePrecentage.String()})
+	}
+
+	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
+	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+
+	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+		index := sort.Search(len(list), func(i int) bool {
+			return list[i].GTE(value)
+		})
+		if len(list) == index { // nil or empty slice or after last element
+			return append(list, value)
+		}
+		list = append(list[:index+1], list[index:]...) // index < len(a)
+		list[index] = value
+		return list
+	}
+	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
+	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
+
+	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
+			cs.QoSInfo.SyncScoreSum++
+		}
+	} else {
+		cs.QoSInfo.SyncScoreSum++
+	}
+	cs.QoSInfo.TotalSyncScore++
+
+	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+
+	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+		utils.LavaFormatInfo("QoS Sync report",
+			&map[string]string{"Sync": cs.QoSInfo.LastQoSReport.Sync.String(),
+				"block diff": strconv.FormatInt(blockHeightDiff, 10),
+				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)})
+	}
+}
+
+func (r *RelayerClientWrapper) GetPairingEpoch() uint64 {
+	return atomic.LoadUint64(&r.PairingEpoch)
+}
+
+func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.providersCount, res.GetParams().ServicersToPairCount)
+	return nil
+}
+
+func (s *Sentry) GetProvidersCount() uint64 {
+	return atomic.LoadUint64(&s.providersCount)
+}
+
+func (s *Sentry) GetEpochSize() uint64 {
+	return atomic.LoadUint64(&s.EpochSize)
+}
+
 func (s *Sentry) FetchEpochSize(ctx context.Context) error {
 	res, err := s.epochStorageQueryClient.Params(ctx, &epochstoragetypes.QueryParamsRequest{})
 	if err != nil {
 		return err
 	}
 	atomic.StoreUint64(&s.EpochSize, res.GetParams().EpochBlocks)
+
 	return nil
 }
 
@@ -264,13 +287,13 @@ func (s *Sentry) FetchEpochParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) error {
+func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, init bool) error {
 	if !s.isUser {
 		return nil
 	}
 
 	// switch pairing every epochSize blocks
-	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() {
+	if uint64(blockHeight) < s.GetCurrentEpochHeight()+s.GetOverlapSize() && !init {
 		return nil
 	}
 
@@ -292,7 +315,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64) err
 	s.pairing = s.pairingNext
 	s.pairingAddresses = s.pairingNextAddresses
 	s.pairingNext = []*RelayerClientWrapper{}
-	log.Printf("Pairing list switched. CurrentBlockHeight: %d \n", s.GetBlockHeight())
 
 	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
@@ -316,62 +338,55 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 		Client:  s.Acc,
 	})
 	if err != nil {
-		return err
+		return utils.LavaFormatError("Failed in get pairing query", err, &map[string]string{})
 	}
 
-	servicers := res.GetProviders()
-	if servicers == nil || len(servicers) == 0 {
-		return errors.New("no servicers found")
+	providers := res.GetProviders()
+	if len(providers) == 0 {
+		return utils.LavaFormatError("no providers found in pairing, returned empty list", nil, &map[string]string{})
 	}
-
-	//
-	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(res.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.pairingNextHash, hash) {
-		return nil
-	}
-	s.pairingNextHash = hash
 
 	//
 	// Set
 	pairing := []*RelayerClientWrapper{}
 	pairingAddresses := []string{} //this object will not be mutated for vrf calculations
-	for _, servicer := range servicers {
+	for _, provider := range providers {
 		//
 		// Sanity
-		servicerEndpoints := servicer.GetEndpoints()
-		if servicerEndpoints == nil || len(servicerEndpoints) == 0 {
-			log.Println("servicerEndpoints == nil || len(servicerEndpoints) == 0")
+		providerEndpoints := provider.GetEndpoints()
+		if len(providerEndpoints) == 0 {
+			utils.LavaFormatError("skipping provider with no endoints", nil, &map[string]string{"Address": provider.Address, "ChainID": provider.Chain})
 			continue
 		}
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
-		for _, endpoint := range servicerEndpoints {
+		for _, endpoint := range providerEndpoints {
 			//only take into account endpoints that use the same api interface
 			if endpoint.UseType == s.ApiInterface {
 				relevantEndpoints = append(relevantEndpoints, endpoint)
 			}
 		}
 		if len(relevantEndpoints) == 0 {
-			log.Println(fmt.Sprintf("No relevant endpoints for apiInterface %s: %v", s.ApiInterface, servicerEndpoints))
+			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, &map[string]string{"Address": provider.Address, "ChainID": provider.Chain, "apiInterface": s.ApiInterface, "Endpoints": fmt.Sprintf("%v", providerEndpoints)})
 			continue
 		}
 
-		maxcu, err := s.GetMaxCUForUser(ctx, s.Acc, servicer.Chain)
+		maxcu, err := s.GetMaxCUForUser(ctx, s.Acc, provider.Chain)
 		if err != nil {
-			return err
+			return utils.LavaFormatError("Failed getting max CU for user", err, &map[string]string{"Address": s.Acc, "ChainID": provider.Chain})
 		}
 		//
 		// TODO: decide how to use multiple addresses from the same operator
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:                servicer.Address,
+			Acc:                provider.Address,
 			Addr:               relevantEndpoints[0].IPPORT,
 			Sessions:           map[int64]*ClientSession{},
 			MaxComputeUnits:    maxcu,
 			ReliabilitySent:    false,
 			ConnectionRefusals: 0,
+			PairingEpoch:       s.GetCurrentEpochHeight(),
 		})
-		pairingAddresses = append(pairingAddresses, servicer.Address)
+		pairingAddresses = append(pairingAddresses, provider.Address)
 	}
 
 	// replace previous pairing with new providers
@@ -388,18 +403,12 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) GetServicersToPairCount() int64 {
-	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	return int64(len(s.pairingAddresses))
-}
-
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
 	serverApis, _ := s.getServiceApis(spec)
 	allSpecNames := make(map[string][]types.ApiInterface)
@@ -409,7 +418,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 	return allSpecNames, nil
 }
 
-func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (map[string]spectypes.ServiceApi, map[string]spectypes.ServiceApi) {
+func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
 	serverApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
@@ -450,20 +459,21 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 		ChainID: s.ChainID,
 	})
 	if err != nil {
-		return err
+		return utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
 
 	//
 	// Check if updated
 	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
 	if bytes.Equal(s.specHash, hash) {
+		//spec for chain didnt change
 		return nil
 	}
 	s.specHash = hash
 
 	//
 	// Update
-	log.Println(fmt.Sprintf("Sentry updated spec for chainID: %s Spec name:%s", spec.Spec.Index, spec.Spec.Name))
+	utils.LavaFormatInfo("Sentry updated spec", &map[string]string{"ChainID": spec.Spec.Index, "spec name": spec.Spec.Name})
 	serverApis, taggedApis := s.getServiceApis(spec)
 
 	s.specMu.Lock()
@@ -489,21 +499,24 @@ func (s *Sentry) Init(ctx context.Context) error {
 	//
 	txs, err := s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
-		fmt.Printf("BAD: %s", err)
-		return err
+		return utils.LavaFormatError("Failed subscribing to new blocks", err, &map[string]string{})
 	}
 	s.NewBlockEvents = txs
 
 	query = "tm.event = 'Tx'"
 	txs, err = s.rpcClient.Subscribe(ctx, "test-client", query)
 	if err != nil {
-		fmt.Printf("BAD: %s", err)
-		return err
+		return utils.LavaFormatError("Failed subscribing to transactions", err, &map[string]string{})
 	}
 	s.NewTransactionEvents = txs
 	//
 	// Get spec for the first time
 	err = s.getSpec(ctx)
+	if err != nil {
+		return utils.LavaFormatError("Failed getting spec in initialization", err, &map[string]string{})
+	}
+
+	err = s.FetchChainParams(ctx)
 	if err != nil {
 		return err
 	}
@@ -512,41 +525,33 @@ func (s *Sentry) Init(ctx context.Context) error {
 	// Get pairing for the first time, for clients
 	err = s.getPairing(ctx)
 	if err != nil {
-		return err
+		return utils.LavaFormatError("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 	}
 
-	s.handlePairingChange(ctx, 0)
+	s.handlePairingChange(ctx, 0, true)
 
 	//
 	// Sanity
 	if !s.isUser {
-		servicers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
+		providers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
 			ChainID: s.GetChainID(),
 		})
 		if err != nil {
-			return err
+			return utils.LavaFormatError("failed querying providers for spec", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
 		}
 		found := false
-		for _, servicer := range servicers.GetStakeEntry() {
-			if servicer.Address == s.Acc {
+		for _, provider := range providers.GetStakeEntry() {
+			if provider.Address == s.Acc {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("servicer not staked for spec: %s %s", s.GetSpecName(), s.GetChainID())
+			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
 		}
 	}
 
-	s.FetchEpochSize(ctx)
-	s.FetchOverlapSize(ctx)
-
 	return nil
-}
-
-func removeFromSlice(s []int, i int) []int {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
 }
 
 func (s *Sentry) ListenForTXEvents(ctx context.Context) {
@@ -555,46 +560,49 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
-			if servicerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
-				for idx, servicerAddr := range servicerAddrList {
-					if s.Acc == servicerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
-						fmt.Printf("\nReceived relay payment of %s for CU: %s\n", e.Events["lava_relay_payment.Mint"][idx], e.Events["lava_relay_payment.CU"][idx])
-
+			if providerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
+				for idx, providerAddr := range providerAddrList {
+					if s.Acc == providerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
+						utils.LavaFormatInfo("Received relay payment",
+							&map[string]string{"Amount": e.Events["lava_relay_payment.Mint"][idx],
+								"CU": e.Events["lava_relay_payment.CU"][idx],
+							})
 						CU := e.Events["lava_relay_payment.CU"][idx]
 						paidCU, err := strconv.ParseUint(CU, 10, 64)
 						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.CU"])
+							utils.LavaFormatError("failed to parse payment event CU", err, &map[string]string{"event": e.Events["lava_relay_payment.CU"][idx]})
 							continue
 						}
 						clientAddr, err := sdk.AccAddressFromBech32(e.Events["lava_relay_payment.client"][idx])
 						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.client"])
+							utils.LavaFormatError("failed to parse payment event client", err, &map[string]string{"event": e.Events["lava_relay_payment.client"][idx]})
 							continue
 						}
 						coin, err := sdk.ParseCoinNormalized(e.Events["lava_relay_payment.Mint"][idx])
 						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.Mint"])
+							utils.LavaFormatError("failed to parse payment event mint", err, &map[string]string{"event": e.Events["lava_relay_payment.Mint"][idx]})
 							continue
 						}
 						uniqueID, err := strconv.ParseUint(e.Events["lava_relay_payment.uniqueIdentifier"][idx], 10, 64)
 						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.uniqueIdentifier"])
+							utils.LavaFormatError("failed to parse payment event uniqueIdentifier", err, &map[string]string{"event": e.Events["lava_relay_payment.uniqueIdentifier"][idx]})
 							continue
 						}
 						serverID, err := strconv.ParseUint(e.Events["lava_relay_payment.descriptionString"][idx], 10, 64)
 						if err != nil {
-							fmt.Printf("failed to parse event: %s\n", e.Events["lava_relay_payment.descriptionString"])
+							utils.LavaFormatError("failed to parse payment event serverID", err, &map[string]string{"event": e.Events["lava_relay_payment.descriptionString"][idx]})
 							continue
 						}
 
 						if serverID == s.serverID {
 							s.UpdatePaidCU(paidCU)
-							s.AppendToReceivedPayments(PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr, UniqueIdentifier: uniqueID})
+							receivedPayment := PaymentRequest{CU: paidCU, BlockHeightDeadline: data.Height, Amount: coin, Client: clientAddr, UniqueIdentifier: uniqueID}
+							s.AppendToReceivedPayments(receivedPayment)
 							found := s.RemoveExpectedPayment(paidCU, clientAddr, data.Height, uniqueID)
 							if !found {
-								fmt.Printf("ERROR: payment received, did not find matching expectancy from correct client Need to add support for partial payment\n %s", s.PrintExpectedPAyments())
+								utils.LavaFormatError("payment received, did not find matching expectancy from correct client", nil, &map[string]string{"expected payments": fmt.Sprintf("%v", s.PrintExpectedPayments()), "received payment": fmt.Sprintf("%v", receivedPayment)})
 							} else {
-								fmt.Printf("SUCCESS: payment received as expected\n")
+								utils.LavaFormatInfo("success: payment received as expected", nil)
 							}
 						}
 					}
@@ -612,13 +620,13 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					num_str := e.Events[eventToListen+".requestBlock"][idx]
 					requestBlock, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
-						log.Printf("Error: requested block could not be parsed as uint64 %s\n", num_str)
+						utils.LavaFormatError("vote requested block could not be parsed", err, &map[string]string{"requested block": num_str, "voteID": voteID})
 						continue
 					}
 					num_str = e.Events[eventToListen+".voteDeadline"][idx]
 					voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
 					if err != nil {
-						log.Printf("Error: parsing vote deadline %s, err:%s\n", num_str, err)
+						utils.LavaFormatError("vote deadline could not be parsed", err, &map[string]string{"deadline": num_str, "voteID": voteID})
 						continue
 					}
 					voters_st := e.Events[eventToListen+".voters"][idx]
@@ -672,7 +680,7 @@ func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
 	defer s.PaymentsMu.Unlock()
 	s.receivedPayments = append(s.receivedPayments, paymentReq)
 }
-func (s *Sentry) PrintExpectedPAyments() string {
+func (s *Sentry) PrintExpectedPayments() string {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	return fmt.Sprintf("last Received: %v\n Expected: %v\n", s.receivedPayments[len(s.receivedPayments)-1], s.expectedPayments)
@@ -742,21 +750,22 @@ func (s *Sentry) Start(ctx context.Context) {
 
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
+				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
-				s.SetCurrentEpochHeight(data.Block.Height)
-				s.FetchEpochSize(ctx)
-				s.FetchOverlapSize(ctx)
-				s.FetchEpochParams(ctx)
+				err := s.FetchChainParams(ctx)
+				if err != nil {
+					utils.LavaFormatError("failed in FetchChainParams", err, nil)
+				}
 
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.EpochSize)) // Currently this is only askForRewards
+					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
 				}
 
 				//
 				// Update specs
-				err := s.getSpec(ctx)
+				err = s.getSpec(ctx)
 				if err != nil {
-					log.Println("error: getSpec", err)
+					utils.LavaFormatError("failed to get spec", err, nil)
 				}
 
 				//update expected payments deadline, and log missing payments
@@ -768,11 +777,11 @@ func (s *Sentry) Start(ctx context.Context) {
 				// Update pairing
 				err = s.getPairing(ctx)
 				if err != nil {
-					log.Println("error: getPairing", err)
+					utils.LavaFormatError("failed to get pairing", err, nil)
 				}
 			}
 
-			s.handlePairingChange(ctx, data.Block.Height)
+			s.handlePairingChange(ctx, data.Block.Height, false)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -782,7 +791,7 @@ func (s *Sentry) Start(ctx context.Context) {
 						num_str := e.Events[eventToListen+".voteDeadline"][idx]
 						voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
 						if err != nil {
-							fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+							utils.LavaFormatError("parsing vote deadline", err, &map[string]string{"VoteDeadline": num_str})
 							continue
 						}
 						go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
@@ -802,16 +811,45 @@ func (s *Sentry) Start(ctx context.Context) {
 	}
 }
 
+func (s *Sentry) FetchChainParams(ctx context.Context) error {
+	err := s.FetchEpochSize(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchOverlapSize(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchEpochParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.FetchProvidersCount(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
 	s.PaymentsMu.RLock()
 	defer s.PaymentsMu.RUnlock()
 	for _, expectedPay := range s.expectedPayments {
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
-			fmt.Printf("ERROR: Identified Missing Payment for CU %d on Block %d current earliestBlockInMemory: %d\n", expectedPay.CU, expectedPay.BlockHeightDeadline, lastBlockInMemory)
+			utils.LavaFormatError("Identified Missing Payment", nil,
+				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
+					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
+					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
+
 		}
 	}
-	fmt.Printf("total CU serviced: %d, total CU paid: %d\n", s.GetCUServiced(), s.GetPaidCU())
+	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
+		"total CU that god paid": strconv.FormatUint(s.GetPaidCU(), 10)})
 }
 
 // expecting caller to lock
@@ -848,7 +886,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
-		return nil, -1, errors.New("no pairings available")
+		return nil, -1, utils.LavaFormatError("no pairings available in specific pairing, pairing list empty", nil, nil)
 	}
 	//
 	for index, wrap := range s.pairing {
@@ -861,13 +899,13 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerC
 
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
-				return nil, -1, fmt.Errorf("error making initial connection to provider: %s, error: %w", wrap.Addr, err)
+				return nil, -1, utils.LavaFormatError("error making initial connection to provider", err, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
 			}
 			wrap.Client = conn
 		}
 		return wrap, index, nil
 	}
-	return nil, -1, fmt.Errorf("did not find requested address")
+	return nil, -1, utils.LavaFormatError("did not find requwested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
@@ -876,14 +914,14 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
-		return nil, -1, errors.New("no pairings available")
+		return nil, -1, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
 
 	//
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
-			return nil, -1, fmt.Errorf("pairing list is empty")
+			return nil, -1, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 
 		index := rand.Intn(len(s.pairing))
@@ -895,10 +933,12 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 			conn, err := s.connectRawClient(ctx, wrap.Addr)
 			if err != nil {
 				wrap.ConnectionRefusals++
-				fmt.Printf("Error getting pairing from: %s, error: %s \n", wrap.Addr, err.Error())
+				utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
 				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
-					s.movePairingEntryToPurge(wrap, index, false)
-					fmt.Printf("moving %s to purge list after max consecutive tries\n", wrap.Addr)
+					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+					s.movePairingEntryToPurge(wrap, index)
+					s.pairingMu.RLock() // we resume read lock here, so we can continue
+					utils.LavaFormatError("purging provider after max consecutive tries", nil, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
 				}
 
 				wrap.SessionsLock.Unlock()
@@ -910,7 +950,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, 
 		}
 		return wrap, index, nil
 	}
-	return nil, -1, fmt.Errorf("error getting pairing from all providers in pairing")
+	return nil, -1, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
 }
 
 func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
@@ -920,7 +960,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 		return true
 	}
 	//they have different data! report!
-	log.Println(fmt.Sprintf("[-] DataReliability detected mismatching results! \n1>>%s \n2>>%s\nReporting...", reply0.Data, reply1.Data))
+	utils.LavaFormatWarning("DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
 	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
@@ -960,7 +1000,7 @@ func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (ad
 	return
 }
 
-func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (bool, error) {
+func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (discrepancy bool, errRet error) {
 	var toIterate map[int64]string   // the smaller map between the two to compare
 	var otherBlocks map[int64]string // the other map
 
@@ -982,10 +1022,8 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				s.ClientCtx.SkipConfirm = true
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
-
 				// TODO:: should break here? is one enough or search for more?
-				log.Printf("reliability discrepancy - block %d has different hashes:[ %s, %s ]\n", blockNum, blockHash, otherHash)
-				return true, fmt.Errorf("is not a valid reliability VRF address result")
+				return true, utils.LavaFormatError("reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
 			}
 		}
 	}
@@ -999,8 +1037,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	maxBlockNum := int64(0)
 	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
-			// log.Println("provider returned non finalized block reply.\n Provider: %s, blockNum: %s", providerAcc, blockNum)
-			return errors.New("Reliability ERROR: provider returned non finalized block reply")
+			return utils.LavaFormatError("provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 		}
 
 		sorted[idx] = blockNum
@@ -1009,7 +1046,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 			maxBlockNum = blockNum
 		}
 		idx++
-		// check blockhash length and format?
+		// TODO: check blockhash length and format
 	}
 
 	// check for consecutive blocks
@@ -1017,13 +1054,14 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	for index := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			return errors.New("Reliability ERROR: provider returned non consecutive finalized blocks reply")
+			return utils.LavaFormatError("provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc})
 		}
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
-		return errors.New("Reliability ERROR: provider returned finalized hashes for an older latest block")
+		return utils.LavaFormatError("provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 	}
 
 	// New reply should have blocknum >= from block same provider
@@ -1036,24 +1074,10 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
 
-		return fmt.Errorf("Reliability ERROR: Provider supplied an older latest block than it has previously")
+		return utils.LavaFormatError("Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 	}
 
-	return nil
-}
-
-func (s *Sentry) getConsensusByProvider(providerId string) *ProviderHashesConsensus {
-	for _, consensus := range s.providerHashesConsensus {
-		if _, ok := consensus.agreeingProviders[providerId]; ok {
-			return &consensus
-		}
-	}
-
-	for _, consensus := range s.prevEpochProviderHashesConsensus {
-		if _, ok := consensus.agreeingProviders[providerId]; ok {
-			return &consensus
-		}
-	}
 	return nil
 }
 
@@ -1098,7 +1122,7 @@ func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	specCategory *spectypes.SpecCategory, // TODO::
+	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
@@ -1133,40 +1157,37 @@ func (s *Sentry) SendRelay(
 		return clientSession
 	}
 	// Get or create session and lock it
-	clientSession := getClientSessionFromWrap(wrap)
+	clientSession := getClientSessionFromWrap(wrap) // clientSession is LOCKED!
 
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index, true)
+			s.movePairingEntryToPurge(wrap, index)
 		}
 		return reply, err
 	}
 
-	providerAcc := clientSession.Client.Acc
-	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
+	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
-		finalizedBlocks := map[int64]string{}                               // TODO:: define struct in relay response
-		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks) // TODO:: check that this works
+		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
+		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			log.Println("Reliability ERROR: Finalized Block reply err", err)
-			return nil, err
+			return nil, utils.LavaFormatError("unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
-			log.Println("Provider reply error, ", err)
-			return nil, err
+			return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
 		clientSession.LatestBlock = latestBlock
-
 		//
 		// Compare finalized block hashes with previous providers
 		// Looks for discrepancy with current epoch providers
@@ -1183,11 +1204,13 @@ func (s *Sentry) SendRelay(
 
 			isSecure, err := s.cmdFlags.GetBool("secure")
 			if err != nil {
-				log.Println("Error: Could not get flag --secure")
+				utils.LavaFormatError("Could not get flag --secure", err, nil)
+				isSecure = false
 			}
 
 			s.VrfSkMu.Lock()
-			currentEpoch := s.GetEpochFromBlockHeight(request.BlockHeight, false)
+
+			currentEpoch := clientSession.Client.GetPairingEpoch()
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
@@ -1202,10 +1225,9 @@ func (s *Sentry) SendRelay(
 					wrap, index, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
-						log.Println("Reliability error: Could not get client specific pairing wrap for address: ", address, err)
-						return nil, nil, err
+						return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
 					} else {
-						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not burn the provider
+						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
 							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
@@ -1221,25 +1243,24 @@ func (s *Sentry) SendRelay(
 							clientSession = getClientSessionFromWrap(wrap)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
-								log.Println("Reliability ERROR: Could not get reply to reliability relay from provider: ", address, err)
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-									s.movePairingEntryToPurge(wrap, index, true)
+									s.movePairingEntryToPurge(wrap, index)
 								}
-								return nil, nil, err
+								return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 							return relay_rep, relay_req, nil
 						} else {
-							log.Println("Reliability already Sent in this epoch to this provider")
+							utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
 							return nil, nil, nil
 						}
 					}
 				} else {
 					if isSecure {
 						//send reliability on the client's expense
-						log.Println("secure flag Not Implemented, TODO:")
+						utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
 					}
-					return nil, nil, fmt.Errorf("reliability ERROR: is not a valid reliability VRF address result")
+					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
 				}
 			}
 
@@ -1259,7 +1280,7 @@ func (s *Sentry) SendRelay(
 					s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
 				}
 				if (ok && check0) || (ok && check1) {
-					log.Printf("[+] Reliability verified and Okay! ----\n\n")
+					utils.LavaFormatInfo("Reliability verified and Okay!", &map[string]string{"address0": address0, "address1": address1, "original address": providerAcc})
 				}
 			}
 			go checkReliability()
@@ -1282,15 +1303,14 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.providerHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Reliability ERROR: Discrepancy Checker err", err)
-				return false, err
+				return false, utils.LavaFormatError("Conflict found in discrepancyChecker", err, nil)
 			}
 
 			// if no conflicts, insert into consensus and break
 			if !discrepancyResult {
 				matchWithExistingConsensus = true
 			} else {
-				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
+				utils.LavaFormatError("Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 
 			// if no discrepency with this group -> insert into consensus and break
@@ -1311,12 +1331,11 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.prevEpochProviderHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				log.Println("Reliability ERROR: Discrepancy Checker err", err)
-				return false, err
+				return false, utils.LavaFormatError("prev epoch Conflict found in discrepancyChecker", err, nil)
 			}
 
 			if discrepancyResult {
-				log.Printf("Reliability ERROR: Conflict found between consensus %d and provider %s\n", idx, providerAcc)
+				utils.LavaFormatError("prev epoch Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 		}
 	}
@@ -1333,11 +1352,13 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	return latestBlock - finalization_criteria
 }
 
-func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, lockpairing bool) {
-	log.Printf("Warning! Jailing provider %s for this epoch\n", wrap.Acc)
-	if lockpairing {
-		s.pairingMu.Lock()
-		defer s.pairingMu.Unlock()
+func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
+	utils.LavaFormatWarning("Jailing provider for this epoch", nil, &map[string]string{"address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
+	s.pairingMu.Lock()
+	defer s.pairingMu.Unlock()
+
+	if len(s.pairing) == 0 {
+		return
 	}
 
 	s.pairingPurgeLock.Lock()
@@ -1352,14 +1373,14 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 		}
 		return false
 	}
-	if index >= len(s.pairing) {
-		log.Printf("Info! Trying to move pairing entry to purge but index is bigger than pairing length! provider: endpoint: %s address: %s index: %d, length: %d\n", wrap.Acc, wrap.Addr, index, len(s.pairing))
+	if index >= len(s.pairing) || index < 0 {
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
 	}
 	if s.pairing[index].Acc != wrap.Acc {
-		log.Printf("Info! Trying to move pairing entry to purge but expected address is different! provider: endpoint: %s address: %s index: %d, length: %d, current index address:%s \n", wrap.Addr, wrap.Acc, index, len(s.pairing), s.pairing[index].Addr)
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but expected address is different!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index provider address": s.pairing[index].Addr, "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
@@ -1369,14 +1390,14 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
-func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtypes.QueryVerifyPairingResponse, error) {
+func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	//
 	// TODO: cache results!
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
-		Client:   user,
+		Client:   consumer,
 		Provider: s.Acc,
-		Block:    uint64(s.GetBlockHeight()),
+		Block:    blockheight,
 	})
 	if err != nil {
 		return nil, err
@@ -1385,7 +1406,7 @@ func (s *Sentry) IsAuthorizedUser(ctx context.Context, user string) (*pairingtyp
 		return res, nil
 	}
 
-	return nil, fmt.Errorf("invalid pairing with user. CurrentBlock: %d", s.GetBlockHeight())
+	return nil, utils.LavaFormatError("invalid self pairing with consumer", nil, &map[string]string{"consumer address": consumer, "CurrentBlock": strconv.FormatInt(s.GetBlockHeight(), 10)})
 }
 
 func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provider string, block uint64) (bool, error) {
@@ -1404,7 +1425,11 @@ func (s *Sentry) IsAuthorizedPairing(ctx context.Context, consumer string, provi
 	if res.GetValid() {
 		return true, nil
 	}
-	return false, fmt.Errorf("invalid pairing with consumer %s, provider %s block: %d", consumer, provider, block)
+	return false, utils.LavaFormatError("invalid pairing with consumer", nil, &map[string]string{"consumer address": consumer, "CurrentBlock": strconv.FormatInt(s.GetBlockHeight(), 10), "requested block": strconv.FormatUint(block, 10)})
+}
+
+func (s *Sentry) GetReliabilityThreshold() uint32 {
+	return s.serverSpec.ReliabilityThreshold
 }
 
 func (s *Sentry) GetSpecName() string {
@@ -1434,7 +1459,7 @@ func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
-			log.Println("error: Compile", apiName, err)
+			utils.LavaFormatError("regex Compile api", err, &map[string]string{"apiName": apiName})
 			continue
 		}
 		if re.Match([]byte(name)) {
@@ -1499,18 +1524,21 @@ func (s *Sentry) UpdateCUServiced(CU uint64) {
 func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (maxCu uint64, err error) {
 	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(s.GetBlockHeight())})
 	if err != nil {
-		return 0, err
+		return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(s.GetBlockHeight(), 10)})
 	}
-	return UserEntryRes.GetMaxCU(), err
+	return UserEntryRes.GetMaxCU(), nil
 }
 
 func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, chainID string, requestBlock int64) (vrfPk *utils.VrfPubKey, maxCu uint64, err error) {
 	UserEntryRes, err := s.pairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: uint64(requestBlock)})
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, utils.LavaFormatError("StakeEntry querying for consumer failed", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(requestBlock, 10)})
 	}
 	vrfPk = &utils.VrfPubKey{}
 	vrfPk, err = vrfPk.DecodeFromBech32(UserEntryRes.GetConsumer().Vrfpk)
+	if err != nil {
+		err = utils.LavaFormatError("decoding vrfpk from bech32", err, &map[string]string{"chainID": chainID, "address": address, "block": strconv.FormatInt(requestBlock, 10), "UserEntryRes": fmt.Sprintf("%v", UserEntryRes)})
+	}
 	return vrfPk, UserEntryRes.GetMaxCU(), err
 }
 
@@ -1556,13 +1584,13 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		slices.Sort(data)
 
 		var median int64
-		l := len(data)
-		if l == 0 {
+		data_len := len(data)
+		if data_len == 0 {
 			return 0
-		} else if l%2 == 0 {
-			median = int64((data[l/2-1] + data[l/2]) / 2.0)
+		} else if data_len%2 == 0 {
+			median = int64((data[data_len/2-1] + data[data_len/2]) / 2.0)
 		} else {
-			median = int64(data[l/2])
+			median = int64(data[data_len/2])
 		}
 		return median
 	}
@@ -1571,11 +1599,9 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 }
 
 // TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64, isOverlap bool) uint64 {
-	epoch := uint64(blockHeight - blockHeight%int64(s.EpochSize))
-	if isOverlap {
-		epoch = epoch - s.EpochSize
-	}
+func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64) uint64 {
+	epochSize := s.GetEpochSize()
+	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
 	return epoch
 }
 
@@ -1597,7 +1623,7 @@ func NewSentry(
 	acc := clientCtx.GetFromAddress().String()
 	currentBlock, err := rpc.GetChainHeight(clientCtx)
 	if err != nil {
-		log.Fatal("Invalid block height, error: ", err)
+		utils.LavaFormatError("Sentry failed to get chain height", err, &map[string]string{"account": acc, "ChainID": chainID, "apiInterface": apiInterface})
 		currentBlock = 0
 	}
 	return &Sentry{

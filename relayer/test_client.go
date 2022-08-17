@@ -2,7 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -69,8 +68,12 @@ func TestClient(
 	// Run tests
 	var testErrors error = nil
 	switch chainID {
-	case "ETH1", "ETH4", "GTH1":
-		testErrors = testclients.EthTests(ctx, chainProxy, privKey)
+	case "ETH1":
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3333/1")
+	case "GTH1":
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3339/1")
+	case "FTM250":
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3336/1")
 	case "COS1":
 		testErrors = testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
 	case "COS3", "COS4":
@@ -80,7 +83,7 @@ func TestClient(
 	}
 
 	if testErrors != nil {
-		log.Fatalln(fmt.Sprintf("%s Client test failed with errors %s", chainID, testErrors))
+		log.Fatalf("%s Client test failed with errors %s\n", chainID, testErrors)
 	} else {
 		log.Printf("%s Client test  complete \n", chainID)
 	}

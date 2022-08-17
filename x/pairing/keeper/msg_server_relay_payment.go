@@ -67,13 +67,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		epochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
-		if isOverlap {
-			epochStart = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
-		}
 
 		payReliability := false
 		//validate data reliability
 		if relay.DataReliability != nil {
+
 			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !found {
@@ -81,8 +79,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-
-			if spec.ComparesHashes == false {
+			if !spec.ComparesHashes {
 				details["chainID"] = relay.ChainID
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}

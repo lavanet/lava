@@ -51832,6 +51832,9 @@ definitions:
           sig:
             type: string
             format: byte
+          epoch:
+            type: string
+            format: uint64
       QoSReport:
         type: object
         properties:
@@ -51866,6 +51869,9 @@ definitions:
       sig:
         type: string
         format: byte
+      epoch:
+        type: string
+        format: uint64
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:
