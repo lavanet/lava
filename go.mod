@@ -32,6 +32,8 @@ require (
 )
 
 require (
+	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 )
@@ -153,7 +155,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
 	github.com/regen-network/cosmos-proto v0.3.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/rs/zerolog v1.26.1 // indirect
+	github.com/rs/zerolog v1.26.1
 	github.com/sasha-s/go-deadlock v0.2.1-0.20190427202633-1595213edefa // indirect
 	github.com/savsgio/gotils v0.0.0-20211223103454-d0aaa54c5899 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
