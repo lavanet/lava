@@ -245,7 +245,7 @@ func (c *Client) SupportedModules() (map[string]string, error) {
 	var result map[string]string
 	ctx, cancel := context.WithTimeout(context.Background(), subscribeTimeout)
 	defer cancel()
-	err := c.CallContext(ctx, &result, "rpc_modules")
+	err := c.CallContext(ctx, &result, "rpc_modules", make([]interface{}, 0))
 	return result, err
 }
 
@@ -279,9 +279,9 @@ func (c *Client) SetHeader(key, value string) {
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) Call(result interface{}, method string, args ...interface{}) error {
+func (c *Client) Call(result interface{}, method string, args interface{}) error {
 	ctx := context.Background()
-	return c.CallContext(ctx, result, method, args...)
+	return c.CallContext(ctx, result, method, args)
 }
 
 // CallContext performs a JSON-RPC call with the given arguments. If the context is
@@ -289,14 +289,28 @@ func (c *Client) Call(result interface{}, method string, args ...interface{}) er
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+func (c *Client) CallContext(ctx context.Context, result interface{}, method string, params interface{}) error {
 	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
 	}
-	msg, err := c.newMessage(method, args...)
-	if err != nil {
-		return err
+
+	var msg *jsonrpcMessage
+	var err error
+	switch p := params.(type) {
+	case []interface{}:
+		msg, err = c.newMessageArray(method, p...)
+		if err != nil {
+			return err
+		}
+	case map[string]interface{}:
+		msg, err = c.newMessageMap(method, p)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown parameters type %v", p)
 	}
+
 	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *jsonrpcMessage, 1)}
 
 	if c.isHTTP {
@@ -352,7 +366,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 		resp: make(chan *jsonrpcMessage, len(b)),
 	}
 	for i, elem := range b {
-		msg, err := c.newMessage(elem.Method, elem.Args...)
+		msg, err := c.newMessageArray(elem.Method, elem.Args...)
 		if err != nil {
 			return err
 		}
@@ -395,7 +409,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 // Notify sends a notification, i.e. a method call that doesn't expect a response.
 func (c *Client) Notify(ctx context.Context, method string, args ...interface{}) error {
 	op := new(requestOp)
-	msg, err := c.newMessage(method, args...)
+	msg, err := c.newMessageArray(method, args...)
 	if err != nil {
 		return err
 	}
@@ -443,7 +457,7 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 		return nil, ErrNotificationsUnsupported
 	}
 
-	msg, err := c.newMessage(namespace+subscribeMethodSuffix, args...)
+	msg, err := c.newMessageArray(namespace+subscribeMethodSuffix, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -464,13 +478,39 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 	return op.sub, nil
 }
 
-func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
+func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
 	msg := &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
 		if msg.Params, err = json.Marshal(paramsIn); err != nil {
 			return nil, err
 		}
+	}
+	return msg, nil
+}
+
+func (c *Client) newMessageMap(method string, paramsIn map[string]interface{}) (*jsonrpcMessage, error) {
+	msg := &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+	if paramsIn != nil { // prevent sending "params":null
+		var err error
+		if msg.Params, err = json.Marshal(paramsIn); err != nil {
+			return nil, err
+		}
+
+		// test this too:
+		//
+		// var paramsMap = make(map[string]json.RawMessage, len(paramsIn))
+		// for name, value := range paramsIn {
+		// 	valueJSON, err := json.Marshal(value)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	paramsMap[name] = valueJSON
+		// }
+		// if msg.Params, err = json.Marshal(paramsMap); err != nil {
+		// 	return nil, err
+		// }
+
 	}
 	return msg, nil
 }

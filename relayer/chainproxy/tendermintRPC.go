@@ -278,7 +278,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 	var result json.RawMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
+	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
 
 	//
 	// Wrap result back to json
