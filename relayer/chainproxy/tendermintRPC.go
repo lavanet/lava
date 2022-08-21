@@ -27,7 +27,7 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 }
 
-func (m TendemintRpcMessage) GetParams() []interface{} {
+func (m TendemintRpcMessage) GetParams() interface{} {
 	return m.msg.Params
 }
 
@@ -155,12 +155,14 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			Version: "2.0",
 			Method:  parsedMethod,
 		} //other parameters don't matter
+		// TODO: will be easier to parse the params in a map instead of an array, as calling with a map should be now supported
 		if strings.Contains(path[idx+1:], "=") {
 			params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
-			msg.Params = make([]interface{}, len(params_raw))
+			params := make([]interface{}, len(params_raw))
 			for i := range params_raw {
-				msg.Params[i] = params_raw[i]
+				params[i] = params_raw[i]
 			}
+			msg.Params = params
 		} else {
 			msg.Params = make([]interface{}, 0)
 		}
@@ -201,7 +203,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
@@ -229,14 +231,16 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			log.Println("out >>> ", string(reply.Data))
 		}
-	}))
+	})
 
-	app.Post("/:dappId", func(c *fiber.Ctx) error {
+	app.Get("/ws/:dappId", webSocketCallback)
+	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		log.Println("jsonrpc in <<< ", string(c.Body()))
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
-			log.Println(err)
-			return nil
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
 		log.Println("out >>> ", string(reply.Data))

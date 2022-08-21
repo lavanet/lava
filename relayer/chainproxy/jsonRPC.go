@@ -26,7 +26,7 @@ type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
+	Params  interface{}     `json:"params,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
 }
@@ -122,7 +122,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
 }
 
-func (cp JsonrpcMessage) GetParams() []interface{} {
+func (cp JsonrpcMessage) GetParams() interface{} {
 	return cp.Params
 }
 
@@ -220,7 +220,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
@@ -248,14 +248,16 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			}
 			log.Println("out >>> ", string(reply.Data))
 		}
-	}))
+	})
 
-	app.Post("/:dappId", func(c *fiber.Ctx) error {
+	app.Get("/ws/:dappId", webSocketCallback)
+	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		log.Println("in <<< ", string(c.Body()))
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
-			// TODO Return errors properly
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
 		}
 
