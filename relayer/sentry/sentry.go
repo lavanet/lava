@@ -25,7 +25,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -413,7 +412,7 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
+func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
 	})
@@ -421,7 +420,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
 	serverApis, _ := s.getServiceApis(spec)
-	allSpecNames := make(map[string][]types.ApiInterface)
+	allSpecNames := make(map[string][]spectypes.ApiInterface)
 	for _, api := range serverApis {
 		allSpecNames[api.Name] = api.ApiInterfaces
 	}
