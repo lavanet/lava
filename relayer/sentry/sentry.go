@@ -1151,6 +1151,7 @@ func (s *Sentry) SendRelay(
 		//try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
 			if session.Endpoint != endpoint {
+				//skip sessions that don't belong to the active connection
 				continue
 			}
 			if session.Lock.TryLock() {
