@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -172,7 +174,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getSupportedApi failed, error: %s, method: %s", err, msg.Method)
 	}
 
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
@@ -209,13 +211,14 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			msg []byte
 			err error
 		)
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				log.Println("read:", err)
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("ws: in <<< ", string(msg))
+			log.Println("seed: ", msgSeed, " ws: in <<< ", string(msg))
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
@@ -229,7 +232,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("out >>> ", string(reply.Data))
+			log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
 		}
 	})
 
@@ -237,19 +240,21 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		log.Println("jsonrpc in <<< ", string(c.Body()))
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		log.Println("seed: ", msgSeed, " jsonrpc in <<< ", string(c.Body()))
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
-		log.Println("out >>> ", string(reply.Data))
+		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
 		return c.SendString(string(reply.Data))
 	})
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		path := c.Params("*")
-		log.Println("urirpc in <<< ", path)
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		log.Println("seed: ", msgSeed, " urirpc in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
@@ -258,7 +263,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
-		log.Println("out >>> ", string(reply.Data))
+		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
 		return c.SendString(string(reply.Data))
 	})
 	//

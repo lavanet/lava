@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -170,7 +172,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getSupportedApi failed, error: %s, method: %s", err, msg.Method)
 	}
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
@@ -226,13 +228,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			msg []byte
 			err error
 		)
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				log.Println("read:", err)
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("in <<< ", string(msg))
+			log.Println("seed: ", msgSeed, " in <<< ", string(msg))
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
@@ -246,7 +249,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				log.Println("write:", err)
 				break
 			}
-			log.Println("out >>> ", string(reply.Data))
+			log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
 		}
 	})
 
@@ -254,14 +257,15 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		log.Println("in <<< ", string(c.Body()))
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		log.Println("seed: ", msgSeed, " in <<< ", string(c.Body()))
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
 		}
 
-		log.Println("out >>> ", string(reply.Data))
+		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
 		return c.SendString(string(reply.Data))
 	})
 
