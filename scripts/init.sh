@@ -7,7 +7,7 @@ killall screen
 screen -wipe
 
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava" -y
-lavad tx gov vote 1 yes -y --from alice --gas "auto"
+lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 sleep 4
 
 #Osmosis providers
