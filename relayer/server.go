@@ -94,6 +94,7 @@ type relayServer struct {
 }
 
 func askForRewards(staleEpochHeight int64) {
+	deletedRewardsSessions := make(map[uint64][]*RelaySession, 0)
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
@@ -181,6 +182,7 @@ func askForRewards(staleEpochHeight int64) {
 		}
 
 		g_rewardsSessions_mutex.Lock()
+		deletedRewardsSessions[uint64(staleEpoch)] = g_rewardsSessions[uint64(staleEpoch)]
 		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
 
@@ -243,7 +245,16 @@ func askForRewards(staleEpochHeight int64) {
 		summarized, transactionResults := summarizeTransactionResult(transactionResult)
 		summarizedTransactionResult = summarized
 
-		returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
+		var returnCode uint64
+		splitted := strings.Split(transactionResults[0], ":")
+		if len(splitted) < 2 {
+			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+				"parsing data": transactionResult,
+			})
+			returnCode = 1 // just not zero
+		}
+
+		returnCode, err = strconv.ParseUint(splitted[1], 10, 32)
 		if err != nil {
 			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
 				"parsing data": transactionResult,
@@ -271,6 +282,12 @@ func askForRewards(staleEpochHeight int64) {
 					utils.LavaFormatError("Cannot parse sequence number from error transaction", err, nil)
 				}
 			} else {
+				// readd the deleted payments back
+				g_rewardsSessions_mutex.Lock()
+				for k, v := range deletedRewardsSessions {
+					g_rewardsSessions[k] = v
+				}
+				g_rewardsSessions_mutex.Unlock()
 				break // Break loop for other errors
 			}
 		}
