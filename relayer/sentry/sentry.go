@@ -380,10 +380,10 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			return utils.LavaFormatError("Failed getting max CU for user", err, &map[string]string{"Address": s.Acc, "ChainID": provider.Chain})
 		}
 		//
-		pairingEndpoints := []*Endpoint{}
-		for _, relevantEndpoint := range relevantEndpoints {
+		pairingEndpoints := make([]*Endpoint, len(relevantEndpoints))
+		for idx, relevantEndpoint := range relevantEndpoints {
 			endp := &Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
-			pairingEndpoints = append(pairingEndpoints, endp)
+			pairingEndpoints[idx] = endp
 		}
 
 		pairing = append(pairing, &RelayerClientWrapper{
