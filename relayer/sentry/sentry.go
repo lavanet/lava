@@ -88,21 +88,21 @@ const (
 )
 
 type Endpoint struct {
-	Addr    string
-	Enabled bool
-	Client  *pairingtypes.RelayerClient
+	Addr               string
+	Enabled            bool
+	Client             *pairingtypes.RelayerClient
+	ConnectionRefusals uint64
 }
 
 type RelayerClientWrapper struct {
-	Acc                string //public lava address
-	Endpoints          []*Endpoint
-	ConnectionRefusals uint64
-	SessionsLock       sync.Mutex
-	Sessions           map[int64]*ClientSession
-	MaxComputeUnits    uint64
-	UsedComputeUnits   uint64
-	ReliabilitySent    bool
-	PairingEpoch       uint64
+	Acc              string //public lava address
+	Endpoints        []*Endpoint
+	SessionsLock     sync.Mutex
+	Sessions         map[int64]*ClientSession
+	MaxComputeUnits  uint64
+	UsedComputeUnits uint64
+	ReliabilitySent  bool
+	PairingEpoch     uint64
 }
 
 type PaymentRequest struct {
@@ -382,18 +382,17 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 		//
 		pairingEndpoints := []*Endpoint{}
 		for _, relevantEndpoint := range relevantEndpoints {
-			endp := &Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil}
+			endp := &Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
 			pairingEndpoints = append(pairingEndpoints, endp)
 		}
 
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:                provider.Address,
-			Endpoints:          pairingEndpoints,
-			Sessions:           map[int64]*ClientSession{},
-			MaxComputeUnits:    maxcu,
-			ReliabilitySent:    false,
-			ConnectionRefusals: 0,
-			PairingEpoch:       s.GetCurrentEpochHeight(),
+			Acc:             provider.Address,
+			Endpoints:       pairingEndpoints,
+			Sessions:        map[int64]*ClientSession{},
+			MaxComputeUnits: maxcu,
+			ReliabilitySent: false,
+			PairingEpoch:    s.GetCurrentEpochHeight(),
 		})
 		pairingAddresses = append(pairingAddresses, provider.Address)
 	}
@@ -939,29 +938,40 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 	//assumes s.pairingMu is Rlocked here
 	wrap.SessionsLock.Lock()
 	defer wrap.SessionsLock.Unlock()
-	for _, endpoint := range wrap.Endpoints {
+	allDisabled := true
+	for idx, endpoint := range wrap.Endpoints {
 		if !endpoint.Enabled {
 			continue
 		}
+		allDisabled = false //even one enabled endpoint is enough to not purge the pairing object
 		if endpoint.Client == nil {
-			conn, err := s.connectRawClient(ctx, endpoint.Addr)
+			connectCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+			conn, err := s.connectRawClient(connectCtx, endpoint.Addr)
+			cancel()
 			if err != nil {
-				//TODO: disable bad connections after two attempts
-				wrap.ConnectionRefusals++
-				utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": wrap.Acc})
-				if wrap.ConnectionRefusals >= uint64(MaxConsecutiveConnectionAttemts*len(wrap.Endpoints)) {
-					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
-					s.movePairingEntryToPurge(wrap, index)
-					s.pairingMu.RLock() // we resume read lock here, so we can continue
-					utils.LavaFormatError("purging provider after max consecutive tries", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc, "refusals": strconv.FormatUint(wrap.ConnectionRefusals, 10)})
+				endpoint.ConnectionRefusals++
+				utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": wrap.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
+				if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
+					endpoint.Enabled = false
+					utils.LavaFormatWarning("disabling provider endpoint", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
 				}
 				continue
 			}
-			wrap.ConnectionRefusals = 0
+			endpoint.ConnectionRefusals = 0
 			endpoint.Client = conn
 		}
+		wrap.Endpoints[idx] = endpoint
 		return true, endpoint
 	}
+
+	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
+	if allDisabled {
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc})
+		s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+		s.movePairingEntryToPurge(wrap, index)
+		s.pairingMu.RLock() // we resume read lock here, so we can continue
+	}
+
 	return false, nil
 }
 
