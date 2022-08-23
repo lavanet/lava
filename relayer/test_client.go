@@ -76,7 +76,7 @@ func TestClient(
 		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3336/1")
 	case "COS1":
 		testErrors = testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
-	case "COS3":
+	case "COS3", "COS4":
 		testErrors = testclients.OsmosisTests(ctx, chainProxy, privKey, apiInterface)
 	case "LAV1":
 		testErrors = testclients.LavaTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)

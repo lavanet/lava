@@ -12,22 +12,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 )
 
 type Connector struct {
 	lock        sync.Mutex
-	freeClients []*rpc.Client
+	freeClients []*rpcclient.Client
 	usedClients int
 }
 
 func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 	connector := &Connector{
-		freeClients: make([]*rpc.Client, 0, nConns),
+		freeClients: make([]*rpcclient.Client, 0, nConns),
 	}
 
 	for i := uint(0); i < nConns; i++ {
-		var rpcClient *rpc.Client
+		var rpcClient *rpcclient.Client
 		var err error
 		for {
 			if ctx.Err() != nil {
@@ -35,7 +35,7 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 				return nil
 			}
 			nctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-			rpcClient, err = rpc.DialContext(nctx, addr)
+			rpcClient, err = rpcclient.DialContext(nctx, addr)
 			if err != nil {
 				log.Println("retrying", err)
 				cancel()
@@ -64,7 +64,7 @@ func (connector *Connector) Close() {
 		for i := 0; i < len(connector.freeClients); i++ {
 			connector.freeClients[i].Close()
 		}
-		connector.freeClients = []*rpc.Client{}
+		connector.freeClients = []*rpcclient.Client{}
 
 		if connector.usedClients > 0 {
 			log.Println("Connector closing, waiting for in use clients", connector.usedClients)
@@ -77,7 +77,7 @@ func (connector *Connector) Close() {
 	}
 }
 
-func (connector *Connector) GetRpc(block bool) (*rpc.Client, error) {
+func (connector *Connector) GetRpc(block bool) (*rpcclient.Client, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
 	countPrint := 0
@@ -107,7 +107,7 @@ func (connector *Connector) GetRpc(block bool) (*rpc.Client, error) {
 	return ret, nil
 }
 
-func (connector *Connector) ReturnRpc(rpc *rpc.Client) {
+func (connector *Connector) ReturnRpc(rpc *rpcclient.Client) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
 
