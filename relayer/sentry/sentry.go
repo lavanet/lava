@@ -25,7 +25,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -45,6 +44,7 @@ type ClientSession struct {
 	RelayNum              uint64
 	LatestBlock           int64
 	FinalizedBlocksHashes map[int64]string
+	Endpoint              *Endpoint
 }
 
 type QoSInfo struct {
@@ -87,18 +87,22 @@ const (
 	StaleEpochDistance              = 3 // relays done 3 epochs back are ready to be rewarded
 )
 
-type RelayerClientWrapper struct {
-	Client *pairingtypes.RelayerClient
-	Acc    string //public lava address
-	Addr   string //ip:port
-
+type Endpoint struct {
+	Addr               string
+	Enabled            bool
+	Client             *pairingtypes.RelayerClient
 	ConnectionRefusals uint64
-	SessionsLock       sync.Mutex
-	Sessions           map[int64]*ClientSession
-	MaxComputeUnits    uint64
-	UsedComputeUnits   uint64
-	ReliabilitySent    bool
-	PairingEpoch       uint64
+}
+
+type RelayerClientWrapper struct {
+	Acc              string //public lava address
+	Endpoints        []*Endpoint
+	SessionsLock     sync.Mutex
+	Sessions         map[int64]*ClientSession
+	MaxComputeUnits  uint64
+	UsedComputeUnits uint64
+	ReliabilitySent  bool
+	PairingEpoch     uint64
 }
 
 type PaymentRequest struct {
@@ -376,15 +380,19 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 			return utils.LavaFormatError("Failed getting max CU for user", err, &map[string]string{"Address": s.Acc, "ChainID": provider.Chain})
 		}
 		//
-		// TODO: decide how to use multiple addresses from the same operator
+		pairingEndpoints := make([]*Endpoint, len(relevantEndpoints))
+		for idx, relevantEndpoint := range relevantEndpoints {
+			endp := &Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
+			pairingEndpoints[idx] = endp
+		}
+
 		pairing = append(pairing, &RelayerClientWrapper{
-			Acc:                provider.Address,
-			Addr:               relevantEndpoints[0].IPPORT,
-			Sessions:           map[int64]*ClientSession{},
-			MaxComputeUnits:    maxcu,
-			ReliabilitySent:    false,
-			ConnectionRefusals: 0,
-			PairingEpoch:       s.GetCurrentEpochHeight(),
+			Acc:             provider.Address,
+			Endpoints:       pairingEndpoints,
+			Sessions:        map[int64]*ClientSession{},
+			MaxComputeUnits: maxcu,
+			ReliabilitySent: false,
+			PairingEpoch:    s.GetCurrentEpochHeight(),
 		})
 		pairingAddresses = append(pairingAddresses, provider.Address)
 	}
@@ -403,7 +411,7 @@ func (s *Sentry) GetSpecHash() []byte {
 	return s.specHash
 }
 
-func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInterface, error) {
+func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
 	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
 		ChainID: s.ChainID,
 	})
@@ -411,7 +419,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]types.ApiInt
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
 	serverApis, _ := s.getServiceApis(spec)
-	allSpecNames := make(map[string][]types.ApiInterface)
+	allSpecNames := make(map[string][]spectypes.ApiInterface)
 	for _, api := range serverApis {
 		allSpecNames[api.Name] = api.ApiInterfaces
 	}
@@ -882,75 +890,89 @@ func (s *Sentry) CheckAndMarkReliabilityForThisPairing(wrap *RelayerClientWrappe
 	return true
 }
 
-func (s *Sentry) specificPairing(ctx context.Context, address string) (*RelayerClientWrapper, int, error) {
+func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) == 0 {
-		return nil, -1, utils.LavaFormatError("no pairings available in specific pairing, pairing list empty", nil, nil)
+		return nil, -1, nil, utils.LavaFormatError("no pairings available in specific pairing, pairing list empty", nil, nil)
 	}
-	//
 	for index, wrap := range s.pairing {
 		if wrap.Acc != address {
 			continue
 		}
-		if wrap.Client == nil {
-			wrap.SessionsLock.Lock()
-			defer wrap.SessionsLock.Unlock()
-
-			conn, err := s.connectRawClient(ctx, wrap.Addr)
-			if err != nil {
-				return nil, -1, utils.LavaFormatError("error making initial connection to provider", err, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
-			}
-			wrap.Client = conn
+		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
+		if connected {
+			return wrap, index, endpoint, nil
 		}
-		return wrap, index, nil
 	}
-	return nil, -1, utils.LavaFormatError("did not find requwested address for pairing", nil, &map[string]string{"requested address": address})
+	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
-func (s *Sentry) _findPairing(ctx context.Context) (*RelayerClientWrapper, int, error) {
+func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
 
 	s.pairingMu.RLock()
 
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
-		return nil, -1, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
 
-	//
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
-			return nil, -1, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 
 		index := rand.Intn(len(s.pairing))
 		wrap := s.pairing[index]
 
-		if wrap.Client == nil {
-			wrap.SessionsLock.Lock()
+		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
+		if connected {
+			return wrap, index, endpoint, nil
+		}
+	}
+	return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+}
 
-			conn, err := s.connectRawClient(ctx, wrap.Addr)
+func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Sentry, ctx context.Context, index int) (connected bool, endpointPtr *Endpoint) {
+	//assumes s.pairingMu is Rlocked here
+	wrap.SessionsLock.Lock()
+	defer wrap.SessionsLock.Unlock()
+	allDisabled := true
+	for idx, endpoint := range wrap.Endpoints {
+		if !endpoint.Enabled {
+			continue
+		}
+		allDisabled = false //even one enabled endpoint is enough to not purge the pairing object
+		if endpoint.Client == nil {
+			connectCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+			conn, err := s.connectRawClient(connectCtx, endpoint.Addr)
+			cancel()
 			if err != nil {
-				wrap.ConnectionRefusals++
-				utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
-				if wrap.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
-					s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
-					s.movePairingEntryToPurge(wrap, index)
-					s.pairingMu.RLock() // we resume read lock here, so we can continue
-					utils.LavaFormatError("purging provider after max consecutive tries", nil, &map[string]string{"provider endpoint": wrap.Addr, "provider address": wrap.Acc})
+				endpoint.ConnectionRefusals++
+				utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": wrap.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
+				if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
+					endpoint.Enabled = false
+					utils.LavaFormatWarning("disabling provider endpoint", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
 				}
-
-				wrap.SessionsLock.Unlock()
 				continue
 			}
-			wrap.ConnectionRefusals = 0
-			wrap.Client = conn
-			wrap.SessionsLock.Unlock()
+			endpoint.ConnectionRefusals = 0
+			endpoint.Client = conn
 		}
-		return wrap, index, nil
+		wrap.Endpoints[idx] = endpoint
+		return true, endpoint
 	}
-	return nil, -1, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+
+	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
+	if allDisabled {
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc})
+		s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+		s.movePairingEntryToPurge(wrap, index)
+		s.pairingMu.RLock() // we resume read lock here, so we can continue
+	}
+
+	return false, nil
 }
 
 func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
@@ -1140,23 +1162,27 @@ func (s *Sentry) SendRelay(
 ) (*pairingtypes.RelayReply, error) {
 	//
 	// Get pairing
-	wrap, index, err := s._findPairing(ctx)
+	wrap, index, endpoint, err := s._findPairing(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	//
-	getClientSessionFromWrap := func(wrap *RelayerClientWrapper) *ClientSession {
+	getClientSessionFromWrap := func(wrap *RelayerClientWrapper, endpoint *Endpoint) *ClientSession {
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
 		//try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
+			if session.Endpoint != endpoint {
+				//skip sessions that don't belong to the active connection
+				continue
+			}
 			if session.Lock.TryLock() {
 				return session
 			}
 		}
-
+		//create a new session
 		randomSessId := int64(0)
 		for randomSessId == 0 { //we don't allow 0
 			randomSessId = rand.Int63()
@@ -1165,13 +1191,14 @@ func (s *Sentry) SendRelay(
 		clientSession := &ClientSession{
 			SessionId: randomSessId,
 			Client:    wrap,
+			Endpoint:  endpoint,
 		}
 		clientSession.Lock.Lock()
 		wrap.Sessions[clientSession.SessionId] = clientSession
 		return clientSession
 	}
 	// Get or create session and lock it
-	clientSession := getClientSessionFromWrap(wrap) // clientSession is LOCKED!
+	clientSession := getClientSessionFromWrap(wrap, endpoint) // clientSession is LOCKED!
 
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
@@ -1236,7 +1263,7 @@ func (s *Sentry) SendRelay(
 
 			sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
 				if address != "" && address != providerAcc {
-					wrap, index, err := s.specificPairing(ctx, address)
+					wrap, index, endpoint, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
 						return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
@@ -1254,7 +1281,7 @@ func (s *Sentry) SendRelay(
 								QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 								Sig:         nil,                                //calculated in cb_send_reliability
 							}
-							clientSession = getClientSessionFromWrap(wrap)
+							clientSession = getClientSessionFromWrap(wrap, endpoint)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
 							if err != nil {
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
@@ -1388,13 +1415,13 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 		return false
 	}
 	if index >= len(s.pairing) || index < 0 {
-		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but index is bigger than pairing length!", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "address": wrap.Acc, "index": strconv.Itoa(index), "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}
 	}
 	if s.pairing[index].Acc != wrap.Acc {
-		utils.LavaFormatWarning("Trying to move pairing entry to purge but expected address is different!", nil, &map[string]string{"provider endpoint": wrap.Addr, "address": wrap.Acc, "index provider address": s.pairing[index].Addr, "length": strconv.Itoa(len(s.pairing))})
+		utils.LavaFormatWarning("Trying to move pairing entry to purge but expected address is different!", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "address": wrap.Acc, "index provider address": s.pairing[index].Acc, "length": strconv.Itoa(len(s.pairing))})
 		if !findPairingIndex() {
 			return
 		}

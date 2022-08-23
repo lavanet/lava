@@ -42,6 +42,7 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	var logEvent *zerolog.Event
 	switch severity {
 	case 4:
@@ -72,7 +73,6 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 		}
 		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
 	}
-	zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	logEvent.Msg(description)
 	// golog.Println(output)
 	return fmt.Errorf(output)

@@ -63,7 +63,7 @@ func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, er
 	return nodeMsg, nil
 }
 
-func (m RestMessage) GetParams() []interface{} {
+func (m RestMessage) GetParams() interface{} {
 	retArr := make([]interface{}, 0)
 	retArr = append(retArr, m.msg)
 	return retArr

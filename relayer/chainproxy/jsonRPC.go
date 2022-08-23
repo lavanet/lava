@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -26,7 +29,7 @@ type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
+	Params  interface{}     `json:"params,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
 }
@@ -122,7 +125,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
 }
 
-func (cp JsonrpcMessage) GetParams() []interface{} {
+func (cp JsonrpcMessage) GetParams() interface{} {
 	return cp.Params
 }
 
@@ -170,7 +173,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
@@ -220,19 +223,20 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
 			err error
 		)
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				log.Println("read:", err)
+				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("in <<< ", string(msg))
+			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
@@ -243,23 +247,26 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
-				log.Println("write:", err)
+				utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 				break
 			}
-			log.Println("out >>> ", string(reply.Data))
+			utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 		}
-	}))
+	})
 
-	app.Post("/:dappId", func(c *fiber.Ctx) error {
-		log.Println("in <<< ", string(c.Body()))
+	app.Get("/ws/:dappId", webSocketCallback)
+	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
-			// TODO Return errors properly
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
 		}
 
-		log.Println("out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 
@@ -293,7 +300,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	var result json.RawMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
+	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
 	//
 	// Wrap result back to json
 	replyMsg := JsonrpcMessage{

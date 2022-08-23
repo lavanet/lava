@@ -63,7 +63,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	if provider {
 		err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
 		if err != nil {
-			details := map[string]string{stake_type(): creator, "error": err.Error()}
+			details := map[string]string{stake_type(): creator, "error": err.Error(), "endpoints": fmt.Sprintf("%v", endpoints), "Chain": specChainID, "geolocation": strconv.FormatUint(geolocation, 10)}
 			return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_endpoints", details, "invalid "+stake_type()+" endpoints implementation for the given spec")
 		}
 	} else {
@@ -113,7 +113,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 
 	// entry isn't staked so add him
-	details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String()}
+	details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String(), "geolocation": strconv.FormatUint(geolocation, 10)}
 	valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
 	if !valid {
 		details["error"] = err.Error()
@@ -142,14 +142,21 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 			}
 		}
 	}
-
+	//check all endpoints only implement expected interfaces
+	for _, endpoint := range endpoints {
+		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
+		if geolocMap[key] {
+			continue
+		} else {
+			return fmt.Errorf("servicer implemented api interfaces that are not in the spec: %s, current expected: %+v", key, geolocMap)
+		}
+	}
+	//check all expected api interfaces are implemented
 	for _, endpoint := range endpoints {
 		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
 		if geolocMap[key] {
 			//interface is implemented and expected
 			delete(geolocMap, key) // remove this from expected implementations
-		} else {
-			return fmt.Errorf("servicer implemented in api interfaces that are not in the spec: %s, current expected: %+v", key, geolocMap)
 		}
 	}
 	if len(geolocMap) == 0 {
