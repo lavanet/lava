@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -16,7 +17,7 @@ const (
 )
 
 type RPCInput interface {
-	GetParams() []interface{}
+	GetParams() interface{}
 	GetResult() json.RawMessage
 	ParseBlock(block string) (int64, error)
 }
@@ -116,7 +117,7 @@ func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser)
 }
 
 // Move to RPCInput
-func GetDataToParse(rpcInput RPCInput, dataSource int) ([]interface{}, error) {
+func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 	switch dataSource {
 	case PARSE_PARAMS:
 		return rpcInput.GetParams(), nil
@@ -152,18 +153,25 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
+		return nil, utils.LavaFormatError("invalid input format, data is not json", err, &map[string]string{"data": fmt.Sprintf("%s", unmarshalledData)})
+	}
+	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	case []interface{}:
+		if uint64(len(unmarshaledDataTyped)) < param_index {
+			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
+
+		}
+		block := unmarshaledDataTyped[param_index]
+		//TODO: turn this into type assertion instead
+
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, fmt.Sprintf("%s", block))
+		return retArr, nil
+	default:
+		// Parse by arg can be only list as we dont have the name of the height property.
+		return nil, utils.LavaFormatInfo("Parse type unsupported in parse by arg, only list parameters are currently supported", &map[string]string{"request": fmt.Sprintf("%s", unmarshaledDataTyped)})
 	}
 
-	if uint64(len(unmarshalledData)) < param_index {
-		return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
-	}
-	block := unmarshalledData[param_index]
-	//TODO: turn this into type assertion instead
-
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, fmt.Sprintf("%s", block))
-	return retArr, nil
 }
 
 //expect input to be keys[a,b,c] and a canonical object such as
@@ -187,29 +195,53 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	if uint64(len(unmarshalledData)) < param_index {
-		return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
-	}
-
-	blockContainer := unmarshalledData[param_index]
-	for _, key := range input[1:] {
-		// type assertion for blockcontainer
-		if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-			return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key)
+	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	case []interface{}:
+		if uint64(len(unmarshaledDataTyped)) < param_index {
+			return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
 		}
+		blockContainer := unmarshaledDataTyped[param_index]
+		for _, key := range input[1:] {
+			// type assertion for blockcontainer
+			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
+				return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key)
+			}
 
-		// assertion for key
-		if container, ok := blockContainer.(map[string]interface{})[key]; ok {
-			blockContainer = container
-		} else {
-			return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s", blockContainer, key)
+			// assertion for key
+			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
+				blockContainer = container
+			} else {
+				return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s", blockContainer, key)
+			}
 		}
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, fmt.Sprintf("%s", blockContainer))
+		return retArr, nil
+	case map[string]interface{}:
+		for idx, key := range input[1:] {
+			if val, ok := unmarshaledDataTyped[key]; ok {
+				if idx == (len(input) - 1) {
+					retArr := make([]interface{}, 0)
+					retArr = append(retArr, val)
+					return retArr, nil
+				}
+				// if we didnt get to the last elemnt continue deeper by chaning unmarshaledDataTyped
+				switch v := val.(type) {
+				case map[string]interface{}:
+					unmarshaledDataTyped = v
+				default:
+					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
+				}
 
+			} else {
+				return nil, fmt.Errorf("invalid parser input format, %s missing from %s", key, unmarshaledDataTyped)
+			}
+		}
+	default:
+		// Parse by arg can be only list as we dont have the name of the height property.
+		return nil, fmt.Errorf("Not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
 	}
-
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, fmt.Sprintf("%s", blockContainer))
-	return retArr, nil
+	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
 }
 
 func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
@@ -224,19 +256,32 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	for _, val := range unmarshalledData {
-		if prop, ok := val.(string); ok {
-			splitted := strings.SplitN(prop, inner_separator, 2)
-			if splitted[0] != prop_name {
-				continue
-			} else {
-				retArr := make([]interface{}, 0)
-				retArr = append(retArr, splitted[1])
-				return retArr, nil
+	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	case []interface{}:
+		for _, val := range unmarshaledDataTyped {
+			if prop, ok := val.(string); ok {
+				splitted := strings.SplitN(prop, inner_separator, 2)
+				if splitted[0] != prop_name {
+					continue
+				} else {
+					retArr := make([]interface{}, 0)
+					retArr = append(retArr, splitted[1])
+					return retArr, nil
+				}
 			}
 		}
+		return nil, fmt.Errorf("invalid input format, did not find prop name %s on params: %s", prop_name, unmarshalledData)
+	case map[string]interface{}:
+		if val, ok := unmarshaledDataTyped[prop_name]; ok {
+			retArr := make([]interface{}, 0)
+			retArr = append(retArr, val)
+			return retArr, nil
+		}
+		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+	default:
+		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
-	return nil, fmt.Errorf("invalid input format, did not find prop name %s on params: %s", prop_name, unmarshalledData)
+
 }
 
 func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
@@ -256,26 +301,43 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	for _, val := range unmarshalledData {
-		if prop, ok := val.(string); ok {
-			splitted := strings.SplitN(prop, inner_separator, 2)
-			if splitted[0] != prop_name || len(splitted) < 2 {
-				continue
-			} else {
-				retArr := make([]interface{}, 0)
-				retArr = append(retArr, splitted[1])
-				return retArr, nil
+	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	case []interface{}:
+		for _, val := range unmarshaledDataTyped {
+			if prop, ok := val.(string); ok {
+				splitted := strings.SplitN(prop, inner_separator, 2)
+				if splitted[0] != prop_name || len(splitted) < 2 {
+					continue
+				} else {
+					retArr := make([]interface{}, 0)
+					retArr = append(retArr, splitted[1])
+					return retArr, nil
+				}
 			}
 		}
+		//did not find a named property
+		if uint64(len(unmarshaledDataTyped)) < param_index {
+			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
+		}
+		block := unmarshaledDataTyped[param_index]
+		//TODO: turn this into type assertion instead
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, fmt.Sprintf("%s", block))
+		return retArr, nil
+	case map[string]interface{}:
+		var value interface{}
+		if val, ok := unmarshaledDataTyped[prop_name]; ok {
+			value = val
+		} else if val, ok := unmarshaledDataTyped[inp]; ok {
+			value = val
+		} else {
+			return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+		}
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, value)
+		return retArr, nil
+	default:
+		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
-	//did not find a named property
-	if uint64(len(unmarshalledData)) < param_index {
-		return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshalledData)
-	}
-	block := unmarshalledData[param_index]
-	//TODO: turn this into type assertion instead
 
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, fmt.Sprintf("%s", block))
-	return retArr, nil
 }
