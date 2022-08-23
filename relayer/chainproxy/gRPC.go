@@ -6,25 +6,26 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
 )
 
 type GrpcMessage struct {
 	cp             *GrpcChainProxy
 	serviceApi     *spectypes.ServiceApi
 	path           string
-	msg            []byte
+	msg            interface{}
 	requestedBlock int64
-	Result         json.RawMessage
 	connectionType string
+	Result         json.RawMessage
 }
 
 type GrpcChainProxy struct {
@@ -51,20 +52,24 @@ func (cp *GrpcChainProxy) NewMessage(path string, data []byte) (*GrpcMessage, er
 	if err != nil {
 		return nil, err
 	}
+	var d interface{}
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal gRPC NewMessage %s", err)
+	}
+
 	nodeMsg := &GrpcMessage{
 		cp:         cp,
 		serviceApi: serviceApi,
 		path:       path,
-		msg:        data,
+		msg:        d,
 	}
 
 	return nodeMsg, nil
 }
 
-func (m GrpcMessage) GetParams() []interface{} {
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, m.msg)
-	return retArr
+func (m GrpcMessage) GetParams() interface{} {
+	return m.msg
 }
 
 func (m GrpcMessage) GetResult() json.RawMessage {
@@ -84,7 +89,7 @@ func (cp *GrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
+		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
 	} else {
 		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
 	}
@@ -117,12 +122,12 @@ func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	params := []byte{}
 	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("new Message creation Failed at FetchLatestBlockNum", err, nil)
 	}
 
 	_, err = nodeMsg.Send(ctx)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Message send Failed at FetchLatestBlockNum", err, nil)
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg, serviceApi.Parsing.ResultParsing)
@@ -142,14 +147,13 @@ func (cp *GrpcChainProxy) Start(context.Context) error {
 }
 
 func (cp *GrpcChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, error) {
-	path = strings.SplitN(path, "?", 2)[0]
 	if api, ok := cp.sentry.MatchSpecApiByName(path); ok {
 		if !api.Enabled {
-			return nil, fmt.Errorf("REST Api is disabled %s ", path)
+			return nil, fmt.Errorf("gRPC Api is disabled %s ", path)
 		}
 		return &api, nil
 	}
-	return nil, fmt.Errorf("REST Api not supported %s ", path)
+	return nil, fmt.Errorf("gRPC Api not supported %s ", path)
 }
 
 func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
@@ -157,15 +161,21 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
+	}
+
+	var d interface{}
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to unmarshal gRPC ParseMsg", err, nil)
 	}
 
 	nodeMsg := &GrpcMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
 		path:           path,
-		msg:            data,
-		connectionType: connectionType, // POST,GET etc..
+		msg:            d,
+		connectionType: connectionType,
 	}
 
 	return nodeMsg, nil
@@ -201,48 +211,27 @@ func (nm *GrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 
 func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 
-	// httpClient := http.Client{
-	// 	Timeout: DefaultTimeout, // Timeout after 5 seconds
-	// }
+	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	defer cancel()
 
-	// var connectionTypeSlected string = http.MethodGet
-	// // if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	// if nm.connectionType != "" {
-	// 	connectionTypeSlected = nm.connectionType
-	// }
+	// Todo, maybe create a list of grpc clients in connector.go instead of creating one and closing it each time?
+	conn, err := grpc.DialContext(connectCtx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
+	}
+	defer conn.Close()
+	var result json.RawMessage
+	err = conn.Invoke(connectCtx, nm.path, nm.msg, &result)
 
-	// msgBuffer := bytes.NewBuffer(nm.msg)
-	// req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
-	// if err != nil {
-	// 	nm.Result = []byte(fmt.Sprintf("%s", err))
-	// 	return nil, err
-	// }
+	if err != nil {
+		nm.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, utils.LavaFormatError("Sending the gRPC message failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+	}
+	nm.Result = result
 
-	// // setting the content-type to be application/json instead of Go's defult http.DefaultClient
-	// if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
-	// 	req.Header.Set("Content-Type", "application/json")
-	// }
-	// res, err := httpClient.Do(req)
-	// if err != nil {
-	// 	nm.Result = []byte(fmt.Sprintf("%s", err))
-	// 	return nil, err
-	// }
-
-	// if res.Body != nil {
-	// 	defer res.Body.Close()
-	// }
-
-	// body, err := ioutil.ReadAll(res.Body)
-
-	// if err != nil {
-	// 	nm.Result = []byte(fmt.Sprintf("%s", err))
-	// 	return nil, err
-	// }
-
-	// reply := &pairingtypes.RelayReply{
-	// 	Data: body,
-	// }
-	// nm.Result = body
-
-	return nil, nil
+	reply := &pairingtypes.RelayReply{
+		Data: result,
+	}
+	nm.Result = result
+	return reply, nil
 }

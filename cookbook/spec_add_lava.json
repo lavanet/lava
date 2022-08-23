@@ -3774,6 +3774,80 @@
               "extra_compute_units": "0"
             }
           ]
+        },
+        {
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "",
+            "function_tag": "getBlockNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "block",
+                "header",
+                "height"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
+        },{
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "height",
+              "=",
+              "0"
+            ],
+            "parserFunc": "PARSE_DICTIONARY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "{\"height\":\"%d\"}",
+            "function_tag": "getBlockByNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "block_id",
+                "hash"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
         }
       ]
     }
