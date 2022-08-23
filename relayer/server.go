@@ -232,9 +232,9 @@ func askForRewards(staleEpochHeight int64) {
 				"customSeqNum": strconv.FormatUint(customSeqNum, 10),
 			})
 		}
-		err := sentry.SimulateAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
+		err := sentry.CheckProfitabilityAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 		if err != nil {
-			utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
+			utils.LavaFormatError("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
 				"msg": fmt.Sprintf("%+v", msg),
 			})
 		}

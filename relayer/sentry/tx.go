@@ -1,14 +1,117 @@
 package sentry
 
 import (
+	"errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
-	txf = txf.WithSimulateAndExecute(true)
-	err := tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+	txf = txf.WithGasPrices("0.000000001ulava")
+	txf = txf.WithGasAdjustment(1.5)
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+
+	txf, err := prepareFactory(clientCtx, txf)
+	if err != nil {
+		return err
+	}
+
+	_, gasUsed, err := tx.CalculateGas(clientCtx, txf, msg)
+	if err != nil {
+		return err
+	}
+
+	txf = txf.WithGas(gasUsed)
+
+	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// this function is extracted from the tx package so that we can use it locally to set the tx factory correctly
+func prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
+	from := clientCtx.GetFromAddress()
+
+	if err := clientCtx.AccountRetriever.EnsureExists(clientCtx, from); err != nil {
+		return txf, err
+	}
+
+	initNum, initSeq := txf.AccountNumber(), txf.Sequence()
+	if initNum == 0 || initSeq == 0 {
+		num, seq, err := clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, from)
+		if err != nil {
+			return txf, err
+		}
+
+		if initNum == 0 {
+			txf = txf.WithAccountNumber(num)
+		}
+
+		if initSeq == 0 {
+			txf = txf.WithSequence(seq)
+		}
+	}
+
+	return txf, nil
+}
+
+func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
+	txf = txf.WithGasPrices("0.000000001ulava")
+	txf = txf.WithGasAdjustment(1.5)
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+
+	txf, err := prepareFactory(clientCtx, txf)
+	if err != nil {
+		return err
+	}
+
+	simResult, gasUsed, err := tx.CalculateGas(clientCtx, txf, msg)
+	if err != nil {
+		return err
+	}
+
+	txEvents := simResult.GetResult().Events
+	lavaRelayPaymentCount := 0
+	var lavaReward sdk.Coin
+	for _, txEvent := range txEvents {
+		if txEvent.Type == "lava_relay_payment" {
+			lavaRelayPaymentCount += 1
+			for _, attribute := range txEvent.Attributes {
+				if string(attribute.Key) == "BasePay" {
+					lavaReward, err = sdk.ParseCoinNormalized(string(attribute.Value))
+					if err != nil {
+						return err
+					}
+					break
+				}
+			}
+		}
+	}
+
+	// there should only be exactly 1 lava_relay_payment txEvent in a normal transaction
+	if lavaRelayPaymentCount != 1 {
+		return errors.New("lava_relay_payment not 1")
+	}
+
+	txf.WithGas(gasUsed)
+
+	gasFee := txf.GasPrices()[0]
+	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
+	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
+
+	if gasFee.IsGTE(lavaRewardDec) {
+		return errors.New("lava_relay_payment claim is not profitable")
+	}
+
+	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 	if err != nil {
 		return err
 	}
