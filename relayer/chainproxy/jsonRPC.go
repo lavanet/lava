@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -172,7 +173,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, fmt.Errorf("getSupportedApi failed, error: %s, method: %s", err, msg.Method)
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
@@ -231,11 +232,11 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				log.Println("read:", err)
+				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("seed: ", msgSeed, " in <<< ", string(msg))
+			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
@@ -246,10 +247,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
-				log.Println("write:", err)
+				utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 				break
 			}
-			log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
+			utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 		}
 	})
 
@@ -258,14 +259,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		log.Println("seed: ", msgSeed, " in <<< ", string(c.Body()))
+		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
 		}
 
-		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 

@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -174,7 +175,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, fmt.Errorf("getSupportedApi failed, error: %s, method: %s", err, msg.Method)
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
@@ -214,25 +215,26 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				log.Println("read:", err)
+				utils.LavaFormatInfo("error read message ws", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("seed: ", msgSeed, " ws: in <<< ", string(msg))
+			utils.LavaFormatInfo(" ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
-				log.Println(err)
+				utils.LavaFormatInfo("error send relay ws", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				log.Println("write:", err)
+				utils.LavaFormatInfo("error write message ws", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
+			utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		}
 	})
 
@@ -241,20 +243,20 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		log.Println("seed: ", msgSeed, " jsonrpc in <<< ", string(c.Body()))
+		utils.LavaFormatInfo("jsonrpc in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
-		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		path := c.Params("*")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		log.Println("seed: ", msgSeed, " urirpc in <<< ", path)
+		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
 		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
@@ -263,7 +265,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
-		log.Println("seed: ", msgSeed, " out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("urirpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 	//
