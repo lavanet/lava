@@ -304,7 +304,7 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 	case nil:
 		msg, err = c.newMessageArray(method, (make([]interface{}, 0))...) // in case of nil, we will send it as an empty array.
 	default:
-		return fmt.Errorf("unknown parameters type %v", p)
+		return fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
 
 	if err != nil {

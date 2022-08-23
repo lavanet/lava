@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -152,12 +153,13 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
+		return nil, utils.LavaFormatError("invalid input format, data is not json", err, &map[string]string{"data": fmt.Sprintf("%s", unmarshalledData)})
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) < param_index {
-			return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
+			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
+
 		}
 		block := unmarshaledDataTyped[param_index]
 		//TODO: turn this into type assertion instead
@@ -167,7 +169,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, fmt.Errorf("Parse type unsupported in parse by arg, only list parameters are currently supported\nrequest: %s", unmarshaledDataTyped)
+		return nil, utils.LavaFormatInfo("Parse type unsupported in parse by arg, only list parameters are currently supported", &map[string]string{"request": fmt.Sprintf("%s", unmarshaledDataTyped)})
 	}
 
 }
@@ -323,12 +325,17 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
 		return retArr, nil
 	case map[string]interface{}:
+		var value interface{}
 		if val, ok := unmarshaledDataTyped[prop_name]; ok {
-			retArr := make([]interface{}, 0)
-			retArr = append(retArr, val)
-			return retArr, nil
+			value = val
+		} else if val, ok := unmarshaledDataTyped[inp]; ok {
+			value = val
+		} else {
+			return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
 		}
-		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, value)
+		return retArr, nil
 	default:
 		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
