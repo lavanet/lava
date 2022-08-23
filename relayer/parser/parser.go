@@ -325,12 +325,17 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
 		return retArr, nil
 	case map[string]interface{}:
+		var value interface{}
 		if val, ok := unmarshaledDataTyped[prop_name]; ok {
-			retArr := make([]interface{}, 0)
-			retArr = append(retArr, val)
-			return retArr, nil
+			value = val
+		} else if val, ok := unmarshaledDataTyped[inp]; ok {
+			value = val
+		} else {
+			return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
 		}
-		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+		retArr := make([]interface{}, 0)
+		retArr = append(retArr, value)
+		return retArr, nil
 	default:
 		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
