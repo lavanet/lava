@@ -49,7 +49,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 
 	// eth_gasPrice
 	_, err = client.SuggestGasPrice(ctx)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_gasPrice error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_gasPrice")
@@ -57,7 +57,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	if chainID != "FTM250" {
 		// eth_getBlockByHash
 		_, err = client.BlockByHash(ctx, latestBlock.Hash())
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			return fmt.Errorf("eth_getBlockByHash error %s", err.Error())
 		}
 		log.Println("reply JSONRPC_eth_getBlockByHash")
@@ -74,7 +74,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 
 	// eth_getTransactionReceipt
 	_, err = client.TransactionReceipt(ctx, targetTx.Hash())
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_getTransactionReceipt error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_getTransactionReceipt")
@@ -83,14 +83,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 
 	// eth_getBalance
 	_, err = client.BalanceAt(ctx, targetTxMsg.From(), nil)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_getBalance error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_getBalance")
 
 	// eth_getStorageAt
 	_, err = client.StorageAt(ctx, *targetTx.To(), common.HexToHash("00"), nil)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_getStorageAt error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_getStorageAt")
@@ -98,14 +98,14 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	if chainID != "FTM250" {
 		// eth_getTransactionCount
 		_, err = client.TransactionCount(ctx, latestBlock.Hash())
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			return fmt.Errorf("eth_getTransactionCount error %s", err.Error())
 		}
 		log.Println("reply JSONRPC_eth_getTransactionCount")
 	}
 	// eth_getCode
 	_, err = client.CodeAt(ctx, *targetTx.To(), nil)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_getCode error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_getCode")
@@ -126,7 +126,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 
 	// eth_call
 	_, err = client.CallContract(ctx, callMsg, previousBlock)
-	if err != nil && !strings.Contains(err.Error(), "execution reverted") {
+	if err != nil && !strings.Contains(err.Error(), "rpc error") {
 		return fmt.Errorf("eth_call error %s", err.Error())
 	}
 	log.Println("reply JSONRPC_eth_call")
@@ -134,7 +134,7 @@ func EthTests(ctx context.Context, chainID string, rpcURL string) error {
 	if chainID != "GTH1" {
 		// eth_estimateGas
 		_, err = client.EstimateGas(ctx, callMsg)
-		if err != nil && !strings.Contains(err.Error(), "execution reverted") {
+		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			return fmt.Errorf("eth_estimateGas error %s", err.Error())
 		}
 		log.Println("reply JSONRPC_eth_estimateGas")
