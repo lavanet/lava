@@ -5,6 +5,7 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -117,6 +118,7 @@ func askForRewards(staleEpochHeight int64) {
 	reliability := false
 	sessionsToDelete := make([]*RelaySession, 0)
 
+	log.Printf("Before Send RewardSes %d %+v\n", len(g_rewardsSessions), g_rewardsSessions)
 	for _, staleEpoch := range staleEpochs {
 		g_rewardsSessions_mutex.Lock()
 		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
@@ -185,7 +187,6 @@ func askForRewards(staleEpochHeight int64) {
 		deletedRewardsSessions[uint64(staleEpoch)] = g_rewardsSessions[uint64(staleEpoch)]
 		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
-
 	}
 
 	userSessionObjsToDelete := make([]string, 0)
@@ -207,7 +208,7 @@ func askForRewards(staleEpochHeight int64) {
 		delete(g_sessions, user)
 	}
 	g_sessions_mutex.Unlock()
-
+	log.Printf("Before Send Relays %d %+v\n", len(relays), relays)
 	if len(relays) == 0 {
 		// no rewards to ask for
 		return
@@ -252,14 +253,14 @@ func askForRewards(staleEpochHeight int64) {
 				"parsing data": transactionResult,
 			})
 			returnCode = 1 // just not zero
-		}
-
-		returnCode, err = strconv.ParseUint(splitted[1], 10, 32)
-		if err != nil {
-			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
-				"parsing data": transactionResult,
-			})
-			returnCode = 1 // just not zero
+		} else {
+			returnCode, err = strconv.ParseUint(splitted[1], 10, 32)
+			if err != nil {
+				utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+					"parsing data": transactionResult,
+				})
+				returnCode = 1 // just not zero
+			}
 		}
 
 		if returnCode == 0 { // if we get some other error which isnt then keep retrying
@@ -292,7 +293,7 @@ func askForRewards(staleEpochHeight int64) {
 			}
 		}
 	}
-
+	log.Printf("After Send RewardSes %d %+v\n", len(g_rewardsSessions), g_rewardsSessions)
 	if hasSequenceError {
 		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
 			"tries": strconv.FormatInt(int64(idx+1), 10),

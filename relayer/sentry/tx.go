@@ -79,26 +79,20 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 	}
 
 	txEvents := simResult.GetResult().Events
-	lavaRelayPaymentCount := 0
-	var lavaReward sdk.Coin
+	lavaReward := sdk.NewCoin("ulava", sdk.NewInt(0))
 	for _, txEvent := range txEvents {
 		if txEvent.Type == "lava_relay_payment" {
-			lavaRelayPaymentCount += 1
 			for _, attribute := range txEvent.Attributes {
 				if string(attribute.Key) == "BasePay" {
-					lavaReward, err = sdk.ParseCoinNormalized(string(attribute.Value))
+					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
 					if err != nil {
 						return err
 					}
+					lavaReward.Add(lavaRewardTemp)
 					break
 				}
 			}
 		}
-	}
-
-	// there should only be exactly 1 lava_relay_payment txEvent in a normal transaction
-	if lavaRelayPaymentCount != 1 {
-		return errors.New("lava_relay_payment not 1")
 	}
 
 	txf.WithGas(gasUsed)
