@@ -8,8 +8,7 @@ import "epochstorage/params.proto";
 
 message FixatedParams {
   string index = 1; 
-  Params parameters = 2 [(gogoproto.nullable) = false]; 
+  bytes parameter = 2 ; 
   uint64 fixationBlock = 3; 
-  
 }
 

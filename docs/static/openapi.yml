@@ -29106,22 +29106,9 @@ paths:
                   properties:
                     index:
                       type: string
-                    parameters:
-                      type: object
-                      properties:
-                        unstakeHoldBlocks:
-                          type: string
-                          format: uint64
-                        epochBlocks:
-                          type: string
-                          format: uint64
-                        epochsToSave:
-                          type: string
-                          format: uint64
-                        latestParamChange:
-                          type: string
-                          format: uint64
-                      description: Params defines the parameters for the module.
+                    parameter:
+                      type: string
+                      format: byte
                     fixationBlock:
                       type: string
                       format: uint64
@@ -29244,22 +29231,9 @@ paths:
                 properties:
                   index:
                     type: string
-                  parameters:
-                    type: object
-                    properties:
-                      unstakeHoldBlocks:
-                        type: string
-                        format: uint64
-                      epochBlocks:
-                        type: string
-                        format: uint64
-                      epochsToSave:
-                        type: string
-                        format: uint64
-                      latestParamChange:
-                        type: string
-                        format: uint64
-                    description: Params defines the parameters for the module.
+                  parameter:
+                    type: string
+                    format: byte
                   fixationBlock:
                     type: string
                     format: uint64
@@ -29299,6 +29273,7 @@ paths:
             type: object
             properties:
               params:
+                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   unstakeHoldBlocks:
@@ -29313,7 +29288,6 @@ paths:
                   latestParamChange:
                     type: string
                     format: uint64
-                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -51365,48 +51339,6 @@ definitions:
         properties:
           chainID:
             type: string
-    description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.epochstorage.Endpoint:
-    type: object
-    properties:
-      iPPORT:
-        type: string
-      useType:
-        type: string
-      geolocation:
-        type: string
-        format: uint64
-  lavanet.lava.epochstorage.EpochDetails:
-    type: object
-    properties:
-      startBlock:
-        type: string
-        format: uint64
-      earliestStart:
-        type: string
-        format: uint64
-  lavanet.lava.epochstorage.FixatedParams:
-    type: object
-    properties:
-      index:
-        type: string
-      parameters:
-        type: object
-        properties:
-          unstakeHoldBlocks:
-            type: string
-            format: uint64
-          epochBlocks:
-            type: string
-            format: uint64
-          epochsToSave:
-            type: string
-            format: uint64
-          latestParamChange:
-            type: string
-            format: uint64
-        description: Params defines the parameters for the module.
-      fixationBlock:
           api_id:
             type: integer
             format: int64
@@ -52121,6 +52053,17 @@ definitions:
       earliestStart:
         type: string
         format: uint64
+  lavanet.lava.epochstorage.FixatedParams:
+    type: object
+    properties:
+      index:
+        type: string
+      parameter:
+        type: string
+        format: byte
+      fixationBlock:
+        type: string
+        format: uint64
   lavanet.lava.epochstorage.Params:
     type: object
     properties:
@@ -52147,22 +52090,9 @@ definitions:
           properties:
             index:
               type: string
-            parameters:
-              type: object
-              properties:
-                unstakeHoldBlocks:
-                  type: string
-                  format: uint64
-                epochBlocks:
-                  type: string
-                  format: uint64
-                epochsToSave:
-                  type: string
-                  format: uint64
-                latestParamChange:
-                  type: string
-                  format: uint64
-              description: Params defines the parameters for the module.
+            parameter:
+              type: string
+              format: byte
             fixationBlock:
               type: string
               format: uint64
@@ -52290,22 +52220,9 @@ definitions:
         properties:
           index:
             type: string
-          parameters:
-            type: object
-            properties:
-              unstakeHoldBlocks:
-                type: string
-                format: uint64
-              epochBlocks:
-                type: string
-                format: uint64
-              epochsToSave:
-                type: string
-                format: uint64
-              latestParamChange:
-                type: string
-                format: uint64
-            description: Params defines the parameters for the module.
+          parameter:
+            type: string
+            format: byte
           fixationBlock:
             type: string
             format: uint64
@@ -52365,6 +52282,7 @@ definitions:
     type: object
     properties:
       params:
+        description: params holds all the parameters of this module.
         type: object
         properties:
           unstakeHoldBlocks:
@@ -52379,7 +52297,6 @@ definitions:
           latestParamChange:
             type: string
             format: uint64
-        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.epochstorage.StakeEntry:
     type: object

@@ -208,7 +208,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, tt.expectedFixation, uint64(len(allFixatedParams)), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
 
-			latestParamChange, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx))
+			latestParamChange, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks))
 			require.True(t, found)
 
 			for _, epochComapre := range pastEpochsToCompare {
@@ -220,7 +220,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 					require.Equal(t, epochComapre.Epoch, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
 				} else {
 					if err == nil {
-						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks), epochComapre.Block)
 						require.NoError(t, err)
 						require.True(t, fixation.FixationBlock <= epochComapre.Block)
 					}
@@ -234,7 +234,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 					require.Equal(t, epochComapre.EpochBlocks, epochBlocks_test)
 				} else {
 					if err == nil {
-						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks), epochComapre.Block)
 						require.NoError(t, err)
 						require.True(t, fixation.FixationBlock <= epochComapre.Block)
 					}
