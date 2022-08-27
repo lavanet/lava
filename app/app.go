@@ -621,8 +621,6 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-
-	app.SetFixationRegistries() //yarom this does not work properly
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	return app
@@ -785,12 +783,4 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
-}
-
-func (app *App) SetFixationRegistries() {
-	registries := make(map[string]func(sdk.Context) any)
-	registries[string(epochstoragemoduletypes.KeyEpochBlocks)] = func(ctx sdk.Context) any { return app.EpochstorageKeeper.EpochBlocksRaw(ctx) }
-	registries[string(epochstoragemoduletypes.KeyEpochsToSave)] = func(ctx sdk.Context) any { return app.EpochstorageKeeper.EpochsToSaveRaw(ctx) }
-	registries[string(epochstoragemoduletypes.KeyUnstakeHoldBlocks)] = func(ctx sdk.Context) any { return app.EpochstorageKeeper.UnstakeHoldBlocksRaw(ctx) }
-	app.EpochstorageKeeper.SetFixationRegistries(registries)
 }

@@ -25,7 +25,7 @@ type (
 		specKeeper    types.SpecKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
-		buffer             bytes.Buffer
+		buffer             *bytes.Buffer
 		enc                *gob.Encoder
 		dec                *gob.Decoder
 	}
@@ -48,7 +48,7 @@ func NewKeeper(
 	enc := gob.NewEncoder(&buffer)
 	dec := gob.NewDecoder(&buffer)
 
-	return &Keeper{
+	keeper := &Keeper{
 
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -56,18 +56,27 @@ func NewKeeper(
 		paramstore: ps,
 		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper,
 
-		fixationRegistries: nil,
-		buffer:             buffer,
+		fixationRegistries: make(map[string]func(sdk.Context) any),
+		buffer:             &buffer,
 		enc:                enc,
 		dec:                dec,
 	}
+
+	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return Keeper.EpochBlocksRaw(*keeper, ctx) })
+	keeper.AddFixationRegistry(string(types.KeyEpochsToSave), func(ctx sdk.Context) any { return Keeper.EpochsToSaveRaw(*keeper, ctx) })
+	keeper.AddFixationRegistry(string(types.KeyUnstakeHoldBlocks), func(ctx sdk.Context) any { return Keeper.UnstakeHoldBlocksRaw(*keeper, ctx) })
+
+	return keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k *Keeper) SetFixationRegistries(fixationRegistries map[string]func(sdk.Context) any) {
+func (k *Keeper) AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any) {
 
-	k.fixationRegistries = fixationRegistries
+	if _, ok := k.fixationRegistries[fixationKey]; ok {
+		panic(fmt.Sprintf("duplicate fixation registry %s", fixationKey))
+	}
+	k.fixationRegistries[fixationKey] = getParamFunction
 }
