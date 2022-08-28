@@ -191,7 +191,7 @@ func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, bl
 }
 
 func (k Keeper) GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error {
-	fixation, err := k.GetFixatedParamsForBlock(ctx, string(types.KeyEpochsToSave), block)
-	k.DecodeParam(fixation.Parameter, &param)
+	fixation, err := k.GetFixatedParamsForBlock(ctx, fixationKey, block)
+	k.DecodeParam(fixation.Parameter, param)
 	return err
 }

@@ -25,7 +25,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 
 func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64) {
 	//Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocks), block, res)
+	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocks), block, &res)
 	return
 }
 
@@ -38,7 +38,7 @@ func (k Keeper) UnstakeHoldBlocksRaw(ctx sdk.Context) (res uint64) {
 
 // EpochBlocks returns the EpochBlocks fixated param
 func (k Keeper) EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error) {
-	err = k.GetParamForBlock(ctx, string(types.KeyEpochBlocks), block, res)
+	err = k.GetParamForBlock(ctx, string(types.KeyEpochBlocks), block, &res)
 	return
 }
 
@@ -50,7 +50,7 @@ func (k Keeper) EpochBlocksRaw(ctx sdk.Context) (res uint64) {
 
 // EpochsToSave returns the EpochsToSave fixated param
 func (k Keeper) EpochsToSave(ctx sdk.Context, block uint64) (res uint64, err error) {
-	err = k.GetParamForBlock(ctx, string(types.KeyEpochsToSave), block, res)
+	err = k.GetParamForBlock(ctx, string(types.KeyEpochsToSave), block, &res)
 	return
 }
 

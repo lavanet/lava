@@ -80,3 +80,7 @@ func (k *Keeper) AddFixationRegistry(fixationKey string, getParamFunction func(s
 	}
 	k.fixationRegistries[fixationKey] = getParamFunction
 }
+
+func (k *Keeper) GetFixationRegistries() map[string]func(sdk.Context) any {
+	return k.fixationRegistries
+}

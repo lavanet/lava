@@ -101,7 +101,7 @@ func TestParamFixation(t *testing.T) {
 				ctx = keepertest.AdvanceBlock(ctx, keepers)
 			}
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, len(allFixatedParams), 1) // no matter how many epochs we want only one fixation since we didnt change the params
+			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries()), len(allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
 			epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedEpochStart, epochStart)
