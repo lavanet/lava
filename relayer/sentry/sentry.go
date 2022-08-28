@@ -35,6 +35,10 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+const (
+	maxRetries = 10
+)
+
 type ClientSession struct {
 	CuSum                 uint64
 	QoSInfo               QoSInfo
@@ -908,6 +912,42 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *
 	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
+func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
+	s.pairingMu.RLock()
+
+	defer s.pairingMu.RUnlock()
+	if len(s.pairing) <= 0 {
+		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+	}
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
+		if len(s.pairing) == 0 {
+			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+		}
+
+		var index, loopIndex int
+		for { // attempt to get a random pairing except index piaringIdx, without chaning the chances for a provider to be picked.
+			loopIndex++
+			index = rand.Intn(len(s.pairing))
+			if index == piaringIdx && len(s.pairing) <= 1 {
+				return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty or index is not allowed", nil, nil)
+			} else if index == piaringIdx { // if index the pairingIndex, try again
+				continue
+			} else if loopIndex >= maxRetries { // if we're still trying to get an index more than maxRetries, return an error
+				return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers, pairing list empty or maxRetries reached", nil, nil)
+			}
+			break
+		}
+		wrap := s.pairing[index]
+
+		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
+		if connected {
+			return wrap, index, endpoint, nil
+		}
+	}
+	return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+}
+
 func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
 
 	s.pairingMu.RLock()
@@ -1194,7 +1234,27 @@ func (s *Sentry) SendRelay(
 			s.movePairingEntryToPurge(wrap, index)
 		}
 		clientSession.Lock.Unlock()
-		return reply, err
+
+		// retry sending the request to a different provider upon error
+		var err2 error
+		wrap, index, endpoint, err2 = s._findPairingExceptIndex(ctx, index) // get a different provider.
+		if err2 != nil {
+			return nil, err2
+		}
+
+		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
+		// call user
+		reply, request, err2 = cb_send_relay(clientSession)
+		if err2 != nil {
+			clientSession.Lock.Unlock()
+			if err.Error() != err2.Error() {
+				// if the first provider error returned a different error than the second provider combine the error into a single one
+				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
+			}
+			// if the errors are the same just return one of them and the reply
+			return reply, err
+		}
+		// if we didnt get an error from the second relay we can continue noramlly
 	}
 
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
