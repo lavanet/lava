@@ -76,7 +76,10 @@ func (k Keeper) fixatedParamsKey(FixatedKey string, index uint64) string {
 
 func (k Keeper) EncodeParam(param any) []byte {
 	k.buffer.Reset()
-	k.enc.Encode(param)
+	err := k.enc.Encode(param)
+	if err != nil {
+		panic("why god why")
+	}
 	return k.buffer.Bytes()
 }
 
