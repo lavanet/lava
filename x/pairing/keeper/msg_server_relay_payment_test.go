@@ -118,7 +118,7 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	entry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clientAccount.Addr, epoch)
 	require.Nil(t, err)
 
-	maxcu, err := ts.keepers.Pairing.GetAllowedCU(sdk.UnwrapSDKContext(ts.ctx), entry)
+	maxcu, err := ts.keepers.Pairing.GetAllowedCUForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()), entry)
 	require.Nil(t, err)
 
 	relayRequest := &types.RelayRequest{

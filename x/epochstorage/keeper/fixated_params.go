@@ -149,7 +149,7 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 }
 
 func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
-	for fixationKey, _ := range k.fixationRegistries {
+	for fixationKey := range k.fixationRegistries {
 		var idx uint64
 		var thisIdxKey string
 		for idx = uint64(startIdx); true; idx++ {

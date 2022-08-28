@@ -100,13 +100,20 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
-	block := currentBlock - blocksToSaveAtEarliestEpoch
-	if earliestEpochBlock >= block {
+	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
+	changed := false
+	for earliestEpochBlock < lastBlockInMemory {
+		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+		changed = true
+	}
+
+	if !changed {
 		return
 	}
+
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
-	earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+
 	if err != nil {
 		// this is critical, no recovery from this
 		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))

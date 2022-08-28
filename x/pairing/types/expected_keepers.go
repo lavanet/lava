@@ -18,6 +18,7 @@ type SpecKeeper interface {
 type EpochstorageKeeper interface {
 	// Methods imported from epochStorage should be defined here
 	// Methods imported from bank should be defined here
+	GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
@@ -39,6 +40,7 @@ type EpochstorageKeeper interface {
 	GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage epochstoragetypes.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
+	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 }
 
 type AccountKeeper interface {

@@ -29,6 +29,12 @@ func createNFixatedParams(keeper *keeper.Keeper, ctx sdk.Context, n int) []types
 	return items
 }
 
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
+	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
+}
+
 func TestFixatedParamsGet(t *testing.T) {
 	keeper, ctx := keepertest.EpochstorageKeeper(t)
 	items := createNFixatedParams(keeper, ctx, 10)
@@ -108,7 +114,6 @@ func TestParamFixation(t *testing.T) {
 
 		})
 	}
-
 }
 
 func TestParamFixationWithEpochBlocksChange(t *testing.T) {
@@ -128,49 +133,77 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
 	newEpochBlocksValues := []uint64{17, 30, 15, 10, 11, 10}
 	type EpochCompare struct {
-		Block       uint64
-		Epoch       uint64
-		EpochBlocks uint64
+		Block       uint64 //advance test to this block
+		Epoch       uint64 //expected epoch for the test
+		EpochBlocks uint64 //expected epochBlocks for the test
 	}
 	// epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
 	wanted_epoch_change_details := []EpochCompare{
-		{1, 0, 0},
-		{blocksInEpochInitial + 1, blocksInEpochInitial, 0},
-		{2*blocksInEpochInitial + 1, 2 * blocksInEpochInitial, newEpochBlocksValues[0]}, // make a param change, doesn't fixate yet
-		{2*blocksInEpochInitial + 2, 2 * blocksInEpochInitial, 0},                       //fixation wasn't reached
-		{3*blocksInEpochInitial + 2, 3 * blocksInEpochInitial, 0},
-		{3*blocksInEpochInitial + newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + newEpochBlocksValues[0], 0},
-		{3*blocksInEpochInitial + 2*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + 2*newEpochBlocksValues[0], 0},
-		{3*blocksInEpochInitial + 7*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + 7*newEpochBlocksValues[0], 0},
-		{3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0], 0},
-		{3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0], newEpochBlocksValues[1]},
-		{3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], 0},
-		{3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], newEpochBlocksValues[2]},
-		{3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + 3, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1], 0},
-		{3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + newEpochBlocksValues[2] + 3, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + newEpochBlocksValues[2], 0},
-		{3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + (epochsMemory_initial+20)*newEpochBlocksValues[2] + 5, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + (epochsMemory_initial+20)*newEpochBlocksValues[2], 0},
+		/*00*/ {1, 0, 0},
+		/*01*/ {blocksInEpochInitial + 1, blocksInEpochInitial, 0},
+		/*02*/ {2*blocksInEpochInitial + 1, 2 * blocksInEpochInitial, newEpochBlocksValues[0]}, // make a param change, doesn't fixate yet
+		/*03*/ {2*blocksInEpochInitial + 2, 2 * blocksInEpochInitial, 0}, //fixation wasn't reached
+		/*04*/ {3*blocksInEpochInitial + 2, 3 * blocksInEpochInitial, 0},
+		/*05*/ {3*blocksInEpochInitial + newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + newEpochBlocksValues[0], 0},
+		/*06*/ {3*blocksInEpochInitial + 2*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + 2*newEpochBlocksValues[0], 0},
+		/*07*/ {3*blocksInEpochInitial + 7*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + 7*newEpochBlocksValues[0], 0},
+		/*08*/ {3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0], 0},
+		/*09*/ {3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0] + 2, 3*blocksInEpochInitial + (7+epochsMemory_initial)*newEpochBlocksValues[0], newEpochBlocksValues[1]},
+		/*10*/ {3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], 0},
+		/*11*/ {3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + 1, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0], newEpochBlocksValues[2]},
+		/*12*/ {3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + 3, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1], 0},
+		/*13*/ {3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + newEpochBlocksValues[2] + 3, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + newEpochBlocksValues[2], 0},
+		/*14*/ {3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + (epochsMemory_initial+20)*newEpochBlocksValues[2] + 5, 3*blocksInEpochInitial + (8+epochsMemory_initial)*newEpochBlocksValues[0] + newEpochBlocksValues[1] + (epochsMemory_initial+20)*newEpochBlocksValues[2], 0},
 	}
+	last_epoch := wanted_epoch_change_details[len(wanted_epoch_change_details)-1].Epoch
+	wanted_epoch_change_details = append(wanted_epoch_change_details, []EpochCompare{
+		/*15*/ {last_epoch + 10, last_epoch, 0},
+		/*16*/ {last_epoch + newEpochBlocksValues[2] + 3, last_epoch + newEpochBlocksValues[2], 0},
+		/*17*/ {last_epoch + 2*newEpochBlocksValues[2], last_epoch + 2*newEpochBlocksValues[2], 0},
+		/*18*/ {last_epoch + 3*newEpochBlocksValues[2] - 1, last_epoch + 2*newEpochBlocksValues[2], 0},
+	}...)
+
+	last_epoch = wanted_epoch_change_details[len(wanted_epoch_change_details)-1].Epoch
+	wanted_epoch_change_details = append(wanted_epoch_change_details, []EpochCompare{
+		/*19*/ {last_epoch, last_epoch, newEpochBlocksValues[3]}, //add param
+		/*20*/ {last_epoch + newEpochBlocksValues[2] + 1, last_epoch + newEpochBlocksValues[2], 0},
+		/*21*/ {last_epoch + newEpochBlocksValues[2] + epochsMemory_initial*newEpochBlocksValues[3] - 1, last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial-1)*newEpochBlocksValues[3], 0},
+		/*22*/ {last_epoch + newEpochBlocksValues[2] + epochsMemory_initial*newEpochBlocksValues[3], last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial)*newEpochBlocksValues[3], 0},
+		/*23*/ {last_epoch + newEpochBlocksValues[2] + epochsMemory_initial*newEpochBlocksValues[3] + 1, last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial)*newEpochBlocksValues[3], 0},
+		/*24*/ {last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial+9)*newEpochBlocksValues[3], last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial+9)*newEpochBlocksValues[3], 0},
+		/*25*/ {last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial+10)*newEpochBlocksValues[3], last_epoch + newEpochBlocksValues[2] + (epochsMemory_initial+10)*newEpochBlocksValues[3], 0},
+	}...)
 
 	tests := []struct {
-		name               string
-		EpochChangeDetails EpochCompare
-		expectedFixation   int
+		name             string
+		expectedFixation int
 	}{
-		{"[00]initial", wanted_epoch_change_details[0], 1},
-		{"[01]epoch", wanted_epoch_change_details[1], 1},
-		{"[02]paramChange", wanted_epoch_change_details[2], 1},
-		{"[03]paramChange+block", wanted_epoch_change_details[3], 1},      //fixation wasn't reached
-		{"[04]paramChange+epoch", wanted_epoch_change_details[4], 2},      //now its fixated
-		{"[05]+newEpoch", wanted_epoch_change_details[5], 2},              //
-		{"[06]+newEpoch+block", wanted_epoch_change_details[6], 2},        //
-		{"[07]+5 * newEpoch", wanted_epoch_change_details[7], 2},          //
-		{"[08]+memory end * newEpoch", wanted_epoch_change_details[8], 1}, // memory end passed
-		{"[09]another param change", wanted_epoch_change_details[9], 1},   // fixation wasn't reached
-		{"[10]paramChange+epoch", wanted_epoch_change_details[10], 2},     // now its fixated
-		{"[11]+block", wanted_epoch_change_details[11], 2},                // another param change
-		{"[12]+epoch", wanted_epoch_change_details[12], 3},                // another fixated
-		{"[13]+new epoch", wanted_epoch_change_details[13], 3},            //
-		{"[14]+memory end", wanted_epoch_change_details[14], 1},           // memory end passed
+		{"[00]initial", 1},
+		{"[01]epoch", 1},
+		{"[02]paramChange", 1},
+		{"[03]paramChange+block", 1},      //fixation wasn't reached
+		{"[04]paramChange+epoch", 2},      //now its fixated
+		{"[05]+newEpoch", 2},              //
+		{"[06]+newEpoch+block", 2},        //
+		{"[07]+5 * newEpoch", 2},          //
+		{"[08]+memory end * newEpoch", 1}, // memory end passed
+		{"[09]another param change", 1},   // fixation wasn't reached
+		{"[10]paramChange+epoch", 2},      // now its fixated
+		{"[11]+block", 2},                 // another param change
+		{"[12]+epoch", 3},                 // another fixated
+		{"[13]+new epoch", 3},             //
+		{"[14]+memory end", 1},            // memory end passed
+		{"[15]memory end + 10", 1},
+		{"[16]memory end + epoch", 1},
+		{"[17]memory end + 2epochs", 1},
+		{"[18]memory end + 3epochs -block", 1},
+		{"[19]param change", 1},
+		{"[20]fixate param change", 2},
+		{"[21]end memory -1", 2},           //before memory end
+		{"[22]end memory", 2},              //at memory end
+		{"[23]end memory +1", 2},           //after memory end +1
+		{"[24]end memory +fixation -1", 1}, //after memory end + diff fixation -1
+		{"[25]end memory +fixation", 1},    //after memory end + diff fixation
 	}
 	prevBlock := 0
 	newEpochBlocksVal := blocksInEpochInitial
@@ -178,10 +211,10 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 
 	pastEpochsToCompare := []EpochCompare{}
 
-	for _, tt := range tests {
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			blocksToLoop := int(tt.EpochChangeDetails.Block) - prevBlock
+			blocksToLoop := int(wanted_epoch_change_details[ti].Block) - prevBlock
 			for i := 0; i < blocksToLoop; i++ {
 				ctx = keepertest.AdvanceBlock(ctx, keepers)
 				if keepers.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
@@ -202,63 +235,84 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 			require.Equal(t, expectedEpochBlocks, epochBlocks)
 
 			fmt.Printf("Tests for current block: %d, with epochBlocks %d\n", prevBlock, epochBlocks)
-			require.Equal(t, tt.EpochChangeDetails.Epoch, epochStart, "GetEpochStartForBlock VS expectedEpochStart")
+			require.Equal(t, wanted_epoch_change_details[ti].Epoch, epochStart, "GetEpochStartForBlock VS expectedEpochStart")
 
 			//check the amount of fixations
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
 			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries())+tt.expectedFixation-1, len(allFixatedParams), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
 
-			latestParamChange, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks))
+			_, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks))
 			require.True(t, found)
 
 			for _, epochComapre := range pastEpochsToCompare {
 				//test past grid
-				epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
-
-				if epochComapre.Block >= earliestEpochStart || (latestParamChange.FixationBlock < epochComapre.Block) {
-					require.NoError(t, err)
+				epochStart, _, errEpochStart := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+				epochBlocks_test, errEpochBlocks := keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+				if epochComapre.Block >= earliestEpochStart {
+					require.NoError(t, errEpochStart)
 					require.Equal(t, epochComapre.Epoch, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
+
+					require.NoError(t, errEpochBlocks)
+					require.Equal(t, epochComapre.EpochBlocks, epochBlocks_test)
 				} else {
-					if err == nil {
+					if errEpochBlocks == nil || errEpochStart == nil {
 						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks), epochComapre.Block)
+
 						require.NoError(t, err)
 						require.True(t, fixation.FixationBlock <= epochComapre.Block)
 					}
 					// require.Error(t, err, fmt.Sprintf("expected error but did not receive: epochComapre.Block: %d earliestEpochStart:%d, fixations: %+v", epochComapre.Block, earliestEpochStart, allFixatedParams))
 				}
-
-				//test for past Epoch Blocks
-				epochBlocks_test, err := keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
-				if epochComapre.Block >= earliestEpochStart || (latestParamChange.FixationBlock < epochComapre.Block) {
-					require.NoError(t, err)
-					require.Equal(t, epochComapre.EpochBlocks, epochBlocks_test)
-				} else {
-					if err == nil {
-						fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks), epochComapre.Block)
-						require.NoError(t, err)
-						require.True(t, fixation.FixationBlock <= epochComapre.Block)
-					}
-				}
-
 			}
 
 			//add the current block to blocks we compare, future tests will need to check this
 			pastEpochsToCompare = append(pastEpochsToCompare, EpochCompare{Block: currBlock, Epoch: epochStart, EpochBlocks: epochBlocks})
 
-			if tt.EpochChangeDetails.EpochBlocks != 0 {
-				require.NotEqual(t, tt.EpochChangeDetails.EpochBlocks, newEpochBlocksVal)
-				newEpochBlocksVal = tt.EpochChangeDetails.EpochBlocks
+			if wanted_epoch_change_details[ti].EpochBlocks != 0 {
+				require.NotEqual(t, wanted_epoch_change_details[ti].EpochBlocks, newEpochBlocksVal)
+				newEpochBlocksVal = wanted_epoch_change_details[ti].EpochBlocks
 				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", "\""+strconv.FormatUint(newEpochBlocksVal, 10)+"\"")
 				require.NoError(t, err)
 			}
-
 		})
 	}
-
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
+func TestParamFixationWithEpochToSaveChange(t *testing.T) {
+	_, keepers, ctx := keepertest.InitAllKeepers(t)
+
+	//init keepers state
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
+
+	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
+	tests := []struct {
+		name          string
+		Block         uint64 //advance test to this block
+		EarliestEpoch uint64 //expected earliest epoch for the test
+		EpochsToSave  uint64 //set this if not zero at the start of the test
+		MumOfFixation int    //expected number of fixations in the memory
+	}{
+		{"FillHalfMemory", epochsMemory_initial * blocksInEpochInitial / 2, 0, 0, 1},
+		{"FixateNewParam", (epochsMemory_initial/2 + 1) * blocksInEpochInitial, 0, epochsMemory_initial / 2, 2},
+		{"FillMemory", epochsMemory_initial * blocksInEpochInitial, 0, 0, 2},
+		{"FillMemory+epoch", (epochsMemory_initial + 1) * blocksInEpochInitial, (epochsMemory_initial + 1 - epochsMemory_initial) * blocksInEpochInitial, 0, 2},
+		{"MemoryLengthChange", (epochsMemory_initial + epochsMemory_initial/2 + 1) * blocksInEpochInitial, (epochsMemory_initial + epochsMemory_initial/2 + 1 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 2},
+		{"FutureTest", (epochsMemory_initial * 2) * blocksInEpochInitial, (epochsMemory_initial*2 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.EpochsToSave != 0 {
+				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(tt.EpochsToSave, 10)+"\"")
+				require.NoError(t, err)
+			}
+
+			ctx = keepertest.AdvanceToBlock(ctx, keepers, tt.Block)
+			require.Equal(t, tt.Block, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			require.Equal(t, tt.EarliestEpoch, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
+			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
+			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries())-1+tt.MumOfFixation, len(allFixatedParams))
+		})
+	}
 }

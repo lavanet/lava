@@ -62,9 +62,9 @@ func NewKeeper(
 		dec:                dec,
 	}
 
-	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return Keeper.EpochBlocksRaw(*keeper, ctx) })
-	keeper.AddFixationRegistry(string(types.KeyEpochsToSave), func(ctx sdk.Context) any { return Keeper.EpochsToSaveRaw(*keeper, ctx) })
-	keeper.AddFixationRegistry(string(types.KeyUnstakeHoldBlocks), func(ctx sdk.Context) any { return Keeper.UnstakeHoldBlocksRaw(*keeper, ctx) })
+	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })
+	keeper.AddFixationRegistry(string(types.KeyEpochsToSave), func(ctx sdk.Context) any { return keeper.EpochsToSaveRaw(ctx) })
+	keeper.AddFixationRegistry(string(types.KeyUnstakeHoldBlocks), func(ctx sdk.Context) any { return keeper.UnstakeHoldBlocksRaw(ctx) })
 
 	return keeper
 }

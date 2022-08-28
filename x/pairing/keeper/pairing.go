@@ -22,8 +22,23 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 		return nil, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}
 	earliestSavedEpoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
-	if earliestSavedEpoch > block {
+	if block < earliestSavedEpoch {
 		return nil, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
+	}
+
+	requestedEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+	if err != nil {
+		return nil, err
+	}
+
+	currentEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
+
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
+	if requestedEpochStart+blocksToSave < currentEpochStart {
+		return nil, err
 	}
 	verifiedUser := false
 
@@ -146,7 +161,11 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	}
 
 	//calculates a hash and randomly chooses the providers
-	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, k.ServicersToPairCount(ctx), epochStartBlock, chainID)
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
+	if err != nil {
+		return nil, nil, err
+	}
+	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, servicersToPairCount, epochStartBlock, chainID)
 
 	for _, stakeEntry := range validProviders {
 		providerAddress := stakeEntry.Address

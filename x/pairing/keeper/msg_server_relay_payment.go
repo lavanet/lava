@@ -121,7 +121,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(k.ServicersToPairCount(ctx)), spec.ReliabilityThreshold)
+			servicersToPairCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, details["error"])
+			}
+			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
 			if index != int64(thisProviderIndex) {
 				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
 				details["VRF_index"] = strconv.FormatInt(index, 10)
@@ -151,7 +156,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
-		allowedCU, err := k.GetAllowedCU(ctx, userStake)
+		allowedCU, err := k.GetAllowedCUForBlock(ctx, uint64(relay.BlockHeight), userStake)
 		if err != nil {
 			panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientAddr, userStake.Stake.Amount.Int64()))
 		}
