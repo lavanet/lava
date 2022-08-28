@@ -1246,7 +1246,11 @@ func (s *Sentry) SendRelay(
 		// call user
 		reply, request, err2 = cb_send_relay(clientSession)
 		if err2 != nil {
+			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+				s.movePairingEntryToPurge(wrap, index)
+			}
 			clientSession.Lock.Unlock()
+
 			if err.Error() != err2.Error() {
 				// if the first provider error returned a different error than the second provider combine the error into a single one
 				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
