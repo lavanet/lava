@@ -154,7 +154,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 	tests := []struct {
 		name               string
 		EpochChangeDetails EpochCompare
-		expectedFixation   uint64
+		expectedFixation   int
 	}{
 		{"[00]initial", wanted_epoch_change_details[0], 1},
 		{"[01]epoch", wanted_epoch_change_details[1], 1},
@@ -206,7 +206,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 
 			//check the amount of fixations
 			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, tt.expectedFixation, uint64(len(allFixatedParams)), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
+			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries())+tt.expectedFixation-1, len(allFixatedParams), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
 
 			latestParamChange, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks))
 			require.True(t, found)
