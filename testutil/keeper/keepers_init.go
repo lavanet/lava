@@ -104,7 +104,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins), moduleBank: make(map[string]map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 
@@ -112,8 +112,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	// Initialize Genesis
 	spec.InitGenesis(ctx, ks.Spec, *spectypes.DefaultGenesis())
-	epochstorage.InitGenesis(ctx, ks.Epochstorage, *epochstoragetypes.DefaultGenesis())
 	pairing.InitGenesis(ctx, ks.Pairing, *pairingtypes.DefaultGenesis())
+	epochstorage.InitGenesis(ctx, ks.Epochstorage, *epochstoragetypes.DefaultGenesis()) //epoch storage is always last
 	conflict.InitGenesis(ctx, ks.Conflict, *conflicttypes.DefaultGenesis())
 
 	ss := Servers{}

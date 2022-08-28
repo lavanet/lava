@@ -23,8 +23,6 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
-
-	k.PushFixatedParams(ctx, 0, 0)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
