@@ -131,7 +131,8 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		if err != nil {
 			interfaceArr = append(interfaceArr, unmarshalled)
 		} else {
-			interfaceArr = append(interfaceArr, data)
+			return data, nil // we support map parsing so we can return here if data was unmarshalled
+			// interfaceArr = append(interfaceArr, data)
 		}
 
 		return interfaceArr, nil
@@ -187,31 +188,31 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
+		return nil, utils.LavaFormatError(fmt.Sprintf("invalid input format, data is not json: %s", inp), err, nil)
 	}
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
+		return nil, utils.LavaFormatError(fmt.Sprintf("invalid input format, data is not json: %s", unmarshalledData), err, nil)
 	}
 
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) < param_index {
-			return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
+			return nil, utils.LavaFormatInfo(fmt.Sprintf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData), nil)
 		}
 		blockContainer := unmarshaledDataTyped[param_index]
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key)
+				return nil, utils.LavaFormatInfo(fmt.Sprintf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key), nil)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s", blockContainer, key)
+				return nil, utils.LavaFormatInfo("invalid input format, key missing from blockContainer", &map[string]string{"key": key, "blockContainer": fmt.Sprintf("%s", blockContainer)})
 			}
 		}
 		retArr := make([]interface{}, 0)
@@ -220,7 +221,8 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 	case map[string]interface{}:
 		for idx, key := range input[1:] {
 			if val, ok := unmarshaledDataTyped[key]; ok {
-				if idx == (len(input) - 1) {
+				// utils.LavaFormatInfo("checking val and key", &map[string]string{"val": fmt.Sprintf("%s", val), "key": key, "inputs": fmt.Sprintf("%s", input)})
+				if idx == (len(input) - 2) {
 					retArr := make([]interface{}, 0)
 					retArr = append(retArr, val)
 					return retArr, nil
@@ -230,7 +232,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				case map[string]interface{}:
 					unmarshaledDataTyped = v
 				default:
-					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
+					return nil, utils.LavaFormatInfo(fmt.Sprintf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData), &map[string]string{"unmarshaledDataTyped": fmt.Sprintf("%s", unmarshaledDataTyped), "value": fmt.Sprintf("%s", v)})
 				}
 
 			} else {

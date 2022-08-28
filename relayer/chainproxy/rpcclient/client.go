@@ -496,21 +496,6 @@ func (c *Client) newMessageMap(method string, paramsIn map[string]interface{}) (
 		if msg.Params, err = json.Marshal(paramsIn); err != nil {
 			return nil, err
 		}
-
-		// test this too:
-		//
-		// var paramsMap = make(map[string]json.RawMessage, len(paramsIn))
-		// for name, value := range paramsIn {
-		// 	valueJSON, err := json.Marshal(value)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	paramsMap[name] = valueJSON
-		// }
-		// if msg.Params, err = json.Marshal(paramsMap); err != nil {
-		// 	return nil, err
-		// }
-
 	}
 	return msg, nil
 }

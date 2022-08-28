@@ -3842,7 +3842,7 @@
             "result_parsing": {
               "parserArg": [
                 "0",
-                "block_id",
+                "blockId",
                 "hash"
               ],
               "parserFunc": "PARSE_CANONICAL"
