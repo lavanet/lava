@@ -82,7 +82,9 @@ func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) (res uint64) {
 }
 
 func (k Keeper) StakeToMaxCUList(ctx sdk.Context, block uint64) (res types.StakeToMaxCUList, err error) {
-	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyServicersToPairCount), block, &res)
+	var unmarshalled []byte
+	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyServicersToPairCount), block, &unmarshalled)
+	res.Unmarshal(unmarshalled)
 	return
 }
 
