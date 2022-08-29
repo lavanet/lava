@@ -113,6 +113,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 
+	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
+
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
 	ss.SpecServer = speckeeper.NewMsgServerImpl(ks.Spec)

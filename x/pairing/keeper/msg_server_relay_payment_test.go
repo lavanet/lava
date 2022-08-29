@@ -573,6 +573,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 			params.ServicersToPairCount = 100
 			ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+			ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 			err := ts.addClient(1)
 			require.Nil(t, err)
 			err = ts.addProvider(100)
@@ -714,6 +715,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -831,6 +833,7 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 5
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(5)
@@ -921,6 +924,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(2)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -1018,6 +1022,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
