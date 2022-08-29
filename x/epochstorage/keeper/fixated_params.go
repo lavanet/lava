@@ -78,7 +78,7 @@ func (k Keeper) EncodeParam(param any) []byte {
 	k.buffer.Reset()
 	err := k.enc.Encode(param)
 	if err != nil {
-		panic("why god why")
+		panic("Can't Encode param: " + err.Error())
 	}
 	return k.buffer.Bytes()
 }
@@ -87,7 +87,10 @@ func (k Keeper) EncodeParam(param any) []byte {
 func (k Keeper) DecodeParam(rawData []byte, param any) {
 	k.buffer.Reset()
 	k.buffer.Write(rawData)
-	k.dec.Decode(param)
+	err := k.dec.Decode(param)
+	if err != nil {
+		panic("Can't Decode param: " + err.Error())
+	}
 }
 
 func (k Keeper) LatestFixatedParams(ctx sdk.Context, fixationKey string) (fixation types.FixatedParams, found bool) {
