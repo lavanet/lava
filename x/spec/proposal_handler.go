@@ -34,6 +34,7 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 }
 
 func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
+
 	for _, c := range p.Changes {
 		ss, ok := k.GetSubspace(c.Subspace)
 		if !ok {
@@ -50,14 +51,16 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 			details["error"] = err.Error()
 			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
 		}
-		// set param change callback
-		if c.Subspace == epochstoragetypes.ModuleName {
-			details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
-			ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
-		}
 
+		details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
 		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")
 	}
+
+	ss, ok := k.GetSubspace(epochstoragetypes.ModuleName)
+	if !ok {
+		return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, epochstoragetypes.ModuleName)
+	}
+	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
 
 	return nil
 }
