@@ -18,7 +18,6 @@ import (
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -40,7 +39,7 @@ type Keepers struct {
 type Servers struct {
 	EpochServer    epochstoragetypes.MsgServer
 	SpecServer     spectypes.MsgServer
-	PairingServer  types.MsgServer
+	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
 }
 

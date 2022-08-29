@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"regexp"
@@ -615,16 +614,6 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 							}
 						}
 					}
-					num_str = e.Events[eventToListen+".voteDeadline"][idx]
-					voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
-					if err != nil {
-						log.Printf("Error: parsing vote deadline %s, err:%s\n", num_str, err)
-						continue
-					}
-					voters_st := e.Events[eventToListen+".voters"][idx]
-					voters := strings.Split(voters_st, ",")
-					voteParams := &VoteParams{ChainID: chainID, ApiURL: apiURL, RequestData: requestData, RequestBlock: requestBlock, Voters: voters, CloseVote: false}
-					go s.voteInitiationCb(ctx, voteID, voteDeadline, voteParams)
 				}
 			}
 
