@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -25,9 +23,6 @@ type (
 		specKeeper    types.SpecKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
-		buffer             *bytes.Buffer
-		enc                *gob.Encoder
-		dec                *gob.Decoder
 	}
 )
 
@@ -44,10 +39,6 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	var buffer bytes.Buffer
-	enc := gob.NewEncoder(&buffer)
-	dec := gob.NewDecoder(&buffer)
-
 	keeper := &Keeper{
 
 		cdc:        cdc,
@@ -57,9 +48,6 @@ func NewKeeper(
 		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper,
 
 		fixationRegistries: make(map[string]func(sdk.Context) any),
-		buffer:             &buffer,
-		enc:                enc,
-		dec:                dec,
 	}
 
 	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })

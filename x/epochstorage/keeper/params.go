@@ -86,7 +86,7 @@ func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64, err err
 	//get epochBlocks directly because we also need an epoch start on the current grid and when fixation was saved is an epoch start
 	fixtedParams, err := k.GetFixatedParamsForBlock(ctx, string(types.KeyEpochBlocks), block)
 	var blocksCycle uint64
-	k.DecodeParam(fixtedParams.Parameter, &blocksCycle)
+	utils.Deserialize(fixtedParams.Parameter, &blocksCycle)
 	epochStartInGrid := fixtedParams.FixationBlock //fixation block is always <= block
 	blockRelativeToGrid := block - epochStartInGrid
 	return blockRelativeToGrid % blocksCycle, err

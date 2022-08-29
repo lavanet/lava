@@ -74,25 +74,6 @@ func (k Keeper) fixatedParamsKey(FixatedKey string, index uint64) string {
 	}
 }
 
-func (k Keeper) EncodeParam(param any) []byte {
-	k.buffer.Reset()
-	err := k.enc.Encode(param)
-	if err != nil {
-		panic("Can't Encode param: " + err.Error())
-	}
-	return k.buffer.Bytes()
-}
-
-//param is the pointer to the param object you need
-func (k Keeper) DecodeParam(rawData []byte, param any) {
-	k.buffer.Reset()
-	k.buffer.Write(rawData)
-	err := k.dec.Decode(param)
-	if err != nil {
-		panic("Can't Decode param: " + err.Error())
-	}
-}
-
 func (k Keeper) LatestFixatedParams(ctx sdk.Context, fixationKey string) (fixation types.FixatedParams, found bool) {
 	return k.GetFixatedParams(ctx, k.fixatedParamsKey(fixationKey, 0))
 }
@@ -126,7 +107,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 
 func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 	for fixationKey, fixationGetParam := range k.fixationRegistries {
-		currentParam := k.EncodeParam(fixationGetParam(ctx))
+		currentParam := utils.Serialize(fixationGetParam(ctx))
 		currentFixatedParam, found := k.LatestFixatedParams(ctx, fixationKey)
 		if found && bytes.Equal(currentParam, currentFixatedParam.Parameter) {
 			continue
@@ -193,11 +174,11 @@ func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, bl
 		}
 	}
 	//handle case of error with current params
-	return types.FixatedParams{Parameter: k.EncodeParam(fixationGetParam(ctx)), FixationBlock: block}, err
+	return types.FixatedParams{Parameter: utils.Serialize(fixationGetParam(ctx)), FixationBlock: block}, err
 }
 
 func (k Keeper) GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error {
 	fixation, err := k.GetFixatedParamsForBlock(ctx, fixationKey, block)
-	k.DecodeParam(fixation.Parameter, param)
+	utils.Deserialize(fixation.Parameter, param)
 	return err
 }

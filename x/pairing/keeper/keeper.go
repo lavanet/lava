@@ -48,14 +48,7 @@ func NewKeeper(
 	}
 
 	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
-	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any {
-		culist := keeper.StakeToMaxCUListRaw(ctx)
-		data, err := culist.Marshal()
-		if err != nil { //out encoder cant encode this, we need marshal before sending
-			panic("failed to marshal stakeToCuList: ")
-		}
-		return data
-	})
+	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })
 
 	return keeper
 }
