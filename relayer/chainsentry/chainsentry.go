@@ -39,7 +39,7 @@ func (cs *ChainSentry) SetLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
-func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error) {
+func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
 
@@ -50,7 +50,7 @@ func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}, error
 		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i+1)
 		hashes[blockNum] = cs.blocksQueue[i]
 	}
-	return latestBlockNum, hashes, nil
+	return latestBlockNum, hashes
 }
 
 func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -72,6 +72,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	cs.SetLatestBlockNum(latestBlock)
 	log.Printf("latest %v block %v", cs.ChainID, latestBlock)
 	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
 	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock-int64(cs.finalizedBlockDistance); i++ {
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
@@ -82,7 +83,6 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 		log.Printf("Block number: %d, block hash: %s", i, result)
 		cs.blocksQueue = append(cs.blocksQueue, result) // save entire block data for now
 	}
-	cs.blockQueueMu.Unlock()
 
 	return nil
 }

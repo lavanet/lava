@@ -28,6 +28,9 @@ func CreateMockSpec() spectypes.Spec {
 	spec.Name = specName
 	spec.Index = specName
 	spec.Enabled = true
+	spec.ReliabilityThreshold = 4294967295
+	spec.FinalizationCriteria = 0
+	spec.ComparesHashes = true
 	apiInterface := spectypes.ApiInterface{Interface: "mockInt", Type: "get"}
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: []spectypes.ApiInterface{apiInterface}})
 	spec.FinalizationCriteria = 0
@@ -62,7 +65,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	msg.Creator = consumer.Addr.String()
 	//request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
-	msg.ResponseConflict.ConflictRelayData0.Request.ApiId = 0
+	msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight = sdk.UnwrapSDKContext(ctx).BlockHeight()
 	msg.ResponseConflict.ConflictRelayData0.Request.ChainID = spec.Index

@@ -1,4 +1,4 @@
-//file_pipe.go
+// file_pipe.go
 package main
 
 import (
@@ -32,7 +32,7 @@ var clientTest = TestProc{
 	tests:            events(),
 	strict:           true}
 
-func FullFlowTest(t *testing.T) ([]TestResult, error) {
+func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 	prepTest(t)
 
 	// Test Configs
@@ -40,8 +40,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	init_chain := true
 	run_providers_osmosis := true
 	run_providers_eth := true
+	run_providers_gth := true
+	run_providers_ftm := true
 	run_client_osmosis := true
 	run_client_eth := true
+	run_client_gth := true
+	run_client_ftm := true
 
 	start_lava := "killall ignite; killall lavad; cd " + homepath + " && ignite chain serve -v -r  "
 	if !resetGenesis {
@@ -59,7 +63,7 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 	}
 
 	if run_providers_osmosis {
-		fmt.Println(" ::: Starting Providers Processes [Osmosis] ::: ")
+		fmt.Println(" ::: Starting Providers Processes [OSMOSIS] ::: ")
 		prov_osm := TestProcess("providers_osmosis", homepath+"scripts/osmosis.sh", providersTest)
 		// debugOn(prov_osm)
 		println(" ::: Providers Processes Started ::: ")
@@ -67,12 +71,12 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 		if run_client_osmosis {
 			sleep(1)
-			fmt.Println(" ::: Starting Client Process [ETH] ::: ")
-			clientOsmoRPC := TestProcess("clientOsmoRPC", "lavad test_client COS3 tendermintrpc --from user2", clientTest)
+			fmt.Println(" ::: Starting Client Process [OSMOSIS] ::: ")
+			clientOsmoRPC := TestProcess("clientOsmoRPC", "lavad test_client COS3 tendermintrpc --from user1", clientTest)
 			await(node, "relay payment 1/3 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
 			silent(clientOsmoRPC)
-			clientOsmoRest := TestProcess("clientOsmoRest", "lavad test_client COS3 rest --from user2", clientTest)
+			clientOsmoRest := TestProcess("clientOsmoRest", "lavad test_client COS3 rest --from user1", clientTest)
 			await(node, "relay payment 1/3 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
 			silent(clientOsmoRest)
@@ -87,16 +91,49 @@ func FullFlowTest(t *testing.T) ([]TestResult, error) {
 
 		if run_client_eth {
 			sleep(1)
-			fmt.Println(" ::: Starting Client Process [COS3] ::: ")
-			clientEth := TestProcess("clientEth", "lavad test_client ETH1 jsonrpc --from user1", clientTest)
-			await(clientEth, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+			fmt.Println(" ::: Starting Client Process [ETH] ::: ")
+			clientETH := TestProcess("clientETH", "lavad test_client ETH1 jsonrpc --from user1", clientTest)
+			await(clientETH, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
 			await(node, "relay payment 3/3 eth", found_relay_payment, "awaiting for ETH payment to proceed...")
 			fmt.Println(" ::: GOT ETH PAYMENT !!!")
-			silent(clientEth)
+			silent(clientETH)
 			silent(prov_eth)
 		}
 	}
+	if run_providers_gth {
+		fmt.Println(" ::: Starting Providers Processes [GTH] ::: ")
+		prov_gth := TestProcess("providers_gth", homepath+"scripts/gth.sh", providersTest)
+		fmt.Println(" ::: Providers Processes Started ::: ")
+		await(prov_gth, "GTH providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
 
+		if run_client_gth {
+			sleep(1)
+			fmt.Println(" ::: Starting Client Process [GTH] ::: ")
+			clientGTH := TestProcess("clientGTH", "lavad test_client GTH1 jsonrpc --from user1", clientTest)
+			await(clientGTH, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+			await(node, "relay payment 3/3 gth", found_relay_payment, "awaiting for GTH payment to proceed...")
+			fmt.Println(" ::: GOT GTH PAYMENT !!!")
+			silent(clientGTH)
+			silent(prov_gth)
+		}
+	}
+	if run_providers_ftm {
+		fmt.Println(" ::: Starting Providers Processes [FTM] ::: ")
+		prov_ftm := TestProcess("providers_ftm", homepath+"scripts/ftm.sh", providersTest)
+		fmt.Println(" ::: Providers Processes Started ::: ")
+		await(prov_ftm, "FTM providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
+
+		if run_client_ftm {
+			sleep(1)
+			fmt.Println(" ::: Starting Client Process [FTM] ::: ")
+			clientFTM := TestProcess("clientFTM", "lavad test_client FTM250 jsonrpc --from user1", clientTest)
+			await(clientFTM, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+			await(node, "relay payment 3/3 ftm", found_relay_payment, "awaiting for FTM payment to proceed...")
+			fmt.Println(" ::: GOT FTM PAYMENT !!!")
+			silent(clientFTM)
+			silent(prov_ftm)
+		}
+	}
 	// FINISHED TEST PROCESSESS
 	println("::::::::::::::::::::::::::::::::::::::::::::::")
 	awaitErrorsTimeout := 10

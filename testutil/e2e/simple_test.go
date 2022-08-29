@@ -27,7 +27,7 @@ var simpleTest = TestProc{
 	tests:            simple_events(),
 	strict:           true}
 
-func SimpleTest(t *testing.T) ([]TestResult, error) {
+func SimpleTest(t *testing.T) ([]*TestResult, error) {
 	prepTest(t)
 
 	simple := TestProcess("simple", "go run "+homepath+"testutil/e2e/simple/simple.go ", simpleTest)

@@ -66,12 +66,30 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_pairing", details, "invalid pairing claim on proof of relay")
 		}
 
+		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+		if err != nil {
+			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
+			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
+		}
+
 		payReliability := false
 		//validate data reliability
 		if relay.DataReliability != nil {
+
+			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
+			if !found {
+				details["chainID"] = relay.ChainID
+				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
+				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
+			}
+			if !spec.ComparesHashes {
+				details["chainID"] = relay.ChainID
+				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
+			}
+
 			//verify user signed this data reliability
 			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
-			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if err != nil || !valid {
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_data_reliability_signer", details, "invalid signature by consumer on data reliability message")
@@ -110,17 +128,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
 			//signatures valid, validate VRF signing
-			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk)
+			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk, epochStart)
 			if !valid {
 				details["error"] = "vrf signing is invalid, proof result mismatch"
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
-			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
-			if !found {
-				details["chainID"] = relay.ChainID
-				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
-				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
-			}
+
 			servicersToPairCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
 			if err != nil {
 				details["error"] = err.Error()
@@ -130,17 +143,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			if index != int64(thisProviderIndex) {
 				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
 				details["VRF_index"] = strconv.FormatInt(index, 10)
-				errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
+				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
 			}
 			//all checks passed
 			payReliability = true
 		}
 
-		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
-		if err != nil {
-			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
-			return errorLogAndFormat("relay_payment_epoch_start", details, "problem getting epoch start")
-		}
 		if isOverlap {
 			epochStart, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
 			if err != nil {

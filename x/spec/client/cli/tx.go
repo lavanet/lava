@@ -47,7 +47,7 @@ func GetTxCmd() *cobra.Command {
 // a parameter change proposal governance transaction.
 func NewSubmitSpecAddProposalTxCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "spec-add [proposal-file]",
+		Use:   "spec-add [proposal-file,proposal-file,...]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a spec add proposal",
 		Long: strings.TrimSpace(

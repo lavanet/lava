@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -13,6 +15,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -27,7 +30,7 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 }
 
-func (m TendemintRpcMessage) GetParams() []interface{} {
+func (m TendemintRpcMessage) GetParams() interface{} {
 	return m.msg.Params
 }
 
@@ -73,7 +76,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)))
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)), "")
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -129,8 +132,8 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 	return nodeMsg, nil
 }
 
-func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
-	//
+func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used only in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {
@@ -155,12 +158,14 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 			Version: "2.0",
 			Method:  parsedMethod,
 		} //other parameters don't matter
+		// TODO: will be easier to parse the params in a map instead of an array, as calling with a map should be now supported
 		if strings.Contains(path[idx+1:], "=") {
 			params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
-			msg.Params = make([]interface{}, len(params_raw))
+			params := make([]interface{}, len(params_raw))
 			for i := range params_raw {
-				msg.Params[i] = params_raw[i]
+				params[i] = params_raw[i]
 			}
+			msg.Params = params
 		} else {
 			msg.Params = make([]interface{}, 0)
 		}
@@ -170,7 +175,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte) (NodeMessa
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
@@ -201,56 +206,66 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
 			err error
 		)
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				log.Println("read:", err)
+				utils.LavaFormatInfo("error read message ws", &map[string]string{"err": err.Error()})
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("ws: in <<< ", string(msg))
+			utils.LavaFormatInfo(" ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg))
+			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
-				log.Println(err)
+				utils.LavaFormatInfo("error send relay ws", &map[string]string{"err": err.Error()})
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				log.Println("write:", err)
+				utils.LavaFormatInfo("error write message ws", &map[string]string{"err": err.Error()})
+				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				break
 			}
-			log.Println("out >>> ", string(reply.Data))
+			utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		}
-	}))
+	})
 
-	app.Post("/:dappId", func(c *fiber.Ctx) error {
-		log.Println("jsonrpc in <<< ", string(c.Body()))
-		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()))
+	app.Get("/ws/:dappId", webSocketCallback)
+	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		utils.LavaFormatInfo("jsonrpc in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
+		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
-			log.Println(err)
-			return nil
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
-		log.Println("out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		path := c.Params("*")
-		log.Println("urirpc in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
+		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
 			log.Println(err)
-			//
-			// TODO: better errors
-			return c.SendString(`{"error": "unsupported api"}`)
+			if string(c.Body()) != "" {
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, err))
+			}
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
-		log.Println("out >>> ", string(reply.Data))
+		utils.LavaFormatInfo("urirpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 	//
@@ -274,7 +289,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 	var result json.RawMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params...)
+	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
 
 	//
 	// Wrap result back to json

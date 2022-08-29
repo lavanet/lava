@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -27,6 +26,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
+	connectionType string
 }
 
 type RestChainProxy struct {
@@ -63,7 +63,7 @@ func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, er
 	return nodeMsg, nil
 }
 
-func (m RestMessage) GetParams() []interface{} {
+func (m RestMessage) GetParams() interface{} {
 	retArr := make([]interface{}, 0)
 	retArr = append(retArr, m.msg)
 	return retArr
@@ -73,12 +73,8 @@ func (m RestMessage) GetResult() json.RawMessage {
 	return m.Result
 }
 
-func (m RestMessage) ParseBlock(block string) (int64, error) {
-	blockNum, err := strconv.ParseInt(block, 0, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)
-	}
-	return blockNum, nil
+func (m RestMessage) ParseBlock(inp string) (int64, error) {
+	return parser.ParseDefaultBlockParameter(inp)
 }
 
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
@@ -90,7 +86,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil)
+		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
 	} else {
 		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
 	}
@@ -158,18 +154,20 @@ func (cp *RestChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 	return nil, fmt.Errorf("REST Api not supported %s ", path)
 }
 
-func (cp *RestChainProxy) ParseMsg(path string, data []byte) (NodeMessage, error) {
+func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
+
 	nodeMsg := &RestMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
+		cp:             cp,
+		serviceApi:     serviceApi,
+		path:           path,
+		msg:            data,
+		connectionType: connectionType, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -181,17 +179,18 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app := fiber.New(fiber.Config{})
 
 	//
-	// Catch all
-	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+	// Catch Post
+	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 
+		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
+		// contentType := string(c.Context().Request.Header.ContentType())
+
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "")
+		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
 			log.Println(err)
-			//
-			// TODO: better errors
-			return c.SendString(`{"error": "unsupported api"}`)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
 		}
 
 		log.Println("out >>> len", len(string(reply.Data)))
@@ -199,9 +198,19 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	})
 
 	//
-	// TODO: add POST support
-	//app.Post("/", func(c *fiber.Ctx) error {})
+	// Catch the others
+	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+		path := "/" + c.Params("*")
+		log.Println("in <<< ", path)
+		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		if err != nil {
+			log.Println(err)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
+		}
 
+		log.Println("out >>> len", len(string(reply.Data)))
+		return c.SendString(string(reply.Data))
+	})
 	//
 	// Go
 	err := app.Listen(listenAddr)
@@ -224,15 +233,23 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
 
-	//
-	// TODO: some APIs use POST!
+	var connectionTypeSlected string = http.MethodGet
+	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
+	if nm.connectionType != "" {
+		connectionTypeSlected = nm.connectionType
+	}
+
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(http.MethodGet, nm.cp.nodeUrl+nm.path, msgBuffer)
+	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
 	}
 
+	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
+	if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
@@ -244,6 +261,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, err
@@ -253,5 +271,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 		Data: body,
 	}
 	nm.Result = body
+
 	return reply, nil
 }

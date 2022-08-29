@@ -19,7 +19,7 @@ var _ = strconv.Itoa(0)
 
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoints] [geolocation]",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation]",
 		Short: "Broadcast message stakeProvider",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {

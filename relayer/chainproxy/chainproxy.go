@@ -27,7 +27,7 @@ type NodeMessage interface {
 type ChainProxy interface {
 	Start(context.Context) error
 	GetSentry() *sentry.Sentry
-	ParseMsg(string, []byte) (NodeMessage, error)
+	ParseMsg(string, []byte, string) (NodeMessage, error)
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
@@ -89,11 +89,12 @@ func SendRelay(
 	privKey *btcec.PrivateKey,
 	url string,
 	req string,
+	connectionType string,
 ) (*pairingtypes.RelayReply, error) {
 
 	//
 	// Unmarshal request
-	nodeMsg, err := cp.ParseMsg(url, []byte(req))
+	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +103,16 @@ func SendRelay(
 	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
+
 		if err != nil {
 			return nil, nil, err
 		}
 
-		blockHeight = cp.GetSentry().GetBlockHeight()
+		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
+
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
+			ConnectionType:  connectionType,
 			ApiUrl:          url,
 			Data:            []byte(req),
 			SessionId:       uint64(clientSession.SessionId),
@@ -126,7 +130,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.Sig = sig
-		c := *clientSession.Client.Client
+		c := *clientSession.Endpoint.Client
 
 		relaySentTime := time.Now()
 		clientSession.QoSInfo.TotalRelays++
@@ -155,13 +159,13 @@ func SendRelay(
 		}
 
 		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, cp.GetSentry().GetServicersToPairCount())
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 
 		return reply, relayRequest, nil
 	}
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
-
+		sentry := cp.GetSentry()
 		if blockHeight < 0 {
 			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
@@ -171,13 +175,14 @@ func SendRelay(
 			ApiUrl:          url,
 			Data:            []byte(req),
 			SessionId:       uint64(0), //sessionID for reliability is 0
-			ChainID:         cp.GetSentry().ChainID,
+			ChainID:         sentry.ChainID,
 			CuSum:           clientSession.CuSum,
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
 			RequestBlock:    requestedBlock,
 			QoSReport:       nil,
 			DataReliability: dataReliability,
+			ConnectionType:  connectionType,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
@@ -191,7 +196,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
-		c := *clientSession.Client.Client
+		c := *clientSession.Endpoint.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err

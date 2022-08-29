@@ -67,13 +67,6 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 	var winnerVotersStake sdk.Int
 
 	//count votes and punish jury that didnt vote
-	epochVoteStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.VoteStartBlock) //TODO check if we need to check for overlap
-	if err != nil {
-		k.CleanUpVote(ctx, ConflictVote.Index)
-		utils.LavaError(ctx, logger, "vote_epoch_get_fail", map[string]string{"voteID": ConflictVote.Index, "block": strconv.FormatUint(ConflictVote.VoteStartBlock, 10)}, "failed to get epoch start")
-		return
-	}
-
 	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, ConflictVote.VoteStartBlock)
 	if err != nil {
 		k.CleanUpVote(ctx, ConflictVote.Index)
@@ -81,6 +74,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		return
 	}
 
+	epochVoteStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ConflictVote.VoteStartBlock) //TODO check if we need to check for overlap
 	for address, vote := range ConflictVote.VotersHash {
 		accAddress, err := sdk.AccAddressFromBech32(address)
 		if err != nil {

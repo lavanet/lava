@@ -11,17 +11,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/x/conflict"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	"github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
+	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -43,7 +40,7 @@ type Keepers struct {
 type Servers struct {
 	EpochServer    epochstoragetypes.MsgServer
 	SpecServer     spectypes.MsgServer
-	PairingServer  pairingtypes.MsgServer
+	PairingServer  types.MsgServer
 	ConflictServer conflicttypes.MsgServer
 }
 
@@ -73,6 +70,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
 	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
 	stateStore.MountStoreWithDB(tkey, sdk.StoreTypeIAVL, db)
+
 	conflictStoreKey := sdk.NewKVStoreKey(conflicttypes.StoreKey)
 	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
 	stateStore.MountStoreWithDB(conflictStoreKey, sdk.StoreTypeIAVL, db)
@@ -110,11 +108,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
-	// Initialize Genesis
-	spec.InitGenesis(ctx, ks.Spec, *spectypes.DefaultGenesis())
-	pairing.InitGenesis(ctx, ks.Pairing, *pairingtypes.DefaultGenesis())
-	epochstorage.InitGenesis(ctx, ks.Epochstorage, *epochstoragetypes.DefaultGenesis()) //epoch storage is always last
-	conflict.InitGenesis(ctx, ks.Conflict, *conflicttypes.DefaultGenesis())
+	// Initialize params
+	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
+	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
+	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
+	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
@@ -186,7 +184,6 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
-
 		//end block
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
