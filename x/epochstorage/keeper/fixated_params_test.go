@@ -297,7 +297,7 @@ func TestParamFixationWithEpochToSaveChange(t *testing.T) {
 		{"FixateNewParam", (epochsMemory_initial/2 + 1) * blocksInEpochInitial, 0, epochsMemory_initial / 2, 2},
 		{"FillMemory", epochsMemory_initial * blocksInEpochInitial, 0, 0, 2},
 		{"FillMemory+epoch", (epochsMemory_initial + 1) * blocksInEpochInitial, (epochsMemory_initial + 1 - epochsMemory_initial) * blocksInEpochInitial, 0, 2},
-		{"MemoryLengthChange", (epochsMemory_initial + epochsMemory_initial/2 + 1) * blocksInEpochInitial, (epochsMemory_initial + epochsMemory_initial/2 + 1 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 2},
+		{"MemoryLengthChange", (epochsMemory_initial + epochsMemory_initial/2 + 2) * blocksInEpochInitial, (epochsMemory_initial + epochsMemory_initial/2 + 2 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 1},
 		{"FutureTest", (epochsMemory_initial * 2) * blocksInEpochInitial, (epochsMemory_initial*2 - epochsMemory_initial/2) * blocksInEpochInitial, 0, 1},
 	}
 
