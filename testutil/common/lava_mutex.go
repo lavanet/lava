@@ -1,13 +1,8 @@
 package common
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -23,38 +18,46 @@ type LavaMutex struct {
 }
 
 func (dm *LavaMutex) getLineAndFile() string {
-	var buf [512]byte
-	runtime.Stack(buf[:], true)
-	temp := strings.Split(string(buf[:]), "\n")
-	filepath := temp[6]
-	filepath = strings.Replace(filepath, "\t", "", -1)
-	split := strings.Split(filepath, ":")
-	path, lineNumStr := split[0], split[1]
-	lineNumStr = strings.Split(lineNumStr, " ")[0]
-	lineNum, err := strconv.Atoi(lineNumStr)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+	_, file, line, _ := runtime.Caller(2)
+	return fmt.Sprintf("%s:%d", file, line)
+	// var buf [512]byte
 
-	scanner := bufio.NewScanner(file)
-	i := 1
-	for scanner.Scan() {
-		if i == lineNum {
-			return fmt.Sprintf("%s:%s: %s", path, lineNumStr, strings.TrimSpace(scanner.Text()))
-		}
+	// runtime.Stack(buf[:], true)
+	// temp := strings.Split(string(buf[:]), "\n")
+	// filepath := ""
+	// if len(temp) < 6 {
+	// 	filepath = temp[len(temp)]
+	// } else {
+	// 	filepath = temp[6]
+	// }
+	// filepath = strings.Replace(filepath, "\t", "", -1)
+	// split := strings.Split(filepath, ":")
+	// path, lineNumStr := split[0], split[1]
+	// lineNumStr = strings.Split(lineNumStr, " ")[0]
+	// lineNum, err := strconv.Atoi(lineNumStr)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return ""
+	// }
+	// file, err := os.Open(path)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer file.Close()
 
-		i = i + 1
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-	return ""
+	// scanner := bufio.NewScanner(file)
+	// i := 1
+	// for scanner.Scan() {
+	// 	if i == lineNum {
+	// 		return fmt.Sprintf("%s:%s: %s", path, lineNumStr, strings.TrimSpace(scanner.Text()))
+	// 	}
+
+	// 	i = i + 1
+	// }
+	// if err := scanner.Err(); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// return ""
 }
 
 func (dm *LavaMutex) waitForTimeout() {
@@ -68,7 +71,7 @@ func (dm *LavaMutex) waitForTimeout() {
 				return
 			case <-ticker.C:
 				ticker.Stop()
-				fmt.Printf("WARNING: Mutex is Locked for more than %d seconds \n", TIMEOUT)
+				fmt.Printf("WARNING: Mutex is Locked for more than %d seconds \n %s \n", TIMEOUT, dm.lineAndFile)
 				return
 			}
 		}
@@ -78,17 +81,31 @@ func (dm *LavaMutex) waitForTimeout() {
 
 func (dm *LavaMutex) Lock() {
 	tempLineAndFile := dm.getLineAndFile()
-	fmt.Println("Lock: ", tempLineAndFile)
+	fmt.Printf("Lock: %s ... ", tempLineAndFile)
 	dm.mu.Lock()
+	fmt.Printf("locked \n")
 	dm.lineAndFile = tempLineAndFile
 	dm.SecondsLeft = TIMEOUT
 	dm.waitForTimeout()
 }
 
+func (dm *LavaMutex) TryLock() (isLocked bool) {
+	tempLineAndFile := dm.getLineAndFile()
+
+	isLocked = dm.mu.TryLock()
+	if isLocked {
+		fmt.Println("TryLock Locked: ", tempLineAndFile)
+		dm.lineAndFile = tempLineAndFile
+		dm.SecondsLeft = TIMEOUT
+		dm.waitForTimeout()
+	}
+	return isLocked
+}
+
 func (dm *LavaMutex) Unlock() {
 	fmt.Println("Unlock: ", dm.getLineAndFile())
-	dm.mu.Unlock()
 	dm.quit <- true
+	dm.mu.Unlock()
 }
 
 // func main() {

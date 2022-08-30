@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -38,16 +38,16 @@ const RETRY_INCORRECT_SEQUENCE = 3
 var (
 	g_privKey               *btcSecp256k1.PrivateKey
 	g_sessions              map[string]*UserSessions
-	g_sessions_mutex        sync.Mutex
+	g_sessions_mutex        common.LavaMutex
 	g_votes                 map[string]*voteData
-	g_votes_mutex           sync.Mutex
+	g_votes_mutex           common.LavaMutex
 	g_sentry                *sentry.Sentry
 	g_serverChainID         string
 	g_txFactory             tx.Factory
 	g_chainProxy            chainproxy.ChainProxy
 	g_chainSentry           *chainsentry.ChainSentry
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
-	g_rewardsSessions_mutex sync.Mutex
+	g_rewardsSessions_mutex common.LavaMutex
 	g_serverID              uint64
 	g_askForRewards_mutex   sync.Mutex
 )
@@ -64,13 +64,13 @@ type UserSessions struct {
 	IsBlockListed bool
 	user          string
 	dataByEpoch   map[uint64]*UserSessionsEpochData
-	Lock          sync.Mutex
+	Lock          common.LavaMutex
 }
 type RelaySession struct {
 	userSessionsParent *UserSessions
 	CuSum              uint64
 	UniqueIdentifier   uint64
-	Lock               sync.Mutex
+	Lock               common.LavaMutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64

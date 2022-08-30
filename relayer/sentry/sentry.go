@@ -21,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -46,7 +47,7 @@ type ClientSession struct {
 	QoSInfo               QoSInfo
 	SessionId             int64
 	Client                *RelayerClientWrapper
-	Lock                  sync.Mutex
+	Lock                  common.LavaMutex
 	RelayNum              uint64
 	LatestBlock           int64
 	FinalizedBlocksHashes map[int64]string
@@ -103,7 +104,7 @@ type Endpoint struct {
 type RelayerClientWrapper struct {
 	Acc              string //public lava address
 	Endpoints        []*Endpoint
-	SessionsLock     sync.Mutex
+	SessionsLock     common.LavaMutex
 	Sessions         map[int64]*ClientSession
 	MaxComputeUnits  uint64
 	UsedComputeUnits uint64
@@ -184,17 +185,17 @@ type Sentry struct {
 	pairing              []*RelayerClientWrapper
 	PairingBlockStart    int64
 	pairingAddresses     []string
-	pairingPurgeLock     sync.Mutex
+	pairingPurgeLock     common.LavaMutex
 	pairingPurge         []*RelayerClientWrapper
 	pairingNext          []*RelayerClientWrapper
 	pairingNextAddresses []string
-	VrfSkMu              sync.Mutex
+	VrfSkMu              common.LavaMutex
 	VrfSk                vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
-	providerDataContainersMu         sync.Mutex
+	providerDataContainersMu         common.LavaMutex
 }
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {

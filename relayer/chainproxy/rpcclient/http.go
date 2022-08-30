@@ -28,6 +28,8 @@ import (
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/lavanet/lava/testutil/common"
 )
 
 const (
@@ -43,7 +45,7 @@ type httpConn struct {
 	url       string
 	closeOnce sync.Once
 	closeCh   chan interface{}
-	mu        sync.Mutex // protects headers
+	mu        common.LavaMutex // protects headers
 	headers   http.Header
 }
 

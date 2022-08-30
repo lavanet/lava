@@ -35,7 +35,7 @@ func (cs *ChainSentry) GetLatestBlockNum() int64 {
 
 func (cs *ChainSentry) SetLatestBlockNum(value int64) {
 	cs.blockQueueMu.Lock()
-	// defer cs.blockQueueMu.Unlock()
+	defer cs.blockQueueMu.Unlock()
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 

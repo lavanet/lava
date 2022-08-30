@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/testutil/common"
+
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -62,7 +64,7 @@ type handler struct {
 	log            log.Logger
 	allowSubscribe bool
 
-	subLock    sync.Mutex
+	subLock    common.LavaMutex
 	serverSubs map[ID]*Subscription
 }
 
