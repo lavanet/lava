@@ -2,14 +2,22 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/tendermint/tendermint/libs/log"
+	"golang.org/x/exp/slices"
+)
+
+const (
+	maxComplaintsPerEpoch = 3
 )
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
@@ -24,6 +32,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		return nil, utils.LavaError(ctx, logger, name, attrs, details)
 	}
 	for _, relay := range msg.Relays {
+
 		if relay.BlockHeight > ctx.BlockHeight() {
 			return errorLogAndFormat("relay_future_block", map[string]string{"blockheight": string(relay.Sig)}, "relay request for a block in the future")
 		}
@@ -246,6 +255,98 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, "relay_payment", details, "New Proof Of Work Was Accepted")
 
+		//
+		// deal with unresponsive providers
+		err = k.dealWithUnresponsivePorivders(ctx, relay.UnresponsiveProviders, logger, clientAddr, epochStart, relay.ChainID)
+		if err != nil {
+			utils.LogLavaEvent(ctx, logger, "UnresponsiveProviders", map[string]string{"err:": err.Error()}, "Error UnresponsiveProviders could not unstake")
+		}
+
 	}
 	return &types.MsgRelayPaymentResponse{}, nil
+}
+
+func (k msgServer) dealWithUnresponsivePorivders(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, clientAddr sdk.AccAddress, epoch uint64, chainID string) error {
+	var unresponsiveProviders []*sentry.RelayerClientWrapper
+	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
+	if err != nil {
+		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData)})
+	}
+	if len(unresponsiveProviders) == 0 {
+		// nothing to do.
+		return nil
+	}
+	epochPayments, found, current_epochpayment_key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+	if !found {
+		return utils.LavaFormatInfo("epoch payment wasnt found", &map[string]string{"epoch": current_epochpayment_key})
+	}
+	for _, unresponsive_provider := range unresponsiveProviders {
+		provider_payment, found := k.GetPaymentRequestsProvidersStorageForProvider(unresponsive_provider.Acc, &epochPayments)
+
+		if !found {
+			// epochPayment doesn't have this provider in this epoch. so we can add this complaint and return
+			epochPayments.NumberOfProviderPayments = append(epochPayments.NumberOfProviderPayments,
+				&types.PaymentRequestsProvidersStorage{
+					ProviderId:                        unresponsive_provider.Acc,
+					NumberOfPayments:                  0,
+					ComplaintsForUnresponsiveProvider: []string{clientAddr.String()}, // this is the first complaint for this provider so we can just continue to the next complaint
+				})
+			continue
+		}
+
+		sdkProviderAddress, err := sdk.AccAddressFromBech32(unresponsive_provider.Acc)
+		if err != nil {
+			return utils.LavaFormatError("unable to  sdk.AccAddressFromBech32(unresponsive_provider.Acc)", err, nil)
+		}
+
+		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ProviderKey, chainID, sdkProviderAddress)
+		if !entryExists {
+			// alraedy unstaked
+			continue
+		}
+
+		// if we did find the provider in this epoch, meaning we have either a payment or a complaint already.
+		// first we add the complaint
+		if !slices.Contains(provider_payment.ComplaintsForUnresponsiveProvider, clientAddr.String()) { // if this client already complained this epoch it doesn't count twice
+			provider_payment.ComplaintsForUnresponsiveProvider = append(provider_payment.ComplaintsForUnresponsiveProvider, clientAddr.String())
+		}
+
+		// then we check if we have more than maxComplaintsPerEpoch
+		if len(provider_payment.ComplaintsForUnresponsiveProvider) >= maxComplaintsPerEpoch {
+			// we check if we have double complaints than previous two epochs (including this one) payment requests
+			// current_epoch + previous_epoch_payment + previous_previous_epoch_payment
+			all_epoch_payments := k.GetAllEpochPayments(ctx)
+			var _2_previous_epoch_payments []types.EpochPayments
+			for idx := len(all_epoch_payments) - 1; idx >= 0; idx-- { // starting from the last epochPayment.
+				if all_epoch_payments[idx].Index == current_epochpayment_key {
+					if idx >= 2 {
+						_2_previous_epoch_payments = all_epoch_payments[(idx - 2):idx]
+					} else {
+						_2_previous_epoch_payments = all_epoch_payments[:idx]
+					}
+					break
+				}
+			}
+			all_epoch_payments = nil // free
+			var total_payment_requests int64
+			for _, ep := range _2_previous_epoch_payments { // get the sum of all payment requests to a specific provider
+				prev_provider_payment, found := k.GetPaymentRequestsProvidersStorageForProvider(unresponsive_provider.Acc, &ep)
+				if !found {
+					continue
+				} else {
+					// check if this provider was already unstaked in the previous epochs.
+					total_payment_requests += prev_provider_payment.NumberOfPayments
+				}
+			}
+
+			total_payment_requests = provider_payment.NumberOfPayments + total_payment_requests
+			if int(total_payment_requests*2) < len(provider_payment.ComplaintsForUnresponsiveProvider) {
+				// unstake provider
+				k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+				k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
+			}
+		}
+	}
+	k.SetEpochPayments(ctx, epochPayments)
+	return nil
 }

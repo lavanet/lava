@@ -29700,6 +29700,22 @@ paths:
                           epoch:
                             type: string
                             format: uint64
+                    number_of_provider_payments:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          provider_id:
+                            type: string
+                          number_of_payments:
+                            type: string
+                            format: int64
+                          complaints_for_unresponsive_provider:
+                            type: array
+                            items:
+                              type: string
+                          unstaked:
+                            type: boolean
               pagination:
                 type: object
                 properties:
@@ -29842,6 +29858,22 @@ paths:
                         epoch:
                           type: string
                           format: uint64
+                  number_of_provider_payments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider_id:
+                          type: string
+                        number_of_payments:
+                          type: string
+                          format: int64
+                        complaints_for_unresponsive_provider:
+                          type: array
+                          items:
+                            type: string
+                        unstaked:
+                          type: boolean
         default:
           description: An unexpected error response.
           schema:
@@ -51843,6 +51875,9 @@ definitions:
             type: string
       connection_type:
         type: string
+      unresponsive_providers:
+        type: string
+        format: byte
   lavanet.lava.pairing.VRFData:
     type: object
     properties:
@@ -52195,6 +52230,22 @@ definitions:
             epoch:
               type: string
               format: uint64
+      number_of_provider_payments:
+        type: array
+        items:
+          type: object
+          properties:
+            provider_id:
+              type: string
+            number_of_payments:
+              type: string
+              format: int64
+            complaints_for_unresponsive_provider:
+              type: array
+              items:
+                type: string
+            unstaked:
+              type: boolean
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
   lavanet.lava.pairing.MsgStakeClientResponse:
@@ -52238,6 +52289,20 @@ definitions:
       QoSWeight:
         type: string
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.PaymentRequestsProvidersStorage:
+    type: object
+    properties:
+      provider_id:
+        type: string
+      number_of_payments:
+        type: string
+        format: int64
+      complaints_for_unresponsive_provider:
+        type: array
+        items:
+          type: string
+      unstaked:
+        type: boolean
   lavanet.lava.pairing.QueryAllClientPaymentStorageResponse:
     type: object
     properties:
@@ -52322,6 +52387,22 @@ definitions:
                   epoch:
                     type: string
                     format: uint64
+            number_of_provider_payments:
+              type: array
+              items:
+                type: object
+                properties:
+                  provider_id:
+                    type: string
+                  number_of_payments:
+                    type: string
+                    format: int64
+                  complaints_for_unresponsive_provider:
+                    type: array
+                    items:
+                      type: string
+                  unstaked:
+                    type: boolean
       pagination:
         type: object
         properties:
@@ -52492,6 +52573,22 @@ definitions:
                 epoch:
                   type: string
                   format: uint64
+          number_of_provider_payments:
+            type: array
+            items:
+              type: object
+              properties:
+                provider_id:
+                  type: string
+                number_of_payments:
+                  type: string
+                  format: int64
+                complaints_for_unresponsive_provider:
+                  type: array
+                  items:
+                    type: string
+                unstaked:
+                  type: boolean
   lavanet.lava.pairing.QueryGetPairingResponse:
     type: object
     properties:

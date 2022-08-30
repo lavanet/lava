@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -85,18 +86,42 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 	return
 }
 
+func (k Keeper) GetPaymentRequestsProvidersStorageForProvider(providerAddr string, epochPayments *types.EpochPayments) (*types.PaymentRequestsProvidersStorage, bool) {
+	for _, p := range epochPayments.NumberOfProviderPayments {
+		if p.ProviderId == providerAddr {
+			return p, true // found the entry
+		}
+	}
+	// entry doesnt exist
+	return nil, false
+}
+
+func (k Keeper) increaseNumberOfPaymentRequestsProvidersStorageForGivenProvider(ctx sdk.Context, providerAddr string, epochPayments *types.EpochPayments) {
+	for _, provider := range epochPayments.NumberOfProviderPayments {
+		if provider.ProviderId == providerAddr {
+			provider.NumberOfPayments++
+			return
+		}
+	}
+	// if we reached here currently this provider has no payments.
+	epochPayments.NumberOfProviderPayments = append(epochPayments.NumberOfProviderPayments, &types.PaymentRequestsProvidersStorage{ProviderId: providerAddr, NumberOfPayments: 1})
+}
+
 func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, fmt.Errorf("could not add epoch payment: %s,%s,%s,%d,%s error: %s", userAddress, providerAddress, uniqueIdentifier, epoch, chainID, err)
+		return 0, utils.LavaFormatError(fmt.Sprintf("could not add epoch payment: %s,%s,%s,%d,%s", userAddress, providerAddress, uniqueIdentifier, epoch, chainID), err, nil)
 	}
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 	if !found {
-		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentProviderStorage}}
+		new_payment_request_provider_storage := &types.PaymentRequestsProvidersStorage{ProviderId: providerAddress.String(), NumberOfPayments: 1}
+		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentProviderStorage}, NumberOfProviderPayments: []*types.PaymentRequestsProvidersStorage{new_payment_request_provider_storage}}
 	} else {
 		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
+		k.increaseNumberOfPaymentRequestsProvidersStorageForGivenProvider(ctx, providerAddress.String(), &epochPayments)
 	}
+
 	k.SetEpochPayments(ctx, epochPayments)
 	return usedCUProviderTotal, nil
 }

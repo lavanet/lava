@@ -100,7 +100,7 @@ func SendRelay(
 	}
 	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
-	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
 
@@ -111,18 +111,19 @@ func SendRelay(
 		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:        clientSession.Client.Acc,
-			ConnectionType:  connectionType,
-			ApiUrl:          url,
-			Data:            []byte(req),
-			SessionId:       uint64(clientSession.SessionId),
-			ChainID:         cp.GetSentry().ChainID,
-			CuSum:           clientSession.CuSum,
-			BlockHeight:     blockHeight,
-			RelayNum:        clientSession.RelayNum,
-			RequestBlock:    nodeMsg.RequestedBlock(),
-			QoSReport:       clientSession.QoSInfo.LastQoSReport,
-			DataReliability: nil,
+			Provider:              clientSession.Client.Acc,
+			ConnectionType:        connectionType,
+			ApiUrl:                url,
+			Data:                  []byte(req),
+			SessionId:             uint64(clientSession.SessionId),
+			ChainID:               cp.GetSentry().ChainID,
+			CuSum:                 clientSession.CuSum,
+			BlockHeight:           blockHeight,
+			RelayNum:              clientSession.RelayNum,
+			RequestBlock:          nodeMsg.RequestedBlock(),
+			QoSReport:             clientSession.QoSInfo.LastQoSReport,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProviders,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)

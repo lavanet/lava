@@ -7,6 +7,11 @@ import "pairing/client_payment_storage.proto";
 message EpochPayments {
   string index = 1; 
   repeated ClientPaymentStorage clientsPayments = 2; 
-  
+  repeated PaymentRequestsProvidersStorage number_of_provider_payments = 3;
 }
 
+message PaymentRequestsProvidersStorage {
+  string provider_id = 1;
+  int64 number_of_payments = 2;
+  repeated string complaints_for_unresponsive_provider = 3;
+}

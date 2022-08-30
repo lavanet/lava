@@ -173,17 +173,19 @@ type Sentry struct {
 
 	// (client only)
 	// Pairing storage (rw mutex)
-	pairingMu            sync.RWMutex
-	pairingNextMu        sync.RWMutex
-	pairing              []*RelayerClientWrapper
-	PairingBlockStart    int64
-	pairingAddresses     []string
-	pairingPurgeLock     sync.Mutex
-	pairingPurge         []*RelayerClientWrapper
-	pairingNext          []*RelayerClientWrapper
-	pairingNextAddresses []string
-	VrfSkMu              sync.Mutex
-	VrfSk                vrf.PrivateKey
+	pairingMu                 sync.RWMutex
+	pairingNextMu             sync.RWMutex
+	pairing                   []*RelayerClientWrapper
+	PairingBlockStart         int64
+	pairingAddresses          []string
+	pairingPurgeLock          sync.Mutex
+	pairingPurge              []*RelayerClientWrapper
+	addedToPurgeAndReportLock sync.Mutex
+	addedToPurgeAndReport     []*RelayerClientWrapper // list of added to purge providers that will be reported by the remaining providers
+	pairingNext               []*RelayerClientWrapper
+	pairingNextAddresses      []string
+	VrfSkMu                   sync.Mutex
+	VrfSk                     vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
@@ -319,6 +321,10 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	s.pairing = s.pairingNext
 	s.pairingAddresses = s.pairingNextAddresses
 	s.pairingNext = []*RelayerClientWrapper{}
+
+	s.addedToPurgeAndReportLock.Lock()
+	s.addedToPurgeAndReport = nil // reset added to purge this epoch when reseting provider list
+	s.addedToPurgeAndReportLock.Unlock()
 
 	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
@@ -916,7 +922,6 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 	if len(s.pairing) <= 0 {
 		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
-
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
@@ -938,12 +943,11 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 	//assumes s.pairingMu is Rlocked here
 	wrap.SessionsLock.Lock()
 	defer wrap.SessionsLock.Unlock()
-	allDisabled := true
+
 	for idx, endpoint := range wrap.Endpoints {
 		if !endpoint.Enabled {
 			continue
 		}
-		allDisabled = false //even one enabled endpoint is enough to not purge the pairing object
 		if endpoint.Client == nil {
 			connectCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 			conn, err := s.connectRawClient(connectCtx, endpoint.Addr)
@@ -957,11 +961,23 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 				}
 				continue
 			}
+
 			endpoint.ConnectionRefusals = 0
 			endpoint.Client = conn
 		}
 		wrap.Endpoints[idx] = endpoint
 		return true, endpoint
+	}
+
+	// checking disabled endpoints, as we can disable an endpoint mid run of the previous loop, we should re test the current endpoint state
+	// before verifing all are Disabled.
+	allDisabled := true
+	for _, endpoint := range wrap.Endpoints {
+		if !endpoint.Enabled {
+			continue
+		}
+		// even one endpoint is enough for us to not purge.
+		allDisabled = false
 	}
 
 	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
@@ -1142,7 +1158,7 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb_send_relay func(clientSession *ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, error) {
@@ -1186,8 +1202,18 @@ func (s *Sentry) SendRelay(
 	// Get or create session and lock it
 	clientSession := getClientSessionFromWrap(wrap, endpoint) // clientSession is LOCKED!
 
-	// call user
-	reply, request, err := cb_send_relay(clientSession)
+	s.addedToPurgeAndReportLock.Lock()
+	data, err := json.Marshal(s.addedToPurgeAndReport)
+	s.addedToPurgeAndReport = nil // reset added to purge this epoch when reporting the purged providers.
+	s.addedToPurgeAndReportLock.Unlock()
+
+	if err != nil {
+		clientSession.Lock.Unlock()
+		return nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(data))})
+	}
+
+	// callback user
+	reply, request, err := cb_send_relay(clientSession, data)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
@@ -1413,6 +1439,11 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 			return
 		}
 	}
+
+	s.addedToPurgeAndReportLock.Lock()
+	s.addedToPurgeAndReport = append(s.addedToPurgeAndReport, wrap) // adding to purge this epoch to send them to the chain.
+	s.addedToPurgeAndReportLock.Unlock()
+
 	s.pairingPurge = append(s.pairingPurge, wrap)
 	s.pairing[index] = s.pairing[len(s.pairing)-1]
 	s.pairing = s.pairing[:len(s.pairing)-1]
