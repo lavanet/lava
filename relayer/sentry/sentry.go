@@ -925,19 +925,9 @@ func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (r
 			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 
-		var index, loopIndex int
-		for { // attempt to get a random pairing except index piaringIdx, without chaning the chances for a provider to be picked.
-			loopIndex++
-			index = rand.Intn(len(s.pairing))
-			if index == piaringIdx && len(s.pairing) <= 1 {
-				return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty or index is not allowed", nil, nil)
-			} else if index == piaringIdx { // if index the pairingIndex, try again
-				continue
-			} else if loopIndex >= maxRetries { // if we're still trying to get an index more than maxRetries, return an error
-				return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers, pairing list empty or maxRetries reached", nil, nil)
-			}
-			break
-		}
+		// get a different index than piaringIdx using modulo operator
+		index := ((piaringIdx + rand.Intn(len(s.pairing)-1) + 1) % 10)
+
 		wrap := s.pairing[index]
 
 		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
