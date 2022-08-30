@@ -15,6 +15,7 @@ type LavaMutex struct {
 	SecondsLeft int
 	lineAndFile string
 	hasQuit     bool
+	lockCount   int
 }
 
 func (dm *LavaMutex) getLineAndFile() string {
@@ -81,7 +82,8 @@ func (dm *LavaMutex) waitForTimeout() {
 
 func (dm *LavaMutex) Lock() {
 	tempLineAndFile := dm.getLineAndFile()
-	fmt.Printf("Lock: %s ... ", tempLineAndFile)
+	dm.lockCount = dm.lockCount + 1
+	fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
 	dm.mu.Lock()
 	fmt.Printf("locked \n")
 	dm.lineAndFile = tempLineAndFile
@@ -94,6 +96,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 
 	isLocked = dm.mu.TryLock()
 	if isLocked {
+		dm.lockCount = dm.lockCount + 1
 		fmt.Println("TryLock Locked: ", tempLineAndFile)
 		dm.lineAndFile = tempLineAndFile
 		dm.SecondsLeft = TIMEOUT
@@ -104,6 +107,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 
 func (dm *LavaMutex) Unlock() {
 	fmt.Println("Unlock: ", dm.getLineAndFile())
+	dm.lockCount = dm.lockCount - 1
 	dm.quit <- true
 	dm.mu.Unlock()
 }
