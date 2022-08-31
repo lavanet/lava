@@ -7,7 +7,7 @@ killall screen
 screen -wipe
 
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava" -y
-lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --fees "2ulava"
+lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 
 sleep 4
 lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
@@ -22,7 +22,7 @@ lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y
 lavad tx pairing stake-provider "ETH1" 2000ulava "127.0.0.1:2222,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 lavad tx pairing stake-provider "ETH1" 2050ulava "127.0.0.1:2223,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 lavad tx pairing stake-provider "ETH1" 2020ulava "127.0.0.1:2224,jsonrpc,1" 1 -y --from servicer4 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
-lavad tx pairing stake-provider "ETH1" 2030ulava "127.0.0.1:2225,jsonrpc,1" 1 -y --from servicer5 --gas-adjustment "1.5" --gas "auto" --fees "2ulava"
+lavad tx pairing stake-provider "ETH1" 2030ulava "127.0.0.1:2225,jsonrpc,1" 1 -y --from servicer5 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 
 #Goerli providers
 lavad tx pairing stake-provider "GTH1" 2010ulava "127.0.0.1:2121,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
@@ -54,9 +54,9 @@ lavad tx pairing stake-provider "COS4" 2000ulava "127.0.0.1:4242,tendermintrpc,1
 lavad tx pairing stake-provider "COS4" 2050ulava "127.0.0.1:4243,tendermintrpc,1 127.0.0.1:4233,rest,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 
 
-# echo "---------------Queries------------------"
-# lavad query pairing providers "ETH1"
-# lavad query pairing clients "ETH1"
+echo "---------------Queries------------------"
+lavad query pairing providers "ETH1"
+lavad query pairing clients "ETH1"
 
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
