@@ -912,13 +912,18 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *
 	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
-func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
+func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (*RelayerClientWrapper, int, *Endpoint, error) {
 	s.pairingMu.RLock()
 
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
 		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
+	if len(s.pairing) == 1 {
+		// if we have only one provider we cant fetch another pairing.
+		return nil, -1, nil, utils.LavaFormatError("pairing list has only one provider which already failed to send the request", nil, nil)
+	}
+
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
@@ -926,7 +931,14 @@ func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (r
 		}
 
 		// get a different index than piaringIdx using modulo operator
-		index := ((piaringIdx + rand.Intn(len(s.pairing)-1) + 1) % 10)
+		index := ((piaringIdx + rand.Intn(len(s.pairing)-1) + 1) % len(s.pairing))
+		utils.LavaFormatInfo("getting different index", &map[string]string{"index": strconv.Itoa(index), "pairingIdx_to_avoid": strconv.Itoa(piaringIdx), "s.pairing": fmt.Sprintf("%v", s.pairing)})
+		if index >= len(s.pairing) || index < 0 {
+			return nil, -1, nil, utils.LavaFormatError(" index out of range ", nil, &map[string]string{"index": strconv.Itoa(index), "pairing_list_length": strconv.Itoa(len(s.pairing))})
+		}
+		if index == piaringIdx {
+			utils.LavaFormatInfo("ERRORRR index and avoid index are the same value", &map[string]string{"index": strconv.Itoa(index), "pairingIdx_to_avoid": strconv.Itoa(piaringIdx), "s.pairing": fmt.Sprintf("%v", s.pairing)})
+		}
 
 		wrap := s.pairing[index]
 
@@ -1229,7 +1241,8 @@ func (s *Sentry) SendRelay(
 		var err2 error
 		wrap, index, endpoint, err2 = s._findPairingExceptIndex(ctx, index) // get a different provider.
 		if err2 != nil {
-			return nil, err2
+			// if we failed to get another provider, just return the first providers error. with the fetching failure message
+			return nil, utils.LavaFormatInfo("failed to send relay: "+err.Error()+" also failed to fetch another provider: "+err2.Error(), nil)
 		}
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
