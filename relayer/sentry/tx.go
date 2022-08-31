@@ -87,7 +87,7 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 					if err != nil {
 						return err
 					}
-					lavaReward.Add(lavaRewardTemp)
+					lavaReward = lavaReward.Add(lavaRewardTemp)
 					break
 				}
 			}
