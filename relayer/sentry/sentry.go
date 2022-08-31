@@ -1207,6 +1207,7 @@ func (s *Sentry) SendRelay(
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 			s.movePairingEntryToPurge(wrap, index)
 		}
+		clientSession.Lock.Unlock()
 		return reply, err
 	}
 
