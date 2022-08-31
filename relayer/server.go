@@ -5,7 +5,6 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -118,7 +117,6 @@ func askForRewards(staleEpochHeight int64) {
 	reliability := false
 	sessionsToDelete := make([]*RelaySession, 0)
 
-	log.Printf("Before Send RewardSes %d %+v\n", len(g_rewardsSessions), g_rewardsSessions)
 	for _, staleEpoch := range staleEpochs {
 		g_rewardsSessions_mutex.Lock()
 		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
@@ -207,7 +205,6 @@ func askForRewards(staleEpochHeight int64) {
 		delete(g_sessions, user)
 	}
 	g_sessions_mutex.Unlock()
-	log.Printf("Before Send Relays %d %+v\n", len(relays), relays)
 	if len(relays) == 0 {
 		// no rewards to ask for
 		return
@@ -292,7 +289,6 @@ func askForRewards(staleEpochHeight int64) {
 			}
 		}
 	}
-	log.Printf("After Send RewardSes %d %+v\n", len(g_rewardsSessions), g_rewardsSessions)
 	if hasSequenceError {
 		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
 			"tries": strconv.FormatInt(int64(idx+1), 10),
