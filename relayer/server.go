@@ -141,7 +141,6 @@ func askForRewards(staleEpochHeight int64) {
 			}
 
 			relay := session.Proof
-			session.Proof = &pairingtypes.RelayRequest{} // Just in case askForRewards is running more than once at the same time and it might ask to be rewarded for this relay twice
 			relays = append(relays, relay)
 			sessionsToDelete = append(sessionsToDelete, session)
 

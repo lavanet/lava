@@ -1,11 +1,10 @@
 package sentry
 
 import (
-	"errors"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 )
 
 func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
@@ -102,7 +101,7 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
 
 	if gasFee.IsGTE(lavaRewardDec) {
-		return errors.New("lava_relay_payment claim is not profitable")
+		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, &map[string]string{"gasFee": gasFee.String(), "lavareward:": lavaRewardDec.String()})
 	}
 
 	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
