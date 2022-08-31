@@ -101,7 +101,7 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 	lavaRewardDec := sdk.NewDecCoinFromCoin(lavaReward)
 
 	if gasFee.IsGTE(lavaRewardDec) {
-		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, &map[string]string{"gasFee": gasFee.String(), "lavareward:": lavaRewardDec.String()})
+		return utils.LavaFormatError("lava_relay_payment claim is not profitable", nil, &map[string]string{"gasFee": gasFee.String(), "lavareward:": lavaRewardDec.String(), "msg": msg.String()})
 	}
 
 	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
