@@ -1120,7 +1120,8 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
 
-		return fmt.Errorf("Reliability ERROR: Provider supplied an older latest block than it has previously")
+		return utils.LavaFormatError("Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 	}
 
 	return nil
