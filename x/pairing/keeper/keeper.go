@@ -38,7 +38,7 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	keeper := &Keeper{
 
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -46,6 +46,11 @@ func NewKeeper(
 		paramstore: ps,
 		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper, epochStorageKeeper: epochStorageKeeper,
 	}
+
+	epochStorageKeeper.AddFixationRegistry(string(types.KeyServicersToPairCount), func(ctx sdk.Context) any { return keeper.ServicersToPairCountRaw(ctx) })
+	epochStorageKeeper.AddFixationRegistry(string(types.KeyStakeToMaxCUList), func(ctx sdk.Context) any { return keeper.StakeToMaxCUListRaw(ctx) })
+
+	return keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

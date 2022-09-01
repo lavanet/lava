@@ -815,6 +815,30 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 			}
 
+			if !s.isUser {
+				// listen for vote reveal event from new block handler on conflict/module.go
+				eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for idx, voteID := range votesList {
+						num_str := e.Events[eventToListen+".voteDeadline"][idx]
+						voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+						if err != nil {
+							fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+							continue
+						}
+						go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
+					}
+				}
+
+				eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for _, voteID := range votesList {
+						voteParams := &VoteParams{CloseVote: true}
+						go s.voteInitiationCb(ctx, voteID, 0, voteParams)
+					}
+				}
+			}
+
 		}
 	}
 }

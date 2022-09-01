@@ -41,12 +41,19 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	}
 
 	//1.5 validate params
-	epochStart, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
+	epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
+	if err != nil {
+		return fmt.Errorf("could not find epoch for block %d", block)
+	}
 	if conflictData.ConflictRelayData0.Request.RequestBlock < 0 {
 		return fmt.Errorf("invalid request block height %d", conflictData.ConflictRelayData0.Request.RequestBlock)
 	}
 
-	span := k.VoteStartSpan(ctx) * k.epochstorageKeeper.EpochBlocks(ctx)
+	epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(block))
+	if err != nil {
+		return fmt.Errorf("could not get EpochBlocks param")
+	}
+	span := k.VoteStartSpan(ctx) * epochBlocks
 	if uint64(ctx.BlockHeight())-epochStart >= span {
 		return fmt.Errorf("conflict was recieved outside of the allowed span, current: %d, span %d - %d", ctx.BlockHeight(), epochStart, epochStart+span)
 	}

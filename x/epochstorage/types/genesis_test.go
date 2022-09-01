@@ -34,6 +34,14 @@ func TestGenesisState_Validate(t *testing.T) {
 					StartBlock:    65,
 					EarliestStart: 76,
 				},
+				FixatedParamsList: []types.FixatedParams{
+					{
+						Index: "0",
+					},
+					{
+						Index: "1",
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -42,6 +50,20 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated stakeStorage",
 			genState: &types.GenesisState{
 				StakeStorageList: []types.StakeStorage{
+					{
+						Index: "0",
+					},
+					{
+						Index: "0",
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated fixatedParams",
+			genState: &types.GenesisState{
+				FixatedParamsList: []types.FixatedParams{
 					{
 						Index: "0",
 					},
