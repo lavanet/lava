@@ -49,6 +49,7 @@ var (
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
 	g_serverID              uint64
+	g_askForRewards_mutex   sync.Mutex
 )
 
 type UserSessionsEpochData struct {
@@ -94,6 +95,8 @@ type relayServer struct {
 }
 
 func askForRewards(staleEpochHeight int64) {
+	g_askForRewards_mutex.Lock()
+	defer g_askForRewards_mutex.Unlock()
 	deletedRewardsSessions := make(map[uint64][]*RelaySession, 0)
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	g_rewardsSessions_mutex.Lock()
