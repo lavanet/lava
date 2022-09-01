@@ -1126,21 +1126,6 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	return nil
 }
 
-func (s *Sentry) getConsensusByProvider(providerId string) *ProviderHashesConsensus {
-	for _, consensus := range s.providerHashesConsensus {
-		if _, ok := consensus.agreeingProviders[providerId]; ok {
-			return &consensus
-		}
-	}
-
-	for _, consensus := range s.prevEpochProviderHashesConsensus {
-		if _, ok := consensus.agreeingProviders[providerId]; ok {
-			return &consensus
-		}
-	}
-	return nil
-}
-
 func (s *Sentry) initProviderHashesConsensus(providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  s.GetLatestFinalizedBlock(latestBlock),
