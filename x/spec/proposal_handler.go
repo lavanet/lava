@@ -11,6 +11,7 @@ import (
 	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -24,7 +25,7 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *paramproposal.ParameterChangeProposal:
-			return handleParameterChangeProposal(ctx, k, c)
+			return HandleParameterChangeProposal(ctx, k, c)
 
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized param proposal content type: %T", c)
@@ -32,21 +33,34 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 	}
 }
 
-func handleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
+func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
+
 	for _, c := range p.Changes {
 		ss, ok := k.GetSubspace(c.Subspace)
 		if !ok {
 			return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, c.Subspace)
 		}
+
 		logger := k.Logger(ctx)
 		details := map[string]string{"param": c.Key, "value": c.Value}
+		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
+			details["error"] = "tried to modify " + string(epochstoragetypes.KeyLatestParamChange)
+			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
+		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
 			details["error"] = err.Error()
 			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
 		}
-		//TODO: set param change callbacks here
+
+		details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
 		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")
 	}
+
+	ss, ok := k.GetSubspace(epochstoragetypes.ModuleName)
+	if !ok {
+		return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, epochstoragetypes.ModuleName)
+	}
+	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
 
 	return nil
 }

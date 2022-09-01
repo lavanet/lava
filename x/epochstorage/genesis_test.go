@@ -26,6 +26,14 @@ func TestGenesis(t *testing.T) {
 			StartBlock:    60,
 			EarliestStart: 93,
 		},
+		FixatedParamsList: []types.FixatedParams{
+			{
+				Index: "0",
+			},
+			{
+				Index: "1",
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -39,5 +47,6 @@ func TestGenesis(t *testing.T) {
 
 	require.ElementsMatch(t, genesisState.StakeStorageList, got.StakeStorageList)
 	require.Equal(t, genesisState.EpochDetails, got.EpochDetails)
+	require.ElementsMatch(t, genesisState.FixatedParamsList, got.FixatedParamsList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

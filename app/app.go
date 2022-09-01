@@ -431,7 +431,7 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		app.SpecKeeper,
-		app.EpochstorageKeeper,
+		&app.EpochstorageKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -571,7 +571,8 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		conflictmoduletypes.ModuleName, // this line is used by starport scaffolding # stargate/app/initGenesis
+		conflictmoduletypes.ModuleName, //NOTICE: the last module to initgenesis needs to push fixation in epoch storage
+		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)

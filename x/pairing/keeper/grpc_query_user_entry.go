@@ -22,14 +22,17 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, status.Error(codes.Unavailable, "invalid address")
 	}
 
-	epochStart, _ := k.epochStorageKeeper.GetEpochStartForBlock(ctx, req.Block)
+	epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, req.Block)
+	if err != nil {
+		return nil, err
+	}
 
 	existingEntry, err := k.epochStorageKeeper.GetStakeEntryForClientEpoch(ctx, req.ChainID, userAddr, epochStart)
 	if err != nil {
 		return nil, err
 	}
 
-	maxCU, err := k.ClientMaxCUProvider(ctx, existingEntry)
+	maxCU, err := k.ClientMaxCUProviderForBlock(ctx, req.Block, existingEntry)
 	if err != nil {
 		return nil, err
 	}

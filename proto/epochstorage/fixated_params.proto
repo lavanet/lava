@@ -1,0 +1,14 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+import "gogoproto/gogo.proto"; 
+import "epochstorage/params.proto";
+
+
+message FixatedParams {
+  string index = 1; 
+  bytes parameter = 2 ; 
+  uint64 fixationBlock = 3; 
+}
+

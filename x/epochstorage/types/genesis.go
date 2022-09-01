@@ -10,8 +10,9 @@ const DefaultIndex uint64 = 1
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		StakeStorageList: []StakeStorage{},
-		EpochDetails:     &EpochDetails{StartBlock: 0, EarliestStart: 0},
+		StakeStorageList:  []StakeStorage{},
+		EpochDetails:      &EpochDetails{StartBlock: 0, EarliestStart: 0},
+		FixatedParamsList: []FixatedParams{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -29,6 +30,16 @@ func (gs GenesisState) Validate() error {
 			return fmt.Errorf("duplicated index for stakeStorage")
 		}
 		stakeStorageIndexMap[index] = struct{}{}
+	}
+	// Check for duplicated index in fixatedParams
+	fixatedParamsIndexMap := make(map[string]struct{})
+
+	for _, elem := range gs.FixatedParamsList {
+		index := string(FixatedParamsKey(elem.Index))
+		if _, ok := fixatedParamsIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for fixatedParams")
+		}
+		fixatedParamsIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

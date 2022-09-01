@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	utils "github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -183,7 +183,7 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	entry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, ts.clients[0].address, epoch)
 	require.Nil(t, err)
 
-	maxcu, err := ts.keepers.Pairing.GetAllowedCU(sdk.UnwrapSDKContext(ts.ctx), entry)
+	maxcu, err := ts.keepers.Pairing.GetAllowedCUForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()), entry)
 	require.Nil(t, err)
 
 	relayRequest := &types.RelayRequest{
@@ -355,7 +355,8 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 
-	epochToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
+	epochToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
 
 	tests := []struct {
 		name    string
@@ -396,8 +397,11 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 	require.Nil(t, err)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	epochsToSave := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx))
-	blocksInEpoch := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx))
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+	blocksInEpoch, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
 	for i := 0; i < int(epochsToSave+1); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -569,6 +573,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 			params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 			params.ServicersToPairCount = 100
 			ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+			ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 			err := ts.addClient(1)
 			require.Nil(t, err)
 			err = ts.addProvider(100)
@@ -611,7 +616,7 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 
 				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
-				index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+				index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 				providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 				require.Nil(t, err)
@@ -710,6 +715,7 @@ func TestRelayPaymentDataReliabilityWrongProvider(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -754,8 +760,8 @@ GetWrongProvider:
 
 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
-		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
-		index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+		index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
@@ -827,6 +833,7 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 5
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(5)
@@ -863,8 +870,8 @@ func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 	vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
-	index0 := utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
-	index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+	index0 := utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+	index1 := utils.GetIndexForVrf(vrfRes1, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 	require.Equal(t, index0, int64(-1))
 	require.Equal(t, index1, int64(-1))
@@ -917,6 +924,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(2)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -956,7 +964,7 @@ func TestRelayPaymentDataReliabilityDifferentClientSign(t *testing.T) {
 
 		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
-		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
@@ -1014,6 +1022,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	params := ts.keepers.Pairing.GetParams(sdk.UnwrapSDKContext(ts.ctx))
 	params.ServicersToPairCount = 100
 	ts.keepers.Pairing.SetParams(sdk.UnwrapSDKContext(ts.ctx), params)
+	ts.keepers.Epochstorage.PushFixatedParams(sdk.UnwrapSDKContext(ts.ctx), 0, 0) //we need that in order for the param set to take effect
 	err := ts.addClient(1)
 	require.Nil(t, err)
 	err = ts.addProvider(100)
@@ -1054,7 +1063,7 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 
 		vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
 
-		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+		index0 = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
 
 		providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 		require.Nil(t, err)
