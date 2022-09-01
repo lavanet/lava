@@ -104,6 +104,10 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	changed := false
 	for earliestEpochBlock < lastBlockInMemory {
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+		if err != nil {
+			// this is critical, no recovery from this
+			panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+		}
 		changed = true
 	}
 
@@ -113,11 +117,6 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
-
-	if err != nil {
-		// this is critical, no recovery from this
-		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
-	}
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }

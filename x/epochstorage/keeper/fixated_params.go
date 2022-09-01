@@ -68,10 +68,7 @@ func (k Keeper) GetAllFixatedParams(ctx sdk.Context) (list []types.FixatedParams
 }
 
 func (k Keeper) fixatedParamsKey(FixatedKey string, index uint64) string {
-	switch index {
-	default:
-		return FixatedKey + strconv.FormatUint(index, 10)
-	}
+	return FixatedKey + strconv.FormatUint(index, 10)
 }
 
 func (k Keeper) LatestFixatedParams(ctx sdk.Context, fixationKey string) (fixation types.FixatedParams, found bool) {
@@ -92,7 +89,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 		//latest param change is older than memory, so remove it
 		k.paramstore.Set(ctx, types.KeyLatestParamChange, uint64(0))
 		//clean up older fixated params, they no longer matter
-		k.CleanOlderFixatedParams(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
+		k.CleanAllOlderFixatedParams(ctx, 1) //everything after 0 is too old since there wasn't a param change in a while
 		return
 	}
 	// we have a param change, is it in the last epoch?
@@ -107,8 +104,8 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 
 func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 	for fixationKey, fixationGetParam := range k.fixationRegistries {
-		currentParam := utils.Serialize(fixationGetParam(ctx))
-		currentFixatedParam, found := k.LatestFixatedParams(ctx, fixationKey)
+		currentParam := utils.Serialize(fixationGetParam(ctx))                //get the current param with the pointer function and serialize, TODO: usually getparam gets from the param store so we unmarshal than serialize, maybe we cam skip save one cast here
+		currentFixatedParam, found := k.LatestFixatedParams(ctx, fixationKey) //get the fixater param and compare
 		if found && bytes.Equal(currentParam, currentFixatedParam.Parameter) {
 			continue
 		}
@@ -126,7 +123,7 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 			//check if what we just set is enough to keep all the memory
 			if fixatedParamsToPush.FixationBlock < limit {
 				// if the fixatedParams we have in the list are too old, we dont need to store them any more
-				k.CleanOlderFixatedParams(ctx, idx+1)
+				k.CleanOlderFixatedParams(ctx, fixationKey, idx+1)
 				break
 			}
 			fixatedParamsToPush = olderParams
@@ -135,20 +132,25 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 	}
 }
 
-func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
+func (k Keeper) CleanAllOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 	for fixationKey := range k.fixationRegistries {
-		var idx uint64
-		var thisIdxKey string
-		for idx = uint64(startIdx); true; idx++ {
-			thisIdxKey = k.fixatedParamsKey(fixationKey, idx)
-			_, found := k.GetFixatedParams(ctx, thisIdxKey)
-			if !found {
-				break
-			}
-			k.RemoveFixatedParams(ctx, thisIdxKey)
-		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": thisIdxKey}, "fixation cleaned")
+		k.CleanOlderFixatedParams(ctx, fixationKey, startIdx)
 	}
+}
+func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, startIdx uint64) {
+
+	var idx uint64
+	var thisIdxKey string
+	for idx = uint64(startIdx); true; idx++ {
+		thisIdxKey = k.fixatedParamsKey(fixationKey, idx)
+		_, found := k.GetFixatedParams(ctx, thisIdxKey)
+		if !found {
+			break
+		}
+		k.RemoveFixatedParams(ctx, thisIdxKey)
+	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": thisIdxKey}, "fixation cleaned")
+
 }
 
 func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, block uint64) (fixated types.FixatedParams, err error) {

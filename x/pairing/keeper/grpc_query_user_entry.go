@@ -32,7 +32,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, err
 	}
 
-	maxCU, err := k.ClientMaxCUProviderForBlock(ctx, uint64(ctx.BlockHeight()), existingEntry)
+	maxCU, err := k.ClientMaxCUProviderForBlock(ctx, req.Block, existingEntry)
 	if err != nil {
 		return nil, err
 	}

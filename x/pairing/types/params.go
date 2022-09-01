@@ -309,6 +309,9 @@ func validateServicersToPairCount(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
+	if servicersToPairCount <= 0 {
+		return fmt.Errorf("invalid parameter, servicersToPairCount can't be zero")
+	}
 	// TODO implement validation
 	_ = servicersToPairCount
 

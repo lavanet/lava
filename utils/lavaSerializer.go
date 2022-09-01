@@ -35,5 +35,5 @@ func Deserialize(raw []byte, data any) {
 		}
 		return
 	}
-	panic(fmt.Sprintf("Lava can't Serialize typetype %T!\n", data))
+	panic(fmt.Sprintf("Lava can't DeSerialize typetype %T!\n", data))
 }
