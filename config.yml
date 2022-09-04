@@ -35,6 +35,9 @@ client:
 faucet:
   name: bob
   coins: ["100000ulava"]
+init:
+  app:
+    minimum-gas-prices: "0.000000001ulava"
 genesis:
   chain_id: "lava"
   app_state:
