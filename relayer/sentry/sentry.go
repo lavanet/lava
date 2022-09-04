@@ -1034,9 +1034,9 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
 	if allDisabled {
 		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc})
-		s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
-		s.movePairingEntryToPurge(wrap, index)
-		s.pairingMu.RLock() // we resume read lock here, so we can continue
+		// we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+		// we resume read lock right after so we can continue reading
+		s.rUnlockAndMovePairingEntryToPurgeReturnRLocked(wrap, index)
 	}
 
 	return false, nil
@@ -1470,6 +1470,14 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	finalization_criteria := int64(s.GetSpecFinalizationCriteria())
 	return latestBlock - finalization_criteria
+}
+
+// this function should be called only if pairing is in rlocked state.
+// returns pairingMu Rlocked so it can continue to be read.
+func (s *Sentry) rUnlockAndMovePairingEntryToPurgeReturnRLocked(wrap *RelayerClientWrapper, index int) {
+	s.pairingMu.RUnlock()
+	defer s.pairingMu.RLock()
+	s.movePairingEntryToPurge(wrap, index)
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
