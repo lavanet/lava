@@ -943,38 +943,30 @@ func (s *Sentry) _findPairingIndexByAdress(address string, index int) int {
 func (s *Sentry) _findPairingExceptIndex(ctx context.Context, accountAddress string, previousIndex int) (*RelayerClientWrapper, int, *Endpoint, error) {
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
-	pairing_list_length := len(s.pairing)
-	if pairing_list_length <= 0 {
+	if len(s.pairing) <= 0 {
 		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
-	get_random := false
-	previousIndex = s._findPairingIndexByAdress(accountAddress, previousIndex)
-	if previousIndex == -1 { // privious provider was not found in s.pairing list. we can get a random value.
-		get_random = true
-	}
-
+	get_random_provider := false
 	var index int
-	maxAttempts := pairing_list_length * MaxConsecutiveConnectionAttemts
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
-		if pairing_list_length == 0 {
+		if len(s.pairing) == 0 {
 			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
-		if get_random {
-			utils.LavaFormatInfo("get random pairings", nil)
-			index = rand.Intn(pairing_list_length)
+		previousIndex = s._findPairingIndexByAdress(accountAddress, previousIndex)
+		if previousIndex == -1 { // privious provider was not found in s.pairing list. we can get a random value.
+			get_random_provider = true
+		}
+		if get_random_provider {
+			index = rand.Intn(len(s.pairing))
 		} else {
-			if pairing_list_length <= 1 {
+			if len(s.pairing) <= 1 {
 				// only one pairings available which is the previous pairing, return an error.
 				return nil, -1, nil, utils.LavaFormatError("no other providers available currently", nil, nil)
 			}
-			utils.LavaFormatInfo("getting modulo pairing", nil)
-			index = ((previousIndex + rand.Intn(pairing_list_length-1) + 1) % pairing_list_length)
+			index = ((previousIndex + rand.Intn(len(s.pairing)-1) + 1) % len(s.pairing))
 		}
-		utils.LavaFormatInfo("picking:", &map[string]string{"not_allowed": accountAddress, "index": fmt.Sprintf("%d", index), "pairing_list_length": fmt.Sprintf("%v", s.pairing)})
 		wrap := s.pairing[index]
-		utils.LavaFormatInfo("chosen:", &map[string]string{"chosen": wrap.Acc, "index": fmt.Sprintf("%d", index)})
-
-		utils.LavaFormatInfo("provider valid", nil)
 		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
 		if connected {
 			return wrap, index, endpoint, nil
