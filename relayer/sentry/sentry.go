@@ -912,36 +912,69 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *
 	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
-func (s *Sentry) _findPairingExceptIndex(ctx context.Context, piaringIdx int) (*RelayerClientWrapper, int, *Endpoint, error) {
-	s.pairingMu.RLock()
+func (s *Sentry) _findPairingIndexWithLoop(address string) int {
+	// Use this function to search a pairing by its address when you dont know what index it is in.
+	for index, wrap := range s.pairing {
+		if wrap.Acc == address {
+			return index
+		}
+	}
+	// didnt find a matching index
+	return -1
+}
 
+func (s *Sentry) _findPairingIndexByAdress(address string, index int) int {
+	// s.pairingMu must be locked before calling this function
+	// pairing list is also not empty as it was tested before calling this function
+	var ret_index int
+	if index >= (len(s.pairing)) {
+		// index out of range
+		ret_index = s._findPairingIndexWithLoop(address) // find index in s.pairing
+	} else {
+		if s.pairing[index].Acc != address {
+			ret_index = s._findPairingIndexWithLoop(address) // find index in s.pairing
+		} else {
+			ret_index = index // index is valid
+		}
+	}
+	return ret_index
+}
+
+func (s *Sentry) _findPairingExceptIndex(ctx context.Context, accountAddress string, previousIndex int) (*RelayerClientWrapper, int, *Endpoint, error) {
+	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
-	if len(s.pairing) <= 0 {
+	pairing_list_length := len(s.pairing)
+	if pairing_list_length <= 0 {
 		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
-	if len(s.pairing) == 1 {
-		// if we have only one provider we cant fetch another pairing.
-		return nil, -1, nil, utils.LavaFormatError("pairing list has only one provider which already failed to send the request", nil, nil)
+	get_random := false
+	previousIndex = s._findPairingIndexByAdress(accountAddress, previousIndex)
+	if previousIndex == -1 { // privious provider was not found in s.pairing list. we can get a random value.
+		get_random = true
 	}
 
-	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	var index int
+	maxAttempts := pairing_list_length * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
-		if len(s.pairing) == 0 {
+		if pairing_list_length == 0 {
 			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
-
-		// get a different index than piaringIdx using modulo operator
-		index := ((piaringIdx + rand.Intn(len(s.pairing)-1) + 1) % len(s.pairing))
-		utils.LavaFormatInfo("getting different index", &map[string]string{"index": strconv.Itoa(index), "pairingIdx_to_avoid": strconv.Itoa(piaringIdx), "s.pairing": fmt.Sprintf("%v", s.pairing)})
-		if index >= len(s.pairing) || index < 0 {
-			return nil, -1, nil, utils.LavaFormatError(" index out of range ", nil, &map[string]string{"index": strconv.Itoa(index), "pairing_list_length": strconv.Itoa(len(s.pairing))})
+		if get_random {
+			utils.LavaFormatInfo("get random pairings", nil)
+			index = rand.Intn(pairing_list_length)
+		} else {
+			if pairing_list_length <= 1 {
+				// only one pairings available which is the previous pairing, return an error.
+				return nil, -1, nil, utils.LavaFormatError("no other providers available currently", nil, nil)
+			}
+			utils.LavaFormatInfo("getting modulo pairing", nil)
+			index = ((previousIndex + rand.Intn(pairing_list_length-1) + 1) % pairing_list_length)
 		}
-		if index == piaringIdx {
-			utils.LavaFormatInfo("ERRORRR index and avoid index are the same value", &map[string]string{"index": strconv.Itoa(index), "pairingIdx_to_avoid": strconv.Itoa(piaringIdx), "s.pairing": fmt.Sprintf("%v", s.pairing)})
-		}
-
+		utils.LavaFormatInfo("picking:", &map[string]string{"not_allowed": accountAddress, "index": fmt.Sprintf("%d", index), "pairing_list_length": fmt.Sprintf("%v", s.pairing)})
 		wrap := s.pairing[index]
+		utils.LavaFormatInfo("chosen:", &map[string]string{"chosen": wrap.Acc, "index": fmt.Sprintf("%d", index)})
 
+		utils.LavaFormatInfo("provider valid", nil)
 		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
 		if connected {
 			return wrap, index, endpoint, nil
@@ -1239,7 +1272,7 @@ func (s *Sentry) SendRelay(
 
 		// retry sending the request to a different provider upon error
 		var err2 error
-		wrap, index, endpoint, err2 = s._findPairingExceptIndex(ctx, index) // get a different provider.
+		wrap, index, endpoint, err2 = s._findPairingExceptIndex(ctx, wrap.Acc, index) // get a different provider.
 		if err2 != nil {
 			// if we failed to get another provider, just return the first providers error. with the fetching failure message
 			return nil, utils.LavaFormatInfo("failed to send relay: "+err.Error()+" also failed to fetch another provider: "+err2.Error(), nil)

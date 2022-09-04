@@ -18,7 +18,7 @@ var (
 var (
 	KeyEpochBlocks = []byte("EpochBlocks")
 	// TODO: Determine the default value
-	DefaultEpochBlocks uint64 = 10
+	DefaultEpochBlocks uint64 = 20
 )
 
 var (
