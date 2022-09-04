@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/utils"
 )
 
 type Connector struct {
@@ -37,7 +38,7 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 			nctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 			rpcClient, err = rpcclient.DialContext(nctx, addr)
 			if err != nil {
-				log.Println("Could not connect to the client, retrying", err)
+				utils.LavaFormatError("Could not connect to the client, retrying", err, nil)
 				cancel()
 				continue
 			}
