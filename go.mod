@@ -23,7 +23,7 @@ require (
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
 	google.golang.org/grpc v1.48.0
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 
 )
@@ -31,6 +31,7 @@ require (
 require (
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/golang/protobuf v1.5.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
 	github.com/spf13/pflag v1.0.5
 )
 

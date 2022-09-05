@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 
@@ -13,6 +16,9 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
+	proxypb "github.com/lavanet/lava/relayer/chainproxy/gen/go/proxy/v1"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/jhump/protoreflect/grpcreflect"
@@ -26,6 +32,53 @@ import (
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
+
+type Server struct {
+	cp      *GrpcChainProxy
+	privKey *btcec.PrivateKey
+}
+
+func NewServer(cp *GrpcChainProxy, privKey *btcec.PrivateKey) *Server {
+	return &Server{
+		cp:      cp,
+		privKey: privKey,
+	}
+}
+
+func (s Server) Get(
+	ctx context.Context,
+	req *proxypb.GetRequest,
+) (resp *proxypb.Response, err error) {
+	path := req.GetName()
+	log.Println("in <<< ", path)
+
+	var reply *pairingtypes.RelayReply
+	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, "", http.MethodGet); err != nil {
+		log.Println(err)
+		return nil, fmt.Errorf(`{"error": "unsupported api","more_information" %w}`, err)
+	}
+
+	return handleReply(reply)
+}
+
+func (s Server) Post(
+	ctx context.Context,
+	req *proxypb.PostRequest,
+) (resp *proxypb.Response, err error) {
+	// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
+	// contentType := string(c.Context().Request.Header.ContentType())
+
+	path := req.GetName()
+	log.Println("in <<< ", path)
+
+	var reply *pairingtypes.RelayReply
+	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, req.GetBody().String(), http.MethodPost); err != nil {
+		log.Println(err)
+		return nil, fmt.Errorf(`{"error": "unsupported api","more_information" %w}`, err)
+	}
+
+	return handleReply(reply)
+}
 
 type GrpcMessage struct {
 	cp             *GrpcChainProxy
@@ -186,23 +239,20 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 }
 
 func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
-	//
-	// // Setup Grpc Server
-	// lis, err := net.Listen("tcp", listenAddr)
-	// if err != nil {
-	// 	utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
-	// }
-	// s := grpc.NewServer()
+	gs := grpc.NewServer()
+	// reflection.Register(gs)
+	proxypb.RegisterProxyServiceServer(gs, NewServer(cp, privKey))
 
-	// Server := &relayServer{}
-	// pairingtypes.RegisterRelayerServer(s, Server)
-	// reflection.Register(s)
-	// utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
-	// if err := s.Serve(lis); err != nil {
-	// 	utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
-	// }
-	// return
+	lis, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
+	}
 
+	_ = utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
+
+	if err = gs.Serve(lis); err != nil {
+		utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
+	}
 }
 
 func (nm *GrpcMessage) RequestedBlock() int64 {
@@ -372,4 +422,25 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	nm.Result = res
 	return reply, nil
+}
+
+func getAnyByInterface(v interface{}) (pbAny *anypb.Any, err error) {
+	var pbValue *structpb.Value
+	if pbValue, err = structpb.NewValue(v); err != nil {
+		return nil, err
+	}
+
+	return anypb.New(pbValue)
+}
+
+func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.Response, err error) {
+	log.Println("out >>> len", len(reply.GetData()))
+
+	var pbAny *anypb.Any
+	if pbAny, err = getAnyByInterface(string(reply.GetData())); err != nil {
+		// TODO: Error format?
+		return nil, err
+	}
+
+	return &proxypb.Response{Body: pbAny}, nil
 }
