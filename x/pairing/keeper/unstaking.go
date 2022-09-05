@@ -36,8 +36,18 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
 	}
 	k.epochStorageKeeper.RemoveStakeEntry(ctx, stake_type(), chainID, indexInStakeStorage)
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
-	return nil
+	blockHeight := uint64(ctx.BlockHeight())
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
+	if err != nil {
+		details := map[string]string{stake_type(): creator, "error": err.Error()}
+		return utils.LavaError(ctx, logger, "unstake_param_read", details, "invalid "+stake_type()+" param read failure")
+	}
+	existingEntry.Deadline = blockHeight + blocksToSave
+	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx, blockHeight)
+	if existingEntry.Deadline < holdBlocks {
+		existingEntry.Deadline = holdBlocks
+	}
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {

@@ -9,21 +9,21 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/rpc/core"
 	tmdb "github.com/tendermint/tm-db"
-
-	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 )
 
 type Keepers struct {
@@ -33,12 +33,13 @@ type Keepers struct {
 	Conflict      conflictkeeper.Keeper
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
+	ParamsKeeper  paramskeeper.Keeper
 }
 
 type Servers struct {
-	EpochServer    epochtypes.MsgServer
+	EpochServer    epochstoragetypes.MsgServer
 	SpecServer     spectypes.MsgServer
-	PairingServer  types.MsgServer
+	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
 }
 
@@ -49,8 +50,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	pairingStoreKey := sdk.NewKVStoreKey(types.StoreKey)
-	pairingMemStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
+	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
 	stateStore.MountStoreWithDB(pairingStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(pairingMemStoreKey, sdk.StoreTypeMemory, nil)
 
@@ -59,10 +60,15 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(specStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(specMemStoreKey, sdk.StoreTypeMemory, nil)
 
-	epochStoreKey := sdk.NewKVStoreKey(epochtypes.StoreKey)
-	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochtypes.MemStoreKey)
+	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
+	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
 	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
+
+	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
+	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
+	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+	stateStore.MountStoreWithDB(tkey, sdk.StoreTypeIAVL, db)
 
 	conflictStoreKey := sdk.NewKVStoreKey(conflicttypes.StoreKey)
 	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
@@ -71,29 +77,20 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
-	epochparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
-		epochStoreKey,
-		epochMemStoreKey,
-		"EpochstorageParams",
-	)
+	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
+	paramsKeeper.Subspace(spectypes.ModuleName)
+	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
+	paramsKeeper.Subspace(pairingtypes.ModuleName)
+	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
-	pairingparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
-		pairingStoreKey,
-		pairingMemStoreKey,
-		"PairingParams",
-	)
+	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
 
-	specparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
-		specStoreKey,
-		specMemStoreKey,
-		"SpecParams",
-	)
+	pairingparamsSubspace, _ := paramsKeeper.GetSubspace(pairingtypes.ModuleName)
 
-	conflictparamsSubspace := paramtypes.NewSubspace(cdc,
-		types.Amino,
+	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
+
+	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
+		conflicttypes.Amino,
 		conflictStoreKey,
 		conflictMemStoreKey,
 		"ConflictParams",
@@ -104,16 +101,19 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins), moduleBank: make(map[string]map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.Epochstorage)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
+	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
-	ks.Pairing.SetParams(ctx, types.DefaultParams())
+	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
-	ks.Epochstorage.SetParams(ctx, epochtypes.DefaultParams())
+	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
+
+	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
 	ss.EpochServer = epochstoragekeeper.NewMsgServerImpl(ks.Epochstorage)
@@ -135,33 +135,59 @@ func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
+func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int) context.Context {
+	for i := 0; i < blocks; i++ {
+		ctx = AdvanceBlock(ctx, ks)
+	}
+
+	return ctx
+}
+
+func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Context {
+
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+	if uint64(unwrapedCtx.BlockHeight()) == block {
+		return ctx
+	}
+
+	for uint64(unwrapedCtx.BlockHeight()) < block {
+		ctx = AdvanceBlock(ctx, ks)
+		unwrapedCtx = sdk.UnwrapSDKContext(ctx)
+	}
+
+	return ctx
+}
+
+//Make sure you save the new context
 func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
-	nextEpochBlockNum := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
-	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(nextEpochBlockNum))
+	nextEpochBlockNum, err := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
+	if err != nil {
+		panic(err)
+	}
 
-	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
-	return sdk.WrapSDKContext(unwrapedCtx)
+	return AdvanceToBlock(ctx, ks, nextEpochBlockNum)
 }
 
+//Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 
 		block := uint64(unwrapedCtx.BlockHeight())
 
+		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		//begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ProviderKey)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochtypes.ClientKey)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
-
 		//end block
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ProviderKey)
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochtypes.ClientKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
 		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 	}
 

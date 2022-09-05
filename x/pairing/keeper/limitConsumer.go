@@ -12,11 +12,14 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) GetAllowedCU(ctx sdk.Context, entry *epochstoragetypes.StakeEntry) (uint64, error) {
+func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry *epochstoragetypes.StakeEntry) (uint64, error) {
 	var allowedCU uint64 = 0
-	stakeToMaxCUMap := k.StakeToMaxCUList(ctx).List
+	stakeToMaxCUMap, err := k.StakeToMaxCUList(ctx, blockHeight)
+	if err != nil {
+		return 0, err
+	}
 
-	for _, stakeToCU := range stakeToMaxCUMap {
+	for _, stakeToCU := range stakeToMaxCUMap.List {
 		if entry.Stake.IsGTE(stakeToCU.StakeThreshold) {
 			allowedCU = stakeToCU.MaxComputeUnits
 		} else {
@@ -30,7 +33,12 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, ChainID string, Cu
 	if allowedCU == 0 {
 		return 0, fmt.Errorf("user %s, no allowedCU were found epoch: %d", clientAddr, epochStart)
 	}
-	allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
+
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, uint64(blockHeight))
+	if err != nil {
+		return 0, err
+	}
+	allowedCUProvider := allowedCU / servicersToPairCount
 	if totalCUInEpochForUserProvider > allowedCUProvider {
 		// remove this function
 		// if a user used too much cu,
@@ -62,7 +70,7 @@ func (k Keeper) GetAllowedCUClientEpoch(ctx sdk.Context, chainID string, epoch u
 		return 0, stakeErr
 	}
 	// get allowed of client for this epoch
-	allowedCU, allowedCUErr := k.GetAllowedCU(ctx, currentStakeEntry)
+	allowedCU, allowedCUErr := k.GetAllowedCUForBlock(ctx, epoch, currentStakeEntry)
 	if allowedCUErr != nil {
 		return 0, allowedCUErr
 	}
@@ -77,8 +85,12 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 	totalOverusedPercent := float64(clientProvidersEpochUsedCUMap.TotalUsed / allowedCU)
 	if usedCU, exist := clientProvidersEpochUsedCUMap.Providers[providerAddr.String()]; exist {
 		// TODO: ServicersToPairCount needs epoch !
-		if k.ServicersToPairCount(ctx) > 0 {
-			allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
+		servicersToPairCount, err := k.ServicersToPairCount(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return 0, 0, err
+		}
+		if servicersToPairCount > 0 {
+			allowedCUProvider := allowedCU / servicersToPairCount
 			if allowedCUProvider > 0 {
 				overusedCU := sdk.ZeroUint()
 				if usedCU > allowedCUProvider {
@@ -109,8 +121,12 @@ func (k Keeper) getOverusedCUPercentageAllEpochs(ctx sdk.Context, chainID string
 	epochs_participated := 0.0
 	epochs_participated_provider := 0.0
 	// for every epoch in memory
-	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
+	for epoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx); epoch <= epochLast; epoch, err = k.epochStorageKeeper.GetNextEpoch(ctx, epoch) {
 		// get epochPayments for this client
+
+		if err != nil {
+			return
+		}
 
 		clientProvidersEpochUsedCUMap := k.GetEpochClientUsedCUMap(ctx, chainID, epoch, clientAddr)
 		if clientProvidersEpochUsedCUMap.TotalUsed == 0 {
@@ -209,12 +225,16 @@ func (k Keeper) LimitClientPairingsAndMarkForPenalty(ctx sdk.Context, clientAddr
 	return finalPay, nil
 }
 
-func (k Keeper) ClientMaxCUProvider(ctx sdk.Context, clientEntry *epochstoragetypes.StakeEntry) (uint64, error) {
-	allowedCU, err := k.GetAllowedCU(ctx, clientEntry)
+func (k Keeper) ClientMaxCUProviderForBlock(ctx sdk.Context, blockHeight uint64, clientEntry *epochstoragetypes.StakeEntry) (uint64, error) {
+	allowedCU, err := k.GetAllowedCUForBlock(ctx, blockHeight, clientEntry)
 	if err != nil {
 		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
-	allowedCU = allowedCU / k.ServicersToPairCount(ctx)
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, blockHeight)
+	if err != nil {
+		return 0, err
+	}
+	allowedCU = allowedCU / servicersToPairCount
 
 	return allowedCU, nil
 }

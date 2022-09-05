@@ -17,6 +17,10 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	if genState.EpochDetails != nil {
 		k.SetEpochDetails(ctx, *genState.EpochDetails)
 	}
+	// Set all the fixatedParams
+	for _, elem := range genState.FixatedParamsList {
+		k.SetFixatedParams(ctx, elem)
+	}
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -32,6 +36,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	if found {
 		genesis.EpochDetails = &epochDetails
 	}
+	genesis.FixatedParamsList = k.GetAllFixatedParams(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
