@@ -730,22 +730,22 @@ func (m *QueryAllUniquePaymentStorageClientProviderResponse) GetPagination() *qu
 	return nil
 }
 
-type QueryGetClientPaymentStorageRequest struct {
+type QueryGetProviderPaymentStorageRequest struct {
 	Index string `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
 }
 
-func (m *QueryGetClientPaymentStorageRequest) Reset()         { *m = QueryGetClientPaymentStorageRequest{} }
-func (m *QueryGetClientPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryGetClientPaymentStorageRequest) ProtoMessage()    {}
-func (*QueryGetClientPaymentStorageRequest) Descriptor() ([]byte, []int) {
+func (m *QueryGetProviderPaymentStorageRequest) Reset()         { *m = QueryGetProviderPaymentStorageRequest{} }
+func (m *QueryGetProviderPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryGetProviderPaymentStorageRequest) ProtoMessage()    {}
+func (*QueryGetProviderPaymentStorageRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6bd8a3cd41a2a1ee, []int{14}
 }
-func (m *QueryGetClientPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryGetProviderPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryGetClientPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryGetProviderPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryGetClientPaymentStorageRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryGetProviderPaymentStorageRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -755,41 +755,43 @@ func (m *QueryGetClientPaymentStorageRequest) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *QueryGetClientPaymentStorageRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetClientPaymentStorageRequest.Merge(m, src)
+func (m *QueryGetProviderPaymentStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetProviderPaymentStorageRequest.Merge(m, src)
 }
-func (m *QueryGetClientPaymentStorageRequest) XXX_Size() int {
+func (m *QueryGetProviderPaymentStorageRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryGetClientPaymentStorageRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetClientPaymentStorageRequest.DiscardUnknown(m)
+func (m *QueryGetProviderPaymentStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetProviderPaymentStorageRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryGetClientPaymentStorageRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryGetProviderPaymentStorageRequest proto.InternalMessageInfo
 
-func (m *QueryGetClientPaymentStorageRequest) GetIndex() string {
+func (m *QueryGetProviderPaymentStorageRequest) GetIndex() string {
 	if m != nil {
 		return m.Index
 	}
 	return ""
 }
 
-type QueryGetClientPaymentStorageResponse struct {
-	ClientPaymentStorage ClientPaymentStorage `protobuf:"bytes,1,opt,name=clientPaymentStorage,proto3" json:"clientPaymentStorage"`
+type QueryGetProviderPaymentStorageResponse struct {
+	ProviderPaymentStorage ProviderPaymentStorage `protobuf:"bytes,1,opt,name=providerPaymentStorage,proto3" json:"providerPaymentStorage"`
 }
 
-func (m *QueryGetClientPaymentStorageResponse) Reset()         { *m = QueryGetClientPaymentStorageResponse{} }
-func (m *QueryGetClientPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryGetClientPaymentStorageResponse) ProtoMessage()    {}
-func (*QueryGetClientPaymentStorageResponse) Descriptor() ([]byte, []int) {
+func (m *QueryGetProviderPaymentStorageResponse) Reset() {
+	*m = QueryGetProviderPaymentStorageResponse{}
+}
+func (m *QueryGetProviderPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryGetProviderPaymentStorageResponse) ProtoMessage()    {}
+func (*QueryGetProviderPaymentStorageResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6bd8a3cd41a2a1ee, []int{15}
 }
-func (m *QueryGetClientPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryGetProviderPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryGetClientPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryGetProviderPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryGetClientPaymentStorageResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryGetProviderPaymentStorageResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -799,41 +801,41 @@ func (m *QueryGetClientPaymentStorageResponse) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
-func (m *QueryGetClientPaymentStorageResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryGetClientPaymentStorageResponse.Merge(m, src)
+func (m *QueryGetProviderPaymentStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryGetProviderPaymentStorageResponse.Merge(m, src)
 }
-func (m *QueryGetClientPaymentStorageResponse) XXX_Size() int {
+func (m *QueryGetProviderPaymentStorageResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryGetClientPaymentStorageResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryGetClientPaymentStorageResponse.DiscardUnknown(m)
+func (m *QueryGetProviderPaymentStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryGetProviderPaymentStorageResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryGetClientPaymentStorageResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryGetProviderPaymentStorageResponse proto.InternalMessageInfo
 
-func (m *QueryGetClientPaymentStorageResponse) GetClientPaymentStorage() ClientPaymentStorage {
+func (m *QueryGetProviderPaymentStorageResponse) GetProviderPaymentStorage() ProviderPaymentStorage {
 	if m != nil {
-		return m.ClientPaymentStorage
+		return m.ProviderPaymentStorage
 	}
-	return ClientPaymentStorage{}
+	return ProviderPaymentStorage{}
 }
 
-type QueryAllClientPaymentStorageRequest struct {
+type QueryAllProviderPaymentStorageRequest struct {
 	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryAllClientPaymentStorageRequest) Reset()         { *m = QueryAllClientPaymentStorageRequest{} }
-func (m *QueryAllClientPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryAllClientPaymentStorageRequest) ProtoMessage()    {}
-func (*QueryAllClientPaymentStorageRequest) Descriptor() ([]byte, []int) {
+func (m *QueryAllProviderPaymentStorageRequest) Reset()         { *m = QueryAllProviderPaymentStorageRequest{} }
+func (m *QueryAllProviderPaymentStorageRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAllProviderPaymentStorageRequest) ProtoMessage()    {}
+func (*QueryAllProviderPaymentStorageRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6bd8a3cd41a2a1ee, []int{16}
 }
-func (m *QueryAllClientPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryAllProviderPaymentStorageRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllClientPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAllProviderPaymentStorageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllClientPaymentStorageRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAllProviderPaymentStorageRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -843,42 +845,44 @@ func (m *QueryAllClientPaymentStorageRequest) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *QueryAllClientPaymentStorageRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllClientPaymentStorageRequest.Merge(m, src)
+func (m *QueryAllProviderPaymentStorageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllProviderPaymentStorageRequest.Merge(m, src)
 }
-func (m *QueryAllClientPaymentStorageRequest) XXX_Size() int {
+func (m *QueryAllProviderPaymentStorageRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllClientPaymentStorageRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllClientPaymentStorageRequest.DiscardUnknown(m)
+func (m *QueryAllProviderPaymentStorageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllProviderPaymentStorageRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllClientPaymentStorageRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryAllProviderPaymentStorageRequest proto.InternalMessageInfo
 
-func (m *QueryAllClientPaymentStorageRequest) GetPagination() *query.PageRequest {
+func (m *QueryAllProviderPaymentStorageRequest) GetPagination() *query.PageRequest {
 	if m != nil {
 		return m.Pagination
 	}
 	return nil
 }
 
-type QueryAllClientPaymentStorageResponse struct {
-	ClientPaymentStorage []ClientPaymentStorage `protobuf:"bytes,1,rep,name=clientPaymentStorage,proto3" json:"clientPaymentStorage"`
-	Pagination           *query.PageResponse    `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+type QueryAllProviderPaymentStorageResponse struct {
+	ProviderPaymentStorage []ProviderPaymentStorage `protobuf:"bytes,1,rep,name=providerPaymentStorage,proto3" json:"providerPaymentStorage"`
+	Pagination             *query.PageResponse      `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryAllClientPaymentStorageResponse) Reset()         { *m = QueryAllClientPaymentStorageResponse{} }
-func (m *QueryAllClientPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryAllClientPaymentStorageResponse) ProtoMessage()    {}
-func (*QueryAllClientPaymentStorageResponse) Descriptor() ([]byte, []int) {
+func (m *QueryAllProviderPaymentStorageResponse) Reset() {
+	*m = QueryAllProviderPaymentStorageResponse{}
+}
+func (m *QueryAllProviderPaymentStorageResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAllProviderPaymentStorageResponse) ProtoMessage()    {}
+func (*QueryAllProviderPaymentStorageResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6bd8a3cd41a2a1ee, []int{17}
 }
-func (m *QueryAllClientPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryAllProviderPaymentStorageResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllClientPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAllProviderPaymentStorageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllClientPaymentStorageResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAllProviderPaymentStorageResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -888,26 +892,26 @@ func (m *QueryAllClientPaymentStorageResponse) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
-func (m *QueryAllClientPaymentStorageResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllClientPaymentStorageResponse.Merge(m, src)
+func (m *QueryAllProviderPaymentStorageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllProviderPaymentStorageResponse.Merge(m, src)
 }
-func (m *QueryAllClientPaymentStorageResponse) XXX_Size() int {
+func (m *QueryAllProviderPaymentStorageResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllClientPaymentStorageResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllClientPaymentStorageResponse.DiscardUnknown(m)
+func (m *QueryAllProviderPaymentStorageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllProviderPaymentStorageResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllClientPaymentStorageResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryAllProviderPaymentStorageResponse proto.InternalMessageInfo
 
-func (m *QueryAllClientPaymentStorageResponse) GetClientPaymentStorage() []ClientPaymentStorage {
+func (m *QueryAllProviderPaymentStorageResponse) GetProviderPaymentStorage() []ProviderPaymentStorage {
 	if m != nil {
-		return m.ClientPaymentStorage
+		return m.ProviderPaymentStorage
 	}
 	return nil
 }
 
-func (m *QueryAllClientPaymentStorageResponse) GetPagination() *query.PageResponse {
+func (m *QueryAllProviderPaymentStorageResponse) GetPagination() *query.PageResponse {
 	if m != nil {
 		return m.Pagination
 	}
@@ -1225,10 +1229,10 @@ func init() {
 	proto.RegisterType((*QueryGetUniquePaymentStorageClientProviderResponse)(nil), "lavanet.lava.pairing.QueryGetUniquePaymentStorageClientProviderResponse")
 	proto.RegisterType((*QueryAllUniquePaymentStorageClientProviderRequest)(nil), "lavanet.lava.pairing.QueryAllUniquePaymentStorageClientProviderRequest")
 	proto.RegisterType((*QueryAllUniquePaymentStorageClientProviderResponse)(nil), "lavanet.lava.pairing.QueryAllUniquePaymentStorageClientProviderResponse")
-	proto.RegisterType((*QueryGetClientPaymentStorageRequest)(nil), "lavanet.lava.pairing.QueryGetClientPaymentStorageRequest")
-	proto.RegisterType((*QueryGetClientPaymentStorageResponse)(nil), "lavanet.lava.pairing.QueryGetClientPaymentStorageResponse")
-	proto.RegisterType((*QueryAllClientPaymentStorageRequest)(nil), "lavanet.lava.pairing.QueryAllClientPaymentStorageRequest")
-	proto.RegisterType((*QueryAllClientPaymentStorageResponse)(nil), "lavanet.lava.pairing.QueryAllClientPaymentStorageResponse")
+	proto.RegisterType((*QueryGetProviderPaymentStorageRequest)(nil), "lavanet.lava.pairing.QueryGetProviderPaymentStorageRequest")
+	proto.RegisterType((*QueryGetProviderPaymentStorageResponse)(nil), "lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse")
+	proto.RegisterType((*QueryAllProviderPaymentStorageRequest)(nil), "lavanet.lava.pairing.QueryAllProviderPaymentStorageRequest")
+	proto.RegisterType((*QueryAllProviderPaymentStorageResponse)(nil), "lavanet.lava.pairing.QueryAllProviderPaymentStorageResponse")
 	proto.RegisterType((*QueryGetEpochPaymentsRequest)(nil), "lavanet.lava.pairing.QueryGetEpochPaymentsRequest")
 	proto.RegisterType((*QueryGetEpochPaymentsResponse)(nil), "lavanet.lava.pairing.QueryGetEpochPaymentsResponse")
 	proto.RegisterType((*QueryAllEpochPaymentsRequest)(nil), "lavanet.lava.pairing.QueryAllEpochPaymentsRequest")
@@ -1240,86 +1244,87 @@ func init() {
 func init() { proto.RegisterFile("pairing/query.proto", fileDescriptor_6bd8a3cd41a2a1ee) }
 
 var fileDescriptor_6bd8a3cd41a2a1ee = []byte{
-	// 1260 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x58, 0xdf, 0x6f, 0xdb, 0x44,
-	0x1c, 0xaf, 0x93, 0xb6, 0x6b, 0xbf, 0x53, 0x25, 0xb8, 0x85, 0x2d, 0x58, 0x25, 0x54, 0x5e, 0xb7,
-	0xfe, 0x58, 0xb1, 0x69, 0x56, 0x21, 0x36, 0x26, 0xa4, 0x6e, 0xdd, 0x4a, 0xc7, 0x24, 0xba, 0x4c,
-	0xe5, 0x81, 0x97, 0xea, 0x92, 0xdc, 0x52, 0x6b, 0x8e, 0xed, 0xda, 0x4e, 0x68, 0x15, 0x45, 0x20,
-	0x10, 0x6f, 0x68, 0x02, 0xf1, 0xc4, 0x3b, 0x12, 0xe2, 0x85, 0x77, 0xfe, 0x00, 0xa6, 0x49, 0xbc,
-	0x4c, 0x42, 0x20, 0x9e, 0x10, 0x6a, 0xf9, 0x43, 0x26, 0xdf, 0x7d, 0xcf, 0x8d, 0x5b, 0xd7, 0x71,
-	0xda, 0x6a, 0x4f, 0xc9, 0xe5, 0xbe, 0x3f, 0x3e, 0x9f, 0xcf, 0x9d, 0xef, 0x3e, 0x31, 0x5c, 0x70,
-	0xa9, 0xe9, 0x99, 0x76, 0xc3, 0xd8, 0x6e, 0x31, 0x6f, 0x57, 0x77, 0x3d, 0x27, 0x70, 0x48, 0xc1,
-	0xa2, 0x6d, 0x6a, 0xb3, 0x40, 0x0f, 0x3f, 0x75, 0x8c, 0x50, 0x0b, 0x0d, 0xa7, 0xe1, 0xf0, 0x00,
-	0x23, 0xfc, 0x26, 0x62, 0xd5, 0xc9, 0x86, 0xe3, 0x34, 0x2c, 0x66, 0x50, 0xd7, 0x34, 0xa8, 0x6d,
-	0x3b, 0x01, 0x0d, 0x4c, 0xc7, 0xf6, 0x71, 0x76, 0xbe, 0xe6, 0xf8, 0x4d, 0xc7, 0x37, 0xaa, 0xd4,
-	0x67, 0xa2, 0x85, 0xd1, 0x5e, 0xac, 0xb2, 0x80, 0x2e, 0x1a, 0x2e, 0x6d, 0x98, 0x36, 0x0f, 0xc6,
-	0xd8, 0x82, 0x84, 0xe2, 0x52, 0x8f, 0x36, 0x65, 0x85, 0x49, 0xf9, 0x2b, 0x73, 0x9d, 0xda, 0xd6,
-	0xa6, 0x4b, 0x77, 0x9b, 0xcc, 0x0e, 0xe4, 0xec, 0xb4, 0x9c, 0xad, 0x59, 0x26, 0xb3, 0x03, 0x39,
-	0xbd, 0xe9, 0x07, 0x8e, 0x47, 0x1b, 0x0c, 0xa3, 0x96, 0x64, 0x54, 0xcb, 0x36, 0xb7, 0x5b, 0xec,
-	0x70, 0xd4, 0xa6, 0x4c, 0xf6, 0x9c, 0xb6, 0x59, 0x67, 0x1e, 0x66, 0x95, 0x78, 0x47, 0x8c, 0x31,
-	0xfc, 0x80, 0x3e, 0x61, 0x9b, 0xcc, 0x0e, 0xa4, 0x4a, 0x5a, 0x01, 0xc8, 0xc3, 0x90, 0xd1, 0x3a,
-	0x87, 0x5b, 0x61, 0xdb, 0x2d, 0xe6, 0x07, 0xda, 0x43, 0xb8, 0x10, 0xfb, 0xd5, 0x77, 0x1d, 0xdb,
-	0x67, 0xe4, 0x26, 0x8c, 0x0a, 0x5a, 0x45, 0x65, 0x4a, 0x99, 0x3d, 0x5f, 0x9e, 0xd4, 0x93, 0x34,
-	0xd6, 0x45, 0xd6, 0xed, 0xe1, 0xe7, 0xff, 0xbe, 0x3d, 0x54, 0xc1, 0x0c, 0x6d, 0x11, 0xde, 0x10,
-	0x25, 0x11, 0x9f, 0xec, 0x45, 0x8a, 0x70, 0xae, 0xb6, 0x45, 0x4d, 0x7b, 0x6d, 0x85, 0x57, 0x1d,
-	0xaf, 0xc8, 0xa1, 0xd6, 0x85, 0x8b, 0x87, 0x53, 0x10, 0xc8, 0xc7, 0x00, 0x9c, 0xca, 0xdd, 0x90,
-	0x49, 0x51, 0x99, 0xca, 0xcf, 0x9e, 0x2f, 0x5f, 0x89, 0x83, 0xe9, 0xe5, 0xad, 0x3f, 0x8a, 0x82,
-	0x11, 0x55, 0x4f, 0x3a, 0xb9, 0x08, 0xa3, 0x4e, 0x2b, 0x70, 0x5b, 0x41, 0x31, 0xc7, 0xfb, 0xe3,
-	0x48, 0x33, 0x50, 0x84, 0x3b, 0x5c, 0xd8, 0x0c, 0x78, 0x3b, 0x50, 0x88, 0x27, 0xbc, 0x4a, 0xb4,
-	0xf7, 0x51, 0xac, 0x55, 0x16, 0xac, 0x8b, 0x75, 0xe8, 0x0b, 0x38, 0xac, 0x25, 0x76, 0x8d, 0xac,
-	0x25, 0x46, 0x5a, 0x1d, 0x2e, 0x1d, 0xa9, 0x85, 0x5c, 0xd6, 0x60, 0x5c, 0xee, 0x30, 0xff, 0x24,
-	0x54, 0x0e, 0xb2, 0xb5, 0x2f, 0xe0, 0x4d, 0xde, 0xe5, 0x53, 0xe6, 0x99, 0x8f, 0x77, 0x4f, 0x0b,
-	0x9a, 0xa8, 0x30, 0x26, 0x6b, 0x17, 0xf3, 0x7c, 0x26, 0x1a, 0x93, 0x02, 0x8c, 0x54, 0x2d, 0xa7,
-	0xf6, 0xa4, 0x38, 0x3c, 0xa5, 0xcc, 0x0e, 0x57, 0xc4, 0x40, 0xab, 0x82, 0x9a, 0x04, 0x00, 0x99,
-	0x16, 0x60, 0xa4, 0x4d, 0x2d, 0xb3, 0xce, 0xfb, 0x8f, 0x55, 0xc4, 0x20, 0xc4, 0xe5, 0xb4, 0x99,
-	0x67, 0x51, 0x97, 0xb7, 0x1f, 0xab, 0xc8, 0x61, 0x18, 0x6f, 0xda, 0x75, 0xb6, 0xc3, 0x9b, 0xe7,
-	0x2b, 0x62, 0xa0, 0xad, 0xc1, 0xa2, 0x94, 0x72, 0x83, 0x3f, 0xb7, 0xeb, 0xe2, 0xb1, 0x7d, 0x24,
-	0x04, 0x12, 0x5b, 0x45, 0x6e, 0x70, 0x49, 0x3e, 0x2a, 0x25, 0xa8, 0x63, 0xa9, 0xdf, 0x15, 0x28,
-	0x0f, 0x52, 0x0b, 0x79, 0x3c, 0x55, 0x40, 0x6b, 0xf5, 0x0d, 0xc7, 0x27, 0xfa, 0xfd, 0xe4, 0x27,
-	0xba, 0x7f, 0x3b, 0x5c, 0xde, 0x0c, 0x9d, 0xb4, 0x0e, 0x4a, 0xb2, 0x6c, 0x59, 0xd9, 0x25, 0xb9,
-	0x07, 0x70, 0x70, 0xd6, 0x22, 0xd8, 0xab, 0xba, 0x38, 0x98, 0xf5, 0xf0, 0x60, 0xd6, 0xc5, 0xd9,
-	0x8f, 0x07, 0xb3, 0xbe, 0x4e, 0x1b, 0x0c, 0x73, 0x2b, 0x3d, 0x99, 0xda, 0xd3, 0x1c, 0x8a, 0x98,
-	0xb1, 0xfb, 0xa0, 0x22, 0xe6, 0x5f, 0x8d, 0x88, 0x64, 0x35, 0xa6, 0x47, 0x8e, 0xeb, 0x31, 0xd3,
-	0x57, 0x0f, 0xc1, 0x26, 0x26, 0xc8, 0x07, 0x70, 0x59, 0x6e, 0x2a, 0x6c, 0x11, 0x6b, 0x9b, 0xbe,
-	0x25, 0xbf, 0x55, 0x60, 0x3a, 0x3d, 0x1b, 0xf5, 0xab, 0x43, 0xa1, 0x96, 0x30, 0x8f, 0x0b, 0x39,
-	0x9f, 0x2c, 0x58, 0x52, 0x45, 0x94, 0x28, 0xb1, 0x9a, 0xd6, 0x44, 0x2e, 0xcb, 0x96, 0x95, 0xc6,
-	0xe5, 0xac, 0xf6, 0xd2, 0x5f, 0x92, 0xfd, 0xb1, 0xfd, 0xfa, 0xb2, 0xcf, 0x9f, 0x1d, 0xfb, 0xb3,
-	0xdb, 0x12, 0x4b, 0x30, 0x29, 0x17, 0xf5, 0x6e, 0x78, 0x98, 0x63, 0x1f, 0x3f, 0x7d, 0x2f, 0xb8,
-	0xf0, 0xd6, 0x31, 0x59, 0xa8, 0xc2, 0x27, 0x30, 0xc1, 0x7a, 0x27, 0x50, 0xf9, 0xcb, 0xc9, 0xf4,
-	0x63, 0x35, 0x90, 0x77, 0x3c, 0x5f, 0x7b, 0x8c, 0x38, 0x97, 0x2d, 0x2b, 0x11, 0xe7, 0x59, 0xad,
-	0xf3, 0x6f, 0x0a, 0x52, 0x3b, 0xda, 0xe8, 0x78, 0x6a, 0xf9, 0xd3, 0x50, 0x3b, 0xbb, 0xb5, 0xa4,
-	0x68, 0xbb, 0x36, 0x7c, 0xe6, 0xf1, 0x7b, 0xb8, 0xe7, 0x82, 0xa5, 0xf5, 0xba, 0xc7, 0x7c, 0x5f,
-	0x5e, 0xb0, 0x38, 0xec, 0xbd, 0x7a, 0x73, 0xf1, 0xab, 0x37, 0xba, 0x46, 0xf3, 0xbd, 0xd7, 0xe8,
-	0xe7, 0xe8, 0x3c, 0x7a, 0x5a, 0xa0, 0x2c, 0xab, 0x30, 0x56, 0x73, 0x6c, 0xbf, 0xd5, 0x8c, 0xee,
-	0x97, 0x81, 0xbc, 0x42, 0x94, 0x1c, 0x36, 0x6e, 0xd2, 0x9d, 0x3b, 0x1b, 0x1c, 0xd0, 0x70, 0x45,
-	0x0c, 0xca, 0x7f, 0xbf, 0x0e, 0x23, 0xbc, 0x33, 0xf9, 0x5a, 0x81, 0x51, 0xe1, 0x3a, 0xc9, 0x6c,
-	0xb2, 0xe6, 0x47, 0x4d, 0xae, 0x3a, 0x97, 0x21, 0x52, 0x10, 0xd1, 0xa6, 0xbf, 0xfa, 0xf3, 0xff,
-	0x1f, 0x72, 0x25, 0x32, 0x69, 0x60, 0x0a, 0xff, 0x34, 0xe2, 0x5e, 0x9f, 0xfc, 0xa8, 0xc0, 0x78,
-	0xe4, 0x55, 0xc9, 0xb5, 0xb4, 0xf2, 0x87, 0x4c, 0xb0, 0xba, 0x90, 0x2d, 0x18, 0xe1, 0x2c, 0x72,
-	0x38, 0xd7, 0xc8, 0xdc, 0x31, 0x70, 0x64, 0x82, 0xd1, 0xc1, 0x95, 0xeb, 0x92, 0xef, 0x15, 0x38,
-	0x87, 0xbe, 0x94, 0xa4, 0x11, 0x8f, 0x9b, 0x5d, 0x75, 0x3e, 0x4b, 0x28, 0xa2, 0x32, 0x38, 0xaa,
-	0x39, 0x32, 0x93, 0x8c, 0x4a, 0x9c, 0x59, 0xbd, 0x98, 0x7e, 0x56, 0x00, 0x0e, 0x2c, 0x26, 0x49,
-	0xd3, 0xe0, 0x88, 0xab, 0x55, 0xdf, 0xc9, 0x18, 0x8d, 0xe0, 0x6e, 0x71, 0x70, 0xef, 0x91, 0xa5,
-	0x64, 0x70, 0x0d, 0x16, 0xfe, 0xed, 0x12, 0xdf, 0x23, 0x80, 0x46, 0x47, 0x60, 0xee, 0x92, 0x67,
-	0x0a, 0x4c, 0xc4, 0x5c, 0x22, 0x31, 0x52, 0xda, 0x27, 0x19, 0x5a, 0xf5, 0xdd, 0xec, 0x09, 0x08,
-	0xb9, 0xc2, 0x21, 0x3f, 0x20, 0xf7, 0x93, 0x21, 0xb7, 0x79, 0x52, 0x0a, 0x6a, 0xa3, 0x23, 0x37,
-	0x42, 0xd7, 0xe8, 0xf0, 0x47, 0xb5, 0x4b, 0xbe, 0xc9, 0x81, 0xb6, 0x91, 0xc1, 0x5d, 0xa4, 0x8b,
-	0x9b, 0xd9, 0xb6, 0xa9, 0x1f, 0x9d, 0xbe, 0x10, 0xaa, 0xf1, 0x80, 0xab, 0x71, 0x8f, 0xac, 0x24,
-	0xab, 0x91, 0xed, 0x4f, 0xb1, 0xd1, 0xe1, 0x77, 0x55, 0x97, 0x7c, 0x99, 0x83, 0x2b, 0xfd, 0x9b,
-	0x2f, 0x5b, 0x56, 0xaa, 0x14, 0x83, 0x38, 0xd8, 0x54, 0x29, 0x06, 0x32, 0xa3, 0xda, 0x0a, 0x97,
-	0xe2, 0x43, 0x72, 0xeb, 0x34, 0x52, 0x90, 0x3f, 0x14, 0x28, 0x24, 0x79, 0x0c, 0x72, 0x23, 0x7d,
-	0xcd, 0x52, 0x9c, 0x95, 0x7a, 0xf3, 0x24, 0xa9, 0xd9, 0x9e, 0xd0, 0xe4, 0x77, 0x23, 0xd1, 0x82,
-	0x3e, 0x53, 0xe0, 0x52, 0x52, 0xf9, 0x70, 0x09, 0x6f, 0xa4, 0x2b, 0x7f, 0x52, 0x42, 0x7d, 0x5c,
-	0x9f, 0xb6, 0xc4, 0x09, 0xe9, 0x64, 0x61, 0x10, 0x42, 0xe4, 0x57, 0x05, 0x26, 0x62, 0x06, 0x81,
-	0x94, 0xd3, 0x45, 0x4d, 0xb2, 0x3e, 0xea, 0xf5, 0x81, 0x72, 0xb2, 0x01, 0x8e, 0xbf, 0xbb, 0x8a,
-	0x94, 0xff, 0x45, 0x81, 0xd7, 0x62, 0xf5, 0x42, 0xc9, 0xcb, 0xe9, 0xba, 0x0d, 0x8c, 0xf9, 0x38,
-	0xe7, 0xa5, 0x2d, 0x70, 0xcc, 0x57, 0xc9, 0x74, 0x16, 0xcc, 0xe4, 0x27, 0x05, 0xc6, 0x23, 0x9b,
-	0x92, 0x7a, 0x43, 0x1f, 0xf6, 0x4b, 0xa9, 0x37, 0xf4, 0x11, 0xe7, 0xd3, 0x6f, 0x33, 0xb7, 0x7c,
-	0xe6, 0x89, 0xd7, 0x70, 0x46, 0x07, 0x6d, 0x57, 0xf7, 0xe0, 0x04, 0xbf, 0xbd, 0xfc, 0x7c, 0xaf,
-	0xa4, 0xbc, 0xd8, 0x2b, 0x29, 0xff, 0xed, 0x95, 0x94, 0xef, 0xf6, 0x4b, 0x43, 0x2f, 0xf6, 0x4b,
-	0x43, 0xff, 0xec, 0x97, 0x86, 0x3e, 0x9b, 0x69, 0x98, 0xc1, 0x56, 0xab, 0xaa, 0xd7, 0x9c, 0x66,
-	0xbc, 0xf2, 0x4e, 0x54, 0x3b, 0xd8, 0x75, 0x99, 0x5f, 0x1d, 0xe5, 0xaf, 0xf7, 0xae, 0xbf, 0x0c,
-	0x00, 0x00, 0xff, 0xff, 0xe6, 0xc1, 0xb7, 0x8e, 0x1b, 0x15, 0x00, 0x00,
+	// 1273 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x58, 0x5d, 0x6f, 0xdb, 0x54,
+	0x18, 0xae, 0x93, 0xb6, 0x6b, 0xdf, 0xa9, 0x12, 0x9c, 0x85, 0x92, 0x59, 0x25, 0x54, 0x66, 0xfd,
+	0xda, 0x8a, 0xbd, 0x66, 0x55, 0x35, 0xb1, 0x32, 0xa9, 0x5b, 0xb7, 0xd2, 0x31, 0x89, 0x2e, 0x53,
+	0xb9, 0xe0, 0xa6, 0x72, 0x92, 0xb3, 0xd4, 0xcc, 0xb1, 0x5d, 0xdb, 0x09, 0xad, 0xa2, 0x08, 0x04,
+	0xe2, 0x76, 0x02, 0xc1, 0x0d, 0xf7, 0x48, 0x88, 0x1b, 0xee, 0xf9, 0x01, 0xa0, 0x5d, 0xa1, 0x49,
+	0xbb, 0xe1, 0x06, 0x84, 0x5a, 0xc4, 0xef, 0x40, 0x3e, 0xe7, 0x3d, 0x6e, 0xdc, 0x3a, 0x8e, 0xd3,
+	0x46, 0xbb, 0x4a, 0x4e, 0xfc, 0x7e, 0x3c, 0xcf, 0x73, 0xbe, 0x9e, 0x18, 0x2e, 0x39, 0xba, 0xe1,
+	0x1a, 0x56, 0x4d, 0xdb, 0x6b, 0x50, 0xf7, 0x40, 0x75, 0x5c, 0xdb, 0xb7, 0x49, 0xce, 0xd4, 0x9b,
+	0xba, 0x45, 0x7d, 0x35, 0xf8, 0x54, 0x31, 0x42, 0xce, 0xd5, 0xec, 0x9a, 0xcd, 0x02, 0xb4, 0xe0,
+	0x1b, 0x8f, 0x95, 0xa7, 0x6a, 0xb6, 0x5d, 0x33, 0xa9, 0xa6, 0x3b, 0x86, 0xa6, 0x5b, 0x96, 0xed,
+	0xeb, 0xbe, 0x61, 0x5b, 0x1e, 0x3e, 0xbd, 0x5a, 0xb1, 0xbd, 0xba, 0xed, 0x69, 0x65, 0xdd, 0xa3,
+	0xbc, 0x85, 0xd6, 0x5c, 0x2a, 0x53, 0x5f, 0x5f, 0xd2, 0x1c, 0xbd, 0x66, 0x58, 0x2c, 0x18, 0x63,
+	0x73, 0x02, 0x8a, 0xa3, 0xbb, 0x7a, 0x5d, 0x54, 0x98, 0x12, 0xbf, 0x52, 0xc7, 0xae, 0xec, 0xee,
+	0x38, 0xfa, 0x41, 0x9d, 0x5a, 0xbe, 0x78, 0x3a, 0x1b, 0xe6, 0xb8, 0x76, 0xd3, 0xa8, 0x52, 0x57,
+	0x04, 0xec, 0x78, 0xbe, 0xed, 0xea, 0x35, 0x8a, 0x71, 0xcb, 0x22, 0xae, 0x61, 0x19, 0x7b, 0x0d,
+	0x7a, 0x32, 0x6a, 0xa7, 0x62, 0x1a, 0xc1, 0x50, 0x54, 0xc1, 0xac, 0x02, 0xeb, 0x89, 0x31, 0x9a,
+	0xe7, 0xeb, 0x4f, 0xe9, 0x0e, 0xb5, 0x7c, 0xa1, 0x93, 0x92, 0x03, 0xf2, 0x28, 0xe0, 0xb4, 0xc5,
+	0x00, 0x97, 0xe8, 0x5e, 0x83, 0x7a, 0xbe, 0xf2, 0x08, 0x2e, 0x45, 0x7e, 0xf5, 0x1c, 0xdb, 0xf2,
+	0x28, 0x79, 0x0f, 0x46, 0x39, 0xb1, 0xbc, 0x34, 0x2d, 0xcd, 0x5f, 0x2c, 0x4e, 0xa9, 0x71, 0x2a,
+	0xab, 0x3c, 0xeb, 0xce, 0xf0, 0xf3, 0xbf, 0xdf, 0x1e, 0x2a, 0x61, 0x86, 0xb2, 0x04, 0x6f, 0xf0,
+	0x92, 0x88, 0x4f, 0xf4, 0x22, 0x79, 0xb8, 0x50, 0xd9, 0xd5, 0x0d, 0x6b, 0x73, 0x9d, 0x55, 0x1d,
+	0x2f, 0x89, 0xa1, 0xd2, 0x86, 0xc9, 0x93, 0x29, 0x08, 0xe4, 0x43, 0x00, 0x46, 0xe5, 0x5e, 0xc0,
+	0x24, 0x2f, 0x4d, 0x67, 0xe7, 0x2f, 0x16, 0x67, 0xa2, 0x60, 0x3a, 0x79, 0xab, 0x8f, 0xc3, 0x60,
+	0x44, 0xd5, 0x91, 0x4e, 0x26, 0x61, 0xd4, 0x6e, 0xf8, 0x4e, 0xc3, 0xcf, 0x67, 0x58, 0x7f, 0x1c,
+	0x29, 0x1a, 0x8a, 0x70, 0x97, 0x09, 0x9b, 0x02, 0x6f, 0x0b, 0x72, 0xd1, 0x84, 0x57, 0x89, 0xf6,
+	0x01, 0x8a, 0xb5, 0x41, 0xfd, 0x2d, 0x3e, 0x0f, 0x3d, 0x01, 0x07, 0xb5, 0xf8, 0xaa, 0x11, 0xb5,
+	0xf8, 0x48, 0xa9, 0xc2, 0x9b, 0xa7, 0x6a, 0x21, 0x97, 0x4d, 0x18, 0x17, 0x2b, 0xcc, 0x3b, 0x0b,
+	0x95, 0xe3, 0x6c, 0xe5, 0x73, 0xb8, 0xcc, 0xba, 0x7c, 0x4c, 0x5d, 0xe3, 0xc9, 0xc1, 0x79, 0x41,
+	0x13, 0x19, 0xc6, 0x44, 0xed, 0x7c, 0x96, 0x3d, 0x09, 0xc7, 0x24, 0x07, 0x23, 0x65, 0xd3, 0xae,
+	0x3c, 0xcd, 0x0f, 0x4f, 0x4b, 0xf3, 0xc3, 0x25, 0x3e, 0x50, 0xca, 0x20, 0xc7, 0x01, 0x40, 0xa6,
+	0x39, 0x18, 0x69, 0xea, 0xa6, 0x51, 0x65, 0xfd, 0xc7, 0x4a, 0x7c, 0x10, 0xe0, 0xb2, 0x9b, 0xd4,
+	0x35, 0x75, 0x87, 0xb5, 0x1f, 0x2b, 0x89, 0x61, 0x10, 0x6f, 0x58, 0x55, 0xba, 0xcf, 0x9a, 0x67,
+	0x4b, 0x7c, 0xa0, 0x6c, 0xc2, 0x92, 0x90, 0x72, 0x9b, 0xed, 0xdb, 0x2d, 0xbe, 0x6d, 0x1f, 0x73,
+	0x81, 0xf8, 0x52, 0x11, 0x0b, 0x5c, 0x90, 0x0f, 0x4b, 0x71, 0xea, 0x58, 0xea, 0x37, 0x09, 0x8a,
+	0xfd, 0xd4, 0x42, 0x1e, 0xcf, 0x24, 0x50, 0x1a, 0x3d, 0xc3, 0x71, 0x47, 0xdf, 0x8c, 0xdf, 0xd1,
+	0xbd, 0xdb, 0xe1, 0xf4, 0xa6, 0xe8, 0xa4, 0xb4, 0x50, 0x92, 0x35, 0xd3, 0x4c, 0x2f, 0xc9, 0x7d,
+	0x80, 0xe3, 0xd3, 0x16, 0xc1, 0xce, 0xaa, 0xfc, 0x68, 0x56, 0x83, 0xa3, 0x59, 0xe5, 0xa7, 0x3f,
+	0x1e, 0xcd, 0xea, 0x96, 0x5e, 0xa3, 0x98, 0x5b, 0xea, 0xc8, 0x54, 0x9e, 0x65, 0x50, 0xc4, 0x94,
+	0xdd, 0xfb, 0x15, 0x31, 0xfb, 0x6a, 0x44, 0x24, 0x1b, 0x11, 0x3d, 0x32, 0x4c, 0x8f, 0xb9, 0x9e,
+	0x7a, 0x70, 0x36, 0x11, 0x41, 0xde, 0x87, 0x99, 0x70, 0xaf, 0x63, 0xf1, 0x68, 0xe3, 0xe4, 0x45,
+	0xf9, 0xbd, 0x04, 0xb3, 0xbd, 0xf2, 0x51, 0xc3, 0x4f, 0x61, 0xd2, 0x89, 0x8d, 0xc0, 0xe9, 0x5c,
+	0xec, 0x72, 0x9b, 0xc4, 0xe6, 0xa0, 0x54, 0x5d, 0x2a, 0x2a, 0x36, 0xb2, 0x5a, 0x33, 0xcd, 0x64,
+	0x56, 0x83, 0x5a, 0x57, 0x7f, 0x09, 0x1d, 0x12, 0x3a, 0xa6, 0xd0, 0x21, 0x3b, 0x58, 0x1d, 0x06,
+	0xb7, 0x4c, 0x96, 0x61, 0x4a, 0x4c, 0xf3, 0xbd, 0xe0, 0x80, 0xc7, 0x3e, 0x5e, 0xf2, 0xea, 0x70,
+	0xe0, 0xad, 0x2e, 0x59, 0xa8, 0xc5, 0x47, 0x30, 0x41, 0x3b, 0x1f, 0xe0, 0x0c, 0xbc, 0x13, 0x2f,
+	0x41, 0xa4, 0x06, 0x32, 0x8f, 0xe6, 0x2b, 0x4f, 0x10, 0xe7, 0x9a, 0x69, 0xc6, 0xe2, 0x1c, 0xd4,
+	0x7c, 0xff, 0x2a, 0x21, 0xb5, 0xd3, 0x8d, 0xba, 0x53, 0xcb, 0x9e, 0x87, 0xda, 0xe0, 0xe6, 0x52,
+	0x47, 0x2b, 0xb6, 0xed, 0x51, 0x97, 0xdd, 0xcd, 0x1d, 0x97, 0xae, 0x5e, 0xad, 0xba, 0xd4, 0xf3,
+	0xc4, 0xa5, 0x8b, 0xc3, 0xce, 0xeb, 0x38, 0x13, 0xbd, 0x8e, 0xc3, 0xab, 0x35, 0xdb, 0x79, 0xb5,
+	0x7e, 0x86, 0x6e, 0xa4, 0xa3, 0x05, 0xca, 0xb2, 0x01, 0x63, 0x15, 0xdb, 0xf2, 0x1a, 0xf5, 0xf0,
+	0xce, 0xe9, 0xcb, 0x3f, 0x84, 0xc9, 0x41, 0xe3, 0xba, 0xbe, 0x7f, 0x77, 0x9b, 0x01, 0x1a, 0x2e,
+	0xf1, 0x41, 0xf1, 0xbf, 0xd7, 0x61, 0x84, 0x75, 0x26, 0x5f, 0x49, 0x30, 0xca, 0x9d, 0x28, 0x99,
+	0x8f, 0xd7, 0xfc, 0xb4, 0xf1, 0x95, 0x17, 0x52, 0x44, 0x72, 0x22, 0xca, 0x95, 0x2f, 0x5f, 0xfe,
+	0xfb, 0x5d, 0xa6, 0x40, 0xa6, 0x34, 0x4c, 0x61, 0x9f, 0x5a, 0xf4, 0x1f, 0x00, 0xf9, 0x41, 0x82,
+	0xf1, 0xd0, 0xbf, 0x92, 0x6b, 0x49, 0xe5, 0x4f, 0x18, 0x63, 0x79, 0x31, 0x5d, 0x30, 0xc2, 0x59,
+	0x62, 0x70, 0xae, 0x91, 0x85, 0x2e, 0x70, 0x44, 0x82, 0xd6, 0xc2, 0x99, 0x6b, 0x93, 0x6f, 0x25,
+	0xb8, 0x80, 0x5e, 0x95, 0x24, 0x11, 0x8f, 0x1a, 0x60, 0xf9, 0x6a, 0x9a, 0x50, 0x44, 0xa5, 0x31,
+	0x54, 0x0b, 0x64, 0x2e, 0x1e, 0x15, 0xb7, 0x6e, 0x9d, 0x98, 0x7e, 0x92, 0x00, 0x8e, 0x6d, 0x27,
+	0x49, 0xd2, 0xe0, 0x94, 0xd3, 0x95, 0xdf, 0x4d, 0x19, 0x8d, 0xe0, 0x56, 0x19, 0xb8, 0x15, 0xb2,
+	0x1c, 0x0f, 0xae, 0x46, 0xfd, 0x1d, 0xf1, 0x3d, 0x04, 0xa8, 0xb5, 0x38, 0xe6, 0x36, 0xf9, 0x5d,
+	0x82, 0x89, 0x88, 0x73, 0x24, 0x5a, 0x42, 0xfb, 0x38, 0x93, 0x2b, 0x5f, 0x4f, 0x9f, 0x80, 0x90,
+	0x4b, 0x0c, 0xf2, 0x43, 0xf2, 0x20, 0x1e, 0x72, 0x93, 0x25, 0x25, 0xa0, 0xd6, 0x5a, 0x62, 0x21,
+	0xb4, 0xb5, 0x16, 0xdb, 0xaa, 0x6d, 0xf2, 0x75, 0x06, 0x94, 0xed, 0x14, 0x8e, 0x23, 0x59, 0xdc,
+	0xd4, 0x56, 0x4e, 0xfe, 0xe0, 0xfc, 0x85, 0x50, 0x8d, 0x87, 0x4c, 0x8d, 0xfb, 0x64, 0x3d, 0x5e,
+	0x8d, 0x74, 0x7f, 0x94, 0xb5, 0x16, 0xbb, 0xab, 0xda, 0xe4, 0x8b, 0x0c, 0xcc, 0xf4, 0x6e, 0xbe,
+	0x66, 0x9a, 0x89, 0x52, 0xf4, 0xe3, 0x6a, 0x13, 0xa5, 0xe8, 0xcb, 0xa0, 0x2a, 0xeb, 0x4c, 0x8a,
+	0xdb, 0x64, 0xf5, 0x3c, 0x52, 0x90, 0x97, 0x12, 0x4c, 0xc6, 0xfb, 0x0c, 0x72, 0xab, 0xc7, 0xde,
+	0x4a, 0x72, 0x59, 0xf2, 0xea, 0xd9, 0x92, 0x91, 0xdb, 0x6d, 0xc6, 0xed, 0x26, 0x59, 0x49, 0x3e,
+	0xda, 0x4e, 0xb2, 0x0b, 0x27, 0xf6, 0x0f, 0x09, 0x2e, 0xc7, 0xb7, 0x08, 0x26, 0xf3, 0x56, 0xf2,
+	0x1c, 0x9c, 0x9d, 0x58, 0x4f, 0x27, 0xa8, 0xac, 0x30, 0x62, 0xd7, 0x89, 0xda, 0x1f, 0x31, 0xf2,
+	0x8b, 0x04, 0x13, 0x11, 0xc3, 0x40, 0x8a, 0xc9, 0x02, 0xc7, 0x59, 0x21, 0xf9, 0x46, 0x5f, 0x39,
+	0x08, 0x79, 0x99, 0x41, 0x56, 0xc9, 0x62, 0x3c, 0xe4, 0xe8, 0x1b, 0xae, 0x70, 0x06, 0x7e, 0x96,
+	0xe0, 0xb5, 0x48, 0xbd, 0x40, 0xf8, 0x62, 0xb2, 0x76, 0x7d, 0x63, 0xee, 0xe6, 0xc4, 0x94, 0x45,
+	0x86, 0x79, 0x96, 0x5c, 0x49, 0x83, 0x99, 0xfc, 0x28, 0xc1, 0x78, 0x68, 0x5b, 0x12, 0x6f, 0xec,
+	0x93, 0xfe, 0x29, 0xf1, 0xc6, 0x3e, 0xe5, 0x84, 0x7a, 0x5d, 0x3f, 0x0d, 0x8f, 0xba, 0xfc, 0x55,
+	0x9d, 0xd6, 0x42, 0x1b, 0xd6, 0x3e, 0x3e, 0xd1, 0xef, 0xac, 0x3d, 0x3f, 0x2c, 0x48, 0x2f, 0x0e,
+	0x0b, 0xd2, 0x3f, 0x87, 0x05, 0xe9, 0x9b, 0xa3, 0xc2, 0xd0, 0x8b, 0xa3, 0xc2, 0xd0, 0x9f, 0x47,
+	0x85, 0xa1, 0x4f, 0xe6, 0x6a, 0x86, 0xbf, 0xdb, 0x28, 0xab, 0x15, 0xbb, 0x1e, 0xad, 0xbc, 0x1f,
+	0xd6, 0xf6, 0x0f, 0x1c, 0xea, 0x95, 0x47, 0xd9, 0x2b, 0xc0, 0x1b, 0xff, 0x07, 0x00, 0x00, 0xff,
+	0xff, 0xb3, 0x77, 0xed, 0x9d, 0x41, 0x15, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1348,10 +1353,10 @@ type QueryClient interface {
 	UniquePaymentStorageClientProvider(ctx context.Context, in *QueryGetUniquePaymentStorageClientProviderRequest, opts ...grpc.CallOption) (*QueryGetUniquePaymentStorageClientProviderResponse, error)
 	// Queries a list of UniquePaymentStorageClientProvider items.
 	UniquePaymentStorageClientProviderAll(ctx context.Context, in *QueryAllUniquePaymentStorageClientProviderRequest, opts ...grpc.CallOption) (*QueryAllUniquePaymentStorageClientProviderResponse, error)
-	// Queries a ClientPaymentStorage by index.
-	ClientPaymentStorage(ctx context.Context, in *QueryGetClientPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetClientPaymentStorageResponse, error)
-	// Queries a list of ClientPaymentStorage items.
-	ClientPaymentStorageAll(ctx context.Context, in *QueryAllClientPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllClientPaymentStorageResponse, error)
+	// Queries a ProviderPaymentStorage by index.
+	ProviderPaymentStorage(ctx context.Context, in *QueryGetProviderPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetProviderPaymentStorageResponse, error)
+	// Queries a list of ProviderPaymentStorage items.
+	ProviderPaymentStorageAll(ctx context.Context, in *QueryAllProviderPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllProviderPaymentStorageResponse, error)
 	// Queries a EpochPayments by index.
 	EpochPayments(ctx context.Context, in *QueryGetEpochPaymentsRequest, opts ...grpc.CallOption) (*QueryGetEpochPaymentsResponse, error)
 	// Queries a list of EpochPayments items.
@@ -1431,18 +1436,18 @@ func (c *queryClient) UniquePaymentStorageClientProviderAll(ctx context.Context,
 	return out, nil
 }
 
-func (c *queryClient) ClientPaymentStorage(ctx context.Context, in *QueryGetClientPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetClientPaymentStorageResponse, error) {
-	out := new(QueryGetClientPaymentStorageResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.pairing.Query/ClientPaymentStorage", in, out, opts...)
+func (c *queryClient) ProviderPaymentStorage(ctx context.Context, in *QueryGetProviderPaymentStorageRequest, opts ...grpc.CallOption) (*QueryGetProviderPaymentStorageResponse, error) {
+	out := new(QueryGetProviderPaymentStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.pairing.Query/ProviderPaymentStorage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ClientPaymentStorageAll(ctx context.Context, in *QueryAllClientPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllClientPaymentStorageResponse, error) {
-	out := new(QueryAllClientPaymentStorageResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.pairing.Query/ClientPaymentStorageAll", in, out, opts...)
+func (c *queryClient) ProviderPaymentStorageAll(ctx context.Context, in *QueryAllProviderPaymentStorageRequest, opts ...grpc.CallOption) (*QueryAllProviderPaymentStorageResponse, error) {
+	out := new(QueryAllProviderPaymentStorageResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.pairing.Query/ProviderPaymentStorageAll", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1492,10 +1497,10 @@ type QueryServer interface {
 	UniquePaymentStorageClientProvider(context.Context, *QueryGetUniquePaymentStorageClientProviderRequest) (*QueryGetUniquePaymentStorageClientProviderResponse, error)
 	// Queries a list of UniquePaymentStorageClientProvider items.
 	UniquePaymentStorageClientProviderAll(context.Context, *QueryAllUniquePaymentStorageClientProviderRequest) (*QueryAllUniquePaymentStorageClientProviderResponse, error)
-	// Queries a ClientPaymentStorage by index.
-	ClientPaymentStorage(context.Context, *QueryGetClientPaymentStorageRequest) (*QueryGetClientPaymentStorageResponse, error)
-	// Queries a list of ClientPaymentStorage items.
-	ClientPaymentStorageAll(context.Context, *QueryAllClientPaymentStorageRequest) (*QueryAllClientPaymentStorageResponse, error)
+	// Queries a ProviderPaymentStorage by index.
+	ProviderPaymentStorage(context.Context, *QueryGetProviderPaymentStorageRequest) (*QueryGetProviderPaymentStorageResponse, error)
+	// Queries a list of ProviderPaymentStorage items.
+	ProviderPaymentStorageAll(context.Context, *QueryAllProviderPaymentStorageRequest) (*QueryAllProviderPaymentStorageResponse, error)
 	// Queries a EpochPayments by index.
 	EpochPayments(context.Context, *QueryGetEpochPaymentsRequest) (*QueryGetEpochPaymentsResponse, error)
 	// Queries a list of EpochPayments items.
@@ -1529,11 +1534,11 @@ func (*UnimplementedQueryServer) UniquePaymentStorageClientProvider(ctx context.
 func (*UnimplementedQueryServer) UniquePaymentStorageClientProviderAll(ctx context.Context, req *QueryAllUniquePaymentStorageClientProviderRequest) (*QueryAllUniquePaymentStorageClientProviderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UniquePaymentStorageClientProviderAll not implemented")
 }
-func (*UnimplementedQueryServer) ClientPaymentStorage(ctx context.Context, req *QueryGetClientPaymentStorageRequest) (*QueryGetClientPaymentStorageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ClientPaymentStorage not implemented")
+func (*UnimplementedQueryServer) ProviderPaymentStorage(ctx context.Context, req *QueryGetProviderPaymentStorageRequest) (*QueryGetProviderPaymentStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProviderPaymentStorage not implemented")
 }
-func (*UnimplementedQueryServer) ClientPaymentStorageAll(ctx context.Context, req *QueryAllClientPaymentStorageRequest) (*QueryAllClientPaymentStorageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ClientPaymentStorageAll not implemented")
+func (*UnimplementedQueryServer) ProviderPaymentStorageAll(ctx context.Context, req *QueryAllProviderPaymentStorageRequest) (*QueryAllProviderPaymentStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProviderPaymentStorageAll not implemented")
 }
 func (*UnimplementedQueryServer) EpochPayments(ctx context.Context, req *QueryGetEpochPaymentsRequest) (*QueryGetEpochPaymentsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EpochPayments not implemented")
@@ -1675,38 +1680,38 @@ func _Query_UniquePaymentStorageClientProviderAll_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ClientPaymentStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryGetClientPaymentStorageRequest)
+func _Query_ProviderPaymentStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetProviderPaymentStorageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ClientPaymentStorage(ctx, in)
+		return srv.(QueryServer).ProviderPaymentStorage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.pairing.Query/ClientPaymentStorage",
+		FullMethod: "/lavanet.lava.pairing.Query/ProviderPaymentStorage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ClientPaymentStorage(ctx, req.(*QueryGetClientPaymentStorageRequest))
+		return srv.(QueryServer).ProviderPaymentStorage(ctx, req.(*QueryGetProviderPaymentStorageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ClientPaymentStorageAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryAllClientPaymentStorageRequest)
+func _Query_ProviderPaymentStorageAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllProviderPaymentStorageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ClientPaymentStorageAll(ctx, in)
+		return srv.(QueryServer).ProviderPaymentStorageAll(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.pairing.Query/ClientPaymentStorageAll",
+		FullMethod: "/lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ClientPaymentStorageAll(ctx, req.(*QueryAllClientPaymentStorageRequest))
+		return srv.(QueryServer).ProviderPaymentStorageAll(ctx, req.(*QueryAllProviderPaymentStorageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1798,12 +1803,12 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_UniquePaymentStorageClientProviderAll_Handler,
 		},
 		{
-			MethodName: "ClientPaymentStorage",
-			Handler:    _Query_ClientPaymentStorage_Handler,
+			MethodName: "ProviderPaymentStorage",
+			Handler:    _Query_ProviderPaymentStorage_Handler,
 		},
 		{
-			MethodName: "ClientPaymentStorageAll",
-			Handler:    _Query_ClientPaymentStorageAll_Handler,
+			MethodName: "ProviderPaymentStorageAll",
+			Handler:    _Query_ProviderPaymentStorageAll_Handler,
 		},
 		{
 			MethodName: "EpochPayments",
@@ -2344,7 +2349,7 @@ func (m *QueryAllUniquePaymentStorageClientProviderResponse) MarshalToSizedBuffe
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryGetClientPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryGetProviderPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2354,12 +2359,12 @@ func (m *QueryGetClientPaymentStorageRequest) Marshal() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *QueryGetClientPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryGetProviderPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryGetClientPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryGetProviderPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2374,7 +2379,7 @@ func (m *QueryGetClientPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryGetClientPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryGetProviderPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2384,18 +2389,18 @@ func (m *QueryGetClientPaymentStorageResponse) Marshal() (dAtA []byte, err error
 	return dAtA[:n], nil
 }
 
-func (m *QueryGetClientPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryGetProviderPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryGetClientPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryGetProviderPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	{
-		size, err := m.ClientPaymentStorage.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.ProviderPaymentStorage.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -2407,7 +2412,7 @@ func (m *QueryGetClientPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte)
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryAllClientPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryAllProviderPaymentStorageRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2417,12 +2422,12 @@ func (m *QueryAllClientPaymentStorageRequest) Marshal() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *QueryAllClientPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAllProviderPaymentStorageRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryAllClientPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAllProviderPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2442,7 +2447,7 @@ func (m *QueryAllClientPaymentStorageRequest) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryAllClientPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryAllProviderPaymentStorageResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2452,12 +2457,12 @@ func (m *QueryAllClientPaymentStorageResponse) Marshal() (dAtA []byte, err error
 	return dAtA[:n], nil
 }
 
-func (m *QueryAllClientPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAllProviderPaymentStorageResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryAllClientPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAllProviderPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2474,10 +2479,10 @@ func (m *QueryAllClientPaymentStorageResponse) MarshalToSizedBuffer(dAtA []byte)
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ClientPaymentStorage) > 0 {
-		for iNdEx := len(m.ClientPaymentStorage) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ProviderPaymentStorage) > 0 {
+		for iNdEx := len(m.ProviderPaymentStorage) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ClientPaymentStorage[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ProviderPaymentStorage[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -2943,7 +2948,7 @@ func (m *QueryAllUniquePaymentStorageClientProviderResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryGetClientPaymentStorageRequest) Size() (n int) {
+func (m *QueryGetProviderPaymentStorageRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2956,18 +2961,18 @@ func (m *QueryGetClientPaymentStorageRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryGetClientPaymentStorageResponse) Size() (n int) {
+func (m *QueryGetProviderPaymentStorageResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = m.ClientPaymentStorage.Size()
+	l = m.ProviderPaymentStorage.Size()
 	n += 1 + l + sovQuery(uint64(l))
 	return n
 }
 
-func (m *QueryAllClientPaymentStorageRequest) Size() (n int) {
+func (m *QueryAllProviderPaymentStorageRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2980,14 +2985,14 @@ func (m *QueryAllClientPaymentStorageRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryAllClientPaymentStorageResponse) Size() (n int) {
+func (m *QueryAllProviderPaymentStorageResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.ClientPaymentStorage) > 0 {
-		for _, e := range m.ClientPaymentStorage {
+	if len(m.ProviderPaymentStorage) > 0 {
+		for _, e := range m.ProviderPaymentStorage {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
@@ -4467,7 +4472,7 @@ func (m *QueryAllUniquePaymentStorageClientProviderResponse) Unmarshal(dAtA []by
 	}
 	return nil
 }
-func (m *QueryGetClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryGetProviderPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4490,10 +4495,10 @@ func (m *QueryGetClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetClientPaymentStorageRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryGetProviderPaymentStorageRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetClientPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryGetProviderPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -4549,7 +4554,7 @@ func (m *QueryGetClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryGetClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryGetProviderPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4572,15 +4577,15 @@ func (m *QueryGetClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryGetClientPaymentStorageResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryGetProviderPaymentStorageResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryGetClientPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryGetProviderPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientPaymentStorage", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderPaymentStorage", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4607,7 +4612,7 @@ func (m *QueryGetClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.ClientPaymentStorage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ProviderPaymentStorage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4632,7 +4637,7 @@ func (m *QueryGetClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryAllClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryAllProviderPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4655,10 +4660,10 @@ func (m *QueryAllClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllClientPaymentStorageRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAllProviderPaymentStorageRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllClientPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAllProviderPaymentStorageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -4718,7 +4723,7 @@ func (m *QueryAllClientPaymentStorageRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryAllClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryAllProviderPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4741,15 +4746,15 @@ func (m *QueryAllClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllClientPaymentStorageResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAllProviderPaymentStorageResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllClientPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAllProviderPaymentStorageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ClientPaymentStorage", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderPaymentStorage", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4776,8 +4781,8 @@ func (m *QueryAllClientPaymentStorageResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ClientPaymentStorage = append(m.ClientPaymentStorage, ClientPaymentStorage{})
-			if err := m.ClientPaymentStorage[len(m.ClientPaymentStorage)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ProviderPaymentStorage = append(m.ProviderPaymentStorage, ProviderPaymentStorage{})
+			if err := m.ProviderPaymentStorage[len(m.ProviderPaymentStorage)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

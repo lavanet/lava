@@ -32,16 +32,18 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, ChainID string, Cu
 	}
 	allowedCUProvider := allowedCU / k.ServicersToPairCount(ctx)
 	if totalCUInEpochForUserProvider > allowedCUProvider {
+		// remove this function
+		// if a user used too much cu,
 		return k.LimitClientPairingsAndMarkForPenalty(ctx, clientAddr, ChainID, CuSum, totalCUInEpochForUserProvider, allowedCU, allowedCUProvider, providerAddr, epochStart)
 	}
 
 	return CuSum, nil
 }
 
-func (k Keeper) GetEpochClientProviderUsedCUMap(ctx sdk.Context, clientPaymentStorage types.ClientPaymentStorage) (clientUsedCUMap types.ClientUsedCU) {
+func (k Keeper) GetEpochClientProviderUsedCUMap(ctx sdk.Context, providerPaymentStorage types.ProviderPaymentStorage) (clientUsedCUMap types.ClientUsedCU) {
 	clientUsedCUMap = types.ClientUsedCU{TotalUsed: 0, Providers: make(map[string]uint64)}
 	// for every unique payment of client for this epoch
-	uniquePaymentStoragesClientProviderList := clientPaymentStorage.UniquePaymentStorageClientProvider
+	uniquePaymentStoragesClientProviderList := providerPaymentStorage.UniquePaymentStorageClientProvider
 	for _, uniquePaymentStorageClientProvider := range uniquePaymentStoragesClientProviderList {
 		paymentProviderAddr := k.GetProviderFromUniquePayment(ctx, *uniquePaymentStorageClientProvider)
 		clientUsedCUMap.TotalUsed += uniquePaymentStorageClientProvider.UsedCU
@@ -90,10 +92,10 @@ func (k Keeper) GetOverusedFromUsedCU(ctx sdk.Context, clientProvidersEpochUsedC
 }
 
 func (k Keeper) GetEpochClientUsedCUMap(ctx sdk.Context, chainID string, epoch uint64, clientAddr sdk.AccAddress) types.ClientUsedCU {
-	clientStoragePaymentKeyEpoch := k.GetClientPaymentStorageKey(ctx, chainID, epoch, clientAddr)
-	clientPaymentStorage, found := k.GetClientPaymentStorage(ctx, clientStoragePaymentKeyEpoch)
+	clientStoragePaymentKeyEpoch := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, clientAddr)
+	providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, clientStoragePaymentKeyEpoch)
 	if found { // no payments this epoch, continue + advance epoch
-		clientProvidersEpochUsedCUMap := k.GetEpochClientProviderUsedCUMap(ctx, clientPaymentStorage)
+		clientProvidersEpochUsedCUMap := k.GetEpochClientProviderUsedCUMap(ctx, providerPaymentStorage)
 		return clientProvidersEpochUsedCUMap
 	}
 	return types.ClientUsedCU{TotalUsed: 0, Providers: make(map[string]uint64)}

@@ -181,7 +181,7 @@ type Sentry struct {
 	pairingPurgeLock          sync.Mutex
 	pairingPurge              []*RelayerClientWrapper
 	addedToPurgeAndReportLock sync.Mutex
-	addedToPurgeAndReport     []*RelayerClientWrapper // list of added to purge providers that will be reported by the remaining providers
+	addedToPurgeAndReport     []string // list of added to purge providers that will be reported by the remaining providers
 	pairingNext               []*RelayerClientWrapper
 	pairingNextAddresses      []string
 	VrfSkMu                   sync.Mutex
@@ -1441,7 +1441,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 	}
 
 	s.addedToPurgeAndReportLock.Lock()
-	s.addedToPurgeAndReport = append(s.addedToPurgeAndReport, wrap) // adding to purge this epoch to send them to the chain.
+	s.addedToPurgeAndReport = append(s.addedToPurgeAndReport, wrap.Acc) // adding to purge this epoch to send them to the chain.
 	s.addedToPurgeAndReportLock.Unlock()
 
 	s.pairingPurge = append(s.pairingPurge, wrap)

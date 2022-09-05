@@ -13,9 +13,9 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.UniquePaymentStorageClientProviderList {
 		k.SetUniquePaymentStorageClientProvider(ctx, elem)
 	}
-	// Set all the clientPaymentStorage
-	for _, elem := range genState.ClientPaymentStorageList {
-		k.SetClientPaymentStorage(ctx, elem)
+	// Set all the providerPaymentStorage
+	for _, elem := range genState.ProviderPaymentStorageList {
+		k.SetProviderPaymentStorage(ctx, elem)
 	}
 	// Set all the epochPayments
 	for _, elem := range genState.EpochPaymentsList {
@@ -31,7 +31,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.Params = k.GetParams(ctx)
 
 	genesis.UniquePaymentStorageClientProviderList = k.GetAllUniquePaymentStorageClientProvider(ctx)
-	genesis.ClientPaymentStorageList = k.GetAllClientPaymentStorage(ctx)
+	genesis.ProviderPaymentStorageList = k.GetAllProviderPaymentStorage(ctx)
 	genesis.EpochPaymentsList = k.GetAllEpochPayments(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 

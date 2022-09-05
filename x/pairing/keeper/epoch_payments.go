@@ -86,27 +86,6 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 	return
 }
 
-func (k Keeper) GetPaymentRequestsProvidersStorageForProvider(providerAddr string, epochPayments *types.EpochPayments) (*types.PaymentRequestsProvidersStorage, bool) {
-	for _, p := range epochPayments.NumberOfProviderPayments {
-		if p.ProviderId == providerAddr {
-			return p, true // found the entry
-		}
-	}
-	// entry doesnt exist
-	return nil, false
-}
-
-func (k Keeper) increaseNumberOfPaymentRequestsProvidersStorageForGivenProvider(ctx sdk.Context, providerAddr string, epochPayments *types.EpochPayments) {
-	for _, provider := range epochPayments.NumberOfProviderPayments {
-		if provider.ProviderId == providerAddr {
-			provider.NumberOfPayments++
-			return
-		}
-	}
-	// if we reached here currently this provider has no payments.
-	epochPayments.NumberOfProviderPayments = append(epochPayments.NumberOfProviderPayments, &types.PaymentRequestsProvidersStorage{ProviderId: providerAddr, NumberOfPayments: 1})
-}
-
 func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
@@ -115,11 +94,9 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 	if !found {
-		new_payment_request_provider_storage := &types.PaymentRequestsProvidersStorage{ProviderId: providerAddress.String(), NumberOfPayments: 1}
-		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentProviderStorage}, NumberOfProviderPayments: []*types.PaymentRequestsProvidersStorage{new_payment_request_provider_storage}}
+		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{userPaymentProviderStorage}}
 	} else {
 		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
-		k.increaseNumberOfPaymentRequestsProvidersStorageForGivenProvider(ctx, providerAddress.String(), &epochPayments)
 	}
 
 	k.SetEpochPayments(ctx, epochPayments)
@@ -146,7 +123,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 			//delete all payment storages
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorageCliPro.Index)
 		}
-		k.RemoveClientPaymentStorage(ctx, userPaymentStorage.Index)
+		k.RemoveProviderPaymentStorage(ctx, userPaymentStorage.Index)
 	}
 	k.RemoveEpochPayments(ctx, key)
 	return nil
