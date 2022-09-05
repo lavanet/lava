@@ -55,8 +55,6 @@ screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
 
-
-
 #Celo providers
 screen -d -m -S celo_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5241 $CELO_ALFAJORES_WS CELO jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/CELO_2221.log"
 screen -S celo_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5242 $CELO_ALFAJORES_WS CELO jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/CELO_2222.log"
