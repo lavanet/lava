@@ -68,12 +68,15 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 }
 
 func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err error) {
-
-	if uint64(ctx.BlockHeight()) < k.BlocksToSave(ctx) {
+	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if err != nil {
+		return err
+	}
+	if uint64(ctx.BlockHeight()) < blocksToSaveAtEarliestEpoch {
 		return nil
 	}
-	block := uint64(ctx.BlockHeight()) - k.BlocksToSave(ctx)
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+	block := uint64(ctx.BlockHeight()) - blocksToSaveAtEarliestEpoch
 	if earliestEpochBlock > block {
 		return nil
 	}
@@ -88,19 +91,32 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err err
 
 func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
-	blocksToSave := k.BlocksToSave(ctx)
-	if currentBlock <= blocksToSave {
-		return
-	}
-	block := currentBlock - blocksToSave
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	if earliestEpochBlock >= block {
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	if err != nil {
+		// this is critical, no recovery from this
+		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
+	}
+	if currentBlock <= blocksToSaveAtEarliestEpoch {
 		return
 	}
+	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
+	changed := false
+	for earliestEpochBlock < lastBlockInMemory {
+		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+		if err != nil {
+			// this is critical, no recovery from this
+			panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s", err))
+		}
+		changed = true
+	}
+
+	if !changed {
+		return
+	}
+
 	logger := k.Logger(ctx)
-	//now update the earliest session start
-	epochBlocks := k.GetEpochBlocks(ctx, earliestEpochBlock)
-	earliestEpochBlock += epochBlocks
+	//now update the earliest epoch start
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }
@@ -185,7 +201,6 @@ func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID st
 	}
 	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
-	return
 }
 
 func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
@@ -302,12 +317,16 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
 }
 
-func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) {
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) error {
 	//update unstake deadline to the higher among params (unstakeholdblocks and blockstosave)
 	//TODO validate in paramchange that unstakeholdblocks >= blockstosave and remove redundancy check
 	blockHeight := uint64(ctx.BlockHeight())
-	stakeEntry.Deadline = blockHeight + k.BlocksToSave(ctx)
-	holdBlocks := blockHeight + k.UnstakeHoldBlocks(ctx)
+	blocksToSave, err := k.BlocksToSave(ctx, blockHeight)
+	if err != nil {
+		return utils.LavaError(ctx, k.Logger(ctx), "append_stake_blockstosave_get_fail", map[string]string{}, "failed to get BlocksToSave")
+	}
+	stakeEntry.Deadline = blockHeight + blocksToSave
+	holdBlocks := blockHeight + k.UnstakeHoldBlocks(ctx, blockHeight)
 	if stakeEntry.Deadline < holdBlocks {
 		stakeEntry.Deadline = holdBlocks
 	}
@@ -337,6 +356,8 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	}
 	stakeStorage.StakeEntries = entries
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
+
+	return nil
 }
 
 //Returns the unstaking Entry if its deadline is lower than the provided block
@@ -382,16 +403,6 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
 		k.SetStakeStorage(ctx, newStorage)
 	}
-}
-
-func (k Keeper) GetNextEpoch(ctx sdk.Context, epoch uint64) uint64 {
-	epochBlocks := k.GetEpochBlocks(ctx, epoch)
-	if epochBlocks == 0 {
-		panic(fmt.Errorf("lava_get_epoch_blocks_error epochBlocks == 0"))
-	}
-	epoch += epochBlocks
-	nextEpoch, _ := k.GetEpochStartForBlock(ctx, epoch)
-	return nextEpoch
 }
 
 func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {

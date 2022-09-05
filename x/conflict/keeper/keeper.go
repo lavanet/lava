@@ -57,3 +57,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k Keeper) IsEpochStart(ctx sdk.Context) (res bool) {
 	return k.epochstorageKeeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight())
 }
+
+func (k Keeper) PushFixations(ctx sdk.Context) {
+	k.epochstorageKeeper.PushFixatedParams(ctx, 0, 0)
+}

@@ -815,6 +815,30 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 			}
 
+			if !s.isUser {
+				// listen for vote reveal event from new block handler on conflict/module.go
+				eventToListen := utils.EventPrefix + conflicttypes.ConflictVoteRevealEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for idx, voteID := range votesList {
+						num_str := e.Events[eventToListen+".voteDeadline"][idx]
+						voteDeadline, err := strconv.ParseUint(num_str, 10, 64)
+						if err != nil {
+							fmt.Printf("ERROR: parsing vote deadline %s, err:%s\n", num_str, err)
+							continue
+						}
+						go s.voteInitiationCb(ctx, voteID, voteDeadline, nil)
+					}
+				}
+
+				eventToListen = utils.EventPrefix + conflicttypes.ConflictVoteResolvedEventName
+				if votesList, ok := e.Events[eventToListen+".voteID"]; ok {
+					for _, voteID := range votesList {
+						voteParams := &VoteParams{CloseVote: true}
+						go s.voteInitiationCb(ctx, voteID, 0, voteParams)
+					}
+				}
+			}
+
 		}
 	}
 }
@@ -988,7 +1012,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-	tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+	SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 	//report the conflict
 	return false
 }
@@ -1043,7 +1067,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-				tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+				SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 				// TODO:: should break here? is one enough or search for more?
 				return true, utils.LavaFormatError("reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
 			}
@@ -1094,7 +1118,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-		tx.GenerateOrBroadcastTxWithFactory(s.ClientCtx, txFactory, msg)
+		SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 
 		return utils.LavaFormatError("Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})

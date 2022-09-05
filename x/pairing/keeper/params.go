@@ -14,9 +14,9 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.BurnCoinsPerCU(ctx),
 		k.FraudStakeSlashingFactor(ctx),
 		k.FraudSlashingAmount(ctx),
-		k.ServicersToPairCount(ctx),
+		k.ServicersToPairCountRaw(ctx),
 		k.EpochBlocksOverlap(ctx),
-		k.StakeToMaxCUList(ctx),
+		k.StakeToMaxCUListRaw(ctx),
 		k.UnpayLimit(ctx),
 		k.SlashLimit(ctx),
 		k.DataReliabilityReward(ctx),
@@ -65,25 +65,32 @@ func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 	return
 }
 
+func (k Keeper) ServicersToPairCount(ctx sdk.Context, block uint64) (res uint64, err error) {
+	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyServicersToPairCount), block, &res)
+	return
+}
+
 // ServicersToPairCount returns the ServicersToPairCount param
-func (k Keeper) ServicersToPairCount(ctx sdk.Context) (res uint64) {
+func (k Keeper) ServicersToPairCountRaw(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyServicersToPairCount, &res)
 	return
 }
 
-// EpochBlocksOverlap returns the EpochBlocksOverlap param
 func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyEpochBlocksOverlap, &res)
 	return
 }
 
-// EpochBlocksOverlap returns the EpochBlocksOverlap param
-func (k Keeper) StakeToMaxCUList(ctx sdk.Context) (res types.StakeToMaxCUList) {
+func (k Keeper) StakeToMaxCUList(ctx sdk.Context, block uint64) (res types.StakeToMaxCUList, err error) {
+	err = k.epochStorageKeeper.GetParamForBlock(ctx, string(types.KeyStakeToMaxCUList), block, &res)
+	return
+}
+
+func (k Keeper) StakeToMaxCUListRaw(ctx sdk.Context) (res types.StakeToMaxCUList) {
 	k.paramstore.Get(ctx, types.KeyStakeToMaxCUList, &res)
 	return
 }
 
-// EpochBlocksOverlap returns the EpochBlocksOverlap param
 func (k Keeper) UnpayLimit(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyUnpayLimit, &res)
 	return

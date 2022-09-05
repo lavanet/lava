@@ -10,21 +10,23 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyUnstakeHoldBlocks = []byte("UnstakeHoldBlocks")
-	// TODO: Determine the default value
+	KeyUnstakeHoldBlocks            = []byte("UnstakeHoldBlocks")
 	DefaultUnstakeHoldBlocks uint64 = 210
 )
 
 var (
-	KeyEpochBlocks = []byte("EpochBlocks")
-	// TODO: Determine the default value
+	KeyEpochBlocks            = []byte("EpochBlocks")
 	DefaultEpochBlocks uint64 = 20
 )
 
 var (
-	KeyEpochsToSave = []byte("EpochsToSave")
-	// TODO: Determine the default value
+	KeyEpochsToSave            = []byte("EpochsToSave")
 	DefaultEpochsToSave uint64 = 10
+)
+
+var (
+	KeyLatestParamChange            = []byte("LatestParamChange")
+	DefaultLatestParamChange uint64 = 0
 )
 
 // ParamKeyTable the param key table for launch module
@@ -37,11 +39,13 @@ func NewParams(
 	unstakeHoldBlocks uint64,
 	epochBlocks uint64,
 	epochsToSave uint64,
+	latestParamChange uint64,
 ) Params {
 	return Params{
 		UnstakeHoldBlocks: unstakeHoldBlocks,
 		EpochBlocks:       epochBlocks,
 		EpochsToSave:      epochsToSave,
+		LatestParamChange: latestParamChange,
 	}
 }
 
@@ -51,6 +55,7 @@ func DefaultParams() Params {
 		DefaultUnstakeHoldBlocks,
 		DefaultEpochBlocks,
 		DefaultEpochsToSave,
+		DefaultLatestParamChange,
 	)
 }
 
@@ -60,6 +65,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyUnstakeHoldBlocks, &p.UnstakeHoldBlocks, validateUnstakeHoldBlocks),
 		paramtypes.NewParamSetPair(KeyEpochBlocks, &p.EpochBlocks, validateEpochBlocks),
 		paramtypes.NewParamSetPair(KeyEpochsToSave, &p.EpochsToSave, validateEpochsToSave),
+		paramtypes.NewParamSetPair(KeyLatestParamChange, &p.LatestParamChange, validateLatestParamChange),
 	}
 }
 
@@ -105,7 +111,9 @@ func validateEpochBlocks(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
+	if epochBlocks == 0 {
+		return fmt.Errorf("invalid parameter epochBlocks- cant be 0")
+	}
 	// TODO implement validation
 	_ = epochBlocks
 
@@ -121,6 +129,16 @@ func validateEpochsToSave(v interface{}) error {
 
 	// TODO implement validation
 	_ = epochsToSave
+
+	return nil
+}
+
+// validateLatestParamChange validates the LatestParamChange param
+func validateLatestParamChange(v interface{}) error {
+	_, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
 
 	return nil
 }
