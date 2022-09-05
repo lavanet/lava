@@ -36,7 +36,9 @@ import (
 )
 
 const (
-	maxRetries = 10
+	maxRetries             = 10
+	providerWasntFound     = -1
+	findPairingFailedIndex = -1
 )
 
 type ClientSession struct {
@@ -920,7 +922,7 @@ func (s *Sentry) _findPairingIndexWithLoop(address string) int {
 		}
 	}
 	// didnt find a matching index
-	return -1
+	return providerWasntFound
 }
 
 func (s *Sentry) _findPairingIndexByAdress(address string, index int) int {
@@ -940,21 +942,22 @@ func (s *Sentry) _findPairingIndexByAdress(address string, index int) int {
 	return ret_index
 }
 
-func (s *Sentry) _findPairingExceptIndex(ctx context.Context, accountAddress string, previousIndex int) (*RelayerClientWrapper, int, *Endpoint, error) {
+// find pairing except given adress, the method will search for a pairing that isnt the given address starting to search in the given index to save time.
+func (s *Sentry) _findPairingExceptAddress(ctx context.Context, accountAddress string, previousIndex int) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
 	s.pairingMu.RLock()
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
-		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
 	get_random_provider := false
 	var index int
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
-			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 		previousIndex = s._findPairingIndexByAdress(accountAddress, previousIndex)
-		if previousIndex == -1 { // privious provider was not found in s.pairing list. we can get a random value.
+		if previousIndex == providerWasntFound { // privious provider was not found in s.pairing list. we can get a random value.
 			get_random_provider = true
 		}
 		if get_random_provider {
@@ -962,7 +965,7 @@ func (s *Sentry) _findPairingExceptIndex(ctx context.Context, accountAddress str
 		} else {
 			if len(s.pairing) <= 1 {
 				// only one pairings available which is the previous pairing, return an error.
-				return nil, -1, nil, utils.LavaFormatError("no other providers available currently", nil, nil)
+				return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no other providers available currently", nil, nil)
 			}
 			index = ((previousIndex + rand.Intn(len(s.pairing)-1) + 1) % len(s.pairing))
 		}
@@ -972,7 +975,7 @@ func (s *Sentry) _findPairingExceptIndex(ctx context.Context, accountAddress str
 			return wrap, index, endpoint, nil
 		}
 	}
-	return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+	return nil, findPairingFailedIndex, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
@@ -981,13 +984,13 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
-		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
 
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
-			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 
 		index := rand.Intn(len(s.pairing))
@@ -998,7 +1001,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 			return wrap, index, endpoint, nil
 		}
 	}
-	return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+	return nil, findPairingFailedIndex, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
 }
 
 func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Sentry, ctx context.Context, index int) (connected bool, endpointPtr *Endpoint) {
@@ -1264,10 +1267,10 @@ func (s *Sentry) SendRelay(
 
 		// retry sending the request to a different provider upon error
 		var err2 error
-		wrap, index, endpoint, err2 = s._findPairingExceptIndex(ctx, wrap.Acc, index) // get a different provider.
+		wrap, index, endpoint, err2 = s._findPairingExceptAddress(ctx, wrap.Acc, index) // get a different provider.
 		if err2 != nil {
 			// if we failed to get another provider, just return the first providers error. with the fetching failure message
-			return nil, utils.LavaFormatInfo("failed to send relay: "+err.Error()+" also failed to fetch another provider: "+err2.Error(), nil)
+			return nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
 		}
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
@@ -1284,7 +1287,7 @@ func (s *Sentry) SendRelay(
 				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
 			}
 			// if the errors are the same just return one of them and the reply
-			return reply, err
+			return reply, err2
 		}
 		// if we didnt get an error from the second relay we can continue noramlly
 	}
