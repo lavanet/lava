@@ -256,8 +256,8 @@
           "name": "eth_uninstallFilter",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -267,7 +267,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -338,8 +338,8 @@
           "name": "eth_subscribe",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -349,7 +349,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -362,8 +362,8 @@
           "name": "eth_unsubscribe",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -373,7 +373,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -1190,8 +1190,8 @@
           "name": "eth_getFilterLogs",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -1201,7 +1201,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "75",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
