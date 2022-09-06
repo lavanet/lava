@@ -8,7 +8,7 @@
       "enabled": true,
       "reliability_threshold": 268435455,
       "compares_hashes": true,
-      "finalization_criteria": 7,
+      "finalization_criteria": 1,
       "saved_blocks": 3,
       "average_block_time": "5000",
       "allowed_block_lag_for_qos_sync": "5",
