@@ -104,7 +104,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 
 func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID string, exemptions []string) []string {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epoch) //TODO if this is overlap and get the previous epoch
+	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epoch)
 
 	if err != nil {
 		return make([]string, 0)
