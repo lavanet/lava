@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
-	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 )
 
 type Connector struct {
-	lock        common.LavaMutex
+	lock        utils.LavaMutex
 	freeClients []*rpcclient.Client
 	usedClients int
 }

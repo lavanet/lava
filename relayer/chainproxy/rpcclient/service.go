@@ -26,7 +26,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 )
 
 var (
@@ -37,7 +37,7 @@ var (
 )
 
 type serviceRegistry struct {
-	mu       common.LavaMutex
+	mu       utils.LavaMutex
 	services map[string]service
 }
 

@@ -1,4 +1,4 @@
-package common
+package utils
 
 import (
 	"fmt"
@@ -8,13 +8,19 @@ import (
 )
 
 const TIMEOUT = 5
+const TimeoutMutex = false
+
+type Lockable interface {
+	Lock()
+	TryLock() bool
+	Unlock()
+}
 
 type LavaMutex struct {
 	mu          sync.Mutex
 	quit        chan bool
 	SecondsLeft int
 	lineAndFile string
-	hasQuit     bool
 	lockCount   int
 }
 
@@ -81,34 +87,43 @@ func (dm *LavaMutex) waitForTimeout() {
 }
 
 func (dm *LavaMutex) Lock() {
-	tempLineAndFile := dm.getLineAndFile()
-	dm.lockCount = dm.lockCount + 1
-	fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
-	dm.mu.Lock()
-	fmt.Printf("locked \n")
-	dm.lineAndFile = tempLineAndFile
-	dm.SecondsLeft = TIMEOUT
-	dm.waitForTimeout()
-}
-
-func (dm *LavaMutex) TryLock() (isLocked bool) {
-	tempLineAndFile := dm.getLineAndFile()
-
-	isLocked = dm.mu.TryLock()
-	if isLocked {
+	if TimeoutMutex {
+		tempLineAndFile := dm.getLineAndFile()
 		dm.lockCount = dm.lockCount + 1
-		fmt.Println("TryLock Locked: ", tempLineAndFile)
+		fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
+		dm.mu.Lock()
+		fmt.Printf("locked \n")
 		dm.lineAndFile = tempLineAndFile
 		dm.SecondsLeft = TIMEOUT
 		dm.waitForTimeout()
+	} else {
+		dm.mu.Lock()
 	}
-	return isLocked
+}
+
+func (dm *LavaMutex) TryLock() (isLocked bool) {
+	if TimeoutMutex {
+		tempLineAndFile := dm.getLineAndFile()
+		isLocked = dm.mu.TryLock()
+		if isLocked {
+			dm.lockCount = dm.lockCount + 1
+			// fmt.Println("TryLock Locked: ", tempLineAndFile)
+			dm.lineAndFile = tempLineAndFile
+			dm.SecondsLeft = TIMEOUT
+			dm.waitForTimeout()
+		}
+		return isLocked
+	} else {
+		return dm.mu.TryLock()
+	}
 }
 
 func (dm *LavaMutex) Unlock() {
-	fmt.Println("Unlock: ", dm.getLineAndFile())
-	dm.lockCount = dm.lockCount - 1
-	dm.quit <- true
+	if TimeoutMutex {
+		// fmt.Println("Unlock: ", dm.getLineAndFile())
+		dm.lockCount = dm.lockCount - 1
+		dm.quit <- true
+	}
 	dm.mu.Unlock()
 }
 

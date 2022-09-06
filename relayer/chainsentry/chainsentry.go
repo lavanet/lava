@@ -9,7 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
-	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -25,7 +25,7 @@ type ChainSentry struct {
 	ChainID                string
 
 	// Spec blockQueueMu (rw mutex)
-	blockQueueMu common.LavaMutex
+	blockQueueMu utils.LavaMutex
 	blocksQueue  []string
 }
 

@@ -25,17 +25,17 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	if msg.FinalizationConflict != nil && msg.ResponseConflict == nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateFinalizationConflict(ctx, msg.FinalizationConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "Finalization_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "finalization conflict detection error")
+			return nil, utils.LavaError(ctx, logger, "Finalization_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: finalization conflict detection error")
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict == nil && msg.SameProviderConflict != nil {
 		err := k.Keeper.ValidateSameProviderConflict(ctx, msg.SameProviderConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "same_provider_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "same provider conflict detection error")
+			return nil, utils.LavaError(ctx, logger, "same_provider_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: same provider conflict detection error")
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict != nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateResponseConflict(ctx, msg.ResponseConflict, clientAddr)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "response conflict detection error")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: response conflict detection error")
 		}
 
 		//the conflict detection transaction is valid!, start a vote
@@ -46,14 +46,14 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		//5. majority wins, minority gets penalised
 		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "could not get EpochStart for specific block")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get EpochStart for specific block")
 
 		}
 		index := DetectionIndex(msg, epochStart)
 		//fmt.Printf("%s \n", index)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "conflict with is already open for this client and providers in this epoch")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: conflict with is already open for this client and providers in this epoch")
 		}
 		conflictVote := types.ConflictVote{}
 		conflictVote.Index = index
@@ -61,7 +61,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight)
 		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+epochStart)
 		if err != nil {
-			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "could not get NextEpoch")
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get NextEpoch")
 
 		}
 		conflictVote.VoteDeadline = voteDeadline
@@ -93,12 +93,12 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		eventData["voteDeadline"] = strconv.FormatUint(conflictVote.VoteDeadline, 10)
 		eventData["voters"] = strings.Join(voters, ",")
 
-		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Got a new valid conflict detection from consumer, starting new vote")
+		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Simulation: Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil
 	}
 
 	eventData := map[string]string{"client": msg.Creator}
-	utils.LogLavaEvent(ctx, logger, "conflict_detection_received", eventData, "Got a new valid conflict detection from consumer")
+	utils.LogLavaEvent(ctx, logger, "conflict_detection_received", eventData, "Simulation: Got a new valid conflict detection from consumer")
 	return &types.MsgDetectionResponse{}, nil
 }
 
