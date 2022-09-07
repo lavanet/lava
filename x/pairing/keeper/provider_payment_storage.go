@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -69,7 +70,7 @@ func (k Keeper) GetProviderPaymentStorageKey(ctx sdk.Context, chainID string, ep
 	return chainID + "_" + strconv.FormatUint(epoch, 16) + "_" + providerAddress.String()
 }
 
-func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUProviderTotal uint64, err error) {
+func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64, err error) {
 	//key is chainID+_+epoch+_+user
 	key := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
 	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
@@ -81,21 +82,32 @@ func (k Keeper) AddClientPaymentInEpoch(ctx sdk.Context, chainID string, epoch u
 	if !found {
 		// is new entry
 		userPaymentStorageInEpoch = types.ProviderPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, Epoch: epoch}
-		usedCUProviderTotal = usedCU
+		usedCUConsumerTotal = usedCU
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)
-		// sums up usedCU for this client and this provider over this epoch
-		usedCUProviderTotal = k.GetTotalUsedCUForProviderEpoch(ctx, providerAddress, userPaymentStorageInEpoch)
+		// sums up usedCU for this provider and this consumer over this epoch
+		usedCUConsumerTotal, err = k.GetTotalUsedCUForConsumerPerEpoch(ctx, userAddress.String(), userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, providerAddress.String())
+		if err != nil { // failed to get consumers total cu
+			return nil, 0, err
+		}
 	}
 	k.SetProviderPaymentStorage(ctx, userPaymentStorageInEpoch)
-	return &userPaymentStorageInEpoch, usedCUProviderTotal, nil
+	return &userPaymentStorageInEpoch, usedCUConsumerTotal, nil
 }
 
-func (k Keeper) GetTotalUsedCUForProviderEpoch(ctx sdk.Context, providerAddress sdk.AccAddress, userPaymentStorageInEpoch types.ProviderPaymentStorage) (usedCUProviderTotal uint64) {
+func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string, uniquePaymentStorage []*types.UniquePaymentStorageClientProvider, providerAddress string) (usedCUProviderTotal uint64, failed error) {
 	usedCUProviderTotal = 0
-	usedCUMap := k.GetEpochClientProviderUsedCUMap(ctx, userPaymentStorageInEpoch)
-	if usedProvider, ok := usedCUMap.Providers[providerAddress.String()]; ok {
-		return usedProvider
+	// uniquePayment key is: string(leadingChar) + providerAddress.String() + userAddress.String() + uniqueIdentifier + chainID
+	providerAddressLength := len(providerAddress) + 1 // we catch the leadingChar + provider address. to get exactly the user address
+	conmsumerAddressLength := len(consumerAddress)
+	totalLength := providerAddressLength + conmsumerAddressLength
+	for _, uniquePayment := range uniquePaymentStorage {
+		if totalLength > len(uniquePayment.Index) {
+			return usedCUProviderTotal, utils.LavaFormatError("providerAddressLength+conmsumerAddressLength out of range", fmt.Errorf("index out of range"), &map[string]string{"index": uniquePayment.Index, "length": strconv.Itoa(len(uniquePayment.Index)), "providerAddressLength": strconv.Itoa(providerAddressLength), "conmsumerAddressLength": strconv.Itoa(conmsumerAddressLength)})
+		}
+		if uniquePayment.Index[providerAddressLength:totalLength] == consumerAddress {
+			usedCUProviderTotal += uniquePayment.UsedCU
+		}
 	}
-	return 0
+	return usedCUProviderTotal, nil
 }

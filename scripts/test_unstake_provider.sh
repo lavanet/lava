@@ -5,20 +5,20 @@ source $__dir/useful_commands.sh
 # Making sure old screens are not running
 killall screen
 screen -wipe
-
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json --from alice --gas-adjustment "1.5" --gas "auto" -y
-lavad tx gov vote 1 yes -y --from alice --gas "auto"
+GASPRICE="0.000000001ulava"
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json --from alice -y --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 
 sleep 4
-lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1
-lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user2
-lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user3
-lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user4
+lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "ETH1" 200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # Ethereum providers
-lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1
-lavad tx pairing stake-provider "ETH1" 2000ulava "127.0.0.1:2222,jsonrpc,1" 1 -y --from servicer2
+lavad tx pairing stake-provider "ETH1" 2010ulava "127.0.0.1:2221,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" 2000ulava "127.0.0.1:2222,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
