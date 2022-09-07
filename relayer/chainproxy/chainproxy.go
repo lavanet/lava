@@ -164,7 +164,7 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
-	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
@@ -172,18 +172,19 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:        clientSession.Client.Acc,
-			ApiUrl:          url,
-			Data:            []byte(req),
-			SessionId:       uint64(0), //sessionID for reliability is 0
-			ChainID:         sentry.ChainID,
-			CuSum:           clientSession.CuSum,
-			BlockHeight:     blockHeight,
-			RelayNum:        clientSession.RelayNum,
-			RequestBlock:    requestedBlock,
-			QoSReport:       nil,
-			DataReliability: dataReliability,
-			ConnectionType:  connectionType,
+			Provider:              clientSession.Client.Acc,
+			ApiUrl:                url,
+			Data:                  []byte(req),
+			SessionId:             uint64(0), //sessionID for reliability is 0
+			ChainID:               sentry.ChainID,
+			CuSum:                 clientSession.CuSum,
+			BlockHeight:           blockHeight,
+			RelayNum:              clientSession.RelayNum,
+			RequestBlock:          requestedBlock,
+			QoSReport:             nil,
+			DataReliability:       dataReliability,
+			ConnectionType:        connectionType,
+			UnresponsiveProviders: unresponsiveProviders,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)

@@ -1253,7 +1253,7 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, error) {
 	//
@@ -1297,17 +1297,17 @@ func (s *Sentry) SendRelay(
 	clientSession := getClientSessionFromWrap(wrap, endpoint) // clientSession is LOCKED!
 
 	s.addedToPurgeAndReportLock.Lock()
-	data, err := json.Marshal(s.addedToPurgeAndReport)
+	unresponsive_providers_data, err := json.Marshal(s.addedToPurgeAndReport)
 	s.addedToPurgeAndReport = nil // reset added to purge this epoch when reporting the purged providers.
 	s.addedToPurgeAndReportLock.Unlock()
 
 	if err != nil {
 		clientSession.Lock.Unlock()
-		return nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(data))})
+		return nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(unresponsive_providers_data))})
 	}
 
 	// callback user
-	reply, request, err := cb_send_relay(clientSession, data)
+	reply, request, err := cb_send_relay(clientSession, unresponsive_providers_data)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
@@ -1325,7 +1325,7 @@ func (s *Sentry) SendRelay(
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
 		// call user
-		reply, request, err2 = cb_send_relay(clientSession)
+		reply, request, err2 = cb_send_relay(clientSession, unresponsive_providers_data)
 		if err2 != nil {
 			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 				s.movePairingEntryToPurge(wrap, index)
@@ -1414,7 +1414,7 @@ func (s *Sentry) SendRelay(
 								Sig:         nil,                                //calculated in cb_send_reliability
 							}
 							clientSession = getClientSessionFromWrap(wrap, endpoint)
-							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
+							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability, unresponsive_providers_data)
 							if err != nil {
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 									s.movePairingEntryToPurge(wrap, index)
