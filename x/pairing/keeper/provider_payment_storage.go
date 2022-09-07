@@ -6,7 +6,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -95,17 +94,11 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 	return &userPaymentStorageInEpoch, usedCUConsumerTotal, nil
 }
 
-func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string, uniquePaymentStorage []*types.UniquePaymentStorageClientProvider, providerAddress string) (usedCUProviderTotal uint64, failed error) {
+func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string,
+	uniquePaymentStorage []*types.UniquePaymentStorageClientProvider, providerAddress string) (usedCUProviderTotal uint64, failed error) {
 	usedCUProviderTotal = 0
-	// uniquePayment key is: string(leadingChar) + providerAddress.String() + userAddress.String() + uniqueIdentifier + chainID
-	providerAddressLength := len(providerAddress) + 1 // we catch the leadingChar + provider address. to get exactly the user address
-	conmsumerAddressLength := len(consumerAddress)
-	totalLength := providerAddressLength + conmsumerAddressLength
 	for _, uniquePayment := range uniquePaymentStorage {
-		if totalLength > len(uniquePayment.Index) {
-			return usedCUProviderTotal, utils.LavaFormatError("providerAddressLength+conmsumerAddressLength out of range", fmt.Errorf("index out of range"), &map[string]string{"index": uniquePayment.Index, "length": strconv.Itoa(len(uniquePayment.Index)), "providerAddressLength": strconv.Itoa(providerAddressLength), "conmsumerAddressLength": strconv.Itoa(conmsumerAddressLength)})
-		}
-		if uniquePayment.Index[providerAddressLength:totalLength] == consumerAddress {
+		if k.GetConsumerFromUniquePayment(uniquePayment) == consumerAddress {
 			usedCUProviderTotal += uniquePayment.UsedCU
 		}
 	}
