@@ -205,13 +205,14 @@ func TestRelayPaymentOverUse(t *testing.T) {
 
 	var Relays []*types.RelayRequest
 	Relays = append(Relays, relayRequest)
-
-	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	// TODO: currently over use is returning an error and doesnt get to balance zero. we will fix it in the future so this can be uncommented.
+	// balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
-	require.Nilf(t, err, "over use didnt return an error. and it should.")
-	balance = balance - ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
-	// require.Zero(t, balance) // TODO: this currently doesnt work as we cancel the payment if there isnt enough money available
+	require.Error(t, err)
+	// TODO: currently over use is returning an error and doesnt get to balance zero. we will fix it in the future so this can be uncommented.
+	// balance = balance - ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	// require.Zero(t, balance)
 }
 
 func TestRelayPaymentDoubleSpending(t *testing.T) {
