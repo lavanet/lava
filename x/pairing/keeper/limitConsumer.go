@@ -35,10 +35,10 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, ChainID string, Cu
 	if err != nil {
 		return 0, err
 	}
-	allowedCUProvider := allowedCU / servicersToPairCount
-	if totalCUInEpochForUserProvider > allowedCUProvider {
+	allowedCUConsumer := allowedCU / servicersToPairCount
+	if totalCUInEpochForUserProvider > allowedCUConsumer {
 		// if cu limit reached we return an error.
-		return 0, utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), &map[string]string{"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "allowedCUProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10)})
+		return 0, utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), &map[string]string{"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "allowedCUProvider": strconv.FormatUint(allowedCUConsumer, 10)})
 	}
 	return CuSum, nil
 }

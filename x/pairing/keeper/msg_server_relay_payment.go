@@ -284,7 +284,7 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 	var unresponsiveProviders []string
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
-		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData)})
+		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
 	}
 	if len(unresponsiveProviders) == 0 {
 		// nothing to do.
