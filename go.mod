@@ -31,7 +31,6 @@ require (
 require (
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/golang/protobuf v1.5.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
 	github.com/spf13/pflag v1.0.5
 )
 

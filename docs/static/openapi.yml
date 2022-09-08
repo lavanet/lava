@@ -16294,6 +16294,9 @@ paths:
                         }
       parameters:
         - name: body
+          description: |-
+            SimulateRequest is the request type for the Service.Simulate
+            RPC method.
           in: body
           required: true
           schema:
@@ -17093,6 +17096,11 @@ paths:
                         }
       parameters:
         - name: body
+          description: >-
+            BroadcastTxRequest is the request type for the
+            Service.BroadcastTxRequest
+
+            RPC method.
           in: body
           required: true
           schema:
@@ -28896,16 +28904,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/conflict/conflict_vote/{index}':
@@ -29289,16 +29287,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/epochstorage/stake_storage/{index}':
@@ -29508,16 +29496,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -29789,16 +29767,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30209,16 +30177,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -30799,16 +30757,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -51169,9 +51117,8 @@ definitions:
         properties:
           chainID:
             type: string
-          api_id:
-            type: integer
-            format: int64
+          connection_type:
+            type: string
           api_url:
             type: string
           session_id:
@@ -51558,9 +51505,8 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
               session_id:
@@ -51647,9 +51593,8 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
               session_id:
@@ -51781,9 +51726,8 @@ definitions:
     properties:
       chainID:
         type: string
-      api_id:
-        type: integer
-        format: int64
+      connection_type:
+        type: string
       api_url:
         type: string
       session_id:
@@ -51841,8 +51785,6 @@ definitions:
             type: string
           sync:
             type: string
-      connection_type:
-        type: string
   lavanet.lava.pairing.VRFData:
     type: object
     properties:

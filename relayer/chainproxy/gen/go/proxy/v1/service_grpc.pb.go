@@ -4,7 +4,7 @@
 // - protoc             v3.18.1
 // source: proxy/v1/service.proto
 
-package proxy
+package proxypb
 
 import (
 	context "context"
@@ -22,8 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProxyServiceClient interface {
-	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*Response, error)
-	Post(ctx context.Context, in *PostRequest, opts ...grpc.CallOption) (*Response, error)
+	Proxy(ctx context.Context, in *ProxyRequest, opts ...grpc.CallOption) (*ProxyResponse, error)
 }
 
 type proxyServiceClient struct {
@@ -34,18 +33,9 @@ func NewProxyServiceClient(cc grpc.ClientConnInterface) ProxyServiceClient {
 	return &proxyServiceClient{cc}
 }
 
-func (c *proxyServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Get", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *proxyServiceClient) Post(ctx context.Context, in *PostRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Post", in, out, opts...)
+func (c *proxyServiceClient) Proxy(ctx context.Context, in *ProxyRequest, opts ...grpc.CallOption) (*ProxyResponse, error) {
+	out := new(ProxyResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Proxy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,19 +46,15 @@ func (c *proxyServiceClient) Post(ctx context.Context, in *PostRequest, opts ...
 // All implementations should embed UnimplementedProxyServiceServer
 // for forward compatibility
 type ProxyServiceServer interface {
-	Get(context.Context, *GetRequest) (*Response, error)
-	Post(context.Context, *PostRequest) (*Response, error)
+	Proxy(context.Context, *ProxyRequest) (*ProxyResponse, error)
 }
 
 // UnimplementedProxyServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedProxyServiceServer struct {
 }
 
-func (UnimplementedProxyServiceServer) Get(context.Context, *GetRequest) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedProxyServiceServer) Post(context.Context, *PostRequest) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Post not implemented")
+func (UnimplementedProxyServiceServer) Proxy(context.Context, *ProxyRequest) (*ProxyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Proxy not implemented")
 }
 
 // UnsafeProxyServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -82,38 +68,20 @@ func RegisterProxyServiceServer(s grpc.ServiceRegistrar, srv ProxyServiceServer)
 	s.RegisterService(&ProxyService_ServiceDesc, srv)
 }
 
-func _ProxyService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRequest)
+func _ProxyService_Proxy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProxyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProxyServiceServer).Get(ctx, in)
+		return srv.(ProxyServiceServer).Proxy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Get",
+		FullMethod: "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Proxy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProxyServiceServer).Get(ctx, req.(*GetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProxyService_Post_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PostRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProxyServiceServer).Post(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/lavanet.lava.relayer.chainproxy.proxy.ProxyService/Post",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProxyServiceServer).Post(ctx, req.(*PostRequest))
+		return srv.(ProxyServiceServer).Proxy(ctx, req.(*ProxyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -126,12 +94,8 @@ var ProxyService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ProxyServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Get",
-			Handler:    _ProxyService_Get_Handler,
-		},
-		{
-			MethodName: "Post",
-			Handler:    _ProxyService_Post_Handler,
+			MethodName: "Proxy",
+			Handler:    _ProxyService_Proxy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

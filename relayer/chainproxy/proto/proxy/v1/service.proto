@@ -2,34 +2,19 @@ syntax = "proto3";
 
 package lavanet.lava.relayer.chainproxy.proxy;
 
-option go_package = "github.com/lavanet/lava/relayer/chainproxy/gen/go/proxy/v1;proxy";
+option go_package = "github.com/lavanet/lava/relayer/chainproxy/gen/go/proxy/v1;proxypb";
 
-import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
-import "google/protobuf/empty.proto";
 
 service ProxyService {
-  rpc Get(GetRequest) returns (Response) {
-    option (google.api.http).get = "/{name=dappId/*}";
-  }
-
-  rpc Post(PostRequest) returns (Response) {
-    option (google.api.http) = {
-      post: "/{name=dappId/*}"
-      body: "*"
-    };;
-  }
+  rpc Proxy(ProxyRequest) returns (ProxyResponse) {};
 };
 
-message GetRequest {
-  string name = 1;
-};
-
-message PostRequest {
+message ProxyRequest {
   string              name = 1;
   google.protobuf.Any body = 2;
 };
 
-message Response {
+message ProxyResponse {
   google.protobuf.Any body = 1;
 };

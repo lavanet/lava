@@ -1,7 +1,7 @@
 #!/bin/bash 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source $__dir/useful_commands.sh
-. ${__dir}/vars/variables.sh
+source "$__dir"/useful_commands.sh
+. "${__dir}"/vars/variables.sh
 # Making sure old screens are not running
 killall screen
 screen -wipe
@@ -20,19 +20,19 @@ lavad tx pairing stake-provider "LAV1" 2050ulava "127.0.0.1:2263,tendermintrpc,1
 sleep_until_next_epoch
 
 # Lava providers
-screen -d -m -S lav1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2271.log"
-screen -S lav1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2272.log"
-screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2273.log"
-screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
-screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
-screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
-screen -S lav1_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2281 $LAVA_GRPC LAV1 grpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2281.log"
-screen -S lav1_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2282 $LAVA_GRPC LAV1 grpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2282.log"
-screen -S lav1_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2283 $LAVA_GRPC LAV1 grpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2283.log"
+screen -d -m -S lav1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2271.log"
+screen -S lav1_providers -X screen -t win1 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2272 $LAVA_REST LAV1 rest --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2272.log"
+screen -S lav1_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2273 $LAVA_REST LAV1 rest --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2273.log"
+screen -S lav1_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
+screen -S lav1_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
+screen -S lav1_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
+screen -S lav1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2281 $LAVA_GRPC LAV1 grpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2281.log"
+screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2282 $LAVA_GRPC LAV1 grpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2282.log"
+screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2283 $LAVA_GRPC LAV1 grpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2283.log"
 
-screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
-screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
-screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 LAV1 grpc --from user4"
+screen -d -m -S portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
+screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
+screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3342 LAV1 grpc --from user4"
 
 # Lava Over Lava ETH
 
@@ -44,8 +44,8 @@ sleep 3 # wait for the portal to start.
 
 # sleep_until_next_epoch
 
-# screen -d -m -S eth1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 --node \"http://127.0.0.1:3341/1\" 2>&1 | tee $LOGS_DIR/ETH1_2221.log"
+# screen -d -m -S eth1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 --node \"http://127.0.0.1:3341/1\" 2>&1 | tee $LOGS_DIR/ETH1_2221.log"
 
-# screen -d -m -S eth1_portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --node \"http://127.0.0.1:3341/1\" 2>&1 | tee $LOGS_DIR/PORTAL_3333.log"
+# screen -d -m -S eth1_portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --node \"http://127.0.0.1:3341/1\" 2>&1 | tee $LOGS_DIR/PORTAL_3333.log"
 
 screen -ls

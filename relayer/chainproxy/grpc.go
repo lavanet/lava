@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	proxypb "github.com/lavanet/lava/relayer/chainproxy/gen/go/proxy/v1"
+	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -45,36 +45,21 @@ func NewServer(cp *GrpcChainProxy, privKey *btcec.PrivateKey) *Server {
 	}
 }
 
-func (s Server) Get(
+func (s Server) Proxy(
 	ctx context.Context,
-	req *proxypb.GetRequest,
-) (resp *proxypb.Response, err error) {
-	path := req.GetName()
-	log.Println("in <<< ", path)
-
-	var reply *pairingtypes.RelayReply
-	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, "", http.MethodGet); err != nil {
-		log.Println(err)
-		return nil, fmt.Errorf(`{"error": "unsupported api","more_information" %w}`, err)
+	req *proxypb.ProxyRequest,
+) (resp *proxypb.ProxyResponse, err error) {
+	var b []byte
+	if b, err = grpcutil.Marshal(req.GetBody()); err != nil {
+		return nil, utils.LavaFormatError("", err, nil)
 	}
 
-	return handleReply(reply)
-}
-
-func (s Server) Post(
-	ctx context.Context,
-	req *proxypb.PostRequest,
-) (resp *proxypb.Response, err error) {
-	// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
-	// contentType := string(c.Context().Request.Header.ContentType())
-
 	path := req.GetName()
 	log.Println("in <<< ", path)
 
 	var reply *pairingtypes.RelayReply
-	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, req.GetBody().String(), http.MethodPost); err != nil {
-		log.Println(err)
-		return nil, fmt.Errorf(`{"error": "unsupported api","more_information" %w}`, err)
+	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, string(b), ""); err != nil {
+		return nil, utils.LavaFormatError("", err, nil)
 	}
 
 	return handleReply(reply)
@@ -424,6 +409,17 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	return reply, nil
 }
 
+func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.ProxyResponse, err error) {
+	log.Println("out >>> len", len(reply.GetData()))
+
+	var pbAny *anypb.Any
+	if pbAny, err = getAnyByInterface(reply.GetData()); err != nil {
+		return nil, utils.LavaFormatError("", err, nil)
+	}
+
+	return &proxypb.ProxyResponse{Body: pbAny}, nil
+}
+
 func getAnyByInterface(v interface{}) (pbAny *anypb.Any, err error) {
 	var pbValue *structpb.Value
 	if pbValue, err = structpb.NewValue(v); err != nil {
@@ -431,16 +427,4 @@ func getAnyByInterface(v interface{}) (pbAny *anypb.Any, err error) {
 	}
 
 	return anypb.New(pbValue)
-}
-
-func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.Response, err error) {
-	log.Println("out >>> len", len(reply.GetData()))
-
-	var pbAny *anypb.Any
-	if pbAny, err = getAnyByInterface(string(reply.GetData())); err != nil {
-		// TODO: Error format?
-		return nil, err
-	}
-
-	return &proxypb.Response{Body: pbAny}, nil
 }
