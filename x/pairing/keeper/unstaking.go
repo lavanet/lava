@@ -97,14 +97,16 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 			if err != nil {
 				panic(fmt.Sprintf("error getting AccAddress from : %s error: %s", unstakingEntry.Address, err))
 			}
-			//transfer stake money to the servicer account
-			valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
-			if !valid {
-				details["error"] = err.Error()
-				utils.LavaError(ctx, logger, stake_type()+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
-				panic(fmt.Sprintf("error unstaking : %s", err))
+			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
+				//transfer stake money to the stake entry account
+				valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
+				if !valid {
+					details["error"] = err.Error()
+					utils.LavaError(ctx, logger, stake_type()+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
+					panic(fmt.Sprintf("error unstaking : %s", err))
+				}
+				utils.LogLavaEvent(ctx, logger, stake_type()+"_unstake_commit", details, "Unstaking Providers Commit")
 			}
-			utils.LogLavaEvent(ctx, logger, stake_type()+"_unstake_commit", details, "Unstaking Providers Commit")
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
 			utils.LavaError(ctx, logger, stake_type()+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
