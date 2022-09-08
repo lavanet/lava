@@ -275,6 +275,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, clientAddr sdk.AccAddress, epoch uint64, chainID string) error {
 	var unresponsiveProviders []string
+	if len(unresponsiveData) == 0 {
+		return nil
+	}
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
 		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
