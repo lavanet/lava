@@ -57,7 +57,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
-		isValidPairing, isOverlap, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, userStake, thisProviderIndex, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.ChainID,
 			clientAddr,
@@ -112,7 +112,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
 			}
 			//check this other provider is indeed legitimate
-			isValidPairing, _, _, _, err := k.Keeper.ValidatePairingForClient(
+			isValidPairing, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
 				relay.ChainID,
 				clientAddr,
@@ -156,13 +156,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			payReliability = true
 		}
 
-		if isOverlap {
-			epochStart, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(relay.BlockHeight))
-			if err != nil {
-				details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "block": strconv.FormatUint(uint64(relay.BlockHeight), 10), "error": err.Error()}
-				return errorLogAndFormat("relay_payment_epoch_start_overlap", details, "problem getting epoch start")
-			}
-		}
 		//this prevents double spend attacks, and tracks the CU per session a client can use
 		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
@@ -205,7 +198,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "isOverlap": fmt.Sprintf("%t", isOverlap), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
 		if relay.QoSReport != nil {
 			QoS, err := relay.QoSReport.ComputeQoS()

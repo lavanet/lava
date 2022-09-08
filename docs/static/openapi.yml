@@ -30563,8 +30563,6 @@ paths:
             properties:
               valid:
                 type: boolean
-              overlap:
-                type: boolean
               index:
                 type: string
                 format: int64
@@ -52982,8 +52980,6 @@ definitions:
     type: object
     properties:
       valid:
-        type: boolean
-      overlap:
         type: boolean
       index:
         type: string
