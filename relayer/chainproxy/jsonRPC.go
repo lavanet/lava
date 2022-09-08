@@ -263,7 +263,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			log.Println(err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, err.Error()))
+			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, err.Error()))
 		}
 
 		utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})

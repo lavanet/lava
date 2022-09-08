@@ -132,7 +132,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.Sig = sig
-		c := *clientSession.Client.Client
+		c := *clientSession.Endpoint.Client
 
 		relaySentTime := time.Now()
 		clientSession.QoSInfo.TotalRelays++
@@ -198,7 +198,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
-		c := *clientSession.Client.Client
+		c := *clientSession.Endpoint.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err

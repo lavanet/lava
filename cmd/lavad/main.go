@@ -93,10 +93,10 @@ func main() {
 	}
 
 	var cmdTestClient = &cobra.Command{
-		Use:   "test_client [chain-id] [api-interface]",
+		Use:   "test_client [chain-id] [api-interface] [duration-seconds]",
 		Short: "test client",
 		Long:  `test client`,
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo("Test consumer process started", &map[string]string{"args": strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -108,9 +108,17 @@ func main() {
 
 			apiInterface := args[1]
 
+			// if duration is not set, set duration value to 1 so tests runs atleast once
+			duration := int64(1)
+			if len(args) == 3 {
+				duration, err = strconv.ParseInt(args[2], 10, 64)
+				if err != nil {
+					return err
+				}
+			}
 			ctx := context.Background()
 
-			relayer.TestClient(ctx, clientCtx, chainID, apiInterface, cmd.Flags())
+			relayer.TestClient(ctx, clientCtx, chainID, apiInterface, duration, cmd.Flags())
 
 			return nil
 		},

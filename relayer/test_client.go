@@ -20,6 +20,7 @@ func TestClient(
 	clientCtx client.Context,
 	chainID string,
 	apiInterface string,
+	duration int64,
 	flagSet *pflag.FlagSet,
 ) {
 	// Every client must preseed
@@ -64,16 +65,16 @@ func TestClient(
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	log.Println("Client pubkey", clientKey.GetPubKey().Address())
 
-	//
+	testDuration := time.Second * time.Duration(duration)
 	// Run tests
 	var testErrors error = nil
 	switch chainID {
 	case "ETH1":
-		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3333/1")
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3333/1", testDuration)
 	case "GTH1":
-		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3339/1")
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3339/1", testDuration)
 	case "FTM250":
-		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3336/1")
+		testErrors = testclients.EthTests(ctx, chainID, "http://127.0.0.1:3336/1", testDuration)
 	case "COS1":
 		testErrors = testclients.TerraTests(ctx, chainProxy, privKey, apiInterface)
 	case "COS3", "COS4":

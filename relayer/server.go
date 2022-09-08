@@ -49,6 +49,7 @@ var (
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
 	g_rewardsSessions_mutex sync.Mutex
 	g_serverID              uint64
+	g_askForRewards_mutex   sync.Mutex
 )
 
 type UserSessionsEpochData struct {
@@ -94,6 +95,9 @@ type relayServer struct {
 }
 
 func askForRewards(staleEpochHeight int64) {
+	g_askForRewards_mutex.Lock()
+	defer g_askForRewards_mutex.Unlock()
+	deletedRewardsSessions := make(map[uint64][]*RelaySession, 0)
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
@@ -138,7 +142,6 @@ func askForRewards(staleEpochHeight int64) {
 			}
 
 			relay := session.Proof
-			session.Proof = &pairingtypes.RelayRequest{} // Just in case askForRewards is running more than once at the same time and it might ask to be rewarded for this relay twice
 			relays = append(relays, relay)
 			sessionsToDelete = append(sessionsToDelete, session)
 
@@ -181,9 +184,9 @@ func askForRewards(staleEpochHeight int64) {
 		}
 
 		g_rewardsSessions_mutex.Lock()
+		deletedRewardsSessions[uint64(staleEpoch)] = g_rewardsSessions[uint64(staleEpoch)]
 		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
-
 	}
 
 	userSessionObjsToDelete := make([]string, 0)
@@ -205,7 +208,6 @@ func askForRewards(staleEpochHeight int64) {
 		delete(g_sessions, user)
 	}
 	g_sessions_mutex.Unlock()
-
 	if len(relays) == 0 {
 		// no rewards to ask for
 		return
@@ -232,9 +234,9 @@ func askForRewards(staleEpochHeight int64) {
 				"customSeqNum": strconv.FormatUint(customSeqNum, 10),
 			})
 		}
-		err := tx.GenerateOrBroadcastTxWithFactory(g_sentry.ClientCtx, g_txFactory, msg)
+		err := sentry.CheckProfitabilityAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 		if err != nil {
-			utils.LavaFormatError("Sending GenerateOrBroadcastTxWithFactory failed", err, &map[string]string{
+			utils.LavaFormatError("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
 				"msg": fmt.Sprintf("%+v", msg),
 			})
 		}
@@ -243,12 +245,21 @@ func askForRewards(staleEpochHeight int64) {
 		summarized, transactionResults := summarizeTransactionResult(transactionResult)
 		summarizedTransactionResult = summarized
 
-		returnCode, err := strconv.ParseUint(strings.Split(transactionResults[0], ":")[1], 10, 32)
-		if err != nil {
+		var returnCode uint64
+		splitted := strings.Split(transactionResults[0], ":")
+		if len(splitted) < 2 {
 			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
 				"parsing data": transactionResult,
 			})
 			returnCode = 1 // just not zero
+		} else {
+			returnCode, err = strconv.ParseUint(splitted[1], 10, 32)
+			if err != nil {
+				utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
+					"parsing data": transactionResult,
+				})
+				returnCode = 1 // just not zero
+			}
 		}
 
 		if returnCode == 0 { // if we get some other error which isnt then keep retrying
@@ -271,11 +282,16 @@ func askForRewards(staleEpochHeight int64) {
 					utils.LavaFormatError("Cannot parse sequence number from error transaction", err, nil)
 				}
 			} else {
+				// readd the deleted payments back
+				g_rewardsSessions_mutex.Lock()
+				for k, v := range deletedRewardsSessions {
+					g_rewardsSessions[k] = v
+				}
+				g_rewardsSessions_mutex.Unlock()
 				break // Break loop for other errors
 			}
 		}
 	}
-
 	if hasSequenceError {
 		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
 			"tries": strconv.FormatInt(int64(idx+1), 10),

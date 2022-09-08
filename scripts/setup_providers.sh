@@ -1,10 +1,10 @@
 #!/bin/bash 
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-. ${__dir}/vars/variables.sh
+. "${__dir}"/vars/variables.sh
 LOGS_DIR=${__dir}/../testutil/debugging/logs
-mkdir -p $LOGS_DIR
-rm $LOGS_DIR/*.log
+mkdir -p "$LOGS_DIR"
+rm "$LOGS_DIR"/*.log
 
 echo "---------------Setup Providers------------------"
 killall screen
@@ -54,9 +54,11 @@ screen -S lav1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
 screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
-screen -S lav1_providers -X screen -t win6 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2282 $LAVA_GRPC LAV1 grpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2281.log"
-screen -S lav1_providers -X screen -t win7 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2283 $LAVA_GRPC LAV1 grpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2282.log"
-screen -S lav1_providers -X screen -t win8 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2284 $LAVA_GRPC LAV1 grpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2283.log"
+
+#Celo providers
+screen -d -m -S celo_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5241 $CELO_ALFAJORES_WS CELO jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/CELO_2221.log"
+screen -S celo_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5242 $CELO_ALFAJORES_WS CELO jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/CELO_2222.log"
+screen -S celo_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5243 $CELO_ALFAJORES_WS CELO jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/CELO_2223.log"
 
 # Setup Portals
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3333.log"
@@ -68,6 +70,6 @@ screen -S portals -X screen -t win14 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win15 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3338 COS4 tendermintrpc --from user2 2>&1 | tee $LOGS_DIR/PORTAL_3338.log"
 screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3340.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
-screen -S portals -X screen -t win18 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 LAV1 grpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 echo "--- setting up screens done ---"
 screen -ls

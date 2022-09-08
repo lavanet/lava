@@ -6,6 +6,7 @@ source $MYDIR/env_vars_for_upgrade.sh
 git checkout upgrade_module_to
 
 ignite chain build
+GASPRICE="0.000000001ulava"
 
 echo "mkdir -p $DAEMON_HOME/cosmovisor/upgrades/$UPRADE_NAME/bin"
 mkdir -p $DAEMON_HOME/cosmovisor/upgrades/$UPRADE_NAME/bin
@@ -22,9 +23,9 @@ done
 
 BLOCK_HEIGHT_CHOSEN=$(echo "$((BLOCK_HEIGHT + 60))")
 
-lavad tx gov submit-proposal software-upgrade $UPRADE_NAME --title upgrade --description upgrade --upgrade-height $BLOCK_HEIGHT_CHOSEN --from alice --yes --gas "auto"
-lavad tx gov deposit 1 10000000ulava --from alice --yes --gas "auto"
-lavad tx gov vote 1 yes --from alice --yes --gas "auto"
+lavad tx gov submit-proposal software-upgrade $UPRADE_NAME --title upgrade --description upgrade --upgrade-height $BLOCK_HEIGHT_CHOSEN --from alice --yes --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov deposit 1 10000000ulava --from alice --yes --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov vote 1 yes --from alice --yes --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 echo "chosen block for upgrade: $BLOCK_HEIGHT_CHOSEN"
 lavad q upgrade plan
 # wait for upgrade.
