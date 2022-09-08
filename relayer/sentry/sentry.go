@@ -1323,14 +1323,14 @@ func (s *Sentry) SendRelay(
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, utils.LavaFormatError("Simulation: failed in unmarshalling finalized blocks data", err, nil)
+			return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
-			return nil, utils.LavaFormatError("Simulation: failed provider reply validation", err, nil)
+			return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
@@ -1372,7 +1372,7 @@ func (s *Sentry) SendRelay(
 					wrap, index, endpoint, err := s.specificPairing(ctx, address)
 					if err != nil {
 						// failed to get clientWrapper for this address, skip reliability
-						return nil, nil, utils.LavaFormatError("Simulation: sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
+						return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
 					} else {
 						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
 						if canSendReliability {
@@ -1393,12 +1393,12 @@ func (s *Sentry) SendRelay(
 								if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 									s.movePairingEntryToPurge(wrap, index)
 								}
-								return nil, nil, utils.LavaFormatError("Simulation: sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
+								return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
 							}
 							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
 							return relay_rep, relay_req, nil
 						} else {
-							utils.LavaFormatWarning("Simulation: Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
+							utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
 							return nil, nil, nil
 						}
 					}
@@ -1407,7 +1407,7 @@ func (s *Sentry) SendRelay(
 						//send reliability on the client's expense
 						utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
 					}
-					return nil, nil, fmt.Errorf("Simulation: is not a valid reliability VRF address result") //this is not an error we want to log
+					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
 				}
 			}
 
