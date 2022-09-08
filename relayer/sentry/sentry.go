@@ -329,7 +329,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	s.pairingNext = []*RelayerClientWrapper{}
 
 	s.addedToPurgeAndReportLock.Lock()
-	s.addedToPurgeAndReport = nil // reset added to purge this epoch when reseting provider list
+	s.addedToPurgeAndReport = []string{} // reset added to purge this epoch when reseting provider list
 	s.addedToPurgeAndReportLock.Unlock()
 
 	// Time to reset the consensuses for this pairing epoch
@@ -1298,7 +1298,7 @@ func (s *Sentry) SendRelay(
 
 	s.addedToPurgeAndReportLock.Lock()
 	unresponsive_providers_data, err := json.Marshal(s.addedToPurgeAndReport)
-	s.addedToPurgeAndReport = nil // reset added to purge this epoch when reporting the purged providers.
+	s.addedToPurgeAndReport = []string{} // reset added to purge this epoch when reporting the purged providers.
 	s.addedToPurgeAndReportLock.Unlock()
 
 	if err != nil {
