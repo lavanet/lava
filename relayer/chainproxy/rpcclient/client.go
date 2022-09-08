@@ -323,14 +323,24 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 	}
 
 	// dispatch has accepted the request and will close the channel when it quits.
-	switch resp, err := op.wait(ctx, c); {
-	case err != nil:
+
+	resp, err := op.wait(ctx, c)
+	if err != nil {
 		return err
-	case resp.Error != nil:
+	}
+	_, ok := result.(*json.RawMessage)
+	if !ok {
+		respData, err := json.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(respData, &result)
+	}
+	if resp.Error != nil {
 		return resp.Error
-	case len(resp.Result) == 0:
+	} else if len(resp.Result) == 0 {
 		return ErrNoResult
-	default:
+	} else {
 		return json.Unmarshal(resp.Result, &result)
 	}
 }
@@ -421,17 +431,6 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	return c.send(ctx, op, msg)
 }
 
-// EthSubscribe registers a subscription under the "eth" namespace.
-func (c *Client) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return c.Subscribe(ctx, "eth", channel, args...)
-}
-
-// ShhSubscribe registers a subscription under the "shh" namespace.
-// Deprecated: use Subscribe(ctx, "shh", ...).
-func (c *Client) ShhSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return c.Subscribe(ctx, "shh", channel, args...)
-}
-
 // Subscribe calls the "<namespace>_subscribe" method with the given arguments,
 // registering a subscription. Server notifications for the subscription are
 // sent to the given channel. The element type of the channel must match the
@@ -444,7 +443,11 @@ func (c *Client) ShhSubscribe(ctx context.Context, channel interface{}, args ...
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
-func (c *Client) Subscribe(ctx context.Context, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+func (c *Client) Subscribe(ctx context.Context, result interface{}, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
+	}
+
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)
 	if chanVal.Kind() != reflect.Chan || chanVal.Type().ChanDir()&reflect.SendDir == 0 {
@@ -472,7 +475,18 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 	if err := c.send(ctx, op, msg); err != nil {
 		return nil, err
 	}
-	if _, err := op.wait(ctx, c); err != nil {
+	resp, err := op.wait(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	// TODO
+	// use only one type to remove marshal and unmarshal
+	respData, err := json.Marshal(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(respData, &result)
+	if err != nil {
 		return nil, err
 	}
 	return op.sub, nil

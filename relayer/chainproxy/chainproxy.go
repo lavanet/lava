@@ -7,6 +7,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -20,6 +21,7 @@ const (
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
+	SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error)
 	RequestedBlock() int64
 	GetMsg() interface{}
 }

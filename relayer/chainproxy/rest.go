@@ -13,8 +13,10 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -273,4 +275,8 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	nm.Result = body
 
 	return reply, nil
+}
+
+func (nm *RestMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
+	return nil, nil, utils.LavaFormatError("Subscribe not available on rest", nil, nil)
 }

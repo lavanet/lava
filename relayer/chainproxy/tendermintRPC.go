@@ -284,32 +284,28 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	//
 	// Call our node
-	var result json.RawMessage
+	var result JsonrpcMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
 
-	//
-	// Wrap result back to json
-	replyMsg := JsonrpcMessage{
-		Version: nm.msg.Version,
-		ID:      nm.msg.ID,
-	}
+	var replyMsg JsonrpcMessage
+
+	// the error check here would only wrap errors not from the rpc
 	if err != nil {
-		//
-		// TODO: CallContext is limited, it does not give us the source
-		// of the error or the error code if json (we need smarter error handling)
+		replyMsg := JsonrpcMessage{
+			Version: nm.msg.Version,
+			ID:      nm.msg.ID,
+		}
+
 		replyMsg.Error = &jsonError{
-			Code:    1, // TODO
+			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
-		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
 	} else {
-		replyMsg.Result = result
-		nm.msg.Result = result
+		replyMsg = result
+		nm.msg = &result
 	}
 
 	data, err := json.Marshal(replyMsg)

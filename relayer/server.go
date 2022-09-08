@@ -5,6 +5,7 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -623,10 +625,31 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		relaySession.Lock.Unlock()
 	}
 	// Send
-	reply, err := nodeMsg.Send(ctx)
+	var reply *pairingtypes.RelayReply
+	if nodeMsg.GetServiceApi().Category.Subscription {
+		var sub *rpcclient.ClientSubscription
+		headers := make(chan interface{})
+		sub, reply, err = nodeMsg.SendSubscribe(ctx, headers)
+		if err != nil {
+			return nil, utils.LavaFormatError("Subscription failed", err, nil)
+		}
+		go func() {
+			for {
+				log.Println("here")
+				select {
+				case err := <-sub.Err():
+					log.Fatal(err)
+				case iheader := <-headers:
+					fmt.Println(iheader) // 0xbc10defa8dda384c96a17640d84de5578804945d347072e091b4e5f390ddea7f
+				}
+			}
+		}()
+
+	} else {
+		reply, err = nodeMsg.Send(ctx)
+	}
 	if err != nil {
-		return nil, utils.LavaFormatError("Sending nodeMsg failed", err,
-			nil)
+		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
 
 	latestBlock := int64(0)

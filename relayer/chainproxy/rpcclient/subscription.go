@@ -210,7 +210,7 @@ type ClientSubscription struct {
 	subid     string
 
 	// The in channel receives notification values from client dispatcher.
-	in chan json.RawMessage
+	in chan *jsonrpcMessage
 
 	// The error channel receives the error from the forwarding loop.
 	// It is closed by Unsubscribe.
@@ -234,7 +234,7 @@ func newClientSubscription(c *Client, namespace string, channel reflect.Value) *
 		namespace:   namespace,
 		etype:       channel.Type().Elem(),
 		channel:     channel,
-		in:          make(chan json.RawMessage),
+		in:          make(chan *jsonrpcMessage),
 		quit:        make(chan error),
 		forwardDone: make(chan struct{}),
 		unsubDone:   make(chan struct{}),
@@ -269,7 +269,7 @@ func (sub *ClientSubscription) Unsubscribe() {
 }
 
 // deliver is called by the client's message dispatcher to send a notification value.
-func (sub *ClientSubscription) deliver(result json.RawMessage) (ok bool) {
+func (sub *ClientSubscription) deliver(result *jsonrpcMessage) (ok bool) {
 	select {
 	case sub.in <- result:
 		return true
@@ -347,26 +347,20 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 			return false, err
 
 		case 1: // <-sub.in
-			val, err := sub.unmarshal(recv.Interface().(json.RawMessage))
-			if err != nil {
+			msg := recv.Interface().(*jsonrpcMessage)
+			if msg.Error != nil {
 				return true, err
 			}
 			if buffer.Len() == maxClientSubscriptionBuffer {
 				return true, ErrSubscriptionQueueOverflow
 			}
-			buffer.PushBack(val)
+			buffer.PushBack(msg)
 
 		case 2: // sub.channel<-
 			cases[2].Send = reflect.Value{} // Don't hold onto the value.
 			buffer.Remove(buffer.Front())
 		}
 	}
-}
-
-func (sub *ClientSubscription) unmarshal(result json.RawMessage) (interface{}, error) {
-	val := reflect.New(sub.etype)
-	err := json.Unmarshal(result, val.Interface())
-	return val.Elem().Interface(), err
 }
 
 func (sub *ClientSubscription) requestUnsubscribe() error {

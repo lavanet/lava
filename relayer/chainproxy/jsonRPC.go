@@ -8,10 +8,12 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -29,7 +31,7 @@ type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
-	Params  interface{}     `json:"params,omitempty"`
+	Params  []interface{}   `json:"params,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
 }
@@ -286,8 +288,8 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }
 
+// the error check here would only wrap errors not from the rpc
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
-	//
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
@@ -295,39 +297,79 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	//
 	// Call our node
-	var result json.RawMessage
+	var result JsonrpcMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
-	//
-	// Wrap result back to json
-	replyMsg := JsonrpcMessage{
-		Version: nm.msg.Version,
-		ID:      nm.msg.ID,
-	}
+
+	var replyMsg JsonrpcMessage
 	if err != nil {
-		//
-		// TODO: CallContext is limited, it does not give us the source
-		// of the error or the error code if json (we need smarter error handling)
+		replyMsg = JsonrpcMessage{
+			Version: nm.msg.Version,
+			ID:      nm.msg.ID,
+		}
 		replyMsg.Error = &jsonError{
-			Code:    1, // TODO
+			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
-		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
 	} else {
-		replyMsg.Result = result
-		nm.msg.Result = result
+		nm.msg = &result
+		replyMsg = result
 	}
 
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
 		return nil, err
 	}
+
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 	return reply, nil
+}
+
+func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
+	// Get node
+	rpc, err := nm.cp.conn.GetRpc(true)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer nm.cp.conn.ReturnRpc(rpc)
+
+	// Need to do this since some networks (Fantom) have a subscribe method under a different namespace.
+	method := strings.Split(nm.msg.Method, "_")
+	if len(method) != 2 {
+		return nil, nil, utils.LavaFormatError("Invalid Method", nil, nil)
+	}
+	namespace := method[0]
+
+	var result JsonrpcMessage
+	sub, err := rpc.Subscribe(context.Background(), &result, namespace, ch, nm.msg.Params...)
+
+	var replyMsg JsonrpcMessage
+	if err != nil {
+		replyMsg = JsonrpcMessage{
+			Version: nm.msg.Version,
+			ID:      nm.msg.ID,
+		}
+		replyMsg.Error = &jsonError{
+			Code:    1,
+			Message: fmt.Sprintf("%s", err),
+		}
+	} else {
+		nm.msg = &result
+		replyMsg = result
+	}
+
+	data, err := json.Marshal(replyMsg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: data,
+	}
+
+	return sub, reply, err
 }
