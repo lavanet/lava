@@ -881,7 +881,7 @@ func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 		}
 	}
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
-		"total CU that god paid": strconv.FormatUint(s.GetPaidCU(), 10)})
+		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
 }
 
 // expecting caller to lock

@@ -329,6 +329,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	return reply, nil
 }
 
+// TODO Identify if API is tendermint or ethereum
 func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
@@ -337,10 +338,15 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
+	// TODO Websockets for tendermint
+	// subscribe is used for tendermint based chains
+	// if nm.msg.Method == "subscribe" {
+	// }
+
 	// Need to do this since some networks (Fantom) have a subscribe method under a different namespace.
 	method := strings.Split(nm.msg.Method, "_")
 	if len(method) != 2 {
-		return nil, nil, utils.LavaFormatError("Invalid Method", nil, nil)
+		return nil, nil, utils.LavaFormatError("Invalid Method "+nm.msg.Method, nil, nil)
 	}
 	namespace := method[0]
 
@@ -372,4 +378,5 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 	}
 
 	return sub, reply, err
+
 }

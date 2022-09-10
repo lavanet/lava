@@ -5,7 +5,6 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -63,11 +62,13 @@ type UserSessionsEpochData struct {
 
 type UserSessions struct {
 	Sessions      map[uint64]*RelaySession
+	Subs          map[string]*subscription //key: subscriptionID
 	IsBlockListed bool
 	user          string
 	dataByEpoch   map[uint64]*UserSessionsEpochData
 	Lock          sync.Mutex
 }
+
 type RelaySession struct {
 	userSessionsParent *UserSessions
 	CuSum              uint64
@@ -90,6 +91,27 @@ type voteData struct {
 	RelayDataHash []byte
 	Nonce         int64
 	CommitHash    []byte
+}
+type subscription struct {
+	id          string
+	sub         *rpcclient.ClientSubscription
+	repliesChan chan interface{}
+}
+
+func (s *subscription) loop() {
+	for {
+		select {
+		case <-s.sub.Err():
+			return
+		case reply := <-s.repliesChan:
+			fmt.Println(reply) // 0xbc10defa8dda384c96a17640d84de5578804945d347072e091b4e5f390ddea7f
+		}
+	}
+}
+
+// TODO Perform payment stuff here
+func (s *subscription) disconnect() {
+	s.sub.Unsubscribe()
 }
 
 type relayServer struct {
@@ -398,7 +420,7 @@ func getOrCreateUserSessions(userAddr string) *UserSessions {
 	g_sessions_mutex.Lock()
 	userSessions, ok := g_sessions[userAddr]
 	if !ok {
-		userSessions = &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
+		userSessions = &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, Subs: map[string]*subscription{}, user: userAddr}
 		g_sessions[userAddr] = userSessions
 	}
 	g_sessions_mutex.Unlock()
@@ -526,12 +548,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
-		utils.LavaFormatError("failed autherising user request", nil, nil)
+		utils.LavaFormatError("failed authorizing user request", nil, nil)
 		return nil, err
 	}
 
 	if request.DataReliability != nil {
-
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
@@ -586,9 +607,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
 		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
-
 	} else {
-
 		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
 			return nil, err
@@ -627,26 +646,50 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	// Send
 	var reply *pairingtypes.RelayReply
 	if nodeMsg.GetServiceApi().Category.Subscription {
-		var sub *rpcclient.ClientSubscription
-		headers := make(chan interface{})
-		sub, reply, err = nodeMsg.SendSubscribe(ctx, headers)
+		userSessions := getOrCreateUserSessions(userAddr.String())
+		userSessions.Lock.Lock()
+		defer userSessions.Lock.Unlock()
+
+		var clientSub *rpcclient.ClientSubscription
+		repliesChan := make(chan interface{})
+		clientSub, reply, err = nodeMsg.SendSubscribe(ctx, repliesChan)
 		if err != nil {
 			return nil, utils.LavaFormatError("Subscription failed", err, nil)
 		}
-		go func() {
-			for {
-				log.Println("here")
-				select {
-				case err := <-sub.Err():
-					log.Fatal(err)
-				case iheader := <-headers:
-					fmt.Println(iheader) // 0xbc10defa8dda384c96a17640d84de5578804945d347072e091b4e5f390ddea7f
-				}
-			}
-		}()
 
+		var replyMsg chainproxy.JsonrpcMessage
+		json.Unmarshal(reply.Data, &replyMsg)
+
+		subscriptionID, err := strconv.Unquote(string(replyMsg.Result))
+		if err != nil {
+			return nil, utils.LavaFormatError("Subscription failed", err, nil)
+		}
+		fmt.Println(subscriptionID)
+		userSessions.Subs[subscriptionID] = &subscription{
+			id:          subscriptionID,
+			sub:         clientSub,
+			repliesChan: repliesChan,
+		}
+
+		go userSessions.Subs[subscriptionID].loop()
 	} else {
+		reqMsg := nodeMsg.GetMsg().(*chainproxy.JsonrpcMessage)
+		reqParams := reqMsg.Params
 		reply, err = nodeMsg.Send(ctx)
+		// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all
+		if strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
+			userSessions := getOrCreateUserSessions(userAddr.String())
+			userSessions.Lock.Lock()
+			defer userSessions.Lock.Unlock()
+			// TODO check if there are types other than string for unsubscribe on tendermint
+			subscriptionID := reqParams[0].(string)
+			fmt.Println("disc", reqParams[0].(string), userSessions.Subs[subscriptionID], len(userSessions.Subs))
+			if sub, ok := userSessions.Subs[subscriptionID]; ok {
+
+				sub.disconnect()
+				delete(userSessions.Subs, subscriptionID)
+			}
+		}
 	}
 	if err != nil {
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
@@ -940,6 +983,7 @@ func Server(
 	}()
 
 	Server := &relayServer{}
+
 	pairingtypes.RegisterRelayerServer(s, Server)
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
