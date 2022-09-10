@@ -363,7 +363,7 @@
           "category": {
             "deterministic": false,
             "local": true,
-            "subscription": true,
+            "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
