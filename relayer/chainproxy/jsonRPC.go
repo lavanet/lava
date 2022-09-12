@@ -234,16 +234,18 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				break
 			}
 			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
+			// check if reply is relayreply or server if server loop
+
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
-				log.Println(err)
+				utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
 				break
 			}
 
