@@ -1753,13 +1753,6 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	return median(listExpectedBlockHeights) - s.serverSpec.AllowedBlockLagForQosSync, len(listExpectedBlockHeights)
 }
 
-// TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64) uint64 {
-	epochSize := s.GetEpochSize()
-	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
-	return epoch
-}
-
 func NewSentry(
 	clientCtx client.Context,
 	chainID string,
