@@ -165,6 +165,7 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
+
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
@@ -211,9 +212,136 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
-	//
-	//
+
 	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+
+	return reply, err
+}
+
+func SendRelaySubscribe(
+	ctx context.Context,
+	cp ChainProxy,
+	privKey *btcec.PrivateKey,
+	url string,
+	req string,
+	connectionType string,
+) (*pairingtypes.Relayer_RelaySubscribeClient, error) {
+
+	// Unmarshal request
+	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
+	if err != nil {
+		return nil, err
+	}
+	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
+	requestedBlock := int64(0)
+	callback_send_relay_subscribe := func(clientSession *sentry.ClientSession) (*pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
+		//client session is locked here
+		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
+
+		if err != nil {
+			return nil, nil, err
+		}
+
+		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
+
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:        clientSession.Client.Acc,
+			ConnectionType:  connectionType,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(clientSession.SessionId),
+			ChainID:         cp.GetSentry().ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     blockHeight,
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    nodeMsg.RequestedBlock(),
+			QoSReport:       clientSession.QoSInfo.LastQoSReport,
+			DataReliability: nil,
+		}
+
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.Sig = sig
+		c := *clientSession.Endpoint.Client
+
+		// relaySentTime := time.Now()
+		clientSession.QoSInfo.TotalRelays++
+		replySrv, err := c.RelaySubscribe(context.Background(), relayRequest)
+		if err != nil {
+			if err.Error() == context.DeadlineExceeded.Error() {
+				clientSession.QoSInfo.ConsecutiveTimeOut++
+			}
+			return nil, nil, err
+		}
+		// currentLatency := time.Since(relaySentTime)
+		// clientSession.QoSInfo.ConsecutiveTimeOut = 0
+		// clientSession.QoSInfo.AnsweredRelays++
+
+		// //update relay request requestedBlock to the provided one in case it was arbitrary
+		// sentry.UpdateRequestedBlock(relayRequest, reply)
+		// requestedBlock = relayRequest.RequestBlock
+
+		// err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		// if err != nil {
+		// 	return nil, nil, err
+		// }
+
+		// expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
+		// clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+
+		return &replySrv, relayRequest, nil
+	}
+
+	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+		//client session is locked here
+		sentry := cp.GetSentry()
+		if blockHeight < 0 {
+			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+		}
+
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:        clientSession.Client.Acc,
+			ApiUrl:          url,
+			Data:            []byte(req),
+			SessionId:       uint64(0), //sessionID for reliability is 0
+			ChainID:         sentry.ChainID,
+			CuSum:           clientSession.CuSum,
+			BlockHeight:     blockHeight,
+			RelayNum:        clientSession.RelayNum,
+			RequestBlock:    requestedBlock,
+			QoSReport:       nil,
+			DataReliability: dataReliability,
+			ConnectionType:  connectionType,
+		}
+
+		sig, err := sigs.SignRelay(privKey, *relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.Sig = sig
+
+		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
+		if err != nil {
+			return nil, nil, err
+		}
+		relayRequest.DataReliability.Sig = sig
+		c := *clientSession.Endpoint.Client
+		reply, err := c.Relay(ctx, relayRequest)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return reply, relayRequest, nil
+	}
+
+	reply, err := cp.GetSentry().SendRelaySubscribe(ctx, callback_send_relay_subscribe, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 
 	return reply, err
 }

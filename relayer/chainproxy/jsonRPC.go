@@ -234,27 +234,79 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				// c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
 				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				break
 			}
 			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
-			// check if reply is relayreply or server if server loop
-
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			// identify if the message is a subscription
+			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
-				utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
-				break
+				utils.LavaFormatInfo("parse error received", &map[string]string{"err": err.Error()})
+				// break
 			}
 
-			if err = c.WriteMessage(mt, reply.Data); err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
-				utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
-				break
+			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
+
+			if nodeMsg.GetServiceApi().Category.Subscription {
+				fmt.Println("send subscribe")
+				replySrv, err := SendRelaySubscribe(context.Background(), cp, privKey, "", string(msg), "")
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
+					break
+				}
+
+				var reply pairingtypes.RelayReply
+				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
+					break
+				}
+
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
+					break
+				}
+
+				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+
+				for {
+					err = (*replySrv).RecvMsg(&reply)
+					if err != nil {
+						c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+						utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
+						break
+					}
+
+					if err = c.WriteMessage(mt, reply.Data); err != nil {
+						(*replySrv).Context().Done()
+						c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+						utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
+						break
+					}
+
+					utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+				}
+			} else {
+				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
+					break
+				}
+
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
+					break
+				}
+				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 			}
-			utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 		}
 	})
 

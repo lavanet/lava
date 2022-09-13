@@ -1341,6 +1341,183 @@ func (s *Sentry) SendRelay(
 	return reply, nil
 }
 
+func (s *Sentry) SendRelaySubscribe(
+	ctx context.Context,
+	cb_send_relay_subscribe func(clientSession *ClientSession) (*pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
+	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	specCategory *spectypes.SpecCategory,
+) (*pairingtypes.Relayer_RelaySubscribeClient, error) {
+	//
+	// Get pairing
+	wrap, index, endpoint, err := s._findPairing(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	//
+	getClientSessionFromWrap := func(wrap *RelayerClientWrapper, endpoint *Endpoint) *ClientSession {
+		wrap.SessionsLock.Lock()
+		defer wrap.SessionsLock.Unlock()
+
+		//try to lock an existing session, if can't create a new one
+		for _, session := range wrap.Sessions {
+			if session.Endpoint != endpoint {
+				//skip sessions that don't belong to the active connection
+				continue
+			}
+			if session.Lock.TryLock() {
+				return session
+			}
+		}
+		//create a new session
+		randomSessId := int64(0)
+		for randomSessId == 0 { //we don't allow 0
+			randomSessId = rand.Int63()
+		}
+
+		clientSession := &ClientSession{
+			SessionId: randomSessId,
+			Client:    wrap,
+			Endpoint:  endpoint,
+		}
+		clientSession.Lock.Lock()
+		wrap.Sessions[clientSession.SessionId] = clientSession
+		return clientSession
+	}
+	// Get or create session and lock it
+	clientSession := getClientSessionFromWrap(wrap, endpoint) // clientSession is LOCKED!
+
+	// call user
+	reply, _, err := cb_send_relay_subscribe(clientSession)
+	//error using this provider
+	if err != nil {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			s.movePairingEntryToPurge(wrap, index)
+		}
+		clientSession.Lock.Unlock()
+		return reply, err
+	}
+
+	// providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
+	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+
+	// if s.GetSpecComparesHashes() {
+	// 	finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
+	// 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
+	// 	if err != nil {
+	// 		return nil, utils.LavaFormatError("unmarshalling finalized blocks data", err, nil)
+	// 	}
+	// 	latestBlock := reply.LatestBlock
+
+	// 	// validate that finalizedBlocks makes sense
+	// 	err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
+	// 	if err != nil {
+	// 		return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
+	// 	}
+	// 	// Save in current session and compare in the next
+	// 	clientSession.FinalizedBlocksHashes = finalizedBlocks
+	// 	clientSession.LatestBlock = latestBlock
+	// 	//
+	// 	// Compare finalized block hashes with previous providers
+	// 	// Looks for discrepancy with current epoch providers
+	// 	// if no conflicts, insert into consensus and break
+	// 	// create new consensus group if no consensus matched
+	// 	// check for discrepancy with old epoch
+	// 	_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+	// 		// handle data reliability
+
+	// 		isSecure, err := s.cmdFlags.GetBool("secure")
+	// 		if err != nil {
+	// 			utils.LavaFormatError("Could not get flag --secure", err, nil)
+	// 			isSecure = false
+	// 		}
+
+	// 		s.VrfSkMu.Lock()
+
+	// 		currentEpoch := clientSession.Client.GetPairingEpoch()
+	// 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
+	// 		s.VrfSkMu.Unlock()
+	// 		address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
+
+	// 		//Printing VRF Data
+	// 		// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
+	// 		// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
+	// 		// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
+
+	// 		sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
+	// 			if address != "" && address != providerAcc {
+	// 				wrap, index, endpoint, err := s.specificPairing(ctx, address)
+	// 				if err != nil {
+	// 					// failed to get clientWrapper for this address, skip reliability
+	// 					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
+	// 				} else {
+	// 					canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
+	// 					if canSendReliability {
+	// 						s.VrfSkMu.Lock()
+	// 						vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
+	// 						s.VrfSkMu.Unlock()
+	// 						dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
+	// 							VrfValue:    vrf_res,
+	// 							VrfProof:    vrf_proof,
+	// 							ProviderSig: reply.Sig,
+	// 							AllDataHash: sigs.AllDataHash(reply, request),
+	// 							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
+	// 							Sig:         nil,                                //calculated in cb_send_reliability
+	// 						}
+	// 						clientSession = getClientSessionFromWrap(wrap, endpoint)
+	// 						relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
+	// 						if err != nil {
+	// 							if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+	// 								s.movePairingEntryToPurge(wrap, index)
+	// 							}
+	// 							return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
+	// 						}
+	// 						clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+	// 						return relay_rep, relay_req, nil
+	// 					} else {
+	// 						utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
+	// 						return nil, nil, nil
+	// 					}
+	// 				}
+	// 			} else {
+	// 				if isSecure {
+	// 					//send reliability on the client's expense
+	// 					utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
+	// 				}
+	// 				return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
+	// 			}
+	// 		}
+
+	// 		checkReliability := func() {
+	// 			reply0, request0, err0 := sendReliabilityRelay(address0, false)
+	// 			reply1, request1, err1 := sendReliabilityRelay(address1, true)
+	// 			ok := true
+	// 			check0 := err0 == nil && reply0 != nil
+	// 			check1 := err1 == nil && reply1 != nil
+	// 			if check0 {
+	// 				ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply0, request0)
+	// 			}
+	// 			if check1 {
+	// 				ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply1, request1)
+	// 			}
+	// 			if !ok && check0 && check1 {
+	// 				s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
+	// 			}
+	// 			if (ok && check0) || (ok && check1) {
+	// 				utils.LavaFormatInfo("Reliability verified and Okay!", &map[string]string{"address0": address0, "address1": address1, "original address": providerAcc})
+	// 			}
+	// 		}
+	// 		go checkReliability()
+	// 	}
+	// }
+	return reply, nil
+}
+
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {
 	s.providerDataContainersMu.Lock()
 	defer s.providerDataContainersMu.Unlock()
