@@ -1,12 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
-COMMIT := $(shell git log -1 --format='%H')
+VERSION ?= $(shell echo $(shell git describe --tags) | sed 's/^v//')
+COMMIT ?= $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
 DOCKER := $(shell which docker)
 BUILDDIR ?= $(CURDIR)/build
 DEBUG_MUTEX ?= false
+MASK_CONSUMER_LOGS ?= false
 export GO111MODULE = on
 
 # process build tags
@@ -55,7 +56,8 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=lava \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
-      -X github.com/lavanet/lava/utils.TimeoutMutex=$(DEBUG_MUTEX)
+      -X github.com/lavanet/lava/utils.TimeoutMutex=$(DEBUG_MUTEX) \ 
+      # -X github.com/lavanet/lava/relayer/chainproxy/portalErrors.returnMaskedErrors=$(MASK_CONSUMER_LOGS)
 
 ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
