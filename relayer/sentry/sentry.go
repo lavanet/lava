@@ -153,6 +153,8 @@ type Sentry struct {
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	serverID                uint64
+	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
+	authorizationCacheMutex sync.Mutex
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -331,6 +333,7 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
 	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
 	s.providerDataContainersMu.Unlock()
+
 	return nil
 }
 
@@ -543,7 +546,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	s.handlePairingChange(ctx, 0, true)
-
 	//
 	// Sanity
 	if !s.isUser {
@@ -796,6 +798,7 @@ func (s *Sentry) Start(ctx context.Context) {
 			}
 
 			s.handlePairingChange(ctx, data.Block.Height, false)
+			s.clearAuthResponseCache(data.Block.Height)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -1545,9 +1548,37 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
+func (s *Sentry) clearAuthResponseCache(blockheight int64) {
+	// Clear cache
+	s.authorizationCacheMutex.Lock()
+	defer s.authorizationCacheMutex.Unlock()
+	for key := range s.authorizationCache {
+		if key <= uint64(blockheight)-s.GetOverlapSize() {
+			delete(s.authorizationCache, key)
+		}
+	}
+}
+
+func (s *Sentry) getAuthResponseFromCache(consumer string, blockheight uint64) *pairingtypes.QueryVerifyPairingResponse {
+	// Check cache
+	s.authorizationCacheMutex.Lock()
+	defer s.authorizationCacheMutex.Unlock()
+	if entry, hasEntryForBlockheight := s.authorizationCache[blockheight]; hasEntryForBlockheight {
+		if cachedResponse, ok := entry[consumer]; ok {
+			return cachedResponse
+		}
+	}
+
+	return nil
+}
+
 func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
-	//
-	// TODO: cache results!
+
+	res := s.getAuthResponseFromCache(consumer, blockheight)
+	if res != nil {
+		return res, nil
+	}
+
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   consumer,
@@ -1558,6 +1589,12 @@ func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, bloc
 		return nil, err
 	}
 	if res.GetValid() {
+		s.authorizationCacheMutex.Lock()
+		if _, ok := s.authorizationCache[blockheight]; !ok {
+			s.authorizationCache[blockheight] = map[string]*pairingtypes.QueryVerifyPairingResponse{} // init
+		}
+		s.authorizationCache[blockheight][consumer] = res
+		s.authorizationCacheMutex.Unlock()
 		return res, nil
 	}
 
@@ -1798,6 +1835,7 @@ func NewSentry(
 		cmdFlags:                flagSet,
 		voteInitiationCb:        voteInitiationCb,
 		serverID:                serverID,
+		authorizationCache:      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse{},
 	}
 }
 
