@@ -352,8 +352,9 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 				"userAddr": userAddr,
 			})
 		}
-		// TODO:: dont use GetEpochFromBlockHeight
-		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight)
+
+		// TODO:: should validate req.BlockHeight ?
+		sessionEpoch = uint64(req.BlockHeight)
 
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
