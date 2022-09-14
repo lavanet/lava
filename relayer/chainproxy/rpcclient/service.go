@@ -23,10 +23,10 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
-	"sync"
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/lavanet/lava/utils"
 )
 
 var (
@@ -37,7 +37,7 @@ var (
 )
 
 type serviceRegistry struct {
-	mu       sync.Mutex
+	mu       utils.LavaMutex
 	services map[string]service
 }
 
