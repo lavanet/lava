@@ -27,6 +27,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -168,7 +170,7 @@ type jsonCodec struct {
 	closer  sync.Once                 // close closed channel once
 	closeCh chan interface{}          // closed on Close
 	decode  func(v interface{}) error // decoder to allow multiple transports
-	encMu   sync.Mutex                // guards the encoder
+	encMu   utils.LavaMutex           // guards the encoder
 	encode  func(v interface{}) error // encoder to allow multiple transports
 	conn    deadlineCloser
 }
