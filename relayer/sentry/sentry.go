@@ -333,7 +333,6 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
 	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
 	s.providerDataContainersMu.Unlock()
-
 	return nil
 }
 
@@ -546,6 +545,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 	}
 
 	s.handlePairingChange(ctx, 0, true)
+
 	//
 	// Sanity
 	if !s.isUser {
