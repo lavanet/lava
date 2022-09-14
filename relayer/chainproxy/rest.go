@@ -189,7 +189,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
-			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 
@@ -204,7 +203,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
-			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 

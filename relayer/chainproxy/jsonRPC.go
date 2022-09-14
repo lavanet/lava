@@ -232,7 +232,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				break
 			}
@@ -241,13 +240,11 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				log.Println(err)
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 				break
 			}
 			utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
@@ -262,7 +259,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
-			log.Println(err)
 			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, GetUniqueGuidResponseForError(err)))
 		}
 

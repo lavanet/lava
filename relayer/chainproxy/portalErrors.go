@@ -3,6 +3,8 @@ package chainproxy
 import (
 	"fmt"
 	"math/rand"
+
+	"github.com/lavanet/lava/utils"
 )
 
 var ReturnMaskedErrors = "false"
@@ -11,7 +13,8 @@ var ReturnMaskedErrors = "false"
 func GetUniqueGuidResponseForError(responseError error) string {
 	guID := fmt.Sprintf("GUID%d", rand.Int63())
 	var ret string
-	ret = "Error guid: " + guID
+	ret = "Error GUID: " + guID
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"GUID": guID})
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}
