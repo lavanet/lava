@@ -6,7 +6,7 @@ LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
 DOCKER := $(shell which docker)
 BUILDDIR ?= $(CURDIR)/build
-
+DEBUG_MUTEX ?= false
 export GO111MODULE = on
 
 # process build tags
@@ -54,7 +54,8 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=lava \
 		  -X github.com/cosmos/cosmos-sdk/version.AppName=lavad \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
+      -X github.com/lavanet/lava/utils.TimeoutMutex=$(DEBUG_MUTEX)
 
 ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb

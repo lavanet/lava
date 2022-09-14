@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -25,7 +25,7 @@ type ChainSentry struct {
 	ChainID                string
 
 	// Spec blockQueueMu (rw mutex)
-	blockQueueMu sync.RWMutex
+	blockQueueMu utils.LavaMutex
 	blocksQueue  []string
 }
 
