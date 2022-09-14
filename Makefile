@@ -50,14 +50,13 @@ comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
 # process linker flags
-
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=lava \
 		  -X github.com/cosmos/cosmos-sdk/version.AppName=lavad \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
-      -X github.com/lavanet/lava/utils.TimeoutMutex=$(DEBUG_MUTEX) \ 
-      # -X github.com/lavanet/lava/relayer/chainproxy/portalErrors.returnMaskedErrors=$(MASK_CONSUMER_LOGS)
+		  -X github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep) \
+      -X github.com/lavanet/lava/relayer/chainproxy.ReturnMaskedErrors=$(MASK_CONSUMER_LOGS)  \
+      -X github.com/lavanet/lava/utils.TimeoutMutex=$(DEBUG_MUTEX) \
 
 ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
