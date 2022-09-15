@@ -29,6 +29,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lavanet/lava/utils"
 )
 
 var (
@@ -59,7 +61,7 @@ func randomIDGenerator() func() ID {
 	}
 
 	var (
-		mu  sync.Mutex
+		mu  utils.LavaMutex
 		rng = rand.New(rand.NewSource(seed))
 	)
 	return func() ID {
@@ -94,7 +96,7 @@ type Notifier struct {
 	h         *handler
 	namespace string
 
-	mu           sync.Mutex
+	mu           utils.LavaMutex
 	sub          *Subscription
 	buffer       []json.RawMessage
 	callReturned bool

@@ -215,23 +215,19 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				utils.LavaFormatInfo("error read message ws", &map[string]string{"err": err.Error()})
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				break
 			}
 			utils.LavaFormatInfo(" ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
-				utils.LavaFormatInfo("error send relay ws", &map[string]string{"err": err.Error()})
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
-				log.Println("write:", err)
-				utils.LavaFormatInfo("error write message ws", &map[string]string{"err": err.Error()})
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				break
 			}
 			utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
@@ -246,7 +242,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("jsonrpc in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 
 		utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
@@ -259,11 +255,10 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
 		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
-			log.Println(err)
 			if string(c.Body()) != "" {
-				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, err))
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, GetUniqueGuidResponseForError(err)))
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, err))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 		utils.LavaFormatInfo("urirpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
@@ -288,7 +283,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 	var result JsonrpcMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
+	err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
 
 	var replyMsg JsonrpcMessage
 

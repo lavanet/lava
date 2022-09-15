@@ -39,16 +39,16 @@ const RETRY_INCORRECT_SEQUENCE = 3
 var (
 	g_privKey               *btcSecp256k1.PrivateKey
 	g_sessions              map[string]*UserSessions
-	g_sessions_mutex        sync.Mutex
+	g_sessions_mutex        utils.LavaMutex
 	g_votes                 map[string]*voteData
-	g_votes_mutex           sync.Mutex
+	g_votes_mutex           utils.LavaMutex
 	g_sentry                *sentry.Sentry
 	g_serverChainID         string
 	g_txFactory             tx.Factory
 	g_chainProxy            chainproxy.ChainProxy
 	g_chainSentry           *chainsentry.ChainSentry
 	g_rewardsSessions       map[uint64][]*RelaySession // map[epochHeight][]*rewardableSessions
-	g_rewardsSessions_mutex sync.Mutex
+	g_rewardsSessions_mutex utils.LavaMutex
 	g_serverID              uint64
 	g_askForRewards_mutex   sync.Mutex
 )
@@ -66,14 +66,14 @@ type UserSessions struct {
 	IsBlockListed bool
 	user          string
 	dataByEpoch   map[uint64]*UserSessionsEpochData
-	Lock          sync.Mutex
+	Lock          utils.LavaMutex
 }
 
 type RelaySession struct {
 	userSessionsParent *UserSessions
 	CuSum              uint64
 	UniqueIdentifier   uint64
-	Lock               sync.Mutex
+	Lock               utils.LavaMutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64
@@ -365,8 +365,9 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 				"userAddr": userAddr,
 			})
 		}
-		// TODO:: dont use GetEpochFromBlockHeight
-		sessionEpoch = g_sentry.GetEpochFromBlockHeight(req.BlockHeight)
+
+		// TODO:: should validate req.BlockHeight ?
+		sessionEpoch = uint64(req.BlockHeight)
 
 		userSessions.Lock.Lock()
 		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
@@ -555,7 +556,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			//data reliability message
 			if epochData.DataReliability != nil {
 				userSessions.Lock.Unlock()
-				return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
+				return nil, utils.LavaFormatError("Simulation: dataReliability can only be used once per client per epoch", nil,
 					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
 			}
 		}
@@ -590,7 +591,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
-		utils.LavaFormatInfo("server got valid DataReliability request", nil)
+		utils.LavaFormatInfo("Simulation: server got valid DataReliability request", nil)
 
 		userSessions.Lock.Lock()
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())

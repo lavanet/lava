@@ -35,12 +35,18 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+const (
+	maxRetries             = 10
+	providerWasntFound     = -1
+	findPairingFailedIndex = -1
+)
+
 type ClientSession struct {
 	CuSum                 uint64
 	QoSInfo               QoSInfo
 	SessionId             int64
 	Client                *RelayerClientWrapper
-	Lock                  sync.Mutex
+	Lock                  utils.LavaMutex
 	RelayNum              uint64
 	LatestBlock           int64
 	FinalizedBlocksHashes map[int64]string
@@ -97,7 +103,7 @@ type Endpoint struct {
 type RelayerClientWrapper struct {
 	Acc              string //public lava address
 	Endpoints        []*Endpoint
-	SessionsLock     sync.Mutex
+	SessionsLock     utils.LavaMutex
 	Sessions         map[int64]*ClientSession
 	MaxComputeUnits  uint64
 	UsedComputeUnits uint64
@@ -178,17 +184,17 @@ type Sentry struct {
 	pairing              []*RelayerClientWrapper
 	PairingBlockStart    int64
 	pairingAddresses     []string
-	pairingPurgeLock     sync.Mutex
+	pairingPurgeLock     utils.LavaMutex
 	pairingPurge         []*RelayerClientWrapper
 	pairingNext          []*RelayerClientWrapper
 	pairingNextAddresses []string
-	VrfSkMu              sync.Mutex
+	VrfSkMu              utils.LavaMutex
 	VrfSk                vrf.PrivateKey
 
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
-	providerDataContainersMu         sync.Mutex
+	providerDataContainersMu         utils.LavaMutex
 }
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
@@ -932,19 +938,83 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *
 	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
 }
 
+func (s *Sentry) _findPairingIndexWithLoop(address string) int {
+	// Use this function to search a pairing by its address when you dont know what index it is in.
+	for index, wrap := range s.pairing {
+		if wrap.Acc == address {
+			return index
+		}
+	}
+	// didnt find a matching index
+	return providerWasntFound
+}
+
+func (s *Sentry) _findPairingIndexByAdress(address string, index int) int {
+	// s.pairingMu must be locked before calling this function
+	// pairing list is also not empty as it was tested before calling this function
+	var ret_index int
+	if index >= (len(s.pairing)) {
+		// index out of range
+		ret_index = s._findPairingIndexWithLoop(address) // find index in s.pairing
+	} else {
+		if s.pairing[index].Acc != address {
+			ret_index = s._findPairingIndexWithLoop(address) // find index in s.pairing
+		} else {
+			ret_index = index // index is valid
+		}
+	}
+	return ret_index
+}
+
+// find pairing except given adress, the method will search for a pairing that isnt the given address starting to search in the given index to save time.
+func (s *Sentry) _findPairingExceptAddress(ctx context.Context, accountAddress string, previousIndex int) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
+	s.pairingMu.RLock()
+	defer s.pairingMu.RUnlock()
+	if len(s.pairing) <= 0 {
+		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+	}
+	get_random_provider := false
+	var index int
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
+		if len(s.pairing) == 0 {
+			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+		}
+		previousIndex = s._findPairingIndexByAdress(accountAddress, previousIndex)
+		if previousIndex == providerWasntFound { // privious provider was not found in s.pairing list. we can get a random value.
+			get_random_provider = true
+		}
+		if get_random_provider {
+			index = rand.Intn(len(s.pairing))
+		} else {
+			if len(s.pairing) <= 1 {
+				// only one pairings available which is the previous pairing, return an error.
+				return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no other providers available currently", nil, nil)
+			}
+			index = ((previousIndex + rand.Intn(len(s.pairing)-1) + 1) % len(s.pairing))
+		}
+		wrap := s.pairing[index]
+		connected, endpoint := wrap.FetchEndpointConnectionFromClientWrapper(s, ctx, index)
+		if connected {
+			return wrap, index, endpoint, nil
+		}
+	}
+	return nil, findPairingFailedIndex, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+}
+
 func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
 
 	s.pairingMu.RLock()
 
 	defer s.pairingMu.RUnlock()
 	if len(s.pairing) <= 0 {
-		return nil, -1, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
+		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
 
 	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
-			return nil, -1, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
+			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
 		}
 
 		index := rand.Intn(len(s.pairing))
@@ -955,7 +1025,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 			return wrap, index, endpoint, nil
 		}
 	}
-	return nil, -1, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
+	return nil, findPairingFailedIndex, nil, utils.LavaFormatError("failed getting pairing from all providers in pairing", nil, nil)
 }
 
 func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Sentry, ctx context.Context, index int) (connected bool, endpointPtr *Endpoint) {
@@ -991,9 +1061,9 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
 	if allDisabled {
 		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc})
-		s.pairingMu.RUnlock() // we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
-		s.movePairingEntryToPurge(wrap, index)
-		s.pairingMu.RLock() // we resume read lock here, so we can continue
+		// we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
+		// we resume read lock right after so we can continue reading
+		s.rUnlockAndMovePairingEntryToPurgeReturnRLocked(wrap, index)
 	}
 
 	return false, nil
@@ -1006,7 +1076,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 		return true
 	}
 	//they have different data! report!
-	utils.LavaFormatWarning("DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
 	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
@@ -1069,7 +1139,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 				// TODO:: should break here? is one enough or search for more?
-				return true, utils.LavaFormatError("reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
+				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
 			}
 		}
 	}
@@ -1083,7 +1153,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	maxBlockNum := int64(0)
 	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
-			return utils.LavaFormatError("provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 		}
 
 		sorted[idx] = blockNum
@@ -1100,13 +1170,13 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	for index := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			return utils.LavaFormatError("provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc})
 		}
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
-		return utils.LavaFormatError("provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
+		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 	}
 
@@ -1120,7 +1190,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 
-		return utils.LavaFormatError("Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
+		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
 	}
 
@@ -1218,7 +1288,32 @@ func (s *Sentry) SendRelay(
 			s.movePairingEntryToPurge(wrap, index)
 		}
 		clientSession.Lock.Unlock()
-		return reply, err
+
+		// retry sending the request to a different provider upon error
+		var err2 error
+		wrap, index, endpoint, err2 = s._findPairingExceptAddress(ctx, wrap.Acc, index) // get a different provider.
+		if err2 != nil {
+			// if we failed to get another provider, just return the first providers error. with the fetching failure message
+			return nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
+		}
+
+		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
+		// call user
+		reply, request, err2 = cb_send_relay(clientSession)
+		if err2 != nil {
+			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+				s.movePairingEntryToPurge(wrap, index)
+			}
+			clientSession.Lock.Unlock()
+
+			if err.Error() != err2.Error() {
+				// if the first provider error returned a different error than the second provider combine the error into a single one
+				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
+			}
+			// if the errors are the same just return one of them and the reply
+			return reply, err2
+		}
+		// if we didnt get an error from the second relay we can continue noramlly
 	}
 
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
@@ -1228,7 +1323,7 @@ func (s *Sentry) SendRelay(
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, utils.LavaFormatError("unmarshalling finalized blocks data", err, nil)
+			return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
@@ -1532,14 +1627,14 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.providerHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				return false, utils.LavaFormatError("Conflict found in discrepancyChecker", err, nil)
+				return false, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err, nil)
 			}
 
 			// if no conflicts, insert into consensus and break
 			if !discrepancyResult {
 				matchWithExistingConsensus = true
 			} else {
-				utils.LavaFormatError("Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
+				utils.LavaFormatError("Simulation: Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 
 			// if no discrepency with this group -> insert into consensus and break
@@ -1560,11 +1655,11 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 		for idx, consensus := range s.prevEpochProviderHashesConsensus {
 			discrepancyResult, err := s.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				return false, utils.LavaFormatError("prev epoch Conflict found in discrepancyChecker", err, nil)
+				return false, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, nil)
 			}
 
 			if discrepancyResult {
-				utils.LavaFormatError("prev epoch Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
+				utils.LavaFormatError("Simulation: prev epoch Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAcc})
 			}
 		}
 	}
@@ -1579,6 +1674,14 @@ func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool 
 func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 	finalization_criteria := int64(s.GetSpecFinalizationCriteria())
 	return latestBlock - finalization_criteria
+}
+
+// this function should be called only if pairing is in rlocked state.
+// returns pairingMu Rlocked so it can continue to be read.
+func (s *Sentry) rUnlockAndMovePairingEntryToPurgeReturnRLocked(wrap *RelayerClientWrapper, index int) {
+	s.pairingMu.RUnlock()
+	defer s.pairingMu.RLock()
+	s.movePairingEntryToPurge(wrap, index)
 }
 
 func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) {
@@ -1825,13 +1928,6 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 	}
 
 	return median(listExpectedBlockHeights) - s.serverSpec.AllowedBlockLagForQosSync, len(listExpectedBlockHeights)
-}
-
-// TODO:: Dont calc. get this info from blockchain - if LAVA params change, this calc is obsolete
-func (s *Sentry) GetEpochFromBlockHeight(blockHeight int64) uint64 {
-	epochSize := s.GetEpochSize()
-	epoch := uint64(blockHeight - blockHeight%int64(epochSize))
-	return epoch
 }
 
 func NewSentry(

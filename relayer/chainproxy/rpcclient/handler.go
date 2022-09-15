@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/lavanet/lava/utils"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -61,7 +62,7 @@ type handler struct {
 	log            log.Logger
 	allowSubscribe bool
 
-	subLock    sync.Mutex
+	subLock    utils.LavaMutex
 	serverSubs map[ID]*Subscription
 }
 

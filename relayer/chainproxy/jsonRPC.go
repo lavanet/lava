@@ -234,7 +234,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				// c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
 				break
 			}
@@ -243,7 +243,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// identify if the message is a subscription
 			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 				utils.LavaFormatInfo("parse error received", &map[string]string{"err": err.Error()})
 				// break
 			}
@@ -254,7 +254,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				fmt.Println("send subscribe")
 				replySrv, err := SendRelaySubscribe(context.Background(), cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
 					break
 				}
@@ -262,13 +262,13 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				var reply pairingtypes.RelayReply
 				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 					utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
 					break
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 					break
 				}
@@ -278,14 +278,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				for {
 					err = (*replySrv).RecvMsg(&reply)
 					if err != nil {
-						c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 						utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
 						break
 					}
 
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
 						(*replySrv).Context().Done()
-						c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 						utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 						break
 					}
@@ -295,13 +295,13 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			} else {
 				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
 					break
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+err.Error()))
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
 					break
 				}
@@ -318,8 +318,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
-			log.Println(err)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, err.Error()))
+			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, GetUniqueGuidResponseForError(err)))
 		}
 
 		utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
@@ -355,7 +354,7 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	var result JsonrpcMessage
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	err = rpc.CallContext(connectCtx, &result, nm.msg.Method, nm.msg.Params)
+	err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
 
 	var replyMsg JsonrpcMessage
 	if err != nil {
@@ -405,7 +404,7 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 	namespace := method[0]
 
 	var result JsonrpcMessage
-	sub, err := rpc.Subscribe(context.Background(), &result, namespace, ch, nm.msg.Params...)
+	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, namespace, ch, nm.msg.Params...)
 
 	var replyMsg JsonrpcMessage
 	if err != nil {
