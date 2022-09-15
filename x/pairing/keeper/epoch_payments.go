@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -93,7 +92,7 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, utils.LavaFormatError(fmt.Sprintf("could not add epoch payment: %s,%s,%s,%d,%s", userAddress, providerAddress, uniqueIdentifier, epoch, chainID), err, nil)
+		return 0, utils.LavaFormatError("could not add epoch payment", err, &map[string]string{"userAddress": userAddress.String(), "providerAddress": providerAddress.String(), "uniqueIdentifier": uniqueIdentifier, "epoch": strconv.FormatUint(epoch, 10), "chainID": chainID})
 	}
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)

@@ -80,7 +80,7 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 	userPaymentStorageInEpoch, found := k.GetProviderPaymentStorage(ctx, key)
 	if !found {
 		// is new entry
-		userPaymentStorageInEpoch = types.ProviderPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, Epoch: epoch}
+		userPaymentStorageInEpoch = types.ProviderPaymentStorage{Index: key, UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{uniquePaymentStorageClientProviderEntryAddr}, Epoch: epoch, UnresponsivenessComplaints: []string{}}
 		usedCUConsumerTotal = usedCU
 	} else {
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProvider = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProvider, uniquePaymentStorageClientProviderEntryAddr)

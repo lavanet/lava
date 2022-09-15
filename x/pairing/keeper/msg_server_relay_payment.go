@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	maxComplaintsPerEpoch = 3
+	maxComplaintsPerEpoch                     = 3
+	collectPaymentsFromNumberOfPreviousEpochs = 2
 )
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
@@ -288,8 +289,9 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 	}
 	for _, unresponsiveProvider := range unresponsiveProviders {
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
-		if err != nil {
-			return utils.LavaFormatError("unable to  sdk.AccAddressFromBech32(unresponsive_provider)", err, nil)
+		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
+			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
+			continue
 		}
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
 		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
@@ -313,46 +315,44 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 
 		providerPaymentStorage.UnresponsivenessComplaints = append(providerPaymentStorage.UnresponsivenessComplaints, clientAddr.String())
 		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
-		// if !entryExists provider is alraedy unstaked
 
+		// if !entryExists provider is alraedy unstaked
 		// now we check if we have more UnresponsivenessComplaints than maxComplaintsPerEpoch
 		if len(providerPaymentStorage.UnresponsivenessComplaints) >= maxComplaintsPerEpoch && entryExists {
-			// we check if we have double complaints than previous two epochs (including this one) payment requests
-			// current_epoch + previous_epoch_payment + previous_previous_epoch_payment
-			totalPaymentRequests := len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments in this epoch
-			onePreviousEpoch, onePreviousEpochErr := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
-			// failed to fetch previous epoch start block we cannot unstake the provider without the necessary information.
-			var twoPreviousEpochErr error
-			if onePreviousEpochErr == nil { // only if no error was returned we can continue with the unstaking
-				onePreviousEpochProviderStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, onePreviousEpoch, sdkUnresponsiveProviderAddress)
-				onePreviousEpochProviderPaymentStorage, onePreviousEpochFound := k.GetProviderPaymentStorage(ctx, onePreviousEpochProviderStorageKey)
-				if onePreviousEpochFound {
-					totalPaymentRequests += len(onePreviousEpochProviderPaymentStorage.UniquePaymentStorageClientProvider) // increase by the amount of previous epoch
+			// we check if we have double complaints than previous "collectPaymentsFromNumberOfPreviousEpochs" epochs (including this one) payment requests
+			totalPaymentsInPreviousEpochs, err := k.getTotalPaymentsForPreviousEpochs(ctx, collectPaymentsFromNumberOfPreviousEpochs, epoch, chainID, sdkUnresponsiveProviderAddress)
+			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments including this epoch
+			if err != nil {
+				utils.LavaFormatError("lava_unresponsive_providers: couldnt fetch getTotalPaymentsForPreviousEpochs", err, nil)
+			} else {
+				if int(totalPaymentRequests*2) < len(providerPaymentStorage.UnresponsivenessComplaints) {
+					// unstake provider
+					utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
+					k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+					k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
 				}
-				// if we didnt have two epochs yet, then we just wont find the provider or just count the services twice.
-				// both cases are ok.
-				twoPreviousEpoch, twoPreviousEpochErr := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, onePreviousEpoch)
-				if twoPreviousEpochErr == nil {
-					twoPreviousEpochProviderStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, twoPreviousEpoch, sdkUnresponsiveProviderAddress)
-					twoPreviousEpochProviderPaymentStorage, twoPreviousEpochFound := k.GetProviderPaymentStorage(ctx, twoPreviousEpochProviderStorageKey)
-					if twoPreviousEpochFound {
-						totalPaymentRequests += len(twoPreviousEpochProviderPaymentStorage.UniquePaymentStorageClientProvider) // increase by the amount of previous previous epoch
-					}
-
-					if int(totalPaymentRequests*2) < len(providerPaymentStorage.UnresponsivenessComplaints) {
-						// unstake provider
-						utils.LogLavaEvent(ctx, logger, "relay_payment", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-						k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
-						k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
-					}
-				}
-			}
-			if onePreviousEpochErr != nil || twoPreviousEpochErr != nil {
-				utils.LogLavaEvent(ctx, logger, "UnresponsiveProviders", map[string]string{"onePreviousEpochErr:": onePreviousEpochErr.Error(), "twoPreviousEpochErr": twoPreviousEpochErr.Error()}, "couldnt fetch previous two epochs")
 			}
 		}
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}
 	return nil
+}
+
+func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEpochs int, currentEpoch uint64, chainID string, sdkUnresponsiveProviderAddress sdk.AccAddress) (totalPaymentsReceived int, errorsGettingEpochs error) {
+	var totalPaymentRequests int
+	epochTemp := currentEpoch
+	for payment := 0; payment < numberOfEpochs; payment++ {
+		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
+		if err != nil {
+			return 0, err
+		}
+		previousEpochProviderStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, previousEpoch, sdkUnresponsiveProviderAddress)
+		previousEpochProviderPaymentStorage, providerPaymentStorageFound := k.GetProviderPaymentStorage(ctx, previousEpochProviderStorageKey)
+		if providerPaymentStorageFound {
+			totalPaymentRequests += len(previousEpochProviderPaymentStorage.UniquePaymentStorageClientProvider) // increase by the amount of previous epoch
+		}
+		epochTemp = previousEpoch
+	}
+	return totalPaymentRequests, nil
 }

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
@@ -213,6 +214,228 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	// TODO: currently over use is returning an error and doesnt get to balance zero. we will fix it in the future so this can be uncommented.
 	// balance = balance - ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
 	// require.Zero(t, balance)
+}
+
+func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	testClientAmount := 4
+	err := ts.addClient(testClientAmount)
+	require.Nil(t, err)
+	err = ts.addProvider(2)
+	require.Nil(t, err)
+	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
+	require.Nil(t, err)
+	var Relays []*types.RelayRequest
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[0].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
+		}
+
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		Relays = append(Relays, relayRequest)
+	}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+	require.Nil(t, err)
+	// testing that the provider wasnt unstaked.
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.True(t, unStakeStoragefound)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.False(t, stakeStorageFound)
+}
+
+// only one epoch is not enough for the unstaking to happen need atleast two epochs in the past
+func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	testClientAmount := 4
+	err := ts.addClient(testClientAmount)
+	require.Nil(t, err)
+	err = ts.addProvider(2)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
+	require.Nil(t, err)
+	var Relays []*types.RelayRequest
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[0].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
+		}
+
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		Relays = append(Relays, relayRequest)
+	}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+	require.Nil(t, err)
+	// testing that the provider wasnt unstaked.
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.False(t, unStakeStoragefound)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.True(t, stakeStorageFound)
+}
+
+func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	testClientAmount := 4
+	err := ts.addClient(testClientAmount)
+	require.Nil(t, err)
+	err = ts.addProvider(2)
+	require.Nil(t, err)
+	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	// test multiple bad data types
+	unresponsiveProvidersData := make([]([]byte), 4)
+	inputData := []interface{}{
+		[]int{1, 2, 3, 4, 5},
+		[]string{"bad", "data", "cosmosBadAddress"},
+		"cosmosBadAddress",
+		[]byte("cosmosBadAddress"),
+	}
+	// badData2, err := json.Marshal([]string{"bad", "data", "cosmosBadAddress"}) // test bad data
+
+	for i := 0; i < testClientAmount; i++ {
+		badData, err := json.Marshal(inputData[i])
+		require.Nil(t, err)
+		unresponsiveProvidersData[i] = badData
+	}
+	require.Nil(t, err)
+	var Relays []*types.RelayRequest
+	var totalCu uint64
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[0].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData[clientIndex], // create the complaint
+		}
+		totalCu += relayRequest.CuSum
+
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		Relays = append(Relays, relayRequest)
+	}
+
+	balanceProviderBeforePayment := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+	require.Nil(t, err)
+	balanceProviderAfterPayment := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	require.Equal(t, balanceProviderAfterPayment, int64(totalCu/10)+balanceProviderBeforePayment)
+
+}
+
+// In this test we will test the protection from unstaking if the amount of previous serices*2 is greater than complaints
+func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t *testing.T) {
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	testClientAmount := 4
+	err := ts.addClient(testClientAmount)
+	require.Nil(t, err)
+	err = ts.addProvider(2)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch to stake
+
+	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelayRequest
+	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
+		relayRequest := &types.RelayRequest{
+			Provider:        ts.providers[1].address.String(),
+			ApiUrl:          "",
+			Data:            []byte(ts.spec.Apis[0].Name),
+			SessionId:       uint64(1),
+			ChainID:         ts.spec.Name,
+			CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:        0,
+			RequestBlock:    -1,
+			DataReliability: nil,
+		}
+
+		sig, err := sigs.SignRelay(ts.clients[i].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		RelaysForUnresponsiveProviderInFirstTwoEpochs = []*types.RelayRequest{relayRequest} // each epoch get one service
+		_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[1].address.String(), Relays: RelaysForUnresponsiveProviderInFirstTwoEpochs})
+		require.Nil(t, err)
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch
+	}
+
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
+	require.Nil(t, err)
+	var Relays []*types.RelayRequest
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[0].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
+		}
+
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		Relays = append(Relays, relayRequest)
+	}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+	require.Nil(t, err)
+
+	// testing that the provider wasnt unstaked.
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.False(t, unStakeStoragefound)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.True(t, stakeStorageFound)
 }
 
 func TestRelayPaymentDoubleSpending(t *testing.T) {
