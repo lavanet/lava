@@ -3,6 +3,7 @@ package relayer
 import (
 	context "context"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,6 +23,7 @@ func PortalServer(
 	flagSet *pflag.FlagSet,
 ) {
 	//
+	rand.Seed(time.Now().UnixNano())
 	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
