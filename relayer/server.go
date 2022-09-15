@@ -636,6 +636,10 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	reqMsg := nodeMsg.GetMsg().(*chainproxy.JsonrpcMessage)
 	reqParams := reqMsg.Params
 	reply, err := nodeMsg.Send(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
+	}
+
 	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all
 	if strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
 		userSessions := getOrCreateUserSessions(userAddr.String())
@@ -648,9 +652,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			sub.disconnect()
 			delete(userSessions.Subs, subscriptionID)
 		}
-	}
-	if err != nil {
-		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
 
 	latestBlock := int64(0)
@@ -703,7 +704,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 }
 
 func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
-	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
+	utils.LavaFormatInfo("Provider got relay request subscribe", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
 
@@ -850,10 +851,6 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 
 		var reply *pairingtypes.RelayReply
 		if nodeMsg.GetServiceApi().Category.Subscription {
-			userSessions := getOrCreateUserSessions(userAddr.String())
-			userSessions.Lock.Lock()
-			defer userSessions.Lock.Unlock()
-
 			var clientSub *rpcclient.ClientSubscription
 			repliesChan := make(chan interface{})
 			clientSub, reply, err = nodeMsg.SendSubscribe(context.Background(), repliesChan)
@@ -868,13 +865,16 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			if err != nil {
 				return utils.LavaFormatError("Subscription failed", err, nil)
 			}
-			fmt.Println(subscriptionID)
+			fmt.Println(subscriptionID, string(request.Data), string(replyMsg.ID))
 
+			userSessions := getOrCreateUserSessions(userAddr.String())
+			userSessions.Lock.Lock()
 			userSessions.Subs[subscriptionID] = &subscription{
 				id:          subscriptionID,
 				sub:         clientSub,
 				repliesChan: repliesChan,
 			}
+			userSessions.Lock.Unlock()
 
 			err = srv.Send(reply) //this reply contains the RPC ID
 			if err != nil {
