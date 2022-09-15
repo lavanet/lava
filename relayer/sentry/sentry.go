@@ -154,7 +154,7 @@ type Sentry struct {
 	cmdFlags                *pflag.FlagSet
 	serverID                uint64
 	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
-	authorizationCacheMutex sync.Mutex
+	authorizationCacheMutex sync.RWMutex
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -795,10 +795,11 @@ func (s *Sentry) Start(ctx context.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed to get pairing", err, nil)
 				}
+
+				s.clearAuthResponseCache(data.Block.Height)
 			}
 
 			s.handlePairingChange(ctx, data.Block.Height, false)
-			s.clearAuthResponseCache(data.Block.Height)
 
 			if !s.isUser {
 				// listen for vote reveal event from new block handler on conflict/module.go
@@ -1549,11 +1550,13 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 }
 
 func (s *Sentry) clearAuthResponseCache(blockheight int64) {
+	prevEpochStart := s.GetCurrentEpochHeight() - s.GetEpochSize()
+
 	// Clear cache
 	s.authorizationCacheMutex.Lock()
 	defer s.authorizationCacheMutex.Unlock()
 	for key := range s.authorizationCache {
-		if key <= uint64(blockheight)-s.GetOverlapSize() {
+		if key < prevEpochStart {
 			delete(s.authorizationCache, key)
 		}
 	}
@@ -1561,8 +1564,8 @@ func (s *Sentry) clearAuthResponseCache(blockheight int64) {
 
 func (s *Sentry) getAuthResponseFromCache(consumer string, blockheight uint64) *pairingtypes.QueryVerifyPairingResponse {
 	// Check cache
-	s.authorizationCacheMutex.Lock()
-	defer s.authorizationCacheMutex.Unlock()
+	s.authorizationCacheMutex.RLock()
+	defer s.authorizationCacheMutex.RUnlock()
 	if entry, hasEntryForBlockheight := s.authorizationCache[blockheight]; hasEntryForBlockheight {
 		if cachedResponse, ok := entry[consumer]; ok {
 			return cachedResponse
@@ -1576,6 +1579,7 @@ func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, bloc
 
 	res := s.getAuthResponseFromCache(consumer, blockheight)
 	if res != nil {
+		// User was authorized before, response returned from cache.
 		return res, nil
 	}
 

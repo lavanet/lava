@@ -524,7 +524,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
-		utils.LavaFormatError("failed autherising user request", nil, nil)
+		utils.LavaFormatError("failed authorizing user request", nil, nil)
 		return nil, err
 	}
 
