@@ -293,6 +293,12 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
 			continue
 		}
+		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
+		// if !entryExists provider is alraedy unstaked
+		if !entryExists {
+			continue // if provider is not staked, nothing to do.
+		}
+
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
 		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
 
@@ -314,11 +320,9 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 		}
 
 		providerPaymentStorage.UnresponsivenessComplaints = append(providerPaymentStorage.UnresponsivenessComplaints, clientAddr.String())
-		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
 
-		// if !entryExists provider is alraedy unstaked
 		// now we check if we have more UnresponsivenessComplaints than maxComplaintsPerEpoch
-		if len(providerPaymentStorage.UnresponsivenessComplaints) >= maxComplaintsPerEpoch && entryExists {
+		if len(providerPaymentStorage.UnresponsivenessComplaints) >= maxComplaintsPerEpoch {
 			// we check if we have double complaints than previous "collectPaymentsFromNumberOfPreviousEpochs" epochs (including this one) payment requests
 			totalPaymentsInPreviousEpochs, err := k.getTotalPaymentsForPreviousEpochs(ctx, collectPaymentsFromNumberOfPreviousEpochs, epoch, chainID, sdkUnresponsiveProviderAddress)
 			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments including this epoch

@@ -216,15 +216,58 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	// require.Zero(t, balance)
 }
 
-func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
-	ts := setupForPaymentTest(t)
+func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int) (ts *testStruct) {
+	ts = setupForPaymentTest(t)
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(amountOfClients)
+	require.Nil(t, err)
+	err = ts.addProvider(3)
+	require.Nil(t, err)
+	return ts
+}
+
+func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	testClientAmount := 4
-	err := ts.addClient(testClientAmount)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
 	require.Nil(t, err)
-	err = ts.addProvider(2)
+	var Relays []*types.RelayRequest
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[0].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
+		}
+
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		Relays = append(Relays, relayRequest)
+	}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
+	// testing that the provider wasnt unstaked.
+	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.True(t, unStakeStoragefound)
+	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.False(t, stakeStorageFound)
+}
+
+func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
+	testClientAmount := 4
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -260,18 +303,44 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	require.True(t, unStakeStoragefound)
 	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
 	require.False(t, stakeStorageFound)
+
+	// continue reporting provider after unstake
+	for i := 0; i < 2; i++ { // move to epoch 5
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	var RelaysAfter []*types.RelayRequest
+	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
+
+		relayRequest := &types.RelayRequest{
+			Provider:              ts.providers[2].address.String(),
+			ApiUrl:                "",
+			Data:                  []byte(ts.spec.Apis[0].Name),
+			SessionId:             uint64(1),
+			ChainID:               ts.spec.Name,
+			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
+			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+			RelayNum:              0,
+			RequestBlock:          -1,
+			DataReliability:       nil,
+			UnresponsiveProviders: unresponsiveProvidersData, // create the complaint
+		}
+		sig, err := sigs.SignRelay(ts.clients[clientIndex].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+		RelaysAfter = append(RelaysAfter, relayRequest)
+	}
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[2].address.String(), Relays: RelaysAfter})
+	require.Nil(t, err)
+
+	_, stakeStorageFound, _ = ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.False(t, stakeStorageFound)
 }
 
 // only one epoch is not enough for the unstaking to happen need atleast two epochs in the past
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation(t *testing.T) {
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	testClientAmount := 4
-	err := ts.addClient(testClientAmount)
-	require.Nil(t, err)
-	err = ts.addProvider(2)
-	require.Nil(t, err)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
@@ -308,14 +377,8 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 }
 
 func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *testing.T) {
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	testClientAmount := 4
-	err := ts.addClient(testClientAmount)
-	require.Nil(t, err)
-	err = ts.addProvider(2)
-	require.Nil(t, err)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -329,7 +392,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 		[]byte("cosmosBadAddress"),
 	}
 	// badData2, err := json.Marshal([]string{"bad", "data", "cosmosBadAddress"}) // test bad data
-
+	var err error
 	for i := 0; i < testClientAmount; i++ {
 		badData, err := json.Marshal(inputData[i])
 		require.Nil(t, err)
@@ -370,14 +433,8 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 
 // In this test we will test the protection from unstaking if the amount of previous serices*2 is greater than complaints
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t *testing.T) {
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	testClientAmount := 4
-	err := ts.addClient(testClientAmount)
-	require.Nil(t, err)
-	err = ts.addProvider(2)
-	require.Nil(t, err)
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch to stake
 
 	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelayRequest
