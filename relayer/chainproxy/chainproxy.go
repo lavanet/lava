@@ -268,7 +268,7 @@ func SendRelaySubscribe(
 
 		// relaySentTime := time.Now()
 		clientSession.QoSInfo.TotalRelays++
-		replySrv, err := c.RelaySubscribe(context.Background(), relayRequest)
+		replySrv, err := c.RelaySubscribe(ctx, relayRequest)
 		if err != nil {
 			if err.Error() == context.DeadlineExceeded.Error() {
 				clientSession.QoSInfo.ConsecutiveTimeOut++

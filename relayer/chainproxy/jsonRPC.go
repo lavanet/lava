@@ -235,7 +235,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatInfo("read error received", &map[string]string{"err": err.Error()})
+				utils.LavaFormatError("read error received", err, nil)
 				break
 			}
 			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
@@ -244,33 +244,34 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatInfo("parse error received", &map[string]string{"err": err.Error()})
-				// break
+				utils.LavaFormatError("parse error received", err, nil)
+				continue
 			}
 
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 
 			if nodeMsg.GetServiceApi().Category.Subscription {
-				fmt.Println("send subscribe")
-				replySrv, err := SendRelaySubscribe(context.Background(), cp, privKey, "", string(msg), "")
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel() //incase there's a problem make sure to cancel the connection
+				replySrv, err := SendRelaySubscribe(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
 					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
-					break
+					utils.LavaFormatError("write to rpc error received", err, nil)
+					continue
 				}
 
 				var reply pairingtypes.RelayReply
 				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
 				if err != nil {
 					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
-					break
+					utils.LavaFormatError("receive from rpc error received", err, nil)
+					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
 					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
-					break
+					utils.LavaFormatError("write error received", err, nil)
+					continue
 				}
 
 				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
@@ -279,15 +280,16 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 					err = (*replySrv).RecvMsg(&reply)
 					if err != nil {
 						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatInfo("receive from rpc error received", &map[string]string{"err": err.Error()})
+						utils.LavaFormatError("receive from rpc error received", err, nil)
 						break
 					}
 
+					// If portal cant write to the client
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
-						(*replySrv).Context().Done()
+						cancel()
 						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
-						break
+						utils.LavaFormatError("write error received", err, nil)
+						// break
 					}
 
 					utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
@@ -296,14 +298,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
 					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatInfo("write to rpc error received", &map[string]string{"err": err.Error()})
-					break
+					utils.LavaFormatError("write to rpc error received", err, nil)
+					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
 					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatInfo("write error received", &map[string]string{"err": err.Error()})
-					break
+					utils.LavaFormatError("write error received", err, nil)
+					continue
 				}
 				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 			}
