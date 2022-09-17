@@ -675,14 +675,19 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		userSessions.Lock.Lock()
 		defer userSessions.Lock.Unlock()
-		subscriptionID := reqParams[0].(string)
-		for _, session := range userSessions.Sessions {
-			session.Lock.Lock()
-			if sub, ok := session.Subs[subscriptionID]; ok {
-				sub.disconnect()
-				delete(session.Subs, subscriptionID)
+		switch p := reqParams.(type) {
+		case []interface{}:
+			subscriptionID := p[0].(string)
+			for _, session := range userSessions.Sessions {
+				session.Lock.Lock()
+				if sub, ok := session.Subs[subscriptionID]; ok {
+					sub.disconnect()
+					delete(session.Subs, subscriptionID)
+				}
+				session.Lock.Unlock()
 			}
-			session.Lock.Unlock()
+			// tendermint
+			// case map[string]interface{}:
 		}
 	}
 

@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
-	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -31,7 +30,7 @@ type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
-	Params  []interface{}   `json:"params,omitempty"`
+	Params  interface{}     `json:"params,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
 }
@@ -393,20 +392,8 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	// TODO Websockets for tendermint
-	// subscribe is used for tendermint based chains
-	// if nm.msg.Method == "subscribe" {
-	// }
-
-	// Need to do this since some networks (Fantom) have a subscribe method under a different namespace.
-	method := strings.Split(nm.msg.Method, "_")
-	if len(method) != 2 {
-		return nil, nil, utils.LavaFormatError("Invalid Method "+nm.msg.Method, nil, nil)
-	}
-	namespace := method[0]
-
 	var result JsonrpcMessage
-	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, namespace, ch, nm.msg.Params...)
+	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
 
 	var replyMsg JsonrpcMessage
 	if err != nil {
