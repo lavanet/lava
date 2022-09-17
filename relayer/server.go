@@ -62,7 +62,6 @@ type UserSessionsEpochData struct {
 
 type UserSessions struct {
 	Sessions      map[uint64]*RelaySession
-	Subs          map[string]*subscription //key: subscriptionID
 	IsBlockListed bool
 	user          string
 	dataByEpoch   map[uint64]*UserSessionsEpochData
@@ -71,12 +70,24 @@ type UserSessions struct {
 
 type RelaySession struct {
 	userSessionsParent *UserSessions
+	Subs               map[string]*subscription //key: subscriptionID
 	CuSum              uint64
 	UniqueIdentifier   uint64
 	Lock               utils.LavaMutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64
+}
+
+type subscription struct {
+	id          string
+	sub         *rpcclient.ClientSubscription
+	repliesChan chan interface{}
+}
+
+// TODO Perform payment stuff here
+func (s *subscription) disconnect() {
+	s.sub.Unsubscribe()
 }
 
 func (r *RelaySession) GetPairingEpoch() uint64 {
@@ -92,17 +103,6 @@ type voteData struct {
 	Nonce         int64
 	CommitHash    []byte
 }
-type subscription struct {
-	id          string
-	sub         *rpcclient.ClientSubscription
-	repliesChan chan interface{}
-}
-
-// TODO Perform payment stuff here
-func (s *subscription) disconnect() {
-	s.sub.Unsubscribe()
-}
-
 type relayServer struct {
 	pairingtypes.UnimplementedRelayerServer
 }
@@ -370,7 +370,7 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 		sessionEpoch = uint64(req.BlockHeight)
 
 		userSessions.Lock.Lock()
-		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch}
+		session = &RelaySession{userSessionsParent: userSessions, RelayNum: 0, UniqueIdentifier: req.SessionId, PairingEpoch: sessionEpoch, Subs: make(map[string]*subscription)}
 		utils.LavaFormatInfo("new session for user", &map[string]string{
 			"userAddr":            userAddr,
 			"created for epoch":   strconv.FormatUint(sessionEpoch, 10),
@@ -410,7 +410,7 @@ func getOrCreateUserSessions(userAddr string) *UserSessions {
 	g_sessions_mutex.Lock()
 	userSessions, ok := g_sessions[userAddr]
 	if !ok {
-		userSessions = &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, Subs: map[string]*subscription{}, user: userAddr}
+		userSessions = &UserSessions{dataByEpoch: map[uint64]*UserSessionsEpochData{}, Sessions: map[uint64]*RelaySession{}, user: userAddr}
 		g_sessions[userAddr] = userSessions
 	}
 	g_sessions_mutex.Unlock()
@@ -482,6 +482,35 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 
 	sess.Lock.Lock()
 	sess.CuSum = request.CuSum
+	sess.Lock.Unlock()
+
+	return nil
+}
+
+func updateSessionCuSubscribe(sess *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
+	utils.LavaFormatInfo("updateSessionCuSubscribe", &map[string]string{
+		"serviceApi.Name":   serviceApi.Name,
+		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+		"cu":                strconv.FormatUint(sess.CuSum, 10),
+	})
+
+	userSessions.Lock.Lock()
+	epochData := userSessions.dataByEpoch[pairingEpoch]
+
+	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
+		userSessions.Lock.Unlock()
+		return utils.LavaFormatError("client cu overflow subscribe", nil, &map[string]string{
+			"epochData.MaxComputeUnits":  strconv.FormatUint(epochData.MaxComputeUnits, 10),
+			"epochData.UsedComputeUnits": strconv.FormatUint(epochData.UsedComputeUnits, 10),
+			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
+		})
+	}
+
+	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
+	userSessions.Lock.Unlock()
+
+	sess.Lock.Lock()
+	sess.CuSum += request.CuSum
 	sess.Lock.Unlock()
 
 	return nil
@@ -641,17 +670,19 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
 
-	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all
+	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all. Right now this is only for ethereum
 	if strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		userSessions.Lock.Lock()
 		defer userSessions.Lock.Unlock()
-		// TODO check if there are types other than string for unsubscribe on tendermint
 		subscriptionID := reqParams[0].(string)
-		fmt.Println("disc", reqParams[0].(string), userSessions.Subs[subscriptionID], len(userSessions.Subs))
-		if sub, ok := userSessions.Subs[subscriptionID]; ok {
-			sub.disconnect()
-			delete(userSessions.Subs, subscriptionID)
+		for _, session := range userSessions.Sessions {
+			session.Lock.Lock()
+			if sub, ok := session.Subs[subscriptionID]; ok {
+				sub.disconnect()
+				delete(session.Subs, subscriptionID)
+			}
+			session.Lock.Unlock()
 		}
 	}
 
@@ -868,42 +899,72 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			}
 			fmt.Println(subscriptionID, string(request.Data), string(replyMsg.ID))
 
-			userSessions := getOrCreateUserSessions(userAddr.String())
-			userSessions.Lock.Lock()
-			userSessions.Subs[subscriptionID] = &subscription{
+			relaySession.Lock.Lock()
+			relaySession.Subs[subscriptionID] = &subscription{
 				id:          subscriptionID,
 				sub:         clientSub,
 				repliesChan: repliesChan,
 			}
-			userSessions.Lock.Unlock()
+			relaySession.Lock.Unlock()
 
 			err = srv.Send(reply) //this reply contains the RPC ID
 			if err != nil {
-				fmt.Println("RPC ID", err)
+				utils.LavaFormatError("Error getting RPC ID", err, nil)
 			}
 
 			for {
 				select {
 				case <-clientSub.Err():
-					return nil
+					utils.LavaFormatError("client sub", err, nil)
+					// delete this connection from the subs map
+					relaySession.Lock.Lock()
+					if sub, ok := relaySession.Subs[subscriptionID]; ok {
+						sub.disconnect()
+						delete(relaySession.Subs, subscriptionID)
+					}
+					relaySession.Lock.Unlock()
+					return err
 				case reply := <-repliesChan:
 					data, err := json.Marshal(reply)
 					if err != nil {
-						fmt.Println("parse", err)
-						// TODO return json error to client here
-						return nil
+						utils.LavaFormatError("client sub unmarshal", err, nil)
+						relaySession.Lock.Lock()
+						if sub, ok := relaySession.Subs[subscriptionID]; ok {
+							sub.disconnect()
+							delete(relaySession.Subs, subscriptionID)
+						}
+						relaySession.Lock.Unlock()
+						return err
 					}
+
 					err = srv.Send(
 						&pairingtypes.RelayReply{
 							Data: data,
 						},
 					)
 					if err != nil {
-						fmt.Println("sendmsg", err)
-						return nil
+						// usually triggered when client closes connection
+						utils.LavaFormatError("client sub send", err, nil)
+						relaySession.Lock.Lock()
+						if sub, ok := relaySession.Subs[subscriptionID]; ok {
+							sub.disconnect()
+							delete(relaySession.Subs, subscriptionID)
+						}
+						relaySession.Lock.Unlock()
+						return err
 					}
-					fmt.Println(string(data))
-					fmt.Println("Info sent")
+					// performCUUpdate
+					err = updateSessionCuSubscribe(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
+					if err != nil {
+						relaySession.Lock.Lock()
+						if sub, ok := relaySession.Subs[subscriptionID]; ok {
+							sub.disconnect()
+							delete(relaySession.Subs, subscriptionID)
+						}
+						relaySession.Lock.Unlock()
+						return err
+					}
+					utils.LavaFormatInfo("Sending data", &map[string]string{"data": string(data)})
 				}
 			}
 		} else {
