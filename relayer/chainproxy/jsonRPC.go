@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -392,8 +393,11 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
+	method := strings.Split(nm.msg.Method, "_")
+	namespace := method[0]
+
 	var result JsonrpcMessage
-	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, namespace, ch, nm.msg.Params)
 
 	var replyMsg JsonrpcMessage
 	if err != nil {
