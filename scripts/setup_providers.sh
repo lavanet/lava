@@ -55,6 +55,14 @@ screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
 
+# Cosmoshub providers
+screen -d -m -S cos5_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2331 $COSHUB_REST COS5 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2331.log"
+screen -S cos5_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2332 $COSHUB_REST COS5 rest --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2332.log"
+screen -S cos5_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2333 $COSHUB_REST COS5 rest --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2333.log"
+screen -S cos5_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2341 $COSHUB_RPC COS5 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2341.log"
+screen -S cos5_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2342 $COSHUB_RPC COS5 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2342.log"
+screen -S cos5_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2343 $COSHUB_RPC COS5 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2343.log"
+
 #Celo providers
 screen -d -m -S celo_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5241 $CELO_HTTP CELO jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/CELO_2221.log" && sleep 0.25
 screen -S celo_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 5242 $CELO_HTTP CELO jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/CELO_2222.log"
@@ -99,6 +107,8 @@ screen -S portals -X screen -t win15 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3339 GTH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3339.log"
 screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3340.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
+screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 COS5 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3340.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3344 COS5 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 screen -S portals -X screen -t win18 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 screen -S portals -X screen -t win19 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 ALFAJORES jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
