@@ -18,6 +18,7 @@ import (
 const (
 	maxComplaintsPerEpoch                     = 3
 	collectPaymentsFromNumberOfPreviousEpochs = 2
+	providerPaymentMultiplier                 = 2 // multiplying the amount of payments to protect provider from unstaking
 )
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
@@ -329,11 +330,10 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 			if err != nil {
 				utils.LavaFormatError("lava_unresponsive_providers: couldnt fetch getTotalPaymentsForPreviousEpochs", err, nil)
 			} else {
-				if int(totalPaymentRequests*2) < len(providerPaymentStorage.UnresponsivenessComplaints) {
+				if int(totalPaymentRequests*providerPaymentMultiplier) < len(providerPaymentStorage.UnresponsivenessComplaints) {
 					// unstake provider
 					utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-					k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
-					k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
+					k.unstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
 				}
 			}
 		}
@@ -359,4 +359,9 @@ func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEp
 		epochTemp = previousEpoch
 	}
 	return totalPaymentRequests, nil
+}
+
+func (k msgServer) unstakeProviderEntry(ctx sdk.Context, providerKey string, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) {
+	k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
 }

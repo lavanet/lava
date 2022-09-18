@@ -258,11 +258,17 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	}
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
-	// testing that the provider wasnt unstaked.
+	// testing that the provider was unstaked. and checking his balance after many epochs
+	balanceProvideratUnstakeEpoch := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
 	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
 	require.True(t, unStakeStoragefound)
 	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
 	require.False(t, stakeStorageFound)
+	for i := 0; i < 10; i++ { // move to epoch 13 so we can check balance at the end
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+	balanceProviderAfterManyEpochs := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	require.Equal(t, balanceProvideratUnstakeEpoch, balanceProviderAfterManyEpochs)
 }
 
 func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
@@ -335,6 +341,19 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfte
 
 	_, stakeStorageFound, _ = ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
 	require.False(t, stakeStorageFound)
+	_, unStakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.True(t, unStakeStoragefound)
+
+	// validating number of appearances for unstaked provider in unstake storage (if more than once found, throw an error)
+	storage, foundStorage := ts.keepers.Epochstorage.GetStakeStorageUnstake(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey)
+	require.True(t, foundStorage)
+	var numberOfAppearances int
+	for _, stored := range storage.StakeEntries {
+		if stored.Address == ts.providers[1].address.String() {
+			numberOfAppearances += 1
+		}
+	}
+	require.Equal(t, numberOfAppearances, 1)
 }
 
 // only one epoch is not enough for the unstaking to happen need atleast two epochs in the past
@@ -427,8 +446,9 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 	balanceProviderAfterPayment := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
-	require.Equal(t, balanceProviderAfterPayment, int64(totalCu/10)+balanceProviderBeforePayment)
-
+	reward := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(totalCu)).TruncateInt64()
+	// testing reward + before == after
+	require.Equal(t, balanceProviderAfterPayment, reward+balanceProviderBeforePayment)
 }
 
 // In this test we will test the protection from unstaking if the amount of previous serices*2 is greater than complaints
