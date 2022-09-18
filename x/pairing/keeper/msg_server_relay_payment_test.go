@@ -270,7 +270,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 
 	OriginalBlockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ts.ctx), OriginalBlockHeight)
-
+	require.Nil(t, err)
 	for { // move to epoch 13 so we can check balance at the end
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 		blockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
