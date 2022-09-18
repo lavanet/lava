@@ -1559,7 +1559,7 @@ func (s *Sentry) clearAuthResponseCache(blockheight int64) {
 	s.authorizationCacheMutex.Lock()
 	defer s.authorizationCacheMutex.Unlock()
 	for key := range s.authorizationCache {
-		if key <= s.GetPrevEpochHeight() {
+		if key < s.GetPrevEpochHeight() {
 			delete(s.authorizationCache, key)
 		}
 	}
