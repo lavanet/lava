@@ -30,7 +30,7 @@ func TestGenesisState_Validate(t *testing.T) {
 						Index: "1",
 					},
 				},
-				ClientPaymentStorageList: []types.ClientPaymentStorage{
+				ProviderPaymentStorageList: []types.ProviderPaymentStorage{
 					{
 						Index: "0",
 					},
@@ -65,9 +65,9 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid: false,
 		},
 		{
-			desc: "duplicated clientPaymentStorage",
+			desc: "duplicated providerPaymentStorage",
 			genState: &types.GenesisState{
-				ClientPaymentStorageList: []types.ClientPaymentStorage{
+				ProviderPaymentStorageList: []types.ProviderPaymentStorage{
 					{
 						Index: "0",
 					},

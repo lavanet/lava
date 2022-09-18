@@ -35,8 +35,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdListUniquePaymentStorageClientProvider())
 	cmd.AddCommand(CmdShowUniquePaymentStorageClientProvider())
-	cmd.AddCommand(CmdListClientPaymentStorage())
-	cmd.AddCommand(CmdShowClientPaymentStorage())
+	cmd.AddCommand(CmdListProviderPaymentStorage())
+	cmd.AddCommand(CmdShowProviderPaymentStorage())
 	cmd.AddCommand(CmdListEpochPayments())
 	cmd.AddCommand(CmdShowEpochPayments())
 	cmd.AddCommand(CmdUserMaxCu())

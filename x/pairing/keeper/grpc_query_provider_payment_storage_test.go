@@ -18,33 +18,33 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func TestClientPaymentStorageQuerySingle(t *testing.T) {
+func TestProviderPaymentStorageQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNClientPaymentStorage(keeper, ctx, 2)
+	msgs := createNProviderPaymentStorage(keeper, ctx, 2)
 	for _, tc := range []struct {
 		desc     string
-		request  *types.QueryGetClientPaymentStorageRequest
-		response *types.QueryGetClientPaymentStorageResponse
+		request  *types.QueryGetProviderPaymentStorageRequest
+		response *types.QueryGetProviderPaymentStorageResponse
 		err      error
 	}{
 		{
 			desc: "First",
-			request: &types.QueryGetClientPaymentStorageRequest{
+			request: &types.QueryGetProviderPaymentStorageRequest{
 				Index: msgs[0].Index,
 			},
-			response: &types.QueryGetClientPaymentStorageResponse{ClientPaymentStorage: msgs[0]},
+			response: &types.QueryGetProviderPaymentStorageResponse{ProviderPaymentStorage: msgs[0]},
 		},
 		{
 			desc: "Second",
-			request: &types.QueryGetClientPaymentStorageRequest{
+			request: &types.QueryGetProviderPaymentStorageRequest{
 				Index: msgs[1].Index,
 			},
-			response: &types.QueryGetClientPaymentStorageResponse{ClientPaymentStorage: msgs[1]},
+			response: &types.QueryGetProviderPaymentStorageResponse{ProviderPaymentStorage: msgs[1]},
 		},
 		{
 			desc: "KeyNotFound",
-			request: &types.QueryGetClientPaymentStorageRequest{
+			request: &types.QueryGetProviderPaymentStorageRequest{
 				Index: strconv.Itoa(100000),
 			},
 			err: status.Error(codes.NotFound, "not found"),
@@ -55,7 +55,7 @@ func TestClientPaymentStorageQuerySingle(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			response, err := keeper.ClientPaymentStorage(wctx, tc.request)
+			response, err := keeper.ProviderPaymentStorage(wctx, tc.request)
 			if tc.err != nil {
 				require.ErrorIs(t, err, tc.err)
 			} else {
@@ -69,13 +69,13 @@ func TestClientPaymentStorageQuerySingle(t *testing.T) {
 	}
 }
 
-func TestClientPaymentStorageQueryPaginated(t *testing.T) {
+func TestProviderPaymentStorageQueryPaginated(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNClientPaymentStorage(keeper, ctx, 5)
+	msgs := createNProviderPaymentStorage(keeper, ctx, 5)
 
-	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllClientPaymentStorageRequest {
-		return &types.QueryAllClientPaymentStorageRequest{
+	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllProviderPaymentStorageRequest {
+		return &types.QueryAllProviderPaymentStorageRequest{
 			Pagination: &query.PageRequest{
 				Key:        next,
 				Offset:     offset,
@@ -87,12 +87,12 @@ func TestClientPaymentStorageQueryPaginated(t *testing.T) {
 	t.Run("ByOffset", func(t *testing.T) {
 		step := 2
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.ClientPaymentStorageAll(wctx, request(nil, uint64(i), uint64(step), false))
+			resp, err := keeper.ProviderPaymentStorageAll(wctx, request(nil, uint64(i), uint64(step), false))
 			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.ClientPaymentStorage), step)
+			require.LessOrEqual(t, len(resp.ProviderPaymentStorage), step)
 			require.Subset(t,
 				nullify.Fill(msgs),
-				nullify.Fill(resp.ClientPaymentStorage),
+				nullify.Fill(resp.ProviderPaymentStorage),
 			)
 		}
 	})
@@ -100,27 +100,27 @@ func TestClientPaymentStorageQueryPaginated(t *testing.T) {
 		step := 2
 		var next []byte
 		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.ClientPaymentStorageAll(wctx, request(next, 0, uint64(step), false))
+			resp, err := keeper.ProviderPaymentStorageAll(wctx, request(next, 0, uint64(step), false))
 			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.ClientPaymentStorage), step)
+			require.LessOrEqual(t, len(resp.ProviderPaymentStorage), step)
 			require.Subset(t,
 				nullify.Fill(msgs),
-				nullify.Fill(resp.ClientPaymentStorage),
+				nullify.Fill(resp.ProviderPaymentStorage),
 			)
 			next = resp.Pagination.NextKey
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
-		resp, err := keeper.ClientPaymentStorageAll(wctx, request(nil, 0, 0, true))
+		resp, err := keeper.ProviderPaymentStorageAll(wctx, request(nil, 0, 0, true))
 		require.NoError(t, err)
 		require.Equal(t, len(msgs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
 			nullify.Fill(msgs),
-			nullify.Fill(resp.ClientPaymentStorage),
+			nullify.Fill(resp.ProviderPaymentStorage),
 		)
 	})
 	t.Run("InvalidRequest", func(t *testing.T) {
-		_, err := keeper.ClientPaymentStorageAll(wctx, nil)
+		_, err := keeper.ProviderPaymentStorageAll(wctx, nil)
 		require.ErrorIs(t, err, status.Error(codes.InvalidArgument, "invalid request"))
 	})
 }

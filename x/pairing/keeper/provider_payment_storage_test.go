@@ -15,21 +15,21 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func createNClientPaymentStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.ClientPaymentStorage {
-	items := make([]types.ClientPaymentStorage, n)
+func createNProviderPaymentStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.ProviderPaymentStorage {
+	items := make([]types.ProviderPaymentStorage, n)
 	for i := range items {
 		items[i].Index = strconv.Itoa(i)
 
-		keeper.SetClientPaymentStorage(ctx, items[i])
+		keeper.SetProviderPaymentStorage(ctx, items[i])
 	}
 	return items
 }
 
-func TestClientPaymentStorageGet(t *testing.T) {
+func TestProviderPaymentStorageGet(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
-	items := createNClientPaymentStorage(keeper, ctx, 10)
+	items := createNProviderPaymentStorage(keeper, ctx, 10)
 	for _, item := range items {
-		rst, found := keeper.GetClientPaymentStorage(ctx,
+		rst, found := keeper.GetProviderPaymentStorage(ctx,
 			item.Index,
 		)
 		require.True(t, found)
@@ -39,25 +39,25 @@ func TestClientPaymentStorageGet(t *testing.T) {
 		)
 	}
 }
-func TestClientPaymentStorageRemove(t *testing.T) {
+func TestProviderPaymentStorageRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
-	items := createNClientPaymentStorage(keeper, ctx, 10)
+	items := createNProviderPaymentStorage(keeper, ctx, 10)
 	for _, item := range items {
-		keeper.RemoveClientPaymentStorage(ctx,
+		keeper.RemoveProviderPaymentStorage(ctx,
 			item.Index,
 		)
-		_, found := keeper.GetClientPaymentStorage(ctx,
+		_, found := keeper.GetProviderPaymentStorage(ctx,
 			item.Index,
 		)
 		require.False(t, found)
 	}
 }
 
-func TestClientPaymentStorageGetAll(t *testing.T) {
+func TestProviderPaymentStorageGetAll(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
-	items := createNClientPaymentStorage(keeper, ctx, 10)
+	items := createNProviderPaymentStorage(keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllClientPaymentStorage(ctx)),
+		nullify.Fill(keeper.GetAllProviderPaymentStorage(ctx)),
 	)
 }

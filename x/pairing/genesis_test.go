@@ -22,7 +22,7 @@ func TestGenesis(t *testing.T) {
 				Index: "1",
 			},
 		},
-		ClientPaymentStorageList: []types.ClientPaymentStorage{
+		ProviderPaymentStorageList: []types.ProviderPaymentStorage{
 			{
 				Index: "0",
 			},
@@ -50,7 +50,7 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(got)
 
 	require.ElementsMatch(t, genesisState.UniquePaymentStorageClientProviderList, got.UniquePaymentStorageClientProviderList)
-	require.ElementsMatch(t, genesisState.ClientPaymentStorageList, got.ClientPaymentStorageList)
+	require.ElementsMatch(t, genesisState.ProviderPaymentStorageList, got.ProviderPaymentStorageList)
 	require.ElementsMatch(t, genesisState.EpochPaymentsList, got.EpochPaymentsList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

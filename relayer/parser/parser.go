@@ -157,7 +157,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
-		if uint64(len(unmarshaledDataTyped)) < param_index {
+		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
 
 		}
@@ -197,7 +197,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
-		if uint64(len(unmarshaledDataTyped)) < param_index {
+		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, fmt.Errorf("invalid rpc input and input index: wanted param: %d params: %s", param_index, unmarshalledData)
 		}
 		blockContainer := unmarshaledDataTyped[param_index]
@@ -316,7 +316,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 			}
 		}
 		//did not find a named property
-		if uint64(len(unmarshaledDataTyped)) < param_index {
+		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
 		}
 		block := unmarshaledDataTyped[param_index]
