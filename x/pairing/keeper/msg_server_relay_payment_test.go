@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	balance int64 = 100000000
-	stake   int64 = 100000
+	balance    int64 = 100000000
+	stake      int64 = 100000
+	manyEpochs       = 20
 )
 
 type account struct {
@@ -230,9 +231,13 @@ func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients i
 func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	testClientAmount := 4
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
+	staked_amount, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
+
 	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
 	require.Nil(t, err)
 	var Relays []*types.RelayRequest
@@ -259,16 +264,22 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 	// testing that the provider was unstaked. and checking his balance after many epochs
-	balanceProvideratUnstakeEpoch := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
 	_, unStakeStoragefound, _ := ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
 	require.True(t, unStakeStoragefound)
 	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
 	require.False(t, stakeStorageFound)
-	for i := 0; i < 10; i++ { // move to epoch 13 so we can check balance at the end
+	for i := 0; i < manyEpochs; i++ { // move to epoch 13 so we can check balance at the end
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
-	balanceProviderAfterManyEpochs := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
-	require.Equal(t, balanceProvideratUnstakeEpoch, balanceProviderAfterManyEpochs)
+	// validate that the provider is no longer unstaked. and stake was returned.
+	_, unStakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
+	require.False(t, unStakeStoragefound)
+	// also that the provider wasnt returned to stake pool
+	_, stakeStorageFound, _ = ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
+	require.False(t, stakeStorageFound)
+
+	balanceProviderAfterUnstakeMoneyReturned := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[1].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	require.Equal(t, balanceProvideratBeforeStake, balanceProviderAfterUnstakeMoneyReturned)
 }
 
 func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
