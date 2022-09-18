@@ -7,7 +7,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
 // this line is used by starport scaffolding # 1
-import "pairing/client_payment_storage.proto";
+import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "epochstorage/stake_entry.proto";
 
@@ -49,14 +49,14 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider";
 	}
 
-// Queries a ClientPaymentStorage by index.
-	rpc ClientPaymentStorage(QueryGetClientPaymentStorageRequest) returns (QueryGetClientPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/client_payment_storage/{index}";
+// Queries a ProviderPaymentStorage by index.
+	rpc ProviderPaymentStorage(QueryGetProviderPaymentStorageRequest) returns (QueryGetProviderPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage/{index}";
 	}
 
-	// Queries a list of ClientPaymentStorage items.
-	rpc ClientPaymentStorageAll(QueryAllClientPaymentStorageRequest) returns (QueryAllClientPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/client_payment_storage";
+	// Queries a list of ProviderPaymentStorage items.
+	rpc ProviderPaymentStorageAll(QueryAllProviderPaymentStorageRequest) returns (QueryAllProviderPaymentStorageResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage";
 	}
 
 // Queries a EpochPayments by index.
@@ -143,21 +143,21 @@ message QueryAllUniquePaymentStorageClientProviderResponse {
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-message QueryGetClientPaymentStorageRequest {
+message QueryGetProviderPaymentStorageRequest {
 	  string index = 1;
 
 }
 
-message QueryGetClientPaymentStorageResponse {
-	ClientPaymentStorage clientPaymentStorage = 1 [(gogoproto.nullable) = false];
+message QueryGetProviderPaymentStorageResponse {
+	ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAllClientPaymentStorageRequest {
+message QueryAllProviderPaymentStorageRequest {
 	cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-message QueryAllClientPaymentStorageResponse {
-	repeated ClientPaymentStorage clientPaymentStorage = 1 [(gogoproto.nullable) = false];
+message QueryAllProviderPaymentStorageResponse {
+	repeated ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

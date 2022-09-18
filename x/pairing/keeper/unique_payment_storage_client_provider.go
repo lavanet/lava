@@ -77,7 +77,7 @@ func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID s
 	return true, &entry
 }
 
-func (k Keeper) GetProviderFromUniquePayment(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) string {
+func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider *types.UniquePaymentStorageClientProvider) string {
 	key := uniquePaymentStorageClientProvider.Index
 	providerAdrLengh := charToAsciiNumber(rune(key[0]))
 	provider := key[1 : providerAdrLengh+1]
@@ -97,8 +97,8 @@ func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddre
 	} else if clientLength > maxAdrLengthUser {
 		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %d == %d", userAddress.String(), maxAdrLengthUser, len(userAddress.String())))
 	}
-	leadingChar := asciiNumberToChar(providerLength)
-	key := string(leadingChar) + providerAddress.String() + userAddress.String() + uniqueIdentifier + chainID
+	leadingChar := asciiNumberToChar(clientLength)
+	key := string(leadingChar) + userAddress.String() + providerAddress.String() + uniqueIdentifier + chainID
 	return key
 }
 

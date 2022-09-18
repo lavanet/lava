@@ -1406,7 +1406,7 @@
             }
           ]
           },{
-          "name": "/lavanet/lava/pairing/client_payment_storage",
+          "name": "/lavanet/lava/pairing/provider_payment_storage",
           "category": {
             "deterministic": true,
             "local": false,
@@ -2234,7 +2234,7 @@
             }
           ]
           },{
-          "name": "/lavanet/lava/pairing/client_payment_storage/{index}",
+          "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
           "category": {
             "deterministic": true,
             "local": false,

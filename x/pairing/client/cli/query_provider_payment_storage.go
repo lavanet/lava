@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdListClientPaymentStorage() *cobra.Command {
+func CmdListProviderPaymentStorage() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-client-payment-storage",
-		Short: "list all ClientPaymentStorage",
+		Use:   "list-provider-payment-storage",
+		Short: "list all ProviderPaymentStorage",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
 
@@ -23,11 +23,11 @@ func CmdListClientPaymentStorage() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryAllClientPaymentStorageRequest{
+			params := &types.QueryAllProviderPaymentStorageRequest{
 				Pagination: pageReq,
 			}
 
-			res, err := queryClient.ClientPaymentStorageAll(context.Background(), params)
+			res, err := queryClient.ProviderPaymentStorageAll(context.Background(), params)
 			if err != nil {
 				return err
 			}
@@ -42,10 +42,10 @@ func CmdListClientPaymentStorage() *cobra.Command {
 	return cmd
 }
 
-func CmdShowClientPaymentStorage() *cobra.Command {
+func CmdShowProviderPaymentStorage() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-client-payment-storage [index]",
-		Short: "shows a ClientPaymentStorage",
+		Use:   "show-provider-payment-storage [index]",
+		Short: "shows a ProviderPaymentStorage",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx := client.GetClientContextFromCmd(cmd)
@@ -54,11 +54,11 @@ func CmdShowClientPaymentStorage() *cobra.Command {
 
 			argIndex := args[0]
 
-			params := &types.QueryGetClientPaymentStorageRequest{
+			params := &types.QueryGetProviderPaymentStorageRequest{
 				Index: argIndex,
 			}
 
-			res, err := queryClient.ClientPaymentStorage(context.Background(), params)
+			res, err := queryClient.ProviderPaymentStorage(context.Background(), params)
 			if err != nil {
 				return err
 			}

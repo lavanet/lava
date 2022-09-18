@@ -21,27 +21,27 @@ import (
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
-func networkWithClientPaymentStorageObjects(t *testing.T, n int) (*network.Network, []types.ClientPaymentStorage) {
+func networkWithProviderPaymentStorageObjects(t *testing.T, n int) (*network.Network, []types.ProviderPaymentStorage) {
 	t.Helper()
 	cfg := network.DefaultConfig()
 	state := types.GenesisState{}
 	require.NoError(t, cfg.Codec.UnmarshalJSON(cfg.GenesisState[types.ModuleName], &state))
 
 	for i := 0; i < n; i++ {
-		clientPaymentStorage := types.ClientPaymentStorage{
+		providerPaymentStorage := types.ProviderPaymentStorage{
 			Index: strconv.Itoa(i),
 		}
-		nullify.Fill(&clientPaymentStorage)
-		state.ClientPaymentStorageList = append(state.ClientPaymentStorageList, clientPaymentStorage)
+		nullify.Fill(&providerPaymentStorage)
+		state.ProviderPaymentStorageList = append(state.ProviderPaymentStorageList, providerPaymentStorage)
 	}
 	buf, err := cfg.Codec.MarshalJSON(&state)
 	require.NoError(t, err)
 	cfg.GenesisState[types.ModuleName] = buf
-	return network.New(t, cfg), state.ClientPaymentStorageList
+	return network.New(t, cfg), state.ProviderPaymentStorageList
 }
 
-func TestShowClientPaymentStorage(t *testing.T) {
-	net, objs := networkWithClientPaymentStorageObjects(t, 2)
+func TestShowProviderPaymentStorage(t *testing.T) {
+	net, objs := networkWithProviderPaymentStorageObjects(t, 2)
 
 	ctx := net.Validators[0].ClientCtx
 	common := []string{
@@ -53,7 +53,7 @@ func TestShowClientPaymentStorage(t *testing.T) {
 
 		args []string
 		err  error
-		obj  types.ClientPaymentStorage
+		obj  types.ProviderPaymentStorage
 	}{
 		{
 			desc:    "found",
@@ -76,27 +76,27 @@ func TestShowClientPaymentStorage(t *testing.T) {
 				tc.idIndex,
 			}
 			args = append(args, tc.args...)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowClientPaymentStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdShowProviderPaymentStorage(), args)
 			if tc.err != nil {
 				stat, ok := status.FromError(tc.err)
 				require.True(t, ok)
 				require.ErrorIs(t, stat.Err(), tc.err)
 			} else {
 				require.NoError(t, err)
-				var resp types.QueryGetClientPaymentStorageResponse
+				var resp types.QueryGetProviderPaymentStorageResponse
 				require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-				require.NotNil(t, resp.ClientPaymentStorage)
+				require.NotNil(t, resp.ProviderPaymentStorage)
 				require.Equal(t,
 					nullify.Fill(&tc.obj),
-					nullify.Fill(&resp.ClientPaymentStorage),
+					nullify.Fill(&resp.ProviderPaymentStorage),
 				)
 			}
 		})
 	}
 }
 
-func TestListClientPaymentStorage(t *testing.T) {
-	net, objs := networkWithClientPaymentStorageObjects(t, 5)
+func TestListProviderPaymentStorage(t *testing.T) {
+	net, objs := networkWithProviderPaymentStorageObjects(t, 5)
 
 	ctx := net.Validators[0].ClientCtx
 	request := func(next []byte, offset, limit uint64, total bool) []string {
@@ -118,14 +118,14 @@ func TestListClientPaymentStorage(t *testing.T) {
 		step := 2
 		for i := 0; i < len(objs); i += step {
 			args := request(nil, uint64(i), uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListClientPaymentStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListProviderPaymentStorage(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllClientPaymentStorageResponse
+			var resp types.QueryAllProviderPaymentStorageResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.ClientPaymentStorage), step)
+			require.LessOrEqual(t, len(resp.ProviderPaymentStorage), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.ClientPaymentStorage),
+				nullify.Fill(resp.ProviderPaymentStorage),
 			)
 		}
 	})
@@ -134,29 +134,29 @@ func TestListClientPaymentStorage(t *testing.T) {
 		var next []byte
 		for i := 0; i < len(objs); i += step {
 			args := request(next, 0, uint64(step), false)
-			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListClientPaymentStorage(), args)
+			out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListProviderPaymentStorage(), args)
 			require.NoError(t, err)
-			var resp types.QueryAllClientPaymentStorageResponse
+			var resp types.QueryAllProviderPaymentStorageResponse
 			require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
-			require.LessOrEqual(t, len(resp.ClientPaymentStorage), step)
+			require.LessOrEqual(t, len(resp.ProviderPaymentStorage), step)
 			require.Subset(t,
 				nullify.Fill(objs),
-				nullify.Fill(resp.ClientPaymentStorage),
+				nullify.Fill(resp.ProviderPaymentStorage),
 			)
 			next = resp.Pagination.NextKey
 		}
 	})
 	t.Run("Total", func(t *testing.T) {
 		args := request(nil, 0, uint64(len(objs)), true)
-		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListClientPaymentStorage(), args)
+		out, err := clitestutil.ExecTestCLICmd(ctx, cli.CmdListProviderPaymentStorage(), args)
 		require.NoError(t, err)
-		var resp types.QueryAllClientPaymentStorageResponse
+		var resp types.QueryAllProviderPaymentStorageResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
 		require.Equal(t, len(objs), int(resp.Pagination.Total))
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
-			nullify.Fill(resp.ClientPaymentStorage),
+			nullify.Fill(resp.ProviderPaymentStorage),
 		)
 	})
 }

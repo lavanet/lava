@@ -11,7 +11,7 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		UniquePaymentStorageClientProviderList: []UniquePaymentStorageClientProvider{},
-		ClientPaymentStorageList:               []ClientPaymentStorage{},
+		ProviderPaymentStorageList:             []ProviderPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
@@ -31,15 +31,15 @@ func (gs GenesisState) Validate() error {
 		}
 		uniquePaymentStorageClientProviderIndexMap[index] = struct{}{}
 	}
-	// Check for duplicated index in clientPaymentStorage
-	clientPaymentStorageIndexMap := make(map[string]struct{})
+	// Check for duplicated index in providerPaymentStorage
+	providerPaymentStorageIndexMap := make(map[string]struct{})
 
-	for _, elem := range gs.ClientPaymentStorageList {
-		index := string(ClientPaymentStorageKey(elem.Index))
-		if _, ok := clientPaymentStorageIndexMap[index]; ok {
-			return fmt.Errorf("duplicated index for clientPaymentStorage")
+	for _, elem := range gs.ProviderPaymentStorageList {
+		index := string(ProviderPaymentStorageKey(elem.Index))
+		if _, ok := providerPaymentStorageIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for providerPaymentStorage")
 		}
-		clientPaymentStorageIndexMap[index] = struct{}{}
+		providerPaymentStorageIndexMap[index] = struct{}{}
 	}
 	// Check for duplicated index in epochPayments
 	epochPaymentsIndexMap := make(map[string]struct{})
