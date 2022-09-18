@@ -19,9 +19,8 @@ import (
 )
 
 var (
-	balance    int64 = 100000000
-	stake      int64 = 100000
-	manyEpochs       = 20
+	balance int64 = 100000000
+	stake   int64 = 100000
 )
 
 type account struct {
@@ -268,8 +267,16 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	require.True(t, unStakeStoragefound)
 	_, stakeStorageFound, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)
 	require.False(t, stakeStorageFound)
-	for i := 0; i < manyEpochs; i++ { // move to epoch 13 so we can check balance at the end
+
+	OriginalBlockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+	blocksToSave, err := ts.keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ts.ctx), OriginalBlockHeight)
+
+	for { // move to epoch 13 so we can check balance at the end
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		blockHeight := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+		if blockHeight > blocksToSave+OriginalBlockHeight {
+			break
+		}
 	}
 	// validate that the provider is no longer unstaked. and stake was returned.
 	_, unStakeStoragefound, _ = ts.keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.providers[1].address)
