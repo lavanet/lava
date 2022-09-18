@@ -168,6 +168,7 @@ type Sentry struct {
 	// Block storage (atomic)
 	blockHeight        int64
 	currentEpoch       uint64
+	prevEpoch          uint64
 	EpochSize          uint64
 	EpochBlocksOverlap uint64
 	providersCount     uint64
@@ -532,6 +533,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return utils.LavaFormatError("Failed getting spec in initialization", err, &map[string]string{})
 	}
 
+	s.SetPrevEpochHeight(0)
 	err = s.FetchChainParams(ctx)
 	if err != nil {
 		return err
@@ -768,6 +770,8 @@ func (s *Sentry) Start(ctx context.Context) {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
+				// New epoch height will be set in FetchChainParams
+				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
 				err := s.FetchChainParams(ctx)
 				if err != nil {
 					utils.LavaFormatError("failed in FetchChainParams", err, nil)
@@ -1550,13 +1554,12 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 }
 
 func (s *Sentry) clearAuthResponseCache(blockheight int64) {
-	prevEpochStart := s.GetCurrentEpochHeight() - s.GetEpochSize()
 
 	// Clear cache
 	s.authorizationCacheMutex.Lock()
 	defer s.authorizationCacheMutex.Unlock()
 	for key := range s.authorizationCache {
-		if key < prevEpochStart {
+		if key <= s.GetPrevEpochHeight() {
 			delete(s.authorizationCache, key)
 		}
 	}
@@ -1695,6 +1698,14 @@ func (s *Sentry) GetCurrentEpochHeight() uint64 {
 
 func (s *Sentry) SetCurrentEpochHeight(blockHeight int64) {
 	atomic.StoreUint64(&s.currentEpoch, uint64(blockHeight))
+}
+
+func (s *Sentry) GetPrevEpochHeight() uint64 {
+	return atomic.LoadUint64(&s.prevEpoch)
+}
+
+func (s *Sentry) SetPrevEpochHeight(blockHeight uint64) {
+	atomic.StoreUint64(&s.prevEpoch, blockHeight)
 }
 
 func (s *Sentry) GetOverlapSize() uint64 {
