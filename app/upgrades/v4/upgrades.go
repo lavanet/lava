@@ -19,6 +19,14 @@ func CreateUpgradeHandler(
 		// Here we would put changes that needs to happen while app is loading like loading information from the old version to the new version
 		// if we changed a module and want to keep some info we would need to implement this migration here or in the configurator
 
+		// 1. fixation parameters initialization.
+
+		// 2. get all client payments.
+		// populate.
+
+		// 3. earliest block == this epoch.
+		// params and fixation? latestParamChange?
+
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
 }
