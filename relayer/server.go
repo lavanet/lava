@@ -479,14 +479,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
 
-	prevEpochStart := int64(g_sentry.GetCurrentEpochHeight()) - int64(g_sentry.EpochSize)
-
-	if prevEpochStart < 0 {
-		prevEpochStart = 0
-	}
-
 	// client blockheight can only be at at prev epoch but not ealier
-	if request.BlockHeight < int64(prevEpochStart) {
+	if request.BlockHeight < int64(g_sentry.GetPrevEpochHeight()) {
 		return nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
@@ -525,7 +519,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
-		utils.LavaFormatError("failed autherising user request", nil, nil)
+		utils.LavaFormatError("failed authorizing user request", nil, nil)
 		return nil, err
 	}
 

@@ -153,6 +153,8 @@ type Sentry struct {
 	ApiInterface            string
 	cmdFlags                *pflag.FlagSet
 	serverID                uint64
+	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
+	authorizationCacheMutex sync.RWMutex
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -166,6 +168,7 @@ type Sentry struct {
 	// Block storage (atomic)
 	blockHeight        int64
 	currentEpoch       uint64
+	prevEpoch          uint64
 	EpochSize          uint64
 	EpochBlocksOverlap uint64
 	providersCount     uint64
@@ -534,6 +537,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return utils.LavaFormatError("Failed getting spec in initialization", err, &map[string]string{})
 	}
 
+	s.SetPrevEpochHeight(0)
 	err = s.FetchChainParams(ctx)
 	if err != nil {
 		return err
@@ -770,6 +774,8 @@ func (s *Sentry) Start(ctx context.Context) {
 				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
 				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
+				// New epoch height will be set in FetchChainParams
+				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
 				err := s.FetchChainParams(ctx)
 				if err != nil {
 					utils.LavaFormatError("failed in FetchChainParams", err, nil)
@@ -797,6 +803,8 @@ func (s *Sentry) Start(ctx context.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed to get pairing", err, nil)
 				}
+
+				s.clearAuthResponseCache(data.Block.Height)
 			}
 
 			s.handlePairingChange(ctx, data.Block.Height, false)
@@ -1573,9 +1581,39 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 	s.pairing = s.pairing[:len(s.pairing)-1]
 }
 
+func (s *Sentry) clearAuthResponseCache(blockheight int64) {
+
+	// Clear cache
+	s.authorizationCacheMutex.Lock()
+	defer s.authorizationCacheMutex.Unlock()
+	for key := range s.authorizationCache {
+		if key < s.GetPrevEpochHeight() {
+			delete(s.authorizationCache, key)
+		}
+	}
+}
+
+func (s *Sentry) getAuthResponseFromCache(consumer string, blockheight uint64) *pairingtypes.QueryVerifyPairingResponse {
+	// Check cache
+	s.authorizationCacheMutex.RLock()
+	defer s.authorizationCacheMutex.RUnlock()
+	if entry, hasEntryForBlockheight := s.authorizationCache[blockheight]; hasEntryForBlockheight {
+		if cachedResponse, ok := entry[consumer]; ok {
+			return cachedResponse
+		}
+	}
+
+	return nil
+}
+
 func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, blockheight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
-	//
-	// TODO: cache results!
+
+	res := s.getAuthResponseFromCache(consumer, blockheight)
+	if res != nil {
+		// User was authorized before, response returned from cache.
+		return res, nil
+	}
+
 	res, err := s.pairingQueryClient.VerifyPairing(context.Background(), &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  s.ChainID,
 		Client:   consumer,
@@ -1586,6 +1624,12 @@ func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, bloc
 		return nil, err
 	}
 	if res.GetValid() {
+		s.authorizationCacheMutex.Lock()
+		if _, ok := s.authorizationCache[blockheight]; !ok {
+			s.authorizationCache[blockheight] = map[string]*pairingtypes.QueryVerifyPairingResponse{} // init
+		}
+		s.authorizationCache[blockheight][consumer] = res
+		s.authorizationCacheMutex.Unlock()
 		return res, nil
 	}
 
@@ -1682,6 +1726,14 @@ func (s *Sentry) GetCurrentEpochHeight() uint64 {
 
 func (s *Sentry) SetCurrentEpochHeight(blockHeight int64) {
 	atomic.StoreUint64(&s.currentEpoch, uint64(blockHeight))
+}
+
+func (s *Sentry) GetPrevEpochHeight() uint64 {
+	return atomic.LoadUint64(&s.prevEpoch)
+}
+
+func (s *Sentry) SetPrevEpochHeight(blockHeight uint64) {
+	atomic.StoreUint64(&s.prevEpoch, blockHeight)
 }
 
 func (s *Sentry) GetOverlapSize() uint64 {
@@ -1819,6 +1871,7 @@ func NewSentry(
 		cmdFlags:                flagSet,
 		voteInitiationCb:        voteInitiationCb,
 		serverID:                serverID,
+		authorizationCache:      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse{},
 	}
 }
 
