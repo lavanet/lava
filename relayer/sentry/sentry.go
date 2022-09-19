@@ -317,25 +317,28 @@ func (s *Sentry) handlePairingChange(ctx context.Context, blockHeight int64, ini
 		return nil
 	}
 
+	//handle pairing list changes first
 	s.pairingMu.Lock()
-	defer s.pairingMu.Unlock()
-	s.pairingPurgeLock.Lock()
-	defer s.pairingPurgeLock.Unlock()
-
-	s.addedToPurgeAndReport = []string{} // reset added to purge this epoch when reseting provider list
-
-	s.pairingPurge = append(s.pairingPurge, s.pairing...) // append old connections to purge list
-	s.PairingBlockStart = blockHeight
+	//save pairing in a tmp to add it to purge later, we dont want to lock both at the same time
+	tmpPairing := s.pairing
 	s.pairing = s.pairingNext
-	s.pairingAddresses = s.pairingNextAddresses
 	s.pairingNext = []*RelayerClientWrapper{}
+	s.PairingBlockStart = blockHeight
+	s.pairingAddresses = s.pairingNextAddresses
+	s.pairingMu.Unlock()
+
+	s.pairingPurgeLock.Lock()
+	s.addedToPurgeAndReport = []string{}                   // reset added to purge this epoch when reseting provider list
+	s.pairingPurge = append(s.pairingPurge, tmpPairing...) // append old connections to purge list
+	s.pairingPurgeLock.Unlock()
 
 	// Time to reset the consensuses for this pairing epoch
 	s.providerDataContainersMu.Lock()
 	s.prevEpochProviderHashesConsensus = s.providerHashesConsensus
 	s.providerHashesConsensus = make([]ProviderHashesConsensus, 0)
 	s.providerDataContainersMu.Unlock()
-	utils.LavaFormatInfo("Handle Pairing change", &map[string]string{"block": strconv.FormatInt(blockHeight, 10)})
+
+	utils.LavaFormatInfo("Handle Pairing Change", &map[string]string{"block": strconv.FormatInt(blockHeight, 10)})
 	return nil
 }
 
@@ -1569,13 +1572,14 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int, 
 		//remove from pairing
 		s.pairing[index] = s.pairing[len(s.pairing)-1]
 		s.pairing = s.pairing[:len(s.pairing)-1]
+		//it was purged, 'true' to move it to purged list
 		return true
 	}
 	moveToPurge := purgeProvider(wrap, index)
 	if moveToPurge {
-		utils.LavaFormatWarning("Provider moving to purge", nil, &map[string]string{"address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10), "reporting": fmt.Sprintf("%t", reportProvider)})
-		//move to purge list
+		//move to purged list
 		s.pairingPurgeLock.Lock()
+		utils.LavaFormatWarning("Provider moving to purge", nil, &map[string]string{"address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10), "reporting": fmt.Sprintf("%t", reportProvider)})
 		defer s.pairingPurgeLock.Unlock()
 		if reportProvider { // Reporting provider to chain.
 			// s.pairingPurgeLock is locked so we can add to purge and report list as they use the same lock.
