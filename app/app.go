@@ -86,6 +86,7 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/openapiconsole"
 	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/app/upgrades"
+	v4 "github.com/lavanet/lava/app/upgrades/v4"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -117,7 +118,7 @@ const (
 
 var (
 	// add here future upgrades (upgrades.Upgrade)
-	Upgrades = []upgrades.Upgrade{}
+	Upgrades = []upgrades.Upgrade{v4.Upgrade}
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals

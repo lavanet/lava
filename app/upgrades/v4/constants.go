@@ -5,7 +5,7 @@ import (
 	"github.com/lavanet/lava/app/upgrades"
 )
 
-const UpgradeName = "v0.0.4"
+const UpgradeName = "v4"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,           // upgrade name defined few lines above
