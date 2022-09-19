@@ -940,7 +940,7 @@ func (s *Sentry) specificPairing(ctx context.Context, address string) (retWrap *
 			return wrap, index, endpoint, nil
 		}
 	}
-	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address})
+	return nil, -1, nil, utils.LavaFormatError("did not find requested address for pairing", nil, &map[string]string{"requested address": address, "entire pairing": fmt.Sprintf("%+v", s.pairing)})
 }
 
 func (s *Sentry) _findPairingIndexWithLoop(address string) int {
