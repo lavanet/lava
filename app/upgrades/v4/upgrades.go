@@ -34,7 +34,7 @@ func CreateUpgradeHandler(
 		// storage.Index == storageType + strconv.FormatUint(block, 10) + chainID
 		for _, storage := range allStorage {
 			if storage.Index {
-
+				// both client and provider
 			}
 		}
 
