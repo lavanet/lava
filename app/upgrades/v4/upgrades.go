@@ -30,31 +30,15 @@ func CreateUpgradeHandler(
 
 		// 2. get all client payments.
 		currentEpoch := keepers.EpochstorageKeeper.GetEpochStart(ctx)
-		allStorage := keepers.EpochstorageKeeper.GetAllStakeStorage(ctx)
-		// storage.Index == storageType + strconv.FormatUint(block, 10) + chainID
-		for _, storage := range allStorage {
-			if storage.Index {
-				// both client and provider
-			}
-		}
-
-		storageType := types.ProviderKey
-		allChainIDs := keepers.SpecKeeper.GetAllChainIDs(ctx)
-		for _, chainID := range allChainIDs {
-			tmpStorage, found := keepers.EpochstorageKeeper.GetStakeStorageCurrent(ctx, storageType, chainID)
-			if !found {
-				//no storage for this spec yet
-				continue
-			}
-			newStorage := tmpStorage.Copy()
-			newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
-			k.SetStakeStorage(ctx, newStorage)
-		}
+		currentBlock := ctx.BlockHeight()
+		keepers.EpochstorageKeeper.RemoveAllEntriesPriorToBlockNumber(ctx, uint64(currentBlock), keepers.SpecKeeper.GetAllChainIDs(ctx))
 
 		// 3. earliest block == this epoch.
-
 		keepers.EpochstorageKeeper.SetEarliestEpochStart(ctx, currentEpoch)
-
+		err := keepers.PairingKeeper.RemoveOldEpochPayment(ctx)
+		if err != nil {
+			panic("failed to remove old epoch payments killing upgrade")
+		}
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
 }
