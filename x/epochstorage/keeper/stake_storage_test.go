@@ -88,6 +88,12 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"ETH1"})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), 0) // zero entries left
+
+	items[0].Index = types.ProviderKey + strconv.FormatUint(uint64(10), 10) + ""
+	keeper.SetStakeStorage(ctx, items[0])
+	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 11, []string{""})
+	allStorage = keeper.GetAllStakeStorage(ctx)
+	require.Equal(t, len(allStorage), 0) // zero entries left
 }
 
 func TestStakeStorageGetAll(t *testing.T) {
