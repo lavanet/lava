@@ -131,7 +131,7 @@ func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, storageType 
 	for _, chainId := range allChainID {
 		for _, entry := range allStorage {
 			if strings.Contains(entry.Index, storageType) && strings.Contains(entry.Index, chainId) {
-				if (len(storageType) + len(chainId)) >= len(entry.Index) {
+				if (len(storageType) + len(chainId)) > len(entry.Index) {
 					panic(fmt.Sprintf("storageType + chainId length out of range %d vs %d", (len(storageType) + len(chainId)), len(entry.Index)))
 				}
 				storageBlock := entry.Index[len(storageType):]
