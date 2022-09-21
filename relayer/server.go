@@ -663,15 +663,23 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		relaySession.Lock.Unlock()
 	}
 	// Send
-	reqMsg := nodeMsg.GetMsg().(*chainproxy.JsonrpcMessage)
-	reqParams := reqMsg.Params
+	var reqMsg *chainproxy.JsonrpcMessage
+	var reqParams interface{}
+	switch msg := nodeMsg.GetMsg().(type) {
+	case *chainproxy.JsonrpcMessage:
+		reqMsg = msg
+		reqParams = reqMsg.Params
+	default:
+		reqMsg = nil
+	}
+
 	reply, err := nodeMsg.Send(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
 
 	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all. Right now this is only for ethereum
-	if strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
+	if nodeMsg != nil && strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		userSessions.Lock.Lock()
 		defer userSessions.Lock.Unlock()
