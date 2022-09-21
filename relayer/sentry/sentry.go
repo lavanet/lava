@@ -85,12 +85,12 @@ func (vp *VoteParams) GetCloseVote() bool {
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
 const (
-	MaxConsecutiveConnectionAttemts = 3
-	PercentileToCalculateLatency    = 0.9
-	MinProvidersForSync             = 0.6
-	LatencyThresholdStatic          = 1 * time.Second
-	LatencyThresholdSlope           = 1 * time.Millisecond
-	StaleEpochDistance              = 3 // relays done 3 epochs back are ready to be rewarded
+	MaxConsecutiveConnectionAttempts = 3
+	PercentileToCalculateLatency     = 0.9
+	MinProvidersForSync              = 0.6
+	LatencyThresholdStatic           = 1 * time.Second
+	LatencyThresholdSlope            = 1 * time.Millisecond
+	StaleEpochDistance               = 3 // relays done 3 epochs back are ready to be rewarded
 )
 
 type Endpoint struct {
@@ -991,7 +991,7 @@ func (s *Sentry) _findPairingExceptAddress(ctx context.Context, accountAddress s
 	}
 	get_random_provider := false
 	var index int
-	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttempts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
 			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
@@ -1026,7 +1026,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 	if len(s.pairing) <= 0 {
 		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
-	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttempts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
 			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
@@ -1060,7 +1060,7 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 				if err != nil {
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": wrap.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
-					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
+					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
 						utils.LavaFormatWarning("disabling provider endpoint", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
 					}
@@ -1323,7 +1323,7 @@ func (s *Sentry) SendRelay(
 	reply, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
 	//error using this provider
 	if err != nil {
-		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 			s.movePairingEntryToPurge(wrap, index, false)
 		}
 		clientSession.Lock.Unlock()
@@ -1340,7 +1340,7 @@ func (s *Sentry) SendRelay(
 		// call user
 		reply, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
 		if err2 != nil {
-			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 				s.movePairingEntryToPurge(wrap, index, false)
 			}
 			clientSession.Lock.Unlock()
@@ -1525,7 +1525,7 @@ func (s *Sentry) SendRelaySubscribe(
 	reply, _, err := cb_send_relay_subscribe(clientSession)
 	//error using this provider
 	if err != nil {
-		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 			s.movePairingEntryToPurge(wrap, index, false)
 		}
 		clientSession.Lock.Unlock()
