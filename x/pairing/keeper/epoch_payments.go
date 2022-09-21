@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -90,17 +90,18 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
-	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddClientPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, fmt.Errorf("could not add epoch payment: %s,%s,%s,%d,%s error: %s", userAddress, providerAddress, uniqueIdentifier, epoch, chainID, err)
+		return 0, utils.LavaFormatError("could not add epoch payment", err, &map[string]string{"userAddress": userAddress.String(), "providerAddress": providerAddress.String(), "uniqueIdentifier": uniqueIdentifier, "epoch": strconv.FormatUint(epoch, 10), "chainID": chainID})
 	}
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 	if !found {
-		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ClientPaymentStorage{userPaymentProviderStorage}}
+		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{userPaymentProviderStorage}}
 	} else {
 		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
 	}
+
 	k.SetEpochPayments(ctx, epochPayments)
 	return usedCUProviderTotal, nil
 }
@@ -125,7 +126,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 			//delete all payment storages
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorageCliPro.Index)
 		}
-		k.RemoveClientPaymentStorage(ctx, userPaymentStorage.Index)
+		k.RemoveProviderPaymentStorage(ctx, userPaymentStorage.Index)
 	}
 	k.RemoveEpochPayments(ctx, key)
 	return nil
