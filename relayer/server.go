@@ -679,7 +679,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all. Right now this is only for ethereum
-	if nodeMsg != nil && strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
+	if reqMsg != nil && strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		userSessions.Lock.Lock()
 		defer userSessions.Lock.Unlock()
