@@ -11,11 +11,11 @@ import (
 )
 
 // Setup a new App for testing purposes
-func TestSetup() (*cosmoscmd.App, sdk.Context) {
+func TestSetup() (cosmoscmd.App, sdk.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 	encoding := cosmoscmd.MakeEncodingConfig(ModuleBasics)
 	app := New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
-	return &app, ctx
+	return app, ctx
 }
