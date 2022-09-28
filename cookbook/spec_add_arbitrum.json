@@ -10,8 +10,8 @@
       "compares_hashes": true,
       "finalization_criteria": 1,
       "saved_blocks": 3,
-      "average_block_time": "700",
-      "allowed_block_lag_for_qos_sync": "15",
+      "average_block_time": "500",
+      "allowed_block_lag_for_qos_sync": "20",
       "apis": [
         {"name": "rpc_modules",
           "category": {
@@ -1293,8 +1293,8 @@
       "compares_hashes": true,
       "finalization_criteria": 1,
       "saved_blocks": 3,
-      "average_block_time": "700",
-      "allowed_block_lag_for_qos_sync": "15",
+      "average_block_time": "500",
+      "allowed_block_lag_for_qos_sync": "20",
       "apis": [
         {"name": "rpc_modules",
           "category": {
