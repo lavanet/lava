@@ -6,15 +6,18 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
+const advanceFewEpochs = 4
 const stakeStorageSlots = 10
 
 func createNStakeStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.StakeStorage {
@@ -56,19 +59,30 @@ func TestStakeStorageRemove(t *testing.T) {
 }
 
 func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
-	keeper, ctx := keepertest.EpochstorageKeeper(t)
+	// keeper, ctx := keepertest.EpochstorageKeeper(t)
+	_, allkeepers, ctxx := testkeeper.InitAllKeepers(t)
+	allkeepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctxx), *epochstoragetypes.DefaultGenesis().EpochDetails)
+
+	keeper := allkeepers.Epochstorage
+	ctx := sdk.UnwrapSDKContext(ctxx)
+
 	items := make([]types.StakeStorage, stakeStorageSlots)
 	chainID := "ETH1"
 	storageType := types.ProviderKey
 	for i := 0; i < len(items); i++ {
-		items[i].Index = storageType + strconv.FormatUint(uint64(i), 10) + chainID
+		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
 		keeper.SetStakeStorage(ctx, items[i])
 	}
 	storageType = types.ClientKey
 	for i := 0; i < len(items); i++ {
-		items[i].Index = storageType + strconv.FormatUint(uint64(i), 10) + chainID
+		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
 		keeper.SetStakeStorage(ctx, items[i])
 	}
+
+	for i := 0; i < advanceFewEpochs; i++ {
+		keepertest.AdvanceEpoch(ctxx, allkeepers)
+	}
+
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"COS3ETH1LAV1COS4"})
 	allStorage := keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
@@ -77,15 +91,15 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
 
-	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 0, []string{"ETH1"})
+	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 0, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), stakeStorageSlots*2) // no entry was removed
 
-	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 9, []string{"ETH1"})
+	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 9, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), 2) // one provider one client
 
-	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"ETH1"})
+	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{chainID})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), 0) // zero entries left
 

@@ -122,7 +122,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }
 
-func (k Keeper) stakeStorageKey(storageType string, block uint64, chainID string) string {
+func (k Keeper) StakeStorageKey(storageType string, block uint64, chainID string) string {
 	return storageType + strconv.FormatUint(block, 10) + chainID
 }
 
@@ -158,7 +158,7 @@ func (k Keeper) RemoveAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64
 }
 
 func (k Keeper) RemoveStakeStorageByBlockAndChain(ctx sdk.Context, storageType string, block uint64, chainID string) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	k.RemoveStakeStorage(ctx, key)
 }
 
@@ -432,13 +432,13 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 			continue
 		}
 		newStorage := tmpStorage.Copy()
-		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
+		newStorage.Index = k.StakeStorageKey(storageType, block, chainID)
 		k.SetStakeStorage(ctx, newStorage)
 	}
 }
 
 func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	return k.GetStakeStorage(ctx, key)
 }
 
@@ -480,7 +480,7 @@ func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID strin
 }
 
 func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)
 	if !found {
 		return nil, false
