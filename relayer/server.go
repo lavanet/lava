@@ -330,6 +330,10 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
+func validateRequestedBlockHeight(blockHeight uint64) bool {
+	return (blockHeight == g_sentry.GetCurrentEpochHeight() || blockHeight == g_sentry.GetPrevEpochHeight())
+}
+
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
 	userSessions := getOrCreateUserSessions(userAddr)
 
@@ -353,7 +357,13 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			})
 		}
 
-		// TODO:: should validate req.BlockHeight ?
+		isValidBlockHeight := validateRequestedBlockHeight(uint64(req.BlockHeight))
+		if !isValidBlockHeight {
+			return nil, utils.LavaFormatError("User requested with invalid block height", err, &map[string]string{
+				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10),
+			})
+		}
+
 		sessionEpoch = uint64(req.BlockHeight)
 
 		userSessions.Lock.Lock()
@@ -479,14 +489,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
 
-	prevEpochStart := int64(g_sentry.GetCurrentEpochHeight()) - int64(g_sentry.EpochSize)
-
-	if prevEpochStart < 0 {
-		prevEpochStart = 0
-	}
-
 	// client blockheight can only be at at prev epoch but not ealier
-	if request.BlockHeight < int64(prevEpochStart) {
+	if request.BlockHeight < int64(g_sentry.GetPrevEpochHeight()) {
 		return nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
@@ -525,7 +529,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
-		utils.LavaFormatError("failed autherising user request", nil, nil)
+		utils.LavaFormatError("failed authorizing user request", nil, nil)
 		return nil, err
 	}
 
