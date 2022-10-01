@@ -84,6 +84,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/ignite-hq/cli/ignite/pkg/openapiconsole"
+	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/app/upgrades"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
@@ -208,6 +209,8 @@ func init() {
 // capabilities aren't needed for testing.
 type LavaApp struct {
 	*baseapp.BaseApp
+	// keepers
+	keepers.LavaKeepers
 
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -220,34 +223,6 @@ type LavaApp struct {
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
 
-	// keepers
-	AccountKeeper    authkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
-	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    stakingkeeper.Keeper
-	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       mintkeeper.Keeper
-	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
-	CrisisKeeper     crisiskeeper.Keeper
-	UpgradeKeeper    upgradekeeper.Keeper
-	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper
-
-	// make scoped keepers public for test purposes
-	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-
-	SpecKeeper specmodulekeeper.Keeper
-
-	EpochstorageKeeper epochstoragemodulekeeper.Keeper
-
-	PairingKeeper pairingmodulekeeper.Keeper
-
-	ConflictKeeper conflictmodulekeeper.Keeper
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
 	// mm is the module manager
@@ -298,6 +273,7 @@ func New(
 
 	app := &LavaApp{
 		BaseApp:           bApp,
+		LavaKeepers:       keepers.LavaKeepers{},
 		cdc:               cdc,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
@@ -665,6 +641,7 @@ func (app *LavaApp) setupUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				app.BaseApp,
+				&app.LavaKeepers,
 			),
 		)
 	}
