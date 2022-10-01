@@ -70,6 +70,11 @@ screen -d -m -S arb_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 72
 screen -S arb_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 7242 $ARB1_HTTP ARB1 jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/ARB1_2222.log"
 screen -S arb_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 7243 $ARB1_HTTP ARB1 jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/ARB1_2223.log"
 
+#Starknet providers
+screen -d -m -S strk_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 8241 $STARKNET_RPC STRK jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/STRK_2221.log"
+screen -S strk_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 8242 $STARKNET_RPC STRK jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/STRK_2222.log"
+screen -S strk_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 8243 $STARKNET_RPC STRK jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/STRK_2223.log"
+
 
 # Setup Portals
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3333.log"
@@ -84,5 +89,6 @@ screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 ALFAJORES jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3344 ARB1 jsonrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3344.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3345 STRK jsonrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3345.log"
 echo "--- setting up screens done ---"
 screen -ls
