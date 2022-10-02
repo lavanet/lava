@@ -156,8 +156,7 @@
                   "result_parsing": {
                     "parserArg": [
                       "0",
-                      "block_id",
-                      "hash"
+                      "block_height"
                     ],
                     "parserFunc": "PARSE_CANONICAL"
                   }
@@ -328,10 +327,10 @@
                         "function_tag": "getBlockNumber",
                         "result_parsing": {
                           "parserArg": [
-                            "block_height",
-                            ":"
+                            "0",
+                            "block_height"
                           ],
-                          "parserFunc": "PARSE_DICTIONARY"
+                          "parserFunc": "PARSE_CANONICAL"
                         }
                       }
                 },{
