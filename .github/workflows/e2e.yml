@@ -64,6 +64,9 @@ jobs:
 
     - name: lava spec unit Tests
       run: go test ./x/spec/keeper/... -v
+
+      - name: lava conflict unit Tests
+      run: go test ./x/conflict/keeper/... -v
       
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
