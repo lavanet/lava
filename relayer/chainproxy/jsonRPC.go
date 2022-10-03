@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
-	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -384,20 +383,16 @@ func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	return reply, nil
 }
 
-// TODO Identify if API is tendermint or ethereum
-func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
+func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, nil, err
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	method := strings.Split(nm.msg.Method, "_")
-	namespace := method[0]
-
 	var result JsonrpcMessage
-	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, namespace, ch, nm.msg.Params)
+	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
 
 	var replyMsg JsonrpcMessage
 	if err != nil {
@@ -416,13 +411,22 @@ func (nm *JrpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (
 
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, nil, err
 	}
 
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 
-	return sub, reply, err
+	subscriptionID, err := strconv.Unquote(string(replyMsg.Result))
+	if err != nil {
+		return "", nil, nil, utils.LavaFormatError("Subscription failed", err, nil)
+	}
+
+	if replyMsg.Error != nil {
+		return "", nil, reply, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
+	}
+
+	return subscriptionID, sub, reply, err
 
 }

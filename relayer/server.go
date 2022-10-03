@@ -891,20 +891,20 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 		var reply *pairingtypes.RelayReply
 		if nodeMsg.GetServiceApi().Category.Subscription {
 			var clientSub *rpcclient.ClientSubscription
+			var subscriptionID string
 			repliesChan := make(chan interface{})
-			clientSub, reply, err = nodeMsg.SendSubscribe(context.Background(), repliesChan)
+			subscriptionID, clientSub, reply, err = nodeMsg.SendSubscribe(context.Background(), repliesChan)
 			if err != nil {
 				return utils.LavaFormatError("Subscription failed", err, nil)
 			}
+			// var replyMsg chainproxy.JsonrpcMessage
+			// json.Unmarshal(reply.Data, &replyMsg)
 
-			var replyMsg chainproxy.JsonrpcMessage
-			json.Unmarshal(reply.Data, &replyMsg)
-
-			subscriptionID, err := strconv.Unquote(string(replyMsg.Result))
-			if err != nil {
-				return utils.LavaFormatError("Subscription failed", err, nil)
-			}
-			fmt.Println(subscriptionID, string(request.Data), string(replyMsg.ID))
+			// subscriptionID, err := strconv.Unquote(string(replyMsg.Result))
+			// if err != nil {
+			// 	return utils.LavaFormatError("Subscription failed", err, nil)
+			// }
+			// fmt.Println(subscriptionID, string(request.Data), string(replyMsg.ID))
 
 			relaySession.Lock.Lock()
 			relaySession.Subs[subscriptionID] = &subscription{

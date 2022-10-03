@@ -293,16 +293,11 @@ func (sub *ClientSubscription) close(err error) {
 func (sub *ClientSubscription) run() {
 	defer close(sub.unsubDone)
 
-	unsubscribe, err := sub.forward()
+	_, err := sub.forward()
 
 	// The client's dispatch loop won't be able to execute the unsubscribe call if it is
 	// blocked in sub.deliver() or sub.close(). Closing forwardDone unblocks them.
 	close(sub.forwardDone)
-
-	// Call the unsubscribe method on the server.
-	if unsubscribe {
-		sub.requestUnsubscribe()
-	}
 
 	// Send the error.
 	if err != nil {
@@ -363,9 +358,4 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 			buffer.Remove(buffer.Front())
 		}
 	}
-}
-
-func (sub *ClientSubscription) requestUnsubscribe() error {
-	var result interface{}
-	return sub.client.Call(&result, sub.namespace+unsubscribeMethodSuffix, sub.subid)
 }

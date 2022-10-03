@@ -19,6 +19,7 @@ package rpcclient
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -239,6 +240,12 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 		}
 		return false
 	case msg.isResponse():
+		if strings.Contains(string(msg.Result), "tm.event='NewBlock'") {
+			fmt.Println(msg)
+		} else {
+			fmt.Println("nope")
+		}
+
 		h.handleResponse(msg)
 		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "duration", time.Since(start))
 		return true
@@ -280,10 +287,13 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 		op.err = msg.Error
 		return
 	}
-	if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
-		go op.sub.run()
-		h.clientSubs[op.sub.subid] = op.sub
-	}
+	fmt.Println("okhere")
+	// if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
+	// 	fmt.Println("okhere2")
+	go op.sub.run()
+	// h.clientSubs[op.sub.subid] = op.sub
+	// }
+	fmt.Println("errorhere", op.err)
 }
 
 // handleCallMsg executes a call message and returns the answer.

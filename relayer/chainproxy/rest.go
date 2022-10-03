@@ -275,6 +275,6 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	return reply, nil
 }
 
-func (nm *RestMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (*rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
-	return nil, nil, utils.LavaFormatError("Subscribe not available on rest", nil, nil)
+func (nm *RestMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
+	return "", nil, nil, utils.LavaFormatError("Subscribe not available on rest", nil, nil)
 }

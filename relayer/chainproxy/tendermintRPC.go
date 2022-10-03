@@ -13,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -220,17 +221,72 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			utils.LavaFormatInfo(" ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			// identify if the message is a subscription
+			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
 				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				break
+				utils.LavaFormatError("parse error received", err, nil)
+				continue
 			}
 
-			if err = c.WriteMessage(mt, reply.Data); err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				break
+			if nodeMsg.GetServiceApi().Category.Subscription {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel() //incase there's a problem make sure to cancel the connection
+				replySrv, err := SendRelaySubscribe(ctx, cp, privKey, "", string(msg), "")
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					utils.LavaFormatError("write to rpc error received", err, nil)
+					continue
+				}
+
+				var reply pairingtypes.RelayReply
+				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					utils.LavaFormatError("receive from rpc error received", err, nil)
+					continue
+				}
+
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					utils.LavaFormatError("write error received", err, nil)
+					continue
+				}
+
+				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+
+				for {
+					err = (*replySrv).RecvMsg(&reply)
+					if err != nil {
+						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+						utils.LavaFormatError("receive from rpc error received", err, nil)
+						break
+					}
+
+					// If portal cant write to the client
+					if err = c.WriteMessage(mt, reply.Data); err != nil {
+						cancel()
+						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+						utils.LavaFormatError("write error received", err, nil)
+						// break
+					}
+
+					utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+				}
+			} else {
+				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+				if err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					break
+				}
+
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					break
+				}
+				utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 			}
-			utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
+
 		}
 	})
 
@@ -312,4 +368,55 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayRep
 		Data: data,
 	}
 	return reply, nil
+}
+
+func (nm *TendemintRpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
+	// Get node
+	rpc, err := nm.cp.conn.GetRpc(true)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	defer nm.cp.conn.ReturnRpc(rpc)
+
+	params := nm.msg.Params
+
+	var result JsonrpcMessage
+	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+
+	var replyMsg JsonrpcMessage
+	if err != nil {
+		replyMsg = JsonrpcMessage{
+			Version: nm.msg.Version,
+			ID:      nm.msg.ID,
+		}
+		replyMsg.Error = &jsonError{
+			Code:    1,
+			Message: fmt.Sprintf("%s", err),
+		}
+	} else {
+		nm.msg = &result
+		replyMsg = result
+	}
+
+	data, err := json.Marshal(replyMsg)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: data,
+	}
+
+	paramsMap, ok := params.(map[string]interface{})
+	if !ok {
+		return "", nil, nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)
+	}
+	subscriptionID, ok := paramsMap["query"].(string)
+	if !ok {
+		return "", nil, nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil, nil)
+	}
+	if replyMsg.Error != nil {
+		return "", nil, reply, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
+	}
+	return subscriptionID, sub, reply, err
 }

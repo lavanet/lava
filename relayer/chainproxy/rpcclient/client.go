@@ -288,11 +288,11 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, result int
 	var err error
 	switch p := params.(type) {
 	case []interface{}:
-		msg, err = c.newMessageArrayWithID(method, id, p...)
+		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
 	case nil:
-		msg, err = c.newMessageArrayWithID(method, id, (make([]interface{}, 0))...) // in case of nil, we will send it as an empty array.
+		msg, err = c.newMessageArrayWithID(method, id, (make([]interface{}, 0))) // in case of nil, we will send it as an empty array.
 	default:
 		return fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -433,7 +433,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
-func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result interface{}, namespace string, channel interface{}, params interface{}) (*ClientSubscription, error) {
+func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result interface{}, method string, channel interface{}, params interface{}) (*ClientSubscription, error) {
 	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
 	}
@@ -453,9 +453,9 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result inter
 	var err error
 	switch p := params.(type) {
 	case []interface{}:
-		msg, err = c.newMessageArrayWithID(namespace+subscribeMethodSuffix, id, p...)
+		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
-		return nil, fmt.Errorf("tendermint subscribe not supported")
+		msg, err = c.newMessageMapWithID(method, id, p)
 	default:
 		return nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -466,7 +466,7 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result inter
 	op := &requestOp{
 		ids:  []json.RawMessage{msg.ID},
 		resp: make(chan *jsonrpcMessage),
-		sub:  newClientSubscription(c, namespace, chanVal),
+		sub:  newClientSubscription(c, method, chanVal),
 	}
 
 	// Send the subscription request.
@@ -491,7 +491,7 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result inter
 	return op.sub, nil
 }
 
-func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn ...interface{}) (*jsonrpcMessage, error) {
+func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn interface{}) (*jsonrpcMessage, error) {
 	var msg *jsonrpcMessage
 	if id == nil {
 		msg = &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
