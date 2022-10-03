@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -121,12 +122,43 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
 }
 
-func (k Keeper) stakeStorageKey(storageType string, block uint64, chainID string) string {
+func (k Keeper) StakeStorageKey(storageType string, block uint64, chainID string) string {
 	return storageType + strconv.FormatUint(block, 10) + chainID
 }
 
+func (k Keeper) removeAllEntriesPriorToBlockNumber(ctx sdk.Context, storageType string, block uint64, allChainID []string) {
+	allStorage := k.GetAllStakeStorage(ctx)
+	for _, chainId := range allChainID {
+		for _, entry := range allStorage {
+			if strings.Contains(entry.Index, storageType) && strings.Contains(entry.Index, chainId) {
+				if (len(storageType) + len(chainId)) > len(entry.Index) {
+					panic(fmt.Sprintf("storageType + chainId length out of range %d vs %d\n more info: entry.Index: %s, storageType: %s, chainId: %s", (len(storageType) + len(chainId)), len(entry.Index), entry.Index, storageType, chainId))
+				}
+				storageBlock := entry.Index[len(storageType):]
+				storageBlock = storageBlock[:(len(storageBlock) - len(chainId))]
+				blockHeight, err := strconv.ParseUint(storageBlock, 10, 64)
+				if err != nil {
+					if storageBlock == "" {
+						// if storageBlock is empty its stake entry current. so we dont remove it.
+						continue
+					}
+					panic("failed to convert storage block to int: " + storageBlock)
+				}
+				if blockHeight < block {
+					k.RemoveStakeStorage(ctx, entry.Index)
+				}
+			}
+		}
+	}
+}
+
+func (k Keeper) RemoveAllEntriesPriorToBlockNumber(ctx sdk.Context, block uint64, allChainID []string) {
+	k.removeAllEntriesPriorToBlockNumber(ctx, types.ProviderKey, block, allChainID)
+	k.removeAllEntriesPriorToBlockNumber(ctx, types.ClientKey, block, allChainID)
+}
+
 func (k Keeper) RemoveStakeStorageByBlockAndChain(ctx sdk.Context, storageType string, block uint64, chainID string) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	k.RemoveStakeStorage(ctx, key)
 }
 
@@ -400,13 +432,13 @@ func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageTyp
 			continue
 		}
 		newStorage := tmpStorage.Copy()
-		newStorage.Index = k.stakeStorageKey(storageType, block, chainID)
+		newStorage.Index = k.StakeStorageKey(storageType, block, chainID)
 		k.SetStakeStorage(ctx, newStorage)
 	}
 }
 
 func (k Keeper) getStakeStorageEpoch(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	return k.GetStakeStorage(ctx, key)
 }
 
@@ -448,7 +480,7 @@ func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID strin
 }
 
 func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
-	key := k.stakeStorageKey(storageType, block, chainID)
+	key := k.StakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)
 	if !found {
 		return nil, false
