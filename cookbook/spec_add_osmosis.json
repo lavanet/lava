@@ -581,7 +581,7 @@
           "category": {
             "deterministic": true,
             "local": false,
-            "subscription": false,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
