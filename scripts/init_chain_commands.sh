@@ -9,7 +9,7 @@ GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json,./cookbook/spec_add_celo.json,./cookbook/spec_add_alfajores.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad tx gov submit-proposal spec-add ./cookbook/spec_add_arbitrum.json,./cookbook/spec_add_starknet.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-proposal spec-add ./cookbook/spec_add_arbitrum.json,./cookbook/spec_add_starknet.json,./cookbook/spec_add_aptos.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep 4
@@ -20,9 +20,10 @@ lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user3 --gas-adjus
 lavad tx pairing stake-client "CELO"   200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "LAV1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "COS4"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "ALFAJORES"   200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "ALFAJORES" 200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 lavad tx pairing stake-client "ARB1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 lavad tx pairing stake-client "ARBN"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "APT1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 lavad tx pairing stake-client "STRK"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 
 
@@ -76,6 +77,11 @@ lavad tx pairing stake-provider "ALFAJORES" 2050ulava "127.0.0.1:6243,jsonrpc,1"
 lavad tx pairing stake-provider "ARB1" 2010ulava "127.0.0.1:7241,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ARB1" 2000ulava "127.0.0.1:7242,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ARB1" 2050ulava "127.0.0.1:7243,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+#Aptos mainet providers
+lavad tx pairing stake-provider "APT1" 2010ulava "127.0.0.1:10031,rest,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "APT1" 2000ulava "127.0.0.1:10032,rest,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "APT1" 2050ulava "127.0.0.1:10033,rest,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 #Starknet mainet providers
 lavad tx pairing stake-provider "STRK" 2010ulava "127.0.0.1:8241,jsonrpc,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
