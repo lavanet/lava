@@ -83,6 +83,8 @@ func TestClient(
 		testErrors = testclients.LavaTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
 	case "APT1":
 		testErrors = testclients.AptosTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
+	case "JUN1":
+		testErrors = testclients.JunoTests(ctx, chainProxy, privKey, apiInterface)
 	}
 
 	if testErrors != nil {

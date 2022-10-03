@@ -37,7 +37,11 @@ func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRe
 	if user != "" {
 		reqUrl.User = url.UserPassword(user, password)
 	}
-	proxyReq, err := http.NewRequest(req.Method, reqUrl.String(), strings.NewReader(body))
+	reqUrlStr, err := url.QueryUnescape(reqUrl.String())
+	if err != nil {
+		return nil, fmt.Errorf(" ::: XXX ::: Could not QueryUnescape new request ::: " + reqUrl.Host + " ::: " + err.Error())
+	}
+	proxyReq, err := http.NewRequest(req.Method, scheme+":"+reqUrlStr, strings.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf(" ::: XXX ::: Could not reproduce new request ::: " + reqUrl.Host + " ::: " + err.Error())
 	}

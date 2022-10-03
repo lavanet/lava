@@ -81,6 +81,14 @@ screen -S strk_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S strk_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 8243 $STARKNET_RPC STRK jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/STRK_2223.log"
 
 
+# Juno providers
+screen -d -m -S jun1_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2371 $JUNO_REST JUN1 rest --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2371.log"
+screen -S jun1_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2372 $JUNO_REST JUN1 rest --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2372.log"
+screen -S jun1_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2373 $JUNO_REST JUN1 rest --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2373.log"
+screen -S jun1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2361 $JUNO_RPC JUN1 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2361.log"
+screen -S jun1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2362 $JUNO_RPC JUN1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2362.log"
+screen -S jun1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2363 $JUNO_RPC JUN1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2363.log"
+
 # Setup Portals
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3333.log" && sleep 0.25
 screen -S portals -X screen -t win11 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2 2>&1 | tee $LOGS_DIR/PORTAL_3334.log"
@@ -91,11 +99,14 @@ screen -S portals -X screen -t win15 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3339 GTH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3339.log"
 screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3340.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 screen -S portals -X screen -t win18 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3342 CELO jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3342.log"
 screen -S portals -X screen -t win19 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 ALFAJORES jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
 screen -S portals -X screen -t win20 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3344 ARB1 jsonrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3344.log"
 screen -S portals -X screen -t win21 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3345 STRK jsonrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3345.log"
 screen -S portals -X screen -t win22 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3346 APT1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3346.log"
+screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 JUN1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3344 JUN1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3344.log"
 
 echo "--- setting up screens done ---"
 screen -ls
