@@ -10,17 +10,18 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/conflict/keeper"
 	"github.com/lavanet/lava/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
-	tmdb "github.com/tendermint/tm-db"
+	"github.com/tendermint/tendermint/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func ConflictKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	epochstorage, ctx := EpochstorageKeeper(t)
+	epochstorage, stateStore, db := EpochstorageKeeperWithDB(t)
+
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := ctx.MultiStore().(storetypes.CommitMultiStore)
 	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())
@@ -47,10 +48,11 @@ func ConflictKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 	)
 
-	ctx = ctx.WithMultiStore(stateStore)
-	epochstorage.EpochBlocksRaw(ctx)
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
-
+	epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
+	epochstorage.EpochBlocksRaw(ctx)
 	return k, ctx
 }
