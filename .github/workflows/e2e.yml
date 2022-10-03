@@ -57,16 +57,16 @@ jobs:
     ### Run lava unitests
     ######################################################
     - name: lava pairing unit Tests
-      run: go test ./x/pairing/... -v
-
+      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types -v
+      
     - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/... -v
+      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types -v
 
     - name: lava spec unit Tests
-      run: go test ./x/spec/... -v
+      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types -v
 
     - name: lava conflict unit Tests
-      run: go test ./x/conflict/... -v
+      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
       
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
