@@ -54,6 +54,18 @@ jobs:
     #   run: starport chain build -v
 
     ######################################################
+    ### Run lava unitests
+    ######################################################
+    - name: lava pairing unit Tests
+      run: go test ./x/pairing/keeper/... -v
+
+    - name: lava epochstorage unit Tests
+      run: go test ./x/epochstorage/keeper/... -v
+
+    - name: lava spec unit Tests
+      run: go test ./x/spec/keeper/... -v
+      
+    ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 960s
@@ -87,5 +99,4 @@ jobs:
     # - name: docker build 
     #   run: docker build -t lava-docker scripts/docker
   
-    - name: lava unit Tests
-      run: go test ./x/pairing/keeper -v
+    

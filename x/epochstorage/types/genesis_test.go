@@ -21,7 +21,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
+				Params: types.DefaultParams(),
 				StakeStorageList: []types.StakeStorage{
 					{
 						Index: "0",
@@ -49,6 +49,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated stakeStorage",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				StakeStorageList: []types.StakeStorage{
 					{
 						Index: "0",
@@ -63,6 +64,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated fixatedParams",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				FixatedParamsList: []types.FixatedParams{
 					{
 						Index: "0",
