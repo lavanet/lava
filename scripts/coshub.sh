@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-COSHUB_RPC=GET_COS5_VARIBLE_FROM_ENV
+GAIA_RPC=GET_COS5_VARIBLE_FROM_ENV
 COSHUB_REST=GET_URL_VARIBLE_FROM_ENV
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
@@ -11,8 +11,8 @@ echo " ::: STARTING COS5 PROVIDERS :::" $COS5_HOST $COS5_URL_PATH
 # SINGLE PROXY
 MOCK_PORT_A=2131
 MOCK_PORT_B=2141
-go run ./testutil/e2e/proxy/. $COSHUB_REST -p $MOCK_PORT_A -cache -id coshub_rest &
-go run ./testutil/e2e/proxy/. $COSHUB_RPC -p $MOCK_PORT_B -cache -id coshub_rpc  &
+go run ./testutil/e2e/proxy/. $GAIA_REST-p $MOCK_PORT_A -cache -id coshub_rest &
+go run ./testutil/e2e/proxy/. $GAIA_RPC -p $MOCK_PORT_B -cache -id coshub_rpc  &
 
 echo " ::: RUNNING COS5 PROVIDERS :::"
 # SINGLE MOCK PROXY
