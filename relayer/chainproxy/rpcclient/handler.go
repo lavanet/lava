@@ -19,7 +19,6 @@ package rpcclient
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -233,19 +232,16 @@ func (h *handler) startCallProc(fn func(*callProc)) {
 func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 	start := time.Now()
 	switch {
-	case msg.isNotification():
+	case msg.isTendermintNotification():
+		h.handleSubscriptionResultTendermint(msg)
+		return true
+	case msg.isEthereumNotification():
 		if strings.HasSuffix(msg.Method, notificationMethodSuffix) {
-			h.handleSubscriptionResult(msg)
+			h.handleSubscriptionResultEthereum(msg)
 			return true
 		}
 		return false
 	case msg.isResponse():
-		if strings.Contains(string(msg.Result), "tm.event='NewBlock'") {
-			fmt.Println(msg)
-		} else {
-			fmt.Println("nope")
-		}
-
 		h.handleResponse(msg)
 		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "duration", time.Since(start))
 		return true
@@ -255,14 +251,25 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 }
 
 // handleSubscriptionResult processes subscription notifications.
-func (h *handler) handleSubscriptionResult(msg *jsonrpcMessage) {
-	var result subscriptionResult
+func (h *handler) handleSubscriptionResultEthereum(msg *jsonrpcMessage) {
+	var result ethereumSubscriptionResult
 	if err := json.Unmarshal(msg.Params, &result); err != nil {
 		h.log.Debug("Dropping invalid subscription message")
 		return
 	}
 	if h.clientSubs[result.ID] != nil {
 		h.clientSubs[result.ID].deliver(msg)
+	}
+}
+
+func (h *handler) handleSubscriptionResultTendermint(msg *jsonrpcMessage) {
+	var result tendermintSubscriptionResult
+	if err := json.Unmarshal(msg.Result, &result); err != nil {
+		h.log.Debug("Dropping invalid subscription message")
+		return
+	}
+	if h.clientSubs[result.Query] != nil {
+		h.clientSubs[result.Query].deliver(msg)
 	}
 }
 
@@ -287,20 +294,21 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 		op.err = msg.Error
 		return
 	}
-	fmt.Println("okhere")
-	// if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
-	// 	fmt.Println("okhere2")
-	go op.sub.run()
-	// h.clientSubs[op.sub.subid] = op.sub
-	// }
-	fmt.Println("errorhere", op.err)
+
+	if op.subid != "" {
+		go op.sub.run()
+		h.clientSubs[op.subid] = op.sub
+	} else if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
+		go op.sub.run()
+		h.clientSubs[op.sub.subid] = op.sub
+	}
 }
 
 // handleCallMsg executes a call message and returns the answer.
 func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
 	start := time.Now()
 	switch {
-	case msg.isNotification():
+	case msg.isEthereumNotification(), msg.isTendermintNotification():
 		h.handleCall(ctx, msg)
 		h.log.Debug("Served "+msg.Method, "duration", time.Since(start))
 		return nil

@@ -127,10 +127,11 @@ type readOp struct {
 }
 
 type requestOp struct {
-	ids  []json.RawMessage
-	err  error
-	resp chan *jsonrpcMessage // receives up to len(ids) responses
-	sub  *ClientSubscription  // only set for EthSubscribe requests
+	ids   []json.RawMessage
+	err   error
+	resp  chan *jsonrpcMessage // receives up to len(ids) responses
+	sub   *ClientSubscription  // only set for EthSubscribe requests
+	subid string               // this is only set for tendermint subscription
 }
 
 func (op *requestOp) wait(ctx context.Context, c *Client) (*jsonrpcMessage, error) {
@@ -451,11 +452,13 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result inter
 	}
 	var msg *jsonrpcMessage
 	var err error
+	var subid string
 	switch p := params.(type) {
 	case []interface{}:
 		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
+		subid = p["query"].(string)
 	default:
 		return nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -464,9 +467,10 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result inter
 	}
 
 	op := &requestOp{
-		ids:  []json.RawMessage{msg.ID},
-		resp: make(chan *jsonrpcMessage),
-		sub:  newClientSubscription(c, method, chanVal),
+		ids:   []json.RawMessage{msg.ID},
+		resp:  make(chan *jsonrpcMessage),
+		sub:   newClientSubscription(c, method, chanVal),
+		subid: subid,
 	}
 
 	// Send the subscription request.
