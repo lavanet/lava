@@ -12,15 +12,11 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
+	"github.com/fullstorydev/grpcurl"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
-	proxypb "github.com/lavanet/lava/relayer/chainproxy/gen/go/proxy/v1"
-	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/fullstorydev/grpcurl"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
@@ -45,25 +41,29 @@ func NewServer(cp *GrpcChainProxy, privKey *btcec.PrivateKey) *Server {
 	}
 }
 
-func (s Server) Proxy(
-	ctx context.Context,
-	req *proxypb.ProxyRequest,
-) (resp *proxypb.ProxyResponse, err error) {
-	var b []byte
-	if b, err = grpcutil.Marshal(req.GetBody()); err != nil {
-		return nil, utils.LavaFormatError("", err, nil)
-	}
-
-	path := req.GetName()
-	log.Println("in <<< ", path)
-
-	var reply *pairingtypes.RelayReply
-	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, string(b), ""); err != nil {
-		return nil, utils.LavaFormatError("", err, nil)
-	}
-
-	return handleReply(reply)
-}
+// func (s Server) Proxy(
+// 	ctx context.Context,
+// 	req *proxypb.ProxyRequest,
+// ) (resp *proxypb.ProxyResponse, err error) {
+// 	var b []byte
+// 	if b, err = grpcutil.Marshal(req.GetBody()); err != nil {
+// 		log.Println("[grpcutil.Marshal]:", err.Error())
+// 		return nil, utils.LavaFormatError("", err, nil)
+// 	}
+//
+// 	log.Println("[b]:", string(b))
+//
+// 	path := req.GetName()
+// 	log.Println("in <<< ", path)
+//
+// 	var reply *pairingtypes.RelayReply
+// 	if reply, err = SendRelay(ctx, s.cp, s.privKey, path, string(b), ""); err != nil {
+// 		log.Println("[SendRelay]:", err.Error())
+// 		return nil, utils.LavaFormatError("", err, nil)
+// 	}
+//
+// 	return handleReply(reply)
+// }
 
 type GrpcMessage struct {
 	cp             *GrpcChainProxy
@@ -224,12 +224,21 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 }
 
 func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
-	gs := grpc.NewServer()
-	// reflection.Register(gs)
-	proxypb.RegisterProxyServiceServer(gs, NewServer(cp, privKey))
+	log.Println("gRPC PortalStart")
+	// gs := grpc.NewServer()
+	gs, err := cp.GetSentry().ProxyGRPC(ctx)
+	if err != nil {
+		log.Println("cp.GetSentry().ProxyGRPC()", err.Error())
+		utils.LavaFormatFatal("grpcutil.NewProxyServer()", err, nil)
+	}
+
+	// proxypb.RegisterProxyServiceServer(gs, NewServer(cp, privKey))
+	log.Println("gogoreflection.Register()")
+	gogoreflection.Register(gs)
 
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
+		log.Println("net.Listen()", err.Error())
 		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
 	}
 
@@ -373,7 +382,10 @@ func (nm *GrpcMessage) invoke(ctx context.Context, conn *grpc.ClientConn) ([]byt
 		fmt.Printf("%s", err)
 	}
 
+	log.Println("[]")
+	log.Println("[req]:", req.String())
 	msg, err := stub.InvokeRpc(ctx, mtd, req)
+	log.Println("[stub.InvokeRpc]:", err.Error())
 
 	if respStr, err := h.Formatter(msg); err != nil {
 		return nil, utils.LavaFormatError("failed to format response from chain", err, &map[string]string{"msg": fmt.Sprintf("%v", msg)})
@@ -409,22 +421,23 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	return reply, nil
 }
 
-func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.ProxyResponse, err error) {
-	log.Println("out >>> len", len(reply.GetData()))
-
-	var pbAny *anypb.Any
-	if pbAny, err = getAnyByInterface(reply.GetData()); err != nil {
-		return nil, utils.LavaFormatError("", err, nil)
-	}
-
-	return &proxypb.ProxyResponse{Body: pbAny}, nil
-}
-
-func getAnyByInterface(v interface{}) (pbAny *anypb.Any, err error) {
-	var pbValue *structpb.Value
-	if pbValue, err = structpb.NewValue(v); err != nil {
-		return nil, err
-	}
-
-	return anypb.New(pbValue)
-}
+// func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.ProxyResponse, err error) {
+// 	log.Println("out >>> len", len(reply.GetData()))
+//
+// 	var pbAny *anypb.Any
+// 	if pbAny, err = getAnyByInterface(reply.GetData()); err != nil {
+// 		log.Println("[getAnyByInterface]:", err.Error())
+// 		return nil, utils.LavaFormatError("", err, nil)
+// 	}
+//
+// 	return &proxypb.ProxyResponse{Body: pbAny}, nil
+// }
+//
+// func getAnyByInterface(v interface{}) (pbAny *anypb.Any, err error) {
+// 	var pbValue *structpb.Value
+// 	if pbValue, err = structpb.NewValue(v); err != nil {
+// 		return nil, err
+// 	}
+//
+// 	return anypb.New(pbValue)
+// }

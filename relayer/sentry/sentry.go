@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"regexp"
@@ -20,19 +21,21 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tenderminttypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -75,15 +78,15 @@ type VoteParams struct {
 
 func (vp *VoteParams) GetCloseVote() bool {
 	if vp == nil {
-		//default returns false
+		// default returns false
 		return false
 	}
 	return vp.CloseVote
 }
 
-//Constants
+// Constants
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
 const (
 	MaxConsecutiveConnectionAttemts = 3
 	PercentileToCalculateLatency    = 0.9
@@ -101,7 +104,7 @@ type Endpoint struct {
 }
 
 type RelayerClientWrapper struct {
-	Acc              string //public lava address
+	Acc              string // public lava address
 	Endpoints        []*Endpoint
 	SessionsLock     sync.Mutex
 	Sessions         map[int64]*ClientSession
@@ -129,7 +132,7 @@ type providerDataContainer struct {
 	BlockHeight           int64
 	RelayNum              uint64
 	LatestBlock           int64
-	//TODO:: keep relay request for conflict reporting
+	// TODO:: keep relay request for conflict reporting
 }
 
 type ProviderHashesConsensus struct {
@@ -197,6 +200,32 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
+// ProxyGRPC - returns a proxy grpc server from pairing.
+func (s *Sentry) ProxyGRPC(ctx context.Context) (server *grpc.Server, err error) {
+	log.Println("ProxyGRPC()")
+	utils.LavaFormatInfo("ProxyGRPC()", nil)
+	var specNameToApiInterfaceSlice map[string][]spectypes.ApiInterface
+	if specNameToApiInterfaceSlice, err = s.GetAllSpecNames(ctx); err != nil {
+		return nil, errors.Wrap(err, "s.GetAllSpecNames()")
+	}
+
+	var endpoint *Endpoint
+	if _, _, endpoint, err = s._findPairing(ctx); err != nil {
+		return nil, errors.Wrap(err, "s._findPairing()")
+	}
+
+	specNameToStruct := make(map[string]struct{}, len(specNameToApiInterfaceSlice))
+	for specName, apiInterfaceSlice := range specNameToApiInterfaceSlice {
+		for _, apiInterface := range apiInterfaceSlice {
+			if apiInterface.GetInterface() == "grpc" {
+				specNameToStruct[specName] = struct{}{}
+			}
+		}
+	}
+
+	return grpcutil.NewProxyServer(ctx, endpoint.Addr, specNameToStruct)
+}
+
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 
 	if cs.QoSInfo.LastQoSReport == nil {
@@ -227,7 +256,7 @@ func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHei
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
+		if blockHeightDiff <= 0 { // if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {
@@ -359,7 +388,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 	//
 	// Set
 	pairing := []*RelayerClientWrapper{}
-	pairingAddresses := []string{} //this object will not be mutated for vrf calculations
+	pairingAddresses := []string{} // this object will not be mutated for vrf calculations
 	for _, provider := range providers {
 		//
 		// Sanity
@@ -371,7 +400,7 @@ func (s *Sentry) getPairing(ctx context.Context) error {
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
-			//only take into account endpoints that use the same api interface
+			// only take into account endpoints that use the same api interface
 			if endpoint.UseType == s.ApiInterface {
 				relevantEndpoints = append(relevantEndpoints, endpoint)
 			}
@@ -444,7 +473,7 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerAp
 			// TODO: find a better spot for this (more optimized, precompile regex, etc)
 			for _, apiInterface := range api.ApiInterfaces {
 				if apiInterface.Interface != s.ApiInterface {
-					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					// spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
 					continue
 				}
 				if apiInterface.Interface == "rest" {
@@ -480,7 +509,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	// Check if updated
 	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
 	if bytes.Equal(s.specHash, hash) {
-		//spec for chain didnt change
+		// spec for chain didnt change
 		return nil
 	}
 	s.specHash = hash
@@ -573,7 +602,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
-			//got new TX event
+			// got new TX event
 			if providerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
 				for idx, providerAddr := range providerAddrList {
 					if s.Acc == providerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
@@ -666,9 +695,9 @@ func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.A
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	for idx, expectedPayment := range s.expectedPayments {
-		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
+		// TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
 		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) && uniqueID == expectedPayment.UniqueIdentifier {
-			//found payment for expected payment
+			// found payment for expected payment
 			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
 			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
 			return true
@@ -682,7 +711,7 @@ func (s *Sentry) GetPaidCU() uint64 {
 }
 
 func (s *Sentry) UpdatePaidCU(extraPaidCU uint64) {
-	//we lock because we dont want the value changing after we read it before we store
+	// we lock because we dont want the value changing after we read it before we store
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUPaid)
@@ -703,7 +732,7 @@ func (s *Sentry) PrintExpectedPayments() string {
 func (s *Sentry) Start(ctx context.Context) {
 
 	if !s.isUser {
-		//listen for transactions for proof of relay payment
+		// listen for transactions for proof of relay payment
 		go s.ListenForTXEvents(ctx)
 	}
 	//
@@ -782,8 +811,8 @@ func (s *Sentry) Start(ctx context.Context) {
 					utils.LavaFormatError("failed to get spec", err, nil)
 				}
 
-				//update expected payments deadline, and log missing payments
-				//TODO: make this from the event lava_earliest_epoch instead
+				// update expected payments deadline, and log missing payments
+				// TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
 					s.IdentifyMissingPayments(ctx)
 				}
@@ -1029,7 +1058,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 }
 
 func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Sentry, ctx context.Context, index int) (connected bool, endpointPtr *Endpoint) {
-	//assumes s.pairingMu is Rlocked here
+	// assumes s.pairingMu is Rlocked here
 	wrap.SessionsLock.Lock()
 	defer wrap.SessionsLock.Unlock()
 	allDisabled := true
@@ -1037,7 +1066,7 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 		if !endpoint.Enabled {
 			continue
 		}
-		allDisabled = false //even one enabled endpoint is enough to not purge the pairing object
+		allDisabled = false // even one enabled endpoint is enough to not purge the pairing object
 		if endpoint.Client == nil {
 			connectCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 			conn, err := s.connectRawClient(connectCtx, endpoint.Addr)
@@ -1058,7 +1087,7 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 		return true, endpoint
 	}
 
-	//we dont purge if we tried connecting and failed, only if we already disabled all endpoints
+	// we dont purge if we tried connecting and failed, only if we already disabled all endpoints
 	if allDisabled {
 		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", wrap.Endpoints), "provider address": wrap.Acc})
 		// we release read lock here, we assume pairing can change in movePairingEntryToPurge and it needs rw lock
@@ -1072,10 +1101,10 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
 	compare_result := bytes.Compare(reply0.Data, reply1.Data)
 	if compare_result == 0 {
-		//they have equal data
+		// they have equal data
 		return true
 	}
-	//they have different data! report!
+	// they have different data! report!
 	utils.LavaFormatWarning("DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
 	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
@@ -1083,13 +1112,13 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 	SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
-	//report the conflict
+	// report the conflict
 	return false
 }
 
 func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (address0 string, address1 string) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
-	//TODO: improve with blacklisted address, and the module-1
+	// TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
 	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
 	s.specMu.RUnlock()
@@ -1110,7 +1139,7 @@ func (s *Sentry) DataReliabilityThresholdToAddress(vrf0 []byte, vrf1 []byte) (ad
 	address1 = parseIndex(index1)
 	s.pairingMu.RUnlock()
 	if address0 == address1 {
-		//can't have both with the same provider
+		// can't have both with the same provider
 		address1 = ""
 	}
 	return
@@ -1252,19 +1281,19 @@ func (s *Sentry) SendRelay(
 		wrap.SessionsLock.Lock()
 		defer wrap.SessionsLock.Unlock()
 
-		//try to lock an existing session, if can't create a new one
+		// try to lock an existing session, if can't create a new one
 		for _, session := range wrap.Sessions {
 			if session.Endpoint != endpoint {
-				//skip sessions that don't belong to the active connection
+				// skip sessions that don't belong to the active connection
 				continue
 			}
 			if session.Lock.TryLock() {
 				return session
 			}
 		}
-		//create a new session
+		// create a new session
 		randomSessId := int64(0)
-		for randomSessId == 0 { //we don't allow 0
+		for randomSessId == 0 { // we don't allow 0
 			randomSessId = rand.Int63()
 		}
 
@@ -1282,7 +1311,7 @@ func (s *Sentry) SendRelay(
 
 	// call user
 	reply, request, err := cb_send_relay(clientSession)
-	//error using this provider
+	// error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 			s.movePairingEntryToPurge(wrap, index)
@@ -1317,7 +1346,7 @@ func (s *Sentry) SendRelay(
 	}
 
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
-	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
+	clientSession.Lock.Unlock()             // function call returns a locked session, we need to unlock it
 
 	if s.GetSpecComparesHashes() {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
@@ -1362,7 +1391,7 @@ func (s *Sentry) SendRelay(
 			s.VrfSkMu.Unlock()
 			address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
 
-			//Printing VRF Data
+			// Printing VRF Data
 			// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
 			// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
 			// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
@@ -1374,7 +1403,7 @@ func (s *Sentry) SendRelay(
 						// failed to get clientWrapper for this address, skip reliability
 						return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
 					} else {
-						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
+						canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) // TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
 						if canSendReliability {
 							s.VrfSkMu.Lock()
 							vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
@@ -1384,8 +1413,8 @@ func (s *Sentry) SendRelay(
 								VrfProof:    vrf_proof,
 								ProviderSig: reply.Sig,
 								AllDataHash: sigs.AllDataHash(reply, request),
-								QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
-								Sig:         nil,                                //calculated in cb_send_reliability
+								QueryHash:   utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
+								Sig:         nil,                                // calculated in cb_send_reliability
 							}
 							clientSession = getClientSessionFromWrap(wrap, endpoint)
 							relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
@@ -1395,7 +1424,7 @@ func (s *Sentry) SendRelay(
 								}
 								return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
 							}
-							clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+							clientSession.Lock.Unlock() // function call returns a locked session, we need to unlock it
 							return relay_rep, relay_req, nil
 						} else {
 							utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
@@ -1404,10 +1433,10 @@ func (s *Sentry) SendRelay(
 					}
 				} else {
 					if isSecure {
-						//send reliability on the client's expense
+						// send reliability on the client's expense
 						utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
 					}
-					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
+					return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") // this is not an error we want to log
 				}
 			}
 
@@ -1518,7 +1547,7 @@ func (s *Sentry) movePairingEntryToPurge(wrap *RelayerClientWrapper, index int) 
 
 	s.pairingPurgeLock.Lock()
 	defer s.pairingPurgeLock.Unlock()
-	//move to purge list
+	// move to purge list
 	findPairingIndex := func() bool {
 		for idx, entry := range s.pairing {
 			if entry.Acc == wrap.Acc {
@@ -1610,7 +1639,7 @@ func (s *Sentry) GetChainID() string {
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
-	//TODO: make it faster and better by not doing a regex instead using a better algorithm
+	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {
@@ -1669,7 +1698,7 @@ func (s *Sentry) SetCUServiced(CU uint64) {
 }
 
 func (s *Sentry) UpdateCUServiced(CU uint64) {
-	//we lock because we dont want the value changing after we read it before we store
+	// we lock because we dont want the value changing after we read it before we store
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUServiced)
@@ -1714,7 +1743,7 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		}
 		return highestBlockNumber
 	}
-	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) //update the highest in place
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
 	highestBlockNumber = FindHighestBlockNumber(s.providerHashesConsensus)
 
 	now := time.Now()
@@ -1722,8 +1751,8 @@ func (s *Sentry) ExpecedBlockHeight() (int64, int) {
 		listExpectedBH := []int64{}
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
-				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) //interpolation
-				//limit the interpolation to the highest seen block height
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) // interpolation
+				// limit the interpolation to the highest seen block height
 				if expected > highestBlockNumber {
 					expected = highestBlockNumber
 				}
@@ -1802,7 +1831,7 @@ func NewSentry(
 }
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
-	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
+	// since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
 	switch request.RequestBlock {
 	case spectypes.LATEST_BLOCK:
 		request.RequestBlock = response.LatestBlock
