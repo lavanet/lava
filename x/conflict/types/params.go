@@ -150,7 +150,7 @@ func validateRewards(v interface{}) error {
 	}
 
 	if rewards.ClientRewardPercent.Add(rewards.VotersRewardPercent).Add(rewards.WinnerRewardPercent).GT(sdk.OneDec()) {
-		return fmt.Errorf("sum of all rewards is bigger than 100%")
+		return fmt.Errorf("sum of all rewards is bigger than 100 percent")
 	}
 
 	return nil

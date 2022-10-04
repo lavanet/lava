@@ -21,7 +21,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
+				Params: types.DefaultParams(),
 				SpecList: []types.Spec{
 					{
 						Index: "0",
@@ -38,6 +38,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated spec",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				SpecList: []types.Spec{
 					{
 						Index: "0",
@@ -52,6 +53,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "invalid spec count",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				SpecList: []types.Spec{
 					{
 						Index: "1",
