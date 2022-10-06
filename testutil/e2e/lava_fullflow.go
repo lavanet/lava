@@ -158,6 +158,9 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
 			silent(clientOsmoRest)
 			silent(prov_JUN1)
+		}
+	}
+
 	if run_providers_coshub {
 		fmt.Println(" ::: Starting Providers Processes [COS5] ::: ")
 		prov_cos5 := TestProcess("providers_coshub", homepath+"scripts/coshub.sh", providersTest)
