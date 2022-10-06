@@ -56,9 +56,9 @@ screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
 
 # Cosmoshub providers
-screen -d -m -S cos5_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2331 $GAIA_RESTCOS5 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2331.log"
-screen -S cos5_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2332 $GAIA_RESTCOS5 rest --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2332.log"
-screen -S cos5_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2333 $GAIA_RESTCOS5 rest --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2333.log"
+screen -d -m -S cos5_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2331 $GAIA_REST COS5 rest --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2331.log"
+screen -S cos5_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2332 $GAIA_REST COS5 rest --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2332.log"
+screen -S cos5_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2333 $GAIA_REST COS5 rest --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2333.log"
 screen -S cos5_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2341 $GAIA_RPC COS5 tendermintrpc --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2341.log"
 screen -S cos5_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2342 $GAIA_RPC COS5 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2342.log"
 screen -S cos5_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2343 $GAIA_RPC COS5 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2343.log"
