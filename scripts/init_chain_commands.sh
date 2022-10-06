@@ -95,7 +95,7 @@ lavad tx pairing stake-provider "STRK" 2010ulava "127.0.0.1:8241,jsonrpc,1" 1 -y
 lavad tx pairing stake-provider "STRK" 2000ulava "127.0.0.1:8242,jsonrpc,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "STRK" 2050ulava "127.0.0.1:8243,jsonrpc,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 # Cosmoshub Providers
-lavad tx pairing stake-provider "COS5" 2010ulava "127.0.0.1:2341,tendermintrpc,1 127.0.0.1:2331,rest,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "COS5" 2010ulava "127.0.0.1:2344,tendermintrpc,1 127.0.0.1:2331,rest,1" 1 -y --from servicer1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "COS5" 2000ulava "127.0.0.1:2342,tendermintrpc,1 127.0.0.1:2332,rest,1" 1 -y --from servicer2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "COS5" 2050ulava "127.0.0.1:2343,tendermintrpc,1 127.0.0.1:2333,rest,1" 1 -y --from servicer3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
