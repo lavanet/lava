@@ -672,8 +672,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
 
-	// TODO Identify if geth unsubscribe or tendermint unsubscribe, unsubscribe all. Right now this is only for ethereum
-	if reqMsg != nil && strings.Contains(nodeMsg.GetServiceApi().Name, "unsubscribe") {
+	apiName := nodeMsg.GetServiceApi().Name
+	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		userSessions.Lock.Lock()
 		defer userSessions.Lock.Unlock()
@@ -685,11 +685,34 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 				if sub, ok := session.Subs[subscriptionID]; ok {
 					sub.disconnect()
 					delete(session.Subs, subscriptionID)
+					break
 				}
 				session.Lock.Unlock()
 			}
-			// tendermint
-			// case map[string]interface{}:
+		case map[string]interface{}:
+			if apiName == "unsubscribe" {
+				subscriptionID := p["query"].(string)
+				for _, session := range userSessions.Sessions {
+					session.Lock.Lock()
+					if sub, ok := session.Subs[subscriptionID]; ok {
+						sub.disconnect()
+						delete(session.Subs, subscriptionID)
+						break
+					}
+					session.Lock.Unlock()
+				}
+			} else if apiName == "unsubscribe_all" {
+				for _, session := range userSessions.Sessions {
+					session.Lock.Lock()
+					for subscriptionID, sub := range session.Subs {
+						sub.disconnect()
+						delete(session.Subs, subscriptionID)
+					}
+					session.Lock.Unlock()
+				}
+			} else {
+				return nil, utils.LavaFormatError("tendermint unsubscribe failed unknown api name", nil, nil)
+			}
 		}
 	}
 
