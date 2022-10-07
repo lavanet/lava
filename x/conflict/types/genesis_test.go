@@ -21,7 +21,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
+				Params: types.DefaultParams(),
 				ConflictVoteList: []types.ConflictVote{
 					{
 						Index: "0",
@@ -37,6 +37,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated conflictVote",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				ConflictVoteList: []types.ConflictVote{
 					{
 						Index: "0",

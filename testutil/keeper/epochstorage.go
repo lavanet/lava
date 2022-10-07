@@ -17,7 +17,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
-func EpochstorageKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
+func EpochstorageKeeperWithDB(t testing.TB) (*keeper.Keeper, storetypes.CommitMultiStore, *tmdb.MemDB) {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -25,7 +25,6 @@ func EpochstorageKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -46,6 +45,12 @@ func EpochstorageKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 	)
 
+	return k, stateStore, db
+}
+
+func EpochstorageKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
+	k, stateStore, _ := EpochstorageKeeperWithDB(t)
+	require.NoError(t, stateStore.LoadLatestVersion())
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params

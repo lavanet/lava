@@ -233,8 +233,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatError("read error received", err, nil)
+				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 				break
 			}
 			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
@@ -242,8 +241,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// identify if the message is a subscription
 			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatError("parse error received", err, nil)
+				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 				continue
 			}
 
@@ -254,22 +252,19 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				defer cancel() //incase there's a problem make sure to cancel the connection
 				replySrv, err := SendRelaySubscribe(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write to rpc error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
 				var reply pairingtypes.RelayReply
 				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("receive from rpc error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
@@ -278,16 +273,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				for {
 					err = (*replySrv).RecvMsg(&reply)
 					if err != nil {
-						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatError("receive from rpc error received", err, nil)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 						break
 					}
 
 					// If portal cant write to the client
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
 						cancel()
-						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatError("write error received", err, nil)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 						// break
 					}
 
@@ -296,14 +289,12 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			} else {
 				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write to rpc error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})

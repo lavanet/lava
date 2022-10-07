@@ -24,6 +24,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.Params = k.GetParams(ctx)
 
 	genesis.SpecList = k.GetAllSpec(ctx)
+	genesis.SpecCount = uint64(len(genesis.SpecList))
 
 	// this line is used by starport scaffolding # genesis/module/export
 

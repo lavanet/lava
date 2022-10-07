@@ -216,16 +216,15 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 				break
 			}
-			utils.LavaFormatInfo(" ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
+			utils.LavaFormatInfo("ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			// identify if the message is a subscription
 			nodeMsg, err := cp.ParseMsg("", msg, "")
 			if err != nil {
-				c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-				utils.LavaFormatError("parse error received", err, nil)
+				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 				continue
 			}
 
@@ -234,54 +233,49 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				defer cancel() //incase there's a problem make sure to cancel the connection
 				replySrv, err := SendRelaySubscribe(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write to rpc error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
 				var reply pairingtypes.RelayReply
 				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("receive from rpc error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-					utils.LavaFormatError("write error received", err, nil)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
 
-				utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+				utils.LavaFormatInfo("ws out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 
 				for {
 					err = (*replySrv).RecvMsg(&reply)
 					if err != nil {
-						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatError("receive from rpc error received", err, nil)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 						break
 					}
 
 					// If portal cant write to the client
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
 						cancel()
-						c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
-						utils.LavaFormatError("write error received", err, nil)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 						// break
 					}
 
-					utils.LavaFormatInfo("out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
+					utils.LavaFormatInfo("ws out >>>", &map[string]string{"seed": msgSeed, "reply": string(reply.Data)})
 				}
 			} else {
 				reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 				if err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					break
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					break
 				}
 				utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
@@ -295,13 +289,12 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("jsonrpc in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
+		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
-
-		utils.LavaFormatInfo("jsonrpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
+		utils.LavaFormatInfo("http out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
 		return c.SendString(string(reply.Data))
 	})
 
