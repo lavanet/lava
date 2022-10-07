@@ -920,14 +920,6 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			if err != nil {
 				return utils.LavaFormatError("Subscription failed", err, nil)
 			}
-			// var replyMsg chainproxy.JsonrpcMessage
-			// json.Unmarshal(reply.Data, &replyMsg)
-
-			// subscriptionID, err := strconv.Unquote(string(replyMsg.Result))
-			// if err != nil {
-			// 	return utils.LavaFormatError("Subscription failed", err, nil)
-			// }
-			// fmt.Println(subscriptionID, string(request.Data), string(replyMsg.ID))
 
 			relaySession.Lock.Lock()
 			relaySession.Subs[subscriptionID] = &subscription{
