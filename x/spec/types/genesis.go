@@ -29,6 +29,10 @@ func (gs GenesisState) Validate() error {
 		}
 		SpecIndexMap[index] = struct{}{}
 	}
+
+	if gs.SpecCount != uint64(len(gs.SpecList)) {
+		return fmt.Errorf("Spec count mismatch spec list")
+	}
 	// this line is used by starport scaffolding # genesis/types/validate
 
 	return gs.Params.Validate()

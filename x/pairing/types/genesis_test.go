@@ -21,7 +21,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
-
+				Params: types.DefaultParams(),
 				UniquePaymentStorageClientProviderList: []types.UniquePaymentStorageClientProvider{
 					{
 						Index: "0",
@@ -53,6 +53,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated uniquePaymentStorageClientProvider",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				UniquePaymentStorageClientProviderList: []types.UniquePaymentStorageClientProvider{
 					{
 						Index: "0",
@@ -67,6 +68,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated providerPaymentStorage",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				ProviderPaymentStorageList: []types.ProviderPaymentStorage{
 					{
 						Index: "0",
@@ -81,6 +83,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "duplicated epochPayments",
 			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
 				EpochPaymentsList: []types.EpochPayments{
 					{
 						Index: "0",

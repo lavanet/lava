@@ -343,6 +343,10 @@ func isSupportedSpec(in *pairingtypes.RelayRequest) bool {
 	return in.ChainID == g_serverChainID
 }
 
+func validateRequestedBlockHeight(blockHeight uint64) bool {
+	return (blockHeight == g_sentry.GetCurrentEpochHeight() || blockHeight == g_sentry.GetPrevEpochHeight())
+}
+
 func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.RelayRequest) (*RelaySession, error) {
 	userSessions := getOrCreateUserSessions(userAddr)
 
@@ -366,7 +370,13 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 			})
 		}
 
-		// TODO:: should validate req.BlockHeight ?
+		isValidBlockHeight := validateRequestedBlockHeight(uint64(req.BlockHeight))
+		if !isValidBlockHeight {
+			return nil, utils.LavaFormatError("User requested with invalid block height", err, &map[string]string{
+				"req.BlockHeight": strconv.FormatInt(req.BlockHeight, 10),
+			})
+		}
+
 		sessionEpoch = uint64(req.BlockHeight)
 
 		userSessions.Lock.Lock()

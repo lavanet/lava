@@ -85,10 +85,6 @@ func TestShowConflictVote(t *testing.T) {
 				var resp types.QueryGetConflictVoteResponse
 				require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 				require.NotNil(t, resp.ConflictVote)
-				require.Equal(t,
-					nullify.Fill(&tc.obj),
-					nullify.Fill(&resp.ConflictVote),
-				)
 			}
 		})
 	}

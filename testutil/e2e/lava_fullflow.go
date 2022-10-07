@@ -42,10 +42,12 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 	run_providers_eth := true
 	run_providers_gth := true
 	run_providers_ftm := true
+	run_providers_juno := true
 	run_client_osmosis := true
 	run_client_eth := true
 	run_client_gth := true
 	run_client_ftm := true
+	run_client_juno := true
 
 	start_lava := "killall ignite; killall lavad; cd " + homepath + " && ignite chain serve -v -r  "
 	if !resetGenesis {
@@ -134,6 +136,29 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 			silent(prov_ftm)
 		}
 	}
+
+	if run_providers_juno {
+		fmt.Println(" ::: Starting Providers Processes [JUN1] ::: ")
+		prov_JUN1 := TestProcess("providers_juno", homepath+"scripts/juno.sh", providersTest)
+		fmt.Println(" ::: Providers Processes Started ::: ")
+		await(prov_JUN1, "JUN1 providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
+
+		if run_client_juno {
+			sleep(1)
+			fmt.Println(" ::: Starting Client Process [JUN1] ::: ")
+			clientJUN1Rpc := TestProcess("clientJUN1", "lavad test_client JUN1 tendermintrpc --from user1", clientTest)
+			await(clientJUN1Rpc, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+			await(node, "relay payment 2/2 juno", found_relay_payment, "awaiting for JUN1 payment to proceed...")
+			fmt.Println(" ::: GOT JUN1 PAYMENT !!!")
+			silent(clientJUN1Rpc)
+			clientOsmoRest := TestProcess("clientOsmoRest", "lavad test_client JUN1 rest --from user1", clientTest)
+			await(node, "relay payment 2/2 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
+			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
+			silent(clientOsmoRest)
+			silent(prov_JUN1)
+		}
+	}
+
 	// FINISHED TEST PROCESSESS
 	println("::::::::::::::::::::::::::::::::::::::::::::::")
 	awaitErrorsTimeout := 10
