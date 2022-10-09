@@ -85,6 +85,8 @@ func TestClient(
 		testErrors = testclients.AptosTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
 	case "JUN1":
 		testErrors = testclients.JunoTests(ctx, chainProxy, privKey, apiInterface)
+	case "COS5":
+		testErrors = testclients.CosmoshubTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
 	}
 
 	if testErrors != nil {

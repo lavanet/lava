@@ -43,12 +43,14 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 	run_providers_gth := true
 	run_providers_ftm := true
 	run_providers_juno := true
+	run_providers_coshub := true
 	run_client_osmosis := true
 	run_client_eth := true
 	run_client_gth := true
 	run_client_ftm := true
 	run_client_juno := true
 
+	run_client_coshub := true
 	start_lava := "killall ignite; killall lavad; cd " + homepath + " && ignite chain serve -v -r  "
 	if !resetGenesis {
 		start_lava = "lavad start "
@@ -156,6 +158,28 @@ func FullFlowTest(t *testing.T) ([]*TestResult, error) {
 			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
 			silent(clientOsmoRest)
 			silent(prov_JUN1)
+		}
+	}
+
+	if run_providers_coshub {
+		fmt.Println(" ::: Starting Providers Processes [COS5] ::: ")
+		prov_cos5 := TestProcess("providers_coshub", homepath+"scripts/coshub.sh", providersTest)
+		fmt.Println(" ::: Providers Processes Started ::: ")
+		await(prov_cos5, "COS5 providers ready", providers_ready_eth, "awaiting for providers to listen to proceed...")
+
+		if run_client_coshub {
+			sleep(1)
+			fmt.Println(" ::: Starting Client Process [COS5] ::: ")
+			clientCos5Rpc := TestProcess("clientCOS5", "lavad test_client COS5 tendermintrpc --from user1", clientTest)
+			await(clientCos5Rpc, "reply rpc", found_rpc_reply, "awaiting for rpc reply to proceed...")
+			await(node, "relay payment 2/2 coshub", found_relay_payment, "awaiting for COS5 payment to proceed...")
+			fmt.Println(" ::: GOT COS5 PAYMENT !!!")
+			silent(clientCos5Rpc)
+			clientOsmoRest := TestProcess("clientOsmoRest", "lavad test_client COS5 rest --from user1", clientTest)
+			await(node, "relay payment 2/2 osmosis", found_relay_payment, "awaiting for OSMOSIS payment to proceed... ")
+			fmt.Println(" ::: GOT OSMOSIS PAYMENT !!!")
+			silent(clientOsmoRest)
+			silent(prov_cos5)
 		}
 	}
 
