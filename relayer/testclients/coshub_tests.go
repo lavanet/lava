@@ -24,7 +24,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 			"/blocks/latest",
 			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
 			"/cosmos/gov/v1beta1/proposals",
-			"/blocks/1",
+			"/blocks/latest",
 			"/cosmos/bank/v1beta1/balances/osmo1500hy75krs9e8t50aav6fahk8sxhajn9ctp40qwvvn8tcprkk6wszun4a5",
 			"/cosmos/gov/v1beta1/proposals"},
 			http.MethodPost: {},
