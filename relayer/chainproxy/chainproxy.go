@@ -102,12 +102,11 @@ func SendRelay(
 	requestedBlock := int64(0)
 	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
-		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
-
+		serviceApiComputeUnits := nodeMsg.GetServiceApi().ComputeUnits
+		err := VerifyComputeUnits(clientSession, serviceApiComputeUnits)
 		if err != nil {
 			return nil, nil, err
 		}
-
 		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
 
 		relayRequest := &pairingtypes.RelayRequest{
@@ -117,9 +116,9 @@ func SendRelay(
 			Data:                  []byte(req),
 			SessionId:             uint64(clientSession.SessionId),
 			ChainID:               cp.GetSentry().ChainID,
-			CuSum:                 clientSession.CuSum,
+			CuSum:                 clientSession.CuSum + serviceApiComputeUnits, // we increase the cusum by the compute units of the service.
 			BlockHeight:           blockHeight,
-			RelayNum:              clientSession.RelayNum,
+			RelayNum:              clientSession.RelayNum + 1, // we increase the relayNum by 1.
 			RequestBlock:          nodeMsg.RequestedBlock(),
 			QoSReport:             clientSession.QoSInfo.LastQoSReport,
 			DataReliability:       nil,
@@ -146,6 +145,10 @@ func SendRelay(
 			}
 			return nil, nil, err
 		}
+
+		// After reply was received without an error and we got the message successfully, we can increase the CU.
+		ApplyComputeUnits(clientSession, serviceApiComputeUnits)
+
 		currentLatency := time.Since(relaySentTime)
 		clientSession.QoSInfo.ConsecutiveTimeOut = 0
 		clientSession.QoSInfo.AnsweredRelays++
@@ -160,7 +163,7 @@ func SendRelay(
 		}
 
 		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+		clientSession.CalculateQoS(serviceApiComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 
 		return reply, relayRequest, nil
 	}
@@ -218,17 +221,25 @@ func SendRelay(
 	return reply, err
 }
 
-func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
+// After a successful reply we can apply the cu.
+func ApplyComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) {
+	clientSession.Client.SessionsLock.Lock()
+	defer clientSession.Client.SessionsLock.Unlock()
+
+	clientSession.CuSum += apiCu
+	clientSession.Client.UsedComputeUnits += apiCu
+	clientSession.RelayNum += 1
+
+	return
+}
+
+// Verify we have enough CU to send the request
+func VerifyComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
 	clientSession.Client.SessionsLock.Lock()
 	defer clientSession.Client.SessionsLock.Unlock()
 
 	if clientSession.Client.UsedComputeUnits+apiCu > clientSession.Client.MaxComputeUnits {
 		return fmt.Errorf("used all the available compute units")
 	}
-
-	clientSession.CuSum += apiCu
-	clientSession.Client.UsedComputeUnits += apiCu
-	clientSession.RelayNum += 1
-
 	return nil
 }

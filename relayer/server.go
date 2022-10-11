@@ -414,14 +414,24 @@ func getOrCreateUserSessions(userAddr string) *UserSessions {
 	return userSessions
 }
 
-func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
-	sess.Lock.Lock()
-	relayNum := sess.RelayNum
-	cuSum := sess.CuSum
-	sess.Lock.Unlock()
+// Verify all session fields are synced with user and valid.
+func verifySession(relaySession *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
+	relaySession.Lock.Lock()
+	relayNum := relaySession.RelayNum
+	cuSum := relaySession.CuSum
+	relaySession.Lock.Unlock()
+
+	utils.LavaFormatInfo("verifySession", &map[string]string{
+		"serviceApi.Name":   serviceApi.Name,
+		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+		"relayNum":          strconv.FormatUint(relayNum, 10), // at this point RelayNum should be -1 to request.RelayNum, we add it after the nodeMsg.Send()
+		"request.RelayNum":  strconv.FormatUint(request.RelayNum, 10),
+		"cuSum":             strconv.FormatUint(cuSum, 10),
+		"request.CuSum":     strconv.FormatUint(request.CuSum, 10),
+	})
 
 	if relayNum+1 != request.RelayNum {
-		utils.LavaFormatError("consumer requested incorrect relaynum, expected it to increment by 1", nil, &map[string]string{
+		return utils.LavaFormatError("consumer requested incorrect relaynum, expected it to increment by 1", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
 			"received": strconv.FormatUint(request.RelayNum, 10),
 		})
@@ -438,15 +448,6 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 		})
 	}
 
-	sess.Lock.Lock()
-	sess.RelayNum = sess.RelayNum + 1
-	sess.Lock.Unlock()
-
-	utils.LavaFormatInfo("updateSessionCu", &map[string]string{
-		"serviceApi.Name":   serviceApi.Name,
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-	})
-	//
 	// TODO: do we worry about overflow here?
 	if cuSum >= request.CuSum {
 		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
@@ -454,17 +455,32 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 			"request.CuSum": strconv.FormatUint(request.CuSum, 10),
 		})
 	}
-	if cuSum+serviceApi.ComputeUnits != request.CuSum {
-		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
+	if cuSum+serviceApi.ComputeUnits < request.CuSum { // if consumer doesnt pay enough return an error.
+		return utils.LavaFormatError("bad CU sum", fmt.Errorf("cuSum+serviceApi.ComputeUnits < request.CuSum"), &map[string]string{
+			"cuSum":                   strconv.FormatUint(cuSum, 10),
+			"request.CuSum":           strconv.FormatUint(request.CuSum, 10),
+			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.ComputeUnits, 10),
+		})
+	} else if cuSum+serviceApi.ComputeUnits > request.CuSum { // if consumer wishes to pay more than cuSum, allow it but print a warning.
+		utils.LavaFormatWarning("CU sum is higher than expected.", nil, &map[string]string{
 			"cuSum":                   strconv.FormatUint(cuSum, 10),
 			"request.CuSum":           strconv.FormatUint(request.CuSum, 10),
 			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.ComputeUnits, 10),
 		})
 	}
 
+	return nil
+}
+
+// After message has been sent successfully we update the required fields.
+func updateSession(relaySession *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
+	utils.LavaFormatInfo("updateSession", &map[string]string{
+		"serviceApi.Name":   serviceApi.Name,
+		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+	})
+
 	userSessions.Lock.Lock()
 	epochData := userSessions.dataByEpoch[pairingEpoch]
-
 	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
 		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("client cu overflow", nil, &map[string]string{
@@ -473,20 +489,24 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
 		})
 	}
-
 	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
 	userSessions.Lock.Unlock()
 
-	sess.Lock.Lock()
-	sess.CuSum = request.CuSum
-	sess.Lock.Unlock()
+	// Update CuSum and RelayNum after sent message successfully.
+	relaySession.Lock.Lock()
+	relaySession.CuSum = request.CuSum
+	relaySession.RelayNum = relaySession.RelayNum + 1
+	relaySession.Lock.Unlock()
 
 	return nil
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+		"request.SessionId":    strconv.FormatUint(request.SessionId, 10),
+		"request.blockHeight":  strconv.FormatInt(request.BlockHeight, 10),
+		"request.RequestBlock": strconv.FormatInt(request.RequestBlock, 10),
+		"request.RelayNum":     strconv.FormatUint(request.RelayNum, 10),
 	})
 
 	// client blockheight can only be at at prev epoch but not ealier
@@ -524,6 +544,9 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data), "userAddr": userAddr.String()})
 		}
+		// TODO Veirfy that i am the provider that was requested.
+		// if request.Provider != me ?
+
 		return authorisedUserResponse, nodeMsg, nil
 	}
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
@@ -532,6 +555,11 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		utils.LavaFormatError("failed authorizing user request", nil, nil)
 		return nil, err
 	}
+
+	// we need to decalre these variables for the updateSession
+	var relaySession *RelaySession
+	var userSessions *UserSessions
+	var pairingEpoch uint64
 
 	if request.DataReliability != nil {
 
@@ -592,13 +620,13 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	} else {
 
-		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
+		relaySession, err = getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
 			return nil, err
 		}
 
 		relaySession.Lock.Lock()
-		pairingEpoch := relaySession.GetPairingEpoch()
+		pairingEpoch = relaySession.GetPairingEpoch()
 
 		if request.BlockHeight != int64(pairingEpoch) {
 			relaySession.Lock.Unlock()
@@ -607,7 +635,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 					"relay blockheight": strconv.FormatInt(request.BlockHeight, 10)})
 		}
 
-		userSessions := relaySession.userSessionsParent
+		userSessions = relaySession.userSessionsParent
 		relaySession.Lock.Unlock()
 
 		// Validate
@@ -617,8 +645,8 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 					"relay request": fmt.Sprintf("%v", request)})
 		}
 
-		// Update session
-		err = updateSessionCu(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
+		// Verify Session Before Sending the message
+		err = verifySession(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
 		if err != nil {
 			return nil, err
 		}
@@ -632,6 +660,13 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	if err != nil {
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err,
 			nil)
+	}
+	// Update session if not DataReliability.
+	if request.DataReliability == nil { // should this be here? or at the bottom of the function before returning?
+		err = updateSession(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	latestBlock := int64(0)
