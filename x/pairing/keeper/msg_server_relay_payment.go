@@ -244,7 +244,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// Mint to module
-		if !reward.IsZero() {
+		if !rewardCoins.AmountOf(epochstoragetypes.TokenDenom).IsZero() {
 			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
 			if err != nil {
 				details["error"] = err.Error()
