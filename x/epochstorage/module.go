@@ -189,9 +189,9 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 		am.keeper.StoreEpochStakeStorage(ctx, block, types.ClientKey)
 		// Notify world we have a new session
-		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight())}
+		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
 		logger := am.keeper.Logger(ctx)
-		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "New Block Epoch Started")
+		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
 	}
 }
 
