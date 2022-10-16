@@ -580,8 +580,8 @@
           "name": "subscribe",
           "category": {
             "deterministic": true,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -676,7 +676,7 @@
           "name": "unsubscribe",
           "category": {
             "deterministic": true,
-            "local": false,
+            "local": true,
             "subscription": false,
             "stateful": 0
           },
@@ -700,7 +700,7 @@
           "name": "unsubscribe_all",
           "category": {
             "deterministic": true,
-            "local": false,
+            "local": true,
             "subscription": false,
             "stateful": 0
           },
