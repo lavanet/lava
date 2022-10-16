@@ -579,7 +579,7 @@
         {
           "name": "subscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": true,
             "subscription": true,
             "stateful": 0
@@ -675,7 +675,7 @@
         {
           "name": "unsubscribe",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": true,
             "subscription": false,
             "stateful": 0
@@ -699,7 +699,7 @@
         {
           "name": "unsubscribe_all",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": true,
             "subscription": false,
             "stateful": 0
