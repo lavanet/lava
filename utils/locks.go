@@ -3,12 +3,15 @@ package utils
 import (
 	"fmt"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 )
 
 const TIMEOUT = 5
-const TimeoutMutex = false
+
+var TimeoutMutex = "false"
+var TimeoutMutexBoolean, _ = strconv.ParseBool(TimeoutMutex)
 
 type Lockable interface {
 	Lock()
@@ -87,7 +90,7 @@ func (dm *LavaMutex) waitForTimeout() {
 }
 
 func (dm *LavaMutex) Lock() {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		tempLineAndFile := dm.getLineAndFile()
 		dm.lockCount = dm.lockCount + 1
 		fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
@@ -102,7 +105,7 @@ func (dm *LavaMutex) Lock() {
 }
 
 func (dm *LavaMutex) TryLock() (isLocked bool) {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		tempLineAndFile := dm.getLineAndFile()
 		isLocked = dm.mu.TryLock()
 		if isLocked {
@@ -119,7 +122,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 }
 
 func (dm *LavaMutex) Unlock() {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		// fmt.Println("Unlock: ", dm.getLineAndFile())
 		dm.lockCount = dm.lockCount - 1
 		dm.quit <- true
