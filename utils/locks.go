@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const TIMEOUT = 5
+const TIMEOUT = 10
 
 var TimeoutMutex = "false"
 var TimeoutMutexBoolean, _ = strconv.ParseBool(TimeoutMutex)
