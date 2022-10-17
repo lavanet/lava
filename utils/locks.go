@@ -30,44 +30,6 @@ type LavaMutex struct {
 func (dm *LavaMutex) getLineAndFile() string {
 	_, file, line, _ := runtime.Caller(2)
 	return fmt.Sprintf("%s:%d", file, line)
-	// var buf [512]byte
-
-	// runtime.Stack(buf[:], true)
-	// temp := strings.Split(string(buf[:]), "\n")
-	// filepath := ""
-	// if len(temp) < 6 {
-	// 	filepath = temp[len(temp)]
-	// } else {
-	// 	filepath = temp[6]
-	// }
-	// filepath = strings.Replace(filepath, "\t", "", -1)
-	// split := strings.Split(filepath, ":")
-	// path, lineNumStr := split[0], split[1]
-	// lineNumStr = strings.Split(lineNumStr, " ")[0]
-	// lineNum, err := strconv.Atoi(lineNumStr)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return ""
-	// }
-	// file, err := os.Open(path)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer file.Close()
-
-	// scanner := bufio.NewScanner(file)
-	// i := 1
-	// for scanner.Scan() {
-	// 	if i == lineNum {
-	// 		return fmt.Sprintf("%s:%s: %s", path, lineNumStr, strings.TrimSpace(scanner.Text()))
-	// 	}
-
-	// 	i = i + 1
-	// }
-	// if err := scanner.Err(); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// return ""
 }
 
 func (dm *LavaMutex) waitForTimeout() {
