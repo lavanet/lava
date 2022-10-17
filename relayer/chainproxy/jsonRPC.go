@@ -333,7 +333,6 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }
 
-// the error check here would only wrap errors not from the rpc
 func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
