@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
-	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -97,7 +96,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -124,7 +123,7 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 		return spectypes.NOT_APPLICABLE, err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -228,7 +227,7 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error) {
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
@@ -243,7 +242,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
@@ -253,7 +252,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	if res.Body != nil {
@@ -264,7 +263,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	reply := &pairingtypes.RelayReply{
@@ -272,9 +271,5 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	nm.Result = body
 
-	return reply, nil
-}
-
-func (nm *RestMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
-	return "", nil, nil, utils.LavaFormatError("Subscribe not available on rest", nil, nil)
+	return reply, "", nil, nil
 }

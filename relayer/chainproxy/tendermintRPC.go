@@ -55,7 +55,7 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 		return spectypes.NOT_APPLICABLE, err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -88,7 +88,7 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 		return "", err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -320,63 +320,29 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	}
 }
 
-func (nm *TendemintRpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
-		return nil, err
-	}
-	defer nm.cp.conn.ReturnRpc(rpc)
-
-	// Call our node
-	var result JsonrpcMessage
-	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
-	defer cancel()
-	err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
-
-	var replyMsg JsonrpcMessage
-
-	// the error check here would only wrap errors not from the rpc
-	if err != nil {
-		replyMsg := JsonrpcMessage{
-			Version: nm.msg.Version,
-			ID:      nm.msg.ID,
-		}
-
-		replyMsg.Error = &jsonError{
-			Code:    1,
-			Message: fmt.Sprintf("%s", err),
-		}
-	} else {
-		replyMsg = result
-		nm.msg = &result
-	}
-
-	data, err := json.Marshal(replyMsg)
-	if err != nil {
-		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
-	}
-	reply := &pairingtypes.RelayReply{
-		Data: data,
-	}
-	return reply, nil
-}
-
-func (nm *TendemintRpcMessage) SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error) {
-	// Get node
-	rpc, err := nm.cp.conn.GetRpc(true)
-	if err != nil {
-		return "", nil, nil, err
+		return nil, "", nil, err
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
 	params := nm.msg.Params
 
+	// Call our node
 	var result JsonrpcMessage
-	sub, err := rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+	var sub *rpcclient.ClientSubscription
+	if ch != nil {
+		sub, err = rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+	} else {
+		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+		defer cancel()
+		err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
+	}
 
 	var replyMsg JsonrpcMessage
+	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,
@@ -393,23 +359,28 @@ func (nm *TendemintRpcMessage) SendSubscribe(ctx context.Context, ch chan interf
 
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
-		return "", nil, nil, err
+		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, "", nil, err
 	}
 
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 
-	paramsMap, ok := params.(map[string]interface{})
-	if !ok {
-		return "", nil, nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)
-	}
-	subscriptionID, ok := paramsMap["query"].(string)
-	if !ok {
-		return "", nil, nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil, nil)
+	var subscriptionID string
+	if ch != nil {
+		paramsMap, ok := params.(map[string]interface{})
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)
+		}
+		subscriptionID, ok = paramsMap["query"].(string)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil, nil)
+		}
 	}
 	if replyMsg.Error != nil {
-		return "", nil, reply, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
+		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
 	}
-	return subscriptionID, sub, reply, err
+
+	return reply, subscriptionID, sub, err
 }

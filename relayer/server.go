@@ -677,7 +677,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		reqMsg = nil
 	}
 
-	reply, err := nodeMsg.Send(ctx)
+	reply, _, _, err := nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 	}
@@ -926,7 +926,7 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			var clientSub *rpcclient.ClientSubscription
 			var subscriptionID string
 			repliesChan := make(chan interface{})
-			subscriptionID, clientSub, reply, err = nodeMsg.SendSubscribe(context.Background(), repliesChan)
+			reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), repliesChan)
 			if err != nil {
 				return utils.LavaFormatError("Subscription failed", err, nil)
 			}
@@ -1180,7 +1180,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 				&map[string]string{"voteID": voteID, "chainID": voteParams.ChainID})
 			return
 		}
-		reply, err := nodeMsg.Send(ctx)
+		reply, _, _, err := nodeMsg.Send(ctx, nil)
 		if err != nil {
 			utils.LavaFormatError("vote relay send has failed", err,
 				&map[string]string{"ApiURL": voteParams.ApiURL, "RequestData": string(voteParams.RequestData)})

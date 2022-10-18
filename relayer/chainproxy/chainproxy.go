@@ -20,8 +20,7 @@ const (
 
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
-	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
-	SendSubscribe(ctx context.Context, ch chan interface{}) (string, *rpcclient.ClientSubscription, *pairingtypes.RelayReply, error)
+	Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error)
 	RequestedBlock() int64
 	GetMsg() interface{}
 }
@@ -94,7 +93,6 @@ func SendRelay(
 	connectionType string,
 ) (*pairingtypes.RelayReply, error) {
 
-	//
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
@@ -166,6 +164,7 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
+
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
