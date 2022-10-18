@@ -2,9 +2,10 @@ package relayer
 
 import (
 	"bytes"
-	context "context"
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -30,7 +31,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
 const RETRY_INCORRECT_SEQUENCE = 3
@@ -131,7 +132,7 @@ func askForRewards(staleEpochHeight int64) {
 		for _, session := range staleEpochSessions {
 			session.Lock.Lock() // TODO:: is it ok to lock session without g_sessions_mutex?
 			if session.Proof == nil {
-				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
+				// this can happen if the data reliability created a session, we dont save a proof on data reliability message
 				session.Lock.Unlock()
 				if session.UniqueIdentifier != 0 {
 					utils.LavaFormatError("Missing proof, cannot get rewards for this session", nil, &map[string]string{
@@ -409,21 +410,21 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	cuSum := sess.CuSum
 	sess.Lock.Unlock()
 
-	if relayNum+1 != request.RelayNum {
+	if relayNum+1 != request.GetRelayNum() {
 		utils.LavaFormatError("consumer requested incorrect relaynum, expected it to increment by 1", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
-			"received": strconv.FormatUint(request.RelayNum, 10),
+			"received": strconv.FormatUint(request.GetRelayNum(), 10),
 		})
 	}
 
 	// Check that relaynum gets incremented by user
-	if relayNum+1 > request.RelayNum {
+	if relayNum+1 > request.GetRelayNum() {
 		userSessions.Lock.Lock()
 		userSessions.IsBlockListed = true
 		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
-			"received": strconv.FormatUint(request.RelayNum, 10),
+			"received": strconv.FormatUint(request.GetRelayNum(), 10),
 		})
 	}
 
@@ -432,42 +433,42 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.Lock.Unlock()
 
 	utils.LavaFormatInfo("updateSessionCu", &map[string]string{
-		"serviceApi.Name":   serviceApi.Name,
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+		"serviceApi.Name":   serviceApi.GetName(),
+		"request.SessionId": strconv.FormatUint(request.GetSessionId(), 10),
 	})
 	//
 	// TODO: do we worry about overflow here?
-	if cuSum >= request.CuSum {
+	if cuSum >= request.GetCuSum() {
 		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
 			"cuSum":         strconv.FormatUint(cuSum, 10),
 			"request.CuSum": strconv.FormatUint(request.CuSum, 10),
 		})
 	}
-	if cuSum+serviceApi.ComputeUnits != request.CuSum {
+	if cuSum+serviceApi.GetComputeUnits() != request.GetCuSum() {
 		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
 			"cuSum":                   strconv.FormatUint(cuSum, 10),
-			"request.CuSum":           strconv.FormatUint(request.CuSum, 10),
-			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.ComputeUnits, 10),
+			"request.CuSum":           strconv.FormatUint(request.GetCuSum(), 10),
+			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.GetComputeUnits(), 10),
 		})
 	}
 
 	userSessions.Lock.Lock()
 	epochData := userSessions.dataByEpoch[pairingEpoch]
 
-	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
+	if epochData.UsedComputeUnits+serviceApi.GetComputeUnits() > epochData.MaxComputeUnits {
 		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("client cu overflow", nil, &map[string]string{
 			"epochData.MaxComputeUnits":  strconv.FormatUint(epochData.MaxComputeUnits, 10),
 			"epochData.UsedComputeUnits": strconv.FormatUint(epochData.UsedComputeUnits, 10),
-			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
+			"serviceApi.ComputeUnits":    strconv.FormatUint(request.GetCuSum(), 10),
 		})
 	}
 
-	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
+	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.GetComputeUnits()
 	userSessions.Lock.Unlock()
 
 	sess.Lock.Lock()
-	sess.CuSum = request.CuSum
+	sess.CuSum = request.GetCuSum()
 	sess.Lock.Unlock()
 
 	return nil
@@ -484,7 +485,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		prevEpochStart = 0
 	}
 
-	// client blockheight can only be at at prev epoch but not ealier
+	// client blockheight can only be at prev epoch but not ealier
 	if request.BlockHeight < int64(prevEpochStart) {
 		return nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
@@ -503,18 +504,19 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 
-	if !isSupportedSpec(request) {
+	if !isSupportedSpec(request) && request.GetConnectionType() != "grpc_server_descriptors" { // TODO: Make a const.
 		return nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 
 	var nodeMsg chainproxy.NodeMessage
 	authorizeAndParseMessage := func(ctx context.Context, userAddr sdk.AccAddress, request *pairingtypes.RelayRequest, blockHeighToAutherise uint64) (*pairingtypes.QueryVerifyPairingResponse, chainproxy.NodeMessage, error) {
-		//TODO: cache this client, no need to run the query every time
+		// TODO: cache this client, no need to run the query every time
 		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeighToAutherise)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeighToAutherise, 10)})
 		}
 		// Parse message, check valid api, etc
+		log.Println("[g_chainProxy.ParseMsg()]", request.ApiUrl, string(request.Data), request.ConnectionType)
 		nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("failed parsing request message", err, &map[string]string{"apiInterface": g_sentry.ApiInterface, "request URL": request.ApiUrl, "request data": string(request.Data), "userAddr": userAddr.String()})
@@ -529,7 +531,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	if request.DataReliability != nil {
-
 		userSessions := getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
@@ -540,7 +541,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 		userSessions.Lock.Lock()
 		if epochData, ok := userSessions.dataByEpoch[uint64(request.BlockHeight)]; ok {
-			//data reliability message
+			// data reliability message
 			if epochData.DataReliability != nil {
 				userSessions.Lock.Unlock()
 				return nil, utils.LavaFormatError("dataReliability can only be used once per client per epoch", nil,
@@ -563,7 +564,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 			return nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
-		//verify data reliability fields correspond to the right vrf
+		// verify data reliability fields correspond to the right vrf
 		valid = utils.VerifyVrfProof(request, *vrf_pk, uint64(request.BlockHeight))
 		if !valid {
 			return nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
@@ -659,7 +660,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		reply.Sig = sig
 
 		if g_sentry.GetSpecComparesHashes() {
-			//update sig blocks signature
+			// update sig blocks signature
 			sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
 			if err != nil {
 				return utils.LavaFormatError("failed signing finalization data", err,
@@ -686,7 +687,7 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 			&map[string]string{"queryHash": string(queryHash), "request QueryHash": string(request.DataReliability.QueryHash)})
 	}
 
-	//validate consumer signing on VRF data
+	// validate consumer signing on VRF data
 	valid, err = sigs.ValidateSignerOnVRFData(consumer, *request.DataReliability)
 	if err != nil {
 		return false, utils.LavaFormatError("failed to Validate Signer On VRF Data", err,
@@ -695,18 +696,18 @@ func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Contex
 	if !valid {
 		return false, nil
 	}
-	//validate provider signing on query data
+	// validate provider signing on query data
 	pubKey, err := sigs.RecoverProviderPubKeyFromVrfDataAndQuery(request)
 	if err != nil {
 		return false, utils.LavaFormatError("failed to Recover Provider PubKey From Vrf Data And Query", err,
 			&map[string]string{"consumer": consumer.String(), "request": fmt.Sprintf("%v", request)})
 	}
-	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) // consumer signer
 	if err != nil {
 		return false, utils.LavaFormatError("failed converting signer to address", err,
 			&map[string]string{"consumer": consumer.String(), "PubKey": pubKey.Address().String()})
 	}
-	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) //return if this pairing is authorised
+	return g_sentry.IsAuthorizedPairing(ctx, consumer.String(), providerAccAddress.String(), uint64(request.BlockHeight)) // return if this pairing is authorised
 }
 
 func SendVoteCommitment(voteID string, vote *voteData) {
@@ -730,12 +731,12 @@ func SendVoteReveal(voteID string, vote *voteData) {
 }
 
 func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, voteParams *sentry.VoteParams) {
-	//got a vote event, handle the cases here
+	// got a vote event, handle the cases here
 
 	if !voteParams.GetCloseVote() {
-		//meaning we dont close a vote, so we should check stuff
+		// meaning we dont close a vote, so we should check stuff
 		if voteParams != nil {
-			//chainID is sent only on new votes
+			// chainID is sent only on new votes
 			chainID := voteParams.ChainID
 			if chainID != g_serverChainID {
 				// not our chain ID
@@ -754,16 +755,16 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 	defer g_votes_mutex.Unlock()
 	vote, ok := g_votes[voteID]
 	if ok {
-		//we have an existing vote with this ID
+		// we have an existing vote with this ID
 		if voteParams != nil {
 			if voteParams.GetCloseVote() {
-				//we are closing the vote, so its okay we ahve this voteID
+				// we are closing the vote, so its okay we ahve this voteID
 				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry",
 					&map[string]string{"voteID": voteID})
 				delete(g_votes, voteID)
 				return
 			}
-			//expected to start a new vote but found an existing one
+			// expected to start a new vote but found an existing one
 			utils.LavaFormatError("new vote Request for vote had existing entry", nil,
 				&map[string]string{"voteParams": fmt.Sprintf("%+v", voteParams), "voteID": voteID, "voteData": fmt.Sprintf("%+v", vote)})
 			return
@@ -784,7 +785,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 				&map[string]string{"voteID": voteID})
 			return
 		}
-		//try to find this provider in the jury
+		// try to find this provider in the jury
 		found := slices.Contains(voteParams.Voters, g_sentry.Acc)
 		if !found {
 			utils.LavaFormatInfo("new vote initiated but not for this provider to vote", nil)
@@ -792,7 +793,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 			return
 		}
 		// we need to send a commit, first we need to use the chainProxy and get the response
-		//TODO: implement code that verified the requested block is finalized and if its not waits and tries again
+		// TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		nodeMsg, err := g_chainProxy.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType)
 		if err != nil {
 			utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
@@ -857,7 +858,7 @@ func Server(
 	g_votes = map[string]*voteData{}
 	g_rewardsSessions = map[uint64][]*RelaySession{}
 	g_serverChainID = ChainID
-	//allow more gas
+	// allow more gas
 	g_txFactory = txFactory.WithGas(1000000)
 
 	//
@@ -918,6 +919,7 @@ func Server(
 
 	Server := &relayServer{}
 	pairingtypes.RegisterRelayerServer(s, Server)
+	// gogoreflection.Register(s)
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
 	if err := s.Serve(lis); err != nil {

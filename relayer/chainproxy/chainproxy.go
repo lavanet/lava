@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -93,19 +94,18 @@ func SendRelay(
 	req string,
 	connectionType string,
 ) (*pairingtypes.RelayReply, error) {
-
 	//
 	// Unmarshal request
+	log.Println("[cp.ParseMsg()]", url, req, connectionType)
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, err
 	}
-	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
+	blockHeight := int64(-1) // to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
 	callback_send_relay := func(clientSession *sentry.ClientSession) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
-		//client session is locked here
-		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
-
+		// client session is locked here
+		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().GetComputeUnits())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -118,7 +118,7 @@ func SendRelay(
 			ApiUrl:          url,
 			Data:            []byte(req),
 			SessionId:       uint64(clientSession.SessionId),
-			ChainID:         cp.GetSentry().ChainID,
+			ChainID:         cp.GetSentry().GetChainID(),
 			CuSum:           clientSession.CuSum,
 			BlockHeight:     blockHeight,
 			RelayNum:        clientSession.RelayNum,
@@ -140,7 +140,6 @@ func SendRelay(
 		defer cancel()
 
 		reply, err := c.Relay(connectCtx, relayRequest)
-
 		if err != nil {
 			if err.Error() == context.DeadlineExceeded.Error() {
 				clientSession.QoSInfo.ConsecutiveTimeOut++
@@ -151,7 +150,7 @@ func SendRelay(
 		clientSession.QoSInfo.ConsecutiveTimeOut = 0
 		clientSession.QoSInfo.AnsweredRelays++
 
-		//update relay request requestedBlock to the provided one in case it was arbitrary
+		// update relay request requestedBlock to the provided one in case it was arbitrary
 		sentry.UpdateRequestedBlock(relayRequest, reply)
 		requestedBlock = relayRequest.RequestBlock
 
@@ -161,12 +160,12 @@ func SendRelay(
 		}
 
 		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+		clientSession.CalculateQoS(nodeMsg.GetServiceApi().GetComputeUnits(), currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 
 		return reply, relayRequest, nil
 	}
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
-		//client session is locked here
+		// client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
 			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
@@ -174,9 +173,10 @@ func SendRelay(
 
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:        clientSession.Client.Acc,
+			ConnectionType:  connectionType,
 			ApiUrl:          url,
 			Data:            []byte(req),
-			SessionId:       uint64(0), //sessionID for reliability is 0
+			SessionId:       uint64(0), // sessionID for reliability is 0
 			ChainID:         sentry.ChainID,
 			CuSum:           clientSession.CuSum,
 			BlockHeight:     blockHeight,
@@ -184,7 +184,6 @@ func SendRelay(
 			RequestBlock:    requestedBlock,
 			QoSReport:       nil,
 			DataReliability: dataReliability,
-			ConnectionType:  connectionType,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
@@ -213,7 +212,7 @@ func SendRelay(
 	}
 	//
 	//
-	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().GetCategory())
 
 	return reply, err
 }

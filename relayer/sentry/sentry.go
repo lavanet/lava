@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"regexp"
@@ -21,14 +20,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -200,34 +197,32 @@ type Sentry struct {
 	providerDataContainersMu         sync.Mutex
 }
 
-// ProxyGRPC - returns a proxy grpc server from pairing.
-func (s *Sentry) ProxyGRPC(ctx context.Context) (server *grpc.Server, err error) {
-	log.Println("ProxyGRPC()")
-	utils.LavaFormatInfo("ProxyGRPC()", nil)
-	var specNameToApiInterfaceSlice map[string][]spectypes.ApiInterface
-	if specNameToApiInterfaceSlice, err = s.GetAllSpecNames(ctx); err != nil {
-		return nil, errors.Wrap(err, "s.GetAllSpecNames()")
-	}
-
-	var endpoint *Endpoint
-	if _, _, endpoint, err = s._findPairing(ctx); err != nil {
-		return nil, errors.Wrap(err, "s._findPairing()")
-	}
-
-	specNameToStruct := make(map[string]struct{}, len(specNameToApiInterfaceSlice))
-	for specName, apiInterfaceSlice := range specNameToApiInterfaceSlice {
-		for _, apiInterface := range apiInterfaceSlice {
-			if apiInterface.GetInterface() == "grpc" {
-				specNameToStruct[specName] = struct{}{}
-			}
-		}
-	}
-
-	return grpcutil.NewProxyServer(ctx, endpoint.Addr, specNameToStruct)
-}
+// // ProxyGRPC - returns a proxy grpc server from pairing.
+// func (s *Sentry) ProxyGRPC(ctx context.Context) (server *grpc.Server, err error) {
+// 	log.Println("ProxyGRPC()")
+// 	var specNameToApiInterfaceSlice map[string][]spectypes.ApiInterface
+// 	if specNameToApiInterfaceSlice, err = s.GetAllSpecNames(ctx); err != nil {
+// 		return nil, errors.Wrap(err, "s.GetAllSpecNames()")
+// 	}
+//
+// 	var endpoint *Endpoint
+// 	if _, _, endpoint, err = s._findPairing(ctx); err != nil {
+// 		return nil, errors.Wrap(err, "s._findPairing()")
+// 	}
+//
+// 	specNameToStruct := make(map[string]struct{}, len(specNameToApiInterfaceSlice))
+// 	for specName, apiInterfaceSlice := range specNameToApiInterfaceSlice {
+// 		for _, apiInterface := range apiInterfaceSlice {
+// 			if apiInterface.GetInterface() == "grpc" {
+// 				specNameToStruct[specName] = struct{}{}
+// 			}
+// 		}
+// 	}
+//
+// 	return grpcutil.NewProxyServer(ctx, endpoint.Addr, specNameToStruct)
+// }
 
 func (cs *ClientSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
-
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
@@ -1032,7 +1027,6 @@ func (s *Sentry) _findPairingExceptAddress(ctx context.Context, accountAddress s
 }
 
 func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrapper, pairingIdx int, endpointPtr *Endpoint, errRet error) {
-
 	s.pairingMu.RLock()
 
 	defer s.pairingMu.RUnlock()
@@ -1342,7 +1336,7 @@ func (s *Sentry) SendRelay(
 			// if the errors are the same just return one of them and the reply
 			return reply, err2
 		}
-		// if we didnt get an error from the second relay we can continue noramlly
+		// if we didn't get an error from the second relay we can continue noramlly
 	}
 
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
@@ -1375,7 +1369,7 @@ func (s *Sentry) SendRelay(
 			return nil, err
 		}
 
-		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+		if specCategory.GetDeterministic() && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 			// handle data reliability
 
 			isSecure, err := s.cmdFlags.GetBool("secure")

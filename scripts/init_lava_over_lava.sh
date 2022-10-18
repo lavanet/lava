@@ -5,7 +5,7 @@ source "$__dir"/useful_commands.sh
 # Making sure old screens are not running
 killall screen
 screen -wipe
-
+LOGS_DIR=${__dir}/../testutil/debugging/logs
 GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_lava.json,./cookbook/spec_add_ethereum.json,./cookbook/spec_add_osmosis.json,./cookbook/spec_add_fantom.json,./cookbook/spec_add_goerli.json  -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -33,7 +33,7 @@ screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad s
 
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
 screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
-screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3342 LAV1 grpc --from user4"
+screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3342 LAV1 grpc --from user4 2>&1 | tee $LOGS_DIR/LAV1_grpc_portal.log"
 
 # Lava Over Lava ETH
 

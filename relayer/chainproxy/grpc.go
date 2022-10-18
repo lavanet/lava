@@ -1,31 +1,36 @@
 package chainproxy
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	"github.com/fullstorydev/grpcurl"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
+	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	reflectionpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
 
@@ -94,7 +99,7 @@ func NewGrpcChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
 
 func (cp *GrpcChainProxy) NewMessage(path string, data []byte) (*GrpcMessage, error) {
 	//
-	// Check api is supported an save it in nodeMsg
+	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to get supported api in NewMessage", err, &map[string]string{"path": path})
@@ -180,6 +185,7 @@ func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
+		log.Println(errors.Wrap(err, "parser.ParseBlockFromReply()"))
 		return spectypes.NOT_APPLICABLE, err
 	}
 
@@ -205,32 +211,134 @@ func (cp *GrpcChainProxy) getSupportedApi(path string) (*spectypes.ServiceApi, e
 }
 
 func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
-	//
-	// Check api is supported an save it in nodeMsg
-	serviceApi, err := cp.getSupportedApi(path)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
-	}
+	switch connectionType {
+	case "grpc_server_descriptors": // TODO: make a const.
+		serviceApi := &spectypes.ServiceApi{
+			ComputeUnits: 10,
+		}
+		nodeMsg := &GrpcMessage{
+			cp:             cp,
+			serviceApi:     serviceApi,
+			connectionType: connectionType,
+		}
 
-	nodeMsg := &GrpcMessage{
-		cp:             cp,
-		serviceApi:     serviceApi,
-		path:           path,
-		msg:            data,
-		connectionType: connectionType,
-	}
+		return nodeMsg, nil
+	default:
+		// Check API is supported and save it in nodeMsg.
+		serviceApi, err := cp.getSupportedApi(path)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
+		}
 
-	return nodeMsg, nil
+		nodeMsg := &GrpcMessage{
+			cp:             cp,
+			serviceApi:     serviceApi,
+			path:           path,
+			msg:            data,
+			connectionType: connectionType,
+		}
+		log.Println("[nodeMsg.msg]", nodeMsg.msg)
+
+		return nodeMsg, nil
+	}
 }
 
 func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+	// service := grpcdynamic2.NewService("t.Query")
+	// service.RegisterUnaryMethod("Params", new(reqT), new(resT), func(ctx context.Context, in interface{}) (interface{}, error) {
+	// 	log.Println("[RPC]")
+	// 	req := in.(*reqT)
+	// 	log.Println("[REQ]:", req)
+	// 	return &resT{Pong: req.Ping}, nil
+	// })
+	// srv := grpcdynamic2.NewServer([]*grpcdynamic2.Service{service})
+	// reflection.Register(srv)
+
 	log.Println("gRPC PortalStart")
-	// gs := grpc.NewServer()
-	gs, err := cp.GetSentry().ProxyGRPC(ctx)
+	reply, err := SendRelay(ctx, cp, privKey, "", "", "grpc_server_descriptors") // TODO: Make a const.
 	if err != nil {
-		log.Println("cp.GetSentry().ProxyGRPC()", err.Error())
-		utils.LavaFormatFatal("grpcutil.NewProxyServer()", err, nil)
+		log.Println(errors.Wrap(err, "SendRelay()"))
+		utils.LavaFormatFatal("SendRelay()", err, nil)
+		return
 	}
+
+	var serviceDescSlice []*grpc.ServiceDesc
+	if err = json.Unmarshal(reply.GetData(), &serviceDescSlice); err != nil {
+		log.Println(errors.Wrap(err, "json.Unmarshal()"))
+		utils.LavaFormatFatal("json.Unmarshal()", err, nil)
+		return
+	}
+
+	gs := grpcutil.NewServerFromServiceDescSlice(
+		serviceDescSlice,
+		func(ctx context.Context, req interface{}) (interface{}, error) {
+			m, ok := req.(*tmservice.GetLatestBlockRequest)
+			if !ok {
+				// TODO: return error
+				return nil, utils.LavaFormatError("Not a proto message", err, nil)
+			}
+
+			// m := &tmservice.GetBlockByHeightRequest{Height: 5}
+
+			// var b []byte
+			// if b, err = m.Marshal(); err != nil {
+			// 	log.Println(errors.Wrap(err, "m.Marshal()"))
+			// 	return nil, utils.LavaFormatError("grpcutil.Marshal()", err, nil)
+			// }
+
+			marshaler := jsonpb.Marshaler{
+				OrigName:     true,
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				Indent:       "",
+			}
+			var s string
+			if s, err = marshaler.MarshalToString(m); err != nil {
+				log.Println(errors.Wrap(err, "marshaler.MarshalToString()"))
+				return nil, utils.LavaFormatError("marshaler.MarshalToString()", err, nil)
+			}
+
+			log.Println("[HANDLER]: SendRelay")
+
+			var relayReply *pairingtypes.RelayReply
+			if relayReply, err = SendRelay(ctx, cp, privKey, "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock", s, "grpc"); err != nil {
+				return nil, errors.Wrap(err, "SendRelay()")
+			}
+
+			// var getBlockByHeightResponse tmservice.GetBlockByHeightResponse
+			// if err = getBlockByHeightResponse.Unmarshal(relayReply.Data); err != nil {
+			// 	log.Println("[ERR]: getBlockByHeightResponse.Unmarshal()", err.Error())
+			// 	return nil, errors.Wrap(err, "getBlockByHeightResponse.Unmarshal()")
+			// }
+			// if err = jsonpb.UnmarshalString(string(relayReply.Data), &getBlockByHeightResponse); err != nil {
+			// 	log.Println("[ERR]: jsonpb.UnmarshalString()", err.Error())
+			// 	return nil, errors.Wrap(err, "jsonpb.UnmarshalString()")
+			// }
+
+			// log.Println("[relayReply.String()]", getBlockByHeightResponse.String())
+			return relayReply, nil
+
+			// m, ok := req.(proto.Message)
+			// if !ok {
+			// 	// TODO: return error
+			// 	return nil, utils.LavaFormatError("Not a proto message", err, nil)
+			// }
+			//
+			// var b []byte
+			// if b, err = grpcutil.Marshal(m); err != nil {
+			// 	return nil, utils.LavaFormatError("grpcutil.Marshal()", err, nil)
+			// }
+			//
+			// log.Println("[HANDLER]: SendRelay")
+			// return SendRelay(ctx, cp, privKey, "", string(b), "")
+		},
+	)
+
+	// gs := grpc.NewServer()
+	// gs, err := cp.GetSentry().ProxyGRPC(ctx)
+	// if err != nil {
+	// 	utils.LavaFormatFatal("cp.GetSentry().ProxyGRPC()", err, nil)
+	// }
 
 	// proxypb.RegisterProxyServiceServer(gs, NewServer(cp, privKey))
 	log.Println("gogoreflection.Register()")
@@ -244,6 +352,7 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	_ = utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
 
+	log.Println("[ADDR]:", listenAddr)
 	if err = gs.Serve(lis); err != nil {
 		utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
 	}
@@ -329,74 +438,200 @@ func parseSymbol(svcAndMethod string) (string, string) {
 	return svcAndMethod[:pos], svcAndMethod[pos+1:]
 }
 
-func (nm *GrpcMessage) invoke(ctx context.Context, conn *grpc.ClientConn) ([]byte, error) {
-	client := grpcreflect.NewClient(ctx, reflectpb.NewServerReflectionClient(conn))
-	source := descriptorSourceFromServer(client)
-	svc, mth := parseSymbol(nm.path)
-	dsc, err := source.FindSymbol(svc)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed to find symbol", err, &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
-	}
-	sd, ok := dsc.(*desc.ServiceDescriptor)
-	if !ok {
-		return nil, utils.LavaFormatError("failed to expose", fmt.Errorf("server does not expose service %q", svc), &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
-	}
-	mtd := sd.FindMethodByName(mth)
-	if mtd == nil {
-		return nil, utils.LavaFormatError("failed to expose", fmt.Errorf("service %q does not include a method named %q", svc, mth), &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
+func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b []byte, err error) {
+	cl := grpcreflect.NewClient(ctx, reflectionpb.NewServerReflectionClient(conn))
+	descriptorSource := descriptorSourceFromServer(cl)
+	svc, methodName := parseSymbol(nm.path)
+
+	var descriptor desc.Descriptor
+	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
+		return nil, errors.Wrap(err, "descriptorSource.FindSymbol()")
 	}
 
+	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
+	if !ok {
+		return nil, errors.Wrap(err, "must be a '*desc.ServiceDescriptor'")
+	}
+
+	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
-	req := msgFactory.NewMessage(mtd.GetInputType())
 	stub := grpcdynamic.NewStubWithMessageFactory(conn, msgFactory)
 
-	var in io.Reader
-	input := ""
-	switch inputContent := nm.msg.(type) {
+	var reader io.Reader
+	switch v := nm.msg.(type) {
 	case []byte:
-		input = string(inputContent)
+		// log.Println("[switch]: []byte")
+		// log.Println("[DEBUG]: reader", string(v))
+		reader = bytes.NewReader(v)
 	case string:
-		input = inputContent
+		// log.Println("[switch]: string")
+		// log.Println("[DEBUG]: reader", v)
+		reader = strings.NewReader(v)
+	case proto.Message:
+		// log.Println("[switch]: proto.Message")
+		marshaler := jsonpb.Marshaler{
+			OrigName:     true,
+			EnumsAsInts:  false,
+			EmitDefaults: false,
+			Indent:       "",
+		}
+
+		var s string
+		if s, err = marshaler.MarshalToString(v); err != nil {
+			return nil, errors.Wrap(err, "marshaler.MarshalToString()")
+		}
+
+		// log.Println("[DEBUG]: reader", s)
+		reader = strings.NewReader(s)
 	default:
-		utils.LavaFormatInfo(fmt.Sprintf("msg type %T is unknown. continuing with empty message parameters", nm.msg), &map[string]string{"msg": fmt.Sprintf("%v", nm.msg)})
+		log.Println("[switch]: default")
+		reader = strings.NewReader("")
 	}
-	in = strings.NewReader(input)
 
-	options := grpcurl.FormatOptions{
-		EmitJSONDefaultFields: false,
-		IncludeTextSeparator:  false,
-		AllowUnknownFields:    true,
+	var requestParser grpcurl.RequestParser
+	var formatter grpcurl.Formatter
+	if requestParser, formatter, err = grpcurl.RequestParserAndFormatter(
+		grpcurl.FormatJSON,
+		descriptorSource,
+		reader,
+		grpcurl.FormatOptions{
+			EmitJSONDefaultFields: false,
+			IncludeTextSeparator:  false,
+			AllowUnknownFields:    true,
+		},
+	); err != nil {
+		return nil, errors.Wrap(err, "grpcurl.RequestParserAndFormatter()")
 	}
-	rf, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.Format("json"), source, in, options)
+	_ = requestParser
+	_ = formatter
+
+	bR, err := ioutil.ReadAll(reader)
 	if err != nil {
-		fmt.Printf("%s", err)
-	}
-	h := &grpcurl.DefaultEventHandler{
-		Out:            os.Stdout,
-		Formatter:      formatter,
-		VerbosityLevel: 0,
-	}
-	rff := rf.Next
-	err = rff(req)
-	if err != nil {
-		fmt.Printf("%s", err)
+		return nil, errors.Wrap(err, "ioutil.ReadAll()")
 	}
 
-	log.Println("[]")
-	log.Println("[req]:", req.String())
-	msg, err := stub.InvokeRpc(ctx, mtd, req)
-	log.Println("[stub.InvokeRpc]:", err.Error())
+	log.Println("[REQ TYPE]", methodDescriptor.GetInputType())
+	log.Println("[RESP TYPE]", methodDescriptor.GetOutputType())
 
-	if respStr, err := h.Formatter(msg); err != nil {
-		return nil, utils.LavaFormatError("failed to format response from chain", err, &map[string]string{"msg": fmt.Sprintf("%v", msg)})
-
-	} else {
-		return []byte(respStr), nil
+	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
+	// log.Println("[MSG]", msg)
+	if len(bR) != 0 {
+		if err = jsonpb.UnmarshalString(string(bR), msg); err != nil {
+			return nil, errors.Wrap(err, "gjsonpb.UnmarshalString()")
+		}
+		// log.Println("[MSG 2]", msg)
+		// if err = requestParser.Next(msg); err != nil {
+		// 	return nil, errors.Wrap(err, "requestParser.Next()")
+		// }
 	}
+
+	var respMessage proto.Message
+	if respMessage, err = stub.InvokeRpc(ctx, methodDescriptor, msg); err != nil {
+		return nil, errors.Wrap(err, "stub.InvokeRpc()")
+	}
+
+	// log.Println("[respMessage]", respMessage.String())
+
+	var s string
+	if s, err = formatter(respMessage); err != nil {
+		return nil, errors.Wrap(err, "formatter()")
+	}
+	log.Println("[RESP]", s)
+
+	return []byte(s), nil
 }
 
-func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+// func (nm *GrpcMessage) invoke(ctx context.Context, conn *grpc.ClientConn) ([]byte, error) {
+// 	client := grpcreflect.NewClient(ctx, reflectionpb.NewServerReflectionClient(conn))
+// 	source := descriptorSourceFromServer(client)
+// 	svc, mth := parseSymbol(nm.path)
+// 	dsc, err := source.FindSymbol(svc)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("failed to find symbol", err, &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
+// 	}
+// 	sd, ok := dsc.(*desc.ServiceDescriptor)
+// 	if !ok {
+// 		return nil, utils.LavaFormatError("failed to expose", fmt.Errorf("server does not expose service %q", svc), &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
+// 	}
+// 	mtd := sd.FindMethodByName(mth)
+// 	if mtd == nil {
+// 		return nil, utils.LavaFormatError("failed to expose", fmt.Errorf("service %q does not include a method named %q", svc, mth), &map[string]string{"symbol": nm.path, "svc": svc, "method": mth})
+// 	}
+//
+// 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
+// 	req := msgFactory.NewMessage(mtd.GetInputType())
+// 	stub := grpcdynamic.NewStubWithMessageFactory(conn, msgFactory)
+//
+// 	// m, ok := nm.msg.(proto.Message)
+//
+// 	var in io.Reader
+// 	input := ""
+// 	switch inputContent := nm.msg.(type) {
+// 	case []byte:
+// 		input = string(inputContent)
+// 	case string:
+// 		input = inputContent
+// 	// case proto.Message:
+// 	// 	log.Println("[INFO] proto.Message")
+// 	// 	var b []byte
+// 	// 	if b, err = grpcutil.Marshal(inputContent); err != nil {
+// 	// 		log.Println(errors.Wrap(err, "grpcutil.Marshal()"))
+// 	// 		return nil, utils.LavaFormatError("grpcutil.Marshal()", err, nil)
+// 	// 	}
+// 	//
+// 	// 	input = string(b)
+// 	default:
+// 		utils.LavaFormatInfo(fmt.Sprintf("msg type %T is unknown. continuing with empty message parameters", nm.msg), &map[string]string{"msg": fmt.Sprintf("%v", nm.msg)})
+// 	}
+//
+// 	log.Println("[INFO] input:", input)
+// 	log.Println("[INFO] path:", nm.path)
+//
+// 	in = strings.NewReader(input)
+//
+// 	options := grpcurl.FormatOptions{
+// 		EmitJSONDefaultFields: false,
+// 		IncludeTextSeparator:  false,
+// 		AllowUnknownFields:    true,
+// 	}
+// 	rf, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, source, in, options)
+// 	if err != nil {
+// 		log.Println("grpcurl.RequestParserAndFormatter()", err.Error())
+// 		return nil, utils.LavaFormatError("grpcurl.RequestParserAndFormatter()", err, nil)
+// 	}
+// 	h := &grpcurl.DefaultEventHandler{
+// 		Out:            os.Stdout,
+// 		Formatter:      formatter,
+// 		VerbosityLevel: 0,
+// 	}
+//
+// 	rff := rf.Next
+// 	err = rff(req)
+// 	if err != nil {
+// 		log.Println(errors.Wrap(err, "rff()"))
+// 		return nil, utils.LavaFormatError("rff()", err, nil)
+// 	}
+//
+// 	log.Println("[REQ]:", req.String())
+// 	log.Println("[MTD]:", mtd)
+// 	msg, err := stub.InvokeRpc(ctx, mtd, req)
+// 	if err != nil {
+// 		log.Println("[stub.InvokeRpc]:", err.Error())
+// 		return nil, utils.LavaFormatError("stub.InvokeRpc()", err, nil)
+// 	}
+// 	log.Println("[stub.InvokeRpc]: no error")
+//
+// 	respStr, err := h.Formatter(msg)
+// 	if err != nil {
+// 		log.Println("[MSG]:", msg.String())
+// 		log.Println("[gRPC Formatter error]:", err.Error())
+// 		return nil, utils.LavaFormatError("failed to format response from chain", err, &map[string]string{"msg": fmt.Sprintf("%v", msg)})
+// 	}
+//
+// 	return []byte(respStr), nil
+// }
 
+func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
 
@@ -407,18 +642,80 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	defer conn.Close()
 
-	res, err := nm.invoke(ctx, conn)
-	if err != nil {
-		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, utils.LavaFormatError("Sending the gRPC message failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
-	}
-	nm.Result = res
+	var res []byte
+	switch nm.connectionType {
+	case "grpc_server_descriptors": // TODO: Make a const.
+		// var fileDescriptorSlice []*desc.FileDescriptor
+		// if fileDescriptorSlice, err = grpcutil.GetFileDescriptorSlice(ctx, conn); err != nil {
+		// 	nm.Result = []byte(fmt.Sprintf("%s", err))
+		// 	return nil, utils.LavaFormatError("Receiving the gRPC service descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+		// }
+		//
+		// var b []byte
+		// if b, err = json.Marshal(fileDescriptorSlice); err != nil {
+		// 	log.Println("[ERROR!]:", err.Error())
+		// 	nm.Result = []byte(fmt.Sprintf("%s", err))
+		// 	return nil, utils.LavaFormatError("Marshalling the gRPC file descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+		// }
+		//
+		// log.Println("[OK] json.Marshal():", string(b))
 
+		var grpcServiceDescSlice []*grpc.ServiceDesc
+		if grpcServiceDescSlice, err = grpcutil.GetServiceDescSlice(ctx, conn); err != nil {
+			nm.Result = []byte(fmt.Sprintf("%s", err))
+			return nil, utils.LavaFormatError("Receiving the gRPC service descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+		}
+
+		serviceDescSlice := make([]serviceDesc, 0, len(grpcServiceDescSlice))
+		for _, grpcServiceDesc := range grpcServiceDescSlice {
+			serviceDescSlice = append(serviceDescSlice, serviceDesc(*grpcServiceDesc))
+		}
+
+		var b []byte
+		if b, err = json.Marshal(serviceDescSlice); err != nil {
+			log.Println("[ERROR!]:", err.Error())
+			nm.Result = []byte(fmt.Sprintf("%s", err))
+			return nil, utils.LavaFormatError("Marshalling the gRPC service descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+		}
+
+		res = b
+	default:
+		res, err = nm.invokeV2(ctx, conn)
+		if err != nil {
+			nm.Result = []byte(fmt.Sprintf("%s", err))
+			return nil, utils.LavaFormatError("Sending the gRPC message failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
+		}
+	}
+
+	nm.Result = res
 	reply := &pairingtypes.RelayReply{
 		Data: res,
 	}
-	nm.Result = res
+
 	return reply, nil
+}
+
+type serviceDesc grpc.ServiceDesc
+
+func (s *serviceDesc) MarshalJSON() ([]byte, error) {
+	type Method struct {
+		MethodName string
+	}
+
+	type ServiceDesc struct {
+		ServiceName string
+		Methods     []Method
+	}
+
+	methods := make([]Method, 0, len(s.Methods))
+	for _, method := range s.Methods {
+		methods = append(methods, Method{MethodName: method.MethodName})
+	}
+
+	return json.Marshal(ServiceDesc{
+		ServiceName: s.ServiceName,
+		Methods:     methods,
+	})
 }
 
 // func handleReply(reply *pairingtypes.RelayReply) (resp *proxypb.ProxyResponse, err error) {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -66,6 +67,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx)
 	// TODO:: chekc if we have at least x blocknums before forloop
 	if err != nil {
+		log.Println(errors.Wrap(err, "cs.fetchLatestBlockNum()"))
 		return err
 	}
 
