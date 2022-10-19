@@ -633,6 +633,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		return nil, utils.LavaFormatError("Sending nodeMsg failed", err,
 			nil)
 	}
+	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
 
 	latestBlock := int64(0)
 	finalizedBlockHashes := map[int64]interface{}{}

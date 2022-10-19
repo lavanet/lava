@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	PairingListEmpty = sdkerrors.New("pairingListEmpty Error", 665, "no pairing available.") // client couldnt connect to any provider.
+	PairingListEmpty = sdkerrors.New("pairingListEmpty Error", 665, "no pairings available.") // client couldnt connect to any provider.
 )
