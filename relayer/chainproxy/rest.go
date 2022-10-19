@@ -280,7 +280,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 func LogRequestAndResponse(hasError bool, method string, path string, req string, resp string, err error) {
 	if hasError {
 		utils.LavaFormatInfo("http In/Out", &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
-
+		return
 	}
 	utils.LavaFormatInfo("http In/Out", &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
