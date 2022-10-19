@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -187,13 +189,16 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// contentType := string(c.Context().Request.Header.ContentType())
 
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
+		requestBody := string(c.Body())
+		reply, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
+		responseBody := string(reply.Data)
 		if err != nil {
+			LogRequestAndResponse(true, http.MethodPost, path, requestBody, responseBody)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 
-		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data))
+		LogRequestAndResponse(false, http.MethodPost, path, requestBody, responseBody)
+		return c.SendString(responseBody)
 	})
 
 	//
@@ -202,11 +207,13 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		responseBody := string(reply.Data)
 		if err != nil {
+			LogRequestAndResponse(true, http.MethodGet, path, "", responseBody)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 
-		log.Println("out >>> len", len(string(reply.Data)))
+		LogRequestAndResponse(false, http.MethodGet, path, "", responseBody)
 		return c.SendString(string(reply.Data))
 	})
 	//
@@ -271,4 +278,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	nm.Result = body
 
 	return reply, nil
+}
+func LogRequestAndResponse(hasError bool, method string, path string, req string, resp string) {
+	utils.LavaFormatInfo("htpp In/Out", &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
