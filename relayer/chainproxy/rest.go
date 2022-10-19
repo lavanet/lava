@@ -192,11 +192,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		requestBody := string(c.Body())
 		reply, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
-			LogRequestAndResponse(true, http.MethodPost, path, requestBody, "", err)
+			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse(false, http.MethodPost, path, requestBody, responseBody, nil)
+		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, nil)
 		return c.SendString(responseBody)
 	})
 
@@ -207,11 +207,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		log.Println("in <<< ", path)
 		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
-			LogRequestAndResponse(true, http.MethodGet, path, "", "", err)
+			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse(false, http.MethodGet, path, "", responseBody, nil)
+		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, nil)
 		return c.SendString(responseBody)
 	})
 	//
@@ -277,10 +277,10 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	return reply, nil
 }
-func LogRequestAndResponse(hasError bool, method string, path string, req string, resp string, err error) {
+func LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, err error) {
 	if hasError {
-		utils.LavaFormatInfo("http In/Out", &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
+		utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
 		return
 	}
-	utils.LavaFormatInfo("http In/Out", &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+	utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
