@@ -15,7 +15,8 @@ jobs:
     
     # Install Ignite
     - name: ignite install
-      run: curl https://get.ignite.com/cli! | bash
+      run: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
+      # run: curl https://get.ignite.com/cli! | bash
     - name: ignite version
       run:  ignite version
     # - name: starport install
