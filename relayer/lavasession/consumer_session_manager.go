@@ -15,6 +15,7 @@ type ConsumerSessionManager struct {
 	pairing      map[string]*ConsumerSessionsWithProvider // key == provider adderss
 	currentEpoch uint64
 
+	// pairingAdressess for Data reliability
 	pairingAdressess []string // contains all addressess from the initial pairing.
 	// providerBlockList + validAddressess == pairingAdressess (while locked)
 	validAddressess       []string // contains all addressess that are currently valid
@@ -34,15 +35,18 @@ func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch 
 	// 4. lock and rewrite pairings.
 	// take care of the following case: request a deletion of a provider from an old epoch, if the epoch is older return an error or do nothing
 	// 5. providerBlockList reset
+	pairingListLength := len(pairingList)
 
-	cs.lock.Lock()       // start by locking the class lock.
-	defer cs.lock.Lock() // we defer here so in case we return an error it will unlock automatically.
+	cs.lock.Lock()         // start by locking the class lock.
+	defer cs.lock.Unlock() // we defer here so in case we return an error it will unlock automatically.
 
 	if epoch <= cs.currentEpoch { // sentry shouldnt update an old epoch or current epoch
 		return utils.LavaFormatError("trying to update provider list for older epoch", nil, &map[string]string{"epoch": strconv.FormatUint(epoch, 10)})
 	}
+	// Update Epoch.
+	cs.currentEpoch = epoch // TODO_RAN: switch to atomic write.
+
 	// Reset States
-	pairingListLength := len(pairingList)
 	cs.validAddressess = make([]string, pairingListLength)
 	cs.providerBlockList = make([]string, 0)
 	cs.pairingAdressess = make([]string, pairingListLength)
@@ -50,19 +54,71 @@ func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch 
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
-	cs.pairingPurge = make(map[string]*ConsumerSessionsWithProvider)
-	for key, value := range cs.pairing {
-		cs.pairingPurge[key] = value
-	}
-	cs.pairing = make(map[string]*ConsumerSessionsWithProvider)
+	cs.pairingPurge = cs.pairing
+	cs.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
 		cs.pairingAdressess[idx] = provider.Acc
 		cs.pairing[provider.Acc] = provider
 	}
 	copy(cs.validAddressess, cs.pairingAdressess) // the starting point is that valid addressess are equal to pairing addressess.
-	cs.currentEpoch = epoch
 
 	return nil
+}
+
+func (cs *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
+	// TODO_RAN: populate
+	return 0
+}
+
+//
+func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64) (clinetSession *ConsumerSession, epoch uint64, errRet error) {
+	// 0. lock pairing for Read only - dont forget to release upon failiures
+	// 1. get a random provider from pairing map
+	// 2. make sure he responds
+	// 		-> if not try different endpoint ->
+	// 			->  if yes, make sure no more than X(10 currently) paralel sessions only when new session is needed validate this
+	// 			-> if all endpoints are dead get another provider
+	// 				-> try again
+	// 3. after session is picked / created, we lock it and return it
+	// design:
+	// random select over providers with retry
+	// 	   loop over endpoints
+	//         loop over sessions (not black listed [with atomic read because its not locked] and can be locked)
+	// UsedComputeUnits - updating the provider of the cu that will be used upon getsession success.
+	// if session will fail in the future this amount should be deducted
+
+	for {
+		consumerSessionWithProvider, providerAddress, err := cs.getValidConsumerSessionsWithProvider()
+		if err != nil {
+			return nil, 0, err
+		}
+		connected, endpoint, err := consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
+		if err != nil {
+			// verify err is AllProviderEndpointsDisabled and report.
+			if AllProviderEndpointsDisabled.Is(err) {
+				cs.providerBlock(providerAddress, true) // reporting and blocking provider this epoch
+				continue
+			} else {
+				utils.LavaFormatFatal("Unsupported Error", err, nil)
+			}
+		} else if !connected {
+			// If failed to connect we try again getting a random provider to pick from
+			continue
+		}
+		// get session from endpoint or create new or continue. if more than 10 connections.
+		consumerSession, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
+		if err != nil {
+			if MaximumNumberOfSessionsExceeded.Is(err) {
+				// we can get a different provider.
+			} else {
+				utils.LavaFormatFatal("Unsupported Error", err, nil)
+			}
+		}
+		return consumerSession, 0, nil
+		// clinetSession, epoch, err = cs.getSessionFromAProvider(providerAddress, cuNeededForSession)
+		// if err != nil {
+		// }
+	}
 }
 
 // Get a valid provider address.
@@ -77,45 +133,16 @@ func (cs *ConsumerSessionManager) getValidProviderAddress() (address string, err
 	return
 }
 
-//
-func (cs *ConsumerSessionManager) GetSession(cuNeededForSession uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
-	// 0. lock pairing for Read only - dont forget to release upon failiures
-
-	// 1. get a random provider from pairing map
-	// 2. make sure he responds
-	// 		-> if not try different endpoint ->
-	// 			->  if yes, make sure no more than X(10 currently) paralel sessions only when new session is needed validate this
-	// 			-> if all endpoints are dead get another provider
-	// 				-> try again
-	// 3. after session is picked / created, we lock it and return it
-
-	// design:
-	// random select over providers with retry
-	// 	   loop over endpoints
-	//         loop over sessions (not black listed [with atomic read because its not locked] and can be locked)
-
-	// UsedComputeUnits - updating the provider of the cu that will be used upon getsession success.
-	// if session will fail in the future this amount should be deducted
-
-	// check PairingListEmpty error
-
+func (cs *ConsumerSessionManager) getValidConsumerSessionsWithProvider() (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, err error) {
 	cs.lock.RLock()
-	defer cs.lock.RUnlock() // will automatically unlock when returns or error is returned
-	for numOfPairings := 0; numOfPairings < len(cs.validAddressess); numOfPairings++ {
-		providerAddress, err := cs.getValidProviderAddress()
-		if err != nil {
-			return nil, 0, utils.LavaFormatError("couldnt get a provider address", err, nil)
-		}
-		consumerSessionWithProvider := cs.pairing[providerAddress]
-		connected, endpoint := consumerSessionWithProvider.fetchEndpointConnectionFromClientWrapper()
-
-		// clinetSession, epoch, err = cs.getSessionFromAProvider(providerAddress, cuNeededForSession)
-		// if err != nil {
-
-		// }
+	defer cs.lock.RUnlock()
+	providerAddress, err = cs.getValidProviderAddress()
+	if err != nil {
+		return nil, "", utils.LavaFormatError("couldnt get a provider address", err, nil)
 	}
-
+	consumerSessionWithProvider = cs.pairing[providerAddress]
 	return
+
 }
 
 // report a failure with the provider.
@@ -160,11 +187,6 @@ func (cs *ConsumerSessionManager) getSessionFromAProvider(address string, cuNeed
 	// }
 
 	return nil, cs.currentEpoch, nil // TODO_RAN: switch cs.currentEpoch to atomic read
-}
-
-func (cs *ConsumerSessionManager) getEndpointFromProvider(address string) (connected bool, endpointPtr *Endpoint) {
-	// get the code from sentry FetchEndpointConnectionFromClientWrapper
-	return false, nil
 }
 
 // get a session from the pool except a specific providers
