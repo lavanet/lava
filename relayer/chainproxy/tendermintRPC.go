@@ -216,6 +216,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+				LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), "", "", err)
 				break
 			}
 			utils.LavaFormatInfo("ws: in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
@@ -223,14 +224,16 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+				LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 				break
 			}
 
 			if err = c.WriteMessage(mt, reply.Data); err != nil {
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+				LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 				break
 			}
-			utils.LavaFormatInfo("ws out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
+			LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
 		}
 	})
 
@@ -242,9 +245,10 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
+			LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), "", err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
-		utils.LavaFormatInfo("http out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
+		LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), nil)
 		return c.SendString(string(reply.Data))
 	})
 
@@ -254,12 +258,13 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
 		reply, err := SendRelay(ctx, cp, privKey, path, "", "")
 		if err != nil {
+			LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", "", err)
 			if string(c.Body()) != "" {
 				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, GetUniqueGuidResponseForError(err)))
 			}
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
-		utils.LavaFormatInfo("urirpc out <<<", &map[string]string{"seed": msgSeed, "msg": string(reply.Data)})
+		LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), nil)
 		return c.SendString(string(reply.Data))
 	})
 	//
