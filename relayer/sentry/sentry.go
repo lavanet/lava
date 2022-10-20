@@ -1266,15 +1266,15 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
-) (*pairingtypes.RelayReply, error) {
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	//
 	// Get pairing
 	wrap, index, endpoint, err := s._findPairing(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//
@@ -1316,11 +1316,11 @@ func (s *Sentry) SendRelay(
 
 	if err != nil {
 		clientSession.Lock.Unlock()
-		return nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(unresponsiveProvidersData))})
+		return nil, nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(unresponsiveProvidersData))})
 	}
 
 	// callback user
-	reply, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
+	reply, replySrv, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
@@ -1333,12 +1333,12 @@ func (s *Sentry) SendRelay(
 		wrap, index, endpoint, err2 = s._findPairingExceptAddress(ctx, wrap.Acc, index) // get a different provider.
 		if err2 != nil {
 			// if we failed to get another provider, just return the first providers error. with the fetching failure message
-			return nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
+			return nil, nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
 		}
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
 		// call user
-		reply, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
+		reply, replySrv, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
 		if err2 != nil {
 			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 				s.movePairingEntryToPurge(wrap, index, false)
@@ -1347,10 +1347,10 @@ func (s *Sentry) SendRelay(
 
 			if err.Error() != err2.Error() {
 				// if the first provider error returned a different error than the second provider combine the error into a single one
-				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
+				return reply, nil, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
 			}
 			// if the errors are the same just return one of them and the reply
-			return reply, err2
+			return reply, replySrv, err2
 		}
 		// if we didnt get an error from the second relay we can continue noramlly
 	}
@@ -1362,14 +1362,14 @@ func (s *Sentry) SendRelay(
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
+			return nil, nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
+			return nil, nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
@@ -1382,7 +1382,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -1472,184 +1472,7 @@ func (s *Sentry) SendRelay(
 			go checkReliability()
 		}
 	}
-	return reply, nil
-}
-
-func (s *Sentry) SendRelaySubscribe(
-	ctx context.Context,
-	cb_send_relay_subscribe func(clientSession *ClientSession) (*pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
-	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	specCategory *spectypes.SpecCategory,
-) (*pairingtypes.Relayer_RelaySubscribeClient, error) {
-	//
-	// Get pairing
-	wrap, index, endpoint, err := s._findPairing(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	getClientSessionFromWrap := func(wrap *RelayerClientWrapper, endpoint *Endpoint) *ClientSession {
-		wrap.SessionsLock.Lock()
-		defer wrap.SessionsLock.Unlock()
-
-		//try to lock an existing session, if can't create a new one
-		for _, session := range wrap.Sessions {
-			if session.Endpoint != endpoint {
-				//skip sessions that don't belong to the active connection
-				continue
-			}
-			if session.Lock.TryLock() {
-				return session
-			}
-		}
-		//create a new session
-		randomSessId := int64(0)
-		for randomSessId == 0 { //we don't allow 0
-			randomSessId = rand.Int63()
-		}
-
-		clientSession := &ClientSession{
-			SessionId: randomSessId,
-			Client:    wrap,
-			Endpoint:  endpoint,
-		}
-		clientSession.Lock.Lock()
-		wrap.Sessions[clientSession.SessionId] = clientSession
-		return clientSession
-	}
-	// Get or create session and lock it
-	clientSession := getClientSessionFromWrap(wrap, endpoint) // clientSession is LOCKED!
-
-	// call user
-	reply, _, err := cb_send_relay_subscribe(clientSession)
-	//error using this provider
-	if err != nil {
-		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-			s.movePairingEntryToPurge(wrap, index, false)
-		}
-		clientSession.Lock.Unlock()
-		return reply, err
-	}
-
-	// providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
-	clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-
-	// if s.GetSpecComparesHashes() {
-	// 	finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
-	// 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
-	// 	if err != nil {
-	// 		return nil, utils.LavaFormatError("unmarshalling finalized blocks data", err, nil)
-	// 	}
-	// 	latestBlock := reply.LatestBlock
-
-	// 	// validate that finalizedBlocks makes sense
-	// 	err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
-	// 	if err != nil {
-	// 		return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
-	// 	}
-	// 	// Save in current session and compare in the next
-	// 	clientSession.FinalizedBlocksHashes = finalizedBlocks
-	// 	clientSession.LatestBlock = latestBlock
-	// 	//
-	// 	// Compare finalized block hashes with previous providers
-	// 	// Looks for discrepancy with current epoch providers
-	// 	// if no conflicts, insert into consensus and break
-	// 	// create new consensus group if no consensus matched
-	// 	// check for discrepancy with old epoch
-	// 	_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
-	// 		// handle data reliability
-
-	// 		isSecure, err := s.cmdFlags.GetBool("secure")
-	// 		if err != nil {
-	// 			utils.LavaFormatError("Could not get flag --secure", err, nil)
-	// 			isSecure = false
-	// 		}
-
-	// 		s.VrfSkMu.Lock()
-
-	// 		currentEpoch := clientSession.Client.GetPairingEpoch()
-	// 		vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, currentEpoch)
-	// 		s.VrfSkMu.Unlock()
-	// 		address0, address1 := s.DataReliabilityThresholdToAddress(vrfRes0, vrfRes1)
-
-	// 		//Printing VRF Data
-	// 		// st1, _ := bech32.ConvertAndEncode("", vrfRes0)
-	// 		// st2, _ := bech32.ConvertAndEncode("", vrfRes1)
-	// 		// log.Printf("Finalized Block reply from %s received res %s, %s, addresses: %s, %s\n", providerAcc, st1, st2, address0, address1)
-
-	// 		sendReliabilityRelay := func(address string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
-	// 			if address != "" && address != providerAcc {
-	// 				wrap, index, endpoint, err := s.specificPairing(ctx, address)
-	// 				if err != nil {
-	// 					// failed to get clientWrapper for this address, skip reliability
-	// 					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get client specific pairing wrap for provider", err, &map[string]string{"Address": address})
-	// 				} else {
-	// 					canSendReliability := s.CheckAndMarkReliabilityForThisPairing(wrap) //TODO: this will still not perform well for multiple clients, we need to get the reliability proof in the error and not penalize the provider
-	// 					if canSendReliability {
-	// 						s.VrfSkMu.Lock()
-	// 						vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, currentEpoch)
-	// 						s.VrfSkMu.Unlock()
-	// 						dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
-	// 							VrfValue:    vrf_res,
-	// 							VrfProof:    vrf_proof,
-	// 							ProviderSig: reply.Sig,
-	// 							AllDataHash: sigs.AllDataHash(reply, request),
-	// 							QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
-	// 							Sig:         nil,                                //calculated in cb_send_reliability
-	// 						}
-	// 						clientSession = getClientSessionFromWrap(wrap, endpoint)
-	// 						relay_rep, relay_req, err := cb_send_reliability(clientSession, dataReliability)
-	// 						if err != nil {
-	// 							if clientSession.QoSInfo.ConsecutiveTimeOut >= 3 && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-	// 								s.movePairingEntryToPurge(wrap, index)
-	// 							}
-	// 							return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
-	// 						}
-	// 						clientSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
-	// 						return relay_rep, relay_req, nil
-	// 					} else {
-	// 						utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": address})
-	// 						return nil, nil, nil
-	// 					}
-	// 				}
-	// 			} else {
-	// 				if isSecure {
-	// 					//send reliability on the client's expense
-	// 					utils.LavaFormatWarning("secure flag Not Implemented", nil, nil)
-	// 				}
-	// 				return nil, nil, fmt.Errorf("is not a valid reliability VRF address result") //this is not an error we want to log
-	// 			}
-	// 		}
-
-	// 		checkReliability := func() {
-	// 			reply0, request0, err0 := sendReliabilityRelay(address0, false)
-	// 			reply1, request1, err1 := sendReliabilityRelay(address1, true)
-	// 			ok := true
-	// 			check0 := err0 == nil && reply0 != nil
-	// 			check1 := err1 == nil && reply1 != nil
-	// 			if check0 {
-	// 				ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply0, request0)
-	// 			}
-	// 			if check1 {
-	// 				ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply1, request1)
-	// 			}
-	// 			if !ok && check0 && check1 {
-	// 				s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
-	// 			}
-	// 			if (ok && check0) || (ok && check1) {
-	// 				utils.LavaFormatInfo("Reliability verified and Okay!", &map[string]string{"address0": address0, "address1": address1, "original address": providerAcc})
-	// 			}
-	// 		}
-	// 		go checkReliability()
-	// 	}
-	// }
-	return reply, nil
+	return reply, replySrv, nil
 }
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {

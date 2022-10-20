@@ -188,7 +188,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// contentType := string(c.Context().Request.Header.ContentType())
 
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
 		if err != nil {
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
@@ -202,7 +202,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
