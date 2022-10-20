@@ -9,14 +9,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
-	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -276,11 +274,4 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	nm.Result = body
 
 	return reply, nil
-}
-func LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, err error) {
-	if hasError {
-		utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
-		return
-	}
-	utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
