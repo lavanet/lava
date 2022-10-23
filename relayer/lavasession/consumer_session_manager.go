@@ -70,29 +70,41 @@ func (cs *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return 0
 }
 
-//
+// 0. lock pairing for Read only - dont forget to release upon failiures
+// 1. get a random provider from pairing map
+// 2. make sure he responds
+// 		-> if not try different endpoint ->
+// 			->  if yes, make sure no more than X(10 currently) paralel sessions only when new session is needed validate this
+// 			-> if all endpoints are dead get another provider
+// 				-> try again
+// 3. after session is picked / created, we lock it and return it
+// design:
+// random select over providers with retry
+// 	   loop over endpoints
+//         loop over sessions (not black listed [with atomic read because its not locked] and can be locked)
+// UsedComputeUnits - updating the provider of the cu that will be used upon getsession success.
+// if session will fail in the future this amount should be deducted
 func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64) (clinetSession *ConsumerSession, epoch uint64, errRet error) {
-	// 0. lock pairing for Read only - dont forget to release upon failiures
-	// 1. get a random provider from pairing map
-	// 2. make sure he responds
-	// 		-> if not try different endpoint ->
-	// 			->  if yes, make sure no more than X(10 currently) paralel sessions only when new session is needed validate this
-	// 			-> if all endpoints are dead get another provider
-	// 				-> try again
-	// 3. after session is picked / created, we lock it and return it
-	// design:
-	// random select over providers with retry
-	// 	   loop over endpoints
-	//         loop over sessions (not black listed [with atomic read because its not locked] and can be locked)
-	// UsedComputeUnits - updating the provider of the cu that will be used upon getsession success.
-	// if session will fail in the future this amount should be deducted
 
+	providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith := make(map[string]bool, 0) // list of providers that are ignored when picking a valid provider.
 	for {
-		consumerSessionWithProvider, providerAddress, err := cs.getValidConsumerSessionsWithProvider()
+
+		// Get a valid consumerSessionWithProvider
+		consumerSessionWithProvider, providerAddress, sessionEpoch, err := cs.getValidConsumerSessionsWithProvider(providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith, cuNeededForSession)
 		if err != nil {
-			return nil, 0, err
+			if PairingListEmpty.Is(err) {
+				return nil, 0, err
+			} else if MaxComputeUnitsExceeded.Is(err) {
+				// This provider doesnt have enough compute units for this session, we block it for this session and continue to another provider.
+				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
+				continue
+			} else {
+				utils.LavaFormatFatal("Unsupported Error", err, nil)
+			}
 		}
-		connected, endpoint, err := consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
+
+		// Get a valid Endpoint from the provider chosen
+		connected, endpoint, err := consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
 		if err != nil {
 			// verify err is AllProviderEndpointsDisabled and report.
 			if AllProviderEndpointsDisabled.Is(err) {
@@ -105,44 +117,73 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 			// If failed to connect we try again getting a random provider to pick from
 			continue
 		}
-		// get session from endpoint or create new or continue. if more than 10 connections.
+
+		// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
 		if err != nil {
 			if MaximumNumberOfSessionsExceeded.Is(err) {
-				// we can get a different provider.
+				// we can get a different provider, adding this provider to the list of providers to skip on.
+				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
+				continue
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
 		}
-		return consumerSession, 0, nil
-		// clinetSession, epoch, err = cs.getSessionFromAProvider(providerAddress, cuNeededForSession)
-		// if err != nil {
-		// }
+
+		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
+		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
+		if err != nil {
+			if MaxComputeUnitsExceeded.Is(err) {
+				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
+				continue
+			} else {
+				utils.LavaFormatFatal("Unsupported Error", err, nil)
+			}
+			// TODO_RAN: unlock consumerSession
+			// check error
+			// return.
+		}
+
+		return consumerSession, sessionEpoch, nil
 	}
 }
 
 // Get a valid provider address.
-func (cs *ConsumerSessionManager) getValidProviderAddress() (address string, err error) {
+func (cs *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList map[string]bool) (address string, err error) {
 	// cs.Lock must be Rlocked here.
+	ignoredProvidersListLength := len(ignoredProvidersList)
 	validAddressessLength := len(cs.validAddressess)
-	if validAddressessLength <= 0 {
-		err = sdkerrors.Wrapf(PairingListEmpty, "cs.validAddressess is empty")
+	totalValidLength := validAddressessLength - ignoredProvidersListLength
+	if totalValidLength <= 0 {
+		err = sdkerrors.Wrapf(PairingListEmpty, "lookup - cs.validAddressess is empty")
 		return
 	}
-	address = cs.validAddressess[rand.Intn(validAddressessLength)]
-	return
+	validAddressIndex := rand.Intn(totalValidLength) // get the N'th valid provider index, only valid providers will increase the addressIndex counter
+	validAddressessCounter := 0                      // this counter will try to reach the addressIndex
+	for index := 0; index < validAddressessLength; index++ {
+		if _, ok := ignoredProvidersList[cs.validAddressess[index]]; !ok { // not ignored -> yes valid
+			validAddressessCounter += 1
+		}
+		if validAddressessCounter == validAddressIndex {
+			return cs.validAddressess[validAddressIndex], nil
+		}
+	}
+	return "", UnreachableCodeError // should not reach here
 }
 
-func (cs *ConsumerSessionManager) getValidConsumerSessionsWithProvider() (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, err error) {
+func (cs *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProvidersList map[string]bool, cuNeededForSession uint64) (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, currentEpoch uint64, err error) {
 	cs.lock.RLock()
 	defer cs.lock.RUnlock()
-	providerAddress, err = cs.getValidProviderAddress()
+	providerAddress, err = cs.getValidProviderAddress(ignoredProvidersList)
 	if err != nil {
-		return nil, "", utils.LavaFormatError("couldnt get a provider address", err, nil)
+		return nil, "", 0, utils.LavaFormatError("couldnt get a provider address", err, nil)
 	}
 	consumerSessionWithProvider = cs.pairing[providerAddress]
+	if err := consumerSessionWithProvider.validateComputeUnits(cuNeededForSession); err != nil { // checking if we even have enough compute units for this provider.
+		return nil, "", 0, err
+	}
+	currentEpoch = cs.currentEpoch // reading the epoch here while locked, to get the epoch of the pairing.
 	return
-
 }
 
 // report a failure with the provider.

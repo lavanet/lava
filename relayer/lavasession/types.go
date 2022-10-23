@@ -58,6 +58,27 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch     uint64
 }
 
+// Validate the compute units for this provider
+func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
+		return MaxComputeUnitsExceeded
+	}
+	return nil
+}
+
+// Validate and add the compute units for this provider
+func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64) error {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
+		return MaxComputeUnitsExceeded
+	}
+	cswp.UsedComputeUnits += cu
+	return nil
+}
+
 func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -110,7 +131,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 
 // fetching an enpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, sessionEpoch uint64) (connected bool, endpointPtr *Endpoint, err error) {
 	getConnectionFromcswp := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
@@ -128,7 +149,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": cswp.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": cswp.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": cswp.Acc, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
 					}
 					continue
 				}
