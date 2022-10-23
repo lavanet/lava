@@ -28,12 +28,7 @@ type ConsumerSessionManager struct {
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 }
 
-// 1. use epoch in order to update a specific epoch.
-// 2. update epoch itself
-// 3. move current pairings to previous pairings.
-// 4. lock and rewrite pairings.
-// take care of the following case: request a deletion of a provider from an old epoch, if the epoch is older return an error or do nothing
-// 5. providerBlockList reset
+// Update the provider pairing list for the ConsumerSessionManager
 func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 
@@ -181,6 +176,7 @@ func (cs *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredPr
 	return
 }
 
+// removes a given address from the valid addressess list.
 func (cs *ConsumerSessionManager) removeAddressFromValidAddressess(address string) error {
 	if cs.lock.TryLock() {
 		// if we managed to lock throw an error for misuse.
