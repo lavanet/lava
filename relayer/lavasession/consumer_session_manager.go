@@ -27,14 +27,13 @@ type ConsumerSessionManager struct {
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 }
 
-//
+// 1. use epoch in order to update a specific epoch.
+// 2. update epoch itself
+// 3. move current pairings to previous pairings.
+// 4. lock and rewrite pairings.
+// take care of the following case: request a deletion of a provider from an old epoch, if the epoch is older return an error or do nothing
+// 5. providerBlockList reset
 func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
-	// 1. use epoch in order to update a specific epoch.
-	// 2. update epoch itself
-	// 3. move current pairings to previous pairings.
-	// 4. lock and rewrite pairings.
-	// take care of the following case: request a deletion of a provider from an old epoch, if the epoch is older return an error or do nothing
-	// 5. providerBlockList reset
 	pairingListLength := len(pairingList)
 
 	cs.lock.Lock()         // start by locking the class lock.
@@ -135,15 +134,15 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 		if err != nil {
 			if MaxComputeUnitsExceeded.Is(err) {
 				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
+				// We must unlock the consumer session before continuing.
+				consumerSession.lock.Unlock()
 				continue
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
-			// TODO_RAN: unlock consumerSession
-			// check error
-			// return.
 		}
 
+		// Successfully created/got a consumerSession.
 		return consumerSession, sessionEpoch, nil
 	}
 }
