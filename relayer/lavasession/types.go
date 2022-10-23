@@ -58,12 +58,18 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch     uint64
 }
 
+func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
+	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is chagned
+	defer cswp.Lock.Unlock()
+	return cswp.Acc, cswp.PairingEpoch
+}
+
 // Validate the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return MaxComputeUnitsExceeded
+		return MaxComputeUnitsExceededError
 	}
 	return nil
 }
@@ -73,9 +79,20 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return MaxComputeUnitsExceeded
+		return MaxComputeUnitsExceededError
 	}
 	cswp.UsedComputeUnits += cu
+	return nil
+}
+
+// Validate and add the compute units for this provider
+func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) error {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if (cswp.UsedComputeUnits - cu) < 0 {
+		return NegativeComputeUnitsAmountError
+	}
+	cswp.UsedComputeUnits -= cu
 	return nil
 }
 
@@ -110,7 +127,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 	}
 	// No Sessions available, create a new session or return an error upon maximum sessions allowed
 	if len(cswp.Sessions) > MaxSessionsAllowedPerProvider {
-		return nil, MaximumNumberOfSessionsExceeded
+		return nil, MaximumNumberOfSessionsExceededError
 	}
 
 	randomSessId := int64(0)
@@ -178,7 +195,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	if allDisabled {
 		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.Acc})
 		// report provider.
-		return connected, endpointPtr, AllProviderEndpointsDisabled
+		return connected, endpointPtr, AllProviderEndpointsDisabledError
 	}
 
 	return connected, endpointPtr, nil

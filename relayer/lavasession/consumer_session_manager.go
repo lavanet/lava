@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
@@ -18,9 +19,9 @@ type ConsumerSessionManager struct {
 	// pairingAdressess for Data reliability
 	pairingAdressess []string // contains all addressess from the initial pairing.
 	// providerBlockList + validAddressess == pairingAdressess (while locked)
-	validAddressess       []string // contains all addressess that are currently valid
-	providerBlockList     []string // contains all currently blocked providers, reseted upon epoch change.
-	addedToPurgeAndReport []string // list of purged providers to report for QoS unavailability.
+	validAddressess       []string        // contains all addressess that are currently valid
+	providerBlockList     map[string]bool // contains all currently blocked providers, reseted upon epoch change. (easier to search maps.)
+	addedToPurgeAndReport map[string]bool // list of purged providers to report for QoS unavailability. (easier to search maps.)
 
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
@@ -47,9 +48,9 @@ func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch 
 
 	// Reset States
 	cs.validAddressess = make([]string, pairingListLength)
-	cs.providerBlockList = make([]string, 0)
+	cs.providerBlockList = make(map[string]bool, 0)
 	cs.pairingAdressess = make([]string, pairingListLength)
-	cs.addedToPurgeAndReport = make([]string, 0)
+	cs.addedToPurgeAndReport = make(map[string]bool, 0)
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
@@ -64,9 +65,9 @@ func (cs *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch 
 	return nil
 }
 
+// reads cs.currentEpoch atomically
 func (cs *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
-	// TODO_RAN: populate
-	return 0
+	return atomic.LoadUint64(&cs.currentEpoch)
 }
 
 // 0. lock pairing for Read only - dont forget to release upon failiures
@@ -91,9 +92,9 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 		// Get a valid consumerSessionWithProvider
 		consumerSessionWithProvider, providerAddress, sessionEpoch, err := cs.getValidConsumerSessionsWithProvider(providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith, cuNeededForSession)
 		if err != nil {
-			if PairingListEmpty.Is(err) {
+			if PairingListEmptyError.Is(err) {
 				return nil, 0, err
-			} else if MaxComputeUnitsExceeded.Is(err) {
+			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesnt have enough compute units for this session, we block it for this session and continue to another provider.
 				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
 				continue
@@ -106,8 +107,14 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 		connected, endpoint, err := consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
 		if err != nil {
 			// verify err is AllProviderEndpointsDisabled and report.
-			if AllProviderEndpointsDisabled.Is(err) {
-				cs.providerBlock(providerAddress, true) // reporting and blocking provider this epoch
+			if AllProviderEndpointsDisabledError.Is(err) {
+				err = cs.providerBlock(providerAddress, true, sessionEpoch) // reporting and blocking provider this epoch
+				if err != nil {
+					if !EpochMismatchError.Is(err) {
+						// only acceptable error is EpochMismatchError so if different, throw fatal
+						utils.LavaFormatFatal("Unsupported Error", err, nil)
+					}
+				}
 				continue
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
@@ -120,7 +127,7 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
 		if err != nil {
-			if MaximumNumberOfSessionsExceeded.Is(err) {
+			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
 				continue
@@ -132,7 +139,7 @@ func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSes
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
-			if MaxComputeUnitsExceeded.Is(err) {
+			if MaxComputeUnitsExceededError.Is(err) {
 				providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith[providerAddress] = false
 				// We must unlock the consumer session before continuing.
 				consumerSession.lock.Unlock()
@@ -154,7 +161,7 @@ func (cs *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList m
 	validAddressessLength := len(cs.validAddressess)
 	totalValidLength := validAddressessLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		err = sdkerrors.Wrapf(PairingListEmpty, "lookup - cs.validAddressess is empty")
+		err = sdkerrors.Wrapf(PairingListEmptyError, "lookup - cs.validAddressess is empty")
 		return
 	}
 	validAddressIndex := rand.Intn(totalValidLength) // get the N'th valid provider index, only valid providers will increase the addressIndex counter
@@ -185,53 +192,112 @@ func (cs *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredPr
 	return
 }
 
-// report a failure with the provider.
-func (cs *ConsumerSessionManager) providerBlock(address string, reportProvider bool) error {
-	// read currentEpoch atomic if its the same we need to lock and read again.
-	// validate errorReceived, some errors will blocklist some will not. if epoch is not older than currentEpoch.
-	// checks here for anything changed while waiting for lock (epoch / pairing doesnt excisits anymore etc..)
-	// validate the error
+func (cs *ConsumerSessionManager) removeAddressFromValidAddressess(address string) error {
+	if cs.lock.TryLock() {
+		// if we managed to lock throw an error for misuse.
+		defer cs.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "cs.lock must be locked before accessing this method")
+	}
 
-	// validate the provider is not already blocked as two sessions can report same provider at the same time
+	// cs Must be Locked here.
+	for idx, addr := range cs.validAddressess {
+		if addr == address {
+			// remove the index from the valid list.
+			cs.validAddressess = append(cs.validAddressess[:idx], cs.validAddressess[idx+1:]...)
+			return nil
+		}
+	}
+	return AddressIndexWasNotFoundError
+}
+
+// Report a failure with the provider.
+// read currentEpoch atomic if its the same we need to lock and read again.
+// validate errorReceived, some errors will blocklist some will not. if epoch is not older than currentEpoch.
+// checks here for anything changed while waiting for lock (epoch / pairing doesnt excisits anymore etc..).
+// validate the error.
+// validate the provider is not already blocked as two sessions can report same provider at the same time.
+func (cs *ConsumerSessionManager) providerBlock(address string, reportProvider bool, sessionEpoch uint64) error {
+	// find Index of the address
+	if sessionEpoch != cs.atomicReadCurrentEpoch() { // we read here atomicly so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
+		return EpochMismatchError
+	}
+
+	cs.lock.Lock() // we lock RW here because we need to make sure nothing changes while we verify validAddressess/addedToPurgeAndReport/providerBlockList
+	defer cs.lock.Unlock()
+	if sessionEpoch != cs.currentEpoch { // After we lock we need to verify again that the epoch didnt change while we waited for the lock.
+		return EpochMismatchError
+	}
+
+	err := cs.removeAddressFromValidAddressess(address)
+	if err != nil {
+		return err
+	}
+
+	if reportProvider { // Report provider flow
+		if _, ok := cs.addedToPurgeAndReport[address]; !ok { // verify it does'nt exist already
+			cs.addedToPurgeAndReport[address] = true
+		}
+	}
+	if _, ok := cs.providerBlockList[address]; !ok { // verify it does'nt exist already
+		cs.providerBlockList[address] = true
+	}
+
 	return nil
 }
 
+// 1. if we failed we need to update the session UsedComputeUnits. -> lock RelayerClientWrapper to modify it
+// 2. clientSession.blocklisted = true
+// 3. report provider if needed. check cases.
+// unlock clientSession.
 func (cs *ConsumerSessionManager) SessionFailure(clientSession *ConsumerSession, errorReceived error) error {
-	// clientSession must be locked when getting here. verify.
+	// clientSession must be locked when getting here.
+	if clientSession.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer clientSession.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "clientSession.lock must be locked before accessing this method, additional info:", errorReceived)
+	}
 
 	// client Session should be locked here. so we can just apply the session failure here.
 	if clientSession.blocklisted {
 		// if client session is already blocklisted return an error.
-		return utils.LavaFormatError("trying to report a session failure of a blocklisted client session", nil, &map[string]string{"clientSession.blocklisted": strconv.FormatBool(clientSession.blocklisted)})
+		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedErrror, "trying to report a session failure of a blocklisted client session", &map[string]string{"clientSession.blocklisted": strconv.FormatBool(clientSession.blocklisted)})
 	}
-	// 1. if we failed we need to update the session UsedComputeUnits. -> lock RelayerClientWrapper to modify it
-	// 2. clientSession.blocklisted = true
-	// 3. report provider if needed. check cases.
-	// unlock clientSession.
+
+	clientSession.blocklisted = true // block this session from future usages
+	cuToDecrease := clientSession.latestRelayCu
+
+	// finished with clientSession here can unlock.
+	clientSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+
+	err := clientSession.client.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
+	if err != nil {
+		return err
+	}
+
+	// check if need to block & report
+	var blockProvider, reportProvider bool
+	if ReportAndBlockProviderError.Is(errorReceived) {
+		blockProvider = true
+		reportProvider = true
+	} else if BlockProviderError.Is(errorReceived) {
+		blockProvider = true
+	}
+	if blockProvider {
+		publicProviderAddress, pairingEpoch := clientSession.client.getPublicLavaAddressAndPairingEpoch()
+		err = cs.providerBlock(publicProviderAddress, reportProvider, pairingEpoch)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-// get a session from a specific provider, pairing must be locked before accessing here.
-func (cs *ConsumerSessionManager) getSessionFromAProvider(address string, cuNeeded uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
-	// get session inner function, to get a session from a specific provider.
-	// get address from -> pairing map[string]*RelayerClientWrapper ->
-	// choose a endpoint for the provider: similar to findPairing.
-	// for _, session := range wrap.Sessions {
-	// 	if session.Endpoint != endpoint {
-	// 		//skip sessions that don't belong to the active connection
-	// 		continue
-	// 	}
-	// 	if session.Lock.TryLock() {
-	// 		return session
-	// 	}
-	// }
-
-	return nil, cs.currentEpoch, nil // TODO_RAN: switch cs.currentEpoch to atomic read
-}
-
-// get a session from the pool except a specific providers
-func (cs *ConsumerSessionManager) GetSessionFromAllExcept(bannedAddresses []string, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
+// get a session from the pool except specific providers
+func (cs *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses []string, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
 	// if bannedAddressessEpoch != current epoch, we just return GetSession. locks...
+	if bannedAddressessEpoch != cs.atomicReadCurrentEpoch() {
+		return cs.GetSession(ctx, cuNeeded)
+	}
 
 	// similar to GetSession code. (they should have same inner function)
 	return nil, cs.currentEpoch, nil
