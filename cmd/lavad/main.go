@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -14,7 +15,11 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
+	"github.com/lavanet/lava/spec"
 	"github.com/lavanet/lava/utils"
+	specpb "github.com/lavanet/lava/x/spec/types"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -124,6 +129,32 @@ func main() {
 		},
 	}
 
+	var cmdSpec = &cobra.Command{
+		Use:     "spec [grpc-addr] [path]",
+		Short:   "Fetch spec and save it to the path locally",
+		Example: "spec 127.0.0.1:9000 /home/.lavad/spec/spec.json",
+		Args:    cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			ctx := context.Background()
+			conn := grpcutil.MustDial(ctx, args[0])
+			specManager := spec.NewSpecManager(conn)
+
+			fetchCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+			defer cancel()
+
+			var pbSpec *specpb.Spec
+			if pbSpec, err = specManager.Fetch(fetchCtx); err != nil {
+				return errors.Wrap(err, "specManager.Fetch()")
+			}
+
+			if err = specManager.Save(pbSpec, args[1]); err != nil {
+				return errors.Wrap(err, "specManager.Save()")
+			}
+
+			return nil
+		},
+	}
+
 	flags.AddTxFlagsToCmd(cmdServer)
 	cmdServer.MarkFlagRequired(flags.FlagFrom)
 	flags.AddTxFlagsToCmd(cmdPortalServer)
@@ -135,6 +166,7 @@ func main() {
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
+	rootCmd.AddCommand(cmdSpec)
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		os.Exit(1)
