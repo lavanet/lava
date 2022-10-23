@@ -24,16 +24,17 @@ type QoSInfo struct {
 }
 
 type ConsumerSession struct {
-	cuSum         uint64
-	latestRelayCu uint64 // set by GetSession cuNeededForSession
-	qoSInfo       QoSInfo
-	sessionId     int64
-	client        *ConsumerSessionsWithProvider
-	lock          utils.LavaMutex
-	relayNum      uint64
-	latestBlock   int64
-	endpoint      *Endpoint
-	blocklisted   bool // if session lost sync we blacklist it.
+	cuSum             uint64
+	latestRelayCu     uint64 // set by GetSession cuNeededForSession
+	qoSInfo           QoSInfo
+	sessionId         int64
+	client            *ConsumerSessionsWithProvider
+	lock              utils.LavaMutex
+	relayNum          uint64
+	latestBlock       int64
+	endpoint          *Endpoint
+	blocklisted       bool   // if session lost sync we blacklist it.
+	numberOfFailiures uint64 // number of times this session has failed
 }
 
 func (cs *ConsumerSession) GetCuSum() {

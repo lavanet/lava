@@ -70,23 +70,12 @@ func (cs *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&cs.currentEpoch)
 }
 
-// 0. lock pairing for Read only - dont forget to release upon failiures
-// 1. get a random provider from pairing map
-// 2. make sure he responds
-// 		-> if not try different endpoint ->
-// 			->  if yes, make sure no more than X(10 currently) paralel sessions only when new session is needed validate this
-// 			-> if all endpoints are dead get another provider
-// 				-> try again
-// 3. after session is picked / created, we lock it and return it
-// design:
-// random select over providers with retry
-// 	   loop over endpoints
-//         loop over sessions (not black listed [with atomic read because its not locked] and can be locked)
-// UsedComputeUnits - updating the provider of the cu that will be used upon getsession success.
-// if session will fail in the future this amount should be deducted
-func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64) (clinetSession *ConsumerSession, epoch uint64, errRet error) {
+// GetSession will return a ConsumerSession, given cu needed for that session.
+// The user can also request specific providers to not be included in the search for a session.
+func (cs *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]bool) (
+	clinetSession *ConsumerSession, epoch uint64, errRet error) {
 
-	providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith := make(map[string]bool, 0) // list of providers that are ignored when picking a valid provider.
+	providersThatAreNotBlockedYetButWeDontWantToGetSessionsWith := initUnwantedProviders // list of providers that are ignored when picking a valid provider.
 	for {
 
 		// Get a valid consumerSessionWithProvider
@@ -210,12 +199,8 @@ func (cs *ConsumerSessionManager) removeAddressFromValidAddressess(address strin
 	return AddressIndexWasNotFoundError
 }
 
-// Report a failure with the provider.
-// read currentEpoch atomic if its the same we need to lock and read again.
-// validate errorReceived, some errors will blocklist some will not. if epoch is not older than currentEpoch.
-// checks here for anything changed while waiting for lock (epoch / pairing doesnt excisits anymore etc..).
-// validate the error.
-// validate the provider is not already blocked as two sessions can report same provider at the same time.
+// Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
+// validates that the sessionEpoch is equal to cs.currentEpoch otherwise does'nt take effect.
 func (cs *ConsumerSessionManager) providerBlock(address string, reportProvider bool, sessionEpoch uint64) error {
 	// find Index of the address
 	if sessionEpoch != cs.atomicReadCurrentEpoch() { // we read here atomicly so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
@@ -245,31 +230,35 @@ func (cs *ConsumerSessionManager) providerBlock(address string, reportProvider b
 	return nil
 }
 
-// 1. if we failed we need to update the session UsedComputeUnits. -> lock RelayerClientWrapper to modify it
-// 2. clientSession.blocklisted = true
-// 3. report provider if needed. check cases.
-// unlock clientSession.
-func (cs *ConsumerSessionManager) SessionFailure(clientSession *ConsumerSession, errorReceived error) error {
-	// clientSession must be locked when getting here.
-	if clientSession.lock.TryLock() { // verify.
+// Report session failiure, mark it as blocked from future usages, report if timeout happened.
+func (cs *ConsumerSessionManager) SessionFailure(consumerSession *ConsumerSession, errorReceived error, didTimeout bool) error {
+	// consumerSession must be locked when getting here.
+	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
-		defer clientSession.lock.Unlock()
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "clientSession.lock must be locked before accessing this method, additional info:", errorReceived)
+		defer consumerSession.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method, additional info:", errorReceived)
 	}
 
 	// client Session should be locked here. so we can just apply the session failure here.
-	if clientSession.blocklisted {
+	if consumerSession.blocklisted {
 		// if client session is already blocklisted return an error.
-		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedErrror, "trying to report a session failure of a blocklisted client session", &map[string]string{"clientSession.blocklisted": strconv.FormatBool(clientSession.blocklisted)})
+		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedErrror, "trying to report a session failure of a blocklisted client session", &map[string]string{"consumerSession.blocklisted": strconv.FormatBool(consumerSession.blocklisted)})
 	}
+	if didTimeout {
+		consumerSession.qoSInfo.ConsecutiveTimeOut++
+	}
+	consumerSession.numberOfFailiures += 1 // increase number of failiures for this session
 
-	clientSession.blocklisted = true // block this session from future usages
-	cuToDecrease := clientSession.latestRelayCu
+	// if this session failed more than MaximumNumberOfFailiuresAllowedPerConsumerSession times we block list it.
+	if consumerSession.numberOfFailiures > MaximumNumberOfFailiuresAllowedPerConsumerSession {
+		consumerSession.blocklisted = true // block this session from future usages
+	}
+	cuToDecrease := consumerSession.latestRelayCu
 
-	// finished with clientSession here can unlock.
-	clientSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+	// finished with consumerSession here can unlock.
+	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
-	err := clientSession.client.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
+	err := consumerSession.client.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
 	if err != nil {
 		return err
 	}
@@ -283,38 +272,61 @@ func (cs *ConsumerSessionManager) SessionFailure(clientSession *ConsumerSession,
 		blockProvider = true
 	}
 	if blockProvider {
-		publicProviderAddress, pairingEpoch := clientSession.client.getPublicLavaAddressAndPairingEpoch()
+		publicProviderAddress, pairingEpoch := consumerSession.client.getPublicLavaAddressAndPairingEpoch()
 		err = cs.providerBlock(publicProviderAddress, reportProvider, pairingEpoch)
 		if err != nil {
+			if EpochMismatchError.Is(err) {
+				return nil // no effects this epoch has been changed
+			}
 			return err
 		}
 	}
 	return nil
 }
 
-// get a session from the pool except specific providers
-func (cs *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses []string, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
+// get a session from the pool except specific providers, which also validates the epoch.
+func (cs *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]bool, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
 	// if bannedAddressessEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressessEpoch != cs.atomicReadCurrentEpoch() {
-		return cs.GetSession(ctx, cuNeeded)
+		return cs.GetSession(ctx, cuNeeded, nil)
+	} else {
+		return cs.GetSession(ctx, cuNeeded, bannedAddresses)
 	}
-
-	// similar to GetSession code. (they should have same inner function)
-	return nil, cs.currentEpoch, nil
 }
 
-func (cs *ConsumerSessionManager) DoneWithSession(epoch uint64, qosInfo QoSInfo, latestServicedBlock uint64) error {
+// On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
+func (cs *ConsumerSessionManager) DoneWithSession(consumerSession *ConsumerSession, epoch uint64, latestServicedBlock int64) error {
 	// release locks, update CU, relaynum etc..
-	// apply LatestRelayCu to CuSum and reset
-	// apply QoS
-	// apply RelayNum + 1
-	// update serviced node LatestBlock (ETH, etc.. ) <- latestServicedBlock
-	// unlock clientSession.
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		defer consumerSession.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+
+	defer consumerSession.lock.Unlock()
+	consumerSession.cuSum += consumerSession.latestRelayCu
+	consumerSession.latestRelayCu = 0 // reset cu just in case
+	// increase relayNum
+	consumerSession.relayNum += 1
+	// increase QualityOfService
+	consumerSession.qoSInfo.TotalRelays++
+	consumerSession.qoSInfo.ConsecutiveTimeOut = 0
+	consumerSession.qoSInfo.AnsweredRelays++
+
+	consumerSession.latestBlock = latestServicedBlock
 	return nil
 }
 
-func (cs *ConsumerSessionManager) GetReportedProviders(epoch uint64) (string, error) {
-	// Rlock providerBlockList
-	// return providerBlockList
-	return "", nil
+// Get the reported providers currently stored in the session manager.
+func (cs *ConsumerSessionManager) GetReportedProviders(epoch uint64) []string {
+	cs.lock.RLock()
+	defer cs.lock.RUnlock()
+	if epoch != cs.currentEpoch {
+		return []string{} // if epochs are not equal, we will return an empty list.
+	}
+	keys := make([]string, 0, len(cs.addedToPurgeAndReport))
+	for k := range cs.addedToPurgeAndReport {
+		keys = append(keys, k)
+	}
+	return keys
 }
