@@ -97,6 +97,12 @@ screen -S jun1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S jun1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2362 $JUNO_RPC JUN1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2362.log"
 screen -S jun1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2363 $JUNO_RPC JUN1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2363.log"
 
+
+#Polygon providers
+screen -d -m -S polygon_providers zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4344 $POLYGON_MAINNET_RPC POLYGON1 jsonrpc --from servicer1 2>&1 | tee $LOGS_DIR/POLYGON_4344.log"
+screen -S polygon_providers -X screen -t win1 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4345 $POLYGON_MAINNET_RPC POLYGON1 jsonrpc --from servicer2 2>&1 | tee $LOGS_DIR/POLYGON_4345.log"
+screen -S polygon_providers -X screen -t win2 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 4346 $POLYGON_MAINNET_RPC POLYGON1 jsonrpc --from servicer3 2>&1 | tee $LOGS_DIR/POLYGON_4346.log"
+
 # Setup Portals
 screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3333.log" && sleep 0.25
 screen -S portals -X screen -t win11 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2 2>&1 | tee $LOGS_DIR/PORTAL_3334.log"
@@ -117,6 +123,7 @@ screen -S portals -X screen -t win21 -X zsh -c "source ~/.zshrc; lavad portal_se
 screen -S portals -X screen -t win22 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3346 APT1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3346.log"
 screen -S portals -X screen -t win16 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3343 JUN1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3343.log"
 screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3344 JUN1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3344.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3347 POLYGON1 jsonrpc --from user3 2>&1 | tee $LOGS_DIR/PORTAL_3347.log"
 
 echo "--- setting up screens done ---"
 screen -ls
