@@ -3,12 +3,15 @@ package utils
 import (
 	"fmt"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 )
 
-const TIMEOUT = 5
-const TimeoutMutex = false
+const TIMEOUT = 10
+
+var TimeoutMutex = "false"
+var TimeoutMutexBoolean, _ = strconv.ParseBool(TimeoutMutex)
 
 type Lockable interface {
 	Lock()
@@ -27,44 +30,6 @@ type LavaMutex struct {
 func (dm *LavaMutex) getLineAndFile() string {
 	_, file, line, _ := runtime.Caller(2)
 	return fmt.Sprintf("%s:%d", file, line)
-	// var buf [512]byte
-
-	// runtime.Stack(buf[:], true)
-	// temp := strings.Split(string(buf[:]), "\n")
-	// filepath := ""
-	// if len(temp) < 6 {
-	// 	filepath = temp[len(temp)]
-	// } else {
-	// 	filepath = temp[6]
-	// }
-	// filepath = strings.Replace(filepath, "\t", "", -1)
-	// split := strings.Split(filepath, ":")
-	// path, lineNumStr := split[0], split[1]
-	// lineNumStr = strings.Split(lineNumStr, " ")[0]
-	// lineNum, err := strconv.Atoi(lineNumStr)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return ""
-	// }
-	// file, err := os.Open(path)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer file.Close()
-
-	// scanner := bufio.NewScanner(file)
-	// i := 1
-	// for scanner.Scan() {
-	// 	if i == lineNum {
-	// 		return fmt.Sprintf("%s:%s: %s", path, lineNumStr, strings.TrimSpace(scanner.Text()))
-	// 	}
-
-	// 	i = i + 1
-	// }
-	// if err := scanner.Err(); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// return ""
 }
 
 func (dm *LavaMutex) waitForTimeout() {
@@ -87,7 +52,7 @@ func (dm *LavaMutex) waitForTimeout() {
 }
 
 func (dm *LavaMutex) Lock() {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		tempLineAndFile := dm.getLineAndFile()
 		dm.lockCount = dm.lockCount + 1
 		fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
@@ -102,7 +67,7 @@ func (dm *LavaMutex) Lock() {
 }
 
 func (dm *LavaMutex) TryLock() (isLocked bool) {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		tempLineAndFile := dm.getLineAndFile()
 		isLocked = dm.mu.TryLock()
 		if isLocked {
@@ -119,7 +84,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 }
 
 func (dm *LavaMutex) Unlock() {
-	if TimeoutMutex {
+	if TimeoutMutexBoolean {
 		// fmt.Println("Unlock: ", dm.getLineAndFile())
 		dm.lockCount = dm.lockCount - 1
 		dm.quit <- true
