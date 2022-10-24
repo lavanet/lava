@@ -17,4 +17,5 @@ var (
 	NegativeComputeUnitsAmountError      = sdkerrors.New("NegativeComputeUnitsAmount", 674, "Tried to substruct to negative compute units amount")
 	ReportAndBlockProviderError          = sdkerrors.New("ReportAndBlockProvider Error", 675, "Report and block the provider")
 	BlockProviderError                   = sdkerrors.New("BlockProvider Error", 676, "Block the provider")
+	SessionOutOfSyncError                = sdkerrors.New("SessionOutOfSync Error", 677, "Session went out of sync with the provider")
 )

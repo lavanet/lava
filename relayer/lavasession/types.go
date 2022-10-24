@@ -122,6 +122,10 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 			continue
 		}
 		if session.lock.TryLock() {
+			if session.blocklisted { // this session cannot be used.
+				session.lock.Unlock()
+				continue
+			}
 			// if we locked the session its available to use, otherwise someone else is already using it
 			return session, nil
 		}
