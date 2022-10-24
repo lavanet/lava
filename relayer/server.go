@@ -922,33 +922,43 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 		relaySession.Lock.Unlock()
 
 		var reply *pairingtypes.RelayReply
-		if nodeMsg.GetServiceApi().Category.Subscription {
-			var clientSub *rpcclient.ClientSubscription
-			var subscriptionID string
-			repliesChan := make(chan interface{})
-			reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), repliesChan)
-			if err != nil {
-				return utils.LavaFormatError("Subscription failed", err, nil)
-			}
+		var clientSub *rpcclient.ClientSubscription
+		var subscriptionID string
+		repliesChan := make(chan interface{})
+		reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), repliesChan)
+		if err != nil {
+			return utils.LavaFormatError("Subscription failed", err, nil)
+		}
 
-			relaySession.Lock.Lock()
-			relaySession.Subs[subscriptionID] = &subscription{
-				id:          subscriptionID,
-				sub:         clientSub,
-				repliesChan: repliesChan,
-			}
-			relaySession.Lock.Unlock()
+		relaySession.Lock.Lock()
+		relaySession.Subs[subscriptionID] = &subscription{
+			id:          subscriptionID,
+			sub:         clientSub,
+			repliesChan: repliesChan,
+		}
+		relaySession.Lock.Unlock()
 
-			err = srv.Send(reply) //this reply contains the RPC ID
-			if err != nil {
-				utils.LavaFormatError("Error getting RPC ID", err, nil)
-			}
+		err = srv.Send(reply) //this reply contains the RPC ID
+		if err != nil {
+			utils.LavaFormatError("Error getting RPC ID", err, nil)
+		}
 
-			for {
-				select {
-				case <-clientSub.Err():
-					utils.LavaFormatError("client sub", err, nil)
-					// delete this connection from the subs map
+		for {
+			select {
+			case <-clientSub.Err():
+				utils.LavaFormatError("client sub", err, nil)
+				// delete this connection from the subs map
+				relaySession.Lock.Lock()
+				if sub, ok := relaySession.Subs[subscriptionID]; ok {
+					sub.disconnect()
+					delete(relaySession.Subs, subscriptionID)
+				}
+				relaySession.Lock.Unlock()
+				return err
+			case reply := <-repliesChan:
+				data, err := json.Marshal(reply)
+				if err != nil {
+					utils.LavaFormatError("client sub unmarshal", err, nil)
 					relaySession.Lock.Lock()
 					if sub, ok := relaySession.Subs[subscriptionID]; ok {
 						sub.disconnect()
@@ -956,105 +966,39 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 					}
 					relaySession.Lock.Unlock()
 					return err
-				case reply := <-repliesChan:
-					data, err := json.Marshal(reply)
-					if err != nil {
-						utils.LavaFormatError("client sub unmarshal", err, nil)
-						relaySession.Lock.Lock()
-						if sub, ok := relaySession.Subs[subscriptionID]; ok {
-							sub.disconnect()
-							delete(relaySession.Subs, subscriptionID)
-						}
-						relaySession.Lock.Unlock()
-						return err
-					}
-
-					err = srv.Send(
-						&pairingtypes.RelayReply{
-							Data: data,
-						},
-					)
-					if err != nil {
-						// usually triggered when client closes connection
-						utils.LavaFormatError("client sub send", err, nil)
-						relaySession.Lock.Lock()
-						if sub, ok := relaySession.Subs[subscriptionID]; ok {
-							sub.disconnect()
-							delete(relaySession.Subs, subscriptionID)
-						}
-						relaySession.Lock.Unlock()
-						return err
-					}
-					// performCUUpdate
-					err = updateSessionCuSubscribe(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
-					if err != nil {
-						relaySession.Lock.Lock()
-						if sub, ok := relaySession.Subs[subscriptionID]; ok {
-							sub.disconnect()
-							delete(relaySession.Subs, subscriptionID)
-						}
-						relaySession.Lock.Unlock()
-						return err
-					}
-					utils.LavaFormatInfo("Sending data", &map[string]string{"data": string(data)})
 				}
+
+				err = srv.Send(
+					&pairingtypes.RelayReply{
+						Data: data,
+					},
+				)
+				if err != nil {
+					// usually triggered when client closes connection
+					utils.LavaFormatError("client sub send", err, nil)
+					relaySession.Lock.Lock()
+					if sub, ok := relaySession.Subs[subscriptionID]; ok {
+						sub.disconnect()
+						delete(relaySession.Subs, subscriptionID)
+					}
+					relaySession.Lock.Unlock()
+					return err
+				}
+				// performCUUpdate
+				// TODO Update payments
+				err = updateSessionCuSubscribe(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
+				if err != nil {
+					relaySession.Lock.Lock()
+					if sub, ok := relaySession.Subs[subscriptionID]; ok {
+						sub.disconnect()
+						delete(relaySession.Subs, subscriptionID)
+					}
+					relaySession.Lock.Unlock()
+					return err
+				}
+				utils.LavaFormatInfo("Sending data", &map[string]string{"data": string(data)})
 			}
-		} else {
-			// sanity check
-			// TODO return a json error here
 		}
-
-		// normal flow starts here
-		// if err != nil {
-		// 	return utils.LavaFormatError("Sending nodeMsg failed", err, nil)
-		// }
-
-		// latestBlock := int64(0)
-		// finalizedBlockHashes := map[int64]interface{}{}
-
-		// if g_sentry.GetSpecComparesHashes() {
-		// 	// Add latest block and finalized
-		// 	latestBlock, finalizedBlockHashes = g_chainSentry.GetLatestBlockData()
-		// }
-
-		// jsonStr, err := json.Marshal(finalizedBlockHashes)
-		// if err != nil {
-		// 	return utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err,
-		// 		&map[string]string{"finalizedBlockHashes": fmt.Sprintf("%v", finalizedBlockHashes)})
-		// }
-
-		// reply.FinalizedBlocksHashes = []byte(jsonStr)
-		// reply.LatestBlock = latestBlock
-
-		// getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {
-		// 	// request is a copy of the original request, but won't modify it
-		// 	// update relay request requestedBlock to the provided one in case it was arbitrary
-		// 	sentry.UpdateRequestedBlock(&request, reply)
-		// 	// Update signature,
-		// 	sig, err := sigs.SignRelayResponse(g_privKey, reply, &request)
-		// 	if err != nil {
-		// 		return utils.LavaFormatError("failed signing relay response", err,
-		// 			&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply)})
-		// 	}
-		// 	reply.Sig = sig
-
-		// 	if g_sentry.GetSpecComparesHashes() {
-		// 		//update sig blocks signature
-		// 		sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
-		// 		if err != nil {
-		// 			return utils.LavaFormatError("failed signing finalization data", err,
-		// 				&map[string]string{"request": fmt.Sprintf("%v", request), "reply": fmt.Sprintf("%v", reply), "userAddr": userAddr.String()})
-		// 		}
-		// 		reply.SigBlocks = sigBlocks
-		// 	}
-		// 	return nil
-		// }
-		// err = getSignaturesFromRequest(*request)
-		// if err != nil {
-		// 	return err
-		// }
-		// return reply to user
-		return nil
 	}
 	return nil
 }
