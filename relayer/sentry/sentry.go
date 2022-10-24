@@ -1358,7 +1358,7 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
 	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
-	if s.GetSpecComparesHashes() {
+	if s.GetSpecComparesHashes() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
