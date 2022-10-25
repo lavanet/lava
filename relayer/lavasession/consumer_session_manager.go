@@ -28,8 +28,6 @@ type ConsumerSessionManager struct {
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 }
 
-type zeroSizeSturct struct{}
-
 // Update the provider pairing list for the ConsumerSessionManager
 func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
@@ -78,9 +76,10 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 	clinetSession *ConsumerSession, epoch uint64, errRet error) {
 
 	// providers that we dont try to connect this iteration.
-
-	// convert this to an object with epoch managment
-	tempIgnoredProviders := initUnwantedProviders // list of providers that are ignored when picking a valid provider.
+	tempIgnoredProviders := &ignoredProviders{
+		providers:    initUnwantedProviders,
+		currentEpoch: csm.atomicReadCurrentEpoch(),
+	}
 	for {
 		// Get a valid consumerSessionWithProvider
 		consumerSessionWithProvider, providerAddress, sessionEpoch, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession)
@@ -89,7 +88,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesnt have enough compute units for this session, we block it for this session and continue to another provider.
-				tempIgnoredProviders[providerAddress] = struct{}{}
+				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
@@ -122,7 +121,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		if err != nil {
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
-				tempIgnoredProviders[providerAddress] = struct{}{}
+				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
@@ -133,7 +132,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
 			if MaxComputeUnitsExceededError.Is(err) {
-				tempIgnoredProviders[providerAddress] = struct{}{}
+				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				// We must unlock the consumer session before continuing.
 				consumerSession.lock.Unlock()
 				continue
@@ -172,18 +171,24 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	return "", UnreachableCodeError // should not reach here
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProvidersList map[string]struct{}, cuNeededForSession uint64) (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, currentEpoch uint64, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64) (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, currentEpoch uint64, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
-	providerAddress, err = csm.getValidProviderAddress(ignoredProvidersList)
+	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
+	if ignoredProviders.currentEpoch < currentEpoch {
+		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
+		ignoredProviders.currentEpoch = currentEpoch
+	}
+
+	providerAddress, err = csm.getValidProviderAddress(ignoredProviders.providers)
 	if err != nil {
-		return nil, "", 0, utils.LavaFormatError("couldnt get a provider address", err, nil)
+		utils.LavaFormatError("couldnt get a provider address", err, nil)
+		return nil, "", 0, err
 	}
 	consumerSessionWithProvider = csm.pairing[providerAddress]
 	if err := consumerSessionWithProvider.validateComputeUnits(cuNeededForSession); err != nil { // checking if we even have enough compute units for this provider.
 		return nil, providerAddress, 0, err // provider address is used to add to temp ignore upon error
 	}
-	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	return
 }
 
@@ -301,13 +306,12 @@ func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, 
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
 func (csm *ConsumerSessionManager) OnSessionDone(consumerSession *ConsumerSession, epoch uint64, latestServicedBlock int64) error {
 	// release locks, update CU, relaynum etc..
+	defer consumerSession.lock.Unlock() // we neeed to be locked here, if we didnt get it locked we try lock anyway
 	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
 		// if we managed to lock throw an error for misuse.
-		defer consumerSession.lock.Unlock()
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.lock.Unlock()
 	consumerSession.cuSum += consumerSession.latestRelayCu
 	consumerSession.latestRelayCu = 0 // reset cu just in case
 	// increase relayNum

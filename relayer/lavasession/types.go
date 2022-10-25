@@ -13,6 +13,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+type ignoredProviders struct {
+	providers    map[string]struct{}
+	currentEpoch uint64
+}
+
 type QoSInfo struct {
 	LastQoSReport      *pairingtypes.QualityOfServiceReport
 	LatencyScoreList   []sdk.Dec
@@ -35,10 +40,6 @@ type ConsumerSession struct {
 	endpoint          *Endpoint
 	blocklisted       bool   // if session lost sync we blacklist it.
 	numberOfFailiures uint64 // number of times this session has failed
-}
-
-func (cs *ConsumerSession) GetCuSum() {
-
 }
 
 type Endpoint struct {
@@ -205,3 +206,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 
 	return connected, endpointPtr, nil
 }
+
+// func (cs *ConsumerSession) GetCuSum() {
+
+// }
