@@ -188,13 +188,15 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// contentType := string(c.Context().Request.Header.ContentType())
 
 		log.Println("in <<< ", path)
-		reply, _, err := SendRelay(ctx, cp, privKey, path, string(c.Body()), http.MethodPost)
+		requestBody := string(c.Body())
+		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
+			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
-
-		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data))
+		responseBody := string(reply.Data)
+		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, nil)
+		return c.SendString(responseBody)
 	})
 
 	//
@@ -204,11 +206,12 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
+			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
 		}
-
-		log.Println("out >>> len", len(string(reply.Data)))
-		return c.SendString(string(reply.Data))
+		responseBody := string(reply.Data)
+		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, nil)
+		return c.SendString(responseBody)
 	})
 	//
 	// Go
