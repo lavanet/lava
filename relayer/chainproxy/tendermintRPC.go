@@ -224,7 +224,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
-			reply, replySrv, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -232,9 +232,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
-			if replySrv != nil {
+			if replyServer != nil {
 				var reply pairingtypes.RelayReply
-				err = (*replySrv).RecvMsg(&reply) //this reply contains the RPC ID
+				err = (*replyServer).RecvMsg(&reply) //this reply contains the RPC ID
 				if err != nil {
 					LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -248,7 +248,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				}
 				LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
 				for {
-					err = (*replySrv).RecvMsg(&reply)
+					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
 						LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)

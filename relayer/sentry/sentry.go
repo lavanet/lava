@@ -1320,7 +1320,7 @@ func (s *Sentry) SendRelay(
 	}
 
 	// callback user
-	reply, replySrv, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
+	reply, replyServer, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
 	//error using this provider
 	if err != nil {
 		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
@@ -1338,7 +1338,7 @@ func (s *Sentry) SendRelay(
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
 		// call user
-		reply, replySrv, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
+		reply, replyServer, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
 		if err2 != nil {
 			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 				s.movePairingEntryToPurge(wrap, index, false)
@@ -1350,7 +1350,7 @@ func (s *Sentry) SendRelay(
 				return reply, nil, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
 			}
 			// if the errors are the same just return one of them and the reply
-			return reply, replySrv, err2
+			return reply, replyServer, err2
 		}
 		// if we didnt get an error from the second relay we can continue noramlly
 	}
@@ -1472,7 +1472,7 @@ func (s *Sentry) SendRelay(
 			go checkReliability()
 		}
 	}
-	return reply, replySrv, nil
+	return reply, replyServer, nil
 }
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {

@@ -139,11 +139,11 @@ func SendRelay(
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
-		var replySrv pairingtypes.Relayer_RelaySubscribeClient
+		var replyServer pairingtypes.Relayer_RelaySubscribeClient
 		var reply *pairingtypes.RelayReply
 
 		if isSubscription {
-			replySrv, err = c.RelaySubscribe(ctx, relayRequest)
+			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
 			reply, err = c.Relay(connectCtx, relayRequest)
 		}
@@ -173,7 +173,7 @@ func SendRelay(
 			clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 		}
 
-		return reply, &replySrv, relayRequest, nil
+		return reply, &replyServer, relayRequest, nil
 	}
 
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
@@ -224,9 +224,9 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replySrv, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 
-	return reply, replySrv, err
+	return reply, replyServer, err
 }
 
 func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
