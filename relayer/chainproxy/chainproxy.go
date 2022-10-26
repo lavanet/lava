@@ -20,7 +20,7 @@ const (
 
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
-	Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error)
+	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 	RequestedBlock() int64
 	GetMsg() interface{}
 }

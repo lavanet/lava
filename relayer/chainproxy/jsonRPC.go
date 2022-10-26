@@ -323,7 +323,7 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }
 
-func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error) {
+func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
@@ -368,7 +368,6 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (*pairingt
 		Data: data,
 	}
 
-	var subscriptionID string
 	if ch != nil {
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 		if err != nil {

@@ -230,7 +230,7 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error) {
+func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}

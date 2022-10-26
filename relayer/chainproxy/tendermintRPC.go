@@ -314,7 +314,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	}
 }
 
-func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (*pairingtypes.RelayReply, string, *rpcclient.ClientSubscription, error) {
+func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
@@ -361,7 +361,6 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (*
 		Data: data,
 	}
 
-	var subscriptionID string
 	if ch != nil {
 		paramsMap, ok := params.(map[string]interface{})
 		if !ok {
