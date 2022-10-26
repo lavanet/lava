@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -231,6 +232,9 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 }
 
 func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	if ch != nil {
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+	}
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
