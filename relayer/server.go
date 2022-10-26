@@ -526,6 +526,54 @@ func updateSessionCuSubscribe(sess *RelaySession, userSessions *UserSessions, se
 	return nil
 }
 
+func processUnsubscribeEthereum(subscriptionID string, userSessions *UserSessions) {
+	for _, session := range userSessions.Sessions {
+		session.Lock.Lock()
+		if sub, ok := session.Subs[subscriptionID]; ok {
+			sub.disconnect()
+			delete(session.Subs, subscriptionID)
+			break
+		}
+		session.Lock.Unlock()
+	}
+}
+
+func processUnsubscribeTendermint(apiName string, subscriptionID string, userSessions *UserSessions) {
+	for _, session := range userSessions.Sessions {
+		session.Lock.Lock()
+		if apiName == "unsubscribe" {
+			if sub, ok := session.Subs[subscriptionID]; ok {
+				sub.disconnect()
+				delete(session.Subs, subscriptionID)
+				break
+			}
+		} else {
+			for subscriptionID, sub := range session.Subs {
+				sub.disconnect()
+				delete(session.Subs, subscriptionID)
+			}
+		}
+		session.Lock.Unlock()
+	}
+}
+
+func processUnsubscribe(apiName string, userAddr sdk.AccAddress, reqParams interface{}) error {
+	userSessions := getOrCreateUserSessions(userAddr.String())
+	userSessions.Lock.Lock()
+	defer userSessions.Lock.Unlock()
+	switch p := reqParams.(type) {
+	case []interface{}:
+		subscriptionID := p[0].(string)
+		processUnsubscribeEthereum(subscriptionID, userSessions)
+	case map[string]interface{}:
+		subscriptionID := ""
+		if apiName == "unsubscribe" {
+			subscriptionID = p["query"].(string)
+		}
+		processUnsubscribeTendermint(apiName, subscriptionID, userSessions)
+	}
+	return nil
+}
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
@@ -684,45 +732,9 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 
 	apiName := nodeMsg.GetServiceApi().Name
 	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
-		userSessions := getOrCreateUserSessions(userAddr.String())
-		userSessions.Lock.Lock()
-		defer userSessions.Lock.Unlock()
-		switch p := reqParams.(type) {
-		case []interface{}:
-			subscriptionID := p[0].(string)
-			for _, session := range userSessions.Sessions {
-				session.Lock.Lock()
-				if sub, ok := session.Subs[subscriptionID]; ok {
-					sub.disconnect()
-					delete(session.Subs, subscriptionID)
-					break
-				}
-				session.Lock.Unlock()
-			}
-		case map[string]interface{}:
-			if apiName == "unsubscribe" {
-				subscriptionID := p["query"].(string)
-				for _, session := range userSessions.Sessions {
-					session.Lock.Lock()
-					if sub, ok := session.Subs[subscriptionID]; ok {
-						sub.disconnect()
-						delete(session.Subs, subscriptionID)
-						break
-					}
-					session.Lock.Unlock()
-				}
-			} else if apiName == "unsubscribe_all" {
-				for _, session := range userSessions.Sessions {
-					session.Lock.Lock()
-					for subscriptionID, sub := range session.Subs {
-						sub.disconnect()
-						delete(session.Subs, subscriptionID)
-					}
-					session.Lock.Unlock()
-				}
-			} else {
-				return nil, utils.LavaFormatError("tendermint unsubscribe failed unknown api name", nil, nil)
-			}
+		err := processUnsubscribe(apiName, userAddr, reqParams)
+		if err != nil {
+			return nil, err
 		}
 	}
 
