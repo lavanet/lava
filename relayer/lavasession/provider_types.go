@@ -1,6 +1,7 @@
 package lavasession
 
 import (
+	"sync"
 	"sync/atomic"
 
 	"github.com/lavanet/lava/utils"
@@ -20,19 +21,38 @@ type ProviderSessionsEpochData struct {
 	VrfPk            utils.VrfPubKey
 }
 
+const (
+	notBlockListedConsumer = 0
+	blockListedConsumer    = 1
+)
+
 type ProviderSessionsWithConsumer struct {
 	Sessions      map[uint64]*SingleProviderSession
-	IsBlockListed bool
+	isBlockListed uint32
 	user          string
 	dataByEpoch   map[uint64]*ProviderSessionsEpochData
-	Lock          utils.LavaMutex
+	Lock          sync.RWMutex
+}
+
+// reads cs.BlockedEpoch atomically
+func (pswc *ProviderSessionsWithConsumer) atomicWriteBlockedEpoch(blockStatus uint32) {
+	atomic.StoreUint32(&pswc.isBlockListed, blockStatus)
+}
+
+// reads cs.BlockedEpoch atomically
+func (pswc *ProviderSessionsWithConsumer) atomicReadBlockedEpoch() (blockStatus uint32) {
+	return atomic.LoadUint32(&pswc.isBlockListed)
+}
+
+func (pswc *ProviderSessionsWithConsumer) readBlockListedAtomic() {
+
 }
 
 type SingleProviderSession struct {
 	userSessionsParent *ProviderSessionsWithConsumer
 	CuSum              uint64
 	UniqueIdentifier   uint64
-	Lock               utils.LavaMutex
+	Lock               sync.RWMutex
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64
