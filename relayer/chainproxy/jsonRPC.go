@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -76,7 +77,7 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 		return spectypes.NOT_APPLICABLE, err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -109,7 +110,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -236,21 +237,59 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 				break
 			}
-			utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
+			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
-			reply, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel() //incase there's a problem make sure to cancel the connection
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
 				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
-				break
+				continue
 			}
 
-			if err = c.WriteMessage(mt, reply.Data); err != nil {
-				LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
-				AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
-				break
+			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
+			if replyServer != nil {
+				var reply pairingtypes.RelayReply
+				err = (*replyServer).RecvMsg(&reply) //this reply contains the RPC ID
+				if err != nil {
+					LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					continue
+				}
+
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					continue
+				}
+				LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
+				for {
+					err = (*replyServer).RecvMsg(&reply)
+					if err != nil {
+						LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+						break
+					}
+
+					// If portal cant write to the client
+					if err = c.WriteMessage(mt, reply.Data); err != nil {
+						cancel()
+						LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
+						AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+						// break
+					}
+
+					LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
+				}
+			} else {
+				if err = c.WriteMessage(mt, reply.Data); err != nil {
+					LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", err)
+					AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					continue
+				}
+				LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
 			}
-			LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), nil)
 		}
 	})
 
@@ -260,7 +299,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
-		reply, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), "", err)
 			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, GetUniqueGuidResponseForError(err)))
@@ -269,7 +308,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		return c.SendString(string(reply.Data))
 	})
 
-	//
 	// Go
 	err := app.Listen(listenAddr)
 	if err != nil {
@@ -285,48 +323,60 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }
 
-func (nm *JrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
-	//
+func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	//
 	// Call our node
-	var result json.RawMessage
-	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
-	defer cancel()
-	err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
-	//
-	// Wrap result back to json
-	replyMsg := JsonrpcMessage{
-		Version: nm.msg.Version,
-		ID:      nm.msg.ID,
+	var result JsonrpcMessage
+	var sub *rpcclient.ClientSubscription
+	if ch != nil {
+		sub, err = rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+	} else {
+		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+		defer cancel()
+		err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
 	}
+
+	var replyMsg JsonrpcMessage
+	// the error check here would only wrap errors not from the rpc
 	if err != nil {
-		//
-		// TODO: CallContext is limited, it does not give us the source
-		// of the error or the error code if json (we need smarter error handling)
+		replyMsg = JsonrpcMessage{
+			Version: nm.msg.Version,
+			ID:      nm.msg.ID,
+		}
 		replyMsg.Error = &jsonError{
-			Code:    1, // TODO
+			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
-		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
 	} else {
-		replyMsg.Result = result
-		nm.msg.Result = result
+		nm.msg = &result
+		replyMsg = result
 	}
 
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
-		return nil, err
+		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
+		return nil, "", nil, err
 	}
+
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
-	return reply, nil
+
+	if ch != nil {
+		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
+		}
+	}
+	if replyMsg.Error != nil {
+		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
+	}
+
+	return reply, subscriptionID, sub, err
 }

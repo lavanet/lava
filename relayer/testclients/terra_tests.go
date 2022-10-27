@@ -15,7 +15,7 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 	errors := []string{}
 	if apiInterface == "rest" {
 		for i := 0; i < 10; i++ {
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet)
+			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet)
 			if err != nil {
 				log.Println("1:" + err.Error())
 				errors = append(errors, fmt.Sprintf("%s", err))
@@ -25,21 +25,21 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 		}
 	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 10; i++ {
-			reply, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet)
+			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet)
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet)
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet)
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
@@ -47,7 +47,7 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 				log.Println("reply URIRPC_TERRA_STATUS", reply)
 			}
-			reply, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet)
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))

@@ -13,7 +13,8 @@
       "average_block_time": "500",
       "allowed_block_lag_for_qos_sync": "20",
       "apis": [
-        {"name": "rpc_modules",
+        {
+          "name": "rpc_modules",
           "category": {
             "deterministic": true,
             "local": false,
@@ -84,7 +85,7 @@
             }
           ]
         },
-        { 
+        {
           "name": "eth_syncing",
           "category": {
             "deterministic": false,
@@ -338,8 +339,8 @@
           "name": "eth_subscribe",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -349,7 +350,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -362,7 +363,7 @@
           "name": "eth_unsubscribe",
           "category": {
             "deterministic": false,
-            "local": false,
+            "local": true,
             "subscription": false,
             "stateful": 0
           },
@@ -373,7 +374,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -1296,7 +1297,8 @@
       "average_block_time": "500",
       "allowed_block_lag_for_qos_sync": "20",
       "apis": [
-        {"name": "rpc_modules",
+        {
+          "name": "rpc_modules",
           "category": {
             "deterministic": true,
             "local": false,
@@ -1367,7 +1369,7 @@
             }
           ]
         },
-        { 
+        {
           "name": "eth_syncing",
           "category": {
             "deterministic": false,
@@ -1621,8 +1623,8 @@
           "name": "eth_subscribe",
           "category": {
             "deterministic": false,
-            "local": false,
-            "subscription": false,
+            "local": true,
+            "subscription": true,
             "stateful": 0
           },
           "block_parsing": {
@@ -1632,7 +1634,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -1645,7 +1647,7 @@
           "name": "eth_unsubscribe",
           "category": {
             "deterministic": false,
-            "local": false,
+            "local": true,
             "subscription": false,
             "stateful": 0
           },
@@ -1656,7 +1658,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": false,
+          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",

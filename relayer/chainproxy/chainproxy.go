@@ -7,6 +7,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -19,7 +20,7 @@ const (
 
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
-	Send(ctx context.Context) (*pairingtypes.RelayReply, error)
+	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 	RequestedBlock() int64
 	GetMsg() interface{}
 }
@@ -90,22 +91,22 @@ func SendRelay(
 	url string,
 	req string,
 	connectionType string,
-) (*pairingtypes.RelayReply, error) {
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 
-	//
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
 	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
-	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
 
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
@@ -128,7 +129,7 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		relayRequest.Sig = sig
 		c := *clientSession.Endpoint.Client
@@ -138,32 +139,43 @@ func SendRelay(
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
-		reply, err := c.Relay(connectCtx, relayRequest)
+		var replyServer pairingtypes.Relayer_RelaySubscribeClient
+		var reply *pairingtypes.RelayReply
+
+		if isSubscription {
+			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
+		} else {
+			reply, err = c.Relay(connectCtx, relayRequest)
+		}
 
 		if err != nil {
 			if err.Error() == context.DeadlineExceeded.Error() {
 				clientSession.QoSInfo.ConsecutiveTimeOut++
 			}
-			return nil, nil, err
-		}
-		currentLatency := time.Since(relaySentTime)
-		clientSession.QoSInfo.ConsecutiveTimeOut = 0
-		clientSession.QoSInfo.AnsweredRelays++
-
-		//update relay request requestedBlock to the provided one in case it was arbitrary
-		sentry.UpdateRequestedBlock(relayRequest, reply)
-		requestedBlock = relayRequest.RequestBlock
-
-		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
-		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
-		expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-		clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+		if !isSubscription {
+			currentLatency := time.Since(relaySentTime)
+			clientSession.QoSInfo.ConsecutiveTimeOut = 0
+			clientSession.QoSInfo.AnsweredRelays++
 
-		return reply, relayRequest, nil
+			//update relay request requestedBlock to the provided one in case it was arbitrary
+			sentry.UpdateRequestedBlock(relayRequest, reply)
+			requestedBlock = relayRequest.RequestBlock
+
+			err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
+			clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+		}
+
+		return reply, &replyServer, relayRequest, nil
 	}
+
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
@@ -211,11 +223,10 @@ func SendRelay(
 
 		return reply, relayRequest, nil
 	}
-	//
-	//
-	reply, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 
-	return reply, err
+	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+
+	return reply, replyServer, err
 }
 
 func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {

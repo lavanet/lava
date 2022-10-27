@@ -127,10 +127,11 @@ type readOp struct {
 }
 
 type requestOp struct {
-	ids  []json.RawMessage
-	err  error
-	resp chan *jsonrpcMessage // receives up to len(ids) responses
-	sub  *ClientSubscription  // only set for EthSubscribe requests
+	ids   []json.RawMessage
+	err   error
+	resp  chan *jsonrpcMessage // receives up to len(ids) responses
+	sub   *ClientSubscription  // only set for EthSubscribe requests
+	subid string               // this is only set for tendermint subscription
 }
 
 func (op *requestOp) wait(ctx context.Context, c *Client) (*jsonrpcMessage, error) {
@@ -288,11 +289,11 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, result int
 	var err error
 	switch p := params.(type) {
 	case []interface{}:
-		msg, err = c.newMessageArrayWithID(method, id, p...)
+		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
-		msg, err = c.newMessageMap(method, p)
+		msg, err = c.newMessageMapWithID(method, id, p)
 	case nil:
-		msg, err = c.newMessageArrayWithID(method, id, (make([]interface{}, 0))...) // in case of nil, we will send it as an empty array.
+		msg, err = c.newMessageArrayWithID(method, id, (make([]interface{}, 0))) // in case of nil, we will send it as an empty array.
 	default:
 		return fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -313,14 +314,24 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, result int
 	}
 
 	// dispatch has accepted the request and will close the channel when it quits.
-	switch resp, err := op.wait(ctx, c); {
-	case err != nil:
+
+	resp, err := op.wait(ctx, c)
+	if err != nil {
 		return err
-	case resp.Error != nil:
+	}
+	_, ok := result.(*json.RawMessage)
+	if !ok {
+		respData, err := json.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(respData, &result)
+	}
+	if resp.Error != nil {
 		return resp.Error
-	case len(resp.Result) == 0:
+	} else if len(resp.Result) == 0 {
 		return ErrNoResult
-	default:
+	} else {
 		return json.Unmarshal(resp.Result, &result)
 	}
 }
@@ -423,7 +434,11 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
-func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, namespace string, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, result interface{}, method string, channel interface{}, params interface{}) (*ClientSubscription, error) {
+	if result != nil && reflect.TypeOf(result).Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("call result parameter must be pointer or nil interface: %v", result)
+	}
+
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)
 	if chanVal.Kind() != reflect.Chan || chanVal.Type().ChanDir()&reflect.SendDir == 0 {
@@ -435,15 +450,27 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, namespace st
 	if c.isHTTP {
 		return nil, ErrNotificationsUnsupported
 	}
-
-	msg, err := c.newMessageArrayWithID(namespace+subscribeMethodSuffix, id, args...)
+	var msg *jsonrpcMessage
+	var err error
+	var subid string
+	switch p := params.(type) {
+	case []interface{}:
+		msg, err = c.newMessageArrayWithID(method, id, p)
+	case map[string]interface{}:
+		msg, err = c.newMessageMapWithID(method, id, p)
+		subid = p["query"].(string)
+	default:
+		return nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	op := &requestOp{
-		ids:  []json.RawMessage{msg.ID},
-		resp: make(chan *jsonrpcMessage),
-		sub:  newClientSubscription(c, namespace, chanVal),
+		ids:   []json.RawMessage{msg.ID},
+		resp:  make(chan *jsonrpcMessage),
+		sub:   newClientSubscription(c, method, chanVal),
+		subid: subid,
 	}
 
 	// Send the subscription request.
@@ -451,13 +478,24 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, namespace st
 	if err := c.send(ctx, op, msg); err != nil {
 		return nil, err
 	}
-	if _, err := op.wait(ctx, c); err != nil {
+	resp, err := op.wait(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	// TODO
+	// use only one type to remove marshal and unmarshal
+	respData, err := json.Marshal(resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(respData, &result)
+	if err != nil {
 		return nil, err
 	}
 	return op.sub, nil
 }
 
-func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn ...interface{}) (*jsonrpcMessage, error) {
+func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn interface{}) (*jsonrpcMessage, error) {
 	var msg *jsonrpcMessage
 	if id == nil {
 		msg = &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
@@ -484,8 +522,13 @@ func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*jsonr
 	return msg, nil
 }
 
-func (c *Client) newMessageMap(method string, paramsIn map[string]interface{}) (*jsonrpcMessage, error) {
-	msg := &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+func (c *Client) newMessageMapWithID(method string, id json.RawMessage, paramsIn map[string]interface{}) (*jsonrpcMessage, error) {
+	var msg *jsonrpcMessage
+	if id == nil {
+		msg = &jsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+	} else {
+		msg = &jsonrpcMessage{Version: vsn, ID: id, Method: method}
+	}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
 		if msg.Params, err = json.Marshal(paramsIn); err != nil {

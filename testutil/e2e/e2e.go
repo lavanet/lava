@@ -116,9 +116,6 @@ func readFile(path string, state State, filter []string, t *testing.T) {
 			if _, found := passingFilter(line, filter); found {
 				processLog(line, state, t)
 			} else if *state.debug || showAll {
-				if len(line) > 200 {
-					line = line[:200] + "..." //too long is ugly
-				}
 				log := "(DEBUG) " + state.id + " ::: " + line
 				if t != nil {
 					t.Log(log)
@@ -300,15 +297,8 @@ func printTestResult(res *TestResult, t *testing.T) {
 	if err == nil {
 		err = fmt.Errorf("")
 	}
-	short := 40 * 4
 	line := res.line
-	if len(line) > short {
-		line = line[:short] + "..."
-	}
 	errMsg := err.Error()
-	if len(errMsg) > short {
-		errMsg = errMsg[:short] + "..."
-	}
 	log := fmt.Sprintf("%s ::: %s ::: %s ::: %s ::: %s", status, res.parent, res.eventID, line, errMsg)
 	fmt.Println(log)
 }
