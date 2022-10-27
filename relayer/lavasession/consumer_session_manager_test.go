@@ -47,7 +47,7 @@ func createPairingList() []*ConsumerSessionsWithProvider {
 		cswpList = append(cswpList, &ConsumerSessionsWithProvider{
 			Acc:             "provider" + strconv.Itoa(p),
 			Endpoints:       pairingEndpoints,
-			Sessions:        map[int64]*ConsumerSession{},
+			Sessions:        map[int64]*SingleConsumerSession{},
 			MaxComputeUnits: 200,
 			ReliabilitySent: false,
 			PairingEpoch:    firstEpochHeight,

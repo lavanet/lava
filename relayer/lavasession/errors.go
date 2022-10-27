@@ -4,7 +4,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-var (
+var ( // Consumer Side Errors
 	PairingListEmptyError                = sdkerrors.New("pairingListEmpty Error", 665, "No pairings available.") // client couldnt connect to any provider.
 	UnreachableCodeError                 = sdkerrors.New("UnreachableCode Error", 666, "Should not get here.")
 	AllProviderEndpointsDisabledError    = sdkerrors.New("AllProviderEndpointsDisabled Error", 667, "All endpoints are not available.") // a provider is completly unresponsive all endpoints are not available
@@ -18,4 +18,9 @@ var (
 	ReportAndBlockProviderError          = sdkerrors.New("ReportAndBlockProvider Error", 675, "Report and block the provider")
 	BlockProviderError                   = sdkerrors.New("BlockProvider Error", 676, "Block the provider")
 	SessionOutOfSyncError                = sdkerrors.New("SessionOutOfSync Error", 677, "Session went out of sync with the provider")
+)
+
+var ( // Provider Side Errors
+	InvalidEpochError           = sdkerrors.New("InvalidEpoch Error", 881, "Requested Epoch Is Too Old")
+	NewSessionWithRelayNumError = sdkerrors.New("NewSessionWithRelayNum Error", 882, "Requested session with relay number is invalid")
 )

@@ -73,7 +73,7 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
-	clinetSession *ConsumerSession, epoch uint64, errRet error) {
+	clinetSession *SingleConsumerSession, epoch uint64, errRet error) {
 
 	// providers that we dont try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{
@@ -236,7 +236,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 }
 
 // Report session failiure, mark it as blocked from future usages, report if timeout happened.
-func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *ConsumerSession, errorReceived error, didTimeout bool) error {
+func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error, didTimeout bool) error {
 	// consumerSession must be locked when getting here.
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
@@ -294,7 +294,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *ConsumerSes
 }
 
 // get a session from the pool except specific providers, which also validates the epoch.
-func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *ConsumerSession, epoch uint64, err error) {
+func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *SingleConsumerSession, epoch uint64, err error) {
 	// if bannedAddressessEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressessEpoch != csm.atomicReadCurrentEpoch() {
 		return csm.GetSession(ctx, cuNeeded, nil)
@@ -304,7 +304,7 @@ func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, 
 }
 
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
-func (csm *ConsumerSessionManager) OnSessionDone(consumerSession *ConsumerSession, epoch uint64, latestServicedBlock int64) error {
+func (csm *ConsumerSessionManager) OnSessionDone(consumerSession *SingleConsumerSession, epoch uint64, latestServicedBlock int64) error {
 	// release locks, update CU, relaynum etc..
 	defer consumerSession.lock.Unlock() // we neeed to be locked here, if we didnt get it locked we try lock anyway
 	if consumerSession.lock.TryLock() { // verify consumerSession was locked.

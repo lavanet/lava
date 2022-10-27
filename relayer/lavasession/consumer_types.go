@@ -18,7 +18,7 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type QoSInfo struct {
+type qoSInfo struct {
 	LastQoSReport      *pairingtypes.QualityOfServiceReport
 	LatencyScoreList   []sdk.Dec
 	SyncScoreSum       int64
@@ -28,10 +28,10 @@ type QoSInfo struct {
 	ConsecutiveTimeOut uint64
 }
 
-type ConsumerSession struct {
+type SingleConsumerSession struct {
 	cuSum             uint64
 	latestRelayCu     uint64 // set by GetSession cuNeededForSession
-	qoSInfo           QoSInfo
+	qoSInfo           qoSInfo
 	sessionId         int64
 	client            *ConsumerSessionsWithProvider
 	lock              utils.LavaMutex
@@ -53,7 +53,7 @@ type ConsumerSessionsWithProvider struct {
 	Lock             utils.LavaMutex
 	Acc              string //public lava address // change at the end to PublicLavaAddress
 	Endpoints        []*Endpoint
-	Sessions         map[int64]*ConsumerSession
+	Sessions         map[int64]*SingleConsumerSession
 	MaxComputeUnits  uint64
 	UsedComputeUnits uint64
 	ReliabilitySent  bool
@@ -111,7 +111,7 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, 
 	return &c, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (*ConsumerSession, error) {
+func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (*SingleConsumerSession, error) {
 	// TODO_RAN: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	cswp.Lock.Lock()
@@ -141,7 +141,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 		randomSessId = rand.Int63()
 	}
 
-	consumerSession := &ConsumerSession{
+	consumerSession := &SingleConsumerSession{
 		sessionId: randomSessId,
 		client:    cswp,
 		endpoint:  endpoint,
@@ -207,6 +207,50 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	return connected, endpointPtr, nil
 }
 
-// func (cs *ConsumerSession) GetCuSum() {
+// func (cs *ConsumerSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 
+// 	if cs.qoSInfo.LastQoSReport == nil {
+// 		cs.qoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
+// 	}
+
+// 	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.qoSInfo.TotalRelays-cs.qoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.qoSInfo.TotalRelays), 0))
+// 	cs.qoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePrecentage).Quo(AvailabilityPercentage))
+// 	if sdk.OneDec().GT(cs.qoSInfo.LastQoSReport.Availability) {
+// 		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availibility": cs.qoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePrecentage.String()})
+// 	}
+
+// 	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
+// 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
+
+// 	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+// 		index := sort.Search(len(list), func(i int) bool {
+// 			return list[i].GTE(value)
+// 		})
+// 		if len(list) == index { // nil or empty slice or after last element
+// 			return append(list, value)
+// 		}
+// 		list = append(list[:index+1], list[index:]...) // index < len(a)
+// 		list[index] = value
+// 		return list
+// 	}
+// 	cs.qoSInfo.LatencyScoreList = insertSorted(cs.qoSInfo.LatencyScoreList, latencyScore)
+// 	cs.qoSInfo.LastQoSReport.Latency = cs.qoSInfo.LatencyScoreList[int(float64(len(cs.qoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
+
+// 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+// 		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
+// 			cs.qoSInfo.SyncScoreSum++
+// 		}
+// 	} else {
+// 		cs.qoSInfo.SyncScoreSum++
+// 	}
+// 	cs.qoSInfo.TotalSyncScore++
+
+// 	cs.qoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.qoSInfo.SyncScoreSum).QuoInt64(cs.qoSInfo.TotalSyncScore)
+
+// 	if sdk.OneDec().GT(cs.qoSInfo.LastQoSReport.Sync) {
+// 		utils.LavaFormatInfo("QoS Sync report",
+// 			&map[string]string{"Sync": cs.qoSInfo.LastQoSReport.Sync.String(),
+// 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
+// 				"sync score": strconv.FormatInt(cs.qoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.qoSInfo.TotalSyncScore, 10)})
+// 	}
 // }
