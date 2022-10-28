@@ -36,10 +36,10 @@ func AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, 
 }
 
 // Logging the Request and Response to the stdout.
-func LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, err error) {
+func LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError {
-		utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
+		utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
 		return
 	}
-	utils.LavaFormatInfo(module, &map[string]string{"request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+	utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
