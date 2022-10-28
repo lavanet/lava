@@ -676,6 +676,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	// return reply to user
+	log.Println("[DATA]", string(reply.GetData()))
 	return reply, nil
 }
 

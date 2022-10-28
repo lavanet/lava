@@ -71,6 +71,9 @@ func NewServer(cp *GrpcChainProxy, privKey *btcec.PrivateKey) *Server {
 // }
 
 type GrpcMessage struct {
+	methodDesc *desc.MethodDescriptor
+	formatter  grpcurl.Formatter
+
 	cp             *GrpcChainProxy
 	serviceApi     *spectypes.ServiceApi
 	path           string
@@ -126,7 +129,57 @@ func (m GrpcMessage) GetParams() interface{} {
 
 func (m GrpcMessage) GetResult() json.RawMessage {
 	// utils.LavaFormatInfo("getting result: "+string(m.Result), nil)
-	return m.Result
+
+	// var s string
+	// if s, err = formatter(respMessage); err != nil {
+	// 	return nil, errors.Wrap(err, "formatter()")
+	// }
+	// log.Println("[RESP]", s)
+	//
+
+	// TODO:
+	msgFactory := dynamic.NewMessageFactoryWithDefaults()
+	msg := msgFactory.NewMessage(m.methodDesc.GetOutputType())
+	if err := proto.Unmarshal(m.Result, msg); err != nil {
+		log.Println(errors.Wrap(err, "proto.Unmarshal()"))
+		return m.Result
+	}
+
+	s, err := m.formatter(msg)
+	if err != nil {
+		log.Println(errors.Wrap(err, "m.formatter()"))
+		return m.Result
+	}
+	log.Println("m.formatter(): ", s)
+
+	return []byte(s)
+
+	// return m.Result
+
+	// log.Println("m.formatter(): ", s)
+	// return []byte(s)
+
+	// if err := jsonpb.UnmarshalString(string(m.Result), msg); err != nil {
+	// 	log.Println(errors.Wrap(err, "jsonpb.UnmarshalString()"))
+	// 	return m.Result
+	// }
+
+	// marshaler := &jsonpb.Marshaler{
+	// 	OrigName:     true,
+	// 	EnumsAsInts:  false,
+	// 	EmitDefaults: false,
+	// 	Indent:       "",
+	// 	AnyResolver:  nil,
+	// }
+	// s, err := marshaler.MarshalToString(msg)
+	// if err != nil {
+	// 	log.Println(errors.Wrap(err, "marshaler.MarshalToString()"))
+	// 	return m.Result
+	// }
+	//
+	// log.Println("marshaler.MarshalToString(): ", s)
+	//
+	// return []byte(s)
 }
 
 func (m GrpcMessage) ParseBlock(inp string) (int64, error) {
@@ -237,7 +290,7 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 			msg:            data,
 			connectionType: connectionType,
 		}
-		log.Println("[nodeMsg.msg]", nodeMsg.msg)
+		log.Println("[nodeMsg.msg]", string(nodeMsg.msg.([]byte)))
 
 		return nodeMsg, nil
 	}
@@ -272,6 +325,7 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	gs := grpcutil.NewServerFromServiceDescSlice(
 		serviceDescSlice,
 		func(ctx context.Context, req interface{}) (interface{}, error) {
+			log.Println("")
 			m, ok := req.(*tmservice.GetLatestBlockRequest)
 			if !ok {
 				// TODO: return error
@@ -438,6 +492,36 @@ func parseSymbol(svcAndMethod string) (string, string) {
 	return svcAndMethod[:pos], svcAndMethod[pos+1:]
 }
 
+type WrapPBI interface {
+	proto.Message
+	Unmarshal(data []byte) (err error)
+}
+
+type WrapPB struct{}
+
+func (w *WrapPB) Reset() {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (w *WrapPB) String() string {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (w *WrapPB) ProtoMessage() {
+	// TODO implement me
+	panic("implement me")
+}
+
+func NewWrapPB() WrapPBI {
+	return &WrapPB{}
+}
+
+func (w *WrapPB) Unmarshal(data []byte) (err error) {
+	return nil
+}
+
 func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b []byte, err error) {
 	cl := grpcreflect.NewClient(ctx, reflectionpb.NewServerReflectionClient(conn))
 	descriptorSource := descriptorSourceFromServer(cl)
@@ -454,8 +538,10 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 	}
 
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 	stub := grpcdynamic.NewStubWithMessageFactory(conn, msgFactory)
+	_ = stub
 
 	var reader io.Reader
 	switch v := nm.msg.(type) {
@@ -503,10 +589,10 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 		return nil, errors.Wrap(err, "grpcurl.RequestParserAndFormatter()")
 	}
 	_ = requestParser
-	_ = formatter
+	nm.formatter = formatter
 
-	bR, err := ioutil.ReadAll(reader)
-	if err != nil {
+	var reqBytes []byte
+	if reqBytes, err = ioutil.ReadAll(reader); err != nil {
 		return nil, errors.Wrap(err, "ioutil.ReadAll()")
 	}
 
@@ -514,9 +600,8 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 	log.Println("[RESP TYPE]", methodDescriptor.GetOutputType())
 
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
-	// log.Println("[MSG]", msg)
-	if len(bR) != 0 {
-		if err = jsonpb.UnmarshalString(string(bR), msg); err != nil {
+	if len(reqBytes) != 0 {
+		if err = jsonpb.UnmarshalString(string(reqBytes), msg); err != nil {
 			return nil, errors.Wrap(err, "gjsonpb.UnmarshalString()")
 		}
 		// log.Println("[MSG 2]", msg)
@@ -525,20 +610,92 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 		// }
 	}
 
-	var respMessage proto.Message
-	if respMessage, err = stub.InvokeRpc(ctx, methodDescriptor, msg); err != nil {
-		return nil, errors.Wrap(err, "stub.InvokeRpc()")
+	var resp hackPB
+	if err = conn.Invoke(
+		ctx,
+		fmt.Sprintf("/%s/%s", methodDescriptor.GetService().GetFullyQualifiedName(), methodDescriptor.GetName()),
+		msg,
+		&resp,
+	); err != nil {
+		return nil, errors.Wrap(err, "conn.Invoke()")
 	}
+
+	// log.Println("json.RawMessage:", resp.String())
+	return resp, nil
+	// return []byte(resp.String()), nil
+
+	// var respMessage proto.Message
+	// if respMessage, err = stub.InvokeRpc(ctx, methodDescriptor, msg); err != nil {
+	// 	return nil, errors.Wrap(err, "stub.InvokeRpc()")
+	// }
+
+	// if b, err = proto.Marshal(respMessage); err != nil {
+	// 	return nil, errors.Wrap(err, "proto.Marshal()")
+	// }
+	//
+	// return b, nil
+
+	// extensionRegistry := dynamic.NewExtensionRegistryWithDefaults()
+	// if err = extensionRegistry.AddExtension(methodDescriptor.GetOutputType().GetFields()...); err != nil {
+	// 	return nil, errors.Wrap(err, "extensionRegistry.AddExtension()")
+	// }
+
+	// var dynamicMessage *dynamic.Message
+	// if dynamicMessage, err = dynamic.AsDynamicMessage(respMessage); err != nil {
+	// 	return nil, errors.Wrap(err, "dynamic.AsDynamicMessage()")
+	// }
+	// if b, err = dynamicMessage.Marshal(); err != nil {
+	// 	return nil, errors.Wrap(err, "dynamicMessage.Marshal()")
+	// }
+	// log.Println("[RESP]", string(b))
+	//
+	// return b, nil
 
 	// log.Println("[respMessage]", respMessage.String())
 
-	var s string
-	if s, err = formatter(respMessage); err != nil {
-		return nil, errors.Wrap(err, "formatter()")
-	}
-	log.Println("[RESP]", s)
+	// var s string
+	// if s, err = formatter(respMessage); err != nil {
+	// 	return nil, errors.Wrap(err, "formatter()")
+	// }
+	// log.Println("[RESP]", s)
+	//
+	// return []byte(s), nil
+}
 
-	return []byte(s), nil
+// type HackPB interface {
+// 	encoding.Codec
+// 	proto.Message
+// }
+
+type hackPB json.RawMessage
+
+// func NewHackPB() HackPB {
+// 	return &hackPB{}
+// }
+
+func (h hackPB) Reset()         {}
+func (h hackPB) String() string { return string(h) }
+func (h hackPB) ProtoMessage()  {}
+func (h hackPB) Marshal(v interface{}) ([]byte, error) {
+	log.Println("HackPB.Marshal()")
+	log.Printf("%T", v)
+	return h, nil
+}
+func (h *hackPB) Unmarshal(dAtA []byte) error {
+	log.Println("HackPB.Unmarshal()")
+	log.Println("data:", string(dAtA))
+	*h = dAtA
+	return nil
+}
+func (h hackPB) Unmarshal2(data []byte, v interface{}) (err error) {
+	log.Println("HackPB.Unmarshal()")
+	log.Printf("%T", v)
+	log.Println("data:", string(data))
+	h = data
+	return nil
+}
+func (h hackPB) Name() string {
+	return "hackPB"
 }
 
 // func (nm *GrpcMessage) invoke(ctx context.Context, conn *grpc.ClientConn) ([]byte, error) {
@@ -630,7 +787,6 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 //
 // 	return []byte(respStr), nil
 // }
-
 func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
@@ -642,7 +798,7 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	defer conn.Close()
 
-	var res []byte
+	var respBytes []byte
 	switch nm.connectionType {
 	case "grpc_server_descriptors": // TODO: Make a const.
 		// var fileDescriptorSlice []*desc.FileDescriptor
@@ -678,18 +834,17 @@ func (nm *GrpcMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 			return nil, utils.LavaFormatError("Marshalling the gRPC service descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
 		}
 
-		res = b
+		respBytes = b
 	default:
-		res, err = nm.invokeV2(ctx, conn)
-		if err != nil {
+		if respBytes, err = nm.invokeV2(ctx, conn); err != nil {
 			nm.Result = []byte(fmt.Sprintf("%s", err))
 			return nil, utils.LavaFormatError("Sending the gRPC message failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
 		}
 	}
 
-	nm.Result = res
+	nm.Result = respBytes
 	reply := &pairingtypes.RelayReply{
-		Data: res,
+		Data: respBytes,
 	}
 
 	return reply, nil
