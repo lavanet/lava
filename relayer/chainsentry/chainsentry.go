@@ -24,6 +24,7 @@ type ChainSentry struct {
 	latestBlockNum         int64 // uint?
 	ChainID                string
 
+	quit chan bool
 	// Spec blockQueueMu (rw mutex)
 	blockQueueMu utils.LavaMutex
 	blocksQueue  []string
@@ -126,7 +127,6 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 
 func (cs *ChainSentry) Start(ctx context.Context) error {
 	ticker := time.NewTicker(time.Second * 5)
-	quit := make(chan struct{})
 
 	// Polls blocks and keeps a queue of them
 	go func() {
@@ -137,7 +137,7 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 				if err != nil {
 					log.Println(err)
 				}
-			case <-quit:
+			case <-cs.quit:
 				ticker.Stop()
 				return
 			}
@@ -145,6 +145,10 @@ func (cs *ChainSentry) Start(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+func (cs *ChainSentry) quitSentry(ctx context.Context) {
+	cs.quit <- true
 }
 
 func NewChainSentry(
@@ -157,5 +161,6 @@ func NewChainSentry(
 		ChainID:                chainID,
 		numFinalBlocks:         int(cp.GetSentry().GetSpecSavedBlocks()),
 		finalizedBlockDistance: int(cp.GetSentry().GetSpecFinalizationCriteria()),
+		quit:                   make(chan bool),
 	}
 }
