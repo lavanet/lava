@@ -110,11 +110,10 @@ type relayServer struct {
 func askForRewards(staleEpochHeight int64) {
 	g_askForRewards_mutex.Lock()
 	defer g_askForRewards_mutex.Unlock()
-	deletedRewardsSessions := make(map[uint64][]*RelaySession, 0)
 	staleEpochs := []uint64{uint64(staleEpochHeight)}
 	g_rewardsSessions_mutex.Lock()
 	if len(g_rewardsSessions) > sentry.StaleEpochDistance+1 {
-		utils.LavaFormatError("Some epochs were not rewarded, catching up and asking for rewards...", nil, &map[string]string{
+		utils.LavaFormatWarning("Some epochs were not rewarded, catching up and asking for rewards...", nil, &map[string]string{
 			"requested epoch":      strconv.FormatInt(staleEpochHeight, 10),
 			"provider block":       strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"rewards to claim len": strconv.FormatInt(int64(len(g_rewardsSessions)), 10),
@@ -145,12 +144,14 @@ func askForRewards(staleEpochHeight int64) {
 			session.Lock.Lock() // TODO:: is it ok to lock session without g_sessions_mutex?
 			if session.Proof == nil {
 				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
-				session.Lock.Unlock()
+
 				if session.UniqueIdentifier != 0 {
-					utils.LavaFormatError("Missing proof, cannot get rewards for this session", nil, &map[string]string{
+
+					utils.LavaFormatError("Missing proof, cannot get rewards for this session, deleting it", nil, &map[string]string{
 						"UniqueIdentifier": strconv.FormatUint(session.UniqueIdentifier, 10),
 					})
 				}
+				session.Lock.Unlock()
 				continue
 			}
 
@@ -197,7 +198,6 @@ func askForRewards(staleEpochHeight int64) {
 		}
 
 		g_rewardsSessions_mutex.Lock()
-		deletedRewardsSessions[uint64(staleEpoch)] = g_rewardsSessions[uint64(staleEpoch)]
 		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
 	}
@@ -235,16 +235,20 @@ func askForRewards(staleEpochHeight int64) {
 	hasSequenceError := false
 	success := false
 	idx := -1
-	customSeqNum := uint64(0)
 	summarizedTransactionResult := ""
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
 		msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 		g_sentry.ClientCtx.Output = &myWriter
 		if hasSequenceError { // a retry
-			g_txFactory = g_txFactory.WithSequence(customSeqNum)
+			_, seq, err := g_sentry.ClientCtx.AccountRetriever.GetAccountNumberSequence(g_sentry.ClientCtx, g_sentry.ClientCtx.GetFromAddress())
+			if err != nil {
+				utils.LavaFormatError("failed to get correct sequence number for account, give up", err, nil)
+				break // give up
+			}
+			g_txFactory = g_txFactory.WithSequence(seq)
 			myWriter.Reset()
-			utils.LavaFormatInfo("Retrying with parsed sequence number:", &map[string]string{
-				"customSeqNum": strconv.FormatUint(customSeqNum, 10),
+			utils.LavaFormatInfo("Retrying with sequence number:", &map[string]string{
+				"SeqNum": strconv.FormatUint(seq, 10),
 			})
 		}
 		err := sentry.CheckProfitabilityAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
@@ -280,35 +284,9 @@ func askForRewards(staleEpochHeight int64) {
 		} else {
 			if strings.Contains(summarized, "incorrect account sequence") {
 				hasSequenceError = true
-				utils.LavaFormatWarning("Incorrect sequence number in transaction, retrying...", nil, &map[string]string{
-					"response": summarized,
-				})
-				seqErrorstr := "account sequence mismatch, expected "
-				seqNumIndex := strings.Index(summarized, seqErrorstr) + len(seqErrorstr)
-				strings.Index(summarized, seqErrorstr)
-				var expectedSeqNum bytes.Buffer
-				for ; summarized[seqNumIndex] != ','; seqNumIndex++ {
-					expectedSeqNum.WriteByte(summarized[seqNumIndex])
-				}
-				customSeqNum, err = strconv.ParseUint(expectedSeqNum.String(), 10, 32)
-				if err != nil {
-					utils.LavaFormatError("Cannot parse sequence number from error transaction", err, nil)
-				}
-			} else {
-				// readd the deleted payments back
-				g_rewardsSessions_mutex.Lock()
-				for k, v := range deletedRewardsSessions {
-					g_rewardsSessions[k] = v
-				}
-				g_rewardsSessions_mutex.Unlock()
-				break // Break loop for other errors
+
 			}
 		}
-	}
-	if hasSequenceError {
-		utils.LavaFormatInfo("Sequence number error handling: ", &map[string]string{
-			"tries": strconv.FormatInt(int64(idx+1), 10),
-		})
 	}
 
 	if !success {
