@@ -99,10 +99,10 @@ func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch u
 // }
 
 func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(epoch uint64, address string, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
-	activeConsumer, err := psm.IsActiveConsumer(epoch, address) // check again
-	if err != nil {
-		return nil, err
-	}
+	// activeConsumer, err := psm.IsActiveConsumer(epoch, address) // check again
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// if session, ok := providerSessionWithConsumer.Sessions[sessionId]; ok {
 	// 	return session, nil

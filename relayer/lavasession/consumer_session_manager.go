@@ -73,7 +73,7 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
-	clinetSession *SingleConsumerSession, epoch uint64, errRet error) {
+	consumerSession *SingleConsumerSession, epoch uint64, errRet error) {
 
 	// providers that we dont try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{
