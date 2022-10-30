@@ -393,7 +393,7 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	}
 	stakeStorage.StakeEntries = entries
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
-
+	utils.LogLavaEvent(ctx, k.Logger(ctx), "new_unstake_"+storageType+"_entry_registered", map[string]string{"deadline": strconv.FormatUint(stakeEntry.Deadline, 10), "Amount": stakeEntry.Stake.String(), "Address": stakeEntry.Address, "ChainID": stakeEntry.Chain, "block": strconv.FormatInt(ctx.BlockHeight(), 10), "totalUnstakingEntries": strconv.FormatInt(int64(len(stakeStorage.StakeEntries)), 10)}, "new unstake entry registered")
 	return nil
 }
 
