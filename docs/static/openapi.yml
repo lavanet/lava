@@ -31254,6 +31254,58 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
+  '/lavanet/lava/spec/show_chain_info/{chainName}':
+    get:
+      summary: Queries a list of ShowChainInfo items.
+      operationId: LavanetLavaSpecShowChainInfo
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              chainID:
+                type: string
+              interfaces:
+                type: array
+                items:
+                  type: string
+              supportedApisInterfaceList:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    interface:
+                      type: string
+                    supportedApis:
+                      type: array
+                      items:
+                        type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: chainName
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/spec/spec:
     get:
       summary: Queries a list of Spec items.
@@ -54384,6 +54436,26 @@ definitions:
         type: array
         items:
           type: string
+  lavanet.lava.spec.QueryShowChainInfoResponse:
+    type: object
+    properties:
+      chainID:
+        type: string
+      interfaces:
+        type: array
+        items:
+          type: string
+      supportedApisInterfaceList:
+        type: array
+        items:
+          type: object
+          properties:
+            interface:
+              type: string
+            supportedApis:
+              type: array
+              items:
+                type: string
   lavanet.lava.spec.ServiceApi:
     type: object
     properties:
@@ -54574,3 +54646,12 @@ definitions:
       stateful:
         type: integer
         format: int64
+  lavanet.lava.spec.apiList:
+    type: object
+    properties:
+      interface:
+        type: string
+      supportedApis:
+        type: array
+        items:
+          type: string

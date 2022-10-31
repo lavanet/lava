@@ -36,6 +36,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/spec/show_all_chains";
 	}
 
+// Queries a list of ShowChainInfo items.
+	rpc ShowChainInfo(QueryShowChainInfoRequest) returns (QueryShowChainInfoResponse) {
+		option (google.api.http).get = "/lavanet/lava/spec/show_chain_info/{chainName}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -79,5 +84,20 @@ message QueryShowAllChainsRequest {
 message QueryShowAllChainsResponse {
   repeated string chainNames = 1;
 }
+
+message QueryShowChainInfoRequest {
+  string chainName = 1;
+}
+
+message apiList {
+	string interface = 4;
+	repeated string supportedApis = 5;
+}
+
+message QueryShowChainInfoResponse {
+	string chainID = 1;
+	repeated string interfaces = 2;
+	repeated apiList supportedApisInterfaceList = 3;
+  }
 
 // this line is used by starport scaffolding # 3
