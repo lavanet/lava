@@ -1,20 +1,19 @@
 {
-  "title": "Add Specs: Goerli",
-  "description": "Adding new specification support for relaying Goerli data on Lava",
+  "title": "Add Specs: polygon",
+  "description": "Adding new specification support for relaying polygon data on Lava",
   "specs": [
     {
-      "chainid": "GTH1",
-      "name": "Goerli Testnet",
+      "chainid": "POLYGON1",
+      "name": "Poligon Mainnet",
       "enabled": true,
       "reliability_threshold": 268435455,
       "compares_hashes": true,
-      "finalization_criteria": 7,
+      "finalization_criteria": 1,
       "saved_blocks": 3,
-      "average_block_time": "13000",
-      "allowed_block_lag_for_qos_sync": "5",
+      "average_block_time": "2000",
+      "allowed_block_lag_for_qos_sync": "30",
       "apis": [
-        {
-          "name": "rpc_modules",
+        {"name": "rpc_modules",
           "category": {
             "deterministic": true,
             "local": false,
@@ -85,7 +84,7 @@
             }
           ]
         },
-        {
+        { 
           "name": "eth_syncing",
           "category": {
             "deterministic": false,
@@ -339,8 +338,8 @@
           "name": "eth_subscribe",
           "category": {
             "deterministic": false,
-            "local": true,
-            "subscription": true,
+            "local": false,
+            "subscription": false,
             "stateful": 0
           },
           "block_parsing": {
@@ -350,7 +349,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": true,
+          "enabled": false,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",
@@ -363,7 +362,7 @@
           "name": "eth_unsubscribe",
           "category": {
             "deterministic": false,
-            "local": true,
+            "local": false,
             "subscription": false,
             "stateful": 0
           },
@@ -374,7 +373,7 @@
             "parserFunc": "EMPTY"
           },
           "compute_units": "10",
-          "enabled": true,
+          "enabled": false,
           "apiInterfaces": [
             {
               "interface": "jsonrpc",

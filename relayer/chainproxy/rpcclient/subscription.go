@@ -175,7 +175,7 @@ func (n *Notifier) activate() error {
 }
 
 func (n *Notifier) send(sub *Subscription, data json.RawMessage) error {
-	params, _ := json.Marshal(&subscriptionResult{ID: string(sub.ID), Result: data})
+	params, _ := json.Marshal(&ethereumSubscriptionResult{ID: string(sub.ID), Result: data})
 	ctx := context.Background()
 	return n.h.conn.writeJSON(ctx, &jsonrpcMessage{
 		Version: vsn,
@@ -212,7 +212,7 @@ type ClientSubscription struct {
 	subid     string
 
 	// The in channel receives notification values from client dispatcher.
-	in chan json.RawMessage
+	in chan *jsonrpcMessage
 
 	// The error channel receives the error from the forwarding loop.
 	// It is closed by Unsubscribe.
@@ -236,7 +236,7 @@ func newClientSubscription(c *Client, namespace string, channel reflect.Value) *
 		namespace:   namespace,
 		etype:       channel.Type().Elem(),
 		channel:     channel,
-		in:          make(chan json.RawMessage),
+		in:          make(chan *jsonrpcMessage),
 		quit:        make(chan error),
 		forwardDone: make(chan struct{}),
 		unsubDone:   make(chan struct{}),
@@ -271,7 +271,7 @@ func (sub *ClientSubscription) Unsubscribe() {
 }
 
 // deliver is called by the client's message dispatcher to send a notification value.
-func (sub *ClientSubscription) deliver(result json.RawMessage) (ok bool) {
+func (sub *ClientSubscription) deliver(result *jsonrpcMessage) (ok bool) {
 	select {
 	case sub.in <- result:
 		return true
@@ -293,16 +293,11 @@ func (sub *ClientSubscription) close(err error) {
 func (sub *ClientSubscription) run() {
 	defer close(sub.unsubDone)
 
-	unsubscribe, err := sub.forward()
+	_, err := sub.forward()
 
 	// The client's dispatch loop won't be able to execute the unsubscribe call if it is
 	// blocked in sub.deliver() or sub.close(). Closing forwardDone unblocks them.
 	close(sub.forwardDone)
-
-	// Call the unsubscribe method on the server.
-	if unsubscribe {
-		sub.requestUnsubscribe()
-	}
 
 	// Send the error.
 	if err != nil {
@@ -349,29 +344,18 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 			return false, err
 
 		case 1: // <-sub.in
-			val, err := sub.unmarshal(recv.Interface().(json.RawMessage))
-			if err != nil {
+			msg := recv.Interface().(*jsonrpcMessage)
+			if msg.Error != nil {
 				return true, err
 			}
 			if buffer.Len() == maxClientSubscriptionBuffer {
 				return true, ErrSubscriptionQueueOverflow
 			}
-			buffer.PushBack(val)
+			buffer.PushBack(msg)
 
 		case 2: // sub.channel<-
 			cases[2].Send = reflect.Value{} // Don't hold onto the value.
 			buffer.Remove(buffer.Front())
 		}
 	}
-}
-
-func (sub *ClientSubscription) unmarshal(result json.RawMessage) (interface{}, error) {
-	val := reflect.New(sub.etype)
-	err := json.Unmarshal(result, val.Interface())
-	return val.Elem().Interface(), err
-}
-
-func (sub *ClientSubscription) requestUnsubscribe() error {
-	var result interface{}
-	return sub.client.Call(&result, sub.namespace+unsubscribeMethodSuffix, sub.subid)
 }

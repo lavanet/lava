@@ -13,8 +13,10 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -95,7 +97,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +124,7 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 		return spectypes.NOT_APPLICABLE, err
 	}
 
-	_, err = nodeMsg.Send(ctx)
+	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -188,13 +190,14 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		log.Println("in <<< ", path)
 		requestBody := string(c.Body())
-		reply, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
-			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
+			msgSeed := GetUniqueGuidResponseForError(err)
+			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, nil)
+		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 
@@ -203,13 +206,14 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
-			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, GetUniqueGuidResponseForError(err)))
+			msgSeed := GetUniqueGuidResponseForError(err)
+			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, nil)
+		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 	//
@@ -229,7 +233,10 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
-func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, error) {
+func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	if ch != nil {
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+	}
 	httpClient := http.Client{
 		Timeout: DefaultTimeout, // Timeout after 5 seconds
 	}
@@ -244,7 +251,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
@@ -254,7 +261,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	res, err := httpClient.Do(req)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	if res.Body != nil {
@@ -265,7 +272,7 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	reply := &pairingtypes.RelayReply{
@@ -273,5 +280,5 @@ func (nm *RestMessage) Send(ctx context.Context) (*pairingtypes.RelayReply, erro
 	}
 	nm.Result = body
 
-	return reply, nil
+	return reply, "", nil, nil
 }

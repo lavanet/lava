@@ -43,9 +43,13 @@ const (
 
 var null = json.RawMessage("null")
 
-type subscriptionResult struct {
+type ethereumSubscriptionResult struct {
 	ID     string          `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type tendermintSubscriptionResult struct {
+	Query string `json:"query"`
 }
 
 // A value of this type can a JSON-RPC request, notification, successful response or
@@ -59,8 +63,21 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func (msg *jsonrpcMessage) isNotification() bool {
+type tendermintSubscribeReply struct {
+	Query string `json:"query"`
+}
+
+func (msg *jsonrpcMessage) isEthereumNotification() bool {
 	return msg.ID == nil && msg.Method != ""
+}
+
+func (msg *jsonrpcMessage) isTendermintNotification() bool {
+	var result tendermintSubscribeReply
+	err := json.Unmarshal(msg.Result, &result)
+	if err == nil && result.Query != "" {
+		return true
+	}
+	return false
 }
 
 func (msg *jsonrpcMessage) isCall() bool {

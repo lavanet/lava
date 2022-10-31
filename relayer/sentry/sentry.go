@@ -85,12 +85,12 @@ func (vp *VoteParams) GetCloseVote() bool {
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
 const (
-	MaxConsecutiveConnectionAttemts = 3
-	PercentileToCalculateLatency    = 0.9
-	MinProvidersForSync             = 0.6
-	LatencyThresholdStatic          = 1 * time.Second
-	LatencyThresholdSlope           = 1 * time.Millisecond
-	StaleEpochDistance              = 3 // relays done 3 epochs back are ready to be rewarded
+	MaxConsecutiveConnectionAttempts = 3
+	PercentileToCalculateLatency     = 0.9
+	MinProvidersForSync              = 0.6
+	LatencyThresholdStatic           = 1 * time.Second
+	LatencyThresholdSlope            = 1 * time.Millisecond
+	StaleEpochDistance               = 3 // relays done 3 epochs back are ready to be rewarded
 )
 
 type Endpoint struct {
@@ -903,7 +903,7 @@ func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 		}
 	}
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
-		"total CU that god paid": strconv.FormatUint(s.GetPaidCU(), 10)})
+		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
 }
 
 // expecting caller to lock
@@ -991,7 +991,7 @@ func (s *Sentry) _findPairingExceptAddress(ctx context.Context, accountAddress s
 	}
 	get_random_provider := false
 	var index int
-	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttempts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
 			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
@@ -1026,7 +1026,7 @@ func (s *Sentry) _findPairing(ctx context.Context) (retWrap *RelayerClientWrappe
 	if len(s.pairing) <= 0 {
 		return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, pairing list empty", nil, nil)
 	}
-	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttemts
+	maxAttempts := len(s.pairing) * MaxConsecutiveConnectionAttempts
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		if len(s.pairing) == 0 {
 			return nil, findPairingFailedIndex, nil, utils.LavaFormatError("no pairings available, while reconnecting pairing list empty", nil, nil)
@@ -1060,7 +1060,7 @@ func (wrap *RelayerClientWrapper) FetchEndpointConnectionFromClientWrapper(s *Se
 				if err != nil {
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": wrap.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
-					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttemts {
+					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
 						utils.LavaFormatWarning("disabling provider endpoint", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": wrap.Acc, "currentEpoch": strconv.FormatInt(s.GetBlockHeight(), 10)})
 					}
@@ -1266,15 +1266,15 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 
 func (s *Sentry) SendRelay(
 	ctx context.Context,
-	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(clientSession *ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(clientSession *ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
-) (*pairingtypes.RelayReply, error) {
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	//
 	// Get pairing
 	wrap, index, endpoint, err := s._findPairing(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//
@@ -1316,14 +1316,14 @@ func (s *Sentry) SendRelay(
 
 	if err != nil {
 		clientSession.Lock.Unlock()
-		return nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(unresponsiveProvidersData))})
+		return nil, nil, utils.LavaFormatError("could not unmarshal unresponsive providers", err, &map[string]string{"unresponsiveProviders": fmt.Sprintf("%v", string(unresponsiveProvidersData))})
 	}
 
 	// callback user
-	reply, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
+	reply, replyServer, request, err := cb_send_relay(clientSession, unresponsiveProvidersData)
 	//error using this provider
 	if err != nil {
-		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+		if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 			s.movePairingEntryToPurge(wrap, index, false)
 		}
 		clientSession.Lock.Unlock()
@@ -1333,24 +1333,24 @@ func (s *Sentry) SendRelay(
 		wrap, index, endpoint, err2 = s._findPairingExceptAddress(ctx, wrap.Acc, index) // get a different provider.
 		if err2 != nil {
 			// if we failed to get another provider, just return the first providers error. with the fetching failure message
-			return nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
+			return nil, nil, utils.LavaFormatWarning("failed to send relay", err, &map[string]string{"failed_to_send_relay_from_2nd_provider_error": err2.Error()})
 		}
 
 		clientSession = getClientSessionFromWrap(wrap, endpoint) // get a new client session. clientSession is LOCKED!
 		// call user
-		reply, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
+		reply, replyServer, request, err2 = cb_send_relay(clientSession, unresponsiveProvidersData)
 		if err2 != nil {
-			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttemts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
+			if clientSession.QoSInfo.ConsecutiveTimeOut >= MaxConsecutiveConnectionAttempts && clientSession.QoSInfo.LastQoSReport.Availability.IsZero() {
 				s.movePairingEntryToPurge(wrap, index, false)
 			}
 			clientSession.Lock.Unlock()
 
 			if err.Error() != err2.Error() {
 				// if the first provider error returned a different error than the second provider combine the error into a single one
-				return reply, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
+				return reply, nil, utils.LavaFormatError("retrying relay returned two different errors", fmt.Errorf("error from provider1: %s\nerror from provider2:%s", err.Error(), err2.Error()), nil)
 			}
 			// if the errors are the same just return one of them and the reply
-			return reply, err2
+			return reply, replyServer, err2
 		}
 		// if we didnt get an error from the second relay we can continue noramlly
 	}
@@ -1358,18 +1358,18 @@ func (s *Sentry) SendRelay(
 	providerAcc := clientSession.Client.Acc // TODO:: should lock client before access?
 	clientSession.Lock.Unlock()             //function call returns a locked session, we need to unlock it
 
-	if s.GetSpecComparesHashes() {
+	if s.GetSpecComparesHashes() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
+			return nil, nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, clientSession)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed provider reply validation", err, nil)
+			return nil, nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		// Save in current session and compare in the next
 		clientSession.FinalizedBlocksHashes = finalizedBlocks
@@ -1382,7 +1382,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -1472,7 +1472,7 @@ func (s *Sentry) SendRelay(
 			go checkReliability()
 		}
 	}
-	return reply, nil
+	return reply, replyServer, nil
 }
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {

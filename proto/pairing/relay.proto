@@ -6,6 +6,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
+    rpc RelaySubscribe (RelayRequest) returns (stream RelayReply) {}
 }
 
 message RelayRequest {
