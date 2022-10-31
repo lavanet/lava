@@ -29,17 +29,17 @@ type qoSInfo struct {
 }
 
 type SingleConsumerSession struct {
-	cuSum             uint64
-	latestRelayCu     uint64 // set by GetSession cuNeededForSession
-	qoSInfo           qoSInfo
-	sessionId         int64
-	client            *ConsumerSessionsWithProvider
-	lock              utils.LavaMutex
-	relayNum          uint64
-	latestBlock       int64
-	endpoint          *Endpoint
-	blocklisted       bool   // if session lost sync we blacklist it.
-	numberOfFailiures uint64 // number of times this session has failed
+	cuSum            uint64
+	latestRelayCu    uint64 // set by GetSession cuNeededForSession
+	qoSInfo          qoSInfo
+	sessionId        int64
+	client           *ConsumerSessionsWithProvider
+	lock             utils.LavaMutex
+	relayNum         uint64
+	latestBlock      int64
+	endpoint         *Endpoint
+	blocklisted      bool   // if session lost sync we blacklist it.
+	numberOfFailures uint64 // number of times this session has failed
 }
 
 type Endpoint struct {
@@ -61,7 +61,7 @@ type ConsumerSessionsWithProvider struct {
 }
 
 func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
-	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is chagned
+	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is changed
 	defer cswp.Lock.Unlock()
 	return cswp.Acc, cswp.PairingEpoch
 }
@@ -184,7 +184,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 		}
 
 		// checking disabled endpoints, as we can disable an endpoint mid run of the previous loop, we should re test the current endpoint state
-		// before verifing all are Disabled.
+		// before verifying all are Disabled.
 		allDisabled = true
 		for _, endpoint := range cswp.Endpoints {
 			if !endpoint.Enabled {
