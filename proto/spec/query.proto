@@ -31,6 +31,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/spec/chain/{chainID}";
 	}
 
+// Queries a list of ShowAllChains items.
+	rpc ShowAllChains(QueryShowAllChainsRequest) returns (QueryShowAllChainsResponse) {
+		option (google.api.http).get = "/lavanet/lava/spec/show_all_chains";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -66,6 +71,13 @@ message QueryChainRequest {
 
 message QueryChainResponse {
   Spec spec = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryShowAllChainsRequest {
+}
+
+message QueryShowAllChainsResponse {
+  repeated string chainNames = 1;
 }
 
 // this line is used by starport scaffolding # 3
