@@ -80,9 +80,9 @@ type RelaySession struct {
 }
 
 type subscription struct {
-	id          string
-	sub         *rpcclient.ClientSubscription
-	repliesChan chan interface{}
+	id                   string
+	sub                  *rpcclient.ClientSubscription
+	subscribeRepliesChan chan interface{}
 }
 
 // TODO Perform payment stuff here
@@ -879,17 +879,17 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	var reply *pairingtypes.RelayReply
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
-	repliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), repliesChan)
+	subscribeRepliesChan := make(chan interface{})
+	reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), subscribeRepliesChan)
 	if err != nil {
 		return utils.LavaFormatError("Subscription failed", err, nil)
 	}
 
 	relaySession.Lock.Lock()
 	relaySession.Subs[subscriptionID] = &subscription{
-		id:          subscriptionID,
-		sub:         clientSub,
-		repliesChan: repliesChan,
+		id:                   subscriptionID,
+		sub:                  clientSub,
+		subscribeRepliesChan: subscribeRepliesChan,
 	}
 	relaySession.Lock.Unlock()
 
@@ -910,8 +910,8 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			}
 			relaySession.Lock.Unlock()
 			return err
-		case reply := <-repliesChan:
-			data, err := json.Marshal(reply)
+		case subscribeReply := <-subscribeRepliesChan:
+			data, err := json.Marshal(subscribeReply)
 			if err != nil {
 				utils.LavaFormatError("client sub unmarshal", err, nil)
 				relaySession.Lock.Lock()
