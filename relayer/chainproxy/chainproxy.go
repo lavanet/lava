@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -32,16 +33,18 @@ type ChainProxy interface {
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+	GetConsumerSessionManager() *lavasession.ConsumerSessionManager
 }
 
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
+	consumerSessionManagerInstance := &lavasession.ConsumerSessionManager{}
 	switch sentry.ApiInterface {
 	case "jsonrpc":
-		return NewJrpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewJrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance), nil
 	case "tendermintrpc":
-		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance), nil
 	case "rest":
-		return NewRestChainProxy(nodeUrl, sentry), nil
+		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
@@ -79,8 +82,11 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), strAdd.String())
 		}
 	}
-
 	return nil
+}
+
+func UpdateAllProvidersCallback(cp ChainProxy, ctx context.Context, epoch uint64, pairingList []*lavasession.ConsumerSessionsWithProvider) error {
+	return cp.GetConsumerSessionManager().UpdateAllProviders(ctx, epoch, pairingList)
 }
 
 // Client requests and queries
@@ -101,41 +107,43 @@ func SendRelay(
 	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
 	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
-	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
+
+	// Get Session. we get session here so we can use the epoch in the callbacks
+	consumerSession, epoch, providerPublicAddress, reportedProviders, err := cp.GetConsumerSessionManager().GetSession(ctx, nodeMsg.GetServiceApi().ComputeUnits, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	// consumerSession is locked here.
+
+	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
-		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
-
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
+		blockHeight = int64(epoch) // epochs heights only
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              clientSession.Client.Acc,
+			Provider:              providerPublicAddress,
 			ConnectionType:        connectionType,
 			ApiUrl:                url,
 			Data:                  []byte(req),
-			SessionId:             uint64(clientSession.SessionId),
+			SessionId:             uint64(consumerSession.SessionId),
 			ChainID:               cp.GetSentry().ChainID,
-			CuSum:                 clientSession.CuSum,
+			CuSum:                 consumerSession.CuSum,
 			BlockHeight:           blockHeight,
-			RelayNum:              clientSession.RelayNum,
+			RelayNum:              consumerSession.RelayNum,
 			RequestBlock:          nodeMsg.RequestedBlock(),
-			QoSReport:             clientSession.QoSInfo.LastQoSReport,
+			QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 			DataReliability:       nil,
 			UnresponsiveProviders: unresponsiveProviders,
 		}
-
+		// TODO_RAN: fix here when finished with sentry
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		relayRequest.Sig = sig
-		c := *clientSession.Endpoint.Client
+		c := *consumerSession.Endpoint.Client
 
 		relaySentTime := time.Now()
-		clientSession.QoSInfo.TotalRelays++
+		consumerSession.QoSInfo.TotalRelays++
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
@@ -150,33 +158,33 @@ func SendRelay(
 
 		if err != nil {
 			if err.Error() == context.DeadlineExceeded.Error() {
-				clientSession.QoSInfo.ConsecutiveTimeOut++
+				consumerSession.QoSInfo.ConsecutiveTimeOut++
 			}
 			return nil, nil, nil, err
 		}
 
 		if !isSubscription {
 			currentLatency := time.Since(relaySentTime)
-			clientSession.QoSInfo.ConsecutiveTimeOut = 0
-			clientSession.QoSInfo.AnsweredRelays++
+			consumerSession.QoSInfo.ConsecutiveTimeOut = 0
+			consumerSession.QoSInfo.AnsweredRelays++
 
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			requestedBlock = relayRequest.RequestBlock
 
-			err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+			err = VerifyRelayReply(reply, relayRequest, consumerSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
 				return nil, nil, nil, err
 			}
 
-			expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-			clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+			expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
+			consumerSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 		}
 
 		return reply, &replyServer, relayRequest, nil
 	}
 
-	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
@@ -184,14 +192,14 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              clientSession.Client.Acc,
+			Provider:              consumerSession.Client.Acc,
 			ApiUrl:                url,
 			Data:                  []byte(req),
 			SessionId:             uint64(0), //sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 clientSession.CuSum,
+			CuSum:                 consumerSession.CuSum,
 			BlockHeight:           blockHeight,
-			RelayNum:              clientSession.RelayNum,
+			RelayNum:              consumerSession.RelayNum,
 			RequestBlock:          requestedBlock,
 			QoSReport:             nil,
 			DataReliability:       dataReliability,
@@ -210,13 +218,13 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
-		c := *clientSession.Endpoint.Client
+		c := *consumerSession.Endpoint.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		err = VerifyRelayReply(reply, relayRequest, consumerSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -224,22 +232,16 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
-
-	return reply, replyServer, err
-}
-
-func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
-	clientSession.Client.SessionsLock.Lock()
-	defer clientSession.Client.SessionsLock.Unlock()
-
-	if clientSession.Client.UsedComputeUnits+apiCu > clientSession.Client.MaxComputeUnits {
-		return fmt.Errorf("used all the available compute units")
+	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, consumerSession, reportedProviders, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	if err != nil {
+		// on session failure here
+		if lavasession.SendRelayError.Is(err) {
+			// send again?
+		}
 	}
 
-	clientSession.CuSum += apiCu
-	clientSession.Client.UsedComputeUnits += apiCu
-	clientSession.RelayNum += 1
+	latestBlock := reply.LatestBlock
+	cp.GetConsumerSessionManager().OnSessionDone(consumerSession, epoch, latestBlock) // session done successfully
 
-	return nil
+	return reply, replyServer, err
 }

@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net"
@@ -68,21 +69,21 @@ func TestHappyFlow(t *testing.T) {
 	pairingList := createPairingList()
 	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
-	require.Equal(t, cs.latestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
 	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber)
 	require.Nil(t, err)
-	require.Equal(t, cs.cuSum, cuForFirstRequest)
-	require.Equal(t, cs.latestRelayCu, latestRelayCuAfterDone)
-	require.Equal(t, cs.relayNum, relayNumberAfterFirstCall)
-	require.Equal(t, cs.latestBlock, servicedBlockNumber)
+	require.Equal(t, cs.CuSum, cuForFirstRequest)
+	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+	require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
+	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 }
 
 func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	cs, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber)
@@ -91,7 +92,7 @@ func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *test
 }
 
 func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	cs, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	err = csm.OnSessionFailure(cs, fmt.Errorf("nothing special"), false)
@@ -214,26 +215,30 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	pairingList := createPairingList()
 	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
-	require.Equal(t, cs.latestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
 	err = csm.OnSessionFailure(cs, ReportAndBlockProviderError, true)
 	require.Nil(t, err)
-	require.Equal(t, cs.client.UsedComputeUnits, cuSumOnFailure)
-	require.Equal(t, cs.cuSum, cuSumOnFailure)
-	require.Equal(t, cs.latestRelayCu, latestRelayCuAfterDone)
-	require.Equal(t, cs.relayNum, relayNumberAfterFirstFail)
+	require.Equal(t, cs.Client.UsedComputeUnits, cuSumOnFailure)
+	require.Equal(t, cs.CuSum, cuSumOnFailure)
+	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+	require.Equal(t, cs.RelayNum, relayNumberAfterFirstFail)
 
 	// verify provider is blocked and reported
-	require.Contains(t, csm.addedToPurgeAndReport, cs.client.Acc) // address is reported
-	require.Contains(t, csm.providerBlockList, cs.client.Acc)     // address is blocked
-	require.NotContains(t, csm.validAddresses, cs.client.Acc)     // address isn't in valid addresses list
+	require.Contains(t, csm.addedToPurgeAndReport, cs.Client.Acc) // address is reported
+	require.Contains(t, csm.providerBlockList, cs.Client.Acc)     // address is blocked
+	require.NotContains(t, csm.validAddresses, cs.Client.Acc)     // address isn't in valid addresses list
 
-	reported := csm.GetReportedProviders(firstEpochHeight)
+	reported, err := csm.GetReportedProviders(firstEpochHeight)
+	require.Nil(t, err)
 	require.NotEmpty(t, reported)
-	for _, providerReported := range reported {
+	reportedSlice := make([]string, 0, len(reported))
+	err = json.Unmarshal(reported, &reportedSlice)
+	require.Nil(t, err)
+	for _, providerReported := range reportedSlice {
 		require.Contains(t, csm.addedToPurgeAndReport, providerReported)
 		require.Contains(t, csm.providerBlockList, providerReported)
 	}
@@ -248,11 +253,11 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 	pairingList := createPairingList()
 	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, epoch, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a sesssion
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a sesssion
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
-	require.Equal(t, cs.latestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
 
 	err = csm.UpdateAllProviders(ctx, secondEpochHeight, pairingList) // update the providers again.
 	require.Nil(t, err)
@@ -266,7 +271,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList()
 	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
-	cs, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
@@ -310,9 +315,9 @@ func TestGetSession(t *testing.T) {
 	pairingList := createPairingList()
 	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList)
 	require.Nil(t, err)
-	cs, epoch, err := csm.GetSession(ctx, cuForFirstRequest, nil)
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil)
 	require.Nil(t, err)
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
-	require.Equal(t, cs.latestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
 }

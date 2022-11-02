@@ -47,6 +47,8 @@ func PortalServer(
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
+	// Setting up the sentry callback
+	sentry.SetupConsumerSessionManager(chainProxy.GetConsumerSessionManager())
 
 	//
 	// Set up a connection to the server.

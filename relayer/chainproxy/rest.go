@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -34,18 +35,24 @@ type RestMessage struct {
 type RestChainProxy struct {
 	nodeUrl string
 	sentry  *sentry.Sentry
+	csm     *lavasession.ConsumerSessionManager
 }
 
 func (r *RestMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
+func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
 		nodeUrl: nodeUrl,
 		sentry:  sentry,
+		csm:     csm,
 	}
+}
+
+func (cp *RestChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
+	return cp.csm
 }
 
 func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, error) {

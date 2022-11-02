@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -73,7 +74,7 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
-	consumerSession *SingleConsumerSession, epoch uint64, errRet error) {
+	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error) {
 
 	// providers that we don't try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{
@@ -85,7 +86,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		consumerSessionWithProvider, providerAddress, sessionEpoch, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession)
 		if err != nil {
 			if PairingListEmptyError.Is(err) {
-				return nil, 0, err
+				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider does'nt have enough compute units for this session, we block it for this session and continue to another provider.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
@@ -116,16 +117,31 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			continue
 		}
 
+		// we get the reported providers here after we try to connect, so if any provider did'nt respond he will already be added to the list.
+		reportedProviders, err = csm.GetReportedProviders(csm.atomicReadCurrentEpoch())
+		if err != nil {
+			return nil, 0, "", nil, utils.LavaFormatError("Failed Unmarshal Error", err, nil)
+		}
+
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
-		consumerSession, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
+		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
 		if err != nil {
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
+			} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
+				// provider has too many block listed sessions. we block it until the next epoch.
+				csm.blockProvider(providerAddress, false, sessionEpoch)
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
+		}
+
+		if pairingEpoch != sessionEpoch {
+			// pairingEpoch and SessionEpoch must be the same, we validate them here if they are different we raise an error and continue with pairingEpoch
+			utils.LavaFormatError("sessionEpoch and pairingEpoch mismatch", nil, &map[string]string{"sessionEpoch": strconv.FormatUint(sessionEpoch, 10), "pairingEpoch": strconv.FormatUint(pairingEpoch, 10)})
+			sessionEpoch = pairingEpoch
 		}
 
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
@@ -140,9 +156,9 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
 		} else {
-			consumerSession.latestRelayCu = cuNeededForSession // set latestRelayCu
+			consumerSession.LatestRelayCu = cuNeededForSession // set latestRelayCu
 			// Successfully created/got a consumerSession.
-			return consumerSession, sessionEpoch, nil
+			return consumerSession, sessionEpoch, providerAddress, reportedProviders, nil
 		}
 		utils.LavaFormatFatal("Unsupported Error", UnreachableCodeError, nil)
 	}
@@ -235,7 +251,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	return nil
 }
 
-// Report session failiure, mark it as blocked from future usages, report if timeout happened.
+// Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error, didTimeout bool) error {
 	// consumerSession must be locked when getting here.
 	if consumerSession.lock.TryLock() { // verify.
@@ -245,25 +261,28 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	}
 
 	// client Session should be locked here. so we can just apply the session failure here.
-	if consumerSession.blocklisted {
+	if consumerSession.Blocklisted {
 		// if client session is already blocklisted return an error.
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
 	}
+
+	// deal with timeouts
 	if didTimeout {
-		consumerSession.qoSInfo.ConsecutiveTimeOut++
+		consumerSession.QoSInfo.ConsecutiveTimeOut++
 	}
-	consumerSession.numberOfFailures += 1 // increase number of failiures for this session
 
-	// if this session failed more than MaximumNumberOfFailiuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.numberOfFailures > MaximumNumberOfFailiuresAllowedPerConsumerSession {
-		consumerSession.blocklisted = true // block this session from future usages
+	consumerSession.NumberOfFailures += 1 // increase number of failures for this session
+
+	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
+	if consumerSession.NumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
+		consumerSession.Blocklisted = true // block this session from future usages
 	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
-		consumerSession.blocklisted = true
+		consumerSession.Blocklisted = true
 	}
-	cuToDecrease := consumerSession.latestRelayCu
-	consumerSession.latestRelayCu = 0 // making sure no one uses it in a wrong way
+	cuToDecrease := consumerSession.LatestRelayCu
+	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 
-	parentConsumerSessionsWithProvider := consumerSession.client // must read this pointer before unlocking
+	parentConsumerSessionsWithProvider := consumerSession.Client // must read this pointer before unlocking
 	// finished with consumerSession here can unlock.
 	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
@@ -293,10 +312,18 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	return nil
 }
 
+func (csm *ConsumerSessionManager) GetSpecificSession(address string, epoch uint64) (*SingleConsumerSession, error) {
+	if epoch != csm.atomicReadCurrentEpoch() {
+		return nil, EpochMismatchError
+	}
+
+	return nil, nil
+}
+
 // get a session from the pool except specific providers, which also validates the epoch.
-func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressessEpoch uint64) (clinetSession *SingleConsumerSession, epoch uint64, err error) {
-	// if bannedAddressessEpoch != current epoch, we just return GetSession. locks...
-	if bannedAddressessEpoch != csm.atomicReadCurrentEpoch() {
+func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
+	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
+	if bannedAddressesEpoch != csm.atomicReadCurrentEpoch() {
 		return csm.GetSession(ctx, cuNeeded, nil)
 	} else {
 		return csm.GetSession(ctx, cuNeeded, bannedAddresses)
@@ -306,35 +333,37 @@ func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, 
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
 func (csm *ConsumerSessionManager) OnSessionDone(consumerSession *SingleConsumerSession, epoch uint64, latestServicedBlock int64) error {
 	// release locks, update CU, relaynum etc..
-	defer consumerSession.lock.Unlock() // we neeed to be locked here, if we didnt get it locked we try lock anyway
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
 	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
 		// if we managed to lock throw an error for misuse.
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
 	}
 
-	consumerSession.cuSum += consumerSession.latestRelayCu
-	consumerSession.latestRelayCu = 0 // reset cu just in case
+	consumerSession.CuSum += consumerSession.LatestRelayCu
+	consumerSession.LatestRelayCu = 0 // reset cu just in case
 	// increase relayNum
-	consumerSession.relayNum += 1
+	consumerSession.RelayNum += 1
 	// increase QualityOfService
-	consumerSession.qoSInfo.TotalRelays++
-	consumerSession.qoSInfo.ConsecutiveTimeOut = 0
-	consumerSession.qoSInfo.AnsweredRelays++
+	consumerSession.QoSInfo.TotalRelays++
+	consumerSession.QoSInfo.ConsecutiveTimeOut = 0
+	consumerSession.QoSInfo.AnsweredRelays++
 
-	consumerSession.latestBlock = latestServicedBlock
+	consumerSession.LatestBlock = latestServicedBlock
 	return nil
 }
 
 // Get the reported providers currently stored in the session manager.
-func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []string {
+func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) ([]byte, error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	if epoch != csm.atomicReadCurrentEpoch() {
-		return []string{} // if epochs are not equal, we will return an empty list.
+		return []byte{}, nil // if epochs are not equal, we will return an empty list.
 	}
 	keys := make([]string, 0, len(csm.addedToPurgeAndReport))
 	for k := range csm.addedToPurgeAndReport {
 		keys = append(keys, k)
 	}
-	return keys
+	bytes, err := json.Marshal(keys)
+
+	return bytes, err
 }

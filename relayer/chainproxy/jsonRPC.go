@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -55,14 +56,20 @@ type JrpcChainProxy struct {
 	nConns  uint
 	nodeUrl string
 	sentry  *sentry.Sentry
+	csm     *lavasession.ConsumerSessionManager
 }
 
-func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
+func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager) ChainProxy {
 	return &JrpcChainProxy{
 		nodeUrl: nodeUrl,
 		nConns:  nConns,
 		sentry:  sentry,
+		csm:     csm,
 	}
+}
+
+func (cp *JrpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
+	return cp.csm
 }
 
 func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
