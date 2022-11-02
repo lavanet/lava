@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -26,8 +25,6 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
 
-		fmt.Printf("spec.GetName() = %s", spec.GetName())
-		fmt.Printf("req.GetChainName() = %s", req.GetChainName())
 		// get info by chain name
 		if spec.GetName() == req.GetChainName() {
 			foundChain = true
@@ -43,7 +40,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 				// iterate over APIs
 				for _, apiInterface := range apiInterfaces {
 
-					interfaceApiStructIndex := checkInterfaceExistance(apiInterfacesStructList, apiInterface.GetInterface())
+					interfaceApiStructIndex := checkInterfaceExistence(apiInterfacesStructList, apiInterface.GetInterface())
 
 					// found an API with a new interface
 					if interfaceApiStructIndex == -1 {
@@ -52,7 +49,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 						tempApiInterfaceStruct := types.ApiList{Interface: apiInterface.GetInterface(), SupportedApis: apiMethods}
 						apiInterfacesStructList = append(apiInterfacesStructList, &tempApiInterfaceStruct)
 					} else {
-						// found an API with an existant interface
+						// found an API with an existent interface
 						apiInterfacesStructList[interfaceApiStructIndex].SupportedApis = append(apiInterfacesStructList[interfaceApiStructIndex].SupportedApis, api.GetName())
 					}
 
@@ -60,6 +57,8 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 			}
 
+			// found the chain, there is no need to further iterate
+			break
 		}
 
 	}
@@ -73,7 +72,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 }
 
 // checks if an interface is already written in one of the ApiList structs and returns the index of its incident
-func checkInterfaceExistance(apis []*types.ApiList, interfaceToCheck string) (index int) {
+func checkInterfaceExistence(apis []*types.ApiList, interfaceToCheck string) (index int) {
 	for i, api := range apis {
 		if interfaceToCheck == api.Interface {
 			return i
