@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"log"
 	"math/rand"
 	"strconv"
@@ -108,12 +109,13 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	return hash, nil
 }
 
-func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
+func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, newRelicApp *newrelic.Application) ChainProxy {
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
-			nodeUrl: nodeUrl,
-			nConns:  nConns,
-			sentry:  sentry,
+			nodeUrl:     nodeUrl,
+			nConns:      nConns,
+			sentry:      sentry,
+			newRelicApp: newRelicApp,
 		},
 	}
 }
@@ -198,6 +200,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app := fiber.New(fiber.Config{})
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+
+		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+		defer txn.End()
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -280,6 +285,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+		defer txn.End()
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
@@ -293,6 +300,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	})
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
+		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+		defer txn.End()
 		path := c.Params("*")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})

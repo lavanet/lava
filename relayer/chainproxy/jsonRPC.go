@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"log"
 	"math/rand"
 	"strconv"
@@ -51,17 +52,19 @@ func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
 }
 
 type JrpcChainProxy struct {
-	conn    *Connector
-	nConns  uint
-	nodeUrl string
-	sentry  *sentry.Sentry
+	newRelicApp *newrelic.Application
+	conn        *Connector
+	nConns      uint
+	nodeUrl     string
+	sentry      *sentry.Sentry
 }
 
-func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) ChainProxy {
+func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, newrelicApp *newrelic.Application) ChainProxy {
 	return &JrpcChainProxy{
-		nodeUrl: nodeUrl,
-		nConns:  nConns,
-		sentry:  sentry,
+		nodeUrl:     nodeUrl,
+		nConns:      nConns,
+		sentry:      sentry,
+		newRelicApp: newrelicApp,
 	}
 }
 
@@ -215,6 +218,9 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app := fiber.New(fiber.Config{})
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+
+		txn := cp.newRelicApp.StartTransaction("jsonRpc-WebSocket")
+		defer txn.End()
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -297,6 +303,8 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		txn := cp.newRelicApp.StartTransaction("jsonRpc-WebSocket")
+		defer txn.End()
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")

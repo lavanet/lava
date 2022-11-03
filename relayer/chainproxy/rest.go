@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -32,19 +33,21 @@ type RestMessage struct {
 }
 
 type RestChainProxy struct {
-	nodeUrl string
-	sentry  *sentry.Sentry
+	nodeUrl     string
+	sentry      *sentry.Sentry
+	newRelicApp *newrelic.Application
 }
 
 func (r *RestMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
+func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, newRelicApp *newrelic.Application) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
-		nodeUrl: nodeUrl,
-		sentry:  sentry,
+		nodeUrl:     nodeUrl,
+		sentry:      sentry,
+		newRelicApp: newRelicApp,
 	}
 }
 
@@ -183,6 +186,9 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+
+		txn := cp.newRelicApp.StartTransaction("rest-http")
+		defer txn.End()
 		path := "/" + c.Params("*")
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
@@ -204,6 +210,9 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+
+		txn := cp.newRelicApp.StartTransaction("rest-http")
+		defer txn.End()
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)

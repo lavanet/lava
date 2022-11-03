@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -34,14 +35,14 @@ type ChainProxy interface {
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
 
-func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
+func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, newRelicApp *newrelic.Application) (ChainProxy, error) {
 	switch sentry.ApiInterface {
 	case "jsonrpc":
-		return NewJrpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewJrpcChainProxy(nodeUrl, nConns, sentry, newRelicApp), nil
 	case "tendermintrpc":
-		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, newRelicApp), nil
 	case "rest":
-		return NewRestChainProxy(nodeUrl, sentry), nil
+		return NewRestChainProxy(nodeUrl, sentry, newRelicApp), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }

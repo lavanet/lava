@@ -2,6 +2,9 @@ package relayer
 
 import (
 	context "context"
+	"github.com/newrelic/go-agent/v3/integrations/nrlogrus"
+	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/sirupsen/logrus"
 	"log"
 	"math/rand"
 	"time"
@@ -22,15 +25,18 @@ func PortalServer(
 	apiInterface string,
 	flagSet *pflag.FlagSet,
 ) {
+
 	//
 	rand.Seed(time.Now().UnixNano())
 	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
+
 	// Start sentry
 	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
+
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
@@ -41,17 +47,29 @@ func PortalServer(
 	g_sentry = sentry
 	g_serverChainID = chainID
 
+	newrelicApp, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("Gateway Proxy"),
+		newrelic.ConfigLicense("def40f7132191919dc6c6684f7a2f2b3462aNRAL"),
+		newrelic.ConfigAppLogEnabled(true),
+		newrelic.ConfigAppLogForwardingEnabled(true),
+		func(config *newrelic.Config) {
+			logrus.SetLevel(logrus.DebugLevel)
+			config.Logger = nrlogrus.StandardLogger()
+		},
+	)
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, newrelicApp)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
+	//start newRelic
 
 	//
 	// Set up a connection to the server.
 	log.Printf("PortalServer %s\n", apiInterface)
 	keyName, err := sigs.GetKeyName(clientCtx)
+
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
 	}
