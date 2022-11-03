@@ -48,6 +48,10 @@ func TestClient(
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
+	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager())
+	if err != nil {
+		log.Fatalln("error: SetupConsumerSessionManager", err)
+	}
 
 	//
 	// Set up a connection to the server.

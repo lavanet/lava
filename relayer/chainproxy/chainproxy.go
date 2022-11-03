@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -109,13 +110,13 @@ func SendRelay(
 	requestedBlock := int64(0)
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	consumerSession, epoch, providerPublicAddress, reportedProviders, err := cp.GetConsumerSessionManager().GetSession(ctx, nodeMsg.GetServiceApi().ComputeUnits, nil)
+	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := cp.GetConsumerSessionManager().GetSession(ctx, nodeMsg.GetServiceApi().ComputeUnits, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	// consumerSession is locked here.
 
-	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
+	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error) {
 		//client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
@@ -138,7 +139,7 @@ func SendRelay(
 		// TODO_RAN: fix here when finished with sentry
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, 0, err
 		}
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
@@ -155,28 +156,21 @@ func SendRelay(
 		} else {
 			reply, err = c.Relay(connectCtx, relayRequest)
 		}
-
+		currentLatency := time.Since(relaySentTime)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, 0, err
 		}
 
 		if !isSubscription {
-			currentLatency := time.Since(relaySentTime)
-
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
-			requestedBlock = relayRequest.RequestBlock
-
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, 0, err
 			}
 
-			expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
-			consumerSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
 		}
-
-		return reply, &replyServer, relayRequest, nil
+		return reply, &replyServer, relayRequest, currentLatency, nil
 	}
 
 	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
@@ -227,16 +221,31 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, consumerSession, reportedProviders, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, replyServer, relayLatency, err := cp.GetSentry().SendRelay(ctx, singleConsumerSession, reportedProviders, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 	if err != nil {
 		// on session failure here
+		err = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, err)
+		if err != nil {
+			return nil, nil, err
+		}
 		if lavasession.SendRelayError.Is(err) {
 			// send again?
 		}
 	}
-
-	latestBlock := reply.LatestBlock
-	cp.GetConsumerSessionManager().OnSessionDone(consumerSession, epoch, latestBlock) // session done successfully
+	if !isSubscription {
+		if reply == nil {
+			// TODO: find out why do we get nil sometimes. but if we do, its a session failure not success.
+			utils.LavaFormatError("reply returned nil", nil, nil)
+			// if the provider returned nil, he thinks he replied a valid response. so we need to block the session
+			err = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, lavasession.SessionOutOfSyncError)
+		} else {
+			latestBlock := reply.LatestBlock
+			expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
+			err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
+		}
+	} else {
+		err = cp.GetConsumerSessionManager().OnSessionDoneWithoutQoSChanges(singleConsumerSession) // session done successfully
+	}
 
 	return reply, replyServer, err
 }

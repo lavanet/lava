@@ -153,20 +153,18 @@ type Sentry struct {
 }
 
 func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
-	if s.consumerSessionManager == nil {
-		utils.LavaFormatInfo("Setting up updateAllProvidersCallback", nil)
-		s.consumerSessionManager = consumerSessionManager
-		// Get pairing for the first time, for clients
-		pairingList, err := s.getPairing(ctx)
-		if err != nil {
-			return utils.LavaFormatError("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
-		}
-		err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
-		if err != nil {
-			return utils.LavaFormatError("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
-		}
+	utils.LavaFormatInfo("Setting up updateAllProvidersCallback", nil)
+	s.consumerSessionManager = consumerSessionManager
+	// Get pairing for the first time, for clients
+	pairingList, err := s.getPairing(ctx)
+	if err != nil {
+		return utils.LavaFormatError("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 	}
-	return utils.LavaFormatError("Tried to Setup Consumer Session Manager more than once", nil, nil)
+	err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+	if err != nil {
+		return utils.LavaFormatError("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
+	}
+	return nil
 }
 
 func (s *Sentry) FetchProvidersCount(ctx context.Context) error {
@@ -615,13 +613,15 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 				//
 				// Update pairing
-				pairingList, err := s.getPairing(ctx)
-				if err != nil {
-					utils.LavaFormatError("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
-				}
-				err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
-				if err != nil {
-					utils.LavaFormatError("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
+				if s.isUser {
+					pairingList, err := s.getPairing(ctx)
+					if err != nil {
+						utils.LavaFormatError("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
+					}
+					err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+					if err != nil {
+						utils.LavaFormatError("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
+					}
 				}
 
 				s.clearAuthResponseCache(data.Block.Height) // TODO: Remove this after provider session manager is fully functional
@@ -766,10 +766,12 @@ func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[i
 	s.specMu.RUnlock()
 
 	providersCount := uint32(s.consumerSessionManager.GetAtomicPairingAddressesLength())
-
+	indexes = make(map[int64]struct{}, len(vrfs))
 	for _, vrf := range vrfs {
 		index := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
-		// Todo this can be optimized with map
+		if index == -1 {
+			continue // no reliability this time.
+		}
 		if _, ok := indexes[index]; !ok {
 			indexes[index] = struct{}{}
 		}
@@ -905,7 +907,6 @@ type DataReliabilityResult struct {
 	reply                 *pairingtypes.RelayReply
 	relayRequest          *pairingtypes.RelayRequest
 	providerPublicAddress string
-	err                   error
 }
 
 func (s *Sentry) SendRelay(
@@ -914,30 +915,30 @@ func (s *Sentry) SendRelay(
 	unresponsiveProvidersData []byte,
 	sessionEpoch uint64,
 	providerPubAddress string,
-	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error),
 	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
-) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, error) {
 
 	// callback user
-	reply, replyServer, request, err := cb_send_relay(consumerSession)
+	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
 	//error using this provider
 	if err != nil {
-		return nil, nil, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
+		return nil, nil, 0, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
 	}
 
 	if s.GetSpecComparesHashes() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
+			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("failed provider reply validation", err, nil)
+			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
 		//
 		// Compare finalized block hashes with previous providers
@@ -947,7 +948,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, latency, utils.LavaFormatError("failed to finalize hashes", err, nil)
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -1000,51 +1001,58 @@ func (s *Sentry) SendRelay(
 					}
 					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
 				}
-				err = s.consumerSessionManager.OnDataReliabilitySessionDone(singleConsumerSession)
-				return relay_rep, relay_req, nil
+				err = s.consumerSessionManager.OnSessionDoneWithoutQoSChanges(singleConsumerSession)
+				return relay_rep, relay_req, err
 			}
 
 			checkReliability := func() {
-				if len(dataReliabilitySessions) > supportedNumberOfVRFs {
-					utils.LavaFormatError("Trying to use DataReliability with more than two vrf sessions.", nil, &map[string]string{"number_of_DataReliabilitySessions": strconv.Itoa(len(dataReliabilitySessions))})
+				numberOfReliabilitySessions := len(dataReliabilitySessions)
+				if numberOfReliabilitySessions > supportedNumberOfVRFs {
+					utils.LavaFormatError("Trying to use DataReliability with more than two vrf sessions, currently not supported", nil, &map[string]string{"number_of_DataReliabilitySessions": strconv.Itoa(numberOfReliabilitySessions)})
+					return
+				} else if numberOfReliabilitySessions == 0 {
 					return
 				}
 				// apply first request and reply to dataReliabilityVerifications
-				originalDataReliabilityResult := &DataReliabilityResult{reply: reply, relayRequest: request, providerPublicAddress: providerPubAddress, err: nil}
-				dataReliabilityVerifications := make([]*DataReliabilityResult, len(dataReliabilitySessions))
+				originalDataReliabilityResult := &DataReliabilityResult{reply: reply, relayRequest: request, providerPublicAddress: providerPubAddress}
+				dataReliabilityVerifications := make([]*DataReliabilityResult, 0)
 				uniqueIdentifier := []bool{true, false} // in the future if we want more vrfs we just change this boolean slice to the idx of the dataReliabilitySessions
 				for idx, dataReliabilitySession := range dataReliabilitySessions {
 					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, uniqueIdentifier[idx])
-					dataReliabilityVerifications = append(dataReliabilityVerifications,
-						&DataReliabilityResult{
-							reply:                 reliabilityReply,
-							relayRequest:          reliabilityRequest,
-							providerPublicAddress: dataReliabilitySession.providerPublicAddress,
-							err:                   err,
-						})
+					if err == nil && reliabilityReply != nil {
+						dataReliabilityVerifications = append(dataReliabilityVerifications,
+							&DataReliabilityResult{
+								reply:                 reliabilityReply,
+								relayRequest:          reliabilityRequest,
+								providerPublicAddress: dataReliabilitySession.providerPublicAddress,
+							})
+					}
 				}
-				s.verifyReliabilityResults(originalDataReliabilityResult, dataReliabilityVerifications)
+				if len(dataReliabilityVerifications) > 0 {
+					s.verifyReliabilityResults(originalDataReliabilityResult, dataReliabilityVerifications, numberOfReliabilitySessions)
+				}
 			}
 			go checkReliability()
 		}
 	}
-	return reply, replyServer, nil
+	return reply, replyServer, latency, nil
 }
 
 // Verify all dataReliabilityVerifications with one another
 // The original reply and request should be in dataReliabilityVerifications as well.
-func (s *Sentry) verifyReliabilityResults(originalResult *DataReliabilityResult, dataReliabilityResults []*DataReliabilityResult) {
+func (s *Sentry) verifyReliabilityResults(originalResult *DataReliabilityResult, dataReliabilityResults []*DataReliabilityResult, totalNumberOfSessions int) {
 	verificationsLength := len(dataReliabilityResults)
 	var ok bool
-	participatingProviders := map[string]string{"originalAddress": originalResult.providerPublicAddress}
+	participatingProviders := make(map[string]string, verificationsLength+1)
+	participatingProviders["originalAddress"] = originalResult.providerPublicAddress
 	for idx, drr := range dataReliabilityResults {
-		participatingProviders["address"+strconv.Itoa(idx)] = drr.providerPublicAddress
-		ok := s.CompareRelaysAndReportConflict(originalResult.reply, originalResult.relayRequest, drr.reply, drr.relayRequest)
+		add := drr.providerPublicAddress
+		participatingProviders["address"+strconv.Itoa(idx)] = add
+		ok = s.CompareRelaysAndReportConflict(originalResult.reply, originalResult.relayRequest, drr.reply, drr.relayRequest)
 		if !ok { // if we failed to compare relays with original reply and result we need to stop and compare them to one another.
 			break
 		}
 	}
-
 	var verifyConflictIsValid bool
 	if !ok {
 		// CompareRelaysAndReportConflict to each one of the data reliability relays to confirm that the first relay was'nt ok
@@ -1061,9 +1069,9 @@ func (s *Sentry) verifyReliabilityResults(originalResult *DataReliabilityResult,
 			}
 		}
 	}
-
-	if ok && !verifyConflictIsValid {
-		utils.LavaFormatInfo("Reliability verified and Okay!", &participatingProviders)
+	if ok && !verifyConflictIsValid && totalNumberOfSessions == verificationsLength {
+		// all reliability sessions succeeded
+		utils.LavaFormatInfo("Reliability verified successfully!", &participatingProviders)
 	} else {
 		utils.LavaFormatInfo("Reliability failed to verify!", &participatingProviders)
 	}

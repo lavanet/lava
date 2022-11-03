@@ -26,7 +26,6 @@ lavad tx pairing stake-client "ARBN"   200000ulava 1 -y --from user4 --gas-adjus
 lavad tx pairing stake-client "APT1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 lavad tx pairing stake-client "STRK"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
 lavad tx pairing stake-client "JUN1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "COS4"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "COS5"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "POLYGON1"   200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
