@@ -132,7 +132,6 @@ func SendRelay(
 			DataReliability:       nil,
 			UnresponsiveProviders: reportedProviders,
 		}
-		// TODO_RAN: fix here when finished with sentry
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, nil, nil, 0, err
