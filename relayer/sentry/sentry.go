@@ -705,17 +705,19 @@ func (s *Sentry) FetchChainParams(ctx context.Context) error {
 
 func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
 	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
-	s.PaymentsMu.RLock()
-	defer s.PaymentsMu.RUnlock()
-	for _, expectedPay := range s.expectedPayments {
+	s.PaymentsMu.Lock()
+	for idx, expectedPay := range s.expectedPayments {
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
 			utils.LavaFormatError("Identified Missing Payment", nil,
 				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
 					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
 					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
-
+			s.expectedPayments = append(s.expectedPayments[:idx], s.expectedPayments[idx+1:]...)
 		}
 	}
+	s.PaymentsMu.Unlock()
+	//can be modified in this race window, so we double check
+
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
 }
