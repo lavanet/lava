@@ -14,7 +14,7 @@ import (
 
 type ConsumerSessionManager struct {
 	lock         sync.RWMutex
-	pairing      map[string]*ConsumerSessionsWithProvider // key == provider adderss
+	pairing      map[string]*ConsumerSessionsWithProvider // key == provider address
 	currentEpoch uint64
 
 	// pairingAddresses for Data reliability
