@@ -21,6 +21,9 @@ var ( // Consumer Side Errors
 	MaximumNumberOfBlockListedSessionsError              = sdkerrors.New("MaximumNumberOfBlockListedSessions Error", 678, "Provider reached maximum number of block listed sessions.")
 	SendRelayError                                       = sdkerrors.New("SendRelay Error", 679, "Failed To Send Relay")
 	DataReliabilityIndexRequestedIsOriginalProviderError = sdkerrors.New("DataReliabilityIndexRequestedIsOriginalProvider Error", 680, "Data reliability session index belongs to the original provider")
+	DataReliabilityIndexOutOfRangeError                  = sdkerrors.New("DataReliabilityIndexOutOfRange Error", 681, "Trying to get provider index out of range")
+	DataReliabilityAlreadySentThisEpochError             = sdkerrors.New("DataReliabilityAlreadySentThisEpoch Error", 682, "Trying to send data reliability more than once per provider per epoch")
+	FailedToConnectToEndPointForDataReliabilityError     = sdkerrors.New("FailedToConnectToEndPointForDataReliability Error", 683, "Failed to connect to a providers endpoints")
 )
 
 var ( // Provider Side Errors

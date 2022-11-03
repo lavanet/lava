@@ -115,7 +115,7 @@ func SendRelay(
 	}
 	// consumerSession is locked here.
 
-	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
+	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
@@ -133,7 +133,7 @@ func SendRelay(
 			RequestBlock:          nodeMsg.RequestedBlock(),
 			QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 			DataReliability:       nil,
-			UnresponsiveProviders: unresponsiveProviders,
+			UnresponsiveProviders: reportedProviders,
 		}
 		// TODO_RAN: fix here when finished with sentry
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
@@ -144,7 +144,6 @@ func SendRelay(
 		c := *consumerSession.Endpoint.Client
 
 		relaySentTime := time.Now()
-		consumerSession.QoSInfo.TotalRelays++
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
@@ -158,22 +157,17 @@ func SendRelay(
 		}
 
 		if err != nil {
-			if err.Error() == context.DeadlineExceeded.Error() {
-				consumerSession.QoSInfo.ConsecutiveTimeOut++
-			}
 			return nil, nil, nil, err
 		}
 
 		if !isSubscription {
 			currentLatency := time.Since(relaySentTime)
-			consumerSession.QoSInfo.ConsecutiveTimeOut = 0
-			consumerSession.QoSInfo.AnsweredRelays++
 
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			requestedBlock = relayRequest.RequestBlock
 
-			err = VerifyRelayReply(reply, relayRequest, consumerSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -185,7 +179,7 @@ func SendRelay(
 		return reply, &replyServer, relayRequest, nil
 	}
 
-	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
@@ -193,7 +187,7 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              consumerSession.Client.Acc,
+			Provider:              providerAddress,
 			ApiUrl:                url,
 			Data:                  []byte(req),
 			SessionId:             uint64(0), //sessionID for reliability is 0
@@ -205,7 +199,7 @@ func SendRelay(
 			QoSReport:             nil,
 			DataReliability:       dataReliability,
 			ConnectionType:        connectionType,
-			UnresponsiveProviders: unresponsiveProviders,
+			UnresponsiveProviders: reportedProviders,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
@@ -225,7 +219,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 
-		err = VerifyRelayReply(reply, relayRequest, consumerSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, nil, err
 		}

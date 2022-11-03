@@ -62,6 +62,29 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch     uint64
 }
 
+// verify data reliability session exists or not
+func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (err error) {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		return DataReliabilityAlreadySentThisEpochError
+	}
+	return nil
+}
+
+// get a data reliability session from an endpoint
+func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSession(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64) {
+	singleDataReliabilitySession := &SingleConsumerSession{
+		SessionId: DataReliabilitySessionId,
+		Client:    cswp,
+		Endpoint:  endpoint,
+	}
+	singleDataReliabilitySession.lock.Lock() // we must lock the session so other requests wont get it.
+
+	cswp.Sessions[singleDataReliabilitySession.SessionId] = singleDataReliabilitySession // applying the session to the pool of sessions.
+	return singleDataReliabilitySession, cswp.PairingEpoch
+}
+
 func (cswp *ConsumerSessionsWithProvider) CheckAndMarkReliabilityForThisPairing() (valid bool) {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
@@ -126,11 +149,6 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, 
 
 	c := pairingtypes.NewRelayerClient(conn)
 	return &c, nil
-}
-
-func (cswp *ConsumerSessionsWithProvider) getDataReliabilityConsumerSessionInstanceFromEndpoint() {
-	// TODO_RAN: use this to dr
-
 }
 
 func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
@@ -242,10 +260,10 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 
-	downtimePrecentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePrecentage).Quo(AvailabilityPercentage))
+	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
+	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availibility": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePrecentage.String()})
+		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
 	}
 
 	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
@@ -266,7 +284,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockheight) and we dont give him the score
+		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {

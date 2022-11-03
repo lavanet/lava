@@ -268,6 +268,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 
+	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
@@ -364,14 +365,84 @@ func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
 	return atomic.LoadUint64(&csm.pairingAddressesLength)
 }
 
+func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddress string, index uint64) (cswp *ConsumerSessionsWithProvider, providerAddress string, epoch uint64, err error) {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	currentEpoch := csm.atomicReadCurrentEpoch()
+	pairingAddressesLength := csm.GetAtomicPairingAddressesLength()
+	if index >= pairingAddressesLength {
+		return nil, "", currentEpoch, DataReliabilityIndexOutOfRangeError
+	}
+	providerAddress = csm.pairingAddresses[index]
+	if providerAddress == unAllowedAddress {
+		return nil, "", currentEpoch, DataReliabilityIndexRequestedIsOriginalProviderError
+	}
+	// if address is valid return the ConsumerSessionsWithProvider
+	return csm.pairing[providerAddress], providerAddress, currentEpoch, nil
+
+}
+
+func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProvider(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
+	var connected bool
+	for idx := 0; idx < MaxConsecutiveConnectionAttempts; idx++ { // try to connect to the endpoint 3 times
+		connected, endpoint, err = consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
+		if err != nil {
+			// verify err is AllProviderEndpointsDisabled and report.
+			if AllProviderEndpointsDisabledError.Is(err) {
+				err = csm.blockProvider(providerAddress, true, sessionEpoch) // reporting and blocking provider this epoch
+				if err != nil {
+					if !EpochMismatchError.Is(err) {
+						// only acceptable error is EpochMismatchError so if different, throw fatal
+						utils.LavaFormatFatal("Unsupported Error", err, nil)
+					}
+				}
+				break // all endpoints are disabled, no reason to continue with this provider.
+			} else {
+				utils.LavaFormatFatal("Unsupported Error", err, nil)
+			}
+		}
+		if connected {
+			// if we are connected we can stop trying and return the endpoint
+			break
+		} else {
+			continue
+		}
+	}
+	if !connected { // if we are not connected at the end
+		// failed to get an endpoint connection from that provider. return an error.
+		return nil, FailedToConnectToEndPointForDataReliabilityError
+	}
+	return endpoint, nil
+}
+
 // Get a Data Reliability Session
-func (csm *ConsumerSessionManager) GetDataReliabilitySession(originalProviderAddress string, index int64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
-	// TODO_RAN
-	if epoch != csm.atomicReadCurrentEpoch() {
-		return nil, "", 0, EpochMismatchError
+func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context, originalProviderAddress string, index int64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
+	consumerSessionWithProvider, providerAddress, currentEpoch, err := csm.getDataReliabilityProviderIndex(originalProviderAddress, uint64(index))
+	if err != nil {
+		return nil, "", 0, err
 	}
 
-	return nil, "", 0, nil
+	// after choosing a provider, try to see if it already has an existing data reliability session.
+	err = consumerSessionWithProvider.verifyDataReliabilitySessionWasNotAlreadyCreated()
+	if err != nil {
+		return nil, "", currentEpoch, err
+	}
+
+	// We can get an endpoint now and create a data reliability session.
+	endpoint, err := csm.getEndpointFromConsumerSessionWithProvider(ctx, consumerSessionWithProvider, currentEpoch, providerAddress)
+	if err != nil {
+		return nil, "", currentEpoch, err
+	}
+
+	// get data reliability session from endpoint
+	consumerSession, pairingEpoch := consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
+
+	if currentEpoch != pairingEpoch { // validate they are the same, if not print an error and set currentEpoch to pairingEpoch.
+		utils.LavaFormatError("currentEpoch and pairingEpoch mismatch", nil, &map[string]string{"sessionEpoch": strconv.FormatUint(currentEpoch, 10), "pairingEpoch": strconv.FormatUint(pairingEpoch, 10)})
+		currentEpoch = pairingEpoch
+	}
+
+	return consumerSession, providerAddress, currentEpoch, nil
 }
 
 // On a successful DataReliability session we don't need to increase and update any field, we just need to unlock the session.

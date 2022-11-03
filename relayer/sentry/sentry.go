@@ -914,13 +914,13 @@ func (s *Sentry) SendRelay(
 	unresponsiveProvidersData []byte,
 	sessionEpoch uint64,
 	providerPubAddress string,
-	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
-	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
+	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 
 	// callback user
-	reply, replyServer, request, err := cb_send_relay(consumerSession, unresponsiveProvidersData)
+	reply, replyServer, request, err := cb_send_relay(consumerSession)
 	//error using this provider
 	if err != nil {
 		return nil, nil, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
@@ -959,13 +959,15 @@ func (s *Sentry) SendRelay(
 			s.VrfSkMu.Unlock()
 			// get two indexesMap for data reliability.
 			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1})
-			for idx, _ := range indexesMap { // go over each unique index and get a session.
+			for idxExtract := range indexesMap { // go over each unique index and get a session.
 				// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
-				session, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(providerPubAddress, idx)
+				session, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract)
 				if err != nil {
 					if lavasession.DataReliabilityIndexRequestedIsOriginalProviderError.Is(err) {
 						// index belongs to original provider, nothing is wrong here, print info and continue
-						utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", &map[string]string{"provider": providerPubAddress, "Index": strconv.FormatInt(idx, 10)})
+						utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", &map[string]string{"provider": providerPubAddress, "Index": strconv.FormatInt(idxExtract, 10)})
+					} else if lavasession.DataReliabilityAlreadySentThisEpochError.Is(err) {
+						utils.LavaFormatInfo("DataReliability: Provider Already Sent Data Reliability This Epoch.", &map[string]string{"Provider": providerPubAddress, "Epoch": strconv.FormatUint(epoch, 10)})
 					} else {
 						utils.LavaFormatError("GetDataReliabilitySession", err, nil)
 					}
@@ -990,7 +992,7 @@ func (s *Sentry) SendRelay(
 					QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 					Sig:         nil,                                //calculated in cb_send_reliability
 				}
-				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, unresponsiveProvidersData)
+				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
 					err = s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
 					if err != nil {
