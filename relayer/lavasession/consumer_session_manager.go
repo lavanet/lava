@@ -382,7 +382,7 @@ func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddr
 
 }
 
-func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProvider(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
+func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderForDR(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
 	var connected bool
 	for idx := 0; idx < MaxConsecutiveConnectionAttempts; idx++ { // try to connect to the endpoint 3 times
 		connected, endpoint, err = consumerSessionWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, sessionEpoch)
@@ -429,7 +429,7 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	// We can get an endpoint now and create a data reliability session.
-	endpoint, err := csm.getEndpointFromConsumerSessionWithProvider(ctx, consumerSessionWithProvider, currentEpoch, providerAddress)
+	endpoint, err := csm.getEndpointFromConsumerSessionWithProviderForDR(ctx, consumerSessionWithProvider, currentEpoch, providerAddress)
 	if err != nil {
 		return nil, "", currentEpoch, err
 	}
