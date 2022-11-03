@@ -153,7 +153,7 @@ type Sentry struct {
 }
 
 func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
-	utils.LavaFormatInfo("Setting up updateAllProvidersCallback", nil)
+	utils.LavaFormatInfo("Setting up ConsumerSessionManager", nil)
 	s.consumerSessionManager = consumerSessionManager
 	// Get pairing for the first time, for clients
 	pairingList, err := s.getPairing(ctx)

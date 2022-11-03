@@ -86,10 +86,6 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 	return nil
 }
 
-func UpdateAllProvidersCallback(cp ChainProxy, ctx context.Context, epoch uint64, pairingList []*lavasession.ConsumerSessionsWithProvider) error {
-	return cp.GetConsumerSessionManager().UpdateAllProviders(ctx, epoch, pairingList)
-}
-
 // Client requests and queries
 func SendRelay(
 	ctx context.Context,
