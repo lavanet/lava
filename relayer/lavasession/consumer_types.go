@@ -22,27 +22,26 @@ type ignoredProviders struct {
 }
 
 type qoSInfo struct {
-	LastQoSReport      *pairingtypes.QualityOfServiceReport
-	LatencyScoreList   []sdk.Dec
-	SyncScoreSum       int64
-	TotalSyncScore     int64
-	TotalRelays        uint64
-	AnsweredRelays     uint64
-	ConsecutiveTimeOut uint64
+	LastQoSReport    *pairingtypes.QualityOfServiceReport
+	LatencyScoreList []sdk.Dec
+	SyncScoreSum     int64
+	TotalSyncScore   int64
+	TotalRelays      uint64
+	AnsweredRelays   uint64
 }
 
 type SingleConsumerSession struct {
-	CuSum            uint64
-	LatestRelayCu    uint64 // set by GetSession cuNeededForSession
-	QoSInfo          qoSInfo
-	SessionId        int64
-	Client           *ConsumerSessionsWithProvider
-	lock             utils.LavaMutex
-	RelayNum         uint64
-	LatestBlock      int64
-	Endpoint         *Endpoint
-	Blocklisted      bool   // if session lost sync we blacklist it.
-	NumberOfFailures uint64 // number of times this session has failed
+	CuSum                       uint64
+	LatestRelayCu               uint64 // set by GetSession cuNeededForSession
+	QoSInfo                     qoSInfo
+	SessionId                   int64
+	Client                      *ConsumerSessionsWithProvider
+	lock                        utils.LavaMutex
+	RelayNum                    uint64
+	LatestBlock                 int64
+	Endpoint                    *Endpoint
+	Blocklisted                 bool   // if session lost sync we blacklist it.
+	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
 }
 
 type Endpoint struct {
@@ -127,6 +126,11 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, 
 
 	c := pairingtypes.NewRelayerClient(conn)
 	return &c, nil
+}
+
+func (cswp *ConsumerSessionsWithProvider) getDataReliabilityConsumerSessionInstanceFromEndpoint() {
+	// TODO_RAN: use this to dr
+
 }
 
 func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {

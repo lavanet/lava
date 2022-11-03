@@ -18,7 +18,8 @@ type ConsumerSessionManager struct {
 	currentEpoch uint64
 
 	// pairingAddresses for Data reliability
-	pairingAddresses []string // contains all addresses from the initial pairing.
+	pairingAddresses       []string // contains all addresses from the initial pairing.
+	pairingAddressesLength uint64
 	// providerBlockList + validAddresses == pairingAddresses (while locked)
 	validAddresses        []string            // contains all addresses that are currently valid
 	providerBlockList     map[string]struct{} // contains all currently blocked providers, reset upon epoch change. (easier to search maps.)
@@ -47,6 +48,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.providerBlockList = make(map[string]struct{}, 0)
 	csm.pairingAddresses = make([]string, pairingListLength)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
+	csm.pairingAddressesLength = uint64(pairingListLength)
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
@@ -252,7 +254,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 }
 
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
-func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error, didTimeout bool) error {
+func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
@@ -260,21 +262,16 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method, additional info:")
 	}
 
-	// client Session should be locked here. so we can just apply the session failure here.
+	// consumer Session should be locked here. so we can just apply the session failure here.
 	if consumerSession.Blocklisted {
-		// if client session is already blocklisted return an error.
-		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
+		// if consumer session is already blocklisted return an error.
+		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 
-	// deal with timeouts
-	if didTimeout {
-		consumerSession.QoSInfo.ConsecutiveTimeOut++
-	}
-
-	consumerSession.NumberOfFailures += 1 // increase number of failures for this session
+	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.NumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
 		consumerSession.Blocklisted = true // block this session from future usages
 	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
 		consumerSession.Blocklisted = true
@@ -312,14 +309,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	return nil
 }
 
-func (csm *ConsumerSessionManager) GetSpecificSession(address string, epoch uint64) (*SingleConsumerSession, error) {
-	if epoch != csm.atomicReadCurrentEpoch() {
-		return nil, EpochMismatchError
-	}
-
-	return nil, nil
-}
-
 // get a session from the pool except specific providers, which also validates the epoch.
 func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
 	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
@@ -342,10 +331,10 @@ func (csm *ConsumerSessionManager) OnSessionDone(consumerSession *SingleConsumer
 	consumerSession.CuSum += consumerSession.LatestRelayCu
 	consumerSession.LatestRelayCu = 0 // reset cu just in case
 	// increase relayNum
-	consumerSession.RelayNum += 1
+	consumerSession.RelayNum += RelayNumberIncrement
 	// increase QualityOfService
 	consumerSession.QoSInfo.TotalRelays++
-	consumerSession.QoSInfo.ConsecutiveTimeOut = 0
+	consumerSession.ConsecutiveNumberOfFailures = 0
 	consumerSession.QoSInfo.AnsweredRelays++
 
 	consumerSession.LatestBlock = latestServicedBlock
@@ -366,4 +355,76 @@ func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) ([]byte, e
 	bytes, err := json.Marshal(keys)
 
 	return bytes, err
+}
+
+// Data Reliability Section:
+
+// Atomically read csm.pairingAddressesLength for data reliability.
+func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
+	return atomic.LoadUint64(&csm.pairingAddressesLength)
+}
+
+// Get a Data Reliability Session
+func (csm *ConsumerSessionManager) GetDataReliabilitySession(originalProviderAddress string, index int64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
+	// TODO_RAN
+	if epoch != csm.atomicReadCurrentEpoch() {
+		return nil, "", 0, EpochMismatchError
+	}
+
+	return nil, "", 0, nil
+}
+
+// On a successful DataReliability session we don't need to increase and update any field, we just need to unlock the session.
+func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession *SingleConsumerSession) error {
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+	return nil
+}
+
+// On a failed DataReliability session we don't decrease the cu unlike a normal session, we just unlock and verify if we need to block this session or provider.
+func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
+	// consumerSession must be locked when getting here.
+	if consumerSession.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer consumerSession.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method, additional info:")
+	}
+	// consumer Session should be locked here. so we can just apply the session failure here.
+	if consumerSession.Blocklisted {
+		// if consumer session is already blocklisted return an error.
+		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
+	}
+
+	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
+	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
+		consumerSession.Blocklisted = true // block this session from future usages
+	}
+
+	var blockProvider, reportProvider bool
+	if ReportAndBlockProviderError.Is(errorReceived) {
+		blockProvider = true
+		reportProvider = true
+	} else if BlockProviderError.Is(errorReceived) {
+		blockProvider = true
+	}
+
+	parentConsumerSessionsWithProvider := consumerSession.Client
+	consumerSession.lock.Unlock()
+
+	if blockProvider {
+		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
+		err := csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch)
+		if err != nil {
+			if EpochMismatchError.Is(err) {
+				return nil // no effects this epoch has been changed
+			}
+			return err
+		}
+	}
+
+	return nil
 }

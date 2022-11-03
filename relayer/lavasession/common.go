@@ -11,7 +11,8 @@ const (
 	TimeoutForEstablishingAConnectionInMS            = 300 * time.Millisecond
 	MaxSessionsAllowedPerProvider                    = 10 // Max number of sessions allowed per provider
 	MaxAllowedBlockListedSessionPerProvider          = 3
-	MaximumNumberOfFailuresAllowedPerConsumerSession = 2
+	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
+	RelayNumberIncrement                             = 1
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing

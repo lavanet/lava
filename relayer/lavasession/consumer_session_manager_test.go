@@ -95,7 +95,7 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
-	err = csm.OnSessionFailure(cs, fmt.Errorf("nothing special"), false)
+	err = csm.OnSessionFailure(cs, fmt.Errorf("nothing special"))
 	require.Nil(t, err)
 	ch <- p
 }
@@ -220,7 +220,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
-	err = csm.OnSessionFailure(cs, ReportAndBlockProviderError, true)
+	err = csm.OnSessionFailure(cs, ReportAndBlockProviderError)
 	require.Nil(t, err)
 	require.Equal(t, cs.Client.UsedComputeUnits, cuSumOnFailure)
 	require.Equal(t, cs.CuSum, cuSumOnFailure)
@@ -261,7 +261,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 
 	err = csm.UpdateAllProviders(ctx, secondEpochHeight, pairingList) // update the providers again.
 	require.Nil(t, err)
-	err = csm.OnSessionFailure(cs, ReportAndBlockProviderError, true)
+	err = csm.OnSessionFailure(cs, ReportAndBlockProviderError)
 	require.Nil(t, err)
 }
 

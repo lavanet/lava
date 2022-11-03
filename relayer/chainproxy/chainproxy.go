@@ -119,6 +119,7 @@ func SendRelay(
 		//client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
+		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:              providerPublicAddress,
 			ConnectionType:        connectionType,
@@ -126,9 +127,9 @@ func SendRelay(
 			Data:                  []byte(req),
 			SessionId:             uint64(consumerSession.SessionId),
 			ChainID:               cp.GetSentry().ChainID,
-			CuSum:                 consumerSession.CuSum,
+			CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly
 			BlockHeight:           blockHeight,
-			RelayNum:              consumerSession.RelayNum,
+			RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
 			RequestBlock:          nodeMsg.RequestedBlock(),
 			QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 			DataReliability:       nil,

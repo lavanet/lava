@@ -39,6 +39,7 @@ const (
 	maxRetries             = 10
 	providerWasntFound     = -1
 	findPairingFailedIndex = -1
+	supportedNumberOfVRFs  = 2
 )
 
 type VoteParams struct {
@@ -757,31 +758,21 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	return false
 }
 
-func (s *Sentry) DataReliabilityThresholdToSession(vrf0 []byte, vrf1 []byte, originalRequestProviderAddress string) (session0 *lavasession.SingleConsumerSession, providerPublicAddress0, string, session1 *lavasession.SingleConsumerSession, providerPublicAddress1 string, err error) {
+func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[int64]struct{}) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
 	//TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
 	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
 	s.specMu.RUnlock()
-	s.pairingMu.RLock()
 
-	providersCount := uint32(len(s.pairingAddresses))
-	index0 := utils.GetIndexForVrf(vrf0, providersCount, reliabilityThreshold)
-	index1 := utils.GetIndexForVrf(vrf1, providersCount, reliabilityThreshold)
-	parseIndex := func(idx int64) (address string) {
-		if idx == -1 {
-			address = ""
-		} else {
-			address = s.pairingAddresses[idx]
+	providersCount := uint32(s.consumerSessionManager.GetAtomicPairingAddressesLength())
+
+	for _, vrf := range vrfs {
+		index := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
+		// Todo this can be optimized with map
+		if _, ok := indexes[index]; !ok {
+			indexes[index] = struct{}{}
 		}
-		return
-	}
-	address0 = parseIndex(index0)
-	address1 = parseIndex(index1)
-	s.pairingMu.RUnlock()
-	if address0 == address1 {
-		//can't have both with the same provider
-		address1 = ""
 	}
 	return
 }
@@ -904,12 +895,25 @@ func (s *Sentry) insertProviderToConsensus(consensus *ProviderHashesConsensus, f
 	}
 }
 
+type DataReliabilitySession struct {
+	singleConsumerSession *lavasession.SingleConsumerSession
+	epoch                 uint64
+	providerPublicAddress string
+}
+
+type DataReliabilityResult struct {
+	reply                 *pairingtypes.RelayReply
+	relayRequest          *pairingtypes.RelayRequest
+	providerPublicAddress string
+	err                   error
+}
+
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	consumerSession *lavasession.SingleConsumerSession,
 	unresponsiveProvidersData []byte,
 	sessionEpoch uint64,
-	providerAcc string,
+	providerPubAddress string,
 	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error),
 	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
@@ -931,7 +935,7 @@ func (s *Sentry) SendRelay(
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
-		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerAcc, consumerSession)
+		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
 			return nil, nil, utils.LavaFormatError("failed provider reply validation", err, nil)
 		}
@@ -941,25 +945,40 @@ func (s *Sentry) SendRelay(
 		// if no conflicts, insert into consensus and break
 		// create new consensus group if no consensus matched
 		// check for discrepancy with old epoch
-		_, err := checkFinalizedHashes(s, providerAcc, latestBlock, finalizedBlocks, request, reply)
+		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
-			canCheckReliability := true
+			var dataReliabilitySessions []*DataReliabilitySession
 
 			// handle data reliability
 			s.VrfSkMu.Lock()
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, sessionEpoch)
 			s.VrfSkMu.Unlock()
-			session0, providerPublicAddress0, session1, providerPublicAddress1, err := s.DataReliabilityThresholdToSession(vrfRes0, vrfRes1, providerAcc)
-			if err != nil {
-				canCheckReliability = false
-				utils.LavaFormatError("DataReliabilityThresholdToSession Error", err, &map[string]string{"sessionEpoch": strconv.FormatUint(sessionEpoch, 10)})
+			// get two indexesMap for data reliability.
+			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1})
+			for idx, _ := range indexesMap { // go over each unique index and get a session.
+				// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
+				session, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(providerPubAddress, idx)
+				if err != nil {
+					if lavasession.DataReliabilityIndexRequestedIsOriginalProviderError.Is(err) {
+						// index belongs to original provider, nothing is wrong here, print info and continue
+						utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", &map[string]string{"provider": providerPubAddress, "Index": strconv.FormatInt(idx, 10)})
+					} else {
+						utils.LavaFormatError("GetDataReliabilitySession", err, nil)
+					}
+					continue // if got an error continue to next index.
+				}
+				dataReliabilitySessions = append(dataReliabilitySessions, &DataReliabilitySession{
+					singleConsumerSession: session,
+					epoch:                 epoch,
+					providerPublicAddress: providerPublicAddress,
+				})
 			}
 
-			sendReliabilityRelay := func(singleConsumerSession *lavasession.SingleConsumerSession, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
+			sendReliabilityRelay := func(singleConsumerSession *lavasession.SingleConsumerSession, providerAddress string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
 				s.VrfSkMu.Lock()
 				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
@@ -971,45 +990,81 @@ func (s *Sentry) SendRelay(
 					QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
 					Sig:         nil,                                //calculated in cb_send_reliability
 				}
-				consumerSession = getClientSessionFromWrap(wrap, endpoint)
-				relay_rep, relay_req, err := cb_send_reliability(consumerSession, dataReliability, unresponsiveProvidersData)
+				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, unresponsiveProvidersData)
 				if err != nil {
-					if consumerSession.QoSInfo.ConsecutiveTimeOut >= 3 && consumerSession.QoSInfo.LastQoSReport.Availability.IsZero() {
-						s.movePairingEntryToPurge(wrap, index, false)
+					err = s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
+					if err != nil {
+						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", err, nil)
 					}
-					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": address})
+					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
 				}
-				consumerSession.Lock.Unlock() //function call returns a locked session, we need to unlock it
+				err = s.consumerSessionManager.OnDataReliabilitySessionDone(singleConsumerSession)
 				return relay_rep, relay_req, nil
 			}
 
 			checkReliability := func() {
-				reply0, request0, err0 := sendReliabilityRelay(session0, false)
-				reply1, request1, err1 := sendReliabilityRelay(session1, true)
-				ok := true
-				check0 := err0 == nil && reply0 != nil
-				check1 := err1 == nil && reply1 != nil
-				if check0 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply0, request0)
+				if len(dataReliabilitySessions) > supportedNumberOfVRFs {
+					utils.LavaFormatError("Trying to use DataReliability with more than two vrf sessions.", nil, &map[string]string{"number_of_DataReliabilitySessions": strconv.Itoa(len(dataReliabilitySessions))})
+					return
 				}
-				if check1 {
-					ok = ok && s.CompareRelaysAndReportConflict(reply, request, reply1, request1)
+				// apply first request and reply to dataReliabilityVerifications
+				originalDataReliabilityResult := &DataReliabilityResult{reply: reply, relayRequest: request, providerPublicAddress: providerPubAddress, err: nil}
+				dataReliabilityVerifications := make([]*DataReliabilityResult, len(dataReliabilitySessions))
+				uniqueIdentifier := []bool{true, false} // in the future if we want more vrfs we just change this boolean slice to the idx of the dataReliabilitySessions
+				for idx, dataReliabilitySession := range dataReliabilitySessions {
+					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, uniqueIdentifier[idx])
+					dataReliabilityVerifications = append(dataReliabilityVerifications,
+						&DataReliabilityResult{
+							reply:                 reliabilityReply,
+							relayRequest:          reliabilityRequest,
+							providerPublicAddress: dataReliabilitySession.providerPublicAddress,
+							err:                   err,
+						})
 				}
-				if !ok && check0 && check1 {
-					s.CompareRelaysAndReportConflict(reply0, request0, reply1, request1)
-				}
-				if (ok && check0) || (ok && check1) {
-					utils.LavaFormatInfo("Reliability verified and Okay!", &map[string]string{"address0": providerPublicAddress0, "address1": providerPublicAddress1, "original address": providerAcc})
-				}
+				s.verifyReliabilityResults(originalDataReliabilityResult, dataReliabilityVerifications)
 			}
-			if canCheckReliability {
-				go checkReliability()
-			} else {
-				utils.LavaFormatInfo("Could not check Reliability", nil)
-			}
+			go checkReliability()
 		}
 	}
 	return reply, replyServer, nil
+}
+
+// Verify all dataReliabilityVerifications with one another
+// The original reply and request should be in dataReliabilityVerifications as well.
+func (s *Sentry) verifyReliabilityResults(originalResult *DataReliabilityResult, dataReliabilityResults []*DataReliabilityResult) {
+	verificationsLength := len(dataReliabilityResults)
+	var ok bool
+	participatingProviders := map[string]string{"originalAddress": originalResult.providerPublicAddress}
+	for idx, drr := range dataReliabilityResults {
+		participatingProviders["address"+strconv.Itoa(idx)] = drr.providerPublicAddress
+		ok := s.CompareRelaysAndReportConflict(originalResult.reply, originalResult.relayRequest, drr.reply, drr.relayRequest)
+		if !ok { // if we failed to compare relays with original reply and result we need to stop and compare them to one another.
+			break
+		}
+	}
+
+	var verifyConflictIsValid bool
+	if !ok {
+		// CompareRelaysAndReportConflict to each one of the data reliability relays to confirm that the first relay was'nt ok
+		for idx1 := 0; idx1 < verificationsLength; idx1++ {
+			for idx2 := (idx1 + 1); idx2 < verificationsLength; idx2++ {
+				verifyConflictIsValid = s.CompareRelaysAndReportConflict(
+					dataReliabilityResults[idx1].reply,        // reply 1
+					dataReliabilityResults[idx1].relayRequest, // request 1
+					dataReliabilityResults[idx2].reply,        // reply 2
+					dataReliabilityResults[idx2].relayRequest) // request 2
+				if !verifyConflictIsValid {
+					break
+				}
+			}
+		}
+	}
+
+	if ok && !verifyConflictIsValid {
+		utils.LavaFormatInfo("Reliability verified and Okay!", &participatingProviders)
+	} else {
+		utils.LavaFormatInfo("Reliability failed to verify!", &participatingProviders)
+	}
 }
 
 func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (bool, error) {
