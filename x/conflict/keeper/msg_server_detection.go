@@ -50,7 +50,6 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 
 		}
 		index := DetectionIndex(msg, epochStart)
-		//fmt.Printf("%s \n", index)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
 		if found {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: conflict with is already open for this client and providers in this epoch")
@@ -59,7 +58,13 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.Index = index
 		conflictVote.VoteState = types.StateCommit
 		conflictVote.VoteStartBlock = uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight)
-		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+epochStart)
+		epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get epochblocks")
+
+		}
+		
+		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()) + k.VotePeriod(ctx)*epochBlocks)
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get NextEpoch")
 
@@ -75,10 +80,10 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		conflictVote.FirstProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData0.Reply.Data)
 		conflictVote.SecondProvider.Account = msg.ResponseConflict.ConflictRelayData1.Request.Provider
 		conflictVote.SecondProvider.Response = tendermintcrypto.Sha256(msg.ResponseConflict.ConflictRelayData1.Reply.Data)
-		conflictVote.VotersHash = map[string]types.Vote{}
+		conflictVote.Votes = []types.Vote{}
 		voters := k.Keeper.LotteryVoters(goCtx, epochStart, conflictVote.ChainID, []string{conflictVote.FirstProvider.Account, conflictVote.SecondProvider.Account})
 		for _, voter := range voters {
-			conflictVote.VotersHash[voter] = types.Vote{Hash: []byte{}, Result: types.NoVote}
+			conflictVote.Votes = append(conflictVote.Votes, types.Vote{Address: voter, Hash: []byte{}, Result: types.NoVote})
 		}
 
 		k.SetConflictVote(ctx, conflictVote)
