@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
-	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -219,28 +218,21 @@ func SendRelay(
 	reply, replyServer, relayLatency, err := cp.GetSentry().SendRelay(ctx, singleConsumerSession, reportedProviders, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 	if err != nil {
 		// on session failure here
-		err = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, err)
-		if err != nil {
-			return nil, nil, err
+		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, err)
+		if errReport != nil {
+			return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", err, errReport)
 		}
 		if lavasession.SendRelayError.Is(err) {
-			// send again?
+			// TODO send again?
 		}
+		return nil, nil, err
 	}
 	if !isSubscription {
-		if reply == nil {
-			// TODO: find out why do we get nil sometimes. but if we do, its a session failure not success.
-			utils.LavaFormatError("reply returned nil", nil, nil)
-			// if the provider returned nil, he thinks he replied a valid response. so we need to block the session
-			err = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, lavasession.SessionOutOfSyncError)
-		} else {
-			latestBlock := reply.LatestBlock
-			expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
-			err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
-		}
+		latestBlock := reply.LatestBlock
+		expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
+		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneWithoutQoSChanges(singleConsumerSession) // session done successfully
 	}
-
 	return reply, replyServer, err
 }

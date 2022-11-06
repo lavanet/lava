@@ -921,7 +921,6 @@ func (s *Sentry) SendRelay(
 	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
 	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, error) {
-
 	// callback user
 	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
 	//error using this provider
@@ -964,7 +963,7 @@ func (s *Sentry) SendRelay(
 			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1})
 			for idxExtract := range indexesMap { // go over each unique index and get a session.
 				// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
-				session, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract)
+				dataReliabilityConsumerSession, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract)
 				if err != nil {
 					if lavasession.DataReliabilityIndexRequestedIsOriginalProviderError.Is(err) {
 						// index belongs to original provider, nothing is wrong here, print info and continue
@@ -977,7 +976,7 @@ func (s *Sentry) SendRelay(
 					continue // if got an error continue to next index.
 				}
 				dataReliabilitySessions = append(dataReliabilitySessions, &DataReliabilitySession{
-					singleConsumerSession: session,
+					singleConsumerSession: dataReliabilityConsumerSession,
 					epoch:                 epoch,
 					providerPublicAddress: providerPublicAddress,
 				})
@@ -1037,6 +1036,7 @@ func (s *Sentry) SendRelay(
 			go checkReliability()
 		}
 	}
+
 	return reply, replyServer, latency, nil
 }
 
