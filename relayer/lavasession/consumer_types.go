@@ -255,6 +255,9 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 }
 
 func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+	// Add current Session QoS
+	cs.QoSInfo.TotalRelays++    // increase total relays
+	cs.QoSInfo.AnsweredRelays++ // increase answered relays
 
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}

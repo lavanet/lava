@@ -339,18 +339,13 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
 	}
 
-	consumerSession.CuSum += consumerSession.LatestRelayCu
-	consumerSession.LatestRelayCu = 0 // reset cu just in case
-	// increase relayNum
-	consumerSession.RelayNum += RelayNumberIncrement
-	// increase QualityOfService
-	consumerSession.QoSInfo.TotalRelays++
-	consumerSession.ConsecutiveNumberOfFailures = 0
-	consumerSession.QoSInfo.AnsweredRelays++
-
-	consumerSession.LatestBlock = latestServicedBlock
+	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
+	consumerSession.LatestRelayCu = 0                      // reset cu just in case
+	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
+	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
+	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
+	// calculate QoS
 	consumerSession.CalculateQoS(computeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-
 	return nil
 }
 
