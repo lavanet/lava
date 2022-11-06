@@ -159,7 +159,10 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 
 	//try to lock an existing session, if can't create a new one
 	numberOfBlockedSessions := 0
-	for _, session := range cswp.Sessions {
+	for sessionID, session := range cswp.Sessions {
+		if sessionID == DataReliabilitySessionId {
+			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
+		}
 		if session.Endpoint != endpoint {
 			//skip sessions that don't belong to the active connection
 			continue
