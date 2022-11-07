@@ -74,7 +74,7 @@ func TestHappyFlow(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	require.Equal(t, cs.CuSum, cuForFirstRequest)
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
@@ -86,7 +86,7 @@ func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *test
 	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
-	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber)
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	ch <- p
 }

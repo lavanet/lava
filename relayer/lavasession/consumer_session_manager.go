@@ -326,7 +326,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession *SingleConsumerSession,
 	epoch uint64,
 	latestServicedBlock int64,
-	computeUnits uint64,
+	specComputeUnits uint64,
 	currentLatency time.Duration,
 	expectedBH int64,
 	numOfProviders int,
@@ -345,7 +345,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(computeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	return nil
 }
 
