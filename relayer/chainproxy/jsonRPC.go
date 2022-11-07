@@ -164,7 +164,7 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 		return &api, nil
 	}
 
-	return nil, errors.New("api not supported")
+	return nil, errors.New("JRPC api not supported")
 }
 
 func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {

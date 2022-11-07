@@ -420,9 +420,6 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 
 	// Check that relaynum gets incremented by user
 	if relayNum+1 > request.RelayNum {
-		userSessions.Lock.Lock()
-		userSessions.IsBlockListed = true
-		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
 			"received": strconv.FormatUint(request.RelayNum, 10),
