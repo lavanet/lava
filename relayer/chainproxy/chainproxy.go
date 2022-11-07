@@ -216,7 +216,7 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replyServer, relayLatency, err := cp.GetSentry().SendRelay(ctx, singleConsumerSession, reportedProviders, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, replyServer, relayLatency, err := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 	if err != nil {
 		// on session failure here
 		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, err)

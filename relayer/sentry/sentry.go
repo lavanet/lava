@@ -914,7 +914,6 @@ type DataReliabilityResult struct {
 func (s *Sentry) SendRelay(
 	ctx context.Context,
 	consumerSession *lavasession.SingleConsumerSession,
-	unresponsiveProvidersData []byte,
 	sessionEpoch uint64,
 	providerPubAddress string,
 	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error),
