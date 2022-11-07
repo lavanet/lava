@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -216,17 +217,38 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replyServer, relayLatency, err := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
-	if err != nil {
+	reply, replyServer, relayLatency, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	if firstSessionError != nil {
 		// on session failure here
-		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, err)
+		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, firstSessionError)
 		if errReport != nil {
-			return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", err, errReport)
+			return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
 		}
-		if lavasession.SendRelayError.Is(err) {
-			// TODO send again?
+		if lavasession.SendRelayError.Is(firstSessionError) {
+			// Retry
+			singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err = cp.GetConsumerSessionManager().GetSessionFromAllExcept(ctx, map[string]struct{}{providerPublicAddress: {}}, nodeMsg.GetServiceApi().ComputeUnits, epoch)
+			if err != nil {
+				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error()})
+			}
+			var secondSessionError error
+			reply, replyServer, relayLatency, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+			if secondSessionError != nil {
+				errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
+				if errReport != nil {
+					return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
+				}
+				// compare error1 with error2
+				if secondSessionError.Error() != secondSessionError.Error() {
+					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
+				} else {
+					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received SAME errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
+					// return nil, nil, firstSessionError // todo uncomment this and delete above
+				}
+			}
+			// retry attempt succeeded! can continue normally
+		} else {
+			return nil, nil, err
 		}
-		return nil, nil, err
 	}
 	if !isSubscription {
 		latestBlock := reply.LatestBlock
