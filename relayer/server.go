@@ -807,6 +807,9 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	}
 
 	userSessions.Lock.Lock()
+	if _, ok := userSessions.Subs[subscriptionID]; ok {
+		return utils.LavaFormatError("SubscriptiodID: "+subscriptionID+"exists", nil, nil)
+	}
 	userSessions.Subs[subscriptionID] = &subscription{
 		id:                   subscriptionID,
 		sub:                  clientSub,
