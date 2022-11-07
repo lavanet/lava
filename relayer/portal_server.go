@@ -2,9 +2,8 @@ package relayer
 
 import (
 	context "context"
-	"github.com/newrelic/go-agent/v3/integrations/nrlogrus"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/sirupsen/logrus"
+	zerologlog "github.com/rs/zerolog/log"
 	"log"
 	"math/rand"
 	"time"
@@ -50,8 +49,7 @@ func PortalServer(
 		newrelic.ConfigAppLogEnabled(true),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 		func(config *newrelic.Config) {
-			logrus.SetLevel(logrus.DebugLevel)
-			config.Logger = nrlogrus.StandardLogger()
+			zerologlog.Debug().Enabled()
 		},
 	)
 	//

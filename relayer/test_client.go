@@ -31,7 +31,6 @@ func TestClient(
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
-
 	// Start sentry
 	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)

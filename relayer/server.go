@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/newrelic/go-agent/v3/newrelic"
+	zerologlog "github.com/rs/zerolog/log"
 	"math/rand"
 	"net"
 	"os"
