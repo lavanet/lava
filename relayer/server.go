@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
-	"github.com/newrelic/go-agent/v3/integrations/nrlogrus"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net"
 	"os"
@@ -1114,8 +1112,7 @@ func Server(
 		newrelic.ConfigAppLogEnabled(true),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 		func(config *newrelic.Config) {
-			logrus.SetLevel(logrus.DebugLevel)
-			config.Logger = nrlogrus.StandardLogger()
+			zerologlog.Debug().Enabled()
 		},
 	)
 

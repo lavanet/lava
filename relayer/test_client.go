@@ -2,9 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"github.com/newrelic/go-agent/v3/integrations/nrlogrus"
-	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/sirupsen/logrus"
 	"log"
 	"math/rand"
 	"time"
@@ -35,16 +32,6 @@ func TestClient(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 
-	newrelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("Gateway Proxy"),
-		newrelic.ConfigLicense("def40f7132191919dc6c6684f7a2f2b3462aNRAL"),
-		newrelic.ConfigAppLogEnabled(true),
-		newrelic.ConfigAppLogForwardingEnabled(true),
-		func(config *newrelic.Config) {
-			logrus.SetLevel(logrus.DebugLevel)
-			config.Logger = nrlogrus.StandardLogger()
-		},
-	)
 	// Start sentry
 	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
@@ -58,7 +45,7 @@ func TestClient(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, newrelicApp)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, nil)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
