@@ -181,9 +181,9 @@ func SendRelay(
 			Data:                  []byte(req),
 			SessionId:             uint64(0), //sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 consumerSession.CuSum,
+			CuSum:                 0, // consumerSession.CuSum == 0
 			BlockHeight:           blockHeight,
-			RelayNum:              consumerSession.RelayNum,
+			RelayNum:              0, // consumerSession.RelayNum == 0
 			RequestBlock:          requestedBlock,
 			QoSReport:             nil,
 			DataReliability:       dataReliability,

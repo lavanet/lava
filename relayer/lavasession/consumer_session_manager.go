@@ -234,7 +234,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	csm.lock.Lock() // we lock RW here because we need to make sure nothing changes while we verify validAddresses/addedToPurgeAndReport/providerBlockList
 	defer csm.lock.Unlock()
-	if sessionEpoch != csm.atomicReadCurrentEpoch() { // After we lock we need to verify again that the epoch did'nt change while we waited for the lock.
+	if sessionEpoch != csm.atomicReadCurrentEpoch() { // After we lock we need to verify again that the epoch didn't change while we waited for the lock.
 		return EpochMismatchError
 	}
 
