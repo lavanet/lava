@@ -333,14 +333,17 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	params := nm.msg.Params
 
 	// Call our node
-	var result JsonrpcMessage
+	var rpcMessage *rpcclient.JsonrpcMessage
+	var replyMessage *JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
-		sub, err = rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
+		replyMessage = convertMsg(rpcMessage)
 	} else {
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
-		err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
+		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
+		replyMessage = convertMsg(rpcMessage)
 	}
 
 	var replyMsg JsonrpcMessage
@@ -350,13 +353,13 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,
 		}
-		replyMsg.Error = &jsonError{
+		replyMsg.Error = &rpcclient.JsonError{
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
-		nm.msg = &result
-		replyMsg = result
+		nm.msg = replyMessage
+		replyMsg = *replyMessage
 	}
 
 	data, err := json.Marshal(replyMsg)

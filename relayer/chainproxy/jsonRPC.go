@@ -21,19 +21,13 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
 type JsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  interface{}     `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
+	Version string               `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage      `json:"id,omitempty"`
+	Method  string               `json:"method,omitempty"`
+	Params  interface{}          `json:"params,omitempty"`
+	Error   *rpcclient.JsonError `json:"error,omitempty"`
+	Result  json.RawMessage      `json:"result,omitempty"`
 }
 
 type JrpcMessage struct {
@@ -49,6 +43,17 @@ func (j *JrpcMessage) GetMsg() interface{} {
 
 func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
 	j.msg.Result = result
+}
+
+func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
+	msg := new(JsonrpcMessage)
+	msg.Version = rpcMsg.Version
+	msg.ID = rpcMsg.ID
+	msg.Method = rpcMsg.Method
+	msg.Params = rpcMsg.Params
+	msg.Error = rpcMsg.Error
+	msg.Result = rpcMsg.Result
+	return msg
 }
 
 type JrpcChainProxy struct {
@@ -340,14 +345,17 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	defer nm.cp.conn.ReturnRpc(rpc)
 
 	// Call our node
-	var result JsonrpcMessage
+	var rpcMessage *rpcclient.JsonrpcMessage
+	var replyMessage *JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
-		sub, err = rpc.Subscribe(context.Background(), nm.msg.ID, &result, nm.msg.Method, ch, nm.msg.Params)
+		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
+		replyMessage = convertMsg(rpcMessage)
 	} else {
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
-		err = rpc.CallContext(connectCtx, nm.msg.ID, &result, nm.msg.Method, nm.msg.Params)
+		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
+		replyMessage = convertMsg(rpcMessage)
 	}
 
 	var replyMsg JsonrpcMessage
@@ -357,13 +365,13 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,
 		}
-		replyMsg.Error = &jsonError{
+		replyMsg.Error = &rpcclient.JsonError{
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
-		nm.msg = &result
-		replyMsg = result
+		nm.msg = replyMessage
+		replyMsg = *replyMessage
 	}
 
 	data, err := json.Marshal(replyMsg)

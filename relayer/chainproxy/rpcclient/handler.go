@@ -93,7 +93,7 @@ func newHandler(connCtx context.Context, conn jsonWriter, idgen func() ID, reg *
 }
 
 // handleBatch executes all messages in a batch and returns the responses.
-func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
+func (h *handler) handleBatch(msgs []*JsonrpcMessage) {
 	// Emit error response for empty batches:
 	if len(msgs) == 0 {
 		h.startCallProc(func(cp *callProc) {
@@ -103,7 +103,7 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 	}
 
 	// Handle non-call messages first:
-	calls := make([]*jsonrpcMessage, 0, len(msgs))
+	calls := make([]*JsonrpcMessage, 0, len(msgs))
 	for _, msg := range msgs {
 		if handled := h.handleImmediate(msg); !handled {
 			calls = append(calls, msg)
@@ -114,7 +114,7 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 	}
 	// Process calls on a goroutine because they may block indefinitely:
 	h.startCallProc(func(cp *callProc) {
-		answers := make([]*jsonrpcMessage, 0, len(msgs))
+		answers := make([]*JsonrpcMessage, 0, len(msgs))
 		for _, msg := range calls {
 			if answer := h.handleCallMsg(cp, msg); answer != nil {
 				answers = append(answers, answer)
@@ -131,7 +131,7 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 }
 
 // handleMsg handles a single message.
-func (h *handler) handleMsg(msg *jsonrpcMessage) {
+func (h *handler) handleMsg(msg *JsonrpcMessage) {
 	if ok := h.handleImmediate(msg); ok {
 		return
 	}
@@ -229,7 +229,7 @@ func (h *handler) startCallProc(fn func(*callProc)) {
 
 // handleImmediate executes non-call messages. It returns false if the message is a
 // call or requires a reply.
-func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
+func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 	start := time.Now()
 	switch {
 	case msg.isTendermintNotification():
@@ -251,7 +251,7 @@ func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
 }
 
 // handleSubscriptionResult processes subscription notifications.
-func (h *handler) handleSubscriptionResultEthereum(msg *jsonrpcMessage) {
+func (h *handler) handleSubscriptionResultEthereum(msg *JsonrpcMessage) {
 	var result ethereumSubscriptionResult
 	if err := json.Unmarshal(msg.Params, &result); err != nil {
 		h.log.Debug("Dropping invalid subscription message")
@@ -262,7 +262,7 @@ func (h *handler) handleSubscriptionResultEthereum(msg *jsonrpcMessage) {
 	}
 }
 
-func (h *handler) handleSubscriptionResultTendermint(msg *jsonrpcMessage) {
+func (h *handler) handleSubscriptionResultTendermint(msg *JsonrpcMessage) {
 	var result tendermintSubscriptionResult
 	if err := json.Unmarshal(msg.Result, &result); err != nil {
 		h.log.Debug("Dropping invalid subscription message")
@@ -274,7 +274,7 @@ func (h *handler) handleSubscriptionResultTendermint(msg *jsonrpcMessage) {
 }
 
 // handleResponse processes method call responses.
-func (h *handler) handleResponse(msg *jsonrpcMessage) {
+func (h *handler) handleResponse(msg *JsonrpcMessage) {
 	op := h.respWait[string(msg.ID)]
 	if op == nil {
 		h.log.Debug("Unsolicited RPC response", "reqid", idForLog{msg.ID})
@@ -305,7 +305,7 @@ func (h *handler) handleResponse(msg *jsonrpcMessage) {
 }
 
 // handleCallMsg executes a call message and returns the answer.
-func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
+func (h *handler) handleCallMsg(ctx *callProc, msg *JsonrpcMessage) *JsonrpcMessage {
 	start := time.Now()
 	switch {
 	case msg.isEthereumNotification(), msg.isTendermintNotification():
@@ -334,7 +334,7 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMess
 }
 
 // handleCall processes method calls.
-func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
+func (h *handler) handleCall(cp *callProc, msg *JsonrpcMessage) *JsonrpcMessage {
 	if msg.isSubscribe() {
 		return h.handleSubscribe(cp, msg)
 	}
@@ -370,7 +370,7 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 }
 
 // handleSubscribe processes *_subscribe method calls.
-func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage {
+func (h *handler) handleSubscribe(cp *callProc, msg *JsonrpcMessage) *JsonrpcMessage {
 	if !h.allowSubscribe {
 		return msg.errorResponse(ErrNotificationsUnsupported)
 	}
@@ -403,7 +403,7 @@ func (h *handler) handleSubscribe(cp *callProc, msg *jsonrpcMessage) *jsonrpcMes
 }
 
 // runMethod runs the Go callback for an RPC method.
-func (h *handler) runMethod(ctx context.Context, msg *jsonrpcMessage, callb *callback, args []reflect.Value) *jsonrpcMessage {
+func (h *handler) runMethod(ctx context.Context, msg *JsonrpcMessage, callb *callback, args []reflect.Value) *JsonrpcMessage {
 	result, err := callb.call(ctx, msg.Method, args)
 	if err != nil {
 		return msg.errorResponse(err)

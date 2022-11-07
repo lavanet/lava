@@ -65,7 +65,7 @@ func (hc *httpConn) remoteAddr() string {
 	return hc.url
 }
 
-func (hc *httpConn) readBatch() ([]*jsonrpcMessage, bool, error) {
+func (hc *httpConn) readBatch() ([]*JsonrpcMessage, bool, error) {
 	<-hc.closeCh
 	return nil, false, io.EOF
 }
@@ -147,7 +147,7 @@ func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) e
 	}
 	defer respBody.Close()
 
-	var respmsg jsonrpcMessage
+	var respmsg JsonrpcMessage
 	if err := json.NewDecoder(respBody).Decode(&respmsg); err != nil {
 		return err
 	}
@@ -155,14 +155,14 @@ func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) e
 	return nil
 }
 
-func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*jsonrpcMessage) error {
+func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*JsonrpcMessage) error {
 	hc := c.writeConn.(*httpConn)
 	respBody, err := hc.doRequest(ctx, msgs)
 	if err != nil {
 		return err
 	}
 	defer respBody.Close()
-	var respmsgs []jsonrpcMessage
+	var respmsgs []JsonrpcMessage
 	if err := json.NewDecoder(respBody).Decode(&respmsgs); err != nil {
 		return err
 	}

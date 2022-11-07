@@ -54,12 +54,12 @@ type tendermintSubscriptionResult struct {
 
 // A value of this type can a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
-type jsonrpcMessage struct {
+type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
 	Params  json.RawMessage `json:"params,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
+	Error   *JsonError      `json:"error,omitempty"`
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
@@ -67,11 +67,11 @@ type tendermintSubscribeReply struct {
 	Query string `json:"query"`
 }
 
-func (msg *jsonrpcMessage) isEthereumNotification() bool {
+func (msg *JsonrpcMessage) isEthereumNotification() bool {
 	return msg.ID == nil && msg.Method != ""
 }
 
-func (msg *jsonrpcMessage) isTendermintNotification() bool {
+func (msg *JsonrpcMessage) isTendermintNotification() bool {
 	var result tendermintSubscribeReply
 	err := json.Unmarshal(msg.Result, &result)
 	if err == nil && result.Query != "" {
@@ -80,53 +80,53 @@ func (msg *jsonrpcMessage) isTendermintNotification() bool {
 	return false
 }
 
-func (msg *jsonrpcMessage) isCall() bool {
+func (msg *JsonrpcMessage) isCall() bool {
 	return msg.hasValidID() && msg.Method != ""
 }
 
-func (msg *jsonrpcMessage) isResponse() bool {
+func (msg *JsonrpcMessage) isResponse() bool {
 	return msg.hasValidID() && msg.Method == "" && msg.Params == nil && (msg.Result != nil || msg.Error != nil)
 }
 
-func (msg *jsonrpcMessage) hasValidID() bool {
+func (msg *JsonrpcMessage) hasValidID() bool {
 	return len(msg.ID) > 0 && msg.ID[0] != '{' && msg.ID[0] != '['
 }
 
-func (msg *jsonrpcMessage) isSubscribe() bool {
+func (msg *JsonrpcMessage) isSubscribe() bool {
 	return strings.HasSuffix(msg.Method, subscribeMethodSuffix)
 }
 
-func (msg *jsonrpcMessage) isUnsubscribe() bool {
+func (msg *JsonrpcMessage) isUnsubscribe() bool {
 	return strings.HasSuffix(msg.Method, unsubscribeMethodSuffix)
 }
 
-func (msg *jsonrpcMessage) namespace() string {
+func (msg *JsonrpcMessage) namespace() string {
 	elem := strings.SplitN(msg.Method, serviceMethodSeparator, 2)
 	return elem[0]
 }
 
-func (msg *jsonrpcMessage) String() string {
+func (msg *JsonrpcMessage) String() string {
 	b, _ := json.Marshal(msg)
 	return string(b)
 }
 
-func (msg *jsonrpcMessage) errorResponse(err error) *jsonrpcMessage {
+func (msg *JsonrpcMessage) errorResponse(err error) *JsonrpcMessage {
 	resp := errorMessage(err)
 	resp.ID = msg.ID
 	return resp
 }
 
-func (msg *jsonrpcMessage) response(result interface{}) *jsonrpcMessage {
+func (msg *JsonrpcMessage) response(result interface{}) *JsonrpcMessage {
 	enc, err := json.Marshal(result)
 	if err != nil {
 		// TODO: wrap with 'internal server error'
 		return msg.errorResponse(err)
 	}
-	return &jsonrpcMessage{Version: vsn, ID: msg.ID, Result: enc}
+	return &JsonrpcMessage{Version: vsn, ID: msg.ID, Result: enc}
 }
 
-func errorMessage(err error) *jsonrpcMessage {
-	msg := &jsonrpcMessage{Version: vsn, ID: null, Error: &jsonError{
+func errorMessage(err error) *JsonrpcMessage {
+	msg := &JsonrpcMessage{Version: vsn, ID: null, Error: &JsonError{
 		Code:    defaultErrorCode,
 		Message: err.Error(),
 	}}
@@ -141,24 +141,24 @@ func errorMessage(err error) *jsonrpcMessage {
 	return msg
 }
 
-type jsonError struct {
+type JsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func (err *jsonError) Error() string {
+func (err *JsonError) Error() string {
 	if err.Message == "" {
 		return fmt.Sprintf("json-rpc error %d", err.Code)
 	}
 	return err.Message
 }
 
-func (err *jsonError) ErrorCode() int {
+func (err *JsonError) ErrorCode() int {
 	return err.Code
 }
 
-func (err *jsonError) ErrorData() interface{} {
+func (err *JsonError) ErrorData() interface{} {
 	return err.Data
 }
 
@@ -226,7 +226,7 @@ func (c *jsonCodec) remoteAddr() string {
 	return c.remote
 }
 
-func (c *jsonCodec) readBatch() (messages []*jsonrpcMessage, batch bool, err error) {
+func (c *jsonCodec) readBatch() (messages []*JsonrpcMessage, batch bool, err error) {
 	// Decode the next JSON object in the input stream.
 	// This verifies basic syntax, etc.
 	var rawmsg json.RawMessage
@@ -238,7 +238,7 @@ func (c *jsonCodec) readBatch() (messages []*jsonrpcMessage, batch bool, err err
 		if msg == nil {
 			// Message is JSON 'null'. Replace with zero value so it
 			// will be treated like any other invalid message.
-			messages[i] = new(jsonrpcMessage)
+			messages[i] = new(JsonrpcMessage)
 		}
 	}
 	return messages, batch, nil
@@ -272,17 +272,17 @@ func (c *jsonCodec) closed() <-chan interface{} {
 // checks in this function because the raw message has already been syntax-checked when it
 // is called. Any non-JSON-RPC messages in the input return the zero value of
 // jsonrpcMessage.
-func parseMessage(raw json.RawMessage) ([]*jsonrpcMessage, bool) {
+func parseMessage(raw json.RawMessage) ([]*JsonrpcMessage, bool) {
 	if !isBatch(raw) {
-		msgs := []*jsonrpcMessage{{}}
+		msgs := []*JsonrpcMessage{{}}
 		json.Unmarshal(raw, &msgs[0])
 		return msgs, false
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.Token() // skip '['
-	var msgs []*jsonrpcMessage
+	var msgs []*JsonrpcMessage
 	for dec.More() {
-		msgs = append(msgs, new(jsonrpcMessage))
+		msgs = append(msgs, new(JsonrpcMessage))
 		dec.Decode(&msgs[len(msgs)-1])
 	}
 	return msgs, true

@@ -162,8 +162,9 @@ func SendRelay(
 			if err != nil {
 				return nil, nil, nil, 0, err
 			}
-
+			return reply, nil, relayRequest, currentLatency, nil
 		}
+		// isSubscription
 		return reply, &replyServer, relayRequest, currentLatency, nil
 	}
 
