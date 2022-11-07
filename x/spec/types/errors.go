@@ -19,4 +19,5 @@ var (
 	ErrDuplicateApiName  = sdkerrors.Register(ModuleName, 6, "api name is not unique")
 	ErrSpecNotFound      = sdkerrors.Register(ModuleName, 7, "spec not found")
 	ErrDuplicateSpecName = sdkerrors.Register(ModuleName, 8, "spec name is not unique")
+	ErrChainNameNotFound = sdkerrors.Register(ModuleName, 9, "chain name not found")
 )

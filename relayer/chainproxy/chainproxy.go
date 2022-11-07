@@ -172,9 +172,10 @@ func SendRelay(
 
 			expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
 			clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
+			return reply, nil, relayRequest, nil
+		} else {
+			return reply, &replyServer, relayRequest, nil
 		}
-
-		return reply, &replyServer, relayRequest, nil
 	}
 
 	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
