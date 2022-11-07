@@ -25,18 +25,15 @@ func PortalServer(
 	apiInterface string,
 	flagSet *pflag.FlagSet,
 ) {
-
 	//
 	rand.Seed(time.Now().UnixNano())
 	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
-
 	// Start sentry
 	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
-
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
 	}
@@ -63,13 +60,11 @@ func PortalServer(
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
-	//start newRelic
 
 	//
 	// Set up a connection to the server.
 	log.Printf("PortalServer %s\n", apiInterface)
 	keyName, err := sigs.GetKeyName(clientCtx)
-
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
 	}
