@@ -186,9 +186,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		if cp.newRelicApp != nil {
+			txn := cp.newRelicApp.StartTransaction("rest-http")
+			defer txn.End()
+		}
 
-		txn := cp.newRelicApp.StartTransaction("rest-http")
-		defer txn.End()
 		path := "/" + c.Params("*")
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
@@ -210,9 +212,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+		if cp.newRelicApp != nil {
+			txn := cp.newRelicApp.StartTransaction("rest-http")
+			defer txn.End()
+		}
 
-		txn := cp.newRelicApp.StartTransaction("rest-http")
-		defer txn.End()
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)

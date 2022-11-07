@@ -200,9 +200,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app := fiber.New(fiber.Config{})
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+		if cp.newRelicApp != nil {
+			txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+			defer txn.End()
+		}
 
-		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
-		defer txn.End()
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -285,8 +287,10 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
-		defer txn.End()
+		if cp.newRelicApp != nil {
+			txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+			defer txn.End()
+		}
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
@@ -300,8 +304,10 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	})
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
-		txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
-		defer txn.End()
+		if cp.newRelicApp != nil {
+			txn := cp.newRelicApp.StartTransaction("tendermint-WebSocket")
+			defer txn.End()
+		}
 		path := c.Params("*")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})

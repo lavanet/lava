@@ -2,6 +2,7 @@ package relayer
 
 import (
 	context "context"
+	"github.com/joho/godotenv"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	zerologlog "github.com/rs/zerolog/log"
 	"log"
@@ -43,15 +44,25 @@ func PortalServer(
 	g_sentry = sentry
 	g_serverChainID = chainID
 
+	var myEnv map[string]string
+	myEnv, err = godotenv.Read()
+
+	NEW_RELIC_APP_NAME := myEnv["NEW_RELIC_APP_NAME"]
+	NEW_RELIC_LICENSE_KEY := myEnv["NEW_RELIC_LICENSE_KEY"]
+
 	newrelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("Gateway Proxy"),
-		newrelic.ConfigLicense("def40f7132191919dc6c6684f7a2f2b3462aNRAL"),
+		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
+		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
 		newrelic.ConfigAppLogEnabled(true),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 		func(config *newrelic.Config) {
 			zerologlog.Debug().Enabled()
 		},
 	)
+	if myEnv == nil {
+		newrelicApp = nil
+	}
+
 	//
 	// Node
 	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, newrelicApp)
