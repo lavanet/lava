@@ -385,6 +385,242 @@ func (m *QueryChainResponse) GetSpec() Spec {
 	return Spec{}
 }
 
+type QueryShowAllChainsRequest struct {
+}
+
+func (m *QueryShowAllChainsRequest) Reset()         { *m = QueryShowAllChainsRequest{} }
+func (m *QueryShowAllChainsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryShowAllChainsRequest) ProtoMessage()    {}
+func (*QueryShowAllChainsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6723cd4498ae5af7, []int{8}
+}
+func (m *QueryShowAllChainsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryShowAllChainsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryShowAllChainsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryShowAllChainsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryShowAllChainsRequest.Merge(m, src)
+}
+func (m *QueryShowAllChainsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryShowAllChainsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryShowAllChainsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryShowAllChainsRequest proto.InternalMessageInfo
+
+type QueryShowAllChainsResponse struct {
+	ChainNames []string `protobuf:"bytes,1,rep,name=chainNames,proto3" json:"chainNames,omitempty"`
+}
+
+func (m *QueryShowAllChainsResponse) Reset()         { *m = QueryShowAllChainsResponse{} }
+func (m *QueryShowAllChainsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryShowAllChainsResponse) ProtoMessage()    {}
+func (*QueryShowAllChainsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6723cd4498ae5af7, []int{9}
+}
+func (m *QueryShowAllChainsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryShowAllChainsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryShowAllChainsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryShowAllChainsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryShowAllChainsResponse.Merge(m, src)
+}
+func (m *QueryShowAllChainsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryShowAllChainsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryShowAllChainsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryShowAllChainsResponse proto.InternalMessageInfo
+
+func (m *QueryShowAllChainsResponse) GetChainNames() []string {
+	if m != nil {
+		return m.ChainNames
+	}
+	return nil
+}
+
+type QueryShowChainInfoRequest struct {
+	ChainName string `protobuf:"bytes,1,opt,name=chainName,proto3" json:"chainName,omitempty"`
+}
+
+func (m *QueryShowChainInfoRequest) Reset()         { *m = QueryShowChainInfoRequest{} }
+func (m *QueryShowChainInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryShowChainInfoRequest) ProtoMessage()    {}
+func (*QueryShowChainInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6723cd4498ae5af7, []int{10}
+}
+func (m *QueryShowChainInfoRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryShowChainInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryShowChainInfoRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryShowChainInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryShowChainInfoRequest.Merge(m, src)
+}
+func (m *QueryShowChainInfoRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryShowChainInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryShowChainInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryShowChainInfoRequest proto.InternalMessageInfo
+
+func (m *QueryShowChainInfoRequest) GetChainName() string {
+	if m != nil {
+		return m.ChainName
+	}
+	return ""
+}
+
+type ApiList struct {
+	Interface     string   `protobuf:"bytes,4,opt,name=interface,proto3" json:"interface,omitempty"`
+	SupportedApis []string `protobuf:"bytes,5,rep,name=supportedApis,proto3" json:"supportedApis,omitempty"`
+}
+
+func (m *ApiList) Reset()         { *m = ApiList{} }
+func (m *ApiList) String() string { return proto.CompactTextString(m) }
+func (*ApiList) ProtoMessage()    {}
+func (*ApiList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6723cd4498ae5af7, []int{11}
+}
+func (m *ApiList) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApiList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApiList.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ApiList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApiList.Merge(m, src)
+}
+func (m *ApiList) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApiList) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApiList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApiList proto.InternalMessageInfo
+
+func (m *ApiList) GetInterface() string {
+	if m != nil {
+		return m.Interface
+	}
+	return ""
+}
+
+func (m *ApiList) GetSupportedApis() []string {
+	if m != nil {
+		return m.SupportedApis
+	}
+	return nil
+}
+
+type QueryShowChainInfoResponse struct {
+	ChainID                    string     `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	Interfaces                 []string   `protobuf:"bytes,2,rep,name=interfaces,proto3" json:"interfaces,omitempty"`
+	SupportedApisInterfaceList []*ApiList `protobuf:"bytes,3,rep,name=supportedApisInterfaceList,proto3" json:"supportedApisInterfaceList,omitempty"`
+}
+
+func (m *QueryShowChainInfoResponse) Reset()         { *m = QueryShowChainInfoResponse{} }
+func (m *QueryShowChainInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryShowChainInfoResponse) ProtoMessage()    {}
+func (*QueryShowChainInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6723cd4498ae5af7, []int{12}
+}
+func (m *QueryShowChainInfoResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryShowChainInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryShowChainInfoResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryShowChainInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryShowChainInfoResponse.Merge(m, src)
+}
+func (m *QueryShowChainInfoResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryShowChainInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryShowChainInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryShowChainInfoResponse proto.InternalMessageInfo
+
+func (m *QueryShowChainInfoResponse) GetChainID() string {
+	if m != nil {
+		return m.ChainID
+	}
+	return ""
+}
+
+func (m *QueryShowChainInfoResponse) GetInterfaces() []string {
+	if m != nil {
+		return m.Interfaces
+	}
+	return nil
+}
+
+func (m *QueryShowChainInfoResponse) GetSupportedApisInterfaceList() []*ApiList {
+	if m != nil {
+		return m.SupportedApisInterfaceList
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.spec.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.spec.QueryParamsResponse")
@@ -394,46 +630,65 @@ func init() {
 	proto.RegisterType((*QueryAllSpecResponse)(nil), "lavanet.lava.spec.QueryAllSpecResponse")
 	proto.RegisterType((*QueryChainRequest)(nil), "lavanet.lava.spec.QueryChainRequest")
 	proto.RegisterType((*QueryChainResponse)(nil), "lavanet.lava.spec.QueryChainResponse")
+	proto.RegisterType((*QueryShowAllChainsRequest)(nil), "lavanet.lava.spec.QueryShowAllChainsRequest")
+	proto.RegisterType((*QueryShowAllChainsResponse)(nil), "lavanet.lava.spec.QueryShowAllChainsResponse")
+	proto.RegisterType((*QueryShowChainInfoRequest)(nil), "lavanet.lava.spec.QueryShowChainInfoRequest")
+	proto.RegisterType((*ApiList)(nil), "lavanet.lava.spec.apiList")
+	proto.RegisterType((*QueryShowChainInfoResponse)(nil), "lavanet.lava.spec.QueryShowChainInfoResponse")
 }
 
 func init() { proto.RegisterFile("spec/query.proto", fileDescriptor_6723cd4498ae5af7) }
 
 var fileDescriptor_6723cd4498ae5af7 = []byte{
-	// 542 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xc1, 0x6b, 0x13, 0x4f,
-	0x14, 0xce, 0xf6, 0x97, 0xa4, 0xfc, 0xc6, 0x83, 0x66, 0x0c, 0xb4, 0x89, 0xb2, 0xb1, 0x43, 0xda,
-	0x48, 0xc5, 0x19, 0x52, 0x0f, 0xde, 0x84, 0x56, 0x31, 0xf4, 0x22, 0x35, 0xde, 0x04, 0x0f, 0x93,
-	0x38, 0x6c, 0x17, 0x36, 0x3b, 0xdb, 0xcc, 0xa6, 0xb4, 0x86, 0x82, 0x78, 0xf0, 0x2c, 0xfa, 0x4f,
-	0xf5, 0x58, 0xf0, 0xe2, 0x49, 0x24, 0xf1, 0x0f, 0x91, 0x79, 0xf3, 0x62, 0xb3, 0x26, 0x4b, 0x7a,
-	0xd9, 0xcd, 0xcc, 0xfb, 0xde, 0xf7, 0x7d, 0xef, 0xed, 0x47, 0xc8, 0x1d, 0x93, 0xa8, 0xbe, 0x38,
-	0x19, 0xa9, 0xe1, 0x39, 0x4f, 0x86, 0x3a, 0xd5, 0xb4, 0x12, 0xc9, 0x53, 0x19, 0xab, 0x94, 0xdb,
-	0x37, 0xb7, 0xe5, 0x7a, 0x35, 0xd0, 0x81, 0x86, 0xaa, 0xb0, 0xbf, 0x1c, 0xb0, 0x7e, 0x3f, 0xd0,
-	0x3a, 0x88, 0x94, 0x90, 0x49, 0x28, 0x64, 0x1c, 0xeb, 0x54, 0xa6, 0xa1, 0x8e, 0x0d, 0x56, 0x77,
-	0xfb, 0xda, 0x0c, 0xb4, 0x11, 0x3d, 0x69, 0x94, 0xe3, 0x17, 0xa7, 0xed, 0x9e, 0x4a, 0x65, 0x5b,
-	0x24, 0x32, 0x08, 0x63, 0x00, 0x23, 0xb6, 0x02, 0x26, 0x12, 0x39, 0x94, 0x83, 0x59, 0xfb, 0x6d,
-	0xb8, 0xb2, 0x0f, 0x77, 0xc1, 0xaa, 0x84, 0xbe, 0xb6, 0x2c, 0x47, 0x80, 0xea, 0xaa, 0x93, 0x91,
-	0x32, 0x29, 0x7b, 0x45, 0xee, 0x66, 0x6e, 0x4d, 0xa2, 0x63, 0xa3, 0xe8, 0x53, 0x52, 0x76, 0x6c,
-	0x9b, 0xde, 0x03, 0xef, 0xe1, 0xad, 0xbd, 0x1a, 0x5f, 0x18, 0x8a, 0xbb, 0x96, 0x83, 0xe2, 0xe5,
-	0xcf, 0x46, 0xa1, 0x8b, 0x70, 0xf6, 0x08, 0xf9, 0x3a, 0x2a, 0x7d, 0x93, 0xa8, 0x3e, 0xca, 0xd0,
-	0x2a, 0x29, 0x85, 0xf1, 0x7b, 0x75, 0x06, 0x74, 0xff, 0x77, 0xdd, 0x81, 0x1d, 0x92, 0x6a, 0x16,
-	0x8c, 0xea, 0x6d, 0x52, 0xb4, 0x67, 0xd4, 0xde, 0x58, 0xa2, 0x6d, 0xcb, 0xa8, 0x0c, 0x50, 0xf6,
-	0x0e, 0x75, 0xf7, 0xa3, 0x68, 0x5e, 0xf7, 0x25, 0x21, 0xd7, 0xcb, 0x42, 0xbe, 0x1d, 0xee, 0x36,
-	0xcb, 0xed, 0x66, 0xb9, 0xfb, 0x72, 0xb8, 0x59, 0x7e, 0x24, 0x03, 0x85, 0xbd, 0xdd, 0xb9, 0x4e,
-	0xf6, 0xd5, 0x43, 0xab, 0x7f, 0xf9, 0x17, 0xac, 0xfe, 0x77, 0x43, 0xab, 0xb4, 0x93, 0xf1, 0xb4,
-	0x06, 0x9e, 0x5a, 0x2b, 0x3d, 0x39, 0xbd, 0x8c, 0xa9, 0xc7, 0xa4, 0x02, 0x9e, 0x9e, 0x1f, 0xcb,
-	0x30, 0x9e, 0x4d, 0xbc, 0x49, 0xd6, 0xfb, 0xf6, 0x7c, 0xf8, 0x02, 0x77, 0x3d, 0x3b, 0xb2, 0x0e,
-	0x06, 0x00, 0xe1, 0xd7, 0x03, 0x98, 0x9b, 0xef, 0xda, 0x5e, 0xec, 0x7d, 0x2e, 0x92, 0x12, 0x30,
-	0xd1, 0x0f, 0xa4, 0xec, 0x52, 0x40, 0xb7, 0x97, 0x34, 0x2e, 0xc6, 0xad, 0xbe, 0xb3, 0x0a, 0xe6,
-	0x5c, 0xb1, 0xad, 0x4f, 0xdf, 0x7f, 0x7f, 0x5b, 0xbb, 0x47, 0x6b, 0x02, 0xf1, 0xf0, 0x16, 0x73,
-	0x31, 0xa7, 0x1f, 0x3d, 0xb7, 0x7a, 0x9a, 0xcb, 0x99, 0xcd, 0x60, 0xbd, 0xb5, 0x12, 0x87, 0xe2,
-	0x2d, 0x10, 0xdf, 0xa2, 0x8d, 0x25, 0xe2, 0xf0, 0x18, 0x43, 0x7c, 0x2f, 0xe8, 0x98, 0xac, 0xdb,
-	0xc6, 0xfd, 0x28, 0xca, 0x37, 0x91, 0x0d, 0x64, 0xbe, 0x89, 0x7f, 0x82, 0xc5, 0x1a, 0x60, 0xa2,
-	0x46, 0x37, 0x72, 0x4c, 0xd8, 0xf9, 0x4b, 0xf0, 0x29, 0x69, 0x33, 0x8f, 0x73, 0x3e, 0x18, 0xf5,
-	0xed, 0x15, 0x28, 0xd4, 0xdd, 0x05, 0xdd, 0x26, 0x65, 0x4b, 0x74, 0x21, 0x49, 0x62, 0x8c, 0x81,
-	0xba, 0x38, 0x78, 0x76, 0x39, 0xf1, 0xbd, 0xab, 0x89, 0xef, 0xfd, 0x9a, 0xf8, 0xde, 0x97, 0xa9,
-	0x5f, 0xb8, 0x9a, 0xfa, 0x85, 0x1f, 0x53, 0xbf, 0xf0, 0xb6, 0x19, 0x84, 0xe9, 0xf1, 0xa8, 0xc7,
-	0xfb, 0x7a, 0x90, 0xe5, 0x39, 0x73, 0x4c, 0xe9, 0x79, 0xa2, 0x4c, 0xaf, 0x0c, 0xff, 0x4c, 0x4f,
-	0xfe, 0x04, 0x00, 0x00, 0xff, 0xff, 0xf8, 0xe4, 0xda, 0x41, 0x44, 0x05, 0x00, 0x00,
+	// 756 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x5f, 0x4b, 0x1b, 0x4b,
+	0x14, 0xcf, 0xaa, 0x89, 0x38, 0x17, 0xb9, 0xd7, 0xb9, 0x01, 0x93, 0x55, 0xe2, 0x75, 0x88, 0x7a,
+	0xb1, 0x75, 0xb7, 0x5a, 0x68, 0x29, 0x94, 0x42, 0x6c, 0xa9, 0x04, 0x5a, 0xb1, 0xf1, 0x4d, 0x28,
+	0x32, 0x89, 0xe3, 0x66, 0x61, 0xb3, 0xb3, 0x66, 0x36, 0xfe, 0xa9, 0x08, 0xa5, 0x9f, 0xa0, 0xb4,
+	0x2f, 0xfd, 0x00, 0xfd, 0x04, 0xfd, 0x14, 0x3e, 0x0a, 0x7d, 0xe9, 0x53, 0x29, 0xda, 0x0f, 0x52,
+	0xe6, 0xcc, 0x24, 0xd9, 0x35, 0xbb, 0x26, 0x2f, 0xbb, 0x99, 0x33, 0xbf, 0xf9, 0xfd, 0x7e, 0xe7,
+	0xec, 0x9c, 0x13, 0xf4, 0x8f, 0x08, 0x58, 0xc3, 0x3e, 0xea, 0xb0, 0xf6, 0x99, 0x15, 0xb4, 0x79,
+	0xc8, 0xf1, 0x8c, 0x47, 0x8f, 0xa9, 0xcf, 0x42, 0x4b, 0xbe, 0x2d, 0xb9, 0x6d, 0xe6, 0x1d, 0xee,
+	0x70, 0xd8, 0xb5, 0xe5, 0x2f, 0x05, 0x34, 0xe7, 0x1d, 0xce, 0x1d, 0x8f, 0xd9, 0x34, 0x70, 0x6d,
+	0xea, 0xfb, 0x3c, 0xa4, 0xa1, 0xcb, 0x7d, 0xa1, 0x77, 0x57, 0x1b, 0x5c, 0xb4, 0xb8, 0xb0, 0xeb,
+	0x54, 0x30, 0xc5, 0x6f, 0x1f, 0xaf, 0xd7, 0x59, 0x48, 0xd7, 0xed, 0x80, 0x3a, 0xae, 0x0f, 0x60,
+	0x8d, 0x9d, 0x01, 0x13, 0x01, 0x6d, 0xd3, 0x56, 0xf7, 0xf8, 0xdf, 0x10, 0x92, 0x0f, 0x15, 0x20,
+	0x79, 0x84, 0xdf, 0x48, 0x96, 0x1d, 0x40, 0xd5, 0xd8, 0x51, 0x87, 0x89, 0x90, 0x6c, 0xa3, 0x7f,
+	0x63, 0x51, 0x11, 0x70, 0x5f, 0x30, 0xfc, 0x18, 0xe5, 0x14, 0x5b, 0xc1, 0xf8, 0xcf, 0xf8, 0xff,
+	0xaf, 0x8d, 0xa2, 0x35, 0x90, 0x94, 0xa5, 0x8e, 0x6c, 0x4e, 0x5c, 0xfe, 0x5c, 0xc8, 0xd4, 0x34,
+	0x9c, 0xdc, 0xd3, 0x7c, 0x5b, 0x2c, 0xdc, 0x0d, 0x58, 0x43, 0xcb, 0xe0, 0x3c, 0xca, 0xba, 0xfe,
+	0x01, 0x3b, 0x05, 0xba, 0xa9, 0x9a, 0x5a, 0x90, 0x2a, 0xca, 0xc7, 0xc1, 0x5a, 0x7d, 0x1d, 0x4d,
+	0xc8, 0xb5, 0xd6, 0x9e, 0x4d, 0xd0, 0x96, 0xdb, 0x5a, 0x19, 0xa0, 0xe4, 0xad, 0xd6, 0xad, 0x78,
+	0x5e, 0x54, 0xf7, 0x25, 0x42, 0xfd, 0x62, 0x69, 0xbe, 0x65, 0x4b, 0x55, 0xd6, 0x92, 0x95, 0xb5,
+	0xd4, 0x97, 0xd3, 0x95, 0xb5, 0x76, 0xa8, 0xc3, 0xf4, 0xd9, 0x5a, 0xe4, 0x24, 0xf9, 0x64, 0x68,
+	0xab, 0x3d, 0xfe, 0x01, 0xab, 0xe3, 0x23, 0x5a, 0xc5, 0x5b, 0x31, 0x4f, 0x63, 0xe0, 0x69, 0x65,
+	0xa8, 0x27, 0xa5, 0x17, 0x33, 0xb5, 0x86, 0x66, 0xc0, 0xd3, 0xf3, 0x26, 0x75, 0xfd, 0x6e, 0xc6,
+	0x05, 0x34, 0xd9, 0x90, 0xeb, 0xea, 0x0b, 0x5d, 0xeb, 0xee, 0x92, 0x6c, 0xe9, 0x0b, 0xa0, 0xe1,
+	0xfd, 0x04, 0xc4, 0xe8, 0xb5, 0x96, 0x01, 0x32, 0x87, 0x8a, 0x40, 0xb4, 0xdb, 0xe4, 0x27, 0x15,
+	0xcf, 0x03, 0xbe, 0xde, 0x85, 0x7a, 0x8a, 0xcc, 0xa4, 0x4d, 0xad, 0x56, 0x42, 0x08, 0xec, 0x6c,
+	0xd3, 0x16, 0x13, 0x50, 0xb4, 0xa9, 0x5a, 0x24, 0x42, 0x9e, 0x44, 0xa8, 0xe1, 0x68, 0xd5, 0x3f,
+	0xe4, 0xdd, 0xd4, 0xe6, 0xd1, 0x54, 0x0f, 0xaa, 0x93, 0xeb, 0x07, 0xc8, 0x6b, 0x34, 0x49, 0x03,
+	0xf7, 0x95, 0xab, 0x80, 0xae, 0x1f, 0xb2, 0xf6, 0x21, 0x6d, 0xb0, 0xc2, 0x84, 0x02, 0xf6, 0x02,
+	0xb8, 0x8c, 0xa6, 0x45, 0x27, 0x08, 0x78, 0x3b, 0x64, 0x07, 0x95, 0xc0, 0x15, 0x85, 0x2c, 0xd8,
+	0x88, 0x07, 0xc9, 0x37, 0x23, 0x92, 0x48, 0xc4, 0x8a, 0x4e, 0x24, 0xb5, 0xcc, 0x32, 0xc5, 0x9e,
+	0x96, 0x28, 0x8c, 0xa9, 0x14, 0xfb, 0x11, 0xbc, 0x87, 0xcc, 0x98, 0x52, 0xb5, 0xbb, 0x25, 0xad,
+	0x17, 0xc6, 0xe1, 0x1e, 0x99, 0x09, 0x9f, 0x41, 0x27, 0x57, 0xbb, 0xe3, 0xf4, 0xc6, 0x65, 0x0e,
+	0x65, 0xc1, 0x34, 0x7e, 0x87, 0x72, 0xaa, 0x3f, 0xf1, 0x52, 0x02, 0xd7, 0xe0, 0x20, 0x30, 0x97,
+	0x87, 0xc1, 0x54, 0xe2, 0x64, 0xf1, 0xc3, 0xf7, 0xdf, 0x9f, 0xc7, 0xe6, 0x70, 0xd1, 0xd6, 0x78,
+	0x78, 0xdb, 0x91, 0x01, 0x84, 0xdf, 0x1b, 0xaa, 0x29, 0x70, 0x2a, 0x67, 0x7c, 0x3a, 0x98, 0x2b,
+	0x43, 0x71, 0x5a, 0x7c, 0x05, 0xc4, 0x17, 0xf1, 0x42, 0x82, 0x38, 0x3c, 0xce, 0x61, 0xb0, 0x5c,
+	0xe0, 0x73, 0x34, 0x29, 0x0f, 0x56, 0x3c, 0x2f, 0xdd, 0x44, 0x7c, 0x54, 0xa4, 0x9b, 0xb8, 0xd5,
+	0xf2, 0x64, 0x01, 0x4c, 0x14, 0xf1, 0x6c, 0x8a, 0x09, 0x99, 0x7f, 0x16, 0x6e, 0x0c, 0x2e, 0xa7,
+	0x71, 0x46, 0x5b, 0xd6, 0x5c, 0x1a, 0x82, 0xd2, 0xba, 0xab, 0xa0, 0x5b, 0xc6, 0x24, 0x41, 0x17,
+	0x2e, 0x9f, 0x7d, 0xae, 0xef, 0xe0, 0x05, 0xfe, 0x62, 0xa0, 0xe9, 0x58, 0x07, 0xe2, 0xfb, 0x69,
+	0x22, 0x49, 0x5d, 0x6c, 0xae, 0x8d, 0x88, 0x1e, 0xc1, 0x9a, 0x68, 0xf2, 0x93, 0x7d, 0xea, 0x79,
+	0xfb, 0x0d, 0x65, 0xe4, 0xab, 0xb6, 0xd6, 0xeb, 0xa9, 0xbb, 0xad, 0xdd, 0x9e, 0x02, 0x77, 0x5b,
+	0x1b, 0x68, 0x54, 0xf2, 0x08, 0xac, 0x3d, 0xc0, 0x56, 0x9a, 0x35, 0xb0, 0xb5, 0xef, 0xfa, 0x87,
+	0x5c, 0xd7, 0x4f, 0x4e, 0x93, 0x8b, 0xcd, 0x67, 0x97, 0xd7, 0x25, 0xe3, 0xea, 0xba, 0x64, 0xfc,
+	0xba, 0x2e, 0x19, 0x1f, 0x6f, 0x4a, 0x99, 0xab, 0x9b, 0x52, 0xe6, 0xc7, 0x4d, 0x29, 0xb3, 0x57,
+	0x76, 0xdc, 0xb0, 0xd9, 0xa9, 0x5b, 0x0d, 0xde, 0x8a, 0x73, 0x9e, 0x2a, 0xd6, 0xf0, 0x2c, 0x60,
+	0xa2, 0x9e, 0x83, 0x7f, 0xdd, 0x87, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0xb4, 0xab, 0x58, 0xd2,
+	0x20, 0x08, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -456,6 +711,10 @@ type QueryClient interface {
 	SpecAll(ctx context.Context, in *QueryAllSpecRequest, opts ...grpc.CallOption) (*QueryAllSpecResponse, error)
 	// Queries a list of Chain items.
 	Chain(ctx context.Context, in *QueryChainRequest, opts ...grpc.CallOption) (*QueryChainResponse, error)
+	// Queries a list of ShowAllChains items.
+	ShowAllChains(ctx context.Context, in *QueryShowAllChainsRequest, opts ...grpc.CallOption) (*QueryShowAllChainsResponse, error)
+	// Queries a list of ShowChainInfo items.
+	ShowChainInfo(ctx context.Context, in *QueryShowChainInfoRequest, opts ...grpc.CallOption) (*QueryShowChainInfoResponse, error)
 }
 
 type queryClient struct {
@@ -502,6 +761,24 @@ func (c *queryClient) Chain(ctx context.Context, in *QueryChainRequest, opts ...
 	return out, nil
 }
 
+func (c *queryClient) ShowAllChains(ctx context.Context, in *QueryShowAllChainsRequest, opts ...grpc.CallOption) (*QueryShowAllChainsResponse, error) {
+	out := new(QueryShowAllChainsResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.spec.Query/ShowAllChains", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ShowChainInfo(ctx context.Context, in *QueryShowChainInfoRequest, opts ...grpc.CallOption) (*QueryShowChainInfoResponse, error) {
+	out := new(QueryShowChainInfoResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.spec.Query/ShowChainInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
@@ -512,6 +789,10 @@ type QueryServer interface {
 	SpecAll(context.Context, *QueryAllSpecRequest) (*QueryAllSpecResponse, error)
 	// Queries a list of Chain items.
 	Chain(context.Context, *QueryChainRequest) (*QueryChainResponse, error)
+	// Queries a list of ShowAllChains items.
+	ShowAllChains(context.Context, *QueryShowAllChainsRequest) (*QueryShowAllChainsResponse, error)
+	// Queries a list of ShowChainInfo items.
+	ShowChainInfo(context.Context, *QueryShowChainInfoRequest) (*QueryShowChainInfoResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -529,6 +810,12 @@ func (*UnimplementedQueryServer) SpecAll(ctx context.Context, req *QueryAllSpecR
 }
 func (*UnimplementedQueryServer) Chain(ctx context.Context, req *QueryChainRequest) (*QueryChainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Chain not implemented")
+}
+func (*UnimplementedQueryServer) ShowAllChains(ctx context.Context, req *QueryShowAllChainsRequest) (*QueryShowAllChainsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShowAllChains not implemented")
+}
+func (*UnimplementedQueryServer) ShowChainInfo(ctx context.Context, req *QueryShowChainInfoRequest) (*QueryShowChainInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShowChainInfo not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -607,6 +894,42 @@ func _Query_Chain_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ShowAllChains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryShowAllChainsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ShowAllChains(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.spec.Query/ShowAllChains",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ShowAllChains(ctx, req.(*QueryShowAllChainsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ShowChainInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryShowChainInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ShowChainInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.spec.Query/ShowChainInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ShowChainInfo(ctx, req.(*QueryShowChainInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.spec.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -626,6 +949,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Chain",
 			Handler:    _Query_Chain_Handler,
+		},
+		{
+			MethodName: "ShowAllChains",
+			Handler:    _Query_ShowAllChains_Handler,
+		},
+		{
+			MethodName: "ShowChainInfo",
+			Handler:    _Query_ShowChainInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -898,6 +1229,183 @@ func (m *QueryChainResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryShowAllChainsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryShowAllChainsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryShowAllChainsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryShowAllChainsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryShowAllChainsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryShowAllChainsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainNames) > 0 {
+		for iNdEx := len(m.ChainNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ChainNames[iNdEx])
+			copy(dAtA[i:], m.ChainNames[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainNames[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryShowChainInfoRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryShowChainInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryShowChainInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainName) > 0 {
+		i -= len(m.ChainName)
+		copy(dAtA[i:], m.ChainName)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ApiList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ApiList) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ApiList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SupportedApis) > 0 {
+		for iNdEx := len(m.SupportedApis) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.SupportedApis[iNdEx])
+			copy(dAtA[i:], m.SupportedApis[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.SupportedApis[iNdEx])))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.Interface) > 0 {
+		i -= len(m.Interface)
+		copy(dAtA[i:], m.Interface)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Interface)))
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryShowChainInfoResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryShowChainInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryShowChainInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SupportedApisInterfaceList) > 0 {
+		for iNdEx := len(m.SupportedApisInterfaceList) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.SupportedApisInterfaceList[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Interfaces) > 0 {
+		for iNdEx := len(m.Interfaces) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Interfaces[iNdEx])
+			copy(dAtA[i:], m.Interfaces[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.Interfaces[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.ChainID) > 0 {
+		i -= len(m.ChainID)
+		copy(dAtA[i:], m.ChainID)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1006,6 +1514,87 @@ func (m *QueryChainResponse) Size() (n int) {
 	_ = l
 	l = m.Spec.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryShowAllChainsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryShowAllChainsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ChainNames) > 0 {
+		for _, s := range m.ChainNames {
+			l = len(s)
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryShowChainInfoRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainName)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *ApiList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Interface)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if len(m.SupportedApis) > 0 {
+		for _, s := range m.SupportedApis {
+			l = len(s)
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryShowChainInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainID)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if len(m.Interfaces) > 0 {
+		for _, s := range m.Interfaces {
+			l = len(s)
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if len(m.SupportedApisInterfaceList) > 0 {
+		for _, e := range m.SupportedApisInterfaceList {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -1660,6 +2249,482 @@ func (m *QueryChainResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryShowAllChainsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryShowAllChainsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryShowAllChainsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryShowAllChainsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryShowAllChainsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryShowAllChainsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainNames = append(m.ChainNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryShowChainInfoRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryShowChainInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryShowChainInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApiList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: apiList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: apiList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Interface", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Interface = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupportedApis", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SupportedApis = append(m.SupportedApis, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryShowChainInfoResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryShowChainInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryShowChainInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Interfaces", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Interfaces = append(m.Interfaces, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupportedApisInterfaceList", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SupportedApisInterfaceList = append(m.SupportedApisInterfaceList, &ApiList{})
+			if err := m.SupportedApisInterfaceList[len(m.SupportedApisInterfaceList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
