@@ -683,6 +683,15 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	reply, err := s.RelayInner(ctx, request)
+	if err != nil {
+		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
+	}
+
+	return reply, err
+}
+
+func (s *relayServer) RelayInner(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
