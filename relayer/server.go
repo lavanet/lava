@@ -63,7 +63,7 @@ type UserSessionsEpochData struct {
 type UserSessions struct {
 	Sessions      map[uint64]*RelaySession
 	Subs          map[string]*subscription //key: subscriptionID
-	IsBlockListed bool
+	IsBlackListed bool
 	user          string
 	dataByEpoch   map[uint64]*UserSessionsEpochData
 	Lock          utils.LavaMutex
@@ -329,9 +329,9 @@ func getOrCreateSession(ctx context.Context, userAddr string, req *pairingtypes.
 	userSessions := getOrCreateUserSessions(userAddr)
 
 	userSessions.Lock.Lock()
-	if userSessions.IsBlockListed {
+	if userSessions.IsBlackListed {
 		userSessions.Lock.Unlock()
-		return nil, utils.LavaFormatError("User blocklisted!", nil, &map[string]string{
+		return nil, utils.LavaFormatError("User blacklisted!", nil, &map[string]string{
 			"userAddr": userAddr,
 		})
 	}
@@ -421,7 +421,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	// Check that relaynum gets incremented by user
 	if relayNum+1 > request.RelayNum {
 		userSessions.Lock.Lock()
-		userSessions.IsBlockListed = true
+		userSessions.IsBlackListed = true
 		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", nil, &map[string]string{
 			"expected": strconv.FormatUint(relayNum+1, 10),
