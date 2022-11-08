@@ -73,7 +73,14 @@ func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlre
 }
 
 // get a data reliability session from an endpoint
-func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSession(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64) {
+func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSession(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	// we re validate the data reliability session now that we are locked.
+	if _, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
+		return nil, cswp.PairingEpoch, DataReliabilityAlreadySentThisEpochError
+	}
+
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
 		Client:    cswp,
@@ -82,18 +89,7 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 	singleDataReliabilitySession.lock.Lock() // we must lock the session so other requests wont get it.
 
 	cswp.Sessions[singleDataReliabilitySession.SessionId] = singleDataReliabilitySession // applying the session to the pool of sessions.
-	return singleDataReliabilitySession, cswp.PairingEpoch
-}
-
-func (cswp *ConsumerSessionsWithProvider) CheckAndMarkReliabilityForThisPairing() (valid bool) {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
-	if cswp.ReliabilitySent {
-		utils.LavaFormatWarning("Reliability already Sent in this epoch to this provider", nil, &map[string]string{"Address": cswp.Acc})
-		return false
-	}
-	cswp.ReliabilitySent = true
-	return true
+	return singleDataReliabilitySession, cswp.PairingEpoch, nil
 }
 
 func (cswp *ConsumerSessionsWithProvider) GetPairingEpoch() uint64 {
@@ -152,7 +148,7 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, 
 }
 
 func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
-	// TODO_RAN: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
+	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()

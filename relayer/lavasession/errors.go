@@ -24,6 +24,7 @@ var ( // Consumer Side Errors
 	DataReliabilityIndexOutOfRangeError                  = sdkerrors.New("DataReliabilityIndexOutOfRange Error", 681, "Trying to get provider index out of range")
 	DataReliabilityAlreadySentThisEpochError             = sdkerrors.New("DataReliabilityAlreadySentThisEpoch Error", 682, "Trying to send data reliability more than once per provider per epoch")
 	FailedToConnectToEndPointForDataReliabilityError     = sdkerrors.New("FailedToConnectToEndPointForDataReliability Error", 683, "Failed to connect to a providers endpoints")
+	DataReliabilityEpochMismatchError                    = sdkerrors.New("DataReliabilityEpochMismatch Error", 684, "Data reliability epoch mismatch original session epoch.")
 )
 
 var ( // Provider Side Errors

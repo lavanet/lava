@@ -16,17 +16,18 @@ import (
 )
 
 const (
-	parallelGoRoutines        = 40
-	numberOfProviders         = 10
-	firstEpochHeight          = 20
-	secondEpochHeight         = 40
-	cuForFirstRequest         = uint64(10)
-	grpcListener              = "localhost:48353"
-	servicedBlockNumber       = int64(30)
-	relayNumberAfterFirstCall = uint64(1)
-	relayNumberAfterFirstFail = uint64(0)
-	latestRelayCuAfterDone    = uint64(0)
-	cuSumOnFailure            = uint64(0)
+	parallelGoRoutines                 = 40
+	numberOfProviders                  = 10
+	numberOfAllowedSessionsPerConsumer = 10
+	firstEpochHeight                   = 20
+	secondEpochHeight                  = 40
+	cuForFirstRequest                  = uint64(10)
+	grpcListener                       = "localhost:48353"
+	servicedBlockNumber                = int64(30)
+	relayNumberAfterFirstCall          = uint64(1)
+	relayNumberAfterFirstFail          = uint64(0)
+	latestRelayCuAfterDone             = uint64(0)
+	cuSumOnFailure                     = uint64(0)
 )
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
@@ -82,10 +83,87 @@ func TestHappyFlow(t *testing.T) {
 	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 }
 
+// Test the basic functionality of the consumerSessionManager
+func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
+	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
+	defer s.Stop()           // stop the server when finished.
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList()
+	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+
+	type session struct {
+		cs    *SingleConsumerSession
+		epoch uint64
+	}
+	sessionList := make([]session, numberOfAllowedSessionsPerConsumer)
+	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
+		cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		require.Nil(t, err)
+		require.NotNil(t, cs)
+		require.Equal(t, epoch, csm.currentEpoch)
+		require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+		sessionList[i] = session{cs: cs, epoch: epoch}
+	}
+
+	var successfulRelays uint64
+	var cuSum uint64
+	for j := 0; j < numberOfAllowedSessionsPerConsumer/2; j++ {
+		cs := sessionList[j].cs
+		require.NotNil(t, cs)
+		epoch := sessionList[j].epoch
+		require.Equal(t, epoch, csm.currentEpoch)
+
+		if rand.Intn(1) > 0 {
+			successfulRelays += 1
+			cuSum += cuForFirstRequest
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			require.Nil(t, err)
+			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
+		} else {
+			err = csm.OnSessionFailure(cs, nil)
+			require.Nil(t, err)
+			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+		}
+	}
+
+	err = csm.UpdateAllProviders(ctx, secondEpochHeight, pairingList[0:(numberOfProviders/2)]) // update the providers. with half of them
+	require.Nil(t, err)
+
+	for j := numberOfAllowedSessionsPerConsumer / 2; j < numberOfAllowedSessionsPerConsumer; j++ {
+		cs := sessionList[j].cs
+		epoch := sessionList[j].epoch
+		if rand.Intn(1) > 0 {
+			successfulRelays += 1
+			cuSum += cuForFirstRequest
+			err = csm.OnSessionDone(cs, epoch, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+			require.Nil(t, err)
+			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.LatestBlock, servicedBlockNumber)
+		} else {
+			err = csm.OnSessionFailure(cs, nil)
+			require.Nil(t, err)
+			require.Equal(t, cs.CuSum, cuSum)
+			require.Equal(t, cs.RelayNum, successfulRelays)
+			require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+		}
+	}
+
+}
+
 func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
 	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
+	time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
 	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
 	require.Nil(t, err)
 	ch <- p
@@ -95,6 +173,7 @@ func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.
 	cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
 	require.Nil(t, err)
 	require.NotNil(t, cs)
+	time.Sleep(time.Duration((rand.Intn(500) + 1)) * time.Millisecond)
 	err = csm.OnSessionFailure(cs, fmt.Errorf("nothing special"))
 	require.Nil(t, err)
 	ch <- p
@@ -229,7 +308,6 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 
 	// verify provider is blocked and reported
 	require.Contains(t, csm.addedToPurgeAndReport, cs.Client.Acc) // address is reported
-	require.Contains(t, csm.providerBlockList, cs.Client.Acc)     // address is blocked
 	require.NotContains(t, csm.validAddresses, cs.Client.Acc)     // address isn't in valid addresses list
 
 	reported, err := csm.GetReportedProviders(firstEpochHeight)
@@ -240,7 +318,6 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	require.Nil(t, err)
 	for _, providerReported := range reportedSlice {
 		require.Contains(t, csm.addedToPurgeAndReport, providerReported)
-		require.Contains(t, csm.providerBlockList, providerReported)
 	}
 }
 
