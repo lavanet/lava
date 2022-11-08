@@ -21,9 +21,8 @@ type ConsumerSessionManager struct {
 	// pairingAddresses for Data reliability
 	pairingAddresses       []string // contains all addresses from the initial pairing.
 	pairingAddressesLength uint64
-	// providerBlockList + validAddresses == pairingAddresses (while locked)
+
 	validAddresses        []string            // contains all addresses that are currently valid
-	providerBlockList     map[string]struct{} // contains all currently blocked providers, reset upon epoch change. (easier to search maps.)
 	addedToPurgeAndReport map[string]struct{} // list of purged providers to report for QoS unavailability. (easier to search maps.)
 
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
@@ -46,7 +45,6 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 
 	// Reset States
 	csm.validAddresses = make([]string, pairingListLength)
-	csm.providerBlockList = make(map[string]struct{}, 0)
 	csm.pairingAddresses = make([]string, pairingListLength)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
@@ -79,11 +77,15 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
 	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error) {
 
+	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
+		initUnwantedProviders = make(map[string]struct{})
+	}
 	// providers that we don't try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{
 		providers:    initUnwantedProviders,
 		currentEpoch: csm.atomicReadCurrentEpoch(),
 	}
+
 	for {
 		// Get a valid consumerSessionWithProvider
 		consumerSessionWithProvider, providerAddress, sessionEpoch, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession)
@@ -121,9 +123,10 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		}
 
 		// we get the reported providers here after we try to connect, so if any provider did'nt respond he will already be added to the list.
-		reportedProviders, err = csm.GetReportedProviders(csm.atomicReadCurrentEpoch())
+		reportedProviders, err = csm.GetReportedProviders(sessionEpoch)
 		if err != nil {
-			return nil, 0, "", nil, utils.LavaFormatError("Failed Unmarshal Error", err, nil)
+			// if failed to GetReportedProviders just log the error and continue.
+			utils.LavaFormatError("Failed Unmarshal Error in GetReportedProviders", err, nil)
 		}
 
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
@@ -163,7 +166,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			// Successfully created/got a consumerSession.
 			return consumerSession, sessionEpoch, providerAddress, reportedProviders, nil
 		}
-		utils.LavaFormatFatal("Unsupported Error", UnreachableCodeError, nil)
+		utils.LavaFormatFatal("Unreachable Error", UnreachableCodeError, nil)
 	}
 }
 
@@ -232,7 +235,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 		return EpochMismatchError
 	}
 
-	csm.lock.Lock() // we lock RW here because we need to make sure nothing changes while we verify validAddresses/addedToPurgeAndReport/providerBlockList
+	csm.lock.Lock() // we lock RW here because we need to make sure nothing changes while we verify validAddresses/addedToPurgeAndReport
 	defer csm.lock.Unlock()
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // After we lock we need to verify again that the epoch didn't change while we waited for the lock.
 		return EpochMismatchError
@@ -248,9 +251,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
-	if _, ok := csm.providerBlockList[address]; !ok { // verify it does'nt exist already
-		csm.providerBlockList[address] = struct{}{}
-	}
+
 	return nil
 }
 
@@ -424,10 +425,13 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 }
 
 // Get a Data Reliability Session
-func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context, originalProviderAddress string, index int64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
+func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context, originalProviderAddress string, index int64, sessionEpoch uint64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
 	consumerSessionWithProvider, providerAddress, currentEpoch, err := csm.getDataReliabilityProviderIndex(originalProviderAddress, uint64(index))
 	if err != nil {
 		return nil, "", 0, err
+	}
+	if sessionEpoch != currentEpoch { // validate we are in the same epoch.
+		return nil, "", currentEpoch, DataReliabilityEpochMismatchError
 	}
 
 	// after choosing a provider, try to see if it already has an existing data reliability session.
@@ -443,7 +447,10 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	// get data reliability session from endpoint
-	consumerSession, pairingEpoch := consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
+	consumerSession, pairingEpoch, err := consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
+	if err != nil {
+		return nil, "", currentEpoch, err
+	}
 
 	if currentEpoch != pairingEpoch { // validate they are the same, if not print an error and set currentEpoch to pairingEpoch.
 		utils.LavaFormatError("currentEpoch and pairingEpoch mismatch", nil, &map[string]string{"sessionEpoch": strconv.FormatUint(currentEpoch, 10), "pairingEpoch": strconv.FormatUint(pairingEpoch, 10)})

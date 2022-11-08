@@ -26,7 +26,7 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 
 //
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) bool {
-	if epoch <= psm.atomicReadBlockedEpoch() { // TODO_RAN: atomic read.
+	if epoch <= psm.atomicReadBlockedEpoch() {
 		return false
 	}
 	return true
