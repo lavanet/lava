@@ -653,6 +653,9 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 }
 
 func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
+	if userSessions == nil || relaySession == nil { // verify sessions are not nil
+		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, nil)
+	}
 	// deal with relaySession
 	computeUnits := nodeMsg.GetServiceApi().ComputeUnits
 	relaySession.Lock.Lock()
