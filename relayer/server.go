@@ -652,28 +652,37 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	return userAddr, nodeMsg, userSessions, relaySession, nil
 }
 
-func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage, originalError error) error {
+func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
 	// deal with relaySession
 	computeUnits := nodeMsg.GetServiceApi().ComputeUnits
 	relaySession.Lock.Lock()
 	pairingEpoch := relaySession.PairingEpoch
 	relaySession.RelayNum -= 1
 	relaySession.CuSum -= computeUnits
+	var retError error
 	if int64(relaySession.RelayNum) < 0 || int64(relaySession.CuSum) < 0 { // relayNumber must be greater than zero.
+		utils.LavaFormatError("consumer RelayNumber or CuSum are negative values", nil, &map[string]string{"RelayNum": strconv.FormatUint(relaySession.RelayNum, 10),
+			"CuSum": strconv.FormatUint(relaySession.CuSum, 10),
+		})
 		relaySession.RelayNum = 0
 		relaySession.CuSum = 0
-		originalError = sdkerrors.Wrapf(lavasession.SessionOutOfSyncError, originalError.Error())
+		retError = lavasession.SessionOutOfSyncError
 	}
 	relaySession.Lock.Unlock()
 	// deal with userSessions
 	userSessions.Lock.Lock()
 	userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits -= computeUnits
 	if int64(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits) < 0 {
+		// if the provider lost sync with the consumer itself, and not just a session. we blockList the consumer.
 		userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits = 0
-		originalError = sdkerrors.Wrapf(lavasession.SessionOutOfSyncError, originalError.Error())
+		userSessions.IsBlockListed = true
+		retError = utils.LavaFormatError("userSessions Out of sync, Blocking consumer",
+			fmt.Errorf("userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits reached negative value"),
+			&map[string]string{"consumer_address": userSessions.user,
+				"userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits": strconv.FormatUint(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits, 10)})
 	}
 	userSessions.Lock.Unlock()
-	return originalError
+	return retError
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
@@ -688,7 +697,10 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	reply, err := s.TryRelay(ctx, request, userAddr, nodeMsg)
 	if err != nil && request.DataReliability == nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-		err = s.onRelayFailure(userSessions, relaySession, nodeMsg, err)
+		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
+		if relayFailureError != nil {
+			err = sdkerrors.Wrapf(relayFailureError, "Relay Error: "+err.Error())
+		}
 	}
 	return reply, err
 }
@@ -781,8 +793,10 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	err = s.TryRelaySubscribe(request, srv, nodeMsg, userSessions)
 	if err != nil && request.DataReliability == nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-
-		err = s.onRelayFailure(userSessions, relaySession, nodeMsg, err)
+		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
+		if relayFailureError != nil {
+			err = sdkerrors.Wrapf(relayFailureError, "Relay Error: "+err.Error())
+		}
 	}
 	return err
 }
