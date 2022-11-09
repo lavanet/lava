@@ -695,7 +695,7 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	reply, err := s.TryRelay(ctx, request, userAddr, nodeMsg)
-	if err != nil && request.DataReliability == nil {
+	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
 		if relayFailureError != nil {
@@ -791,7 +791,7 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	}
 
 	err = s.TryRelaySubscribe(request, srv, nodeMsg, userSessions)
-	if err != nil && request.DataReliability == nil {
+	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
 		if relayFailureError != nil {
