@@ -21,9 +21,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -472,35 +474,6 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	return nil
 }
 
-func updateSessionCuSubscribe(sess *RelaySession, userSessions *UserSessions, serviceApi *spectypes.ServiceApi, request *pairingtypes.RelayRequest, pairingEpoch uint64) error {
-	utils.LavaFormatInfo("updateSessionCuSubscribe", &map[string]string{
-		"serviceApi.Name":   serviceApi.Name,
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-		"cu":                strconv.FormatUint(sess.CuSum, 10),
-	})
-
-	userSessions.Lock.Lock()
-	epochData := userSessions.dataByEpoch[pairingEpoch]
-
-	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
-		userSessions.Lock.Unlock()
-		return utils.LavaFormatError("client cu overflow subscribe", nil, &map[string]string{
-			"epochData.MaxComputeUnits":  strconv.FormatUint(epochData.MaxComputeUnits, 10),
-			"epochData.UsedComputeUnits": strconv.FormatUint(epochData.UsedComputeUnits, 10),
-			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
-		})
-	}
-
-	epochData.UsedComputeUnits = epochData.UsedComputeUnits + serviceApi.ComputeUnits
-	userSessions.Lock.Unlock()
-
-	sess.Lock.Lock()
-	sess.CuSum += request.CuSum
-	sess.Lock.Unlock()
-
-	return nil
-}
-
 func processUnsubscribeEthereum(subscriptionID string, userSessions *UserSessions) {
 	if sub, ok := userSessions.Subs[subscriptionID]; ok {
 		sub.disconnect()
@@ -540,10 +513,10 @@ func processUnsubscribe(apiName string, userAddr sdk.AccAddress, reqParams inter
 	return nil
 }
 
-func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (sdk.AccAddress, chainproxy.NodeMessage, *UserSessions, error) {
+func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (sdk.AccAddress, chainproxy.NodeMessage, *UserSessions, *RelaySession, error) {
 	// client blockheight can only be at at prev epoch but not ealier
 	if request.BlockHeight < int64(g_sentry.GetPrevEpochHeight()) {
-		return nil, nil, nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
+		return nil, nil, nil, nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
 			"requested lava block": strconv.FormatInt(request.BlockHeight, 10),
 		})
@@ -552,15 +525,15 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	// Checks
 	user, err := getRelayUser(request)
 	if err != nil {
-		return nil, nil, nil, utils.LavaFormatError("get relay user", err, &map[string]string{})
+		return nil, nil, nil, nil, utils.LavaFormatError("get relay user", err, &map[string]string{})
 	}
 	userAddr, err := sdk.AccAddressFromHex(user.String())
 	if err != nil {
-		return nil, nil, nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
+		return nil, nil, nil, nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 
 	if !isSupportedSpec(request) {
-		return nil, nil, nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
+		return nil, nil, nil, nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 
 	var nodeMsg chainproxy.NodeMessage
@@ -581,15 +554,15 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
 		utils.LavaFormatError("failed authorizing user request", nil, nil)
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-
+	var relaySession *RelaySession
 	var userSessions *UserSessions
 	if request.DataReliability != nil {
 		userSessions = getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
-			return nil, nil, nil, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err, &map[string]string{
+			return nil, nil, nil, nil, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err, &map[string]string{
 				"userAddr": userAddr.String(),
 			})
 		}
@@ -599,36 +572,36 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 			//data reliability message
 			if epochData.DataReliability != nil {
 				userSessions.Lock.Unlock()
-				return nil, nil, nil, utils.LavaFormatError("Simulation: dataReliability can only be used once per client per epoch", nil,
+				return nil, nil, nil, nil, utils.LavaFormatError("Simulation: dataReliability can only be used once per client per epoch", nil,
 					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
 			}
 		}
 		userSessions.Lock.Unlock()
 		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
 		if vrf_pk == nil {
-			return nil, nil, nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String()})
 		}
 		// verify the providerSig is ineed a signature by a valid provider on this query
 		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
 		if err != nil {
-			return nil, nil, nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
+			return nil, nil, nil, nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		if !valid {
-			return nil, nil, nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 		//verify data reliability fields correspond to the right vrf
 		valid = utils.VerifyVrfProof(request, *vrf_pk, uint64(request.BlockHeight))
 		if !valid {
-			return nil, nil, nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 
 		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
 		if authorisedUserResponse.Index != vrfIndex {
-			return nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
 					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
@@ -643,7 +616,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	} else {
 		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 
 		relaySession.Lock.Lock()
@@ -651,7 +624,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 
 		if request.BlockHeight != int64(pairingEpoch) {
 			relaySession.Lock.Unlock()
-			return nil, nil, nil, utils.LavaFormatError("request blockheight mismatch to session epoch", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("request blockheight mismatch to session epoch", nil,
 				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
 					"relay blockheight": strconv.FormatInt(request.BlockHeight, 10)})
 		}
@@ -661,7 +634,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 
 		// Validate
 		if request.SessionId == 0 {
-			return nil, nil, nil, utils.LavaFormatError("SessionID cannot be 0 for non-data reliability requests", nil,
+			return nil, nil, nil, nil, utils.LavaFormatError("SessionID cannot be 0 for non-data reliability requests", nil,
 				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
 					"relay request": fmt.Sprintf("%v", request)})
 		}
@@ -669,25 +642,73 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		// Update session
 		err = updateSessionCu(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 
 		relaySession.Lock.Lock()
 		relaySession.Proof = request
 		relaySession.Lock.Unlock()
 	}
-	return userAddr, nodeMsg, userSessions, nil
+	return userAddr, nodeMsg, userSessions, relaySession, nil
+}
+
+func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
+	if userSessions == nil || relaySession == nil { // verify sessions are not nil
+		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, nil)
+	}
+	// deal with relaySession
+	computeUnits := nodeMsg.GetServiceApi().ComputeUnits
+	relaySession.Lock.Lock()
+	pairingEpoch := relaySession.PairingEpoch
+	relaySession.RelayNum -= 1
+	relaySession.CuSum -= computeUnits
+	var retError error
+	if int64(relaySession.RelayNum) < 0 || int64(relaySession.CuSum) < 0 { // relayNumber must be greater than zero.
+		utils.LavaFormatError("consumer RelayNumber or CuSum are negative values", nil, &map[string]string{"RelayNum": strconv.FormatUint(relaySession.RelayNum, 10),
+			"CuSum": strconv.FormatUint(relaySession.CuSum, 10),
+		})
+		relaySession.RelayNum = 0
+		relaySession.CuSum = 0
+		retError = lavasession.SessionOutOfSyncError
+	}
+	relaySession.Lock.Unlock()
+	// deal with userSessions
+	userSessions.Lock.Lock()
+	userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits -= computeUnits
+	if int64(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits) < 0 {
+		// if the provider lost sync with the consumer itself, and not just a session. we blockList the consumer.
+		userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits = 0
+		userSessions.IsBlockListed = true
+		retError = utils.LavaFormatError("userSessions Out of sync, Blocking consumer",
+			fmt.Errorf("userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits reached negative value"),
+			&map[string]string{"consumer_address": userSessions.user,
+				"userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits": strconv.FormatUint(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits, 10)})
+	}
+	userSessions.Lock.Unlock()
+	return retError
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
-
-	userAddr, nodeMsg, _, err := s.initRelay(ctx, request)
+	userAddr, nodeMsg, userSessions, relaySession, err := s.initRelay(ctx, request)
 	if err != nil {
 		return nil, err
 	}
+
+	reply, err := s.TryRelay(ctx, request, userAddr, nodeMsg)
+	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
+		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
+		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
+		if relayFailureError != nil {
+			err = sdkerrors.Wrapf(relayFailureError, "Relay Error: "+err.Error())
+		}
+	}
+	return reply, err
+}
+
+func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, userAddr sdk.AccAddress, nodeMsg chainproxy.NodeMessage) (*pairingtypes.RelayReply, error) {
 
 	// Send
 	var reqMsg *chainproxy.JsonrpcMessage
@@ -767,17 +788,29 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	utils.LavaFormatInfo("Provider got relay request subscribe", &map[string]string{
 		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
 	})
-
-	_, nodeMsg, userSessions, err := s.initRelay(context.Background(), request)
+	_, nodeMsg, userSessions, relaySession, err := s.initRelay(context.Background(), request)
 	if err != nil {
 		return err
 	}
+
+	err = s.TryRelaySubscribe(request, srv, nodeMsg, userSessions)
+	if err != nil && request.DataReliability == nil { // we ignore data reliability because its not checking/adding cu/relaynum.
+		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
+		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
+		if relayFailureError != nil {
+			err = sdkerrors.Wrapf(relayFailureError, "Relay Error: "+err.Error())
+		}
+	}
+	return err
+}
+
+func (s *relayServer) TryRelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, nodeMsg chainproxy.NodeMessage, userSessions *UserSessions) error {
 
 	var reply *pairingtypes.RelayReply
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, err = nodeMsg.Send(context.Background(), subscribeRepliesChan)
+	reply, subscriptionID, clientSub, err := nodeMsg.Send(context.Background(), subscribeRepliesChan)
 	if err != nil {
 		return utils.LavaFormatError("Subscription failed", err, nil)
 	}
@@ -830,7 +863,11 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 			)
 			if err != nil {
 				// usually triggered when client closes connection
-				utils.LavaFormatError("client sub send", err, nil)
+				if strings.Contains(err.Error(), "Canceled desc = context canceled") {
+					utils.LavaFormatWarning("Client closed connection", err, nil)
+				} else {
+					utils.LavaFormatError("srv.Send", err, nil)
+				}
 				userSessions.Lock.Lock()
 				if sub, ok := userSessions.Subs[subscriptionID]; ok {
 					sub.disconnect()
