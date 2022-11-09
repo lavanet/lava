@@ -21,9 +21,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -650,7 +652,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	return userAddr, nodeMsg, userSessions, relaySession, nil
 }
 
-func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) {
+func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage, originalError error) error {
 	// deal with relaySession
 	computeUnits := nodeMsg.GetServiceApi().ComputeUnits
 	relaySession.Lock.Lock()
@@ -658,18 +660,20 @@ func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *R
 	relaySession.RelayNum -= 1
 	relaySession.CuSum -= computeUnits
 	if int64(relaySession.RelayNum) < 0 || int64(relaySession.CuSum) < 0 { // relayNumber must be greater than zero.
-		utils.LavaFormatFatal("consumer RelayNumber or CuSum are negative values", nil, &map[string]string{"RelayNum": strconv.FormatUint(relaySession.RelayNum, 10),
-			"CuSum": strconv.FormatUint(relaySession.CuSum, 10),
-		})
+		relaySession.RelayNum = 0
+		relaySession.CuSum = 0
+		originalError = sdkerrors.Wrapf(lavasession.SessionOutOfSyncError, originalError.Error())
 	}
 	relaySession.Lock.Unlock()
 	// deal with userSessions
 	userSessions.Lock.Lock()
 	userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits -= computeUnits
 	if int64(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits) < 0 {
-		utils.LavaFormatFatal("userSessions reached negative value", nil, &map[string]string{"userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits": strconv.FormatUint(userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits, 10)})
+		userSessions.dataByEpoch[pairingEpoch].UsedComputeUnits = 0
+		originalError = sdkerrors.Wrapf(lavasession.SessionOutOfSyncError, originalError.Error())
 	}
 	userSessions.Lock.Unlock()
+	return originalError
 }
 
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
@@ -682,9 +686,9 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 	}
 
 	reply, err := s.TryRelay(ctx, request, userAddr, nodeMsg)
-	if err != nil {
+	if err != nil && request.DataReliability == nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-		s.onRelayFailure(userSessions, relaySession, nodeMsg)
+		err = s.onRelayFailure(userSessions, relaySession, nodeMsg, err)
 	}
 	return reply, err
 }
@@ -775,9 +779,10 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 	}
 
 	err = s.TryRelaySubscribe(request, srv, nodeMsg, userSessions)
-	if err != nil {
+	if err != nil && request.DataReliability == nil {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
-		s.onRelayFailure(userSessions, relaySession, nodeMsg)
+
+		err = s.onRelayFailure(userSessions, relaySession, nodeMsg, err)
 	}
 	return err
 }
