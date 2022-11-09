@@ -226,9 +226,10 @@ func SendRelay(
 		}
 		if lavasession.SendRelayError.Is(firstSessionError) {
 			// Retry
+			originalProviderAddress := providerPublicAddress
 			singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err = cp.GetConsumerSessionManager().GetSessionFromAllExcept(ctx, map[string]struct{}{providerPublicAddress: {}}, nodeMsg.GetServiceApi().ComputeUnits, epoch)
 			if err != nil {
-				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error()})
+				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
 			}
 			var secondSessionError error
 			reply, replyServer, relayLatency, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
@@ -238,11 +239,11 @@ func SendRelay(
 					return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
 				}
 				// compare error1 with error2
-				if secondSessionError.Error() != secondSessionError.Error() {
+				if secondSessionError.Error() != firstSessionError.Error() {
 					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
 				} else {
-					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received SAME errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
-					// return nil, nil, firstSessionError // todo uncomment this and delete above
+					// if both errors are the same, just return the first error.
+					return nil, nil, firstSessionError
 				}
 			}
 			// retry attempt succeeded! can continue normally
