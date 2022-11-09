@@ -29952,6 +29952,7 @@ paths:
             type: object
             properties:
               params:
+                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   minStakeProvider:
@@ -29983,7 +29984,6 @@ paths:
                     type: string
                   QoSWeight:
                     type: string
-                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -52092,6 +52092,7 @@ definitions:
       sig:
         type: string
         format: byte
+        title: sign the data hash+query hash+nonce
       nonce:
         type: integer
         format: int64
@@ -52104,6 +52105,9 @@ definitions:
       sig_blocks:
         type: string
         format: byte
+        title: >-
+          sign
+          latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.pairing.RelayRequest:
     type: object
     properties:
@@ -52114,12 +52118,16 @@ definitions:
         format: int64
       api_url:
         type: string
+        title: >-
+          some relays have associated urls that are filled with params
+          ('/block/{height}')
       session_id:
         type: string
         format: uint64
       cu_sum:
         type: string
         format: uint64
+        title: total compute unit used including this relay
       data:
         type: string
         format: byte
@@ -52157,6 +52165,7 @@ definitions:
           queryHash:
             type: string
             format: byte
+            title: we only need it for payment later
           sig:
             type: string
             format: byte
@@ -52194,6 +52203,7 @@ definitions:
       queryHash:
         type: string
         format: byte
+        title: we only need it for payment later
       sig:
         type: string
         format: byte
@@ -52984,6 +52994,7 @@ definitions:
     type: object
     properties:
       params:
+        description: params holds all the parameters of this module.
         type: object
         properties:
           minStakeProvider:
@@ -53015,7 +53026,6 @@ definitions:
             type: string
           QoSWeight:
             type: string
-        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object

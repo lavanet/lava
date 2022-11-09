@@ -20,30 +20,29 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	if conflictVote.VoteState != types.StateReveal {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: vote is not in reveal state")
 	}
-	if _, ok := conflictVote.VotersHash[msg.Creator]; !ok {
+	index, ok := FindVote(&conflictVote.Votes, msg.Creator)
+	if !ok {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider is not in the voters list")
 	}
-	if conflictVote.VotersHash[msg.Creator].Hash == nil {
+	if conflictVote.Votes[index].Hash == nil {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider did not commit")
 	}
-	if conflictVote.VotersHash[msg.Creator].Result != types.Commit {
+	if conflictVote.Votes[index].Result != types.Commit {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider already revealed")
 	}
 
 	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash)
-	if !bytes.Equal(commitHash, conflictVote.VotersHash[msg.Creator].Hash) {
+	if !bytes.Equal(commitHash, conflictVote.Votes[index].Hash) {
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_reveal", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "Simulation: provider reveal does not match the commit")
 	}
 
-	vote := conflictVote.VotersHash[msg.Creator]
 	if bytes.Equal(msg.Hash, conflictVote.FirstProvider.Response) {
-		vote.Result = types.Provider0
+		conflictVote.Votes[index].Result = types.Provider0
 	} else if bytes.Equal(msg.Hash, conflictVote.SecondProvider.Response) {
-		vote.Result = types.Provider1
+		conflictVote.Votes[index].Result = types.Provider1
 	} else {
-		vote.Result = types.NoneOfTheProviders
+		conflictVote.Votes[index].Result = types.NoneOfTheProviders
 	}
-	conflictVote.VotersHash[msg.Creator] = vote
 
 	k.SetConflictVote(ctx, conflictVote)
 	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotRevealEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "Simulation: conflict reveal recieved")
