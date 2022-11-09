@@ -429,9 +429,13 @@ func (s *Sentry) GetSpecHash() []byte {
 }
 
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
-	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
-		ChainID: s.ChainID,
+	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		Index: s.ChainID,
 	})
+	// spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+	// 	ChainID: s.ChainID,
+	// })
+	fmt.Printf("YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
@@ -443,7 +447,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.Ap
 	return allSpecNames, nil
 }
 
-func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
+func (s *Sentry) getServiceApis(spec *spectypes.QueryGetSpecResponse) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
 	serverApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
@@ -480,8 +484,8 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerAp
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
-	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
-		ChainID: s.ChainID,
+	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		Index: s.ChainID,
 	})
 	if err != nil {
 		return utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
