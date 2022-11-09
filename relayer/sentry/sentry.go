@@ -432,10 +432,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.Ap
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		Index: s.ChainID,
 	})
-	// spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
-	// 	ChainID: s.ChainID,
-	// })
-	fmt.Printf("YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
