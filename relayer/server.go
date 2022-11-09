@@ -863,7 +863,11 @@ func (s *relayServer) TryRelaySubscribe(request *pairingtypes.RelayRequest, srv 
 			)
 			if err != nil {
 				// usually triggered when client closes connection
-				utils.LavaFormatError("client sub send", err, nil)
+				if strings.Contains(err.Error(), "Canceled desc = context canceled") {
+					utils.LavaFormatWarning("Client closed connection", err, nil)
+				} else {
+					utils.LavaFormatError("srv.Send", err, nil)
+				}
 				userSessions.Lock.Lock()
 				if sub, ok := userSessions.Subs[subscriptionID]; ok {
 					sub.disconnect()
