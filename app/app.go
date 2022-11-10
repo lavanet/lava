@@ -87,6 +87,8 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/openapiconsole"
 	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/app/upgrades"
+	v4 "github.com/lavanet/lava/app/upgrades/v4"
+	v5 "github.com/lavanet/lava/app/upgrades/v5"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -126,9 +128,39 @@ const (
 	Name                 = "lava"
 )
 
+var Upgrade2 = upgrades.Upgrade{
+	UpgradeName: "v2", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
+var Upgrade3 = upgrades.Upgrade{
+	UpgradeName: "v2", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
+var Upgrade6 = upgrades.Upgrade{
+	UpgradeName: "v6", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
 var (
 	// add here future upgrades (upgrades.Upgrade)
-	Upgrades = []upgrades.Upgrade{Upgrade010}
+	Upgrades = []upgrades.Upgrade{Upgrade2, Upgrade3, v4.Upgrade, v5.Upgrade, Upgrade6, Upgrade010}
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
