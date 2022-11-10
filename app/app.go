@@ -129,7 +129,7 @@ var Upgrade2 = upgrades.Upgrade{
 }
 
 var Upgrade3 = upgrades.Upgrade{
-	UpgradeName: "v2", // upgrade name defined few lines above
+	UpgradeName: "v3", // upgrade name defined few lines above
 	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
 		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 			return m.RunMigrations(ctx, c, vm)
@@ -139,7 +139,7 @@ var Upgrade3 = upgrades.Upgrade{
 }
 
 var Upgrade6 = upgrades.Upgrade{
-	UpgradeName: "v6", // upgrade name defined few lines above
+	UpgradeName: "v0.0.6", // upgrade name defined few lines above
 	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
 		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 			return m.RunMigrations(ctx, c, vm)
