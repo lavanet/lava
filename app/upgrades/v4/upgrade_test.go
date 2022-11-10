@@ -1,4 +1,4 @@
-package v5_test
+package v4_test
 
 import (
 	"testing"
@@ -6,9 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/relayer/sigs"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/conflict/keeper"
-	"github.com/lavanet/lava/x/conflict/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -36,16 +35,14 @@ func (suite *UpgradeTestSuite) TestDeletingOldPrefixDataFromStore() {
 	_, keepers, ctx := keepertest.InitAllKeepers(suite.T())
 	sdkctx := sdk.UnwrapSDKContext(ctx)
 	suite.T().Log("TestDeletingOldPrefixDataFromStore")
-
-	vote := types.ConflictVote{}
-	keepers.Conflict.SetConflictVote(sdkctx, vote)
-
-	allvotes := keepers.Conflict.GetAllConflictVote(sdkctx)
-	suite.Require().NotEqual(0, len(allvotes))
-
-	migrator := keeper.NewMigrator(keepers.Conflict)
-	migrator.MigrateToV5(sdkctx)
-
-	allvotes = keepers.Conflict.GetAllConflictVote(sdkctx)
-	suite.Require().Equal(0, len(allvotes))
+	_, userAddress := sigs.GenerateFloatingKey()
+	_, providerAddress := sigs.GenerateFloatingKey()
+	allUniquePayments := keepers.Pairing.GetAllUniquePaymentStorageClientProvider(sdkctx)
+	suite.Require().Empty(allUniquePayments)
+	keepers.Pairing.AddUniquePaymentStorageClientProvider(sdkctx, "ETH1", 0, userAddress, providerAddress, "test", 50)
+	allUniquePayments = keepers.Pairing.GetAllUniquePaymentStorageClientProvider(sdkctx)
+	suite.Require().NotEmpty(allUniquePayments)
+	// v4.DeleteStoreEntries(sdkctx, "pairing", v4.UniquePaymentStorageClientProviderKeyPrefix)
+	// allUniquePayments = keepers.Pairing.GetAllUniquePaymentStorageClientProvider(sdkctx)
+	// suite.Require().Empty(allUniquePayments)
 }
