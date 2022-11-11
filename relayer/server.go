@@ -5,9 +5,6 @@ import (
 	context "context"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/newrelic/go-agent/v3/newrelic"
-	zerologlog "github.com/rs/zerolog/log"
 	"math/rand"
 	"net"
 	"os"
@@ -1011,25 +1008,13 @@ func Server(
 	g_serverID = uint64(rand.Int63())
 
 	//
-	var myEnv map[string]string
-	myEnv, err := godotenv.Read()
 
-	NEW_RELIC_APP_NAME := myEnv["NEW_RELIC_APP_NAME"]
-	NEW_RELIC_LICENSE_KEY := myEnv["NEW_RELIC_LICENSE_KEY"]
-
-	newrelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
-		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
-		newrelic.ConfigAppLogEnabled(true),
-		newrelic.ConfigAppLogForwardingEnabled(true),
-		func(config *newrelic.Config) {
-			zerologlog.Debug().Enabled()
-		},
-	)
+	portalLogs := new(chainproxy.PortalLogs)
+	portalLogs.CreateNewRelicApp()
 
 	// Start newSentry
 	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
-	err = newSentry.Init(ctx)
+	err := newSentry.Init(ctx)
 	if err != nil {
 		utils.LavaFormatError("sentry init failure to initialize", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 		return
@@ -1066,7 +1051,7 @@ func Server(
 	utils.LavaFormatInfo("Server loaded keys", &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, newrelicApp)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, portalLogs)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
