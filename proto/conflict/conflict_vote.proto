@@ -10,8 +10,9 @@ message Provider {
 }
 
 message Vote {
-  bytes Hash = 1;
-  int64 Result =2;
+  string address = 1;
+  bytes Hash = 2;
+  int64 Result =3;
 }
 
 message ConflictVote {
@@ -26,7 +27,7 @@ message ConflictVote {
   uint64 requestBlock = 9;
   Provider firstProvider = 10 [(gogoproto.nullable) = false]; 
   Provider secondProvider = 11 [(gogoproto.nullable) = false]; 
-  map<string, Vote> votersHash = 13[(gogoproto.nullable) = false]; 
+  repeated Vote votes = 12 [(gogoproto.nullable) = false]; 
 
 }
 

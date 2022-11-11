@@ -16294,9 +16294,6 @@ paths:
                         }
       parameters:
         - name: body
-          description: |-
-            SimulateRequest is the request type for the Service.Simulate
-            RPC method.
           in: body
           required: true
           schema:
@@ -17096,11 +17093,6 @@ paths:
                         }
       parameters:
         - name: body
-          description: >-
-            BroadcastTxRequest is the request type for the
-            Service.BroadcastTxRequest
-
-            RPC method.
           in: body
           required: true
           schema:
@@ -51465,8 +51457,9 @@ definitions:
         properties:
           chainID:
             type: string
-          connection_type:
-            type: string
+          api_id:
+            type: integer
+            format: int64
           api_url:
             type: string
           session_id:
@@ -51853,8 +51846,9 @@ definitions:
             properties:
               chainID:
                 type: string
-              connection_type:
-                type: string
+              api_id:
+                type: integer
+                format: int64
               api_url:
                 type: string
               session_id:
@@ -51941,8 +51935,9 @@ definitions:
             properties:
               chainID:
                 type: string
-              connection_type:
-                type: string
+              api_id:
+                type: integer
+                format: int64
               api_url:
                 type: string
               session_id:
@@ -52078,8 +52073,9 @@ definitions:
     properties:
       chainID:
         type: string
-      connection_type:
-        type: string
+      api_id:
+        type: integer
+        format: int64
       api_url:
         type: string
         title: >-
@@ -52142,6 +52138,8 @@ definitions:
             type: string
           sync:
             type: string
+      connection_type:
+        type: string
       unresponsive_providers:
         type: string
         format: byte

@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -45,32 +46,40 @@ func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
 }
 
 func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
-	msg := new(JsonrpcMessage)
-	msg.Version = rpcMsg.Version
-	msg.ID = rpcMsg.ID
-	msg.Method = rpcMsg.Method
-	msg.Params = rpcMsg.Params
-	msg.Error = rpcMsg.Error
-	msg.Result = rpcMsg.Result
+	msg := &JsonrpcMessage{
+		Version: rpcMsg.Version,
+		ID:      rpcMsg.ID,
+		Method:  rpcMsg.Method,
+		Params:  rpcMsg.Params,
+		Error:   rpcMsg.Error,
+		Result:  rpcMsg.Result,
+	}
 	return msg
 }
 
 type JrpcChainProxy struct {
+	conn    *Connector
+	nConns  uint
+	nodeUrl string
+	sentry  *sentry.Sentry
+	csm     *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
-	conn       *Connector
-	nConns     uint
-	nodeUrl    string
-	sentry     *sentry.Sentry
+
 }
 
-func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) ChainProxy {
+func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 
 	return &JrpcChainProxy{
-		nodeUrl:    nodeUrl,
-		nConns:     nConns,
-		sentry:     sentry,
+		nodeUrl: nodeUrl,
+		nConns:  nConns,
+		sentry:  sentry,
+		csm:     csm,
 		portalLogs: pLogs,
 	}
+}
+
+func (cp *JrpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
+	return cp.csm
 }
 
 func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -167,7 +176,7 @@ func (cp *JrpcChainProxy) getSupportedApi(name string) (*spectypes.ServiceApi, e
 		return &api, nil
 	}
 
-	return nil, errors.New("api not supported")
+	return nil, errors.New("JRPC api not supported")
 }
 
 func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
@@ -349,12 +358,10 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
 	} else {
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
 	}
 
 	var replyMsg JsonrpcMessage
@@ -369,6 +376,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
+		replyMessage = convertMsg(rpcMessage)
 		nm.msg = replyMessage
 		replyMsg = *replyMessage
 	}

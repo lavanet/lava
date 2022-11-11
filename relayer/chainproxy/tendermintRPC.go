@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -68,6 +69,10 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 	return blocknum, nil
 }
 
+func (cp *tendermintRpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
+	return cp.csm
+}
+
 func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
 	if !ok {
@@ -102,19 +107,20 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	// we know to expect a string result for a hash.
 	hash, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
 	if !ok {
-		return "", errors.New("hash not string parseable")
+		return "", errors.New("hash not string parsable")
 	}
 
 	return hash, nil
 }
 
-func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) ChainProxy {
+func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
-			nodeUrl:    nodeUrl,
-			nConns:     nConns,
-			sentry:     sentry,
+			nodeUrl: nodeUrl,
+			nConns: nConns,
+			sentry: sentry,
 			portalLogs: pLogs,
+			csm: csm,
 		},
 	}
 }

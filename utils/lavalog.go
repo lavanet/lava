@@ -76,7 +76,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 		for key, val := range *extraAttributes {
 			logEvent = logEvent.Str(key, val)
 		}
-		output = fmt.Sprintf("%s -- %v", output, extraAttributes)
+		output = fmt.Sprintf("%s -- %+v", output, *extraAttributes)
 	}
 	logEvent.Msg(description)
 	// golog.Println(output)

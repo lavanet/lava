@@ -30,22 +30,26 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 	if err != nil {
 		return nil, err
 	}
+	currentEpochStart := k.epochStorageKeeper.GetEpochStart(ctx)
 
-	currentEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if requestedEpochStart > currentEpochStart {
+		return nil, utils.LavaError(ctx, logger, "verify_pairing_block_sync", map[string]string{"requested block": strconv.FormatUint(block, 10), "requested epoch": strconv.FormatUint(requestedEpochStart, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "VerifyPairing requested epoch is too new")
+	}
+
+	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}
 
-	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
 	if requestedEpochStart+blocksToSave < currentEpochStart {
-		return nil, err
+		return nil, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
 	}
 	verifiedUser := false
 
 	//we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
 	userStakedEntries, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, block, epochstoragetypes.ClientKey, chainID)
 	if !found {
-		return nil, utils.LavaError(ctx, logger, "client_entries_pairing", map[string]string{"chainID": chainID, "block": strconv.FormatUint(block, 10)}, "no user entries for spec")
+		return nil, utils.LavaError(ctx, logger, "client_entries_pairing", map[string]string{"chainID": chainID, "query Epoch": strconv.FormatUint(requestedEpochStart, 10), "query block": strconv.FormatUint(block, 10), "current epoch": strconv.FormatUint(currentEpochStart, 10)}, "no EpochStakeEntries entries at all for this spec")
 	}
 	for _, clientStakeEntry := range userStakedEntries {
 		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)

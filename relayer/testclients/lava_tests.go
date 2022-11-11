@@ -25,7 +25,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			"/lavanet/lava/pairing/providers/LAV1",
 			"/lavanet/lava/pairing/clients/LAV1",
 			fmt.Sprintf("/lavanet/lava/pairing/get_pairing/LAV1/%s", clientAdress),
-			fmt.Sprintf("/lavanet/lava/pairing/verify_pairing/LAV1/%s/%s/%d", clientAdress, clientAdress, 78),
+			// fmt.Sprintf("/lavanet/lava/pairing/verify_pairing/LAV1/%s/%s/%d", clientAdress, clientAdress, 78), // verify pairing needs more work. as block is changed every iterations
 			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
 			"/cosmos/gov/v1beta1/proposals",
 			"/lavanet/lava/spec/spec",
