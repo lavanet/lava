@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,21 +32,21 @@ type RestMessage struct {
 }
 
 type RestChainProxy struct {
-	nodeUrl     string
-	sentry      *sentry.Sentry
-	newRelicApp *newrelic.Application
+	nodeUrl    string
+	sentry     *sentry.Sentry
+	portalLogs *PortalLogs
 }
 
 func (r *RestMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, newRelicApp *newrelic.Application) ChainProxy {
+func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, pLogs *PortalLogs) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
-		nodeUrl:     nodeUrl,
-		sentry:      sentry,
-		newRelicApp: newRelicApp,
+		nodeUrl:    nodeUrl,
+		sentry:     sentry,
+		portalLogs: pLogs,
 	}
 }
 
@@ -186,10 +185,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		if cp.newRelicApp != nil {
-			txn := cp.newRelicApp.StartTransaction("rest-http")
-			defer txn.End()
-		}
+		cp.portalLogs.LogStartTransaction("rest-http")
 
 		path := "/" + c.Params("*")
 
@@ -200,33 +196,30 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
-			msgSeed := GetUniqueGuidResponseForError(err)
-			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
+			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
+			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 
 	//
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
-		if cp.newRelicApp != nil {
-			txn := cp.newRelicApp.StartTransaction("rest-http")
-			defer txn.End()
-		}
+		cp.portalLogs.LogStartTransaction("rest-http")
 
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
-			msgSeed := GetUniqueGuidResponseForError(err)
-			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
+			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
+			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 	//

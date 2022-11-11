@@ -2,9 +2,6 @@ package relayer
 
 import (
 	context "context"
-	"github.com/joho/godotenv"
-	"github.com/newrelic/go-agent/v3/newrelic"
-	zerologlog "github.com/rs/zerolog/log"
 	"log"
 	"math/rand"
 	"time"
@@ -43,29 +40,10 @@ func PortalServer(
 	}
 	g_sentry = sentry
 	g_serverChainID = chainID
-
-	var myEnv map[string]string
-	myEnv, err = godotenv.Read()
-
-	NEW_RELIC_APP_NAME := myEnv["NEW_RELIC_APP_NAME"]
-	NEW_RELIC_LICENSE_KEY := myEnv["NEW_RELIC_LICENSE_KEY"]
-
-	newrelicApp, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
-		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
-		newrelic.ConfigAppLogEnabled(true),
-		newrelic.ConfigAppLogForwardingEnabled(true),
-		func(config *newrelic.Config) {
-			zerologlog.Debug().Enabled()
-		},
-	)
-	if myEnv == nil {
-		newrelicApp = nil
-	}
-
-	//
+	portalLogs := new(chainproxy.PortalLogs)
+	portalLogs.CreateNewRelicApp()
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, newrelicApp)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, portalLogs)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
