@@ -5,20 +5,12 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/spec"
 	"github.com/stretchr/testify/require"
 )
-
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
-}
 
 func TestServicersToPair(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
@@ -65,7 +57,7 @@ func TestServicersToPair(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ServicersToPair != 0 {
-				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyServicersToPairCount), "\""+strconv.FormatUint(tt.ServicersToPair, 10)+"\"")
+				err := keepertest.SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyServicersToPairCount), "\""+strconv.FormatUint(tt.ServicersToPair, 10)+"\"")
 				require.NoError(t, err)
 			}
 

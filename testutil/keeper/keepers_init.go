@@ -11,12 +11,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -41,6 +43,12 @@ type Servers struct {
 	SpecServer     spectypes.MsgServer
 	PairingServer  pairingtypes.MsgServer
 	ConflictServer conflicttypes.MsgServer
+}
+
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
+	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
