@@ -185,9 +185,9 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 		am.keeper.SetEpochDetailsStart(ctx, block)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, types.ProviderKey)
+		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ProviderKey)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, types.ClientKey)
+		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ClientKey)
 		// Notify world we have a new session
 		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
 		logger := am.keeper.Logger(ctx)

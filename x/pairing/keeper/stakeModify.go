@@ -14,7 +14,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 	}
 	logger := k.Logger(ctx)
 	//find the user in the stake list
-	clientEntry, found, indexFound := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ClientKey, chainID, clientAddressToBurn)
+	clientEntry, found, indexFound := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ClientKey, chainID, clientAddressToBurn)
 	if found {
 		if clientEntry.Stake.IsLT(burnAmount) {
 			if failBurnOnLeftover {
@@ -25,7 +25,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		//reduce the requested burn from the entry
 		clientEntry.Stake = clientEntry.Stake.Sub(burnAmount)
 		//now we need to save the entry
-		k.epochStorageKeeper.ModifyStakeEntry(ctx, epochstoragetypes.ClientKey, chainID, clientEntry, indexFound)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ClientKey, chainID, clientEntry, indexFound)
 
 		if clientEntry.Stake.IsLT(k.MinStakeClient(ctx)) {
 			//if user doesn't have enough stake to stay staked, we will unstake him now
@@ -76,13 +76,13 @@ func (k Keeper) CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress 
 	case false:
 		storageType = epochstoragetypes.ClientKey
 	}
-	entry, found, indexFound := k.epochStorageKeeper.StakeEntryByAddress(ctx, storageType, chainID, lookUpAddress)
+	entry, found, indexFound := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, storageType, chainID, lookUpAddress)
 	if found {
 		//add the requested credit to the entry
 		entry.Stake = entry.Stake.Add(creditAmount)
 		//now we need to save the entry
 		k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(creditAmount))
-		k.epochStorageKeeper.ModifyStakeEntry(ctx, storageType, chainID, entry, indexFound)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, storageType, chainID, entry, indexFound)
 		return true, nil
 	}
 

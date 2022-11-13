@@ -209,7 +209,7 @@ func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage 
 	return
 }
 
-func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
 		return types.StakeEntry{}, false, 0
@@ -226,7 +226,7 @@ func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID
 	return
 }
 
-func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64) {
+func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, idx uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
 		return
@@ -235,7 +235,7 @@ func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID st
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
 }
 
-func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
+func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
 	//this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	var entries = []types.StakeEntry{}
@@ -264,7 +264,7 @@ func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID st
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
 }
 
-func (k Keeper) ModifyStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
+func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
 	//this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
@@ -423,7 +423,7 @@ func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uin
 // ------------------------------------------------
 
 // takes the current stake storage and puts it in epoch storage
-func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageType string) {
+func (k Keeper) StoreCurrentEpochStakeStorage(ctx sdk.Context, block uint64, storageType string) {
 	allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	for _, chainID := range allChainIDs {
 		tmpStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
@@ -486,4 +486,37 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType 
 		return nil, false
 	}
 	return stakeStorage.StakeEntries, true
+}
+
+func (k Keeper) GetEpochStakeStorage(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
+	key := k.StakeStorageKey(storageType, block, chainID)
+	stakeStorage, found = k.GetStakeStorage(ctx, key)
+	return stakeStorage, found
+}
+
+func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string, stakeEntry types.StakeEntry) error {
+	logger := k.Logger(ctx)
+	storage, found := k.GetEpochStakeStorage(ctx, block, storageType, chainID)
+	if !found {
+		entries := []types.StakeEntry{}
+		//create a new one
+		storage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(storageType, chainID), StakeEntries: entries}
+	}
+	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
+	if err != nil {
+		return err
+	}
+
+	for _, clientStakeEntry := range storage.StakeEntries {
+		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
+		if err != nil {
+			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
+		}
+		if clientAddr.Equals(entryAddr) {
+			return utils.LavaError(ctx, logger, "stake_already_exists", map[string]string{"chainID": chainID, "block": strconv.FormatUint(block, 10)}, "stake already exists in this storage for this address")
+		}
+	}
+	storage.StakeEntries = append(storage.StakeEntries, stakeEntry)
+	k.SetStakeStorage(ctx, storage)
+	return nil
 }

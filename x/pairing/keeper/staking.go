@@ -78,7 +78,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	// new staking takes effect from the next block
 	blockDeadline := uint64(ctx.BlockHeight()) + 1
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, stake_type(), chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
 	if entryExists {
 		//modify the entry
 		if existingEntry.Address != creator {
@@ -96,7 +96,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			}
 			//
 			//TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
-			// then we need to change the Copy of StoreEpochStakeStorage to copy of the pointers only
+			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
 
 			//paid the difference to module
@@ -104,9 +104,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			//we dont change vrfpk, deadlines and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
-			k.epochStorageKeeper.ModifyStakeEntry(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
+			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
+			if !provider {
+				epoch := k.epochStorageKeeper.GetEpochStart(ctx)
+				existingEntry.Deadline = epoch
+				err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, existingEntry)
+			}
 			utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_update", details, "Changing Staked "+stake_type())
-			return nil
+			return err
 		}
 		details["existingStake"] = existingEntry.Stake.String()
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_stake", details, "can't decrease stake for existing "+stake_type())
@@ -121,9 +126,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk}
-	k.epochStorageKeeper.AppendStakeEntry(ctx, stake_type(), chainID, stakeEntry)
+	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
+	if !provider {
+		epoch := k.epochStorageKeeper.GetEpochStart(ctx)
+		stakeEntry.Deadline = epoch
+		err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, stakeEntry)
+	}
 	utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_new", details, "Adding Staked "+stake_type())
-	return nil
+	return err
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {
