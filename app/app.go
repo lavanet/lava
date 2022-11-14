@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -110,6 +111,16 @@ import (
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
+var Upgrade010 = upgrades.Upgrade{
+	UpgradeName: "v0.1.0", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
 const (
 	AccountAddressPrefix = "lava@"
 	Name                 = "lava"
@@ -117,7 +128,7 @@ const (
 
 var (
 	// add here future upgrades (upgrades.Upgrade)
-	Upgrades = []upgrades.Upgrade{}
+	Upgrades = []upgrades.Upgrade{Upgrade010}
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
