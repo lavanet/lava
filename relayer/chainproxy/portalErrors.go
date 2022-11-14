@@ -28,16 +28,18 @@ func GetUniqueGuidResponseForError(responseError error) string {
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
 func AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
-	if err.Error() == webSocketCloseMessage {
-		utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
-		return
+	if err != nil {
+		if err.Error() == webSocketCloseMessage {
+			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
+			return
+		}
+		c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 	}
-	c.WriteMessage(mt, []byte("Error Received: "+GetUniqueGuidResponseForError(err)))
 }
 
 // Logging the Request and Response to the stdout.
 func LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
-	if hasError {
+	if hasError && err != nil {
 		utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
 		return
 	}
