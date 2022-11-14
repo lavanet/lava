@@ -2,14 +2,13 @@ package chainproxy
 
 import (
 	"fmt"
+	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
+	"github.com/lavanet/lava/utils"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"math/rand"
 	"os"
 	"strconv"
-
-	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/utils"
 )
 
 var ReturnMaskedErrors = "false"
@@ -39,24 +38,6 @@ func NewPortalLogs() (*PortalLogs, error) {
 	return &PortalLogs{newRelicApplication}, nil
 }
 
-func (cp *PortalLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
-	if hasError {
-		utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
-		return
-	}
-	utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
-}
-
-// Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
-// We dont want to alert error monitoring for that purpses.
-func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
-	if err.Error() == webSocketCloseMessage {
-		utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
-		return
-	}
-	c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err)))
-}
-
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string {
 	guID := fmt.Sprintf("GUID%d", rand.Int63())
@@ -68,6 +49,28 @@ func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string 
 	}
 	return ret
 }
+
+// Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
+// We dont want to alert error monitoring for that purpses.
+func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
+
+	if err != nil {
+		if err.Error() == webSocketCloseMessage {
+			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
+			return
+		}
+		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err)))
+	}
+}
+
+func (cp *PortalLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
+	if hasError && err != nil {
+		utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
+		return
+	}
+	utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+}
+
 func (cp *PortalLogs) LogStartTransaction(name string) {
 	if cp.newRelicApplication != nil {
 		txn := cp.newRelicApplication.StartTransaction(name)
