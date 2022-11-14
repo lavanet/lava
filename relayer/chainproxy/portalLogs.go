@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"math/rand"
+	"os"
 	"strconv"
 
 	"github.com/gofiber/websocket/v2"
@@ -19,19 +20,23 @@ type PortalLogs struct {
 	newRelicApplication *newrelic.Application
 }
 
-func (cp *PortalLogs) CreateNewRelicApp() (err error) {
-	myEnv, err := godotenv.Read()
+func NewPortalLogs() (*PortalLogs, error) {
+	err := godotenv.Load()
 	if err != nil {
-		return
+		return &PortalLogs{}, err
 	}
-	NEW_RELIC_APP_NAME := myEnv["NEW_RELIC_APP_NAME"]
-	NEW_RELIC_LICENSE_KEY := myEnv["NEW_RELIC_LICENSE_KEY"]
 
-	cp.newRelicApplication, err = newrelic.NewApplication(
+	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
+	NEW_RELIC_LICENSE_KEY := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	if NEW_RELIC_APP_NAME == "" || NEW_RELIC_LICENSE_KEY == "" {
+		return &PortalLogs{}, err
+	}
+	newRelicApplication, err := newrelic.NewApplication(
 		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
 		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
+		newrelic.ConfigFromEnvironment(),
 	)
-	return
+	return &PortalLogs{newRelicApplication}, nil
 }
 
 func (cp *PortalLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {

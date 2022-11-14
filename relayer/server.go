@@ -1047,9 +1047,6 @@ func Server(
 
 	//
 
-	portalLogs := new(chainproxy.PortalLogs)
-	portalLogs.CreateNewRelicApp()
-
 	// Start newSentry
 	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
@@ -1089,7 +1086,9 @@ func Server(
 	utils.LavaFormatInfo("Server loaded keys", &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, portalLogs)
+	pLogs, err := chainproxy.NewPortalLogs()
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
+
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}

@@ -40,10 +40,10 @@ func PortalServer(
 	}
 	g_sentry = sentry
 	g_serverChainID = chainID
-	portalLogs := new(chainproxy.PortalLogs)
-	portalLogs.CreateNewRelicApp()
+
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, portalLogs)
+	pLogs, err := chainproxy.NewPortalLogs()
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, pLogs)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
