@@ -1455,12 +1455,12 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 	if valid {
 		// payment is valid, provider's balance should increase
 		mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
-		want := mint.MulInt64(int64(ts.spec.Apis[0].ComputeUnits * 10)) // The compensation for the query is arbitrary
+		want := mint.MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum)) // The compensation for a single query
 		require.Equal(t, balance+want.TruncateInt64(),
 			ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
 
 		// payment is valid, consumer's balance should decrease
-		burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.Apis[0].ComputeUnits * 10))
+		burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum))
 		newStakeClient, _, _ := ts.keepers.Epochstorage.StakeEntryByAddress(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
 		require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
 

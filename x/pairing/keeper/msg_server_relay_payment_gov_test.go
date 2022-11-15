@@ -439,3 +439,89 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	}
 
 }
+
+// Test that if the StakeToMaxCUList param decreases make sure the client can send queries according to the original StakeToMaxCUList in the current epoch (This parameter is fixated)
+func TestRelayPaymentGovStakeToMaxCUListChange(t *testing.T) {
+
+	// setup testnet with mock spec
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000 (because of bug?)). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+
+	// advance an epoch so the client and provider will be paired (new pairing is determined every epoch)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochBeforeChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	// Find the stakeToMaxEntry that is compatible to our client
+	stakeToMaxCUList, _ := ts.keepers.Pairing.StakeToMaxCUList(sdk.UnwrapSDKContext(ts.ctx), 0)
+	stakeToMaxCUEntryIndex := -1
+	for index, stakeToMaxCUEntry := range stakeToMaxCUList.GetList() {
+		if stakeToMaxCUEntry.MaxComputeUnits == uint64(500000) {
+			stakeToMaxCUEntryIndex = index
+			break
+		}
+	}
+	require.NotEqual(t, stakeToMaxCUEntryIndex, -1)
+
+	// Create new stakeToMaxCUEntry with the same stake threshold but higher MaxComuteUnits and put it in stakeToMaxCUList. For maxCU of 600000, the client will be able to use 300000CU (because maxCU is divided by servicersToPairCount)
+	newStakeToMaxCUEntry := pairingtypes.StakeToMaxCU{StakeThreshold: stakeToMaxCUList.List[stakeToMaxCUEntryIndex].StakeThreshold, MaxComputeUnits: uint64(600000)}
+	stakeToMaxCUList.List[stakeToMaxCUEntryIndex] = newStakeToMaxCUEntry
+
+	// change the stakeToMaxCUList parameter
+	stakeToMaxCUListBytes, _ := stakeToMaxCUList.MarshalJSON()
+	stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
+	require.Nil(t, err)
+
+	// Advance an epoch (only then the parameter change will be applied) and get current epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochAfterChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	// define tests - different epochs, valid tells if the payment request should work
+	tests := []struct {
+		name  string
+		epoch uint64
+		valid bool
+	}{
+		{"PaymentBeforeStakeToMaxCUListChange", epochBeforeChange, false}, // maxCU for this epoch is 250000, so it should fail
+		{"PaymentAfterStakeToMaxCUListChange", epochAfterChange, true},    // maxCU for this epoch is 300000, so it should succeed
+	}
+
+	sessionCounter := 0
+	for _, tt := range tests {
+		sessionCounter += 1
+		t.Run(tt.name, func(t *testing.T) {
+			relayRequest := &pairingtypes.RelayRequest{
+				Provider:        ts.providers[0].address.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(sessionCounter),
+				ChainID:         ts.spec.Name,
+				CuSum:           uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
+				BlockHeight:     int64(tt.epoch),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: nil,
+			}
+
+			// Sign and send the payment requests for block 20 (=epochBeforeChange)
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			relayRequest.Sig = sig
+			require.Nil(t, err)
+
+			// Add the relay request to the Relays array (for relayPaymentMessage())
+			var Relays []*pairingtypes.RelayRequest
+			Relays = append(Relays, relayRequest)
+
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+		})
+	}
+
+}
