@@ -58,22 +58,21 @@ func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
 }
 
 type JrpcChainProxy struct {
-	conn    *Connector
-	nConns  uint
-	nodeUrl string
-	sentry  *sentry.Sentry
-	csm     *lavasession.ConsumerSessionManager
+	conn       *Connector
+	nConns     uint
+	nodeUrl    string
+	sentry     *sentry.Sentry
+	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
-
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 
 	return &JrpcChainProxy{
-		nodeUrl: nodeUrl,
-		nConns:  nConns,
-		sentry:  sentry,
-		csm:     csm,
+		nodeUrl:    nodeUrl,
+		nConns:     nConns,
+		sentry:     sentry,
+		csm:        csm,
 		portalLogs: pLogs,
 	}
 }
@@ -316,7 +315,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
-		cp.portalLogs.LogStartTransaction("jsonRpc-WebSocket")
+		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
