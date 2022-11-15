@@ -516,7 +516,23 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 			return utils.LavaError(ctx, logger, "stake_already_exists", map[string]string{"chainID": chainID, "block": strconv.FormatUint(block, 10)}, "stake already exists in this storage for this address")
 		}
 	}
-	storage.StakeEntries = append(storage.StakeEntries, stakeEntry)
+
+	//put it in the right place
+	entries := storage.StakeEntries
+	sortFunc := func(i int) bool {
+		return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+	}
+	//returns the smallest index in which the sort func is true
+	index := sort.Search(len(entries), sortFunc)
+	if index < len(entries) {
+		entries = append(entries[:index+1], entries[index:]...)
+		entries[index] = stakeEntry
+	} else {
+		//put in the end
+		entries = append(entries, stakeEntry)
+	}
+
+	storage.StakeEntries = entries
 	k.SetStakeStorage(ctx, storage)
 	return nil
 }
