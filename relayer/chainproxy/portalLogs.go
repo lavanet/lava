@@ -22,7 +22,9 @@ type PortalLogs struct {
 func NewPortalLogs() (*PortalLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return &PortalLogs{}, err
+		utils.LavaFormatInfo("New relic missing environment file", nil)
+
+		return &PortalLogs{}, nil
 	}
 
 	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
