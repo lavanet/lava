@@ -525,3 +525,99 @@ func TestRelayPaymentGovStakeToMaxCUListChange(t *testing.T) {
 	}
 
 }
+
+func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
+	// setup testnet with mock spec
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// stake a client and a provider
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+
+	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// struct that holds the new values for EpochBlocks and the block the chain will advance to
+	epochTests := []struct {
+		epochBlocksNewValues uint64 // EpochBlocks new value
+		epochNum             uint64 // The number of epochs the chain will advance (after EpochBlocks changed)
+		blockNum             uint64 // The number of blocks the chain will advance (after EpochBlocks changed)
+	}{
+		{4, 3, 5},    // Test #0 - latest epoch start: 52
+		{9, 0, 7},    // Test #1 - latest epoch start: 56
+		{24, 37, 42}, // Test #2 - latest epoch start: 953
+		{41, 45, 30}, // Test #3 - latest epoch start: 2781
+		{36, 15, 12}, // Test #4 - latest epoch start: 3326
+		{25, 40, 7},  // Test #5 - latest epoch start: 4337
+		{5, 45, 22},  // Test #6 - latest epoch start: 4602
+		{45, 37, 18}, // Test #7 - latest epoch start: 6227
+	}
+
+	// define tests - for each test, the paymentEpoch will be +-1 of the latest epoch start of the test
+	tests := []struct {
+		name         string // Test name
+		paymentEpoch uint64 // The epoch inside the relay request (the payment is requested according to this epoch)
+		valid        bool   // Is the test supposed to succeed?
+	}{
+		{"Test #1", 51, true},
+		{"Test #2", 57, true},
+		{"Test #3", 952, true},
+		{"Test #4", 2782, true},
+		{"Test #5", 3325, true},
+		{"Test #6", 4338, true},
+		{"Test #7", 4601, true},
+		{"Test #8", 6228, true},
+	}
+
+	sessionCounter := 0
+	for ti, tt := range tests {
+		sessionCounter += 1
+		t.Run(tt.name, func(t *testing.T) {
+
+			// change the EpochBlocks parameter according to the epoch test values
+			epochBlocksNew := uint64(epochTests[ti].epochBlocksNewValues)
+			err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksNew, 10)+"\"")
+			require.Nil(t, err)
+
+			// Advance epochs according to the epoch test values
+			for i := 0; i < int(epochTests[ti].epochNum); i++ {
+				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			}
+
+			// Advance blocks according to the epoch test values
+			for i := 0; i < int(epochTests[ti].blockNum); i++ {
+				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+			}
+
+			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
+			relayRequest := &pairingtypes.RelayRequest{
+				Provider:        ts.providers[0].address.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(sessionCounter),
+				ChainID:         ts.spec.Name,
+				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+				BlockHeight:     int64(tt.paymentEpoch),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: nil,
+			}
+
+			// Sign and send the payment requests
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			relayRequest.Sig = sig
+			require.Nil(t, err)
+
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
+			var Relays []*pairingtypes.RelayRequest
+			Relays = append(Relays, relayRequest)
+			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+		})
+	}
+
+}
