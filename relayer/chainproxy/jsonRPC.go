@@ -46,6 +46,11 @@ func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
 }
 
 func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
+	// Return nil if the message was not sent
+	if rpcMsg == nil {
+		return nil
+	}
+
 	msg := &JsonrpcMessage{
 		Version: rpcMsg.Version,
 		ID:      rpcMsg.ID,
@@ -54,6 +59,7 @@ func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
 		Error:   rpcMsg.Error,
 		Result:  rpcMsg.Result,
 	}
+
 	return msg
 }
 
