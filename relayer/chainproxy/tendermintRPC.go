@@ -338,12 +338,22 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
+
+		// Only convert the message if there is no error
+		// and message exists
+		if err == nil && rpcMessage != nil {
+			replyMessage = convertMsg(rpcMessage)
+		}
 	} else {
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
+
+		// Only convert the message if there is no error
+		// and message exists
+		if err == nil && rpcMessage != nil {
+			replyMessage = convertMsg(rpcMessage)
+		}
 	}
 
 	var replyMsg JsonrpcMessage
