@@ -430,7 +430,7 @@ func (s *Sentry) GetSpecHash() []byte {
 
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		Index: s.ChainID,
+		ChainID: s.ChainID,
 	})
 
 	if err != nil {
@@ -482,7 +482,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		Index: s.ChainID,
+		ChainID: s.ChainID,
 	})
 	if err != nil {
 		return utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})

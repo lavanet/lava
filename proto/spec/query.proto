@@ -18,7 +18,7 @@ service Query {
   }
   // Queries a Spec by id.
 	rpc Spec(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/spec/{index}";
+		option (google.api.http).get = "/lavanet/lava/spec/spec/{ChainID}";
 	}
 
 	// Queries a list of Spec items.
@@ -49,7 +49,7 @@ message QueryParamsResponse {
 }
 
 message QueryGetSpecRequest {
-	string index = 1;
+	string ChainID = 1;
 }
 
 message QueryGetSpecResponse {

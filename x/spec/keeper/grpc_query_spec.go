@@ -47,7 +47,7 @@ func (k Keeper) Spec(c context.Context, req *types.QueryGetSpecRequest) (*types.
 
 	val, found := k.GetSpec(
 		ctx,
-		req.Index,
+		req.ChainID,
 	)
 	if !found {
 		return nil, status.Error(codes.InvalidArgument, "not found")

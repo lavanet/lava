@@ -31409,7 +31409,7 @@ paths:
           type: boolean
       tags:
         - Query
-  '/lavanet/lava/spec/spec/{index}':
+  '/lavanet/lava/spec/spec/{ChainID}':
     get:
       summary: Queries a Spec by id.
       operationId: LavanetLavaSpecSpec
@@ -31558,7 +31558,7 @@ paths:
                       type: string
                   additionalProperties: {}
       parameters:
-        - name: index
+        - name: ChainID
           in: path
           required: true
           type: string
