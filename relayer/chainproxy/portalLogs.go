@@ -28,7 +28,7 @@ func NewPortalLogs() (*PortalLogs, error) {
 	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
 	NEW_RELIC_LICENSE_KEY := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if NEW_RELIC_APP_NAME == "" || NEW_RELIC_LICENSE_KEY == "" {
-		return &PortalLogs{}, err
+		return &PortalLogs{}, utils.LavaFormatInfo("New relic missing environment variables", nil)
 	}
 	newRelicApplication, err := newrelic.NewApplication(
 		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),

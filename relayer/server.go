@@ -1086,7 +1086,11 @@ func Server(
 	utils.LavaFormatInfo("Server loaded keys", &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
+	//get portal logs
 	pLogs, err := chainproxy.NewPortalLogs()
+	if err != nil {
+		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
+	}
 	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
 
 	if err != nil {
