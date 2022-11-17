@@ -494,8 +494,8 @@ func (k Keeper) GetEpochStakeStorage(ctx sdk.Context, block uint64, storageType 
 	return stakeStorage, found
 }
 
+//append to epoch stake entries ONLY if it doesn't exist
 func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string, stakeEntry types.StakeEntry) error {
-	logger := k.Logger(ctx)
 	storage, found := k.GetEpochStakeStorage(ctx, block, storageType, chainID)
 	if !found {
 		entries := []types.StakeEntry{}
@@ -513,7 +513,7 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
 		}
 		if clientAddr.Equals(entryAddr) {
-			return utils.LavaError(ctx, logger, "stake_already_exists", map[string]string{"chainID": chainID, "block": strconv.FormatUint(block, 10)}, "stake already exists in this storage for this address")
+			return nil //stake already exists in this epoch
 		}
 	}
 
