@@ -1030,6 +1030,7 @@ func Server(
 	ChainID string,
 	apiInterface string,
 ) {
+
 	//
 	// ctrl+c
 	ctx, cancel := context.WithCancel(ctx)
@@ -1045,6 +1046,7 @@ func Server(
 	g_serverID = uint64(rand.Int63())
 
 	//
+
 	// Start newSentry
 	newSentry := sentry.NewSentry(clientCtx, ChainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
@@ -1084,7 +1086,13 @@ func Server(
 	utils.LavaFormatInfo("Server loaded keys", &map[string]string{"PublicKey": serverKey.GetPubKey().Address().String()})
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry)
+	//get portal logs
+	pLogs, err := chainproxy.NewPortalLogs()
+	if err != nil {
+		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
+	}
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
+
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}

@@ -16294,6 +16294,9 @@ paths:
                         }
       parameters:
         - name: body
+          description: |-
+            SimulateRequest is the request type for the Service.Simulate
+            RPC method.
           in: body
           required: true
           schema:
@@ -17093,6 +17096,11 @@ paths:
                         }
       parameters:
         - name: body
+          description: >-
+            BroadcastTxRequest is the request type for the
+            Service.BroadcastTxRequest
+
+            RPC method.
           in: body
           required: true
           schema:
@@ -28793,11 +28801,13 @@ paths:
                         response:
                           type: string
                           format: byte
-                    votersHash:
-                      type: object
-                      additionalProperties:
+                    votes:
+                      type: array
+                      items:
                         type: object
                         properties:
+                          address:
+                            type: string
                           Hash:
                             type: string
                             format: byte
@@ -28960,11 +28970,13 @@ paths:
                       response:
                         type: string
                         format: byte
-                  votersHash:
-                    type: object
-                    additionalProperties:
+                  votes:
+                    type: array
+                    items:
                       type: object
                       properties:
+                        address:
+                          type: string
                         Hash:
                           type: string
                           format: byte
@@ -29779,16 +29791,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/epoch_payments/{index}':
@@ -30136,16 +30138,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/provider_payment_storage/{index}':
@@ -30401,16 +30393,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31110,16 +31092,6 @@ paths:
             when key
 
             is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -51497,17 +51469,20 @@ definitions:
         properties:
           chainID:
             type: string
-          api_id:
-            type: integer
-            format: int64
+          connection_type:
+            type: string
           api_url:
             type: string
+            title: >-
+              some relays have associated urls that are filled with params
+              ('/block/{height}')
           session_id:
             type: string
             format: uint64
           cu_sum:
             type: string
             format: uint64
+            title: total compute unit used including this relay
           data:
             type: string
             format: byte
@@ -51545,6 +51520,7 @@ definitions:
               queryHash:
                 type: string
                 format: byte
+                title: we only need it for payment later
               sig:
                 type: string
                 format: byte
@@ -51557,6 +51533,9 @@ definitions:
                 type: string
               sync:
                 type: string
+          unresponsive_providers:
+            type: string
+            format: byte
       reply:
         type: object
         properties:
@@ -51566,6 +51545,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51578,6 +51558,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.ConflictVote:
     type: object
     properties:
@@ -51620,11 +51603,13 @@ definitions:
           response:
             type: string
             format: byte
-      votersHash:
-        type: object
-        additionalProperties:
+      votes:
+        type: array
+        items:
           type: object
           properties:
+            address:
+              type: string
             Hash:
               type: string
               format: byte
@@ -51643,6 +51628,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51655,6 +51641,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
       relayReply1:
         type: object
         properties:
@@ -51664,6 +51653,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51676,6 +51666,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.MsgConflictVoteCommitResponse:
     type: object
   lavanet.lava.conflict.MsgConflictVoteRevealResponse:
@@ -51758,11 +51751,13 @@ definitions:
                 response:
                   type: string
                   format: byte
-            votersHash:
-              type: object
-              additionalProperties:
+            votes:
+              type: array
+              items:
                 type: object
                 properties:
+                  address:
+                    type: string
                   Hash:
                     type: string
                     format: byte
@@ -51839,11 +51834,13 @@ definitions:
               response:
                 type: string
                 format: byte
-          votersHash:
-            type: object
-            additionalProperties:
+          votes:
+            type: array
+            items:
               type: object
               properties:
+                address:
+                  type: string
                 Hash:
                   type: string
                   format: byte
@@ -51886,17 +51883,20 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
+                title: >-
+                  some relays have associated urls that are filled with params
+                  ('/block/{height}')
               session_id:
                 type: string
                 format: uint64
               cu_sum:
                 type: string
                 format: uint64
+                title: total compute unit used including this relay
               data:
                 type: string
                 format: byte
@@ -51934,6 +51934,7 @@ definitions:
                   queryHash:
                     type: string
                     format: byte
+                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
@@ -51946,6 +51947,9 @@ definitions:
                     type: string
                   sync:
                     type: string
+              unresponsive_providers:
+                type: string
+                format: byte
           reply:
             type: object
             properties:
@@ -51955,6 +51959,7 @@ definitions:
               sig:
                 type: string
                 format: byte
+                title: sign the data hash+query hash+nonce
               nonce:
                 type: integer
                 format: int64
@@ -51967,6 +51972,9 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+                title: >-
+                  sign
+                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
       conflictRelayData1:
         type: object
         properties:
@@ -51975,17 +51983,20 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
+                title: >-
+                  some relays have associated urls that are filled with params
+                  ('/block/{height}')
               session_id:
                 type: string
                 format: uint64
               cu_sum:
                 type: string
                 format: uint64
+                title: total compute unit used including this relay
               data:
                 type: string
                 format: byte
@@ -52023,6 +52034,7 @@ definitions:
                   queryHash:
                     type: string
                     format: byte
+                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
@@ -52035,6 +52047,9 @@ definitions:
                     type: string
                   sync:
                     type: string
+              unresponsive_providers:
+                type: string
+                format: byte
           reply:
             type: object
             properties:
@@ -52044,6 +52059,7 @@ definitions:
               sig:
                 type: string
                 format: byte
+                title: sign the data hash+query hash+nonce
               nonce:
                 type: integer
                 format: int64
@@ -52056,6 +52072,9 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+                title: >-
+                  sign
+                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.Rewards:
     type: object
     properties:
@@ -52068,6 +52087,8 @@ definitions:
   lavanet.lava.conflict.Vote:
     type: object
     properties:
+      address:
+        type: string
       Hash:
         type: string
         format: byte
@@ -52113,9 +52134,8 @@ definitions:
     properties:
       chainID:
         type: string
-      api_id:
-        type: integer
-        format: int64
+      connection_type:
+        type: string
       api_url:
         type: string
         title: >-
@@ -52178,8 +52198,6 @@ definitions:
             type: string
           sync:
             type: string
-      connection_type:
-        type: string
       unresponsive_providers:
         type: string
         format: byte
