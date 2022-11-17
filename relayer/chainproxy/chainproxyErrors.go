@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	errFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
+	ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 )
