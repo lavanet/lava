@@ -3,6 +3,7 @@ package lavasession
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -135,13 +136,16 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
-				continue
 			} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
 				// provider has too many block listed sessions. we block it until the next epoch.
-				csm.blockProvider(providerAddress, false, sessionEpoch)
+				err = csm.blockProvider(providerAddress, false, sessionEpoch)
+				if err != nil {
+					return nil, 0, "", nil, err
+				}
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
+			continue
 		}
 
 		if pairingEpoch != sessionEpoch {
@@ -243,7 +247,12 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
-		return err
+		if AddressIndexWasNotFoundError.Is(err) {
+			// in case index wasnt found just continue with the method
+			utils.LavaFormatError("address was not found in valid addresses", err, &map[string]string{"address": address, "validAddresses": fmt.Sprintf("%v", csm.validAddresses)})
+		} else {
+			return err
+		}
 	}
 
 	if reportProvider { // Report provider flow
