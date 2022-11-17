@@ -45,7 +45,8 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	NoColor := os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor})
 	}
