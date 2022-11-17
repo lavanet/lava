@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -62,7 +63,6 @@ func TestNewStakeClient(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestAddStakeClient(t *testing.T) {
@@ -117,5 +117,52 @@ func TestAddStakeClient(t *testing.T) {
 			}
 		})
 	}
+
+}
+
+func TestStakeClientPairingImidietly(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	//init keepers state
+	var balance int64 = 10000
+	consumer := common.CreateNewAccount(ctx, *keepers, balance)
+	provider1 := common.CreateNewAccount(ctx, *keepers, balance)
+	provider2 := common.CreateNewAccount(ctx, *keepers, balance)
+
+	spec := common.CreateMockSpec()
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
+
+	stake := balance / 10
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	common.StakeAccount(t, ctx, *keepers, *servers, provider1, spec, stake, true)
+	common.StakeAccount(t, ctx, *keepers, *servers, provider2, spec, stake, true)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, stake, false)
+
+	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+
+	//check pairing in the same epoch
+	clientStakeEntry, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	require.Nil(t, err)
+	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
+
+	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+	require.Nil(t, err)
+
+	//try to change stake
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, 2*stake, false)
+	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	require.Nil(t, err)
+	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
+
+	//new stake takes effect
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	clientStakeEntry, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	require.Nil(t, err)
+	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(2*stake))
 
 }

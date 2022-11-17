@@ -108,7 +108,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			if !provider {
 				epoch := k.epochStorageKeeper.GetEpochStart(ctx)
 				existingEntry.Deadline = epoch
-				err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, existingEntry)
+				_ = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, existingEntry)
 			}
 			utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_update", details, "Changing Staked "+stake_type())
 			return err

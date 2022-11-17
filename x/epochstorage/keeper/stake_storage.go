@@ -500,7 +500,7 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 	if !found {
 		entries := []types.StakeEntry{}
 		//create a new one
-		storage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(storageType, chainID), StakeEntries: entries}
+		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, block, chainID), StakeEntries: entries}
 	}
 	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
 	if err != nil {
