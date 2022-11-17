@@ -31,21 +31,21 @@ func TestSpecQuerySingle(t *testing.T) {
 		{
 			desc: "First",
 			request: &types.QueryGetSpecRequest{
-				Index: msgs[0].Index,
+				ChainID: msgs[0].Index,
 			},
 			response: &types.QueryGetSpecResponse{Spec: msgs[0]},
 		},
 		{
 			desc: "Second",
 			request: &types.QueryGetSpecRequest{
-				Index: msgs[1].Index,
+				ChainID: msgs[1].Index,
 			},
 			response: &types.QueryGetSpecResponse{Spec: msgs[1]},
 		},
 		{
 			desc: "KeyNotFound",
 			request: &types.QueryGetSpecRequest{
-				Index: strconv.Itoa(100000),
+				ChainID: strconv.Itoa(100000),
 			},
 			err: status.Error(codes.InvalidArgument, "not found"),
 		},
