@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -34,18 +35,26 @@ type RestMessage struct {
 type RestChainProxy struct {
 	nodeUrl string
 	sentry  *sentry.Sentry
+	csm     *lavasession.ConsumerSessionManager
+	portalLogs *PortalLogs
 }
 
 func (r *RestMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry) ChainProxy {
+func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
 		nodeUrl: nodeUrl,
 		sentry:  sentry,
+		csm: csm,
+		portalLogs: pLogs,
 	}
+}
+
+func (cp *RestChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
+	return cp.csm
 }
 
 func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, error) {
@@ -183,6 +192,8 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	//
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+		cp.portalLogs.LogStartTransaction("rest-http")
+
 		path := "/" + c.Params("*")
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
@@ -192,28 +203,30 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
-			msgSeed := GetUniqueGuidResponseForError(err)
-			LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
+			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
+			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 
 	//
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+		cp.portalLogs.LogStartTransaction("rest-http")
+
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
-			msgSeed := GetUniqueGuidResponseForError(err)
-			LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
+			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
+			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
-		LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)
 		return c.SendString(responseBody)
 	})
 	//

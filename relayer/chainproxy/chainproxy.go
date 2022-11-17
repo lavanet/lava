@@ -8,8 +8,10 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -32,16 +34,18 @@ type ChainProxy interface {
 	PortalStart(context.Context, *btcec.PrivateKey, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+	GetConsumerSessionManager() *lavasession.ConsumerSessionManager
 }
 
-func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry) (ChainProxy, error) {
+func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
+	consumerSessionManagerInstance := &lavasession.ConsumerSessionManager{}
 	switch sentry.ApiInterface {
 	case "jsonrpc":
-		return NewJrpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewJrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	case "tendermintrpc":
-		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry), nil
+		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	case "rest":
-		return NewRestChainProxy(nodeUrl, sentry), nil
+		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
@@ -79,7 +83,6 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 			return fmt.Errorf("server address mismatch in reply sigblocks (%s) (%s)", serverAddr.String(), strAdd.String())
 		}
 	}
-
 	return nil
 }
 
@@ -101,41 +104,42 @@ func SendRelay(
 	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
 	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
-	callback_send_relay := func(clientSession *sentry.ClientSession, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, error) {
+
+	// Get Session. we get session here so we can use the epoch in the callbacks
+	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := cp.GetConsumerSessionManager().GetSession(ctx, nodeMsg.GetServiceApi().ComputeUnits, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	// consumerSession is locked here.
+
+	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error) {
 		//client session is locked here
-		err := CheckComputeUnits(clientSession, nodeMsg.GetServiceApi().ComputeUnits)
+		blockHeight = int64(epoch) // epochs heights only
 
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		blockHeight = int64(clientSession.Client.GetPairingEpoch()) // epochs heights only
-
+		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              clientSession.Client.Acc,
+			Provider:              providerPublicAddress,
 			ConnectionType:        connectionType,
 			ApiUrl:                url,
 			Data:                  []byte(req),
-			SessionId:             uint64(clientSession.SessionId),
+			SessionId:             uint64(consumerSession.SessionId),
 			ChainID:               cp.GetSentry().ChainID,
-			CuSum:                 clientSession.CuSum,
+			CuSum:                 consumerSession.CuSum + consumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly
 			BlockHeight:           blockHeight,
-			RelayNum:              clientSession.RelayNum,
+			RelayNum:              consumerSession.RelayNum + lavasession.RelayNumberIncrement, // increment the relay number. which will be applied when session is returned properly
 			RequestBlock:          nodeMsg.RequestedBlock(),
-			QoSReport:             clientSession.QoSInfo.LastQoSReport,
+			QoSReport:             consumerSession.QoSInfo.LastQoSReport,
 			DataReliability:       nil,
-			UnresponsiveProviders: unresponsiveProviders,
+			UnresponsiveProviders: reportedProviders,
 		}
-
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, 0, err
 		}
 		relayRequest.Sig = sig
-		c := *clientSession.Endpoint.Client
+		c := *consumerSession.Endpoint.Client
 
 		relaySentTime := time.Now()
-		clientSession.QoSInfo.TotalRelays++
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
@@ -147,37 +151,25 @@ func SendRelay(
 		} else {
 			reply, err = c.Relay(connectCtx, relayRequest)
 		}
-
+		currentLatency := time.Since(relaySentTime)
 		if err != nil {
-			if err.Error() == context.DeadlineExceeded.Error() {
-				clientSession.QoSInfo.ConsecutiveTimeOut++
-			}
-			return nil, nil, nil, err
+			return nil, nil, nil, 0, err
 		}
 
 		if !isSubscription {
-			currentLatency := time.Since(relaySentTime)
-			clientSession.QoSInfo.ConsecutiveTimeOut = 0
-			clientSession.QoSInfo.AnsweredRelays++
-
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
-			requestedBlock = relayRequest.RequestBlock
-
-			err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, 0, err
 			}
-
-			expectedBH, numOfProviders := cp.GetSentry().ExpecedBlockHeight()
-			clientSession.CalculateQoS(nodeMsg.GetServiceApi().ComputeUnits, currentLatency, expectedBH-reply.LatestBlock, numOfProviders, int64(cp.GetSentry().GetProvidersCount()))
-			return reply, nil, relayRequest, nil
-		} else {
-			return reply, &replyServer, relayRequest, nil
+			return reply, nil, relayRequest, currentLatency, nil
 		}
+		// isSubscription
+		return reply, &replyServer, relayRequest, currentLatency, nil
 	}
 
-	callback_send_reliability := func(clientSession *sentry.ClientSession, dataReliability *pairingtypes.VRFData, unresponsiveProviders []byte) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
@@ -185,19 +177,19 @@ func SendRelay(
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
-			Provider:              clientSession.Client.Acc,
+			Provider:              providerAddress,
 			ApiUrl:                url,
 			Data:                  []byte(req),
 			SessionId:             uint64(0), //sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 clientSession.CuSum,
+			CuSum:                 0, // consumerSession.CuSum == 0
 			BlockHeight:           blockHeight,
-			RelayNum:              clientSession.RelayNum,
+			RelayNum:              0, // consumerSession.RelayNum == 0
 			RequestBlock:          requestedBlock,
 			QoSReport:             nil,
 			DataReliability:       dataReliability,
 			ConnectionType:        connectionType,
-			UnresponsiveProviders: unresponsiveProviders,
+			UnresponsiveProviders: reportedProviders,
 		}
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
@@ -211,13 +203,13 @@ func SendRelay(
 			return nil, nil, err
 		}
 		relayRequest.DataReliability.Sig = sig
-		c := *clientSession.Endpoint.Client
+		c := *consumerSession.Endpoint.Client
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		err = VerifyRelayReply(reply, relayRequest, clientSession.Client.Acc, cp.GetSentry().GetSpecComparesHashes())
+		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -225,22 +217,46 @@ func SendRelay(
 		return reply, relayRequest, nil
 	}
 
-	reply, replyServer, err := cp.GetSentry().SendRelay(ctx, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
-
-	return reply, replyServer, err
-}
-
-func CheckComputeUnits(clientSession *sentry.ClientSession, apiCu uint64) error {
-	clientSession.Client.SessionsLock.Lock()
-	defer clientSession.Client.SessionsLock.Unlock()
-
-	if clientSession.Client.UsedComputeUnits+apiCu > clientSession.Client.MaxComputeUnits {
-		return fmt.Errorf("used all the available compute units")
+	reply, replyServer, relayLatency, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	if firstSessionError != nil {
+		// on session failure here
+		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, firstSessionError)
+		if errReport != nil {
+			return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
+		}
+		if lavasession.SendRelayError.Is(firstSessionError) {
+			// Retry
+			originalProviderAddress := providerPublicAddress
+			singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err = cp.GetConsumerSessionManager().GetSessionFromAllExcept(ctx, map[string]struct{}{providerPublicAddress: {}}, nodeMsg.GetServiceApi().ComputeUnits, epoch)
+			if err != nil {
+				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
+			}
+			var secondSessionError error
+			reply, replyServer, relayLatency, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+			if secondSessionError != nil {
+				errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
+				if errReport != nil {
+					return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
+				}
+				// compare error1 with error2
+				if secondSessionError.Error() != firstSessionError.Error() {
+					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
+				} else {
+					// if both errors are the same, just return the first error.
+					return nil, nil, firstSessionError
+				}
+			}
+			// retry attempt succeeded! can continue normally
+		} else {
+			return nil, nil, err
+		}
 	}
-
-	clientSession.CuSum += apiCu
-	clientSession.Client.UsedComputeUnits += apiCu
-	clientSession.RelayNum += 1
-
-	return nil
+	if !isSubscription {
+		latestBlock := reply.LatestBlock
+		expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
+		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
+	} else {
+		err = cp.GetConsumerSessionManager().OnSessionDoneWithoutQoSChanges(singleConsumerSession) // session done successfully
+	}
+	return reply, replyServer, err
 }

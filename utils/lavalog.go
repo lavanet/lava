@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"runtime/debug"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
@@ -84,6 +86,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
+	(*extraAttributes)["StackTrace"] = string(debug.Stack())
 	LavaFormatLog(description, err, extraAttributes, 4)
 	os.Exit(1)
 }
