@@ -342,12 +342,10 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	var sub *rpcclient.ClientSubscription
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
 	} else {
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
-		replyMessage = convertMsg(rpcMessage)
 	}
 
 	var replyMsg JsonrpcMessage
@@ -362,6 +360,11 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
+		replyMessage, err = convertMsg(rpcMessage)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
+		}
+
 		nm.msg = replyMessage
 		replyMsg = *replyMessage
 	}

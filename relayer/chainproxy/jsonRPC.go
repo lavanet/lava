@@ -45,7 +45,12 @@ func (j *JrpcMessage) setMessageResult(result json.RawMessage) {
 	j.msg.Result = result
 }
 
-func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
+func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
+	// Return an error if the message was not sent
+	if rpcMsg == nil {
+		return nil, ErrFailedToConvertMessage
+	}
+
 	msg := &JsonrpcMessage{
 		Version: rpcMsg.Version,
 		ID:      rpcMsg.ID,
@@ -54,7 +59,8 @@ func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) *JsonrpcMessage {
 		Error:   rpcMsg.Error,
 		Result:  rpcMsg.Result,
 	}
-	return msg
+
+	return msg, nil
 }
 
 type JrpcChainProxy struct {
@@ -375,7 +381,11 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
-		replyMessage = convertMsg(rpcMessage)
+		replyMessage, err = convertMsg(rpcMessage)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, nil)
+		}
+
 		nm.msg = replyMessage
 		replyMsg = *replyMessage
 	}
