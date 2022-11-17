@@ -120,7 +120,7 @@ func TestAddStakeClient(t *testing.T) {
 
 }
 
-func TestStakeClientPairingImidietly(t *testing.T) {
+func TestStakeClientPairingimmediately(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	//init keepers state

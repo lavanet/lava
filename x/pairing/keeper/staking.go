@@ -116,6 +116,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 				}
 			}
 			utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_update", details, "Changing Staked "+stake_type())
+			return nil
 		}
 		details["existingStake"] = existingEntry.Stake.String()
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_stake", details, "can't decrease stake for existing "+stake_type())
