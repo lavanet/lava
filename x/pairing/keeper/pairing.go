@@ -146,7 +146,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	if err != nil {
 		return nil, nil, err
 	}
-	validProviders = k.returnSubsetOfProvidersByStake(ctx, validProviders, servicersToPairCount, epochStartBlock, chainID)
+	validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
 
 	for _, stakeEntry := range validProviders {
 		providerAddress := stakeEntry.Address
@@ -160,7 +160,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 }
 
 //this function randomly chooses count providers by weight
-func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
+func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sdk.AccAddress, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string) (returnedProviders []epochstoragetypes.StakeEntry) {
 	var stakeSum sdk.Coin = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 	hashData := make([]byte, 0)
 	for _, stakedProvider := range providersMaps {
@@ -179,7 +179,8 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, providersMaps []
 	}
 	sessionBlockHash := epochStartBlock.Block.Hash()
 	hashData = append(hashData, sessionBlockHash...)
-	hashData = append(hashData, chainID...) // to make this pairing unique per chainID
+	hashData = append(hashData, chainID...)       // to make this pairing unique per chainID
+	hashData = append(hashData, clientAddress...) // to make this pairing unique per consumer
 
 	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
 	for it := 0; it < int(count); it++ {
