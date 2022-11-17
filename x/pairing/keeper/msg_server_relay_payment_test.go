@@ -222,7 +222,7 @@ func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients i
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 	err := ts.addClient(amountOfClients)
 	require.Nil(t, err)
-	err = ts.addProvider(3)
+	err = ts.addProvider(2)
 	require.Nil(t, err)
 	return ts
 }
@@ -337,10 +337,10 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfte
 	for clientIndex := 0; clientIndex < testClientAmount; clientIndex++ { // testing testClientAmount of complaints
 
 		relayRequest := &types.RelayRequest{
-			Provider:              ts.providers[2].address.String(),
+			Provider:              ts.providers[0].address.String(),
 			ApiUrl:                "",
 			Data:                  []byte(ts.spec.Apis[0].Name),
-			SessionId:             uint64(1),
+			SessionId:             uint64(2),
 			ChainID:               ts.spec.Name,
 			CuSum:                 ts.spec.Apis[0].ComputeUnits * 10,
 			BlockHeight:           sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
@@ -354,7 +354,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfte
 		require.Nil(t, err)
 		RelaysAfter = append(RelaysAfter, relayRequest)
 	}
-	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[2].address.String(), Relays: RelaysAfter})
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: RelaysAfter})
 	require.Nil(t, err)
 
 	_, stakeStorageFound, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.Name, ts.providers[1].address)

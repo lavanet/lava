@@ -29,7 +29,7 @@ func TestPairingUniqueness(t *testing.T) {
 	common.StakeAccount(t, ctx, *keepers, *servers, consumer2, spec, stake, false)
 
 	providers := []common.Account{}
-	for i := 1; i <= 10000; i++ {
+	for i := 1; i <= 1000; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
 		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
 		providers = append(providers, provider)
