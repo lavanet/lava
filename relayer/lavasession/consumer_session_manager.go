@@ -479,6 +479,21 @@ func (csm *ConsumerSessionManager) OnSessionDoneWithoutQoSChanges(consumerSessio
 	return nil
 }
 
+// On a successful Subscribe relay
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSession *SingleConsumerSession) error {
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+
+	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
+	consumerSession.LatestRelayCu = 0                      // reset cu just in case
+	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
+	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
+	return nil
+}
+
 // On a failed DataReliability session we don't decrease the cu unlike a normal session, we just unlock and verify if we need to block this session or provider.
 func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.

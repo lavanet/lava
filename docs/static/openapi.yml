@@ -16721,9 +16721,6 @@ paths:
                         }
       parameters:
         - name: body
-          description: |-
-            SimulateRequest is the request type for the Service.Simulate
-            RPC method.
           in: body
           required: true
           schema:
@@ -17523,11 +17520,6 @@ paths:
                         }
       parameters:
         - name: body
-          description: >-
-            BroadcastTxRequest is the request type for the
-            Service.BroadcastTxRequest
-
-            RPC method.
           in: body
           required: true
           schema:
@@ -30218,6 +30210,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/epoch_payments/{index}':
@@ -30565,6 +30567,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/provider_payment_storage/{index}':
@@ -30820,6 +30832,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31364,6 +31386,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean

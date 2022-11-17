@@ -256,7 +256,7 @@ func SendRelay(
 		expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
 		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
 	} else {
-		err = cp.GetConsumerSessionManager().OnSessionDoneWithoutQoSChanges(singleConsumerSession) // session done successfully
+		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
 	}
 	return reply, replyServer, err
 }
