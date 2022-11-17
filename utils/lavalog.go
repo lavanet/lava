@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"runtime/debug"
 
@@ -48,7 +49,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
 	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor})
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
 	}
 
 	var logEvent *zerolog.Event

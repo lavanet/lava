@@ -22,6 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
@@ -1030,7 +1031,7 @@ func Server(
 	ChainID string,
 	apiInterface string,
 ) {
-
+	utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 	//
 	// ctrl+c
 	ctx, cancel := context.WithCancel(ctx)
