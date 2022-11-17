@@ -2,7 +2,6 @@ package chainproxy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,10 +18,6 @@ import (
 
 const (
 	DefaultTimeout = 5 * time.Second
-)
-
-var (
-	errFailedToConvertMessage = errors.New("failed to convert a message")
 )
 
 type NodeMessage interface {

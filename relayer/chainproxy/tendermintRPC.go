@@ -358,10 +358,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {
-			// Log an error
-			utils.LavaFormatError("tendermingRPC error", err, nil)
-
-			return nil, "", nil, err
+			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
 		}
 
 		nm.msg = replyMessage

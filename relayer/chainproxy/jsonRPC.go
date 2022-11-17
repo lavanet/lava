@@ -377,10 +377,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {
-			// Log an error
-			utils.LavaFormatError("jsonRPC error", err, nil)
-
-			return nil, "", nil, err
+			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, nil)
 		}
 
 		nm.msg = replyMessage
