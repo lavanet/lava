@@ -99,7 +99,6 @@ import (
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
-	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
@@ -147,9 +146,29 @@ var Upgrade6 = upgrades.Upgrade{
 	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
 }
 
+var Upgrade010 = upgrades.Upgrade{
+	UpgradeName: "v0.1.0", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
+var Upgrade011 = upgrades.Upgrade{
+	UpgradeName: "v0.1.1", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm upgrades.BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}
+
 var (
 	// add here future upgrades (upgrades.Upgrade)
-	Upgrades = []upgrades.Upgrade{Upgrade2, Upgrade3, v4.Upgrade, v5.Upgrade, Upgrade6, Upgrade010}
+	Upgrades = []upgrades.Upgrade{Upgrade2, Upgrade3, v4.Upgrade, v5.Upgrade, Upgrade6, Upgrade010, Upgrade011}
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -198,7 +217,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		specmodule.AppModuleBasic{},
+		spec.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
@@ -380,7 +399,7 @@ func New(
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
 	)
-	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
+	specModule := spec.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
