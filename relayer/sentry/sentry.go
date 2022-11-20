@@ -586,8 +586,8 @@ func (s *Sentry) Start(ctx context.Context) {
 			s.SetBlockHeight(data.Block.Height)
 
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
-				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
-				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
+				utils.LavaFormatInfo("New Epoch Event", nil)
+				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())

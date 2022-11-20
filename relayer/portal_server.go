@@ -2,11 +2,13 @@ package relayer
 
 import (
 	context "context"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -23,6 +25,7 @@ func PortalServer(
 	flagSet *pflag.FlagSet,
 ) {
 	//
+	utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 	rand.Seed(time.Now().UnixNano())
 	sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
 	if err != nil {
@@ -57,7 +60,7 @@ func PortalServer(
 	}
 	//
 	// Set up a connection to the server.
-	log.Printf("PortalServer %s\n", apiInterface)
+	utils.LavaFormatInfo("PortalServer"+apiInterface, nil)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		log.Fatalln("error: getKeyName", err)
@@ -67,7 +70,8 @@ func PortalServer(
 		log.Fatalln("error: getPrivKey", err)
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
-	log.Println("Client pubkey", clientKey.GetPubKey().Address())
+
+	utils.LavaFormatInfo("Client pubkey: "+fmt.Sprintf("%s", clientKey.GetPubKey().Address()), nil)
 
 	//
 	//
