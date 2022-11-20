@@ -94,6 +94,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
 	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	deletedEpochs := []uint64{}
 	if err != nil {
 		// this is critical, no recovery from this
 		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
@@ -104,6 +105,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
 	changed := false
 	for earliestEpochBlock < lastBlockInMemory {
+		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
 		if err != nil {
 			// this is critical, no recovery from this
