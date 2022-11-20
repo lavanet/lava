@@ -192,14 +192,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
 		logger := am.keeper.Logger(ctx)
 		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
-	}
-}
 
-// EndBlock executes all ABCI EndBlock logic respective to the capability module. It
-// returns no validator updates.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	if am.keeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight()) {
-		logger := am.keeper.Logger(ctx)
 		logOnErr := func(err error, failingFunc string) {
 			if err != nil {
 				attrs := map[string]string{"error": err.Error()}
@@ -214,5 +207,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.Val
 
 		am.keeper.UpdateEarliestEpochstart(ctx)
 	}
+}
+
+// EndBlock executes all ABCI EndBlock logic respective to the capability module. It
+// returns no validator updates.
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
 }
