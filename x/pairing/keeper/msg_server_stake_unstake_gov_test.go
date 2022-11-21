@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test that if the EpochBlocks param decreases make sure the provider is staked only after the original EpochBlocks value (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// Test that if the EpochBlocks param decreases make sure the provider/client is staked only after the original EpochBlocks value (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -33,25 +33,30 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
 
-	// Add a staked provider and get its address
+	// Add a staked provider and client and get their address
+	err = ts.addClient(1)
+	require.Nil(t, err)
+	clientAddress := ts.clients[len(ts.clients)-1].address
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].address
 
-	// Verify the provider paid for its stake request
-	firstProviderCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, firstProviderCurrentFunds.Amount.Int64())
+	// Verify the provider/client paid for its stake request
+	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
-	// Advance an epoch (10 blocks). from its stake, 11 blocks have passed so it shouldn't be staked (it staked when EpochBlocks was 20)
+	// Advance an epoch (10 blocks). from their stake, 11 blocks have passed so they shouldn't be staked (they staked when EpochBlocks was 20)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 50
-	epochProviderShouldntBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	epochShouldntBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// Advance another epoch (10 blocks). from its stake, 21 blocks have passed so it should be staked
+	// Advance another epoch (10 blocks). from their stake, 21 blocks have passed so they should be staked
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 60
-	epochProviderShouldBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	epochShouldBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// define tests
 	tests := []struct {
@@ -59,8 +64,8 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 		epoch          uint64
 		shouldBeStaked bool
 	}{
-		{"providerShouldntBeStaked", epochProviderShouldntBeStaked, false}, // 11 blocks have passed since the stake - not enough blocks
-		{"providerShouldBeStaked", epochProviderShouldBeStaked, true},      // 21 blocks have passed - enough blocks
+		{"ShouldntBeStaked", epochShouldntBeStaked, false}, // 11 blocks have passed since the stake - not enough blocks
+		{"ShouldBeStaked", epochShouldBeStaked, true},      // 21 blocks have passed - enough blocks
 	}
 
 	sessionCounter := 0
@@ -68,15 +73,17 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
-			// check if the provider is staked
-			_, found := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
-			require.Equal(t, tt.shouldBeStaked, found)
+			// check if the provider/client are staked
+			_, foundProvider := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
+			require.Equal(t, tt.shouldBeStaked, foundProvider)
+			_, foundClient := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ClientKey, ts.spec.GetIndex())
+			require.Equal(t, tt.shouldBeStaked, foundClient)
 		})
 	}
 
 }
 
-// Test that if the EpochBlocks param increases make sure the provider is staked after the original EpochBlocks value, and not the new enlarged one (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// Test that if the EpochBlocks param increases make sure the provider/client is staked after the original EpochBlocks value, and not the new enlarged one (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -97,29 +104,34 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
 
-	// Add a staked provider and get its address
+	// Add a staked provider/client and get their address
+	err = ts.addClient(1)
+	require.Nil(t, err)
+	clientAddress := ts.clients[len(ts.clients)-1].address
 	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].address
 
-	// Verify the provider paid for its stake request
-	firstProviderCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, firstProviderCurrentFunds.Amount.Int64())
+	// Verify the provider/client paid for its stake request
+	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
-	// Advance to blockHeight = 59. from its stake, 20 blocks have passed so it should be staked (it staked when EpochBlocks was 20)
+	// Advance to blockHeight = 59. from their stake, 20 blocks have passed so they should be staked (they staked when EpochBlocks was 20)
 	for i := 0; i < 19; i++ {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
-	epochProviderShouldBeStaked := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+	epochShouldBeStaked := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 
 	// Advance to blockHeight = 90 to complete the epoch. from its stake, 51 blocks have passed so it should definitely be staked
 	for i := 0; i < 31; i++ {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
-	epochProviderShouldAlsoBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	epochShouldAlsoBeStaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// define tests
 	tests := []struct {
@@ -127,8 +139,8 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 		epoch          uint64
 		shouldBeStaked bool
 	}{
-		{"providerShouldBeStaked", epochProviderShouldBeStaked, true},         // 20 blocks have passed since the stake - should be enough blocks
-		{"providerShouldAlsoBeStaked", epochProviderShouldAlsoBeStaked, true}, // 51 blocks have passed - enough blocks
+		{"ShouldBeStaked", epochShouldBeStaked, true},         // 20 blocks have passed since the stake - should be enough blocks
+		{"ShouldAlsoBeStaked", epochShouldAlsoBeStaked, true}, // 51 blocks have passed - enough blocks
 	}
 
 	sessionCounter := 0
@@ -136,148 +148,79 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
-			// check if the provider is staked
+			// check if the provider/client are staked
 			_, found := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
+			require.Equal(t, tt.shouldBeStaked, found)
+			_, found = ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ClientKey, ts.spec.GetIndex())
 			require.Equal(t, tt.shouldBeStaked, found)
 		})
 	}
 
 }
 
-// Test that if the EpochBlocks param decreases make sure the provider is unstaked only after the original EpochBlocks value (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
-func TestUnstakeGovEpochBlocksDecrease(t *testing.T) {
+// Test that if the UnstakeHoldBlocks param decreases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
+func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 
 	// setup testnet with mock spec
 	ts := setupForPaymentTest(t)
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
-	// Add a staked provider and get its address
-	err := ts.addProvider(1)
+	// Add a staked provider and client and get their address
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	clientAddress := ts.clients[len(ts.clients)-1].address
+	err = ts.addProvider(1)
 	require.Nil(t, err)
 	providerAddress := ts.providers[len(ts.providers)-1].address
 
-	// Verify the provider paid for its stake request
-	firstProviderCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, firstProviderCurrentFunds.Amount.Int64())
+	// Verify the provider/client paid for its stake request
+	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
 	// Advance an epoch to apply the provider's stake and because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
-	// change the EpochBlocks parameter to 10
-	epochBlocksTen := uint64(10)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTen, 10)+"\"")
+	// change the UnstakeHoldBlocks parameter to 60
+	unstakeHoldBlocksNewVal := uint64(60)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyUnstakeHoldBlocks), "\""+strconv.FormatUint(unstakeHoldBlocksNewVal, 10)+"\"")
 	require.Nil(t, err)
 
-	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
+	// Advance to blockHeight = 39, one block before the UnstakeHoldBlocks change apply
 	for i := 0; i < 19; i++ {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
 
-	// Unstake the provider
+	// Unstake the provider/client - they are supposed to get their funds back on block #260 (39+210 = 249 -> next epoch start in 260)
+	_, err = ts.servers.PairingServer.UnstakeClient(ts.ctx, &types.MsgUnstakeClient{Creator: clientAddress.String(), ChainID: ts.spec.Index})
+	require.Nil(t, err)
 	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{Creator: providerAddress.String(), ChainID: ts.spec.Index})
 	require.Nil(t, err)
 
-	// Advance to the next block so the EpochBlocks change apply
+	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 60
+	// if the unstaking refers to 60 (wrongly), they are supposed to get their funds back on block #240 (40+200(=BlockToSave) = 240 -> this is a start of a new epoch)
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
-	// Advance an epoch (10 blocks). from its unstake, 11 blocks have passed so it shouldn't be unstaked (it unstaked when EpochBlocks was 20)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 50
-	epochProviderShouldntBeUnstaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-
-	// Advance another epoch (10 blocks). from its unstake, 21 blocks have passed so it should be unstaked
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 60
-	epochProviderShouldBeUnstaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-
-	// define tests
-	tests := []struct {
-		name           string
-		epoch          uint64
-		shouldBeStaked bool
-	}{
-		{"providerShouldntBeUnstaked", epochProviderShouldntBeUnstaked, true}, // 11 blocks have passed since the stake - not enough blocks
-		{"providerShouldBeUnstaked", epochProviderShouldBeUnstaked, false},    // 21 blocks have passed - enough blocks
+	// Advance 10 epochs to get to block #240. At this point, they shouldn't get their funds back
+	for i := 0; i < 10; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
-		t.Run(tt.name, func(t *testing.T) {
+	// check if the client/provider got their funds back - they shouldn't get it
+	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.NotEqual(t, balance, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.NotEqual(t, balance, providerCurrentFunds.Amount.Int64())
 
-			// check if the provider is staked
-			_, found := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
-			require.Equal(t, tt.shouldBeStaked, found)
-		})
-	}
-}
+	// Advance another epoch to block #260. Now they should get their funds back
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 59
 
-// Test that if the EpochBlocks param increases make sure the provider is unstaked after the original EpochBlocks value, and not the new enlarged one (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
-func TestUnstakeGovEpochBlocksIncrease(t *testing.T) {
+	// check if the client/provider got their funds back - they should get it
+	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
 
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// Add a staked provider and get its address
-	err := ts.addProvider(1)
-	require.Nil(t, err)
-	providerAddress := ts.providers[len(ts.providers)-1].address
-
-	// Verify the provider paid for its stake request
-	firstProviderCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
-	require.Equal(t, balance-stake, firstProviderCurrentFunds.Amount.Int64())
-
-	// Advance an epoch to apply the provider's stake and because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
-
-	// change the EpochBlocks parameter to 10
-	epochBlocksFifty := uint64(50)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksFifty, 10)+"\"")
-	require.Nil(t, err)
-
-	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
-	for i := 0; i < 19; i++ {
-		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
-	}
-
-	// Unstake the provider
-	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{Creator: providerAddress.String(), ChainID: ts.spec.Index})
-	require.Nil(t, err)
-
-	// Advance to the next block so the EpochBlocks change apply
-	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
-
-	// Advance to blockHeight = 59. from its unstake, 20 blocks have passed so it should be unstaked (it staked when EpochBlocks was 20)
-	for i := 0; i < 19; i++ {
-		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
-	}
-	epochProviderShouldBeUnstaked := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
-
-	// Advance to blockHeight = 90 to complete the epoch. from its stake, 51 blocks have passed so it should definitely be staked
-	for i := 0; i < 31; i++ {
-		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
-	}
-	epochProviderShouldAlsoBeUnstaked := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-
-	// define tests
-	tests := []struct {
-		name           string
-		epoch          uint64
-		shouldBeStaked bool
-	}{
-		{"providerShouldntBeUnstaked", epochProviderShouldBeUnstaked, false},   // 20 blocks have passed since the stake - should be enough blocks
-		{"providerShouldBeUnstaked", epochProviderShouldAlsoBeUnstaked, false}, // 51 blocks have passed - enough blocks
-	}
-
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
-		t.Run(tt.name, func(t *testing.T) {
-
-			// check if the provider is staked
-			_, found := ts.keepers.Epochstorage.GetEpochStakeEntries(sdk.UnwrapSDKContext(ts.ctx), tt.epoch, epochstoragetypes.ProviderKey, ts.spec.GetIndex())
-			require.Equal(t, tt.shouldBeStaked, found)
-		})
-	}
 }
