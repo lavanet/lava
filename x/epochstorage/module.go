@@ -193,10 +193,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		logger := am.keeper.Logger(ctx)
 		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
 
-		deletedEpochs := am.keeper.UpdateEarliestEpochstart(ctx)
+		am.keeper.UpdateEarliestEpochstart(ctx)
 
-		am.keeper.RemoveOldEpochData(ctx, types.ProviderKey, deletedEpochs)
-		am.keeper.RemoveOldEpochData(ctx, types.ClientKey, deletedEpochs)
+		am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
+		am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
 	}
 }
 

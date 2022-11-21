@@ -66,20 +66,10 @@ func (k Keeper) GetAllEpochPayments(ctx sdk.Context) (list []types.EpochPayments
 }
 
 func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) (err error) {
-	earliestEpochBlock := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
-	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, earliestEpochBlock)
-	if err != nil {
-		return err
+
+	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs() {
+		err = k.RemoveAllEpochPaymentsForBlock(ctx, epoch)
 	}
-	if uint64(ctx.BlockHeight()) < blocksToSave {
-		return nil
-	}
-	block := uint64(ctx.BlockHeight()) - blocksToSave
-	if earliestEpochBlock > block {
-		return nil
-	}
-	//we passed the distance to earliest epoch block, so remove the entries
-	err = k.RemoveAllEpochPaymentsForBlock(ctx, earliestEpochBlock)
 	return
 }
 

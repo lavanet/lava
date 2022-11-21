@@ -186,9 +186,10 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
 		//end block
+		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
 		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
-		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
+
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)

@@ -23,6 +23,7 @@ type (
 		specKeeper    types.SpecKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
+		deletedEpochs      []uint64
 	}
 )
 
@@ -71,4 +72,8 @@ func (k *Keeper) AddFixationRegistry(fixationKey string, getParamFunction func(s
 
 func (k *Keeper) GetFixationRegistries() map[string]func(sdk.Context) any {
 	return k.fixationRegistries
+}
+
+func (k *Keeper) GetDeletedEpochs() []uint64 {
+	return k.deletedEpochs
 }
