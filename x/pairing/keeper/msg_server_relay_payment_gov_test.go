@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -665,8 +664,6 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 	}
 
 	for ti, tt := range tests {
-
-		fmt.Printf("Starting Test #%v\n", ti)
 
 		// Get current StakeToMaxCU list
 		stakeToMaxCUList = ts.keepers.Pairing.StakeToMaxCUListRaw(sdk.UnwrapSDKContext(ts.ctx))
