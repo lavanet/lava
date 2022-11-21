@@ -339,6 +339,9 @@ func validateStakeToMaxCUList(v interface{}) error {
 	}
 
 	for i, stakeToMaxCU := range stakeToMaxCUList.List {
+		if stakeToMaxCU.StakeThreshold.Amount.Sign() == -1 {
+			return fmt.Errorf("invalid stakeThreshold %v. Must be positive integer", stakeToMaxCU.StakeThreshold)
+		}
 		if i > 0 {
 			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
 				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
