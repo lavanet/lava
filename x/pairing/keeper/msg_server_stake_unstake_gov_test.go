@@ -200,7 +200,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	require.Nil(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 60
-	// if the unstaking refers to 60 (wrongly), they are supposed to get their funds back on block #240 (40+200(=BlockToSave) = 240 -> this is a start of a new epoch)
+	// if the unstaking refers to 60 (wrongly, since they unstaked before the change was applied), they are supposed to get their funds back on block #240 (40+200(=BlockToSave) = 240 -> this is a start of a new epoch)
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
 	// Advance 10 epochs to get to block #240. At this point, they shouldn't get their funds back
@@ -216,6 +216,75 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 
 	// Advance another epoch to block #260. Now they should get their funds back
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 59
+
+	// check if the client/provider got their funds back - they should get it
+	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
+
+}
+
+// Test that if the UnstakeHoldBlocks param increases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
+func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
+
+	// setup testnet with mock spec
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// Add a staked provider and client and get their address
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	clientAddress := ts.clients[len(ts.clients)-1].address
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	providerAddress := ts.providers[len(ts.providers)-1].address
+
+	// Verify the provider/client paid for its stake request
+	clientCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
+
+	// Advance an epoch to apply the provider's stake and because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
+
+	// change the UnstakeHoldBlocks parameter to 280
+	unstakeHoldBlocksNewVal := uint64(280)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyUnstakeHoldBlocks), "\""+strconv.FormatUint(unstakeHoldBlocksNewVal, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance to blockHeight = 39, one block before the UnstakeHoldBlocks change apply
+	for i := 0; i < 19; i++ {
+		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+	}
+
+	// Unstake the provider/client - they are supposed to get their funds back on block #260 (39+210 = 249 -> next epoch start in 260)
+	_, err = ts.servers.PairingServer.UnstakeClient(ts.ctx, &types.MsgUnstakeClient{Creator: clientAddress.String(), ChainID: ts.spec.Index})
+	require.Nil(t, err)
+	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{Creator: providerAddress.String(), ChainID: ts.spec.Index})
+	require.Nil(t, err)
+
+	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 280
+	// if the unstaking refers to 280 (wrongly, since they unstaked before the change was applied), they are supposed to get their funds back on block #320 (40+280 = 320 -> this is a start of a new epoch)
+	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
+
+	// Advance 11 epochs to get to block #260. At this point, they should get their funds back
+	for i := 0; i < 11; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	// check if the client/provider got their funds back - they should get it
+	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, clientCurrentFunds.Amount.Int64())
+	providerCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
+	require.Equal(t, balance, providerCurrentFunds.Amount.Int64())
+
+	// Advance 3 more epoch to block #320. Now they definitely should get their funds back
+	for i := 0; i < 3; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
 
 	// check if the client/provider got their funds back - they should get it
 	clientCurrentFunds = ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), clientAddress, epochstoragetypes.TokenDenom)
