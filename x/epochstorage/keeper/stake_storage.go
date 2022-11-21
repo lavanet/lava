@@ -232,7 +232,7 @@ func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID st
 	if !found {
 		return errors.ErrNotFound
 	}
-	if idx < uint64(len(stakeStorage.StakeEntries)) {
+	if idx > uint64(len(stakeStorage.StakeEntries)) {
 		return errors.ErrNotFound
 	}
 	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
