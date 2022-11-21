@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -620,4 +621,73 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing.T) {
+	// setup testnet with mock spec
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000 (because of bug?)). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+
+	// advance an epoch so the client and provider will be paired (new pairing is determined every epoch)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// Get the StakeToMaxCU list
+	stakeToMaxCUList, _ := ts.keepers.Pairing.StakeToMaxCUList(sdk.UnwrapSDKContext(ts.ctx), 0)
+
+	// struct that holds the new values for EpochBlocks and the block the chain will advance to
+	stakeToMaxCUThresholdTests := []struct {
+		newStakeThreshold int64  // newStakeThreshold new value
+		newMaxCU          uint64 // MaxCU new value
+		stakeToMaxCUIndex int    // stakeToMaxCU entry index that will change (see types/params.go for the default values)
+	}{
+		{10, 20000, 0},   // Test #0
+		{400, 16000, 1},  // Test #1
+		{2001, 14000, 2}, // Test #2
+		{0, 0, 0},        // Test #3
+	}
+
+	// define tests - for each test, the paymentEpoch will be +-1 of the latest epoch start of the test
+	tests := []struct {
+		name  string // Test name
+		valid bool   // Is the change of StakeToMaxCUList entry valid?
+	}{
+		{"Test #0", false},
+		{"Test #1", true},
+		{"Test #2", false},
+		{"Test #3", true},
+	}
+
+	for ti, tt := range tests {
+
+		fmt.Printf("Starting Test #%v\n", ti)
+
+		// Get current StakeToMaxCU list
+		stakeToMaxCUList = ts.keepers.Pairing.StakeToMaxCUListRaw(sdk.UnwrapSDKContext(ts.ctx))
+
+		// Create new stakeToMaxCUEntry with the same stake threshold but higher MaxComuteUnits and put it in stakeToMaxCUList. I picked the stake entry with: StakeThreshold = 100000ulava, MaxCU = 500000
+		newStakeToMaxCUEntry := pairingtypes.StakeToMaxCU{StakeThreshold: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stakeToMaxCUThresholdTests[ti].newStakeThreshold)), MaxComputeUnits: stakeToMaxCUThresholdTests[ti].newMaxCU}
+		stakeToMaxCUList.List[stakeToMaxCUThresholdTests[ti].stakeToMaxCUIndex] = newStakeToMaxCUEntry
+
+		// change the stakeToMaxCUList parameter
+		stakeToMaxCUListBytes, _ := stakeToMaxCUList.MarshalJSON()
+		stakeToMaxCUListStr := string(stakeToMaxCUListBytes[:])
+		err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyStakeToMaxCUList), stakeToMaxCUListStr)
+
+		// Advance an epoch (only then the parameter change will be applied) and get current epoch
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+		if tt.valid {
+			require.Nil(t, err)
+		} else {
+			require.NotNil(t, err)
+		}
+
+	}
 }
