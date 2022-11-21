@@ -29158,6 +29158,11 @@ paths:
                   earliestStart:
                     type: string
                     format: uint64
+                  deletedEpochs:
+                    type: array
+                    items:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -52569,6 +52574,11 @@ definitions:
       earliestStart:
         type: string
         format: uint64
+      deletedEpochs:
+        type: array
+        items:
+          type: string
+          format: uint64
   lavanet.lava.epochstorage.FixatedParams:
     type: object
     properties:
@@ -52728,6 +52738,11 @@ definitions:
           earliestStart:
             type: string
             format: uint64
+          deletedEpochs:
+            type: array
+            items:
+              type: string
+              format: uint64
   lavanet.lava.epochstorage.QueryGetFixatedParamsResponse:
     type: object
     properties:

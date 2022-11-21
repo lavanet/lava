@@ -66,8 +66,7 @@ func (k Keeper) GetAllEpochPayments(ctx sdk.Context) (list []types.EpochPayments
 }
 
 func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) (err error) {
-
-	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs() {
+	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs(ctx) {
 		err = k.RemoveAllEpochPaymentsForBlock(ctx, epoch)
 	}
 	return

@@ -188,15 +188,17 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ProviderKey)
 
 		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ClientKey)
-		// Notify world we have a new session
-		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
-		logger := am.keeper.Logger(ctx)
-		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
 
 		am.keeper.UpdateEarliestEpochstart(ctx)
 
 		am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
 		am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
+
+		// Notify world we have a new session
+
+		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
+		logger := am.keeper.Logger(ctx)
+		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
 	}
 }
 
