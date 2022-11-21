@@ -78,7 +78,7 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) {
 	}
 }
 
-func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
+func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
 	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
