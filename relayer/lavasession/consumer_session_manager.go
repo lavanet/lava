@@ -94,7 +94,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if PairingListEmptyError.Is(err) {
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
-				// This provider does'nt have enough compute units for this session, we block it for this session and continue to another provider.
+				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
@@ -232,7 +232,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 }
 
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
-// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise does'nt take effect.
+// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
 func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64) error {
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
@@ -256,7 +256,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it does'nt exist already
+		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
