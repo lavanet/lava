@@ -136,6 +136,54 @@ func (lt *lavaTest) checkStakeLava() {
 	}
 }
 
+func (lt *lavaTest) startLavaProvider() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommands := []string{
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2271 http://127.0.0.1:1317 LAV1 rest --from servicer1",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2272 http://127.0.0.1:1317 LAV1 rest --from servicer2",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2273 http://127.0.0.1:1317 LAV1 rest --from servicer3",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2261 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer1",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2262 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer2",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2263 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer3",
+	}
+	for _, providerCommand := range providerCommands {
+		cmd := exec.Cmd{
+			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: os.Stdout,
+			Stderr: os.Stdout,
+		}
+		err := cmd.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (lt *lavaTest) startLavaGateway() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommands := []string{
+		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4",
+		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4",
+	}
+	for _, providerCommand := range providerCommands {
+		cmd := exec.Cmd{
+			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: os.Stdout,
+			Stderr: os.Stdout,
+		}
+		err := cmd.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
 func main() {
 	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithInsecure())
 	if err != nil {
@@ -157,6 +205,8 @@ func main() {
 	lt.stakeLava()
 	lt.checkStakeLava()
 	fmt.Println("Staking Lava OK")
+	lt.startLavaProvider()
+	lt.startLavaGateway()
 	// startETHProxy()
 	// checkETHProxy()
 	// RunProviders()
