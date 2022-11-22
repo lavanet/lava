@@ -7,8 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/testutil/common"
+	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
 	"github.com/stretchr/testify/require"
@@ -21,10 +23,10 @@ func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subsp
 }
 
 func TestServicersToPair(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
 	//init keepers state
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	blocksInEpoch := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	epochsMemory := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
@@ -69,7 +71,7 @@ func TestServicersToPair(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			ctx = keepertest.AdvanceToBlock(ctx, keepers, tt.Block)
+			ctx = testkeeper.AdvanceToBlock(ctx, keepers, tt.Block)
 
 			require.Equal(t, tt.Block, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			servicersToPair, err := keepers.Pairing.ServicersToPairCount(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
@@ -96,4 +98,68 @@ func TestServicersToPair(t *testing.T) {
 
 		})
 	}
+}
+
+func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
+
+	ts := setupForPaymentTest(t) //reset the keepers state before each state
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	relayRequest := &pairingtypes.RelayRequest{
+		Provider:        ts.providers[0].address.String(),
+		ApiUrl:          "",
+		Data:            []byte(ts.spec.Apis[0].Name),
+		SessionId:       uint64(1),
+		ChainID:         ts.spec.Name,
+		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:        0,
+		RequestBlock:    -1,
+		DataReliability: nil,
+	}
+
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relayRequest.Sig = sig
+	require.Nil(t, err)
+
+	//make payment request
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
+	require.Nil(t, err)
+
+	//shorten memory
+	err = SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSave/2, 10)+"\"")
+	require.NoError(t, err)
+
+	//advance epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	//make another request
+	relayRequest.SessionId++
+
+	sig, err = sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relayRequest.Sig = sig
+	require.Nil(t, err)
+
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: []*pairingtypes.RelayRequest{relayRequest}})
+	require.Nil(t, err)
+
+	//check that both payments were deleted
+	for i := 0; i < int(epochsToSave); i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	//check second payment was deleted
+	ans, err := ts.keepers.Pairing.EpochPaymentsAll(ts.ctx, &pairingtypes.QueryAllEpochPaymentsRequest{})
+	require.Nil(t, err)
+	require.Equal(t, 0, len(ans.EpochPayments))
+
 }
