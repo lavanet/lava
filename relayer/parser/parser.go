@@ -125,7 +125,9 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 		interfaceArr := []interface{}{}
 		var data map[string]interface{}
 		unmarshalled := rpcInput.GetResult()
-
+		if len(unmarshalled) == 0 {
+			return nil, utils.LavaFormatError("GetDataToParse Result is empty", nil, nil)
+		}
 		// Try to unmarshal and if the data is unmarshalable then return the data itself
 		err := json.Unmarshal(unmarshalled, &data)
 		if err != nil {
@@ -204,14 +206,14 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s", blockContainer, key)
+				return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s, unmarshaledDataTyped: %s", blockContainer, key, unmarshaledDataTyped)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s", blockContainer, key)
+				return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s, unmarshaledDataTyped: %s", blockContainer, key, unmarshaledDataTyped)
 			}
 		}
 		retArr := make([]interface{}, 0)

@@ -33,9 +33,9 @@ type RestMessage struct {
 }
 
 type RestChainProxy struct {
-	nodeUrl string
-	sentry  *sentry.Sentry
-	csm     *lavasession.ConsumerSessionManager
+	nodeUrl    string
+	sentry     *sentry.Sentry
+	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
 }
 
@@ -46,9 +46,9 @@ func (r *RestMessage) GetMsg() interface{} {
 func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
-		nodeUrl: nodeUrl,
-		sentry:  sentry,
-		csm: csm,
+		nodeUrl:    nodeUrl,
+		sentry:     sentry,
+		csm:        csm,
 		portalLogs: pLogs,
 	}
 }
@@ -108,7 +108,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blockData, err := parser.ParseMessageResponse((nodeMsg.(*RestMessage)), serviceApi.Parsing.ResultParsing)
@@ -135,12 +135,16 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  cp.nodeUrl,
+			"Method":   nodeMsg.path,
+			"Response": string(nodeMsg.Result),
+		})
 	}
 
 	return blocknum, nil
