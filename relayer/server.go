@@ -37,6 +37,7 @@ import (
 )
 
 const RETRY_INCORRECT_SEQUENCE = 3
+const TimeWaitInitializeChainSentry = 10
 
 var (
 	g_privKey               *btcSecp256k1.PrivateKey
@@ -1102,9 +1103,16 @@ func Server(
 	if g_sentry.GetSpecComparesHashes() {
 		// Start chain sentry
 		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
-		err = chainSentry.Init(ctx)
-		if err != nil {
-			utils.LavaFormatFatal("provider failure initializing chainSentry", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID, "nodeUrl": nodeUrl})
+		for {
+			err = chainSentry.Init(ctx)
+			if err != nil {
+				utils.LavaFormatError("provider failure initializing chainSentry - nodeUrl might be unreachable or offline", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID, "nodeUrl": nodeUrl})
+				utils.LavaFormatWarning(fmt.Sprintf("Retrying to initialize chainSentry in %d seconds", TimeWaitInitializeChainSentry), nil, nil)
+				time.Sleep(TimeWaitInitializeChainSentry * time.Second)
+				continue
+			}
+			// break when chainSentry was initialized successfully
+			break
 		}
 		chainSentry.Start(ctx)
 		g_chainSentry = chainSentry
