@@ -610,7 +610,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				//update expected payments deadline, and log missing payments
 				//TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
-					s.IdentifyMissingPayments(ctx)
+					s.IdentifyMissingPayments()
 				}
 				//
 				// Update pairing
@@ -704,20 +704,32 @@ func (s *Sentry) FetchChainParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
+func (s *Sentry) IdentifyMissingPayments() {
 	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
 	s.PaymentsMu.Lock()
+
+	var updatedExpectedPayments []PaymentRequest
+
 	for idx, expectedPay := range s.expectedPayments {
+		// Exclude and log missing payments
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
 			utils.LavaFormatError("Identified Missing Payment", nil,
 				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
 					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
 					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
-			s.expectedPayments = append(s.expectedPayments[:idx], s.expectedPayments[idx+1:]...)
+
+			continue
 		}
+
+		// Include others
+		updatedExpectedPayments = append(updatedExpectedPayments, s.expectedPayments[idx])
 	}
+
+	// Update expectedPayment
+	s.expectedPayments = updatedExpectedPayments
+
 	s.PaymentsMu.Unlock()
-	//can be modified in this race window, so we double check
+	//can be modified in this race window, so we double-check
 
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
