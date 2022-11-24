@@ -488,19 +488,15 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType 
 	return stakeStorage.StakeEntries, true
 }
 
-func (k Keeper) GetEpochStakeStorage(ctx sdk.Context, block uint64, storageType string, chainID string) (stakeStorage types.StakeStorage, found bool) {
-	key := k.StakeStorageKey(storageType, block, chainID)
-	stakeStorage, found = k.GetStakeStorage(ctx, key)
-	return stakeStorage, found
-}
-
 //append to epoch stake entries ONLY if it doesn't exist
-func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string, stakeEntry types.StakeEntry) (bool, error) {
-	storage, found := k.GetEpochStakeStorage(ctx, block, storageType, chainID)
+func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) (bool, error) {
+	epoch := k.GetEpochStart(ctx)
+	stakeEntry.Deadline = epoch
+	storage, found := k.getStakeStorageEpoch(ctx, epoch, storageType, chainID)
 	if !found {
 		entries := []types.StakeEntry{}
 		//create a new one
-		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, block, chainID), StakeEntries: entries}
+		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, epoch, chainID), StakeEntries: entries}
 	}
 	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
 	if err != nil {

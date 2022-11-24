@@ -124,9 +124,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
 	appended := false
 	if !provider {
-		epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-		stakeEntry.Deadline = epoch
-		appended, err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, stakeEntry)
+		//this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
+		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type(), chainID, stakeEntry)
 
 		if err != nil {
 			details["error"] = err.Error()
