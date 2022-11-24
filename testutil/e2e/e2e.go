@@ -136,7 +136,7 @@ func (lt *lavaTest) checkStakeLava() {
 	}
 }
 
-func (lt *lavaTest) startLavaProvider() {
+func (lt *lavaTest) startLavaRESTProvider() {
 	// TODO
 	// remove ugly path
 	// pipe output to array
@@ -144,6 +144,26 @@ func (lt *lavaTest) startLavaProvider() {
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2271 http://127.0.0.1:1317 LAV1 rest --from servicer1",
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2272 http://127.0.0.1:1317 LAV1 rest --from servicer2",
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2273 http://127.0.0.1:1317 LAV1 rest --from servicer3",
+	}
+	for _, providerCommand := range providerCommands {
+		cmd := exec.Cmd{
+			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: os.Stdout,
+			Stderr: os.Stdout,
+		}
+		err := cmd.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (lt *lavaTest) startLavaTendermintProvider() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommands := []string{
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2261 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer1",
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2262 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer2",
 		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2263 ws://0.0.0.0:26657/websocket LAV1 tendermintrpc --from servicer3",
@@ -162,13 +182,16 @@ func (lt *lavaTest) startLavaProvider() {
 	}
 }
 
-func (lt *lavaTest) startLavaGateway() {
+func (lt *lavaTest) startETHProvider() {
 	// TODO
 	// remove ugly path
 	// pipe output to array
 	providerCommands := []string{
-		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4",
-		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2221 ws://127.0.0.1:1317 ETH1 jsonrpc --from servicer1",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2222 ws://127.0.0.1:1317 ETH1 jsonrpc --from servicer2",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2223 ws://127.0.0.1:1317 ETH1 jsonrpc --from servicer3",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2224 ws://127.0.0.1:1317 ETH1 jsonrpc --from servicer4",
+		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2225 ws://127.0.0.1:1317 ETH1 jsonrpc --from servicer5",
 	}
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
@@ -181,6 +204,58 @@ func (lt *lavaTest) startLavaGateway() {
 		if err != nil {
 			fmt.Println(err)
 		}
+	}
+}
+
+func (lt *lavaTest) startLavaRESTGateway() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommand := "/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
+	cmd := exec.Cmd{
+		Path:   "/Users/jaketagnepis/go/bin/lavad",
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: os.Stdout,
+		Stderr: os.Stdout,
+	}
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (lt *lavaTest) startLavaTendermintGateway() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommand := "/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
+	cmd := exec.Cmd{
+		Path:   "/Users/jaketagnepis/go/bin/lavad",
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: os.Stdout,
+		Stderr: os.Stdout,
+	}
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (lt *lavaTest) startETHGateway() {
+	// TODO
+	// remove ugly path
+	// pipe output to array
+	providerCommand :=
+		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
+	cmd := exec.Cmd{
+		Path:   "/Users/jaketagnepis/go/bin/lavad",
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: os.Stdout,
+		Stderr: os.Stdout,
+	}
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
@@ -205,8 +280,12 @@ func main() {
 	lt.stakeLava()
 	lt.checkStakeLava()
 	fmt.Println("Staking Lava OK")
-	lt.startLavaProvider()
-	lt.startLavaGateway()
+	lt.startLavaRESTProvider()
+	lt.startLavaRESTGateway()
+	lt.startETHGateway()
+	lt.startETHProvider()
+	lt.startLavaTendermintProvider()
+	lt.startLavaTendermintGateway()
 	// startETHProxy()
 	// checkETHProxy()
 	// RunProviders()
