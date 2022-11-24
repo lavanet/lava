@@ -1242,6 +1242,10 @@ func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index
 }
 
+func (s *Sentry) GetAverageBlockTime() int64 {
+	return s.serverSpec.AverageBlockTime
+}
+
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
