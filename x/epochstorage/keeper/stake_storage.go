@@ -495,7 +495,7 @@ func (k Keeper) GetEpochStakeStorage(ctx sdk.Context, block uint64, storageType 
 }
 
 //append to epoch stake entries ONLY if it doesn't exist
-func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string, stakeEntry types.StakeEntry) error {
+func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string, stakeEntry types.StakeEntry) (bool, error) {
 	storage, found := k.GetEpochStakeStorage(ctx, block, storageType, chainID)
 	if !found {
 		entries := []types.StakeEntry{}
@@ -504,7 +504,7 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 	}
 	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, clientStakeEntry := range storage.StakeEntries {
@@ -513,7 +513,7 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
 		}
 		if clientAddr.Equals(entryAddr) {
-			return nil //stake already exists in this epoch
+			return false, nil //stake already exists in this epoch
 		}
 	}
 
@@ -534,5 +534,5 @@ func (k Keeper) AppendEpochStakeEntries(ctx sdk.Context, block uint64, storageTy
 
 	storage.StakeEntries = entries
 	k.SetStakeStorage(ctx, storage)
-	return nil
+	return true, nil
 }
