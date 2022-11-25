@@ -71,7 +71,7 @@ func (lt *lavaTest) checkLava() {
 		// This one should always end but add a timer
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err != nil && strings.Contains(err.Error(), "rpc error") {
-			log.Println("Waiting for Lava")
+			utils.LavaFormatInfo("Waiting for Lava", nil)
 			time.Sleep(time.Second)
 		} else if err == nil {
 			break
@@ -194,7 +194,7 @@ func (lt *lavaTest) startJSONRPCGateway() {
 
 func (lt *lavaTest) checkJSONRPCGateway(rpcURL string) {
 	for {
-		log.Println("Waiting JSONRPC Gateway")
+		utils.LavaFormatInfo("Waiting JSONRPC Gateway", nil)
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
 			continue
@@ -353,7 +353,7 @@ func (lt *lavaTest) startRESTGateway() {
 
 func (lt *lavaTest) checkRESTGateway(rpcURL string) {
 	for {
-		log.Println("Waiting REST Gateway")
+		utils.LavaFormatInfo("Waiting REST Gateway", nil)
 		reply, err := getRequest(log.Sprintf("%s/blocks/latest", rpcURL))
 		if err != nil || strings.Contains(string(reply), "error") {
 			time.Sleep(time.Second)
@@ -434,7 +434,7 @@ func (lt *lavaTest) startTendermintGateway() {
 
 func (lt *lavaTest) checkTendermintGateway(rpcURL string) {
 	for {
-		log.Println("Waiting TENDERMINT Gateway")
+		utils.LavaFormatInfo("Waiting TENDERMINT Gateway", nil)
 		client, err := tmclient.New(rpcURL, "/websocket")
 		if err != nil {
 			continue
@@ -447,8 +447,23 @@ func (lt *lavaTest) checkTendermintGateway(rpcURL string) {
 	}
 }
 func tendermintTests(rpcURL string, testDuration time.Duration) error {
+	ctx := context.Background()
 	utils.LavaFormatInfo("Starting TENDERMINT Tests", nil)
 	errors := []string{}
+	client, err := tmclient.New(rpcURL, "/websocket")
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	for start := time.Now(); time.Since(start) < testDuration; {
+		_, err := client.Status(ctx)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		_, err = client.Health(ctx)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+	}
 	if len(errors) > 0 {
 		return log.Errorf(strings.Join(errors, ",\n"))
 	}
@@ -485,14 +500,14 @@ func main() {
 	}
 	lt.ctxs["lavaMain"] = context.Background()
 	lt.wg.Add(1)
-	log.Println("Starting Lava")
+	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(lt.ctxs["lavaMain"])
 	lt.checkLava()
-	log.Println("Starting Lava OK")
-	log.Println("Staking Lava")
+	utils.LavaFormatInfo("Starting Lava OK", nil)
+	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
 	lt.checkStakeLava()
-	log.Println("Staking Lava OK")
+	utils.LavaFormatInfo("Staking Lava OK", nil)
 
 	lt.startJSONRPCProvider("")
 	lt.startJSONRPCGateway()
@@ -505,13 +520,14 @@ func main() {
 	lt.startTendermintProvider("http://0.0.0.0:26657")
 	lt.startTendermintGateway()
 	lt.checkTendermintGateway("http://127.0.0.1:3341/1")
-	log.Println("RUNNING TESTS")
+	utils.LavaFormatInfo("RUNNING TESTS", nil)
 	// startETHProxy()
 	// checkETHProxy()
 	err = jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	log.Println(err)
 	err = restTests("http://127.0.0.1:3340/1", time.Second*30)
 	log.Println(err)
-	tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
+	err = tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
+	log.Println(err)
 	lt.wg.Wait()
 }
