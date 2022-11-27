@@ -58,7 +58,7 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg.GetMsg().(*JsonrpcMessage), serviceApi.Parsing.ResultParsing)
@@ -95,12 +95,17 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
-	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
+	msg := (nodeMsg.GetMsg().(*JsonrpcMessage))
+	blockData, err := parser.ParseMessageResponse(msg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  cp.nodeUrl,
+			"Method":   msg.Method,
+			"Response": string(msg.Result),
+		})
 	}
 
 	// blockData is an interface array with the parsed result in index 0.
@@ -116,11 +121,11 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	return &tendermintRpcChainProxy{
 		JrpcChainProxy: JrpcChainProxy{
-			nodeUrl: nodeUrl,
-			nConns: nConns,
-			sentry: sentry,
+			nodeUrl:    nodeUrl,
+			nConns:     nConns,
+			sentry:     sentry,
 			portalLogs: pLogs,
-			csm: csm,
+			csm:        csm,
 		},
 	}
 }

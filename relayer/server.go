@@ -37,7 +37,11 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-const RETRY_INCORRECT_SEQUENCE = 3
+const (
+	RETRY_INCORRECT_SEQUENCE      = 3
+	TimeWaitInitializeChainSentry = 10
+	RetryInitAttempts             = 10
+)
 
 var (
 	g_privKey               *btcSecp256k1.PrivateKey
@@ -1103,10 +1107,27 @@ func Server(
 	if g_sentry.GetSpecComparesHashes() {
 		// Start chain sentry
 		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, ChainID)
-		err = chainSentry.Init(ctx)
-		if err != nil {
-			utils.LavaFormatFatal("provider failure initializing chainSentry", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID, "nodeUrl": nodeUrl})
+		var chainSentryInitError error
+		errMapInfo := &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID, "nodeUrl": nodeUrl}
+		for attempt := 0; attempt < RetryInitAttempts; attempt++ {
+			chainSentryInitError = chainSentry.Init(ctx)
+			if chainSentryInitError != nil {
+				if chainsentry.ErrorFailedToFetchLatestBlock.Is(chainSentryInitError) { // we allow ErrorFailedToFetchLatestBlock. to retry
+					utils.LavaFormatWarning(fmt.Sprintf("chainSentry Init failed. Attempt Number: %d/%d, Retrying in %d seconds",
+						attempt+1, RetryInitAttempts, TimeWaitInitializeChainSentry), nil, nil)
+					time.Sleep(TimeWaitInitializeChainSentry * time.Second)
+					continue
+				} else { // other errors are currently fatal.
+					utils.LavaFormatFatal("Provider Init failure", chainSentryInitError, errMapInfo)
+				}
+			}
+			// break when chainSentry was initialized successfully
+			break
 		}
+		if chainSentryInitError != nil {
+			utils.LavaFormatFatal("provider failure initializing chainSentry - nodeUrl might be unreachable or offline", chainSentryInitError, errMapInfo)
+		}
+
 		chainSentry.Start(ctx)
 		g_chainSentry = chainSentry
 	}

@@ -101,12 +101,16 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg.msg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  cp.nodeUrl,
+			"Method":   nodeMsg.msg.Method,
+			"Response": string(nodeMsg.msg.Result),
+		})
 	}
 
 	return blocknum, nil
@@ -134,7 +138,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 	// log.Println("%s", reply)
 
