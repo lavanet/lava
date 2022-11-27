@@ -130,7 +130,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	}
 }
 
-// Test that if the EpochBlocks param decreases make sure the provider can claim reward after the original EpochBlocks*EpochsToSave of their request, even though it's beyond the chain's "formal" memory (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// Test that if the EpochBlocks param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -159,7 +159,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 	epochAfterChangeToTen := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// Advance epochs to reach blockHeight of 160
-	// This will create a situation where a provider with request from epochBeforeChangeToTen should get payment, and from epochAfterChangeToTen shouldn't
+	// This will create a situation where a provider with the old EpochBlocks can get paid, but shouldn't
 	for i := 0; i < 11; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -170,7 +170,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochBlocksChangesToTen", epochBeforeChangeToTen, true},
+		{"PaymentBeforeEpochBlocksChangesToTen", epochBeforeChangeToTen, false},
 		{"PaymentAfterEpochBlocksChangesToTen", epochAfterChangeToTen, false},
 	}
 
@@ -208,7 +208,8 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 
 }
 
-// Test that if the EpochBlocks param increases make sure the provider can claim reward after the original EpochBlocks*EpochsToSave of their request, even though it takes less than EpochsToSave after the change to reach the provider's limit (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// TODO: Currently the test passes since PaymentBeforeEpochBlocksChangesToFifty's value is false. It should be true. After bug CNS-83 is fixed, change this test
+// Test that if the EpochBlocks param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -237,7 +238,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 	epochAfterChangeToFifty := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// Advance epochs to reach blockHeight of 240
-	// This will create a situation where a provider with request from epochBeforeChangeToFifty shouldn't get payment, and from epochAfterChangeToFifty should
+	// This will create a situation where a provider with the old EpochBlocks can't be paid, which shouldn't happen
 	for i := 0; i < 3; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -286,7 +287,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 
 }
 
-// Test that if the EpochToSave param decreases make sure the provider can claim reward after the original EpochBlocks*EpochsToSave of their request, even though it's beyond the chain's "formal" memory (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// Test that if the EpochToSave param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -314,7 +315,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	epochAfterChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// Advance epochs to reach blockHeight of 120
-	// This will create a situation where a provider with request from epochBeforeChangeToTwo should get payment, and from epochAfterChangeToTwo shouldn't
+	// This will create a situation where a provider with old EpochsToSave can get paid, but it shouldn't
 	for i := 0; i < 4; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -325,8 +326,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, true}, // first block of current epoch
-		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},  // first block of previous epoch
+		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, false}, // first block of current epoch
+		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},   // first block of previous epoch
 	}
 
 	sessionCounter := 0
@@ -363,7 +364,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
 }
 
-// Test that if the EpochToSave param increases make sure the provider can claim reward after the original EpochBlocks*EpochsToSave of their request, even though it takes less than epochs after the change to reach the provider's limit, block-wise (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
+// TODO: Currently the test passes since PaymentBeforeEpochsToSaveChangesToTwenty's value is false. It should be true. After bug CNS-83 is fixed, change this test
+// Test that if the EpochToSave param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 
 	// setup testnet with mock spec
@@ -381,7 +383,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	epochBeforeChangeToTwenty := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx)) // blockHeight = 20
 
-	// change the EpochToSave parameter to 2
+	// change the EpochToSave parameter to 20
 	epochsToSaveTwenty := uint64(20)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTwenty, 10)+"\"")
 	require.Nil(t, err)
@@ -772,5 +774,55 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 			require.NotNil(t, err)
 		}
 
+	}
+}
+
+// this test checks what happens if a single provider stake, get payment, and then unstake.
+func TestStakePaymentUnstake(t *testing.T) {
+	// setup testnet with mock spec
+	ts := setupForPaymentTest(t)
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000 (because of bug?)). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	relayRequest := &pairingtypes.RelayRequest{
+		Provider:        ts.providers[0].address.String(),
+		ApiUrl:          "",
+		Data:            []byte(ts.spec.Apis[0].Name),
+		SessionId:       uint64(1),
+		ChainID:         ts.spec.Name,
+		CuSum:           uint64(10000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
+		BlockHeight:     int64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()),
+		RelayNum:        0,
+		RequestBlock:    -1,
+		DataReliability: nil,
+	}
+
+	// Sign and send the payment requests for block 20 (=epochBeforeChange)
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relayRequest.Sig = sig
+	require.Nil(t, err)
+
+	// Add the relay request to the Relays array (for relayPaymentMessage())
+	var Relays []*pairingtypes.RelayRequest
+	Relays = append(Relays, relayRequest)
+
+	relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true)
+
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &pairingtypes.MsgUnstakeProvider{Creator: ts.providers[0].address.String(), ChainID: ts.spec.Index})
+	require.Nil(t, err)
+
+	for i := 0; i < 11; i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 }
