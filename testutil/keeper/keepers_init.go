@@ -113,7 +113,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
 	// Initialize params
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
