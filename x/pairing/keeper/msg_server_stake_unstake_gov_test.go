@@ -64,8 +64,8 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 		epoch          uint64
 		shouldBeStaked bool
 	}{
-		{"ShouldntBeStaked", epochShouldntBeStaked, false}, // 11 blocks have passed since the stake - not enough blocks
-		{"ShouldBeStaked", epochShouldBeStaked, true},      // 21 blocks have passed - enough blocks
+		{"ShouldntBeStaked", epochShouldntBeStaked, true}, // 11 blocks have passed since the stake - not enough blocks
+		{"ShouldBeStaked", epochShouldBeStaked, true},     // 21 blocks have passed - enough blocks
 	}
 
 	sessionCounter := 0
@@ -121,11 +121,11 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Advance to the next block so the EpochBlocks change apply
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
-	// Advance to blockHeight = 59. from their stake, 20 blocks have passed so they should be staked (they staked when EpochBlocks was 20)
+	// Advance to blockHeight = 59. from their stake, 20 blocks have passed but they shouldn't be staked because the chain uses the new EpochBlocks value
 	for i := 0; i < 19; i++ {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
-	epochShouldBeStaked := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+	epochShouldntBeStaked := uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 
 	// Advance to blockHeight = 90 to complete the epoch. from its stake, 51 blocks have passed so it should definitely be staked
 	for i := 0; i < 31; i++ {
@@ -139,7 +139,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 		epoch          uint64
 		shouldBeStaked bool
 	}{
-		{"ShouldBeStaked", epochShouldBeStaked, true},         // 20 blocks have passed since the stake - should be enough blocks
+		{"ShouldBeStaked", epochShouldntBeStaked, false},      // 20 blocks have passed since the stake - not enough blocks (when EpochBlocks = 50)
 		{"ShouldAlsoBeStaked", epochShouldAlsoBeStaked, true}, // 51 blocks have passed - enough blocks
 	}
 
@@ -200,7 +200,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	require.Nil(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 60
-	// if the unstaking refers to 60 (wrongly, since they unstaked before the change was applied), they are supposed to get their funds back on block #240 (40+200(=BlockToSave) = 240 -> this is a start of a new epoch)
+	// if the unstaking refers to 60 (wrongly, since they unstaked before the change was applied), they are supposed to get their funds back on block #240 (39+200(=BlockToSave) = 240 -> this is a start of a new epoch)
 	ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers) // blockHeight = 40
 
 	// Advance 10 epochs to get to block #240. At this point, they shouldn't get their funds back
