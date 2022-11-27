@@ -10,6 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
+
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -31,6 +33,9 @@ func PortalServer(
 	if err != nil {
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
+
+	performance.Init()
+
 	// Start sentry
 	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
