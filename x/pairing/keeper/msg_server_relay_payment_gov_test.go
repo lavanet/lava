@@ -170,8 +170,8 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochBlocksChangesToTen", epochBeforeChangeToTen, true}, // first block of current epoch
-		{"PaymentAfterEpochBlocksChangesToTen", epochAfterChangeToTen, false},  // first block of previous epoch
+		{"PaymentBeforeEpochBlocksChangesToTen", epochBeforeChangeToTen, false}, // first block of current epoch
+		{"PaymentAfterEpochBlocksChangesToTen", epochAfterChangeToTen, false},   // first block of previous epoch
 	}
 
 	sessionCounter := 0
@@ -325,8 +325,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, true}, // first block of current epoch
-		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},  // first block of previous epoch
+		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, false}, // first block of current epoch
+		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},   // first block of previous epoch
 	}
 
 	sessionCounter := 0
