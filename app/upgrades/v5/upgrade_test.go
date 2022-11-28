@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
-	"github.com/lavanet/lava/app"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/conflict/keeper"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -22,7 +21,7 @@ type UpgradeTestSuite struct {
 }
 
 func (suite *UpgradeTestSuite) SetupTestApp() {
-	suite.app, suite.ctx = app.TestSetup()
+	//suite.app, suite.ctx = app.TestSetup()
 }
 
 func TestKeeperTestSuite(t *testing.T) {

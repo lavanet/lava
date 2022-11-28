@@ -30046,7 +30046,6 @@ paths:
             type: object
             properties:
               params:
-                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   minStakeProvider:
@@ -30078,6 +30077,7 @@ paths:
                     type: string
                   QoSWeight:
                     type: string
+                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30698,161 +30698,6 @@ paths:
           format: uint64
       tags:
         - Query
-  '/lavanet/lava/spec/chain/{chainID}':
-    get:
-      summary: Queries a list of Chain items.
-      operationId: LavanetLavaSpecChain
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              spec:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  name:
-                    type: string
-                  apis:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        blockParsing:
-                          type: object
-                          properties:
-                            parserArg:
-                              type: array
-                              items:
-                                type: string
-                            parserFunc:
-                              type: string
-                              enum:
-                                - EMPTY
-                                - PARSE_BY_ARG
-                                - PARSE_CANONICAL
-                                - PARSE_DICTIONARY
-                                - PARSE_DICTIONARY_OR_ORDERED
-                                - DEFAULT
-                              default: EMPTY
-                              title: >-
-                                - PARSE_BY_ARG: means parameters are ordered and
-                                flat expected areguments are: [param index]
-                                (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
-                        computeUnits:
-                          type: string
-                          format: uint64
-                        enabled:
-                          type: boolean
-                        apiInterfaces:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              interface:
-                                type: string
-                              type:
-                                type: string
-                              extraComputeUnits:
-                                type: string
-                                format: uint64
-                        category:
-                          type: object
-                          properties:
-                            deterministic:
-                              type: boolean
-                            local:
-                              type: boolean
-                            subscription:
-                              type: boolean
-                            stateful:
-                              type: integer
-                              format: int64
-                        parsing:
-                          type: object
-                          properties:
-                            function_tag:
-                              type: string
-                            function_template:
-                              type: string
-                            result_parsing:
-                              type: object
-                              properties:
-                                parserArg:
-                                  type: array
-                                  items:
-                                    type: string
-                                parserFunc:
-                                  type: string
-                                  enum:
-                                    - EMPTY
-                                    - PARSE_BY_ARG
-                                    - PARSE_CANONICAL
-                                    - PARSE_DICTIONARY
-                                    - PARSE_DICTIONARY_OR_ORDERED
-                                    - DEFAULT
-                                  default: EMPTY
-                                  title: >-
-                                    - PARSE_BY_ARG: means parameters are ordered
-                                    and flat expected areguments are: [param
-                                    index] (example: PARAMS:
-                                    [<#BlockNum>,"banana"])
-                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block
-                  enabled:
-                    type: boolean
-                  reliabilityThreshold:
-                    type: integer
-                    format: int64
-                  comparesHashes:
-                    type: boolean
-                  finalizationCriteria:
-                    type: integer
-                    format: int64
-                  saved_blocks:
-                    type: integer
-                    format: int64
-                  averageBlockTime:
-                    type: string
-                    format: int64
-                  allowedBlockLagForQosSync:
-                    type: string
-                    format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: chainID
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   /lavanet/lava/spec/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -31219,7 +31064,7 @@ paths:
           type: boolean
       tags:
         - Query
-  '/lavanet/lava/spec/spec/{index}':
+  '/lavanet/lava/spec/spec/{ChainID}':
     get:
       summary: Queries a Spec by id.
       operationId: LavanetLavaSpecSpec
@@ -31368,7 +31213,7 @@ paths:
                       type: string
                   additionalProperties: {}
       parameters:
-        - name: index
+        - name: ChainID
           in: path
           required: true
           type: string
@@ -53352,7 +53197,6 @@ definitions:
     type: object
     properties:
       params:
-        description: params holds all the parameters of this module.
         type: object
         properties:
           minStakeProvider:
@@ -53384,6 +53228,7 @@ definitions:
             type: string
           QoSWeight:
             type: string
+        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -53744,128 +53589,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  lavanet.lava.spec.QueryChainResponse:
-    type: object
-    properties:
-      spec:
-        type: object
-        properties:
-          index:
-            type: string
-          name:
-            type: string
-          apis:
-            type: array
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                blockParsing:
-                  type: object
-                  properties:
-                    parserArg:
-                      type: array
-                      items:
-                        type: string
-                    parserFunc:
-                      type: string
-                      enum:
-                        - EMPTY
-                        - PARSE_BY_ARG
-                        - PARSE_CANONICAL
-                        - PARSE_DICTIONARY
-                        - PARSE_DICTIONARY_OR_ORDERED
-                        - DEFAULT
-                      default: EMPTY
-                      title: >-
-                        - PARSE_BY_ARG: means parameters are ordered and flat
-                        expected areguments are: [param index] (example: PARAMS:
-                        [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block
-                computeUnits:
-                  type: string
-                  format: uint64
-                enabled:
-                  type: boolean
-                apiInterfaces:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      interface:
-                        type: string
-                      type:
-                        type: string
-                      extraComputeUnits:
-                        type: string
-                        format: uint64
-                category:
-                  type: object
-                  properties:
-                    deterministic:
-                      type: boolean
-                    local:
-                      type: boolean
-                    subscription:
-                      type: boolean
-                    stateful:
-                      type: integer
-                      format: int64
-                parsing:
-                  type: object
-                  properties:
-                    function_tag:
-                      type: string
-                    function_template:
-                      type: string
-                    result_parsing:
-                      type: object
-                      properties:
-                        parserArg:
-                          type: array
-                          items:
-                            type: string
-                        parserFunc:
-                          type: string
-                          enum:
-                            - EMPTY
-                            - PARSE_BY_ARG
-                            - PARSE_CANONICAL
-                            - PARSE_DICTIONARY
-                            - PARSE_DICTIONARY_OR_ORDERED
-                            - DEFAULT
-                          default: EMPTY
-                          title: >-
-                            - PARSE_BY_ARG: means parameters are ordered and
-                            flat expected areguments are: [param index]
-                            (example: PARAMS: [<#BlockNum>,"banana"])
-                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                             - DEFAULT: means parameters are non related to block, and should fetch latest block
-          enabled:
-            type: boolean
-          reliabilityThreshold:
-            type: integer
-            format: int64
-          comparesHashes:
-            type: boolean
-          finalizationCriteria:
-            type: integer
-            format: int64
-          saved_blocks:
-            type: integer
-            format: int64
-          averageBlockTime:
-            type: string
-            format: int64
-          allowedBlockLagForQosSync:
-            type: string
-            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:

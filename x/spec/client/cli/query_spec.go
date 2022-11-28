@@ -55,7 +55,7 @@ func CmdShowSpec() *cobra.Command {
 			argIndex := args[0]
 
 			params := &types.QueryGetSpecRequest{
-				Index: argIndex,
+				ChainID: argIndex,
 			}
 
 			res, err := queryClient.Spec(context.Background(), params)

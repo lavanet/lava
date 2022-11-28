@@ -3,6 +3,7 @@ package lavasession
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -93,7 +94,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if PairingListEmptyError.Is(err) {
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
-				// This provider does'nt have enough compute units for this session, we block it for this session and continue to another provider.
+				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
@@ -135,13 +136,16 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
-				continue
 			} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
 				// provider has too many block listed sessions. we block it until the next epoch.
-				csm.blockProvider(providerAddress, false, sessionEpoch)
+				err = csm.blockProvider(providerAddress, false, sessionEpoch)
+				if err != nil {
+					return nil, 0, "", nil, err
+				}
 			} else {
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
+			continue
 		}
 
 		if pairingEpoch != sessionEpoch {
@@ -228,7 +232,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 }
 
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
-// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise does'nt take effect.
+// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
 func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64) error {
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
@@ -243,11 +247,16 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
-		return err
+		if AddressIndexWasNotFoundError.Is(err) {
+			// in case index wasnt found just continue with the method
+			utils.LavaFormatError("address was not found in valid addresses", err, &map[string]string{"address": address, "validAddresses": fmt.Sprintf("%v", csm.validAddresses)})
+		} else {
+			return err
+		}
 	}
 
 	if reportProvider { // Report provider flow
-		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it does'nt exist already
+		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
@@ -467,6 +476,21 @@ func (csm *ConsumerSessionManager) OnSessionDoneWithoutQoSChanges(consumerSessio
 		// if we managed to lock throw an error for misuse.
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
 	}
+	return nil
+}
+
+// On a successful Subscribe relay
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSession *SingleConsumerSession) error {
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+
+	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
+	consumerSession.LatestRelayCu = 0                      // reset cu just in case
+	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
+	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	return nil
 }
 

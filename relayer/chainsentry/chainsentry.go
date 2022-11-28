@@ -67,7 +67,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx)
 	// TODO:: chekc if we have at least x blocknums before forloop
 	if err != nil {
-		return err
+		return ErrorFailedToFetchLatestBlock.Wrapf("Chain Sentry Init failed, additional info: " + err.Error())
 	}
 
 	cs.SetLatestBlockNum(latestBlock)
@@ -126,7 +126,9 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 }
 
 func (cs *ChainSentry) Start(ctx context.Context) error {
-	ticker := time.NewTicker(time.Second * 5)
+	// how often to query latest block.
+	ticker := time.NewTicker(
+		time.Millisecond * time.Duration(int64(cs.chainProxy.GetSentry().GetAverageBlockTime())))
 
 	// Polls blocks and keeps a queue of them
 	go func() {

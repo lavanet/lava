@@ -193,8 +193,12 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 		utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
 	} else {
 		ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accClientAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, clientReward.TruncateInt()), false)
-		if !ok || err != nil {
-			utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit client")
+		if !ok {
+			details := map[string]string{}
+			if err != nil {
+				details["error"] = err.Error()
+			}
+			utils.LavaError(ctx, logger, "failed_credit", details, "failed to credit client")
 		}
 	}
 
@@ -214,8 +218,12 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 				utils.LavaError(ctx, logger, "invalid_address", map[string]string{"error": err.Error()}, "")
 			} else {
 				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()), true)
-				if !ok || err != nil {
-					utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit provider")
+				if !ok {
+					details := map[string]string{}
+					if err != nil {
+						details["error"] = err.Error()
+					}
+					utils.LavaError(ctx, logger, "failed_credit", details, "failed to credit provider")
 				}
 			}
 		}
@@ -239,8 +247,12 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 					continue
 				}
 				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, ConflictVote.ChainID, accAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, rewardVoter.TruncateInt()), true)
-				if !ok || err != nil {
-					utils.LavaError(ctx, logger, "failed_credit", map[string]string{"error": err.Error()}, "failed to credit voter")
+				if !ok {
+					details := map[string]string{}
+					if err != nil {
+						details["error"] = err.Error()
+					}
+					utils.LavaError(ctx, logger, "failed_credit", details, "failed to credit voter")
 					continue
 				}
 			}

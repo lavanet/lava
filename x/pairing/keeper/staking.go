@@ -105,16 +105,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
-			if !provider {
-				epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-				existingEntry.Deadline = epoch
-				err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, existingEntry)
-
-				if err != nil {
-					details["error"] = err.Error()
-					return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_epoch", details, "could not append epoch stake entries")
-				}
-			}
 			utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_update", details, "Changing Staked "+stake_type())
 			return nil
 		}
@@ -132,16 +122,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
+	appended := false
 	if !provider {
-		epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-		stakeEntry.Deadline = epoch
-		err = k.epochStorageKeeper.AppendEpochStakeEntries(ctx, epoch, stake_type(), chainID, stakeEntry)
+		//this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
+		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type(), chainID, stakeEntry)
 
 		if err != nil {
 			details["error"] = err.Error()
 			return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_epoch", details, "could not append epoch stake entries")
 		}
 	}
+	details["effectiveImmediately"] = strconv.FormatBool(appended)
 	utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_new", details, "Adding Staked "+stake_type())
 	return err
 }
