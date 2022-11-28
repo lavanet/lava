@@ -60,3 +60,12 @@ After a draft release is created, make your final changes from the release page 
 
 # Lava e2e Test & Mock Proxy 
 * check out ./testutils/e2e/Readme.md
+
+# Building the binary
+* building the lava binary is done via the make file
+```
+make build //builds the binary in a local directory to be copied and used
+make install //builds the binary and copies it to the gopath/bin directory
+make install-performance //builds the binary and copies it to the gopath/bin directory, with internal performance tools access
+make build-performance //builds the binary in a local directory to be copied and used, with internal performance tools access
+```
