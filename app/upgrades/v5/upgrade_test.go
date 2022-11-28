@@ -1,3 +1,5 @@
+//go:build ignore
+
 package v4_test
 
 import (
