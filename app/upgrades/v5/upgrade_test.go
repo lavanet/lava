@@ -21,7 +21,7 @@ type UpgradeTestSuite struct {
 }
 
 func (suite *UpgradeTestSuite) SetupTestApp() {
-	//suite.app, suite.ctx = app.TestSetup()
+	suite.app, suite.ctx = app.TestSetup()
 }
 
 func TestKeeperTestSuite(t *testing.T) {
