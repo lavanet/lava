@@ -172,6 +172,23 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	}
 }
 
+func (lt *lavaTest) startJSONRPCProxy() {
+	proxyCommand := "/opt/homebrew/bin/go run ./testutil/e2e/proxy/. eth"
+	cmd := exec.Cmd{
+		Path: "/opt/homebrew/bin/go",
+		Args: strings.Split(proxyCommand, " "),
+		// Stdout: os.Stdout,
+		// Stderr: os.Stdout,
+		Stdout: &lt.execOut,
+		Stderr: &lt.execErr,
+	}
+	err := cmd.Start()
+	if err != nil {
+		log.Println(err)
+
+	}
+}
+
 func (lt *lavaTest) startJSONRPCGateway() {
 	// TODO
 	// remove ugly path
@@ -446,6 +463,7 @@ func (lt *lavaTest) checkTendermintGateway(rpcURL string) {
 		time.Sleep(time.Second)
 	}
 }
+
 func tendermintTests(rpcURL string, testDuration time.Duration) error {
 	ctx := context.Background()
 	utils.LavaFormatInfo("Starting TENDERMINT Tests", nil)
@@ -509,7 +527,8 @@ func main() {
 	lt.checkStakeLava()
 	utils.LavaFormatInfo("Staking Lava OK", nil)
 
-	lt.startJSONRPCProvider("")
+	lt.startJSONRPCProxy()
+	lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	lt.startJSONRPCGateway()
 	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1")
 
@@ -521,8 +540,7 @@ func main() {
 	lt.startTendermintGateway()
 	lt.checkTendermintGateway("http://127.0.0.1:3341/1")
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
-	// startETHProxy()
-	// checkETHProxy()
+
 	err = jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	log.Println(err)
 	err = restTests("http://127.0.0.1:3340/1", time.Second*30)
