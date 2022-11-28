@@ -489,7 +489,7 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType 
 }
 
 //append to epoch stake entries ONLY if it doesn't exist
-func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) (bool, error) {
+func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) (added bool, err error) {
 	epoch := k.GetEpochStart(ctx)
 	stakeEntry.Deadline = epoch
 	storage, found := k.getStakeStorageEpoch(ctx, epoch, storageType, chainID)

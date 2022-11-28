@@ -133,7 +133,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		}
 
 	}
-	details["effectiveImidietly"] = strconv.FormatBool(appended)
+	details["effectiveImmediately"] = strconv.FormatBool(appended)
 	utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_new", details, "Adding Staked "+stake_type())
 	return err
 }
