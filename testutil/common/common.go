@@ -56,7 +56,6 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		vrfPk.Unmarshal(pk)
 		_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 		require.Nil(t, err)
-
 	}
 }
 

@@ -180,8 +180,8 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		//begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
+		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
