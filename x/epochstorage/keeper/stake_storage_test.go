@@ -5,11 +5,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/epochstorage/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
@@ -20,8 +18,8 @@ var _ = strconv.IntSize
 const advanceFewEpochs = 4
 const stakeStorageSlots = 10
 
-func createNStakeStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.StakeStorage {
-	items := make([]types.StakeStorage, n)
+func createNStakeStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []epochstoragetypes.StakeStorage {
+	items := make([]epochstoragetypes.StakeStorage, n)
 	for i := range items {
 		items[i].Index = strconv.Itoa(i)
 
@@ -31,7 +29,7 @@ func createNStakeStorage(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.
 }
 
 func TestStakeStorageGet(t *testing.T) {
-	keeper, ctx := keepertest.EpochstorageKeeper(t)
+	keeper, ctx := testkeeper.EpochstorageKeeper(t)
 	items := createNStakeStorage(keeper, ctx, 10)
 	for _, item := range items {
 		rst, found := keeper.GetStakeStorage(ctx,
@@ -45,7 +43,7 @@ func TestStakeStorageGet(t *testing.T) {
 	}
 }
 func TestStakeStorageRemove(t *testing.T) {
-	keeper, ctx := keepertest.EpochstorageKeeper(t)
+	keeper, ctx := testkeeper.EpochstorageKeeper(t)
 	items := createNStakeStorage(keeper, ctx, stakeStorageSlots)
 	for _, item := range items {
 		keeper.RemoveStakeStorage(ctx,
@@ -66,21 +64,21 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	keeper := allkeepers.Epochstorage
 	ctx := sdk.UnwrapSDKContext(ctxx)
 
-	items := make([]types.StakeStorage, stakeStorageSlots)
+	items := make([]epochstoragetypes.StakeStorage, stakeStorageSlots)
 	chainID := "ETH1"
-	storageType := types.ProviderKey
+	storageType := epochstoragetypes.ProviderKey
 	for i := 0; i < len(items); i++ {
 		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
 		keeper.SetStakeStorage(ctx, items[i])
 	}
-	storageType = types.ClientKey
+	storageType = epochstoragetypes.ClientKey
 	for i := 0; i < len(items); i++ {
 		items[i].Index = keeper.StakeStorageKey(storageType, uint64(i), chainID)
 		keeper.SetStakeStorage(ctx, items[i])
 	}
 
 	for i := 0; i < advanceFewEpochs; i++ {
-		keepertest.AdvanceEpoch(ctxx, allkeepers)
+		testkeeper.AdvanceEpoch(ctxx, allkeepers)
 	}
 
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 10, []string{"COS3ETH1LAV1COS4"})
@@ -103,7 +101,7 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), 0) // zero entries left
 
-	items[0].Index = types.ProviderKey + strconv.FormatUint(uint64(10), 10) + ""
+	items[0].Index = epochstoragetypes.ProviderKey + strconv.FormatUint(uint64(10), 10) + ""
 	keeper.SetStakeStorage(ctx, items[0])
 	keeper.RemoveAllEntriesPriorToBlockNumber(ctx, 11, []string{""})
 	allStorage = keeper.GetAllStakeStorage(ctx)
@@ -111,7 +109,7 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 }
 
 func TestStakeStorageGetAll(t *testing.T) {
-	keeper, ctx := keepertest.EpochstorageKeeper(t)
+	keeper, ctx := testkeeper.EpochstorageKeeper(t)
 	items := createNStakeStorage(keeper, ctx, 10)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
