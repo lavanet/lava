@@ -29,6 +29,7 @@ require (
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/golang/protobuf v1.5.2
 	github.com/joho/godotenv v1.3.0
+	github.com/lavanet/performance_tools v0.0.0-20221128024105-d5a48bc0b321
 	github.com/newrelic/go-agent/v3 v3.20.0
 	github.com/spf13/pflag v1.0.5
 )

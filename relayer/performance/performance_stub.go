@@ -1,4 +1,4 @@
-//go:build !pro
+//go:build !performance_tools
 
 package performance
 

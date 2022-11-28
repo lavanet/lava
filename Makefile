@@ -7,12 +7,13 @@ SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
 DOCKER := $(shell which docker)
 BUILDDIR ?= $(CURDIR)/build
 DEBUG_MUTEX ?= false
+BUILD_PERFORMANCE ?= false
 MASK_CONSUMER_LOGS ?= false
 export GO111MODULE = on
 
 # process build tags
 
-build_tags = netgo pro
+build_tags = netgo
 ifeq ($(LEDGER_ENABLED),true)
   ifeq ($(OS),Windows_NT)
     GCCEXE = $(shell where gcc.exe 2> NUL)
@@ -35,6 +36,10 @@ ifeq ($(LEDGER_ENABLED),true)
     endif
   endif
 endif
+
+ifeq ($(BUILD_PERFORMANCE),true)
+  build_tags += performance_tools
+endif 
 
 ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
   build_tags += gcc
@@ -103,4 +108,8 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 
+build-performance: go.sum
+	BUILD_PERFORMANCE=true $(MAKE) build
 
+install-performance: go.sum
+	BUILD_PERFORMANCE=true $(MAKE) install
