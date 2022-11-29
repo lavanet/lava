@@ -29,10 +29,11 @@ import (
 )
 
 type lavaTest struct {
-	grpcConn  *grpc.ClientConn
-	lavadPath string
-	execOut   bytes.Buffer
-	execErr   bytes.Buffer
+	grpcConn         *grpc.ClientConn
+	lavadPath        string
+	goExecutablePath string
+	execOut          bytes.Buffer
+	execErr          bytes.Buffer
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
@@ -165,9 +166,9 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startJSONRPCProxy() {
-	proxyCommand := "/opt/homebrew/bin/go run ./testutil/e2e/proxy/. eth"
+	proxyCommand := lt.goExecutablePath + " run ./testutil/e2e/proxy/. eth"
 	cmd := exec.Cmd{
-		Path: "/opt/homebrew/bin/go",
+		Path: lt.goExecutablePath,
 		Args: strings.Split(proxyCommand, " "),
 		// Stdout: os.Stdout,
 		// Stderr: os.Stdout,
@@ -502,6 +503,11 @@ func (lt *lavaTest) saveLogs() {
 }
 
 func main() {
+	goExecutablePath, err := exec.LookPath("go")
+	if err != nil {
+		panic("Could not find go executable path")
+	}
+
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		gopath = build.Default.GOPATH
@@ -512,8 +518,9 @@ func main() {
 		log.Println(err)
 	}
 	lt := &lavaTest{
-		grpcConn:  grpcConn,
-		lavadPath: gopath + "/bin/lavad",
+		grpcConn:         grpcConn,
+		lavadPath:        gopath + "/bin/lavad",
+		goExecutablePath: goExecutablePath,
 	}
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
@@ -541,7 +548,9 @@ func main() {
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	restErr := restTests("http://127.0.0.1:3340/1", time.Second*30)
 	tendermintErr := tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
+
 	lt.saveLogs()
+
 	if jsonErr != nil {
 		panic(jsonErr)
 	} else {
