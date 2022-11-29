@@ -532,7 +532,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		return nil, nil, nil, nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 
-	if !isSupportedSpec(request) {
+	if !isSupportedSpec(request) && request.GetConnectionType() != chainproxy.GRPC_DESCRIPTORS_REQUEST {
 		return nil, nil, nil, nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 

@@ -265,7 +265,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			reply, replyServer, _, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
 			if err != nil {
 				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -324,7 +324,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
+		reply, _, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)

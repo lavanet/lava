@@ -33,9 +33,9 @@ type RestMessage struct {
 }
 
 type RestChainProxy struct {
-	nodeUrl string
-	sentry  *sentry.Sentry
-	csm     *lavasession.ConsumerSessionManager
+	nodeUrl    string
+	sentry     *sentry.Sentry
+	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
 }
 
@@ -46,9 +46,9 @@ func (r *RestMessage) GetMsg() interface{} {
 func NewRestChainProxy(nodeUrl string, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &RestChainProxy{
-		nodeUrl: nodeUrl,
-		sentry:  sentry,
-		csm: csm,
+		nodeUrl:    nodeUrl,
+		sentry:     sentry,
+		csm:        csm,
 		portalLogs: pLogs,
 	}
 }
@@ -201,7 +201,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		log.Println("in <<< ", path)
 		requestBody := string(c.Body())
-		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
+		reply, _, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
@@ -219,7 +219,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		reply, _, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
