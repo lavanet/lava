@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	log "fmt"
+	"go/build"
 	"io"
 	"math/big"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -28,58 +29,55 @@ import (
 )
 
 type lavaTest struct {
-	wg       sync.WaitGroup
-	grpcConn *grpc.ClientConn
-	ctxs     map[string]context.Context
-	execOut  bytes.Buffer
-	execErr  bytes.Buffer
+	grpcConn  *grpc.ClientConn
+	lavadPath string
+	execOut   bytes.Buffer
+	execErr   bytes.Buffer
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
-	defer lt.wg.Done()
 	absPath, err := filepath.Abs(".")
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 
 	c, err := chain.New(absPath, chain.LogLevel(chain.LogRegular))
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 	cacheRootDir, err := chainconfig.ConfigDirPath()
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 
 	storage, err := cache.NewStorage(filepath.Join(cacheRootDir, "ignite_cache.db"))
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 
 	err = c.Serve(ctx, storage, chain.ServeForceReset())
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
 
-func (lt *lavaTest) checkLava() {
+func (lt *lavaTest) checkLava(timeout time.Duration) {
+
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
-	for {
-		// TODO
+	for start := time.Now(); time.Since(start) < timeout; {
 		// This loop would wait for the lavad server to be up before chain init
-		// This one should always end but add a timer
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err != nil && strings.Contains(err.Error(), "rpc error") {
 			utils.LavaFormatInfo("Waiting for Lava", nil)
 			time.Sleep(time.Second)
 		} else if err == nil {
-			break
-		} else {
-			log.Println(err)
 			return
+		} else {
+			panic(err)
 		}
 	}
+	panic("Lava Check Failed")
 }
 
 func (lt *lavaTest) stakeLava() {
@@ -99,14 +97,13 @@ func (lt *lavaTest) checkStakeLava() {
 	// query all specs
 	specQueryRes, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
 	if len(specQueryRes.Spec) == 0 {
-		log.Println("Staking Failed SPEC")
-		return
+		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
 		// Query providers
@@ -116,12 +113,10 @@ func (lt *lavaTest) checkStakeLava() {
 			ChainID: spec.GetIndex(),
 		})
 		if err != nil {
-			log.Println(err)
-			return
+			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) == 0 {
-			log.Println("Staking Failed PROVIDER")
-			return
+			panic("Staking Failed PROVIDER")
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
 			// check if number of stakes matches number of providers to be launched
@@ -133,12 +128,10 @@ func (lt *lavaTest) checkStakeLava() {
 			ChainID: spec.GetIndex(),
 		})
 		if err != nil {
-			log.Println(err)
-			return
+			panic(err)
 		}
 		if len(clientQueryRes.StakeEntry) == 0 {
-			log.Println("Staking Failed CLIENT")
-			return
+			panic("Staking Failed CLIENT")
 		}
 		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
 			// check if number of stakes matches number of clients to be launched
@@ -149,25 +142,24 @@ func (lt *lavaTest) checkStakeLava() {
 
 func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	// TODO
-	// remove ugly path
 	// pipe output to array
 	providerCommands := []string{
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5",
+		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1",
+		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2",
+		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3",
+		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4",
+		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5",
 	}
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
-			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
 			Stdout: &lt.execOut,
 			Stderr: &lt.execErr,
 		}
 		err := cmd.Start()
 		if err != nil {
-			log.Println(err)
+			panic(err)
 		}
 	}
 }
@@ -184,19 +176,17 @@ func (lt *lavaTest) startJSONRPCProxy() {
 	}
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
-
+		panic(err)
 	}
 }
 
 func (lt *lavaTest) startJSONRPCGateway() {
 	// TODO
-	// remove ugly path
 	// pipe output to array
 	providerCommand :=
-		"/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
+		lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 	cmd := exec.Cmd{
-		Path: "/Users/jaketagnepis/go/bin/lavad",
+		Path: lt.lavadPath,
 		Args: strings.Split(providerCommand, " "),
 		// Stdout: os.Stdout,
 		// Stderr: os.Stdout,
@@ -205,12 +195,13 @@ func (lt *lavaTest) startJSONRPCGateway() {
 	}
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
 
-func (lt *lavaTest) checkJSONRPCGateway(rpcURL string) {
-	for {
+// If after timeout and the check does not return it means it failed
+func (lt *lavaTest) checkJSONRPCGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting JSONRPC Gateway", nil)
 		client, err := ethclient.Dial(rpcURL)
 		if err != nil {
@@ -218,10 +209,11 @@ func (lt *lavaTest) checkJSONRPCGateway(rpcURL string) {
 		}
 		_, err = client.BlockNumber(context.Background())
 		if err == nil {
-			break
+			return
 		}
 		time.Sleep(time.Second)
 	}
+	panic("JSONRPC Check Failed")
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
@@ -330,55 +322,54 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	// TODO
-	// remove ugly path
 	// pipe output to array
 	providerCommands := []string{
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer1",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer2",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer3",
+		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer1",
+		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer2",
+		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer3",
 	}
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
-			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
 			Stdout: &lt.execOut,
 			Stderr: &lt.execErr,
 		}
 		err := cmd.Start()
 		if err != nil {
-			log.Println(err)
+			panic(err)
 		}
 	}
 }
 
 func (lt *lavaTest) startRESTGateway() {
 	// TODO
-	// remove ugly path
 	// pipe output to array
-	providerCommand := "/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 rest --from user4"
 	cmd := exec.Cmd{
-		Path:   "/Users/jaketagnepis/go/bin/lavad",
+		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
 		Stdout: &lt.execOut,
 		Stderr: &lt.execErr,
 	}
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
 
-func (lt *lavaTest) checkRESTGateway(rpcURL string) {
-	for {
+func (lt *lavaTest) checkRESTGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting REST Gateway", nil)
 		reply, err := getRequest(log.Sprintf("%s/blocks/latest", rpcURL))
 		if err != nil || strings.Contains(string(reply), "error") {
 			time.Sleep(time.Second)
 			continue
 		} else {
-			break
+			return
 		}
 	}
+	panic("REST Check Failed")
 }
 
 func restTests(rpcURL string, testDuration time.Duration) error {
@@ -414,20 +405,20 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	// remove ugly path
 	// pipe output to array
 	providerCommands := []string{
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer1",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer2",
-		"/Users/jaketagnepis/go/bin/lavad server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer3",
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer1",
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer2",
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer3",
 	}
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
-			Path:   "/Users/jaketagnepis/go/bin/lavad",
+			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
 			Stdout: &lt.execOut,
 			Stderr: &lt.execErr,
 		}
 		err := cmd.Start()
 		if err != nil {
-			log.Println(err)
+			panic(err)
 		}
 	}
 }
@@ -436,21 +427,21 @@ func (lt *lavaTest) startTendermintGateway() {
 	// TODO
 	// remove ugly path
 	// pipe output to array
-	providerCommand := "/Users/jaketagnepis/go/bin/lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
 	cmd := exec.Cmd{
-		Path:   "/Users/jaketagnepis/go/bin/lavad",
+		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
 		Stdout: &lt.execOut,
 		Stderr: &lt.execErr,
 	}
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
 
-func (lt *lavaTest) checkTendermintGateway(rpcURL string) {
-	for {
+func (lt *lavaTest) checkTendermintGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting TENDERMINT Gateway", nil)
 		client, err := tmclient.New(rpcURL, "/websocket")
 		if err != nil {
@@ -458,10 +449,11 @@ func (lt *lavaTest) checkTendermintGateway(rpcURL string) {
 		}
 		_, err = client.Status(context.Background())
 		if err == nil {
-			break
+			return
 		}
 		time.Sleep(time.Second)
 	}
+	panic("TENDERMINT Check Failed")
 }
 
 func tendermintTests(rpcURL string, testDuration time.Duration) error {
@@ -489,7 +481,7 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func getRequest(url string) ([]byte, error) {
-	res, err := http.Get(url) //nolint:gosec
+	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -505,22 +497,27 @@ func getRequest(url string) ([]byte, error) {
 	return body, nil
 }
 
+func (lt *lavaTest) saveLogs() {
+
+}
+
 func main() {
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
 	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithInsecure())
 	if err != nil {
-		// this check does not get triggered even if server is down
+		// Just log because grpc redials
 		log.Println(err)
-		return
 	}
 	lt := &lavaTest{
-		grpcConn: grpcConn,
-		ctxs:     make(map[string]context.Context),
+		grpcConn:  grpcConn,
+		lavadPath: gopath + "/bin/lavad",
 	}
-	lt.ctxs["lavaMain"] = context.Background()
-	lt.wg.Add(1)
 	utils.LavaFormatInfo("Starting Lava", nil)
-	go lt.startLava(lt.ctxs["lavaMain"])
-	lt.checkLava()
+	go lt.startLava(context.Background())
+	lt.checkLava(time.Second * 30)
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
@@ -530,22 +527,36 @@ func main() {
 	lt.startJSONRPCProxy()
 	lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	lt.startJSONRPCGateway()
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1")
+	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
 
 	lt.startRESTProvider("http://127.0.0.1:1317")
 	lt.startRESTGateway()
-	lt.checkRESTGateway("http://127.0.0.1:3340/1")
+	lt.checkRESTGateway("http://127.0.0.1:3340/1", time.Second*30)
 
 	lt.startTendermintProvider("http://0.0.0.0:26657")
 	lt.startTendermintGateway()
-	lt.checkTendermintGateway("http://127.0.0.1:3341/1")
+	lt.checkTendermintGateway("http://127.0.0.1:3341/1", time.Second*30)
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
-	err = jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
-	log.Println(err)
-	err = restTests("http://127.0.0.1:3340/1", time.Second*30)
-	log.Println(err)
-	err = tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
-	log.Println(err)
-	lt.wg.Wait()
+	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
+	restErr := restTests("http://127.0.0.1:3340/1", time.Second*30)
+	tendermintErr := tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
+	lt.saveLogs()
+	if jsonErr != nil {
+		panic(jsonErr)
+	} else {
+		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
+	}
+
+	if restErr != nil {
+		panic(restErr)
+	} else {
+		utils.LavaFormatInfo("REST TEST OK", nil)
+	}
+
+	if tendermintErr != nil {
+		panic(tendermintErr)
+	} else {
+		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
+	}
 }
