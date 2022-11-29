@@ -8,7 +8,6 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -34,7 +33,7 @@ func TestUnstakeClient(t *testing.T) {
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochtypes.DefaultGenesis().EpochDetails)
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/10)), Geolocation: 1, Vrfpk: vrfPk.String()})
 	require.Nil(t, err)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -83,7 +82,7 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochtypes.DefaultGenesis().EpochDetails)
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	specName := "mockSpec"
 	spec := spectypes.Spec{}
@@ -127,7 +126,7 @@ func TestDoubleUnstakeClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochtypes.DefaultGenesis().EpochDetails)
+	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	specName := "mockSpec"
 	spec := spectypes.Spec{}

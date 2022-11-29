@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
+
+	"runtime/debug"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
@@ -43,9 +46,10 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	NoColor := os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor})
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
 	}
 
 	var logEvent *zerolog.Event
@@ -84,6 +88,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
+	(*extraAttributes)["StackTrace"] = string(debug.Stack())
 	LavaFormatLog(description, err, extraAttributes, 4)
 	os.Exit(1)
 }

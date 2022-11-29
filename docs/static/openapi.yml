@@ -1997,33 +1997,44 @@ paths:
                       last_commit_hash:
                         type: string
                         format: byte
+                        description: commit from validators from the last block
                         title: hashes of block data
                       data_hash:
                         type: string
                         format: byte
+                        title: transactions
                       validators_hash:
                         type: string
                         format: byte
+                        description: validators for the current block
                         title: hashes from the app output from the prev block
                       next_validators_hash:
                         type: string
                         format: byte
+                        title: validators for the next block
                       consensus_hash:
                         type: string
                         format: byte
+                        title: consensus params for current block
                       app_hash:
                         type: string
                         format: byte
+                        title: state after txs from the previous block
                       last_results_hash:
                         type: string
                         format: byte
+                        title: >-
+                          root hash of all results from the txs from the
+                          previous block
                       evidence_hash:
                         type: string
                         format: byte
+                        description: evidence included in the block
                         title: consensus info
                       proposer_address:
                         type: string
                         format: byte
+                        title: original proposer of the block
                     description: Header defines the structure of a Tendermint block header.
                   data:
                     type: object
@@ -2095,6 +2106,7 @@ paths:
                                               format: byte
                                           title: PartsetHeader
                                       title: BlockID
+                                      description: zero if vote is nil.
                                     timestamp:
                                       type: string
                                       format: date-time
@@ -2152,6 +2164,7 @@ paths:
                                               format: byte
                                           title: PartsetHeader
                                       title: BlockID
+                                      description: zero if vote is nil.
                                     timestamp:
                                       type: string
                                       format: date-time
@@ -2240,35 +2253,48 @@ paths:
                                             last_commit_hash:
                                               type: string
                                               format: byte
+                                              description: >-
+                                                commit from validators from the last
+                                                block
                                               title: hashes of block data
                                             data_hash:
                                               type: string
                                               format: byte
+                                              title: transactions
                                             validators_hash:
                                               type: string
                                               format: byte
+                                              description: validators for the current block
                                               title: >-
                                                 hashes from the app output from the prev
                                                 block
                                             next_validators_hash:
                                               type: string
                                               format: byte
+                                              title: validators for the next block
                                             consensus_hash:
                                               type: string
                                               format: byte
+                                              title: consensus params for current block
                                             app_hash:
                                               type: string
                                               format: byte
+                                              title: state after txs from the previous block
                                             last_results_hash:
                                               type: string
                                               format: byte
+                                              title: >-
+                                                root hash of all results from the txs
+                                                from the previous block
                                             evidence_hash:
                                               type: string
                                               format: byte
+                                              description: evidence included in the block
                                               title: consensus info
                                             proposer_address:
                                               type: string
                                               format: byte
+                                              title: original proposer of the block
                                           description: >-
                                             Header defines the structure of a
                                             Tendermint block header.
@@ -2751,33 +2777,44 @@ paths:
                       last_commit_hash:
                         type: string
                         format: byte
+                        description: commit from validators from the last block
                         title: hashes of block data
                       data_hash:
                         type: string
                         format: byte
+                        title: transactions
                       validators_hash:
                         type: string
                         format: byte
+                        description: validators for the current block
                         title: hashes from the app output from the prev block
                       next_validators_hash:
                         type: string
                         format: byte
+                        title: validators for the next block
                       consensus_hash:
                         type: string
                         format: byte
+                        title: consensus params for current block
                       app_hash:
                         type: string
                         format: byte
+                        title: state after txs from the previous block
                       last_results_hash:
                         type: string
                         format: byte
+                        title: >-
+                          root hash of all results from the txs from the
+                          previous block
                       evidence_hash:
                         type: string
                         format: byte
+                        description: evidence included in the block
                         title: consensus info
                       proposer_address:
                         type: string
                         format: byte
+                        title: original proposer of the block
                     description: Header defines the structure of a Tendermint block header.
                   data:
                     type: object
@@ -2849,6 +2886,7 @@ paths:
                                               format: byte
                                           title: PartsetHeader
                                       title: BlockID
+                                      description: zero if vote is nil.
                                     timestamp:
                                       type: string
                                       format: date-time
@@ -2906,6 +2944,7 @@ paths:
                                               format: byte
                                           title: PartsetHeader
                                       title: BlockID
+                                      description: zero if vote is nil.
                                     timestamp:
                                       type: string
                                       format: date-time
@@ -2994,35 +3033,48 @@ paths:
                                             last_commit_hash:
                                               type: string
                                               format: byte
+                                              description: >-
+                                                commit from validators from the last
+                                                block
                                               title: hashes of block data
                                             data_hash:
                                               type: string
                                               format: byte
+                                              title: transactions
                                             validators_hash:
                                               type: string
                                               format: byte
+                                              description: validators for the current block
                                               title: >-
                                                 hashes from the app output from the prev
                                                 block
                                             next_validators_hash:
                                               type: string
                                               format: byte
+                                              title: validators for the next block
                                             consensus_hash:
                                               type: string
                                               format: byte
+                                              title: consensus params for current block
                                             app_hash:
                                               type: string
                                               format: byte
+                                              title: state after txs from the previous block
                                             last_results_hash:
                                               type: string
                                               format: byte
+                                              title: >-
+                                                root hash of all results from the txs
+                                                from the previous block
                                             evidence_hash:
                                               type: string
                                               format: byte
+                                              description: evidence included in the block
                                               title: consensus info
                                             proposer_address:
                                               type: string
                                               format: byte
+                                              title: original proposer of the block
                                           description: >-
                                             Header defines the structure of a
                                             Tendermint block header.
@@ -10915,7 +10967,10 @@ paths:
                             description: >-
                               RedelegationEntry defines a redelegation object
                               with relevant metadata.
-                          description: entries are the redelegation entries.
+                          description: |-
+                            entries are the redelegation entries.
+
+                            redelegation entries
                       description: >-
                         Redelegation contains the list of a particular
                         delegator's redelegating bonds
@@ -11315,7 +11370,10 @@ paths:
                         description: >-
                           UnbondingDelegationEntry defines an unbonding object
                           with relevant metadata.
-                      description: entries are the unbonding delegation entries.
+                      description: |-
+                        entries are the unbonding delegation entries.
+
+                        unbonding delegation entries
                   description: >-
                     UnbondingDelegation stores all of a single delegator's
                     unbonding bonds
@@ -12767,33 +12825,44 @@ paths:
                       last_commit_hash:
                         type: string
                         format: byte
+                        description: commit from validators from the last block
                         title: hashes of block data
                       data_hash:
                         type: string
                         format: byte
+                        title: transactions
                       validators_hash:
                         type: string
                         format: byte
+                        description: validators for the current block
                         title: hashes from the app output from the prev block
                       next_validators_hash:
                         type: string
                         format: byte
+                        title: validators for the next block
                       consensus_hash:
                         type: string
                         format: byte
+                        title: consensus params for current block
                       app_hash:
                         type: string
                         format: byte
+                        title: state after txs from the previous block
                       last_results_hash:
                         type: string
                         format: byte
+                        title: >-
+                          root hash of all results from the txs from the
+                          previous block
                       evidence_hash:
                         type: string
                         format: byte
+                        description: evidence included in the block
                         title: consensus info
                       proposer_address:
                         type: string
                         format: byte
+                        title: original proposer of the block
                     description: Header defines the structure of a Tendermint block header.
                   valset:
                     type: array
@@ -15482,7 +15551,10 @@ paths:
                       description: >-
                         UnbondingDelegationEntry defines an unbonding object
                         with relevant metadata.
-                    description: entries are the unbonding delegation entries.
+                    description: |-
+                      entries are the unbonding delegation entries.
+
+                      unbonding delegation entries
                 description: >-
                   UnbondingDelegation stores all of a single delegator's
                   unbonding bonds
@@ -15748,7 +15820,10 @@ paths:
                         description: >-
                           UnbondingDelegationEntry defines an unbonding object
                           with relevant metadata.
-                      description: entries are the unbonding delegation entries.
+                      description: |-
+                        entries are the unbonding delegation entries.
+
+                        unbonding delegation entries
                   description: >-
                     UnbondingDelegation stores all of a single delegator's
                     unbonding bonds
@@ -16088,6 +16163,7 @@ paths:
                                 format: byte
                               index:
                                 type: boolean
+                                title: nondeterministic
                             description: >-
                               EventAttribute is a single key-value pair,
                               associated with an event.
@@ -16294,6 +16370,9 @@ paths:
                         }
       parameters:
         - name: body
+          description: |-
+            SimulateRequest is the request type for the Service.Simulate
+            RPC method.
           in: body
           required: true
           schema:
@@ -16872,6 +16951,7 @@ paths:
                                 format: byte
                               index:
                                 type: boolean
+                                title: nondeterministic
                             description: >-
                               EventAttribute is a single key-value pair,
                               associated with an event.
@@ -17093,6 +17173,11 @@ paths:
                         }
       parameters:
         - name: body
+          description: >-
+            BroadcastTxRequest is the request type for the
+            Service.BroadcastTxRequest
+
+            RPC method.
           in: body
           required: true
           schema:
@@ -28793,11 +28878,13 @@ paths:
                         response:
                           type: string
                           format: byte
-                    votersHash:
-                      type: object
-                      additionalProperties:
+                    votes:
+                      type: array
+                      items:
                         type: object
                         properties:
+                          address:
+                            type: string
                           Hash:
                             type: string
                             format: byte
@@ -28960,11 +29047,13 @@ paths:
                       response:
                         type: string
                         format: byte
-                  votersHash:
-                    type: object
-                    additionalProperties:
+                  votes:
+                    type: array
+                    items:
                       type: object
                       properties:
+                        address:
+                          type: string
                         Hash:
                           type: string
                           format: byte
@@ -29069,6 +29158,11 @@ paths:
                   earliestStart:
                     type: string
                     format: uint64
+                  deletedEpochs:
+                    type: array
+                    items:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -30604,161 +30698,6 @@ paths:
           format: uint64
       tags:
         - Query
-  '/lavanet/lava/spec/chain/{chainID}':
-    get:
-      summary: Queries a list of Chain items.
-      operationId: LavanetLavaSpecChain
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              spec:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  name:
-                    type: string
-                  apis:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        blockParsing:
-                          type: object
-                          properties:
-                            parserArg:
-                              type: array
-                              items:
-                                type: string
-                            parserFunc:
-                              type: string
-                              enum:
-                                - EMPTY
-                                - PARSE_BY_ARG
-                                - PARSE_CANONICAL
-                                - PARSE_DICTIONARY
-                                - PARSE_DICTIONARY_OR_ORDERED
-                                - DEFAULT
-                              default: EMPTY
-                              title: >-
-                                - PARSE_BY_ARG: means parameters are ordered and
-                                flat expected areguments are: [param index]
-                                (example: PARAMS: [<#BlockNum>,"banana"])
-                                 - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                 - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                                 - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                 - DEFAULT: means parameters are non related to block, and should fetch latest block
-                        computeUnits:
-                          type: string
-                          format: uint64
-                        enabled:
-                          type: boolean
-                        apiInterfaces:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              interface:
-                                type: string
-                              type:
-                                type: string
-                              extraComputeUnits:
-                                type: string
-                                format: uint64
-                        category:
-                          type: object
-                          properties:
-                            deterministic:
-                              type: boolean
-                            local:
-                              type: boolean
-                            subscription:
-                              type: boolean
-                            stateful:
-                              type: integer
-                              format: int64
-                        parsing:
-                          type: object
-                          properties:
-                            function_tag:
-                              type: string
-                            function_template:
-                              type: string
-                            result_parsing:
-                              type: object
-                              properties:
-                                parserArg:
-                                  type: array
-                                  items:
-                                    type: string
-                                parserFunc:
-                                  type: string
-                                  enum:
-                                    - EMPTY
-                                    - PARSE_BY_ARG
-                                    - PARSE_CANONICAL
-                                    - PARSE_DICTIONARY
-                                    - PARSE_DICTIONARY_OR_ORDERED
-                                    - DEFAULT
-                                  default: EMPTY
-                                  title: >-
-                                    - PARSE_BY_ARG: means parameters are ordered
-                                    and flat expected areguments are: [param
-                                    index] (example: PARAMS:
-                                    [<#BlockNum>,"banana"])
-                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                                     - DEFAULT: means parameters are non related to block, and should fetch latest block
-                  enabled:
-                    type: boolean
-                  reliabilityThreshold:
-                    type: integer
-                    format: int64
-                  comparesHashes:
-                    type: boolean
-                  finalizationCriteria:
-                    type: integer
-                    format: int64
-                  saved_blocks:
-                    type: integer
-                    format: int64
-                  averageBlockTime:
-                    type: string
-                    format: int64
-                  allowedBlockLagForQosSync:
-                    type: string
-                    format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    '@type':
-                      type: string
-                  additionalProperties: {}
-      parameters:
-        - name: chainID
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   /lavanet/lava/spec/params:
     get:
       summary: Parameters queries the parameters of the module.
@@ -31125,7 +31064,7 @@ paths:
           type: boolean
       tags:
         - Query
-  '/lavanet/lava/spec/spec/{index}':
+  '/lavanet/lava/spec/spec/{ChainID}':
     get:
       summary: Queries a Spec by id.
       operationId: LavanetLavaSpecSpec
@@ -31274,7 +31213,7 @@ paths:
                       type: string
                   additionalProperties: {}
       parameters:
-        - name: index
+        - name: ChainID
           in: path
           required: true
           type: string
@@ -32688,33 +32627,42 @@ definitions:
               last_commit_hash:
                 type: string
                 format: byte
+                description: commit from validators from the last block
                 title: hashes of block data
               data_hash:
                 type: string
                 format: byte
+                title: transactions
               validators_hash:
                 type: string
                 format: byte
+                description: validators for the current block
                 title: hashes from the app output from the prev block
               next_validators_hash:
                 type: string
                 format: byte
+                title: validators for the next block
               consensus_hash:
                 type: string
                 format: byte
+                title: consensus params for current block
               app_hash:
                 type: string
                 format: byte
+                title: state after txs from the previous block
               last_results_hash:
                 type: string
                 format: byte
+                title: root hash of all results from the txs from the previous block
               evidence_hash:
                 type: string
                 format: byte
+                description: evidence included in the block
                 title: consensus info
               proposer_address:
                 type: string
                 format: byte
+                title: original proposer of the block
             description: Header defines the structure of a Tendermint block header.
           data:
             type: object
@@ -32783,6 +32731,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -32840,6 +32789,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -32928,35 +32878,48 @@ definitions:
                                     last_commit_hash:
                                       type: string
                                       format: byte
+                                      description: >-
+                                        commit from validators from the last
+                                        block
                                       title: hashes of block data
                                     data_hash:
                                       type: string
                                       format: byte
+                                      title: transactions
                                     validators_hash:
                                       type: string
                                       format: byte
+                                      description: validators for the current block
                                       title: >-
                                         hashes from the app output from the prev
                                         block
                                     next_validators_hash:
                                       type: string
                                       format: byte
+                                      title: validators for the next block
                                     consensus_hash:
                                       type: string
                                       format: byte
+                                      title: consensus params for current block
                                     app_hash:
                                       type: string
                                       format: byte
+                                      title: state after txs from the previous block
                                     last_results_hash:
                                       type: string
                                       format: byte
+                                      title: >-
+                                        root hash of all results from the txs
+                                        from the previous block
                                     evidence_hash:
                                       type: string
                                       format: byte
+                                      description: evidence included in the block
                                       title: consensus info
                                     proposer_address:
                                       type: string
                                       format: byte
+                                      title: original proposer of the block
                                   description: >-
                                     Header defines the structure of a Tendermint
                                     block header.
@@ -33239,33 +33202,42 @@ definitions:
               last_commit_hash:
                 type: string
                 format: byte
+                description: commit from validators from the last block
                 title: hashes of block data
               data_hash:
                 type: string
                 format: byte
+                title: transactions
               validators_hash:
                 type: string
                 format: byte
+                description: validators for the current block
                 title: hashes from the app output from the prev block
               next_validators_hash:
                 type: string
                 format: byte
+                title: validators for the next block
               consensus_hash:
                 type: string
                 format: byte
+                title: consensus params for current block
               app_hash:
                 type: string
                 format: byte
+                title: state after txs from the previous block
               last_results_hash:
                 type: string
                 format: byte
+                title: root hash of all results from the txs from the previous block
               evidence_hash:
                 type: string
                 format: byte
+                description: evidence included in the block
                 title: consensus info
               proposer_address:
                 type: string
                 format: byte
+                title: original proposer of the block
             description: Header defines the structure of a Tendermint block header.
           data:
             type: object
@@ -33334,6 +33306,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -33391,6 +33364,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -33479,35 +33453,48 @@ definitions:
                                     last_commit_hash:
                                       type: string
                                       format: byte
+                                      description: >-
+                                        commit from validators from the last
+                                        block
                                       title: hashes of block data
                                     data_hash:
                                       type: string
                                       format: byte
+                                      title: transactions
                                     validators_hash:
                                       type: string
                                       format: byte
+                                      description: validators for the current block
                                       title: >-
                                         hashes from the app output from the prev
                                         block
                                     next_validators_hash:
                                       type: string
                                       format: byte
+                                      title: validators for the next block
                                     consensus_hash:
                                       type: string
                                       format: byte
+                                      title: consensus params for current block
                                     app_hash:
                                       type: string
                                       format: byte
+                                      title: state after txs from the previous block
                                     last_results_hash:
                                       type: string
                                       format: byte
+                                      title: >-
+                                        root hash of all results from the txs
+                                        from the previous block
                                     evidence_hash:
                                       type: string
                                       format: byte
+                                      description: evidence included in the block
                                       title: consensus info
                                     proposer_address:
                                       type: string
                                       format: byte
+                                      title: original proposer of the block
                                   description: >-
                                     Header defines the structure of a Tendermint
                                     block header.
@@ -34549,33 +34536,42 @@ definitions:
           last_commit_hash:
             type: string
             format: byte
+            description: commit from validators from the last block
             title: hashes of block data
           data_hash:
             type: string
             format: byte
+            title: transactions
           validators_hash:
             type: string
             format: byte
+            description: validators for the current block
             title: hashes from the app output from the prev block
           next_validators_hash:
             type: string
             format: byte
+            title: validators for the next block
           consensus_hash:
             type: string
             format: byte
+            title: consensus params for current block
           app_hash:
             type: string
             format: byte
+            title: state after txs from the previous block
           last_results_hash:
             type: string
             format: byte
+            title: root hash of all results from the txs from the previous block
           evidence_hash:
             type: string
             format: byte
+            description: evidence included in the block
             title: consensus info
           proposer_address:
             type: string
             format: byte
+            title: original proposer of the block
         description: Header defines the structure of a Tendermint block header.
       data:
         type: object
@@ -34644,6 +34640,7 @@ definitions:
                                   format: byte
                               title: PartsetHeader
                           title: BlockID
+                          description: zero if vote is nil.
                         timestamp:
                           type: string
                           format: date-time
@@ -34701,6 +34698,7 @@ definitions:
                                   format: byte
                               title: PartsetHeader
                           title: BlockID
+                          description: zero if vote is nil.
                         timestamp:
                           type: string
                           format: date-time
@@ -34788,35 +34786,46 @@ definitions:
                                 last_commit_hash:
                                   type: string
                                   format: byte
+                                  description: commit from validators from the last block
                                   title: hashes of block data
                                 data_hash:
                                   type: string
                                   format: byte
+                                  title: transactions
                                 validators_hash:
                                   type: string
                                   format: byte
+                                  description: validators for the current block
                                   title: >-
                                     hashes from the app output from the prev
                                     block
                                 next_validators_hash:
                                   type: string
                                   format: byte
+                                  title: validators for the next block
                                 consensus_hash:
                                   type: string
                                   format: byte
+                                  title: consensus params for current block
                                 app_hash:
                                   type: string
                                   format: byte
+                                  title: state after txs from the previous block
                                 last_results_hash:
                                   type: string
                                   format: byte
+                                  title: >-
+                                    root hash of all results from the txs from
+                                    the previous block
                                 evidence_hash:
                                   type: string
                                   format: byte
+                                  description: evidence included in the block
                                   title: consensus info
                                 proposer_address:
                                   type: string
                                   format: byte
+                                  title: original proposer of the block
                               description: >-
                                 Header defines the structure of a Tendermint
                                 block header.
@@ -35183,6 +35192,7 @@ definitions:
                     format: byte
                 title: PartsetHeader
             title: BlockID
+            description: zero if vote is nil.
           timestamp:
             type: string
             format: date-time
@@ -35239,6 +35249,7 @@ definitions:
                     format: byte
                 title: PartsetHeader
             title: BlockID
+            description: zero if vote is nil.
           timestamp:
             type: string
             format: date-time
@@ -35313,6 +35324,7 @@ definitions:
                         format: byte
                     title: PartsetHeader
                 title: BlockID
+                description: zero if vote is nil.
               timestamp:
                 type: string
                 format: date-time
@@ -35369,6 +35381,7 @@ definitions:
                         format: byte
                     title: PartsetHeader
                 title: BlockID
+                description: zero if vote is nil.
               timestamp:
                 type: string
                 format: date-time
@@ -35456,33 +35469,44 @@ definitions:
                       last_commit_hash:
                         type: string
                         format: byte
+                        description: commit from validators from the last block
                         title: hashes of block data
                       data_hash:
                         type: string
                         format: byte
+                        title: transactions
                       validators_hash:
                         type: string
                         format: byte
+                        description: validators for the current block
                         title: hashes from the app output from the prev block
                       next_validators_hash:
                         type: string
                         format: byte
+                        title: validators for the next block
                       consensus_hash:
                         type: string
                         format: byte
+                        title: consensus params for current block
                       app_hash:
                         type: string
                         format: byte
+                        title: state after txs from the previous block
                       last_results_hash:
                         type: string
                         format: byte
+                        title: >-
+                          root hash of all results from the txs from the
+                          previous block
                       evidence_hash:
                         type: string
                         format: byte
+                        description: evidence included in the block
                         title: consensus info
                       proposer_address:
                         type: string
                         format: byte
+                        title: original proposer of the block
                     description: Header defines the structure of a Tendermint block header.
                   commit:
                     type: object
@@ -35686,6 +35710,7 @@ definitions:
                               format: byte
                           title: PartsetHeader
                       title: BlockID
+                      description: zero if vote is nil.
                     timestamp:
                       type: string
                       format: date-time
@@ -35743,6 +35768,7 @@ definitions:
                               format: byte
                           title: PartsetHeader
                       title: BlockID
+                      description: zero if vote is nil.
                     timestamp:
                       type: string
                       format: date-time
@@ -35830,33 +35856,44 @@ definitions:
                             last_commit_hash:
                               type: string
                               format: byte
+                              description: commit from validators from the last block
                               title: hashes of block data
                             data_hash:
                               type: string
                               format: byte
+                              title: transactions
                             validators_hash:
                               type: string
                               format: byte
+                              description: validators for the current block
                               title: hashes from the app output from the prev block
                             next_validators_hash:
                               type: string
                               format: byte
+                              title: validators for the next block
                             consensus_hash:
                               type: string
                               format: byte
+                              title: consensus params for current block
                             app_hash:
                               type: string
                               format: byte
+                              title: state after txs from the previous block
                             last_results_hash:
                               type: string
                               format: byte
+                              title: >-
+                                root hash of all results from the txs from the
+                                previous block
                             evidence_hash:
                               type: string
                               format: byte
+                              description: evidence included in the block
                               title: consensus info
                             proposer_address:
                               type: string
                               format: byte
+                              title: original proposer of the block
                           description: >-
                             Header defines the structure of a Tendermint block
                             header.
@@ -36060,33 +36097,42 @@ definitions:
       last_commit_hash:
         type: string
         format: byte
+        description: commit from validators from the last block
         title: hashes of block data
       data_hash:
         type: string
         format: byte
+        title: transactions
       validators_hash:
         type: string
         format: byte
+        description: validators for the current block
         title: hashes from the app output from the prev block
       next_validators_hash:
         type: string
         format: byte
+        title: validators for the next block
       consensus_hash:
         type: string
         format: byte
+        title: consensus params for current block
       app_hash:
         type: string
         format: byte
+        title: state after txs from the previous block
       last_results_hash:
         type: string
         format: byte
+        title: root hash of all results from the txs from the previous block
       evidence_hash:
         type: string
         format: byte
+        description: evidence included in the block
         title: consensus info
       proposer_address:
         type: string
         format: byte
+        title: original proposer of the block
     description: Header defines the structure of a Tendermint block header.
   tendermint.types.LightBlock:
     type: object
@@ -36143,33 +36189,42 @@ definitions:
               last_commit_hash:
                 type: string
                 format: byte
+                description: commit from validators from the last block
                 title: hashes of block data
               data_hash:
                 type: string
                 format: byte
+                title: transactions
               validators_hash:
                 type: string
                 format: byte
+                description: validators for the current block
                 title: hashes from the app output from the prev block
               next_validators_hash:
                 type: string
                 format: byte
+                title: validators for the next block
               consensus_hash:
                 type: string
                 format: byte
+                title: consensus params for current block
               app_hash:
                 type: string
                 format: byte
+                title: state after txs from the previous block
               last_results_hash:
                 type: string
                 format: byte
+                title: root hash of all results from the txs from the previous block
               evidence_hash:
                 type: string
                 format: byte
+                description: evidence included in the block
                 title: consensus info
               proposer_address:
                 type: string
                 format: byte
+                title: original proposer of the block
             description: Header defines the structure of a Tendermint block header.
           commit:
             type: object
@@ -36338,33 +36393,44 @@ definitions:
                   last_commit_hash:
                     type: string
                     format: byte
+                    description: commit from validators from the last block
                     title: hashes of block data
                   data_hash:
                     type: string
                     format: byte
+                    title: transactions
                   validators_hash:
                     type: string
                     format: byte
+                    description: validators for the current block
                     title: hashes from the app output from the prev block
                   next_validators_hash:
                     type: string
                     format: byte
+                    title: validators for the next block
                   consensus_hash:
                     type: string
                     format: byte
+                    title: consensus params for current block
                   app_hash:
                     type: string
                     format: byte
+                    title: state after txs from the previous block
                   last_results_hash:
                     type: string
                     format: byte
+                    title: >-
+                      root hash of all results from the txs from the previous
+                      block
                   evidence_hash:
                     type: string
                     format: byte
+                    description: evidence included in the block
                     title: consensus info
                   proposer_address:
                     type: string
                     format: byte
+                    title: original proposer of the block
                 description: Header defines the structure of a Tendermint block header.
               commit:
                 type: object
@@ -36577,33 +36643,42 @@ definitions:
           last_commit_hash:
             type: string
             format: byte
+            description: commit from validators from the last block
             title: hashes of block data
           data_hash:
             type: string
             format: byte
+            title: transactions
           validators_hash:
             type: string
             format: byte
+            description: validators for the current block
             title: hashes from the app output from the prev block
           next_validators_hash:
             type: string
             format: byte
+            title: validators for the next block
           consensus_hash:
             type: string
             format: byte
+            title: consensus params for current block
           app_hash:
             type: string
             format: byte
+            title: state after txs from the previous block
           last_results_hash:
             type: string
             format: byte
+            title: root hash of all results from the txs from the previous block
           evidence_hash:
             type: string
             format: byte
+            description: evidence included in the block
             title: consensus info
           proposer_address:
             type: string
             format: byte
+            title: original proposer of the block
         description: Header defines the structure of a Tendermint block header.
       commit:
         type: object
@@ -36790,6 +36865,7 @@ definitions:
                 format: byte
             title: PartsetHeader
         title: BlockID
+        description: zero if vote is nil.
       timestamp:
         type: string
         format: date-time
@@ -39698,33 +39774,42 @@ definitions:
           last_commit_hash:
             type: string
             format: byte
+            description: commit from validators from the last block
             title: hashes of block data
           data_hash:
             type: string
             format: byte
+            title: transactions
           validators_hash:
             type: string
             format: byte
+            description: validators for the current block
             title: hashes from the app output from the prev block
           next_validators_hash:
             type: string
             format: byte
+            title: validators for the next block
           consensus_hash:
             type: string
             format: byte
+            title: consensus params for current block
           app_hash:
             type: string
             format: byte
+            title: state after txs from the previous block
           last_results_hash:
             type: string
             format: byte
+            title: root hash of all results from the txs from the previous block
           evidence_hash:
             type: string
             format: byte
+            description: evidence included in the block
             title: consensus info
           proposer_address:
             type: string
             format: byte
+            title: original proposer of the block
         description: Header defines the structure of a Tendermint block header.
       valset:
         type: array
@@ -40257,7 +40342,10 @@ definitions:
                 description: >-
                   UnbondingDelegationEntry defines an unbonding object with
                   relevant metadata.
-              description: entries are the unbonding delegation entries.
+              description: |-
+                entries are the unbonding delegation entries.
+
+                unbonding delegation entries
           description: >-
             UnbondingDelegation stores all of a single delegator's unbonding
             bonds
@@ -40945,33 +41033,42 @@ definitions:
               last_commit_hash:
                 type: string
                 format: byte
+                description: commit from validators from the last block
                 title: hashes of block data
               data_hash:
                 type: string
                 format: byte
+                title: transactions
               validators_hash:
                 type: string
                 format: byte
+                description: validators for the current block
                 title: hashes from the app output from the prev block
               next_validators_hash:
                 type: string
                 format: byte
+                title: validators for the next block
               consensus_hash:
                 type: string
                 format: byte
+                title: consensus params for current block
               app_hash:
                 type: string
                 format: byte
+                title: state after txs from the previous block
               last_results_hash:
                 type: string
                 format: byte
+                title: root hash of all results from the txs from the previous block
               evidence_hash:
                 type: string
                 format: byte
+                description: evidence included in the block
                 title: consensus info
               proposer_address:
                 type: string
                 format: byte
+                title: original proposer of the block
             description: Header defines the structure of a Tendermint block header.
           valset:
             type: array
@@ -41373,7 +41470,10 @@ definitions:
                     description: >-
                       RedelegationEntry defines a redelegation object with
                       relevant metadata.
-                  description: entries are the redelegation entries.
+                  description: |-
+                    entries are the redelegation entries.
+
+                    redelegation entries
               description: >-
                 Redelegation contains the list of a particular delegator's
                 redelegating bonds
@@ -41492,7 +41592,10 @@ definitions:
               description: >-
                 UnbondingDelegationEntry defines an unbonding object with
                 relevant metadata.
-            description: entries are the unbonding delegation entries.
+            description: |-
+              entries are the unbonding delegation entries.
+
+              unbonding delegation entries
         description: |-
           UnbondingDelegation stores all of a single delegator's unbonding bonds
           for a single validator in an time-ordered list.
@@ -41904,7 +42007,10 @@ definitions:
                 description: >-
                   UnbondingDelegationEntry defines an unbonding object with
                   relevant metadata.
-              description: entries are the unbonding delegation entries.
+              description: |-
+                entries are the unbonding delegation entries.
+
+                unbonding delegation entries
           description: >-
             UnbondingDelegation stores all of a single delegator's unbonding
             bonds
@@ -42293,7 +42399,10 @@ definitions:
           description: >-
             RedelegationEntry defines a redelegation object with relevant
             metadata.
-        description: entries are the redelegation entries.
+        description: |-
+          entries are the redelegation entries.
+
+          redelegation entries
     description: >-
       Redelegation contains the list of a particular delegator's redelegating
       bonds
@@ -42406,7 +42515,10 @@ definitions:
               description: >-
                 RedelegationEntry defines a redelegation object with relevant
                 metadata.
-            description: entries are the redelegation entries.
+            description: |-
+              entries are the redelegation entries.
+
+              redelegation entries
         description: >-
           Redelegation contains the list of a particular delegator's
           redelegating bonds
@@ -42496,7 +42608,10 @@ definitions:
           description: >-
             UnbondingDelegationEntry defines an unbonding object with relevant
             metadata.
-        description: entries are the unbonding delegation entries.
+        description: |-
+          entries are the unbonding delegation entries.
+
+          unbonding delegation entries
     description: |-
       UnbondingDelegation stores all of a single delegator's unbonding bonds
       for a single validator in an time-ordered list.
@@ -42891,6 +43006,7 @@ definitions:
                     format: byte
                   index:
                     type: boolean
+                    title: nondeterministic
                 description: >-
                   EventAttribute is a single key-value pair, associated with an
                   event.
@@ -43198,6 +43314,7 @@ definitions:
                     format: byte
                   index:
                     type: boolean
+                    title: nondeterministic
                 description: >-
                   EventAttribute is a single key-value pair, associated with an
                   event.
@@ -43681,6 +43798,7 @@ definitions:
                         format: byte
                       index:
                         type: boolean
+                        title: nondeterministic
                     description: >-
                       EventAttribute is a single key-value pair, associated with
                       an event.
@@ -43845,33 +43963,42 @@ definitions:
               last_commit_hash:
                 type: string
                 format: byte
+                description: commit from validators from the last block
                 title: hashes of block data
               data_hash:
                 type: string
                 format: byte
+                title: transactions
               validators_hash:
                 type: string
                 format: byte
+                description: validators for the current block
                 title: hashes from the app output from the prev block
               next_validators_hash:
                 type: string
                 format: byte
+                title: validators for the next block
               consensus_hash:
                 type: string
                 format: byte
+                title: consensus params for current block
               app_hash:
                 type: string
                 format: byte
+                title: state after txs from the previous block
               last_results_hash:
                 type: string
                 format: byte
+                title: root hash of all results from the txs from the previous block
               evidence_hash:
                 type: string
                 format: byte
+                description: evidence included in the block
                 title: consensus info
               proposer_address:
                 type: string
                 format: byte
+                title: original proposer of the block
             description: Header defines the structure of a Tendermint block header.
           data:
             type: object
@@ -43940,6 +44067,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -43997,6 +44125,7 @@ definitions:
                                       format: byte
                                   title: PartsetHeader
                               title: BlockID
+                              description: zero if vote is nil.
                             timestamp:
                               type: string
                               format: date-time
@@ -44085,35 +44214,48 @@ definitions:
                                     last_commit_hash:
                                       type: string
                                       format: byte
+                                      description: >-
+                                        commit from validators from the last
+                                        block
                                       title: hashes of block data
                                     data_hash:
                                       type: string
                                       format: byte
+                                      title: transactions
                                     validators_hash:
                                       type: string
                                       format: byte
+                                      description: validators for the current block
                                       title: >-
                                         hashes from the app output from the prev
                                         block
                                     next_validators_hash:
                                       type: string
                                       format: byte
+                                      title: validators for the next block
                                     consensus_hash:
                                       type: string
                                       format: byte
+                                      title: consensus params for current block
                                     app_hash:
                                       type: string
                                       format: byte
+                                      title: state after txs from the previous block
                                     last_results_hash:
                                       type: string
                                       format: byte
+                                      title: >-
+                                        root hash of all results from the txs
+                                        from the previous block
                                     evidence_hash:
                                       type: string
                                       format: byte
+                                      description: evidence included in the block
                                       title: consensus info
                                     proposer_address:
                                       type: string
                                       format: byte
+                                      title: original proposer of the block
                                   description: >-
                                     Header defines the structure of a Tendermint
                                     block header.
@@ -44628,6 +44770,7 @@ definitions:
                         format: byte
                       index:
                         type: boolean
+                        title: nondeterministic
                     description: >-
                       EventAttribute is a single key-value pair, associated with
                       an event.
@@ -44950,6 +45093,7 @@ definitions:
                           format: byte
                         index:
                           type: boolean
+                          title: nondeterministic
                       description: >-
                         EventAttribute is a single key-value pair, associated
                         with an event.
@@ -45398,6 +45542,7 @@ definitions:
                         format: byte
                       index:
                         type: boolean
+                        title: nondeterministic
                     description: >-
                       EventAttribute is a single key-value pair, associated with
                       an event.
@@ -46556,6 +46701,7 @@ definitions:
               format: byte
             index:
               type: boolean
+              title: nondeterministic
           description: 'EventAttribute is a single key-value pair, associated with an event.'
     description: >-
       Event allows application developers to attach additional information to
@@ -46575,6 +46721,7 @@ definitions:
         format: byte
       index:
         type: boolean
+        title: nondeterministic
     description: 'EventAttribute is a single key-value pair, associated with an event.'
   cosmos.upgrade.v1beta1.ModuleVersion:
     type: object
@@ -51497,17 +51644,20 @@ definitions:
         properties:
           chainID:
             type: string
-          api_id:
-            type: integer
-            format: int64
+          connection_type:
+            type: string
           api_url:
             type: string
+            title: >-
+              some relays have associated urls that are filled with params
+              ('/block/{height}')
           session_id:
             type: string
             format: uint64
           cu_sum:
             type: string
             format: uint64
+            title: total compute unit used including this relay
           data:
             type: string
             format: byte
@@ -51545,6 +51695,7 @@ definitions:
               queryHash:
                 type: string
                 format: byte
+                title: we only need it for payment later
               sig:
                 type: string
                 format: byte
@@ -51557,6 +51708,9 @@ definitions:
                 type: string
               sync:
                 type: string
+          unresponsive_providers:
+            type: string
+            format: byte
       reply:
         type: object
         properties:
@@ -51566,6 +51720,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51578,6 +51733,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.ConflictVote:
     type: object
     properties:
@@ -51620,11 +51778,13 @@ definitions:
           response:
             type: string
             format: byte
-      votersHash:
-        type: object
-        additionalProperties:
+      votes:
+        type: array
+        items:
           type: object
           properties:
+            address:
+              type: string
             Hash:
               type: string
               format: byte
@@ -51643,6 +51803,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51655,6 +51816,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
       relayReply1:
         type: object
         properties:
@@ -51664,6 +51828,7 @@ definitions:
           sig:
             type: string
             format: byte
+            title: sign the data hash+query hash+nonce
           nonce:
             type: integer
             format: int64
@@ -51676,6 +51841,9 @@ definitions:
           sig_blocks:
             type: string
             format: byte
+            title: >-
+              sign
+              latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.MsgConflictVoteCommitResponse:
     type: object
   lavanet.lava.conflict.MsgConflictVoteRevealResponse:
@@ -51758,11 +51926,13 @@ definitions:
                 response:
                   type: string
                   format: byte
-            votersHash:
-              type: object
-              additionalProperties:
+            votes:
+              type: array
+              items:
                 type: object
                 properties:
+                  address:
+                    type: string
                   Hash:
                     type: string
                     format: byte
@@ -51839,11 +52009,13 @@ definitions:
               response:
                 type: string
                 format: byte
-          votersHash:
-            type: object
-            additionalProperties:
+          votes:
+            type: array
+            items:
               type: object
               properties:
+                address:
+                  type: string
                 Hash:
                   type: string
                   format: byte
@@ -51886,17 +52058,20 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
+                title: >-
+                  some relays have associated urls that are filled with params
+                  ('/block/{height}')
               session_id:
                 type: string
                 format: uint64
               cu_sum:
                 type: string
                 format: uint64
+                title: total compute unit used including this relay
               data:
                 type: string
                 format: byte
@@ -51934,6 +52109,7 @@ definitions:
                   queryHash:
                     type: string
                     format: byte
+                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
@@ -51946,6 +52122,9 @@ definitions:
                     type: string
                   sync:
                     type: string
+              unresponsive_providers:
+                type: string
+                format: byte
           reply:
             type: object
             properties:
@@ -51955,6 +52134,7 @@ definitions:
               sig:
                 type: string
                 format: byte
+                title: sign the data hash+query hash+nonce
               nonce:
                 type: integer
                 format: int64
@@ -51967,6 +52147,9 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+                title: >-
+                  sign
+                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
       conflictRelayData1:
         type: object
         properties:
@@ -51975,17 +52158,20 @@ definitions:
             properties:
               chainID:
                 type: string
-              api_id:
-                type: integer
-                format: int64
+              connection_type:
+                type: string
               api_url:
                 type: string
+                title: >-
+                  some relays have associated urls that are filled with params
+                  ('/block/{height}')
               session_id:
                 type: string
                 format: uint64
               cu_sum:
                 type: string
                 format: uint64
+                title: total compute unit used including this relay
               data:
                 type: string
                 format: byte
@@ -52023,6 +52209,7 @@ definitions:
                   queryHash:
                     type: string
                     format: byte
+                    title: we only need it for payment later
                   sig:
                     type: string
                     format: byte
@@ -52035,6 +52222,9 @@ definitions:
                     type: string
                   sync:
                     type: string
+              unresponsive_providers:
+                type: string
+                format: byte
           reply:
             type: object
             properties:
@@ -52044,6 +52234,7 @@ definitions:
               sig:
                 type: string
                 format: byte
+                title: sign the data hash+query hash+nonce
               nonce:
                 type: integer
                 format: int64
@@ -52056,6 +52247,9 @@ definitions:
               sig_blocks:
                 type: string
                 format: byte
+                title: >-
+                  sign
+                  latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
   lavanet.lava.conflict.Rewards:
     type: object
     properties:
@@ -52068,6 +52262,8 @@ definitions:
   lavanet.lava.conflict.Vote:
     type: object
     properties:
+      address:
+        type: string
       Hash:
         type: string
         format: byte
@@ -52113,9 +52309,8 @@ definitions:
     properties:
       chainID:
         type: string
-      api_id:
-        type: integer
-        format: int64
+      connection_type:
+        type: string
       api_url:
         type: string
         title: >-
@@ -52178,8 +52373,6 @@ definitions:
             type: string
           sync:
             type: string
-      connection_type:
-        type: string
       unresponsive_providers:
         type: string
         format: byte
@@ -52226,6 +52419,11 @@ definitions:
       earliestStart:
         type: string
         format: uint64
+      deletedEpochs:
+        type: array
+        items:
+          type: string
+          format: uint64
   lavanet.lava.epochstorage.FixatedParams:
     type: object
     properties:
@@ -52385,6 +52583,11 @@ definitions:
           earliestStart:
             type: string
             format: uint64
+          deletedEpochs:
+            type: array
+            items:
+              type: string
+              format: uint64
   lavanet.lava.epochstorage.QueryGetFixatedParamsResponse:
     type: object
     properties:
@@ -53386,128 +53589,6 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
-  lavanet.lava.spec.QueryChainResponse:
-    type: object
-    properties:
-      spec:
-        type: object
-        properties:
-          index:
-            type: string
-          name:
-            type: string
-          apis:
-            type: array
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                blockParsing:
-                  type: object
-                  properties:
-                    parserArg:
-                      type: array
-                      items:
-                        type: string
-                    parserFunc:
-                      type: string
-                      enum:
-                        - EMPTY
-                        - PARSE_BY_ARG
-                        - PARSE_CANONICAL
-                        - PARSE_DICTIONARY
-                        - PARSE_DICTIONARY_OR_ORDERED
-                        - DEFAULT
-                      default: EMPTY
-                      title: >-
-                        - PARSE_BY_ARG: means parameters are ordered and flat
-                        expected areguments are: [param index] (example: PARAMS:
-                        [<#BlockNum>,"banana"])
-                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                         - DEFAULT: means parameters are non related to block, and should fetch latest block
-                computeUnits:
-                  type: string
-                  format: uint64
-                enabled:
-                  type: boolean
-                apiInterfaces:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      interface:
-                        type: string
-                      type:
-                        type: string
-                      extraComputeUnits:
-                        type: string
-                        format: uint64
-                category:
-                  type: object
-                  properties:
-                    deterministic:
-                      type: boolean
-                    local:
-                      type: boolean
-                    subscription:
-                      type: boolean
-                    stateful:
-                      type: integer
-                      format: int64
-                parsing:
-                  type: object
-                  properties:
-                    function_tag:
-                      type: string
-                    function_template:
-                      type: string
-                    result_parsing:
-                      type: object
-                      properties:
-                        parserArg:
-                          type: array
-                          items:
-                            type: string
-                        parserFunc:
-                          type: string
-                          enum:
-                            - EMPTY
-                            - PARSE_BY_ARG
-                            - PARSE_CANONICAL
-                            - PARSE_DICTIONARY
-                            - PARSE_DICTIONARY_OR_ORDERED
-                            - DEFAULT
-                          default: EMPTY
-                          title: >-
-                            - PARSE_BY_ARG: means parameters are ordered and
-                            flat expected areguments are: [param index]
-                            (example: PARAMS: [<#BlockNum>,"banana"])
-                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
-                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
-                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-                             - DEFAULT: means parameters are non related to block, and should fetch latest block
-          enabled:
-            type: boolean
-          reliabilityThreshold:
-            type: integer
-            format: int64
-          comparesHashes:
-            type: boolean
-          finalizationCriteria:
-            type: integer
-            format: int64
-          saved_blocks:
-            type: integer
-            format: int64
-          averageBlockTime:
-            type: string
-            format: int64
-          allowedBlockLagForQosSync:
-            type: string
-            format: int64
   lavanet.lava.spec.QueryGetSpecResponse:
     type: object
     properties:

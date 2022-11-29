@@ -188,15 +188,15 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		//begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
-		ks.Epochstorage.StoreEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
+		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)
+
+		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
+		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
-		//end block
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ProviderKey)
-		ks.Epochstorage.RemoveOldEpochData(unwrapedCtx, epochstoragetypes.ClientKey)
-		ks.Epochstorage.UpdateEarliestEpochstart(unwrapedCtx)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)

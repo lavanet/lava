@@ -45,15 +45,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_addr", details, "invalid "+stake_type()+" address")
 	}
 	//define the function here for later use
-	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
+	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) error {
 		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
-			return false, fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
+			return fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
 		}
 		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
 		if err != nil {
-			return false, fmt.Errorf("invalid transfer coins to module, %s", err)
+			return fmt.Errorf("invalid transfer coins to module, %s", err)
 		}
-		return true, nil
+		return nil
 	}
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 	if geolocation == 0 || geolocation > (1<<geolocations) {
@@ -78,7 +78,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	// new staking takes effect from the next block
 	blockDeadline := uint64(ctx.BlockHeight()) + 1
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, stake_type(), chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
 	if entryExists {
 		//modify the entry
 		if existingEntry.Address != creator {
@@ -88,15 +88,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String()}
 		if existingEntry.Stake.IsLT(amount) {
 			// increasing stake is allowed
-			valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
-			if !valid {
+			err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
+			if err != nil {
 				details["error"] = err.Error()
 				details["neededStake"] = amount.Sub(existingEntry.Stake).String()
 				return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_update_amount", details, "insufficient funds to pay for difference in stake")
 			}
 			//
 			//TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
-			// then we need to change the Copy of StoreEpochStakeStorage to copy of the pointers only
+			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
 
 			//paid the difference to module
@@ -104,7 +104,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			//we dont change vrfpk, deadlines and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
-			k.epochStorageKeeper.ModifyStakeEntry(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
+			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
 			utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_update", details, "Changing Staked "+stake_type())
 			return nil
 		}
@@ -114,16 +114,27 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 	// entry isn't staked so add him
 	details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String(), "geolocation": strconv.FormatUint(geolocation, 10)}
-	valid, err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
-	if !valid {
+	err = verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
+	if err != nil {
 		details["error"] = err.Error()
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_new_amount", details, "insufficient amount to pay for stake")
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk}
-	k.epochStorageKeeper.AppendStakeEntry(ctx, stake_type(), chainID, stakeEntry)
+	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
+	appended := false
+	if !provider {
+		//this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
+		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type(), chainID, stakeEntry)
+
+		if err != nil {
+			details["error"] = err.Error()
+			return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_epoch", details, "could not append epoch stake entries")
+		}
+	}
+	details["effectiveImmediately"] = strconv.FormatBool(appended)
 	utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_new", details, "Adding Staked "+stake_type())
-	return nil
+	return err
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {

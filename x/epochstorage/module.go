@@ -185,10 +185,17 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 
 		am.keeper.SetEpochDetailsStart(ctx, block)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, types.ProviderKey)
+		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ProviderKey)
 
-		am.keeper.StoreEpochStakeStorage(ctx, block, types.ClientKey)
+		am.keeper.StoreCurrentEpochStakeStorage(ctx, block, types.ClientKey)
+
+		am.keeper.UpdateEarliestEpochstart(ctx)
+
+		am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
+		am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
+
 		// Notify world we have a new session
+
 		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
 		logger := am.keeper.Logger(ctx)
 		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
@@ -198,21 +205,5 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	if am.keeper.GetEpochStart(ctx) == uint64(ctx.BlockHeight()) {
-		logger := am.keeper.Logger(ctx)
-		logOnErr := func(err error, failingFunc string) {
-			if err != nil {
-				attrs := map[string]string{"error": err.Error()}
-				utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
-			}
-		}
-		err := am.keeper.RemoveOldEpochData(ctx, types.ProviderKey)
-		logOnErr(err, "RemoveOldEpochData "+types.ProviderKey)
-
-		err = am.keeper.RemoveOldEpochData(ctx, types.ClientKey)
-		logOnErr(err, "RemoveOldEpochData "+types.ClientKey)
-
-		am.keeper.UpdateEarliestEpochstart(ctx)
-	}
 	return []abci.ValidatorUpdate{}
 }

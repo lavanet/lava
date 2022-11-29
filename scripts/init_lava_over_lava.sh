@@ -27,8 +27,9 @@ screen -S lav1_providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad ser
 screen -S lav1_providers -X screen -t win4 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
 screen -S lav1_providers -X screen -t win5 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
 
-screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
-screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
+screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3340.log"
+screen -S portals -X screen -t win17 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4 2>&1 | tee $LOGS_DIR/PORTAL_3341.log"
+# echo "lavad portal_server 127.0.0.1 3340 LAV1 rest --from user4"
 
 # Lava Over Lava ETH
 

@@ -27,7 +27,6 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdQueryParams())
 	cmd.AddCommand(CmdListSpec())
 	cmd.AddCommand(CmdShowSpec())
-	cmd.AddCommand(CmdChain())
 
 	cmd.AddCommand(CmdShowAllChains())
 

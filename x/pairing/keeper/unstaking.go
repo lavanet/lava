@@ -31,12 +31,12 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		return utils.LavaError(ctx, logger, "unstake_"+stake_type()+"_addr", details, "invalid "+stake_type()+" address")
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, stake_type(), chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
 	if !entryExists {
 		details := map[string]string{stake_type(): creator, "spec": chainID}
 		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
 	}
-	err = k.epochStorageKeeper.RemoveStakeEntry(ctx, stake_type(), chainID, indexInStakeStorage)
+	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type(), chainID, indexInStakeStorage)
 	if err != nil {
 		details := map[string]string{stake_type(): creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
 		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
