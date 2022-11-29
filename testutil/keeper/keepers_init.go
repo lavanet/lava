@@ -129,6 +129,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 
+	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 	NewBlock(sdk.WrapSDKContext(ctx), &ks)
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }

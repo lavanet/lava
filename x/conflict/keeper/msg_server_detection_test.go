@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -38,8 +37,6 @@ func setupForConflictTests(t *testing.T, NumOfProviders int) testStruct {
 	for i := 0; i < NumOfProviders; i++ {
 		ts.Providers = append(ts.Providers, common.CreateNewAccount(ts.ctx, *ts.keepers, balance))
 	}
-
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochtypes.DefaultGenesis().EpochDetails)
 
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)

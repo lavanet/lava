@@ -92,8 +92,6 @@ func setupForPaymentTest(t *testing.T) *testStruct {
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-
 	return ts
 }
 

@@ -17,9 +17,6 @@ import (
 func TestServicersToPair(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
 
-	//init keepers state
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-
 	blocksInEpoch := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	epochsMemory := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
 	blocksInMemory := blocksInEpoch * epochsMemory
