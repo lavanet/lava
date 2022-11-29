@@ -23,7 +23,6 @@ func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 //mock bank keeper
 type mockBankKeeper struct {
 	balance map[string]sdk.Coins
-	//moduleBank map[string]map[string]sdk.Coins
 }
 
 func (k *mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
@@ -54,11 +53,6 @@ func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 	}
 
 	k.SubFromBalance(senderAddr, amt)
-	//if k.moduleBank[moduleAcc.String()] == nil {
-	//		k.moduleBank[moduleAcc.String()] = make(map[string]sdk.Coins)
-	//		k.moduleBank[moduleAcc.String()][senderAddr.String()] = sdk.NewCoins()
-	//}
-	//k.moduleBank[moduleAcc.String()][senderAddr.String()] = k.moduleBank[moduleAcc.String()][senderAddr.String()].Add(amt[0])
 	k.AddToBalance(moduleAcc, amt)
 	return nil
 }
@@ -66,7 +60,6 @@ func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	//TODO support multiple coins
 
-	//coin := amt[0]
 	moduleAcc := sdk.AccAddress([]byte(senderModule))
 
 	if amt.Len() > 1 {
@@ -78,25 +71,12 @@ func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 	if coin.Amount.GT(accountCoin.Amount) {
 		return fmt.Errorf("not enough coins")
 	}
-	// if module, ok := k.moduleBank[moduleAcc.String()]; ok {
-	// 	if coins, ok := module[recipientAddr.String()]; ok {
-	// 		if coins[0].IsGTE(coin) {
-	// 			k.balance[recipientAddr.String()] = k.balance[recipientAddr.String()].Add(coin)
-	// 			module[recipientAddr.String()] = module[recipientAddr.String()].Sub(amt)
-	// 			k.SubFromBalance(moduleAcc, amt)
-	// 			return nil
-	// 		}
-	// 	}
-	// }
+
 	k.SubFromBalance(moduleAcc, amt)
-	//if k.moduleBank[moduleAcc.String()] == nil {
-	//		k.moduleBank[moduleAcc.String()] = make(map[string]sdk.Coins)
-	//		k.moduleBank[moduleAcc.String()][senderAddr.String()] = sdk.NewCoins()
-	//}
-	//k.moduleBank[moduleAcc.String()][senderAddr.String()] = k.moduleBank[moduleAcc.String()][senderAddr.String()].Add(amt[0])
+
 	k.AddToBalance(recipientAddr, amt)
 
-	return nil //fmt.Errorf("didnt find staked coins")
+	return nil
 }
 func (k *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
 	acc := sdk.AccAddress([]byte(moduleName))
