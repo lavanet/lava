@@ -1442,3 +1442,66 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: provider.address.String(), Relays: relaysRequests})
 	require.NotNil(t, err)
 }
+
+func TestEpochPaymentDeletion(t *testing.T) {
+
+	ts := setupForPaymentTest(t) //reset the keepers state before each state
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	relayRequest := &types.RelayRequest{
+		Provider:        ts.providers[0].address.String(),
+		ApiUrl:          "",
+		Data:            []byte(ts.spec.Apis[0].Name),
+		SessionId:       uint64(1),
+		ChainID:         ts.spec.Name,
+		CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+		BlockHeight:     sdk.UnwrapSDKContext(ts.ctx).BlockHeight(),
+		RelayNum:        0,
+		RequestBlock:    -1,
+		DataReliability: nil,
+	}
+
+	sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+	relayRequest.Sig = sig
+	require.Nil(t, err)
+
+	var Relays []*types.RelayRequest
+	Relays = append(Relays, relayRequest)
+
+	balanceProvider := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64()
+	stakeClient, found, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
+	require.Equal(t, true, found)
+
+	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
+
+	require.Nil(t, err)
+
+	mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
+	want := mint.MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+
+	require.Equal(t, balanceProvider+want.TruncateInt64(),
+		ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), ts.providers[0].address, epochstoragetypes.TokenDenom).Amount.Int64())
+
+	burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(ts.spec.GetApis()[0].ComputeUnits * 10))
+	newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, ts.clients[0].address)
+	require.Nil(t, err)
+	require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
+
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	for i := 0; i < int(epochsToSave+1); i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	ans, err := ts.keepers.Pairing.EpochPaymentsAll(ts.ctx, &types.QueryAllEpochPaymentsRequest{})
+	require.Nil(t, err)
+	require.Equal(t, 0, len(ans.EpochPayments))
+
+}

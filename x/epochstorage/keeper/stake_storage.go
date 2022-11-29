@@ -68,32 +68,21 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 	return
 }
 
-func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err error) {
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
-	if err != nil {
-		return err
+func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) {
+
+	for _, block := range k.GetDeletedEpochs(ctx) {
+		allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
+		for _, chainID := range allChainIDs {
+			k.RemoveStakeStorageByBlockAndChain(ctx, storageType, block, chainID)
+		}
 	}
-	if uint64(ctx.BlockHeight()) < blocksToSaveAtEarliestEpoch {
-		return nil
-	}
-	block := uint64(ctx.BlockHeight()) - blocksToSaveAtEarliestEpoch
-	if earliestEpochBlock > block {
-		return nil
-	}
-	//we passed the distance to earliest session block, so remove the entries and update the earliestSessionBlock
-	allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
-	for _, chainID := range allChainIDs {
-		k.RemoveStakeStorageByBlockAndChain(ctx, storageType, earliestEpochBlock, chainID)
-	}
-	//TODO: after a long period go over all entries and find leftovers, to make sure edge cases are handled
-	return nil
 }
 
-func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
+func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
 	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	deletedEpochs := []uint64{}
 	if err != nil {
 		// this is critical, no recovery from this
 		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
@@ -104,6 +93,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
 	changed := false
 	for earliestEpochBlock < lastBlockInMemory {
+		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
 		if err != nil {
 			// this is critical, no recovery from this
@@ -119,7 +109,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
-	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
+	k.SetEarliestEpochStart(ctx, earliestEpochBlock, deletedEpochs)
 }
 
 func (k Keeper) StakeStorageKey(storageType string, block uint64, chainID string) string {

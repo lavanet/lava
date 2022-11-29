@@ -86,6 +86,7 @@ BUILD_TARGETS := build install
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
+.PHONY: $(BUILD_TARGETS)
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
 	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./...
 

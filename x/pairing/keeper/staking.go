@@ -131,7 +131,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			details["error"] = err.Error()
 			return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_epoch", details, "could not append epoch stake entries")
 		}
-
 	}
 	details["effectiveImmediately"] = strconv.FormatBool(appended)
 	utils.LogLavaEvent(ctx, logger, stake_type()+"_stake_new", details, "Adding Staked "+stake_type())
