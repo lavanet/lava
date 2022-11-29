@@ -1,0 +1,26 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+import "gogoproto/gogo.proto";
+import "pairing/relay.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+service RelayerCache {
+    rpc GetRelay (RelayCacheGet) returns (RelayReply) {}
+    rpc SetRelay (RelayCacheSet) returns (SetRelayResponse) {}
+}
+
+message SetRelayResponse {
+
+}
+
+message RelayCacheGet {
+    RelayRequest request =1;
+    string apiInterface =2;
+}
+
+message RelayCacheSet {
+    RelayRequest request =1;
+    string apiInterface =2;
+    RelayReply response =3;
+}
