@@ -21,11 +21,19 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+
+	// The test assumes that EpochBlocks default value is 20 - make sure it is 20
+	epochBlocksTwenty := uint64(20)
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
 	// change the EpochBlocks parameter to 10
 	epochBlocksTen := uint64(10)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTen, 10)+"\"")
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTen, 10)+"\"")
 	require.Nil(t, err)
 
 	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
@@ -92,11 +100,19 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+
+	// The test assumes that EpochBlocks default value is 20 - make sure it is 20
+	epochBlocksTwenty := uint64(20)
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
 	// change the EpochBlocks parameter to 50
 	epochBlocksFifty := uint64(50)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksFifty, 10)+"\"")
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksFifty, 10)+"\"")
 	require.Nil(t, err)
 
 	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
@@ -180,7 +196,18 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
-	// Advance an epoch to apply the provider's stake and because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+
+	// The test assumes that EpochBlocks default value is 20 and UnstakeHoldBlocks is 210 - make sure it is 20 and 210
+	epochBlocksTwenty := uint64(20)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	require.Nil(t, err)
+	unstakeHoldBlocksDefaultVal := uint64(210)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyUnstakeHoldBlocks), "\""+strconv.FormatUint(unstakeHoldBlocksDefaultVal, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance an epoch to apply the changes. From here, the documented blockHeight is with offset of initEpochBlocks
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
 	// change the UnstakeHoldBlocks parameter to 60
@@ -247,7 +274,18 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	providerCurrentFunds := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom)
 	require.Equal(t, balance-stake, providerCurrentFunds.Amount.Int64())
 
-	// Advance an epoch to apply the provider's stake and because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+
+	// The test assumes that EpochBlocks default value is 20 and UnstakeHoldBlocks is 210 - make sure it is 20 and 210
+	epochBlocksTwenty := uint64(20)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	require.Nil(t, err)
+	unstakeHoldBlocksDefaultVal := uint64(210)
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyUnstakeHoldBlocks), "\""+strconv.FormatUint(unstakeHoldBlocksDefaultVal, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance an epoch to apply the changes. From here, the documented blockHeight is with offset of initEpochBlocks
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
 
 	// change the UnstakeHoldBlocks parameter to 280
