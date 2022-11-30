@@ -573,8 +573,6 @@ func runE2E() {
 	restErr := restTests("http://127.0.0.1:3340/1", time.Second*30)
 	tendermintErr := tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
 
-	lt.saveLogs()
-
 	if jsonErr != nil {
 		panic(jsonErr)
 	} else {
