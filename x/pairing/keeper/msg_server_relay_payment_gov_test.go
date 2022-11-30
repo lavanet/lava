@@ -194,7 +194,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -274,7 +274,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -361,7 +361,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -440,7 +440,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -536,7 +536,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -632,7 +632,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -729,7 +729,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			var Relays []*pairingtypes.RelayRequest
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid)
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
 		})
 	}
 
@@ -863,7 +863,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	// get payment
 	relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-	payAndVerifyBalance(t, ts, relayPaymentMessage, true)
+	payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].address, ts.providers[0].address)
 
 	// advance another epoch and unstake the provider
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
