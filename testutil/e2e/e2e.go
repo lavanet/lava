@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	log "fmt"
 	"go/build"
 	"io"
 	"math/big"
@@ -27,6 +26,7 @@ import (
 	"github.com/ignite/cli/ignite/pkg/cache"
 	"github.com/ignite/cli/ignite/services/chain"
 	"github.com/lavanet/lava/utils"
+	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
@@ -34,9 +34,10 @@ import (
 )
 
 type lavaTest struct {
-	grpcConn  *grpc.ClientConn
-	lavadPath string
-	logs      map[string]*bytes.Buffer
+	grpcConn     *grpc.ClientConn
+	lavadPath    string
+	logs         map[string]*bytes.Buffer
+	providerType map[string][]epochStorageTypes.Endpoint
 }
 
 func init() {
@@ -129,7 +130,7 @@ func (lt *lavaTest) checkStakeLava() {
 	for _, spec := range specQueryRes.Spec {
 		// Query providers
 
-		log.Println(spec.GetIndex())
+		fmt.Println(spec.GetIndex())
 		providerQueryRes, err := pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
 			ChainID: spec.GetIndex(),
 		})
@@ -140,8 +141,8 @@ func (lt *lavaTest) checkStakeLava() {
 			panic("Staking Failed PROVIDER")
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
-			// check if number of stakes matches number of providers to be launched
-			log.Println("provider", providerStakeEntry)
+			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
+			lt.providerType[providerStakeEntry.Address] = providerStakeEntry.Endpoints
 		}
 
 		// Query clients
@@ -155,8 +156,7 @@ func (lt *lavaTest) checkStakeLava() {
 			panic("Staking Failed CLIENT")
 		}
 		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
-			// check if number of stakes matches number of clients to be launched
-			log.Println("client", clientStakeEntry)
+			fmt.Println("client", clientStakeEntry)
 		}
 	}
 }
@@ -333,7 +333,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	}
 
 	if len(errors) > 0 {
-		return log.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf(strings.Join(errors, ",\n"))
 	}
 
 	return nil
@@ -412,18 +412,18 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 		}
 	}
 	if len(errors) > 0 {
-		return log.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf(strings.Join(errors, ",\n"))
 	}
 	return nil
 }
 
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2276 " + rpcURL + " LAV1 rest --from servicer11",
-		lt.lavadPath + " server 127.0.0.1 2277 " + rpcURL + " LAV1 rest --from servicer12",
-		lt.lavadPath + " server 127.0.0.1 2278 " + rpcURL + " LAV1 rest --from servicer13",
-		lt.lavadPath + " server 127.0.0.1 2279 " + rpcURL + " LAV1 rest --from servicer14",
-		lt.lavadPath + " server 127.0.0.1 2280 " + rpcURL + " LAV1 rest --from servicer15",
+		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6",
+		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7",
+		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8",
+		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9",
+		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10",
 	}
 	lt.logs["restProvider"] = new(bytes.Buffer)
 	for _, providerCommand := range providerCommands {
@@ -458,7 +458,7 @@ func (lt *lavaTest) startRESTGateway() {
 func (lt *lavaTest) checkRESTGateway(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting REST Gateway", nil)
-		reply, err := getRequest(log.Sprintf("%s/blocks/latest", rpcURL))
+		reply, err := getRequest(fmt.Sprintf("%s/blocks/latest", rpcURL))
 		if err != nil || strings.Contains(string(reply), "error") {
 			time.Sleep(time.Second)
 			continue
@@ -482,9 +482,9 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for _, api := range mostImportantApisToTest {
-			reply, err := getRequest(log.Sprintf(api, rpcURL))
+			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
 			if err != nil {
-				errors = append(errors, log.Sprintf("%s", err))
+				errors = append(errors, fmt.Sprintf("%s", err))
 			} else if strings.Contains(string(reply), "error") {
 				errors = append(errors, string(reply))
 			}
@@ -492,7 +492,7 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	}
 
 	if len(errors) > 0 {
-		return log.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf(strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -519,7 +519,7 @@ func (lt *lavaTest) saveLogs() {
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(logsFolder, os.ModePerm)
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 		}
 	}
 	for fileName, logBuffer := range lt.logs {
@@ -534,6 +534,53 @@ func (lt *lavaTest) saveLogs() {
 	}
 }
 
+func (lt *lavaTest) checkPayments(testDuration time.Duration) {
+	utils.LavaFormatInfo("Checking Payments", nil)
+	ethPaid := false
+	lavaPaid := false
+	for start := time.Now(); time.Since(start) < testDuration; {
+		pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
+		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
+		if err != nil {
+			panic(err)
+		}
+
+		if len(pairingRes.EpochPayments) == 0 {
+			utils.LavaFormatInfo("Waiting Payments", nil)
+			time.Sleep(time.Second)
+			continue
+		}
+		for _, epochPayment := range pairingRes.EpochPayments {
+			for _, clientsPayment := range epochPayment.ClientsPayments {
+				if strings.Contains(clientsPayment.Index, "ETH") {
+					ethPaid = true
+				} else if strings.Contains(clientsPayment.Index, "LAV") {
+					lavaPaid = true
+				}
+			}
+		}
+		if ethPaid && lavaPaid {
+			break
+		}
+	}
+
+	if !ethPaid && !lavaPaid {
+		panic("PAYMENT FAILED FOR ETH AND LAVA")
+	}
+
+	if ethPaid {
+		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR ETH", nil)
+	} else {
+		panic("PAYMENT FAILED FOR ETH")
+	}
+
+	if lavaPaid {
+		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR LAVA", nil)
+	} else {
+		panic("PAYMENT FAILED FOR LAVA")
+	}
+}
+
 func runE2E() {
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
@@ -542,12 +589,13 @@ func runE2E() {
 	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithInsecure())
 	if err != nil {
 		// Just log because grpc redials
-		log.Println(err)
+		fmt.Println(err)
 	}
 	lt := &lavaTest{
-		grpcConn:  grpcConn,
-		lavadPath: gopath + "/bin/lavad",
-		logs:      make(map[string]*bytes.Buffer),
+		grpcConn:     grpcConn,
+		lavadPath:    gopath + "/bin/lavad",
+		logs:         make(map[string]*bytes.Buffer),
+		providerType: make(map[string][]epochStorageTypes.Endpoint),
 	}
 	// use defer to save logs in case the tests fail
 	defer lt.saveLogs()
@@ -559,7 +607,6 @@ func runE2E() {
 	lt.stakeLava()
 	lt.checkStakeLava()
 	utils.LavaFormatInfo("Staking Lava OK", nil)
-
 	lt.startJSONRPCProxy()
 	lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	lt.startJSONRPCGateway()
@@ -596,4 +643,6 @@ func runE2E() {
 	} else {
 		utils.LavaFormatInfo("REST TEST OK", nil)
 	}
+
+	lt.checkPayments(time.Minute * 10)
 }
