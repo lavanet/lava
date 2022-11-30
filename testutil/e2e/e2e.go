@@ -339,11 +339,91 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
+func (lt *lavaTest) startTendermintProvider(rpcURL string) {
+	providerCommands := []string{
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6",
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7",
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8",
+		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9",
+		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10",
+	}
+	lt.logs["tendermintProvider"] = new(bytes.Buffer)
+	for _, providerCommand := range providerCommands {
+		cmd := exec.Cmd{
+			Path:   lt.lavadPath,
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: lt.logs["tendermintProvider"],
+			Stderr: lt.logs["tendermintProvider"],
+		}
+		err := cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (lt *lavaTest) startTendermintGateway() {
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2"
+	lt.logs["tendermintGateway"] = new(bytes.Buffer)
+	cmd := exec.Cmd{
+		Path:   lt.lavadPath,
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: lt.logs["tendermintGateway"],
+		Stderr: lt.logs["tendermintGateway"],
+	}
+	err := cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (lt *lavaTest) checkTendermintGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting TENDERMINT Gateway", nil)
+		client, err := tmclient.New(rpcURL, "/websocket")
+		if err != nil {
+			continue
+		}
+		_, err = client.Status(context.Background())
+		if err == nil {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+	panic("TENDERMINT Check Failed")
+}
+
+func tendermintTests(rpcURL string, testDuration time.Duration) error {
+	ctx := context.Background()
+	utils.LavaFormatInfo("Starting TENDERMINT Tests", nil)
+	errors := []string{}
+	client, err := tmclient.New(rpcURL, "/websocket")
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	for start := time.Now(); time.Since(start) < testDuration; {
+		_, err := client.Status(ctx)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		_, err = client.Health(ctx)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+	}
+	if len(errors) > 0 {
+		return log.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer1",
-		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer2",
-		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer3",
+		lt.lavadPath + " server 127.0.0.1 2276 " + rpcURL + " LAV1 rest --from servicer11",
+		lt.lavadPath + " server 127.0.0.1 2277 " + rpcURL + " LAV1 rest --from servicer12",
+		lt.lavadPath + " server 127.0.0.1 2278 " + rpcURL + " LAV1 rest --from servicer13",
+		lt.lavadPath + " server 127.0.0.1 2279 " + rpcURL + " LAV1 rest --from servicer14",
+		lt.lavadPath + " server 127.0.0.1 2280 " + rpcURL + " LAV1 rest --from servicer15",
 	}
 	lt.logs["restProvider"] = new(bytes.Buffer)
 	for _, providerCommand := range providerCommands {
@@ -361,7 +441,7 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 rest --from user4"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user3"
 	lt.logs["restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
@@ -411,82 +491,6 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 		}
 	}
 
-	if len(errors) > 0 {
-		return log.Errorf(strings.Join(errors, ",\n"))
-	}
-	return nil
-}
-
-func (lt *lavaTest) startTendermintProvider(rpcURL string) {
-	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer1",
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer2",
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer3",
-	}
-	lt.logs["tendermintProvider"] = new(bytes.Buffer)
-	for _, providerCommand := range providerCommands {
-		cmd := exec.Cmd{
-			Path:   lt.lavadPath,
-			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["tendermintProvider"],
-			Stderr: lt.logs["tendermintProvider"],
-		}
-		err := cmd.Start()
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func (lt *lavaTest) startTendermintGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
-	lt.logs["tendermintGateway"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   lt.lavadPath,
-		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["tendermintGateway"],
-		Stderr: lt.logs["tendermintGateway"],
-	}
-	err := cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (lt *lavaTest) checkTendermintGateway(rpcURL string, timeout time.Duration) {
-	for start := time.Now(); time.Since(start) < timeout; {
-		utils.LavaFormatInfo("Waiting TENDERMINT Gateway", nil)
-		client, err := tmclient.New(rpcURL, "/websocket")
-		if err != nil {
-			continue
-		}
-		_, err = client.Status(context.Background())
-		if err == nil {
-			return
-		}
-		time.Sleep(time.Second)
-	}
-	panic("TENDERMINT Check Failed")
-}
-
-func tendermintTests(rpcURL string, testDuration time.Duration) error {
-	ctx := context.Background()
-	utils.LavaFormatInfo("Starting TENDERMINT Tests", nil)
-	errors := []string{}
-	client, err := tmclient.New(rpcURL, "/websocket")
-	if err != nil {
-		errors = append(errors, "error client dial")
-	}
-	for start := time.Now(); time.Since(start) < testDuration; {
-		_, err := client.Status(ctx)
-		if err != nil {
-			errors = append(errors, err.Error())
-		}
-		_, err = client.Health(ctx)
-		if err != nil {
-			errors = append(errors, err.Error())
-		}
-	}
 	if len(errors) > 0 {
 		return log.Errorf(strings.Join(errors, ",\n"))
 	}
@@ -561,18 +565,19 @@ func runE2E() {
 	lt.startJSONRPCGateway()
 	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
 
-	lt.startRESTProvider("http://127.0.0.1:1317")
-	lt.startRESTGateway()
-	lt.checkRESTGateway("http://127.0.0.1:3340/1", time.Second*30)
-
 	lt.startTendermintProvider("http://0.0.0.0:26657")
 	lt.startTendermintGateway()
-	lt.checkTendermintGateway("http://127.0.0.1:3341/1", time.Second*30)
+	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
+
+	lt.startRESTProvider("http://127.0.0.1:1317")
+	lt.startRESTGateway()
+	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
-	restErr := restTests("http://127.0.0.1:3340/1", time.Second*30)
-	tendermintErr := tendermintTests("http://127.0.0.1:3341/1", time.Second*30)
+	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
+	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 
 	if jsonErr != nil {
 		panic(jsonErr)
@@ -580,15 +585,15 @@ func runE2E() {
 		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
 	}
 
-	if restErr != nil {
-		panic(restErr)
-	} else {
-		utils.LavaFormatInfo("REST TEST OK", nil)
-	}
-
 	if tendermintErr != nil {
 		panic(tendermintErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
+	}
+
+	if restErr != nil {
+		panic(restErr)
+	} else {
+		utils.LavaFormatInfo("REST TEST OK", nil)
 	}
 }
