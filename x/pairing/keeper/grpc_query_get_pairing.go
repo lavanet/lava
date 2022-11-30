@@ -29,7 +29,8 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")
 	}
-	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr)
+	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
+	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr, currentEpoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, ctx.BlockHeight(), err)
 	}
