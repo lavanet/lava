@@ -417,8 +417,6 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) startTendermintProvider(rpcURL string) {
-	// TODO
-	// pipe output to array
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer1",
 		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer2",
