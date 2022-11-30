@@ -19,9 +19,9 @@ var _ = strconv.Itoa(0)
 
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation]",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [optional: moniker/name]",
 		Short: "Broadcast message stakeProvider",
-		Args:  cobra.ExactArgs(4),
+		Args:  cobra.RangeArgs(4, 5),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -51,13 +51,17 @@ func CmdStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
+			moniker := ""
+			if len(args) > 4 {
+				moniker = args[4]
+			}
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
 				argAmount,
 				argEndpoints,
 				argGeolocation,
+				moniker,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
