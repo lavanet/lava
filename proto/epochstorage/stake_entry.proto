@@ -15,4 +15,5 @@ message StakeEntry {
   uint64 geolocation = 5; 
   string chain = 6;
   string vrfpk = 7;
+  string moniker = 8;
 }
