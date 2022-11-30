@@ -44,7 +44,7 @@ func TestClient(
 
 	//
 	// Node
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, nil)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}

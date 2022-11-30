@@ -18,17 +18,12 @@ service Query {
   }
   // Queries a Spec by id.
 	rpc Spec(QueryGetSpecRequest) returns (QueryGetSpecResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/spec/{index}";
+		option (google.api.http).get = "/lavanet/lava/spec/spec/{ChainID}";
 	}
 
 	// Queries a list of Spec items.
 	rpc SpecAll(QueryAllSpecRequest) returns (QueryAllSpecResponse) {
 		option (google.api.http).get = "/lavanet/lava/spec/spec";
-	}
-
-// Queries a list of Chain items.
-	rpc Chain(QueryChainRequest) returns (QueryChainResponse) {
-		option (google.api.http).get = "/lavanet/lava/spec/chain/{chainID}";
 	}
 
 // Queries a list of ShowAllChains items.
@@ -54,7 +49,7 @@ message QueryParamsResponse {
 }
 
 message QueryGetSpecRequest {
-	string index = 1;
+	string ChainID = 1;
 }
 
 message QueryGetSpecResponse {
@@ -68,14 +63,6 @@ message QueryAllSpecRequest {
 message QueryAllSpecResponse {
 	repeated Spec Spec = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryChainRequest {
-  string chainID = 1;
-}
-
-message QueryChainResponse {
-  Spec spec = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryShowAllChainsRequest {

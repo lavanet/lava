@@ -11,7 +11,7 @@ import (
 
 func CmdListSpec() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-Spec",
+		Use:   "list-spec",
 		Short: "list all Spec",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
@@ -55,7 +55,7 @@ func CmdShowSpec() *cobra.Command {
 			argIndex := args[0]
 
 			params := &types.QueryGetSpecRequest{
-				Index: argIndex,
+				ChainID: argIndex,
 			}
 
 			res, err := queryClient.Spec(context.Background(), params)

@@ -295,9 +295,10 @@ func (s *Sentry) GetSpecHash() []byte {
 }
 
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
-	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		ChainID: s.ChainID,
 	})
+
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
@@ -309,7 +310,7 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.Ap
 	return allSpecNames, nil
 }
 
-func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
+func (s *Sentry) getServiceApis(spec *spectypes.QueryGetSpecResponse) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
 	serverApis := map[string]spectypes.ServiceApi{}
 	taggedApis := map[string]spectypes.ServiceApi{}
 	if spec.Spec.Enabled {
@@ -346,7 +347,7 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryChainResponse) (retServerAp
 func (s *Sentry) getSpec(ctx context.Context) error {
 	//
 	// TODO: decide if it's fatal to not have spec (probably!)
-	spec, err := s.specQueryClient.Chain(ctx, &spectypes.QueryChainRequest{
+	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		ChainID: s.ChainID,
 	})
 	if err != nil {
@@ -585,8 +586,8 @@ func (s *Sentry) Start(ctx context.Context) {
 			s.SetBlockHeight(data.Block.Height)
 
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
-				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
-				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
+				utils.LavaFormatInfo("New Epoch Event", nil)
+				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
@@ -609,7 +610,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				//update expected payments deadline, and log missing payments
 				//TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
-					s.IdentifyMissingPayments(ctx)
+					s.IdentifyMissingPayments()
 				}
 				//
 				// Update pairing
@@ -703,20 +704,32 @@ func (s *Sentry) FetchChainParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
+func (s *Sentry) IdentifyMissingPayments() {
 	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
 	s.PaymentsMu.Lock()
+
+	var updatedExpectedPayments []PaymentRequest
+
 	for idx, expectedPay := range s.expectedPayments {
+		// Exclude and log missing payments
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
 			utils.LavaFormatError("Identified Missing Payment", nil,
 				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
 					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
 					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
-			s.expectedPayments = append(s.expectedPayments[:idx], s.expectedPayments[idx+1:]...)
+
+			continue
 		}
+
+		// Include others
+		updatedExpectedPayments = append(updatedExpectedPayments, s.expectedPayments[idx])
 	}
+
+	// Update expectedPayment
+	s.expectedPayments = updatedExpectedPayments
+
 	s.PaymentsMu.Unlock()
-	//can be modified in this race window, so we double check
+	//can be modified in this race window, so we double-check
 
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
@@ -1239,6 +1252,10 @@ func (s *Sentry) GetSpecSavedBlocks() uint32 {
 
 func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index
+}
+
+func (s *Sentry) GetAverageBlockTime() int64 {
+	return s.serverSpec.AverageBlockTime
 }
 
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
