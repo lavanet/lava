@@ -69,9 +69,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 		{"PaymentFiftyPercentQosEpoch", epochQosWeightFiftyPercent, sdk.NewDecWithPrec(5, 1), false},    // payment collected for an epoch with QosWeight = 0.5, still provider should be effected by QosWeight = 0.7
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
@@ -79,7 +77,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.epoch),
@@ -185,9 +183,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 		{"PaymentAfterEpochBlocksChangesToTen", epochAfterChangeToTen, false},
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
@@ -195,7 +191,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.epoch),
@@ -275,9 +271,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 		{"PaymentAfterEpochBlocksChangesToFifty", epochAfterChangeToFifty, true},
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
@@ -285,7 +279,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.epoch),
@@ -363,9 +357,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},   // first block of previous epoch
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
@@ -373,7 +365,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.epoch),
@@ -452,9 +444,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 		{"PaymentAfterEpochsToSaveChangesToTwenty", epochAfterChangeToTwenty, true},    // first block of previous epoch
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
@@ -462,7 +452,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.epoch),
@@ -559,15 +549,13 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 		{"PaymentAfterStakeToMaxCUListChange", epochAfterChange, true},    // maxCU for this epoch is 300000, so it should succeed
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           uint64(250001), // the relayRequest costs 250001 (more than the previous limit, and less than in the new limit). This should influence the validity of the request
 				BlockHeight:     int64(tt.epoch),
@@ -665,15 +653,13 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 		{"PaymentAfterStakeToMaxCUListChange", epochAfterChange, false},  // StakeThreshold for this epoch allows MaxCU = 125000, so it shouldn't work
 	}
 
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
+	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           uint64(200000), // the relayRequest costs 200000 (less than the previous limit, and more than in the new limit). This should influence the validity of the request
 				BlockHeight:     int64(tt.epoch),
@@ -756,9 +742,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 		{"Test #8", 6228, true},
 	}
 
-	sessionCounter := 0
 	for ti, tt := range tests {
-		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
 			// change the EpochBlocks parameter according to the epoch test values
@@ -781,7 +765,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       uint64(ti),
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
 				BlockHeight:     int64(tt.paymentEpoch),

@@ -76,9 +76,7 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 		{"ShouldBeStaked", epochShouldBeStaked, true},     // 21 blocks have passed - enough blocks
 	}
 
-	sessionCounter := 0
 	for _, tt := range tests {
-		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
 			// check if the provider/client are staked
@@ -159,9 +157,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 		{"ShouldAlsoBeStaked", epochShouldAlsoBeStaked, true}, // 51 blocks have passed - enough blocks
 	}
 
-	sessionCounter := 0
 	for _, tt := range tests {
-		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
 			// check if the provider/client are staked
