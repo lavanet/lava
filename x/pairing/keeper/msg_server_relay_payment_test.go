@@ -92,6 +92,14 @@ func setupForPaymentTest(t *testing.T) *testStruct {
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
+	// Create mock spec, stake a client and a provider
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
+
 	return ts
 }
 

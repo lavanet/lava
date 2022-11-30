@@ -15,8 +15,14 @@ import (
 // Test that if the EpochBlocks param decreases make sure the provider/client is staked only after the original EpochBlocks value (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
+	// Create teststruct ts
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// Create a mock spec
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
@@ -92,8 +98,14 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 // Test that if the EpochBlocks param increases make sure the provider/client is staked after the original EpochBlocks value, and not the new enlarged one (EpochBlocks = number of blocks in an epoch. This parameter is fixated)
 func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
+	// Create teststruct ts
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// Create a mock spec
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
@@ -173,8 +185,14 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 // Test that if the UnstakeHoldBlocks param decreases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
 func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
+	// Create teststruct ts
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// Create a mock spec
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
@@ -251,8 +269,14 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 // Test that if the UnstakeHoldBlocks param increases make sure the provider/client is getting their funds back only by the original UnstakeHoldBlocks value (return_funds_block = next_epoch(current_block + max(UnstakeHoldBlocks, BlocksToSave)))
 func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
+	// Create teststruct ts
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// Create a mock spec
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 

@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/sigs"
-	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -19,12 +18,6 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 	// setup testnet with mock spec, a staked client and a staked provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Create badQos - to see the effect of changing QosWeight, the provider need to provide bad service (here, his score is 0%)
 	badQoS := &pairingtypes.QualityOfServiceReport{Latency: sdk.ZeroDec(), Availability: sdk.ZeroDec(), Sync: sdk.ZeroDec()}
@@ -38,7 +31,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	initQosStr := string(initQosBytes[:])
 
 	// change the QoS weight parameter to 0.5
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyQoSWeight), initQosStr)
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyQoSWeight), initQosStr)
 	require.Nil(t, err)
 
 	// Advance an epoch (only then the parameter change will be applied) and get current epoch
@@ -131,23 +124,15 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 // Test that if the EpochBlocks param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
@@ -219,23 +204,15 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 // Test that if the EpochBlocks param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochBlocks = number of blocks in an epoch)
 func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
@@ -306,23 +283,15 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 // Test that if the EpochToSave param decreases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
@@ -393,23 +362,15 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 // Test that if the EpochToSave param increases make sure the provider can claim reward after the new EpochBlocks*EpochsToSave, and not the original EpochBlocks (EpochsToSave = number of epochs the chain remembers (accessible memory))
 func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
@@ -479,23 +440,15 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 // Test that if the StakeToMaxCU.MaxCU param decreases make sure the client can send queries according to the original StakeToMaxCUList in the current epoch (This parameter is fixated)
 func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20,and the default StakeToMaxCU list below - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
@@ -583,23 +536,15 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 // Test that if the StakeToMaxCU.StakeThreshold param increases make sure the client can send queries according to the original StakeToMaxCUList in the current epoch (This parameter is fixated)
 func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20,and the default StakeToMaxCU list below - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
@@ -685,23 +630,15 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 }
 
 func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
-	// setup testnet with mock spec
+	// setup testnet with mock spec, stake a client and a provider
 	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	// stake a client and a provider
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
@@ -790,16 +727,9 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 }
 
 func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing.T) {
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
-	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000 (because of bug?)). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
+	// setup testnet with mock spec, stake a client and a provider
+	ts := setupForPaymentTest(t)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	// Also, the client and provider will be paired (new pairing is determined every epoch)
@@ -807,7 +737,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 
 	// The test assumes that EpochBlocks default value is 20,and the default StakeToMaxCU list below - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
@@ -879,23 +809,16 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 
 // this test checks what happens if a single provider stake, get payment, and then unstake and gets its money.
 func TestStakePaymentUnstake(t *testing.T) {
-	// setup testnet with mock spec
-	ts := setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
 
-	// stake a client and a provider (both are staked with 100000ulava - client has a max CU limit of 250000 (because of bug?)). Note, the default burnCoinsPerCU = 0.05, so the client has enough funds.
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
+	// setup testnet with mock spec, stake a client and a provider
+	ts := setupForPaymentTest(t)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
 
 	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10, and unstakeHoldBlocks is 210 - make sure it is
 	epochBlocksTwenty := uint64(20)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	epochsToSaveTen := uint64(10)
 	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
