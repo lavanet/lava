@@ -127,7 +127,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 				}
 			}
 		}
-
+		spec.BlockUpdated = uint64(ctx.BlockHeight())
 		k.SetSpec(ctx, spec)
 		//TODO: add api types once its implemented to the event
 
@@ -156,6 +156,7 @@ func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecMod
 				return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
 			}
 		}
+		spec.BlockUpdated = uint64(ctx.BlockHeight())
 
 		k.SetSpec(ctx, spec)
 		utils.LogLavaEvent(ctx, logger, "spec_modify", details, "Gov Proposal Accepted Spec Modified")
