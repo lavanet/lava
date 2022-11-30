@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	log "fmt"
 	"go/build"
 	"io"
@@ -10,7 +13,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -29,11 +34,20 @@ import (
 )
 
 type lavaTest struct {
-	grpcConn         *grpc.ClientConn
-	lavadPath        string
-	goExecutablePath string
-	execOut          bytes.Buffer
-	execErr          bytes.Buffer
+	grpcConn  *grpc.ClientConn
+	lavadPath string
+	logs      map[string]*bytes.Buffer
+}
+
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	// Move to parent directory
+	dir := path.Join(path.Dir(filename), "../..")
+	err := os.Chdir(dir)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(dir)
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
@@ -82,13 +96,18 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 }
 
 func (lt *lavaTest) stakeLava() {
+	stakeCommand := "./scripts/init.sh"
+	lt.logs["stakeLava"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path:   "./scripts/init.sh",
-		Args:   []string{"./scripts/init.sh"},
-		Stdout: &lt.execOut,
-		Stderr: &lt.execErr,
+		Path:   stakeCommand,
+		Args:   strings.Split(stakeCommand, " "),
+		Stdout: lt.logs["stakeLava"],
+		Stderr: lt.logs["stakeLava"],
 	}
-	cmd.Start()
+	err := cmd.Start()
+	if err != nil {
+		panic("Staking Failed " + err.Error())
+	}
 	cmd.Wait()
 }
 
@@ -141,9 +160,26 @@ func (lt *lavaTest) checkStakeLava() {
 	}
 }
 
+func (lt *lavaTest) startJSONRPCProxy() {
+	goExecutablePath, err := exec.LookPath("go")
+	if err != nil {
+		panic("Could not find go executable path")
+	}
+	proxyCommand := goExecutablePath + " run ./testutil/e2e/proxy/. eth"
+	lt.logs["jsonProxy"] = new(bytes.Buffer)
+	cmd := exec.Cmd{
+		Path:   goExecutablePath,
+		Args:   strings.Split(proxyCommand, " "),
+		Stdout: lt.logs["jsonProxy"],
+		Stderr: lt.logs["jsonProxy"],
+	}
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
-	// TODO
-	// pipe output to array
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1",
 		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2",
@@ -151,12 +187,13 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4",
 		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5",
 	}
+	lt.logs["jsonProvider"] = new(bytes.Buffer)
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: &lt.execOut,
-			Stderr: &lt.execErr,
+			Stdout: lt.logs["jsonProvider"],
+			Stderr: lt.logs["jsonProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
@@ -165,34 +202,14 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	}
 }
 
-func (lt *lavaTest) startJSONRPCProxy() {
-	proxyCommand := lt.goExecutablePath + " run ./testutil/e2e/proxy/. eth"
-	cmd := exec.Cmd{
-		Path: lt.goExecutablePath,
-		Args: strings.Split(proxyCommand, " "),
-		// Stdout: os.Stdout,
-		// Stderr: os.Stdout,
-		Stdout: &lt.execOut,
-		Stderr: &lt.execErr,
-	}
-	err := cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (lt *lavaTest) startJSONRPCGateway() {
-	// TODO
-	// pipe output to array
-	providerCommand :=
-		lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
+	lt.logs["jsonGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path: lt.lavadPath,
-		Args: strings.Split(providerCommand, " "),
-		// Stdout: os.Stdout,
-		// Stderr: os.Stdout,
-		Stdout: &lt.execOut,
-		Stderr: &lt.execErr,
+		Path:   lt.lavadPath,
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: lt.logs["jsonGateway"],
+		Stderr: lt.logs["jsonGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
@@ -322,19 +339,18 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
-	// TODO
-	// pipe output to array
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer1",
 		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer2",
 		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer3",
 	}
+	lt.logs["restProvider"] = new(bytes.Buffer)
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: &lt.execOut,
-			Stderr: &lt.execErr,
+			Stdout: lt.logs["restProvider"],
+			Stderr: lt.logs["restProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
@@ -344,14 +360,13 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	// TODO
-	// pipe output to array
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 rest --from user4"
+	lt.logs["restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
-		Stdout: &lt.execOut,
-		Stderr: &lt.execErr,
+		Stdout: lt.logs["restGateway"],
+		Stderr: lt.logs["restGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
@@ -403,19 +418,19 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	// TODO
-	// remove ugly path
 	// pipe output to array
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer1",
 		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer2",
 		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer3",
 	}
+	lt.logs["tendermintProvider"] = new(bytes.Buffer)
 	for _, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: &lt.execOut,
-			Stderr: &lt.execErr,
+			Stdout: lt.logs["tendermintProvider"],
+			Stderr: lt.logs["tendermintProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
@@ -425,15 +440,13 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startTendermintGateway() {
-	// TODO
-	// remove ugly path
-	// pipe output to array
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 tendermintrpc --from user4"
+	lt.logs["tendermintGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
-		Stdout: &lt.execOut,
-		Stderr: &lt.execErr,
+		Stdout: lt.logs["tendermintGateway"],
+		Stderr: lt.logs["tendermintGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
@@ -499,15 +512,26 @@ func getRequest(url string) ([]byte, error) {
 }
 
 func (lt *lavaTest) saveLogs() {
-
+	logsFolder := "./testutil/e2e/logs/"
+	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(logsFolder, os.ModePerm)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	for fileName, logBuffer := range lt.logs {
+		file, err := os.Create(logsFolder + fileName + ".log")
+		if err != nil {
+			panic(err)
+		}
+		writer := bufio.NewWriter(file)
+		writer.Write(logBuffer.Bytes())
+		writer.Flush()
+		file.Close()
+	}
 }
 
-func main() {
-	goExecutablePath, err := exec.LookPath("go")
-	if err != nil {
-		panic("Could not find go executable path")
-	}
-
+func runE2E() {
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		gopath = build.Default.GOPATH
@@ -518,10 +542,12 @@ func main() {
 		log.Println(err)
 	}
 	lt := &lavaTest{
-		grpcConn:         grpcConn,
-		lavadPath:        gopath + "/bin/lavad",
-		goExecutablePath: goExecutablePath,
+		grpcConn:  grpcConn,
+		lavadPath: gopath + "/bin/lavad",
+		logs:      make(map[string]*bytes.Buffer),
 	}
+	// use defer to save logs in case the tests fail
+	defer lt.saveLogs()
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
 	lt.checkLava(time.Second * 30)
