@@ -298,8 +298,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	require.Nil(t, err)
 
 	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)                                          // blockHeight = 20
-	epochBeforeChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx)) // blockHeight = 20
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
+	epochBeforeChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
 	// change the EpochToSave parameter to 2
 	epochsToSaveTwo := uint64(2)
@@ -310,10 +310,13 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 40
 	epochAfterChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// Advance epochs to reach blockHeight of 120
-	// This will create a situation where a provider with old EpochsToSave can get paid, but it shouldn't
-	for i := 0; i < 4; i++ {
+	// Advance epochs to reach blockHeight of 99
+	// This will create a situation where a provider with old EpochsToSave from epochBeforeChangeToTwo can get paid (but it shouldn't). Also a provider from epochAfterChangeToTwo with the new EpochsToSave should get paid since block 99 is inside the memory (it belongs to the epoch that starts on blockHeight=80)
+	for i := 0; i < 2; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+	for i := 0; i < 19; i++ {
+		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
 
 	// define tests - different epoch+blocks, valid tells if the payment request should work
@@ -322,12 +325,18 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, false}, // first block of current epoch
-		{"PaymentAfterEpochsToSaveChangesToTwo", epochAfterChangeToTwo, false},   // first block of previous epoch
+		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, false},
+		{"PaymentAfterEpochsToSaveChangesToTwoBlockInMemory", epochAfterChangeToTwo, true},
+		{"PaymentAfterEpochsToSaveChangesToTwoBlockOutsideOfMemory", epochAfterChangeToTwo, false}, // the chain advances inside the loop test when it reaches this test
 	}
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			// advace to blockHeight 100 -> the provider shouldn't be able to get its payments (epoch out of memory)
+			if ti == 2 {
+				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+			}
 
 			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
