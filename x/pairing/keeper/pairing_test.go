@@ -35,10 +35,11 @@ func TestPairingUniqueness(t *testing.T) {
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
-	providers1, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	currentEpoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
+	providers1, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, currentEpoch)
 	require.Nil(t, err)
 
-	providers2, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer2.Addr)
+	providers2, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer2.Addr, currentEpoch)
 	require.Nil(t, err)
 
 	require.Equal(t, len(providers1), len(providers2))

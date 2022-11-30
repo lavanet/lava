@@ -144,7 +144,8 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, clientStakeEntry.Stake.Amount, sdk.NewInt(stake))
 
-	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+	currentEpoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
+	_, err = keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, currentEpoch)
 	require.Nil(t, err)
 
 	//try to change stake
