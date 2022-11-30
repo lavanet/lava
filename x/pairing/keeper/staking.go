@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, vrfpk string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, vrfpk string, moniker string) error {
 	logger := k.Logger(ctx)
 	stake_type := func() string {
 		if provider {
@@ -120,7 +120,11 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_new_amount", details, "insufficient amount to pay for stake")
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk}
+	if len(moniker) > 50 {
+		moniker = moniker[:50]
+	}
+
+	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
 	appended := false
 	if !provider {
