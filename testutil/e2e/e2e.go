@@ -41,13 +41,14 @@ type lavaTest struct {
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
-	// Move to parent directory
+	// Move to parent directory since running "go test ./testutil/e2e/ -v" would move working directory
+	// to testutil/e2e/ which breaks relative paths in scripts
 	dir := path.Join(path.Dir(filename), "../..")
 	err := os.Chdir(dir)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(dir)
+	fmt.Println("Test Directory", dir)
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
