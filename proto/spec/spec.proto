@@ -19,5 +19,5 @@ message Spec {
   uint32 saved_blocks = 8;
   int64 averageBlockTime =9;
   int64 allowedBlockLagForQosSync = 10;
-  uint64 blockUpdated = 11;
+  uint64 blockLastUpdated = 11;
 }
