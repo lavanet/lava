@@ -224,11 +224,10 @@ func TestRelayPaymentOverUse(t *testing.T) {
 
 func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int) (ts *testStruct) {
 	ts = setupForPaymentTest(t)
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-	err := ts.addClient(amountOfClients)
+
+	err := ts.addClient(amountOfClients - 1)
 	require.Nil(t, err)
-	err = ts.addProvider(2)
+	err = ts.addProvider(1)
 	require.Nil(t, err)
 	return ts
 }
