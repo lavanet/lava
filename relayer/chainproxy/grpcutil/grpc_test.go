@@ -1,4 +1,4 @@
-package chainproxy
+package grpcutil
 
 //
 // import (

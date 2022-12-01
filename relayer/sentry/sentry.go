@@ -585,7 +585,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 			}
 		}
 		if !found {
-			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
+			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "myAddress": s.Acc, "providers": fmt.Sprintf("%v", providers)})
 		}
 	}
 
