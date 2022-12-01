@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -35,6 +36,8 @@ type ChainProxy interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	GetConsumerSessionManager() *lavasession.ConsumerSessionManager
+	SetCache(*performance.Cache)
+	GetCache() *performance.Cache
 }
 
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
@@ -149,7 +152,11 @@ func SendRelay(
 		if isSubscription {
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
-			reply, err = c.Relay(connectCtx, relayRequest)
+			cache := cp.GetCache()
+			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil) // caching in the portal doesn't care about hashes
+			if err != nil || reply == nil {
+				reply, err = c.Relay(connectCtx, relayRequest)
+			}
 		}
 		currentLatency := time.Since(relaySentTime)
 		if err != nil {
@@ -158,11 +165,18 @@ func SendRelay(
 
 		if !isSubscription {
 			//update relay request requestedBlock to the provided one in case it was arbitrary
+			latest := false
+			if sentry.IsLatestBlock(relayRequest.GetRequestBlock()) {
+				latest = true
+			}
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
 				return nil, nil, nil, 0, err
 			}
+			cache := cp.GetCache()
+			// TODO: response sanity, check its under an expected format add that format to spec
+			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, reply, latest) // caching in the portal doesn't care about hashes
 			return reply, nil, relayRequest, currentLatency, nil
 		}
 		// isSubscription

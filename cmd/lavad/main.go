@@ -14,6 +14,7 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
 )
@@ -132,6 +133,8 @@ func main() {
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
+	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)

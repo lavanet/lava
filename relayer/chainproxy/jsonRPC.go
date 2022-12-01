@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -70,6 +71,7 @@ type JrpcChainProxy struct {
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
+	cache      *performance.Cache
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
@@ -80,7 +82,14 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *
 		sentry:     sentry,
 		csm:        csm,
 		portalLogs: pLogs,
+		cache:      nil,
 	}
+}
+func (cp *JrpcChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *JrpcChainProxy) GetCache() *performance.Cache {
+	return cp.cache
 }
 
 func (cp *JrpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {

@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -37,6 +38,7 @@ type RestChainProxy struct {
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
+	cache      *performance.Cache
 }
 
 func (r *RestMessage) GetMsg() interface{} {
@@ -86,6 +88,13 @@ func (m RestMessage) GetResult() json.RawMessage {
 
 func (m RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
+}
+
+func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *RestChainProxy) GetCache() *performance.Cache {
+	return cp.cache
 }
 
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {

@@ -1459,7 +1459,23 @@ func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingt
 	switch request.RequestBlock {
 	case spectypes.LATEST_BLOCK:
 		request.RequestBlock = response.LatestBlock
+	case spectypes.SAFE_BLOCK:
+		request.RequestBlock = response.LatestBlock
+	case spectypes.FINALIZED_BLOCK:
+		request.RequestBlock = response.LatestBlock
 	case spectypes.EARLIEST_BLOCK:
 		request.RequestBlock = spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
+}
+
+func IsLatestBlock(block int64) bool {
+	switch block {
+	case spectypes.LATEST_BLOCK:
+		return true
+	case spectypes.SAFE_BLOCK:
+		return true
+	case spectypes.FINALIZED_BLOCK:
+		return true
+	}
+	return false
 }

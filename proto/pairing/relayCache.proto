@@ -7,20 +7,29 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service RelayerCache {
     rpc GetRelay (RelayCacheGet) returns (RelayReply) {}
-    rpc SetRelay (RelayCacheSet) returns (SetRelayResponse) {}
+    rpc SetRelay (RelayCacheSet) returns (Empty) {}
+    rpc Health (Empty) returns (CacheUsage) {}
 }
 
-message SetRelayResponse {
+message CacheUsage {
+    uint64 CacheHits =1;
+    uint64 CacheMisses =2;
+}
+
+message Empty {
 
 }
 
 message RelayCacheGet {
     RelayRequest request =1;
     string apiInterface =2;
+    bytes blockHash =3;
 }
 
 message RelayCacheSet {
     RelayRequest request =1;
     string apiInterface =2;
-    RelayReply response =3;
+    bytes blockHash =3;
+    RelayReply response =4;
+    bool latest =5;
 }
