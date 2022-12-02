@@ -220,7 +220,13 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
-		query := "?" + string(c.Request().URI().QueryString())
+
+		URI := c.Request().URI()
+		if strings.Contains(URI.String(), "favicon.ico") {
+			return nil
+		}
+
+		query := "?" + string(URI.QueryString())
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet)
