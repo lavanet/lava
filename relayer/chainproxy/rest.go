@@ -176,7 +176,7 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
-
+	// data contains the query string
 	nodeMsg := &RestMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
@@ -220,10 +220,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Catch the others
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
-
+		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
 		log.Println("in <<< ", path)
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
@@ -265,7 +265,12 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
+	url := nm.cp.nodeUrl + nm.path
+	// Only get calls uses query params the rest uses the body
+	if connectionTypeSlected == http.MethodGet {
+		url += string(nm.msg)
+	}
+	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
