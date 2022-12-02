@@ -1,3 +1,3 @@
 package performance
 
-const CacheFlagName = "cache"
+const CacheFlagName = "cache-be"

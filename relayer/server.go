@@ -27,12 +27,14 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/spf13/pflag"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
@@ -1049,6 +1051,7 @@ func Server(
 	nodeUrl string,
 	ChainID string,
 	apiInterface string,
+	flagSet *pflag.FlagSet,
 ) {
 	utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 	//
@@ -1172,6 +1175,21 @@ func Server(
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
 	if err := s.Serve(lis); err != nil {
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
+	}
+
+	cacheAddr, err := flagSet.GetString(performance.CacheFlagName)
+	if err != nil {
+		utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", flagSet)})
+	} else {
+		if cacheAddr != "" {
+			cache, err := performance.InitCache(ctx, cacheAddr)
+			if err != nil {
+				utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+			} else {
+				utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+				chainProxy.SetCache(cache)
+			}
+		}
 	}
 
 	askForRewards(int64(g_sentry.GetCurrentEpochHeight()))
