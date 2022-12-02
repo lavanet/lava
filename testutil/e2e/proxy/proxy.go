@@ -62,13 +62,13 @@ func main() {
 	port := flag.String("p", "1111", "PORT")
 	id := flag.String("id", "", "ID (optional) - will set the default host id instead of the full domain name"+
 		"\nUsage Example:\n	$ go run proxy.go randomnumberapi.com -id random -cache")
-	cache := flag.Bool("cache", false, "CACHE (optional) - This will make proxy return from cache if possible "+
+	cache := flag.Bool("cache", true, "CACHE (optional) - This will make proxy return from cache if possible "+
 		"(from default [host].json unless -alt was set)\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache")
 	alt := flag.String("alt", "", "ALT (optional) [JSONFILE] - This will make proxy return from alternative cache file if possible"+
 		"\nUsage Example:\n	$ go run proxy.go http://google.com/ -cache -alt ./mockMaps/google_alt.json		# respond from google_alt.json")
-	strict := flag.Bool("strict", false, "STRICT (optional) - This will make proxy return ONLY from cache, no external calls")
+	strict := flag.Bool("strict", true, "STRICT (optional) - This will make proxy return ONLY from cache, no external calls")
 	help := flag.Bool("h", false, "Shows this help message")
-	noSave := flag.Bool("no-save", false, "NO-SAVE (optional) will not store any data from proxy")
+	noSave := flag.Bool("no-save", true, "NO-SAVE (optional) will not store any data from proxy")
 
 	flag.Parse()
 	if *help || (*host == "" && flag.NArg() == 0) {
@@ -106,7 +106,7 @@ func main() {
 	}
 	malicious := false // default
 
-	startEpochUpdate(noSave)
+	startEpochUpdate(*noSave)
 
 	process := proxyProcess{
 		id:        domain,
@@ -170,7 +170,7 @@ func getMockBlockNumber() (block string) {
 	return "0xe" + fmt.Sprintf("%d", epochCount) // return "0xe39ab8"
 }
 
-func startEpochUpdate(noSave *bool) {
+func startEpochUpdate(noSave bool) {
 	go func() {
 		count := 0
 		for {
@@ -179,7 +179,7 @@ func startEpochUpdate(noSave *bool) {
 			if count%epochTime == 0 {
 				epochCount += 1
 			}
-			if !*noSave && responsesChanged && count%saveJsonEvery == 0 {
+			if !noSave && responsesChanged && count%saveJsonEvery == 0 {
 				for _, process := range proxies {
 					mapToJsonFile(*process.mock, process.mockfile)
 				}

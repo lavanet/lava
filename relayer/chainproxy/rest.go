@@ -185,7 +185,7 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
-
+	// data contains the query string
 	nodeMsg := &RestMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
@@ -235,6 +235,12 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
 
+		URI := c.Request().URI()
+		if strings.Contains(URI.String(), "favicon.ico") {
+			return nil
+		}
+
+		query := "?" + string(URI.QueryString())
 		path := "/" + c.Params("*")
 		dappID := ""
 		if len(c.Route().Params) > 1 {
@@ -242,7 +248,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			dappID = strings.Replace(dappID, "*", "", -1)
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet, dappID)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
@@ -258,7 +264,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		log.Println(err)
 	}
-	return
 }
 
 func (nm *RestMessage) RequestedBlock() int64 {
@@ -284,7 +289,12 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
+	url := nm.cp.nodeUrl + nm.path
+	// Only get calls uses query params the rest uses the body
+	if connectionTypeSlected == http.MethodGet {
+		url += string(nm.msg)
+	}
+	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
