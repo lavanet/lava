@@ -2,13 +2,15 @@ package chainproxy
 
 import (
 	"fmt"
-	"github.com/gofiber/websocket/v2"
-	"github.com/joho/godotenv"
-	"github.com/lavanet/lava/utils"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"math/rand"
 	"os"
 	"strconv"
+
+	"github.com/gofiber/websocket/v2"
+	"github.com/joho/godotenv"
+	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/utils"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 var ReturnMaskedErrors = "false"
@@ -68,10 +70,10 @@ func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 
 func (cp *PortalLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError && err != nil {
-		utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError), "error": err.Error()})
+		utils.LavaFormatError(module, err, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 		return
 	}
-	utils.LavaFormatInfo(module, &map[string]string{"GUID": msgSeed, "request": req, "response": resp, "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+	utils.LavaFormatDebug(module, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
 }
 
 func (cp *PortalLogs) LogStartTransaction(name string) {

@@ -43,9 +43,26 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	return errors.New(err_msg)
 }
 
+func LoggingLevel(logLevel string) {
+	switch logLevel {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+	LavaFormatInfo("setting log level", &map[string]string{"level": logLevel})
+}
+
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
 	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
 	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {

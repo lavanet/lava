@@ -59,6 +59,11 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err, nil)
+			}
+			utils.LoggingLevel(logLevel)
 			relayer.Server(ctx, clientCtx, txFactory, listenAddr, args[2], chainID, apiInterface, cmd.Flags())
 
 			return nil
@@ -87,6 +92,11 @@ func main() {
 
 			listenAddr := fmt.Sprintf("%s:%d", args[0], port)
 			ctx := context.Background()
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err, nil)
+			}
+			utils.LoggingLevel(logLevel)
 			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface, cmd.Flags())
 
 			return nil
@@ -118,7 +128,11 @@ func main() {
 				}
 			}
 			ctx := context.Background()
-
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err, nil)
+			}
+			utils.LoggingLevel(logLevel)
 			relayer.TestClient(ctx, clientCtx, chainID, apiInterface, duration, cmd.Flags())
 
 			return nil
