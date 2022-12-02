@@ -126,7 +126,9 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 
 	if cs.latestBlockNum != latestBlock || cs.forkChanged(ctx, latestBlock) {
 		err := cs.fetchAllPreviousBlocks(ctx, latestBlock)
-		return utils.LavaFormatError("error getting all previous blocks on catchup", err, nil)
+		if err != nil {
+			return utils.LavaFormatError("error getting all previous blocks on catchup", err, nil)
+		}
 	} else {
 		utils.LavaFormatDebug("chainSentry skipped reading blocks because its up to date", &map[string]string{"latestHash": cs.GetLatestBlockHash()})
 	}
