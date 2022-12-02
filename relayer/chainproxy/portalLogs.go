@@ -40,7 +40,7 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
 		newrelic.ConfigFromEnvironment(),
 	)
-	return &PortalLogs{newRelicApplication}, nil
+	return &PortalLogs{newRelicApplication}, err
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
