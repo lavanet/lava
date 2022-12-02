@@ -154,7 +154,7 @@ func SendRelay(
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
 			cache := cp.GetCache()
-			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID) // caching in the portal doesn't care about hashes
+			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 			if err != nil || reply == nil {
 				reply, err = c.Relay(connectCtx, relayRequest)
 			}

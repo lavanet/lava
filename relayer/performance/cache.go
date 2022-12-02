@@ -34,13 +34,13 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 	return &cache, nil
 }
 
-func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string) (reply *pairingtypes.RelayReply, err error) {
+func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, finalized bool) (reply *pairingtypes.RelayReply, err error) {
 	if cache == nil {
 		//TODO: try to connect again once in a while
 		return nil, NotConnectedError
 	}
 	//TODO: handle disconnections and error types here
-	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID})
+	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Finalized: finalized})
 }
 
 func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, bucketID string, reply *pairingtypes.RelayReply, finalized bool) {

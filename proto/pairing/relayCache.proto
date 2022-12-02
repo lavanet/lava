@@ -25,6 +25,7 @@ message RelayCacheGet {
     string apiInterface =2;
     bytes blockHash =3;
     string chainID = 4; //Used to differentiate between different chains so each has its own bucket
+    bool finalized =5;
 }
 
 message RelayCacheSet {

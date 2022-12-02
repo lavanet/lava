@@ -742,18 +742,17 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 
 	}
 	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
-
+	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	cache := g_chainProxy.GetCache()
 	//TODO: handle cache on fork for dataReliability = false
-	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID)
+	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
 	if err != nil || reply == nil {
 		//cache miss
 		reply, _, _, err = nodeMsg.Send(ctx, nil)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 		}
-		finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
-		cache.SetEntry(ctx, request, g_sentry.ApiInterface, nil, g_sentry.ChainID, userAddr.String(), reply, finalized) // caching in the portal doesn't care about hashes
+		cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
 	}
 
 	apiName := nodeMsg.GetServiceApi().Name
