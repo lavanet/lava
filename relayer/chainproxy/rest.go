@@ -239,7 +239,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		log.Println(err)
 	}
-	return
 }
 
 func (nm *RestMessage) RequestedBlock() int64 {
