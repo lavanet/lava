@@ -725,10 +725,33 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	default:
 		reqMsg = nil
 	}
+	latestBlock := int64(0)
+	finalizedBlockHashes := map[int64]interface{}{}
+	var requestedBlockHash []byte = nil
+	if g_sentry.GetSpecComparesHashes() {
+		// Add latest block and finalized data
+		var requestedBlockHashStr string
+		latestBlock, finalizedBlockHashes, requestedBlockHashStr = g_chainSentry.GetLatestBlockData(request.RequestBlock)
+		if requestedBlockHashStr == "" {
+			utils.LavaFormatWarning("no hash data for requested block", nil, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		} else {
+			requestedBlockHash = []byte(requestedBlockHashStr)
+		}
 
-	reply, _, _, err := nodeMsg.Send(ctx, nil)
-	if err != nil {
-		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
+	}
+	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
+
+	cache := g_chainProxy.GetCache()
+	//TODO: handle cache on fork for dataReliability = false
+	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID)
+	if err != nil || reply == nil {
+		//cache miss
+		reply, _, _, err = nodeMsg.Send(ctx, nil)
+		if err != nil {
+			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
+		}
+		finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
+		cache.SetEntry(ctx, request, g_sentry.ApiInterface, nil, g_sentry.ChainID, userAddr.String(), reply, finalized) // caching in the portal doesn't care about hashes
 	}
 
 	apiName := nodeMsg.GetServiceApi().Name
@@ -739,14 +762,6 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		}
 	}
 	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
-
-	latestBlock := int64(0)
-	finalizedBlockHashes := map[int64]interface{}{}
-
-	if g_sentry.GetSpecComparesHashes() {
-		// Add latest block and finalized
-		latestBlock, finalizedBlockHashes = g_chainSentry.GetLatestBlockData()
-	}
 
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {

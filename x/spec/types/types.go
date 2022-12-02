@@ -43,6 +43,7 @@ func IsFinalizedBlock(requestedBlock int64, latestBlock int64, finalizationCrite
 	switch requestedBlock {
 	case NOT_APPLICABLE:
 		return false
+		//TODO: handle safe & finalized key words, currently returns false
 	default:
 		if requestedBlock < 0 {
 			return false

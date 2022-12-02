@@ -24,12 +24,16 @@ message RelayCacheGet {
     RelayRequest request =1;
     string apiInterface =2;
     bytes blockHash =3;
+    string chainID = 4; //Used to differentiate between different chains so each has its own bucket
 }
 
 message RelayCacheSet {
     RelayRequest request =1;
     string apiInterface =2;
     bytes blockHash =3;
-    RelayReply response =4;
-    bool latest =5;
+    string chainID = 4; //Used to differentiate between different chains so each has its own bucket
+    string bucketID = 5; //bucketID is used to make sure a big user doesnt flood the cache, on providers this will be consumer address, on portal it will be dappID
+    RelayReply response =6;
+    bool finalized =7;
+    
 }

@@ -1456,26 +1456,20 @@ func NewSentry(
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
 	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
-	switch request.RequestBlock {
-	case spectypes.LATEST_BLOCK:
-		request.RequestBlock = response.LatestBlock
-	case spectypes.SAFE_BLOCK:
-		request.RequestBlock = response.LatestBlock
-	case spectypes.FINALIZED_BLOCK:
-		request.RequestBlock = response.LatestBlock
-	case spectypes.EARLIEST_BLOCK:
-		request.RequestBlock = spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
-	}
+	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
 
-func IsLatestBlock(block int64) bool {
-	switch block {
+func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
+	switch requestedBlock {
 	case spectypes.LATEST_BLOCK:
-		return true
+		return latestBlock
 	case spectypes.SAFE_BLOCK:
-		return true
+		return latestBlock
 	case spectypes.FINALIZED_BLOCK:
-		return true
+		return latestBlock
+	case spectypes.EARLIEST_BLOCK:
+		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
-	return false
+	return requestedBlock
+
 }

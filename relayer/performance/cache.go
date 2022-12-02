@@ -34,20 +34,20 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 	return &cache, nil
 }
 
-func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte) (reply *pairingtypes.RelayReply, err error) {
+func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string) (reply *pairingtypes.RelayReply, err error) {
 	if cache == nil {
 		//TODO: try to connect again once in a while
 		return nil, NotConnectedError
 	}
 	//TODO: handle disconnections and error types here
-	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash})
+	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID})
 }
 
-func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, reply *pairingtypes.RelayReply, latest bool) {
+func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, bucketID string, reply *pairingtypes.RelayReply, finalized bool) {
 	if cache == nil {
 		//TODO: try to connect again once in a while
 		return
 	}
-	//TODO: handle disconnections and error types here
-	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, Response: reply, Latest: latest})
+	//TODO: handle disconnections and SetRelay error types here
+	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, Response: reply, Finalized: finalized, BucketID: bucketID})
 }

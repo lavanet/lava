@@ -2,19 +2,15 @@ package chainsentry
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
-)
-
-const (
-	DEFAULT_NUM_FINAL_BLOCKS = 3
-	DEFAULT_NUM_SAVED_BLOCKS = 7
 )
 
 type ChainSentry struct {
@@ -27,7 +23,7 @@ type ChainSentry struct {
 	quit chan bool
 	// Spec blockQueueMu (rw mutex)
 	blockQueueMu utils.LavaMutex
-	blocksQueue  []string
+	blocksQueue  []string //holds all past hashes up until latest block
 }
 
 func (cs *ChainSentry) GetLatestBlockNum() int64 {
@@ -35,23 +31,39 @@ func (cs *ChainSentry) GetLatestBlockNum() int64 {
 }
 
 func (cs *ChainSentry) SetLatestBlockNum(value int64) {
-	cs.blockQueueMu.Lock()
-	defer cs.blockQueueMu.Unlock()
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
-func (cs *ChainSentry) GetLatestBlockData() (int64, map[int64]interface{}) {
+func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int64, hashesRes map[int64]interface{}, requestedBlockHash string) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
 
 	latestBlockNum := cs.GetLatestBlockNum()
+	if len(cs.blocksQueue) == 0 {
+		utils.LavaFormatError("chainSentry GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlockNum, 10)})
+		return latestBlockNum, nil, ""
+	}
+
+	if requestedBlock < 0 {
+		requestedBlock = sentry.ReplaceRequestedBlock(requestedBlock, latestBlockNum)
+	}
 	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
 
-	for i := 0; i < cs.numFinalBlocks; i++ {
-		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(i+1)
-		hashes[blockNum] = cs.blocksQueue[i]
+	for indexInQueue := 0; indexInQueue < cs.numFinalBlocks; indexInQueue++ {
+		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(indexInQueue+1)
+		if blockNum < 0 {
+			continue
+		}
+		if indexInQueue < cs.numFinalBlocks {
+			//only return numFinalBlocks in the finalization guarantee
+			hashes[blockNum] = cs.blocksQueue[indexInQueue]
+		}
+		//keep iterating on the others to find a match for the request
+		if blockNum == requestedBlock {
+			requestedBlockHash = cs.blocksQueue[indexInQueue]
+		}
 	}
-	return latestBlockNum, hashes
+	return latestBlockNum, hashes, requestedBlockHash
 }
 
 func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -70,59 +82,62 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 		return ErrorFailedToFetchLatestBlock.Wrapf("Chain Sentry Init failed, additional info: " + err.Error())
 	}
 
-	cs.SetLatestBlockNum(latestBlock)
-	log.Printf("latest %v block %v", cs.ChainID, latestBlock)
-	cs.blockQueueMu.Lock()
-	defer cs.blockQueueMu.Unlock()
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock-int64(cs.finalizedBlockDistance); i++ {
+	err = cs.fetchAllPreviousBlocks(ctx, latestBlock)
+	if err != nil {
+		return ErrorFailedToFetchLatestBlock.Wrapf("Chain Sentry Init failed to fetch all blocks, additional info: " + err.Error())
+	}
+	return nil
+}
+
+func (cs *ChainSentry) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) error {
+	tmpArr := []string{}
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock; i++ { //save all blocks from the past up until latest block
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
-			log.Fatalln("error: Start", err)
+			utils.LavaFormatError("could not get block data in chainSentry", err, &map[string]string{"block": strconv.FormatInt(i, 10)})
 			return err
 		}
 
-		log.Printf("Block number: %d, block hash: %s", i, result)
-		cs.blocksQueue = append(cs.blocksQueue, result) // save entire block data for now
+		utils.LavaFormatDebug("ChainSentry read a block", &map[string]string{"block": strconv.FormatInt(i, 10), "result": result})
+		tmpArr = append(cs.blocksQueue, result) // save entire block data for now
 	}
-
+	cs.blockQueueMu.Lock()
+	cs.SetLatestBlockNum(latestBlock)
+	cs.blocksQueue = tmpArr
+	cs.blockQueueMu.Unlock()
+	utils.LavaFormatInfo("ChainSentry Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": cs.GetLatestBlockHash()})
 	return nil
+}
+
+func (cs *ChainSentry) forkChanged(ctx context.Context, latestBlock int64) bool {
+	blockHash, err := cs.fetchBlockHashByNum(ctx, latestBlock)
+	if err != nil {
+		utils.LavaFormatError("ChainSentry fetchBlockHashByNum failed", err, &map[string]string{"block": strconv.FormatInt(latestBlock, 10)})
+		return true
+	}
+	return cs.GetLatestBlockHash() != blockHash
 }
 
 func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	latestBlock, err := cs.fetchLatestBlockNum(ctx) // get actual latest from chain
 	if err != nil {
-		return fmt.Errorf("error: chainSentry fetchLatestBlockNum: %w", err)
+		return utils.LavaFormatError("error getting latestBlockNum on catchup", err, nil)
 	}
 
-	if cs.latestBlockNum != latestBlock {
-		tempArr := cs.blocksQueue // should copy array
-		prevLatestBlock := cs.GetLatestBlockNum()
-		// Get all missing blocks
-		i := prevLatestBlock + 1
-		if latestBlock-prevLatestBlock > int64(cs.finalizedBlockDistance)+int64(cs.numFinalBlocks) {
-			i = latestBlock - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks)
-		}
-
-		for ; i <= latestBlock; i++ {
-			blockHash, err := cs.fetchBlockHashByNum(ctx, i)
-			if err != nil {
-				return fmt.Errorf("error fetchBlockHashByNum for block %d: %w", i, err)
-			}
-
-			tempArr = append(tempArr, blockHash)
-		}
-
-		// remove the first entries from the queue (oldest ones)
-		if len(tempArr) > cs.numFinalBlocks {
-			tempArr = tempArr[(len(tempArr) - cs.numFinalBlocks):]
-		}
-		cs.blockQueueMu.Lock()
-		cs.blocksQueue = tempArr
-		atomic.StoreInt64(&cs.latestBlockNum, latestBlock)
-		log.Printf("chainSentry blocks list updated. latest block %d", latestBlock)
-		cs.blockQueueMu.Unlock()
+	if cs.latestBlockNum != latestBlock || cs.forkChanged(ctx, latestBlock) {
+		err := cs.fetchAllPreviousBlocks(ctx, latestBlock)
+		return utils.LavaFormatError("error getting all previous blocks on catchup", err, nil)
+	} else {
+		utils.LavaFormatDebug("chainSentry skipped reading blocks because its up to date", &map[string]string{"latestHash": cs.GetLatestBlockHash()})
 	}
 	return nil
+}
+
+func (cs *ChainSentry) GetLatestBlockHash() string {
+	cs.blockQueueMu.Lock()
+	latestHash := cs.blocksQueue[len(cs.blocksQueue)-1]
+	cs.blockQueueMu.Unlock()
+	return latestHash
 }
 
 func (cs *ChainSentry) Start(ctx context.Context) error {

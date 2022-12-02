@@ -97,6 +97,7 @@ func SendRelay(
 	url string,
 	req string,
 	connectionType string,
+	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 
 	// Unmarshal request
@@ -153,7 +154,7 @@ func SendRelay(
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
 			cache := cp.GetCache()
-			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil) // caching in the portal doesn't care about hashes
+			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID) // caching in the portal doesn't care about hashes
 			if err != nil || reply == nil {
 				reply, err = c.Relay(connectCtx, relayRequest)
 			}
@@ -165,18 +166,15 @@ func SendRelay(
 
 		if !isSubscription {
 			//update relay request requestedBlock to the provided one in case it was arbitrary
-			latest := false
-			if sentry.IsLatestBlock(relayRequest.GetRequestBlock()) {
-				latest = true
-			}
 			sentry.UpdateRequestedBlock(relayRequest, reply)
+			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
 				return nil, nil, nil, 0, err
 			}
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
-			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, reply, latest) // caching in the portal doesn't care about hashes
+			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
 			return reply, nil, relayRequest, currentLatency, nil
 		}
 		// isSubscription
