@@ -74,32 +74,30 @@ jobs:
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 960s
       run: go test ./testutil/e2e/ -v -timeout 960s # 11mins
-  
-    # Show OSMOSIS Logs
-    - name: cat clientOsmoRest.log
-      run: cat ./testutil/e2e/logs/clientOsmoRest.log
-    - name: cat clientOsmoRPC.log
-      run: cat ./testutil/e2e/logs/clientOsmoRPC.log
-    - name: cat providers_osmosis.log
-      run: cat ./testutil/e2e/logs/providers_eth.log
 
-    # Show ETH Logs
-    - name: cat clientETH.log
-      run: cat ./testutil/e2e/logs/clientETH.log
-    - name: cat providers_eth.log
-      run: cat ./testutil/e2e/logs/providers_eth.log
+    # Show Stake Lava Logs
+    - name: cat stakeLava.log
+      run: cat ./testutil/e2e/logs/stakeLava.log
 
-    # Show GTH Logs
-    - name: cat clientGTH.log
-      run: cat ./testutil/e2e/logs/clientGTH.log
-    - name: cat providers_gth.log
-      run: cat ./testutil/e2e/logs/providers_gth.log
+    # Show JSONRPC Logs
+    - name: cat jsonProxy.log
+      run: cat ./testutil/e2e/logs/jsonProxy.log
+    - name: cat jsonProvider.log
+      run: cat ./testutil/e2e/logs/jsonProvider.log
+    - name: cat jsonGateway.log
+      run: cat ./testutil/e2e/logs/jsonGateway.log
 
-    # Show FTM Logs
-    - name: cat clientFTM.log
-      run: cat ./testutil/e2e/logs/clientFTM.log
-    - name: cat providers_ftm.log
-      run: cat ./testutil/e2e/logs/providers_ftm.log
+    # Show REST Logs
+    - name: cat restProvider.log
+      run: cat ./testutil/e2e/logs/restProvider.log
+    - name: cat restGateway.log
+      run: cat ./testutil/e2e/logs/restGateway.log
+
+    # Show TENDERMINT Logs
+    - name: cat tendermintProvider.log
+      run: cat ./testutil/e2e/logs/tendermintProvider.log
+    - name: cat tendermintGateway.log
+      run: cat ./testutil/e2e/logs/tendermintGateway.log
     # - name: docker build 
     #   run: docker build -t lava-docker scripts/docker
   

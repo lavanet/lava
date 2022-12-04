@@ -6,14 +6,14 @@ require (
 	github.com/99designs/keyring v1.1.6
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cosmos/cosmos-sdk v0.45.5
-	github.com/cosmos/ibc-go/v3 v3.0.0
+	github.com/cosmos/ibc-go/v3 v3.0.1
 	github.com/ethereum/go-ethereum v1.10.18
 	github.com/gofiber/fiber/v2 v2.34.0
 	github.com/gofiber/websocket/v2 v2.0.22
 	github.com/gogo/protobuf v1.3.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/ignite-hq/cli v0.22.1
+	github.com/ignite/cli v0.23.0
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.2
@@ -28,6 +28,7 @@ require (
 require (
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/golang/protobuf v1.5.2
+	github.com/ignite-hq/cli v0.22.1-0.20220610070456-1b33c09fceb7
 	github.com/joho/godotenv v1.3.0
 	github.com/newrelic/go-agent/v3 v3.20.0
 	github.com/spf13/pflag v1.0.5
@@ -172,9 +173,9 @@ require (
 	github.com/takuoki/gocase v1.0.0 // indirect
 	github.com/tendermint/btcd v0.1.1 // indirect
 	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15 // indirect
-	github.com/tendermint/fundraising v0.3.0 // indirect
+	github.com/tendermint/fundraising v0.3.1-0.20220613014523-03b4a2d4481a // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
-	github.com/tendermint/spn v0.2.1-0.20220609194312-7833ecf4454a // indirect
+	github.com/tendermint/spn v0.2.1-0.20220708132853-26a17f03c072 // indirect
 	github.com/tklauser/go-sysconf v0.3.7 // indirect
 	github.com/tklauser/numcpus v0.2.3 // indirect
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce // indirect
