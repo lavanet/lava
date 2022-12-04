@@ -192,6 +192,17 @@ func request_Query_GetPairing_0(ctx context.Context, marshaler runtime.Marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "client", err)
 	}
 
+	val, ok = pathParams["blockHeight"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "blockHeight")
+	}
+
+	protoReq.BlockHeight, err = runtime.Int64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "blockHeight", err)
+	}
+
 	msg, err := client.GetPairing(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -228,6 +239,17 @@ func local_request_Query_GetPairing_0(ctx context.Context, marshaler runtime.Mar
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "client", err)
+	}
+
+	val, ok = pathParams["blockHeight"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "blockHeight")
+	}
+
+	protoReq.BlockHeight, err = runtime.Int64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "blockHeight", err)
 	}
 
 	msg, err := server.GetPairing(ctx, &protoReq)
@@ -1292,7 +1314,7 @@ var (
 
 	pattern_Query_Clients_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "clients", "chainID"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_GetPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "get_pairing", "chainID", "client"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_GetPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "pairing", "get_pairing", "chainID", "client", "blockHeight"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_Query_VerifyPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6, 1, 0, 4, 1, 5, 7}, []string{"lavanet", "lava", "pairing", "verify_pairing", "chainID", "client", "provider", "block"}, "", runtime.AssumeColonVerbOpt(true)))
 

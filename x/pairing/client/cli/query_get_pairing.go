@@ -19,6 +19,14 @@ func CmdGetPairing() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqChainID := args[0]
 			reqClient := args[1]
+			reqblockHeight := int64(-1)
+			flagUsed := cmd.Flags().Lookup("height").Changed
+			if flagUsed {
+				reqblockHeight, err = cmd.Flags().GetInt64("height")
+				if err != nil {
+					return err
+				}
+			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -29,8 +37,9 @@ func CmdGetPairing() *cobra.Command {
 
 			params := &types.QueryGetPairingRequest{
 
-				ChainID: reqChainID,
-				Client:  reqClient,
+				ChainID:     reqChainID,
+				Client:      reqClient,
+				BlockHeight: reqblockHeight,
 			}
 
 			res, err := queryClient.GetPairing(cmd.Context(), params)
