@@ -2,13 +2,14 @@ package chainproxy
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
+	"strconv"
+
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	"github.com/lavanet/lava/utils"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"math/rand"
-	"os"
-	"strconv"
 )
 
 var ReturnMaskedErrors = "false"
@@ -55,13 +56,13 @@ func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string 
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
-func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
-
+func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
 			return
 		}
+		cp.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err)))
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
-	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/relayer/chainproxy/grpcutil"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
@@ -31,7 +30,8 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	reflectionpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 const GRPC_DESCRIPTORS_REQUEST = "get_grpc_server_descriptors"
@@ -315,26 +315,29 @@ func descriptorSourceFromServer(refClient *grpcreflect.Client) grpcutil.Descript
 	return grpcutil.ServerSource{Client: refClient}
 }
 
-func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b []byte, err error) {
-	cl := grpcreflect.NewClient(ctx, reflectionpb.NewServerReflectionClient(conn))
+func (nm *GrpcMessage) initInvoke(ctx context.Context) (string, protoiface.MessageV1, error) {
+	conn, err := grpc.DialContext(ctx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return "", nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
+	}
+	defer conn.Close()
+	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := descriptorSourceFromServer(cl)
 	svc, methodName := grpcutil.ParseSymbol(nm.path)
 
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, errors.Wrap(err, "descriptorSource.FindSymbol()")
+		return "", nil, errors.Wrap(err, "descriptorSource.FindSymbol()")
 	}
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, errors.Wrap(err, "must be a '*desc.ServiceDescriptor'")
+		return "", nil, errors.Wrap(err, "must be a '*desc.ServiceDescriptor'")
 	}
 
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
-	stub := grpcdynamic.NewStubWithMessageFactory(conn, msgFactory)
-	_ = stub
 
 	var reader io.Reader
 	switch v := nm.msg.(type) {
@@ -357,13 +360,13 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 
 		var s string
 		if s, err = marshaler.MarshalToString(v); err != nil {
-			return nil, errors.Wrap(err, "marshaler.MarshalToString()")
+			return "", nil, errors.Wrap(err, "marshaler.MarshalToString()")
 		}
 
 		log.Println("[DEBUG]: reader", s)
 		reader = strings.NewReader(s)
 	default:
-		return nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
+		return "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
 	}
 
 	var requestParser grpcurl.RequestParser
@@ -378,14 +381,14 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 			AllowUnknownFields:    true,
 		},
 	); err != nil {
-		return nil, errors.Wrap(err, "grpcurl.RequestParserAndFormatter()")
+		return "", nil, errors.Wrap(err, "grpcurl.RequestParserAndFormatter()")
 	}
 	_ = requestParser
 	nm.formatter = formatter
 
 	var reqBytes []byte
 	if reqBytes, err = ioutil.ReadAll(reader); err != nil {
-		return nil, errors.Wrap(err, "ioutil.ReadAll()")
+		return "", nil, errors.Wrap(err, "ioutil.ReadAll()")
 	}
 
 	log.Println("[REQ TYPE]", methodDescriptor.GetInputType())
@@ -394,20 +397,33 @@ func (nm *GrpcMessage) invokeV2(ctx context.Context, conn *grpc.ClientConn) (b [
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
 	if len(reqBytes) != 0 {
 		if err = jsonpb.UnmarshalString(string(reqBytes), msg); err != nil {
-			return nil, errors.Wrap(err, "gjsonpb.UnmarshalString()")
+			return "", nil, errors.Wrap(err, "gjsonpb.UnmarshalString()")
 		}
 	}
+	return fmt.Sprintf("%s/%s", methodDescriptor.GetService().GetFullyQualifiedName(), methodDescriptor.GetName()), msg, nil
+}
 
-	var resp grpcutil.HackPB
+func (nm *GrpcMessage) invokeV2(ctx context.Context) (b []byte, err error) {
+	method, msg, err := nm.initInvoke(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("initInvoke failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
+	}
+
+	conn, err := grpc.DialContext(ctx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
+	}
+	defer conn.Close()
+
+	var resp []byte
 	if err = conn.Invoke(
 		ctx,
-		fmt.Sprintf("%s/%s", methodDescriptor.GetService().GetFullyQualifiedName(), methodDescriptor.GetName()),
+		method,
 		msg,
 		&resp,
 	); err != nil {
 		return nil, errors.Wrap(err, "conn.Invoke()")
 	}
-
 	return resp, nil
 }
 
@@ -420,30 +436,15 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	defer cancel()
 
 	// Todo, maybe create a list of grpc clients in connector.go instead of creating one and closing it each time?
-	conn, err := grpc.DialContext(connectCtx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
-	}
-	defer conn.Close()
 
 	var respBytes []byte
 	switch nm.path {
 	case GRPC_DESCRIPTORS_REQUEST:
-		// var fileDescriptorSlice []*desc.FileDescriptor
-		// if fileDescriptorSlice, err = grpcutil.GetFileDescriptorSlice(ctx, conn); err != nil {
-		// 	nm.Result = []byte(fmt.Sprintf("%s", err))
-		// 	return nil, utils.LavaFormatError("Receiving the gRPC service descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
-		// }
-		//
-		// var b []byte
-		// if b, err = json.Marshal(fileDescriptorSlice); err != nil {
-		// 	log.Println("[ERROR!]:", err.Error())
-		// 	nm.Result = []byte(fmt.Sprintf("%s", err))
-		// 	return nil, utils.LavaFormatError("Marshalling the gRPC file descriptors failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
-		// }
-		//
-		// log.Println("[OK] json.Marshal():", string(b))
-
+		conn, err := grpc.DialContext(connectCtx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		}
+		defer conn.Close()
 		var grpcServiceDescSlice []*grpc.ServiceDesc
 		if grpcServiceDescSlice, err = grpcutil.GetServiceDescSlice(ctx, conn); err != nil {
 			nm.Result = []byte(fmt.Sprintf("%s", err))
@@ -464,7 +465,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 
 		respBytes = b
 	default:
-		if respBytes, err = nm.invokeV2(ctx, conn); err != nil {
+		if respBytes, err = nm.invokeV2(ctx); err != nil {
 			nm.Result = []byte(fmt.Sprintf("%s", err))
 			return nil, "", nil, utils.LavaFormatError("Sending the gRPC message failed.", err, &map[string]string{"msg": fmt.Sprintf("%s", nm.msg), "addr": nm.cp.nodeUrl, "path": nm.path})
 		}
