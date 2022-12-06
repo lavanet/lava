@@ -252,7 +252,7 @@ func SendRelay(
 				}
 				// compare error1 with error2
 				if secondSessionError.Error() != firstSessionError.Error() {
-					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
+					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error(), "firstProviderAddr": originalProviderAddress, "secondProviderAddr": providerPublicAddress})
 				} else {
 					// if both errors are the same, just return the first error.
 					return nil, nil, firstSessionError

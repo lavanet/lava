@@ -548,7 +548,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		//TODO: cache this client, no need to run the query every time
 		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeightToAuthorize)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10)})
+			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10), "userRequest": fmt.Sprintf("%+v", request)})
 		}
 		// Parse message, check valid api, etc
 		nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
@@ -621,11 +621,13 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
 	} else {
-		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
+		relaySession, err = getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
-
+		if relaySession == nil {
+			return nil, nil, nil, nil, utils.LavaFormatError("getOrCreateSession has a RelaySession nil without an error", nil, nil)
+		}
 		relaySession.Lock.Lock()
 		pairingEpoch := relaySession.GetPairingEpoch()
 
@@ -645,7 +647,6 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
 					"relay request": fmt.Sprintf("%v", request)})
 		}
-
 		// Update session
 		err = updateSessionCu(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
 		if err != nil {
@@ -656,12 +657,16 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		relaySession.Proof = request
 		relaySession.Lock.Unlock()
 	}
+	if userSessions == nil || relaySession == nil {
+		return nil, nil, nil, nil, utils.LavaFormatError("relay Init has a UserSession Or RelaySession nil", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions), "relaySession": fmt.Sprintf("%+v", relaySession)})
+	}
 	return userAddr, nodeMsg, userSessions, relaySession, nil
 }
 
 func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
 	if userSessions == nil || relaySession == nil { // verify sessions are not nil
-		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, nil)
+
+		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions), "relaySession": fmt.Sprintf("%+v", relaySession)})
 	}
 	// deal with relaySession
 	computeUnits := nodeMsg.GetServiceApi().ComputeUnits

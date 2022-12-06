@@ -406,6 +406,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
+		//this later causes returning an error
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {

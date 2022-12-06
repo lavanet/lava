@@ -58,7 +58,7 @@ func LoggingLevel(logLevel string) {
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	LavaFormatInfo("setting log level", &map[string]string{"level": logLevel})
+	LavaFormatInfo("setting log level", &map[string]string{"loglevel": logLevel})
 }
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
