@@ -7,14 +7,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	"github.com/tendermint/tendermint/rpc/core"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// TODO: if I stop the chain, and then start it after a few seconds, the average block time considers the time that passed between activations. Bug?
+// TODO: average block time runtime: 740.664µs, 25th percentile block time runtime 1.957131ms
 // Gets a client's provider list in a specific chain. Also returns the start block of the current epoch, time (in seconds) until there's a new pairing, the block that the chain in the request's spec was changed
 func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequest) (*types.QueryGetPairingResponse, error) {
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -49,54 +49,11 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, blockHeight, err)
 	}
 
-	// Check if the chain in on its first epoch
-	chainOnFirstEpoch := false
-	if k.epochStorageKeeper.GetEpochStart(ctx) == 0 {
-		chainOnFirstEpoch = true
-	}
-
-	// Get the past reference for the average time calculation. Should be the start block of the previous epoch or block 0 if the chain's on its first epoch
-	pastRef := uint64(0)
-	if !chainOnFirstEpoch {
-		pastRef, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-		if err != nil {
-			return nil, fmt.Errorf("could not get previous epoch start, err: %s", err)
-		}
-	}
-
-	// Get the timestamp of the past reference's block
-	pastRefInt64 := int64(pastRef)
-	pastRefStartBlock, err := core.Block(nil, &pastRefInt64)
-	if err != nil {
-		return nil, fmt.Errorf("could not get past reference block, err: %s", err)
-	}
-	pastRefStartBlockTime := pastRefStartBlock.Block.Header.Time.UTC()
-
-	// Get the present reference for the average time calculation. Should be the start block of the current epoch or the current block if the chain's on its first epoch
-	presentRef := uint64(ctx.BlockHeight())
-	if !chainOnFirstEpoch {
-		presentRef = k.epochStorageKeeper.GetEpochStart(ctx)
-	}
-
-	// Get the timestamp of the present reference's block
-	presentRefInt64 := int64(presentRef)
-	presentRefStartBlock, err := core.Block(nil, &presentRefInt64)
-	if err != nil {
-		return nil, fmt.Errorf("could not get present reference block, err: %s", err)
-	}
-	presentRefStartBlockTime := presentRefStartBlock.Block.Header.Time.UTC()
-
-	// Get the number of blocks from the past reference to the present reference
-	if presentRef < pastRef {
-		return nil, fmt.Errorf("previous epoch's start block height is larger than the current epoch's start block height")
-	}
-	pastRefToCurrentRefBlocksNum := presentRef - pastRef
-
-	// Calculate average block time in seconds (averaged on one epoch or blocks past until current if the chain is on its first epoch)
-	averageBlockTime := presentRefStartBlockTime.Sub(pastRefStartBlockTime).Seconds() / float64(pastRefToCurrentRefBlocksNum)
+	// Get block creation time TODO:
+	blockCreationTime := 0
 
 	// Get the next epoch from the present reference
-	nextEpochStart, err := k.epochStorageKeeper.GetNextEpoch(ctx, presentRef)
+	nextEpochStart, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, fmt.Errorf("could not get next epoch start, err: %s", err)
 	}
@@ -108,7 +65,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(ctx.BlockHeight())
 
 	// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
-	timeLeftToNextPairing := blocksUntilNewEpoch * uint64(averageBlockTime)
+	timeLeftToNextPairing := blocksUntilNewEpoch * uint64(blockCreationTime)
 
 	// Get current epoch start block
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)

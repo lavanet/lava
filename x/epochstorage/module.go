@@ -200,6 +200,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		logger := am.keeper.Logger(ctx)
 		utils.LogLavaEvent(ctx, logger, "new_epoch", details, "")
 	}
+	am.keeper.CalculateAndSetAverageBlockTime(ctx) // TODO: should I check for errors?
+
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It
