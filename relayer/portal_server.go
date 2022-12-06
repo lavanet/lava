@@ -46,7 +46,7 @@ func PortalServer(
 	if err != nil {
 		log.Fatalln("error: NewPortalLogs", err)
 	}
-	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, pLogs)
+	chainProxy, err := chainproxy.GetChainProxy("", 1, sentry, pLogs, g_serverChainID)
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}

@@ -532,7 +532,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		return nil, nil, nil, nil, utils.LavaFormatError("get relay acc address", err, &map[string]string{})
 	}
 
-	if !isSupportedSpec(request) && request.GetConnectionType() != chainproxy.GRPC_DESCRIPTORS_REQUEST {
+	if !isSupportedSpec(request) {
 		return nil, nil, nil, nil, utils.LavaFormatError("spec not supported by server", err, &map[string]string{"request.chainID": request.ChainID, "chainID": g_serverChainID})
 	}
 
@@ -1091,7 +1091,7 @@ func Server(
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs, g_serverChainID)
 
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})

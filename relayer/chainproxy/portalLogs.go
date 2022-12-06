@@ -2,7 +2,6 @@ package chainproxy
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"strconv"
 
@@ -43,8 +42,8 @@ func NewPortalLogs() (*PortalLogs, error) {
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
-func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string {
-	guID := fmt.Sprintf("GUID%d", rand.Int63())
+func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
+	guID := "GUID" + msgSeed
 	var ret string
 	ret = "Error GUID: " + guID
 	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"GUID": guID})
@@ -63,7 +62,7 @@ func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 			return
 		}
 		cp.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err)))
+		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err, msgSeed)))
 	}
 }
 
