@@ -87,7 +87,7 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 		_, err := specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
 		if err != nil && strings.Contains(err.Error(), "rpc error") {
 			utils.LavaFormatInfo("Waiting for Lava", nil)
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 10)
 		} else if err == nil {
 			return
 		} else {
@@ -601,7 +601,7 @@ func runE2E() {
 	defer lt.saveLogs()
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
-	lt.checkLava(time.Second * 30)
+	lt.checkLava(time.Minute * 5)
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
