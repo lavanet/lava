@@ -817,7 +817,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 				// TODO:: should break here? is one enough or search for more?
-				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
+				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
 			}
 		}
 	}
@@ -831,7 +831,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	maxBlockNum := int64(0)
 	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
-			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 		}
 
 		sorted[idx] = blockNum
@@ -848,14 +848,14 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	for index := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 		}
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
 		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 	}
 
 	// New reply should have blocknum >= from block same provider
@@ -944,14 +944,14 @@ func (s *Sentry) SendRelay(
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
+			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil).Error())
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", err, nil)
+			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed provider reply validation", err, nil).Error())
 		}
 		//
 		// Compare finalized block hashes with previous providers
@@ -961,7 +961,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed to finalize hashes", err, nil)
+			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed to check finalized hashes", err, nil).Error())
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {

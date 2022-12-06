@@ -43,7 +43,10 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 		utils.LavaFormatError("chainSentry GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlockNum, 10)})
 		return latestBlockNum, nil, ""
 	}
-
+	if len(cs.blocksQueue) < cs.numFinalBlocks {
+		utils.LavaFormatError("chainSentry GetLatestBlockData had too little blocks in queue", nil, &map[string]string{"numFinalBlocks": strconv.FormatInt(int64(cs.numFinalBlocks), 10), "blocksQueueLen": strconv.FormatInt(int64(len(cs.blocksQueue)), 10)})
+		return latestBlockNum, nil, ""
+	}
 	if requestedBlock < 0 {
 		requestedBlock = sentry.ReplaceRequestedBlock(requestedBlock, latestBlockNum)
 	}

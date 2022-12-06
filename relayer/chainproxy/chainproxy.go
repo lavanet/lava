@@ -260,7 +260,7 @@ func SendRelay(
 			}
 			// retry attempt succeeded! can continue normally
 		} else {
-			return nil, nil, err
+			return nil, nil, firstSessionError
 		}
 	}
 	if !isSubscription {
@@ -269,6 +269,11 @@ func SendRelay(
 		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
+	}
+	if err == nil && reply.Data == nil {
+		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
+	} else {
+		fmt.Println("life is good")
 	}
 	return reply, replyServer, err
 }
