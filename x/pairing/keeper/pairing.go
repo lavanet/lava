@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 
@@ -220,4 +221,121 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
 	return returnedProviders
+}
+
+func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (timeLeftToNextEpoch uint64, err error) {
+
+	// Get current epoch
+	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
+
+	// Check when the last average block time calculation occured. If we're not in the same epoch as latestEpochBlockTimeCalculation, re-calculate the time
+	if currentEpoch != latestEpochBlockTimeCalculation || averageBlockTime == -1 {
+		err = k.calculateAverageBlockTime(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("could not calculate average block time, err: %s", err)
+		}
+	}
+
+	// Get the next epoch from the present reference
+	nextEpochStart, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return 0, fmt.Errorf("could not get next epoch start, err: %s", err)
+	}
+
+	// Get the defined as overlap blocks
+	overlapBlocks := k.EpochBlocksOverlap(ctx)
+
+	// Get number of blocks from the current block to the next epoch
+	blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(ctx.BlockHeight())
+
+	// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
+	timeLeftToNextEpoch = blocksUntilNewEpoch * uint64(averageBlockTime)
+
+	return timeLeftToNextEpoch, nil
+}
+
+var (
+	averageBlockTime                float64 = -1
+	latestEpochBlockTimeCalculation uint64  = 0 // the latest epoch that an average block time calculation was performed (supposed to make the average block time calculation at most once per epoch)
+)
+
+func (k Keeper) calculateAverageBlockTime(ctx sdk.Context) (err error) {
+
+	// Check if the chain in on its first epoch
+	chainOnFirstEpoch := false
+	if k.epochStorageKeeper.GetEpochStart(ctx) == 0 {
+		chainOnFirstEpoch = true
+	}
+
+	// Get the past reference block for the block time calculation. Should be the start block of the previous epoch or block 0 if the chain's on its first epoch
+	pastRefBlock := uint64(0)
+	if !chainOnFirstEpoch {
+		pastRefBlock, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			return fmt.Errorf("could not get previous epoch start, err: %s", err)
+		}
+	}
+
+	// Get the present reference for the block time calculation. Should be the start block of the current epoch or the current block if the chain's on its first epoch
+	presentRefBlock := uint64(ctx.BlockHeight())
+	if !chainOnFirstEpoch {
+		presentRefBlock = k.epochStorageKeeper.GetEpochStart(ctx)
+	}
+
+	// Get the number of blocks from the past reference to the present reference
+	if presentRefBlock < pastRefBlock {
+		return fmt.Errorf("previous reference start block height is larger than the present reference start block height")
+	}
+	pastRefBlockToPresentRefBlockBlocksNum := presentRefBlock - pastRefBlock
+
+	// Define sample step. Determines which timestamps will be taken in the calculation (if there are fewer than 5 block between the present and past blocks - sampleStep=1)
+	sampleStep := uint64(0)
+	if pastRefBlockToPresentRefBlockBlocksNum < 5 {
+		sampleStep = uint64(1)
+	} else {
+		sampleStep = uint64(float64(pastRefBlockToPresentRefBlockBlocksNum) * 0.2)
+	}
+
+	// Get the timestamps of all the blocks between the pastRefBlock and presentRefBlock. Then, calculate the differences between them.
+	blockTimesList := make([]float64, int(math.Min(float64(pastRefBlockToPresentRefBlockBlocksNum), float64(5))))
+	loopCounter := 0
+	for block := pastRefBlock; block < presentRefBlock; block = block + sampleStep {
+
+		// Get current block timestamp
+		blockInt64 := int64(block)
+		currentBlock, err := core.Block(nil, &blockInt64)
+		if err != nil {
+			return fmt.Errorf("could not get past reference block, err: %s", err)
+		}
+		currentBlockTimestamp := currentBlock.Block.Header.Time.UTC()
+
+		// Get next block timestamp
+		nextBlockIndex := blockInt64 + 1
+		nextBlock, err := core.Block(nil, &nextBlockIndex)
+		if err != nil {
+			return fmt.Errorf("could not get past reference block, err: %s", err)
+		}
+		nextBlockTimestamp := nextBlock.Block.Header.Time.UTC()
+
+		// Calculte difference and append to list
+		timeDifference := nextBlockTimestamp.Sub(currentBlockTimestamp).Seconds()
+		blockTimesList[loopCounter] = timeDifference
+
+		loopCounter++
+	}
+
+	// Calculate average block time in seconds (averaged on one epoch or blocks past until current if the chain is on its first epoch)
+	minBlockTime := blockTimesList[0]
+	for _, blockTime := range blockTimesList {
+		if blockTime < minBlockTime && blockTime != 0 {
+			minBlockTime = blockTime
+		}
+	}
+
+	averageBlockTime = minBlockTime
+	if averageBlockTime < 0 {
+		return fmt.Errorf("block creation time is less then zero")
+	}
+
+	return nil
 }
