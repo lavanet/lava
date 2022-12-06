@@ -34,18 +34,16 @@ func (cs *ChainSentry) SetLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
 
-func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int64, hashesRes map[int64]interface{}, requestedBlockHash string) {
+func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int64, hashesRes map[int64]interface{}, requestedBlockHash string, err error) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
 
 	latestBlockNum := cs.GetLatestBlockNum()
 	if len(cs.blocksQueue) == 0 {
-		utils.LavaFormatError("chainSentry GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlockNum, 10)})
-		return latestBlockNum, nil, ""
+		return latestBlockNum, nil, "", utils.LavaFormatError("chainSentry GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlockNum, 10)})
 	}
 	if len(cs.blocksQueue) < cs.numFinalBlocks {
-		utils.LavaFormatError("chainSentry GetLatestBlockData had too little blocks in queue", nil, &map[string]string{"numFinalBlocks": strconv.FormatInt(int64(cs.numFinalBlocks), 10), "blocksQueueLen": strconv.FormatInt(int64(len(cs.blocksQueue)), 10)})
-		return latestBlockNum, nil, ""
+		return latestBlockNum, nil, "", utils.LavaFormatError("chainSentry GetLatestBlockData had too little blocks in queue", nil, &map[string]string{"numFinalBlocks": strconv.FormatInt(int64(cs.numFinalBlocks), 10), "blocksQueueLen": strconv.FormatInt(int64(len(cs.blocksQueue)), 10)})
 	}
 	if requestedBlock < 0 {
 		requestedBlock = sentry.ReplaceRequestedBlock(requestedBlock, latestBlockNum)
@@ -66,7 +64,7 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 			requestedBlockHash = cs.blocksQueue[indexInQueue]
 		}
 	}
-	return latestBlockNum, hashes, requestedBlockHash
+	return latestBlockNum, hashes, requestedBlockHash, nil
 }
 
 func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -102,13 +100,14 @@ func (cs *ChainSentry) fetchAllPreviousBlocks(ctx context.Context, latestBlock i
 		}
 
 		utils.LavaFormatDebug("ChainSentry read a block", &map[string]string{"block": strconv.FormatInt(i, 10), "result": result})
-		tmpArr = append(cs.blocksQueue, result) // save entire block data for now
+		tmpArr = append(tmpArr, result) // save entire block data for now
 	}
 	cs.blockQueueMu.Lock()
 	cs.SetLatestBlockNum(latestBlock)
 	cs.blocksQueue = tmpArr
+	blocksQueueLen := int64(len(cs.blocksQueue))
 	cs.blockQueueMu.Unlock()
-	utils.LavaFormatInfo("ChainSentry Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": cs.GetLatestBlockHash()})
+	utils.LavaFormatInfo("ChainSentry Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": cs.GetLatestBlockHash(), "blocksQueueLen": strconv.FormatInt(blocksQueueLen, 10)})
 	return nil
 }
 

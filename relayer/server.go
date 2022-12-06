@@ -738,8 +738,13 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	if g_sentry.GetSpecComparesHashes() {
 		// Add latest block and finalized data
 		var requestedBlockHashStr string
-		latestBlock, finalizedBlockHashes, requestedBlockHashStr = g_chainSentry.GetLatestBlockData(request.RequestBlock)
+		var err error
+		latestBlock, finalizedBlockHashes, requestedBlockHashStr, err = g_chainSentry.GetLatestBlockData(request.RequestBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("Could not guarantee data reliability", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
 		if requestedBlockHashStr == "" {
+			//avoid using cache, but can still service
 			utils.LavaFormatWarning("no hash data for requested block", nil, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
 		} else {
 			requestedBlockHash = []byte(requestedBlockHashStr)
