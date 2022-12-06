@@ -11,7 +11,7 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		StakeStorageList:  []StakeStorage{},
-		EpochDetails:      &EpochDetails{StartBlock: 0, EarliestStart: 0, DeletedEpochs: []uint64{}, AverageBlockTime: 0},
+		EpochDetails:      &EpochDetails{StartBlock: 0, EarliestStart: 0, DeletedEpochs: []uint64{}},
 		FixatedParamsList: []FixatedParams{},
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),

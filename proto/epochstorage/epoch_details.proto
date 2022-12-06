@@ -7,6 +7,5 @@ message EpochDetails {
   uint64 startBlock = 1; 
   uint64 earliestStart = 2; 
   repeated uint64 deletedEpochs =3;
-  uint64 averageBlockTime = 4;
   
 }

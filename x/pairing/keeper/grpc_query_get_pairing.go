@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// TODO: average block time runtime: 740.664µs, 25th percentile block time runtime 1.957131ms
 // Gets a client's provider list in a specific chain. Also returns the start block of the current epoch, time (in seconds) until there's a new pairing, the block that the chain in the request's spec was changed
 func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequest) (*types.QueryGetPairingResponse, error) {
 
@@ -49,23 +48,11 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, blockHeight, err)
 	}
 
-	// Get block creation time TODO:
-	blockCreationTime := 0
-
-	// Get the next epoch from the present reference
-	nextEpochStart, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)
+	timeLeftToNextPairing, err := k.calculateNextEpochTime(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get next epoch start, err: %s", err)
+		return nil, fmt.Errorf("could not calculate time to next pairing, err: %s", err)
 	}
-
-	// Get the defined as overlap blocks
-	overlapBlocks := k.EpochBlocksOverlap(ctx)
-
-	// Get number of blocks from the current block to the next epoch
-	blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(ctx.BlockHeight())
-
-	// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
-	timeLeftToNextPairing := blocksUntilNewEpoch * uint64(blockCreationTime)
 
 	// Get current epoch start block
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
