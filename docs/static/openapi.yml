@@ -29513,6 +29513,9 @@ paths:
                     items:
                       type: string
                       format: uint64
+                  averageBlockTime:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -53078,6 +53081,9 @@ definitions:
         items:
           type: string
           format: uint64
+      averageBlockTime:
+        type: string
+        format: uint64
   lavanet.lava.epochstorage.FixatedParams:
     type: object
     properties:
@@ -53244,6 +53250,9 @@ definitions:
             items:
               type: string
               format: uint64
+          averageBlockTime:
+            type: string
+            format: uint64
   lavanet.lava.epochstorage.QueryGetFixatedParamsResponse:
     type: object
     properties:
