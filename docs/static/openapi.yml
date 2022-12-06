@@ -19495,7 +19495,9 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash (in hex format) of the denomination trace information.
+          description: >-
+            hash (in hex format) or denom (full denom with ibc prefix) of the
+            denomination trace information.
           in: path
           required: true
           type: string
@@ -47304,14 +47306,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47351,14 +47353,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47369,14 +47371,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47387,14 +47389,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -48725,14 +48727,14 @@ definitions:
   ibc.core.channel.v1.ResponseResultType:
     type: string
     enum:
-      - RESPONSE_RESULT_UNSPECIFIED
-      - RESPONSE_RESULT_NOOP
-      - RESPONSE_RESULT_SUCCESS
-    default: RESPONSE_RESULT_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_NOOP
+      - RESPONSE_RESULT_TYPE_SUCCESS
+    default: RESPONSE_RESULT_TYPE_UNSPECIFIED
     description: |-
-      - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-       - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-       - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+       - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+       - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
     title: >-
       ResponseResultType defines the possible outcomes of the execution of a
       message

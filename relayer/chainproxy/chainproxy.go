@@ -270,10 +270,8 @@ func SendRelay(
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
 	}
-	if err == nil && reply.Data == nil {
+	if reply.Data == nil && err == nil {
 		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
-	} else {
-		fmt.Println("life is good")
 	}
 	return reply, replyServer, err
 }
