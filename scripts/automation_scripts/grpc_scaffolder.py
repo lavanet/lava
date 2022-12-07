@@ -215,12 +215,10 @@ for x in childrens:
       if childrens[x]["child_name"].lower() in relevant_part:
         continue
       else:
-        pass
-        file_data.replace(relevant_part,relevant_part.replace(scaffold_register,ADD_REGISTER.replace("###VAR_NAME###",childrens[x]["child_name"].lower())
+        file_data = file_data.replace(relevant_part,relevant_part.replace(scaffold_register,ADD_REGISTER.replace("###VAR_NAME###",childrens[x]["child_name"].lower())
         .replace("###UNIQUENAME###",childrens[x]["struct_name"]).replace("###SERVER_TYPE###",childrens[x]["server_type"]) + scaffold_register))
-
     else:
-      file_data.replace(scaffold_registeration, REGISTER_SINGLE_REGISTRATION.replace("###CHAIN###",chain) + scaffold_registeration).replace(scaffold_register,
+      file_data = file_data.replace(scaffold_registeration, REGISTER_SINGLE_REGISTRATION.replace("###CHAIN###",chain) + scaffold_registeration).replace(scaffold_register,
         ADD_REGISTER.replace("###VAR_NAME###",childrens[x]["child_name"].lower())
         .replace("###UNIQUENAME###",childrens[x]["struct_name"]).replace("###SERVER_TYPE###",childrens[x]["server_type"]) + scaffold_register
         )
