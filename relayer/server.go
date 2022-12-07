@@ -1147,9 +1147,10 @@ func Server(
 
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
+		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		resp.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		resp.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-User-Agent, X-Grpc-Web, Grpc-Timeout")
+		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
@@ -1167,6 +1168,7 @@ func Server(
 
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
 		defer shutdownRelease()
+		
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			utils.LavaFormatFatal("Provider failed to shutdown", err, &map[string]string{})
 		}
