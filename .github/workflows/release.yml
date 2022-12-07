@@ -1,55 +1,121 @@
-# This workflow is useful if you want to automate the process of:
-#
-# a) Creating a new prelease when you push a new tag with a "v" prefix (version).
-#
-#    This type of prerelease is meant to be used for production: alpha, beta, rc, etc. types of releases.
-#    After the prerelease is created, you need to make your changes on the release page at the relevant
-#    Github page and publish your release.
-#
-# b) Creating/updating the "latest" prerelease when you push to your default branch.
-#
-#    This type of prelease is useful to make your bleeding-edge binaries available to advanced users.
-#
-# The workflow will not run if there is no tag pushed with a "v" prefix and no change pushed to your 
-# default branch.
-#on: push
+name: 'Release'
+
+on:
+  release:
+    types: [created, edited, prereleased]
+
+permissions:
+  contents: write
 
 jobs:
-  might_release:
+  release:
+    name: 'release'
     runs-on: ubuntu-latest
+    environment: default
+    defaults:
+      run:
+        shell: bash
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      # https://github.com/tendermint/starport/blob/develop/actions/release/vars/action.yml
-      - name: Prepare Release Variables 
-        id: vars
-        uses: tendermint/starport/actions/release/vars@develop
+    - name: Configure Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '^1.19'
+        check-latest: true
+        cache: true
 
-      # https://github.com/tendermint/starport/tree/develop/actions/cli
-      - name: Issue Release Assets 
-        uses: tendermint/starport/actions/cli@develop
-        if: ${{ steps.vars.outputs.should_release == 'true' }}
-        with:
-          args: chain build --release --release.prefix ${{ steps.vars.outputs.tarball_prefix }} -t linux:amd64 -t darwin:amd64
-      
-      - name: Delete the "latest" Release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        if: ${{ steps.vars.outputs.is_release_type_latest == 'true' }}
-        with:
-          tag_name: ${{ steps.vars.outputs.tag_name }}
-          delete_release: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build
+      run: |
+        make build
 
-      - name: Publish the Release
-        uses: softprops/action-gh-release@v1
-        if: ${{ steps.vars.outputs.should_release == 'true' }}
-        with:
-          tag_name: ${{ steps.vars.outputs.tag_name }}
-          files: release/*
-          prerelease: true 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Test build
+      continue-on-error: true
+      run: |
+        response=$(build/lavad status --node http://public-rpc.lavanet.xyz:80/rpc/ | jq '.NodeInfo')
+        if [ -z "${response}" ]; then
+          echo "The binary fails to connect to a node."
+          exit 1
+        else
+          echo $response
+          echo "The binary is working as expected."
+        fi
+
+    - name: Check for existing assests
+      id: existing_asset
+      run: |
+        if [ "${{ github.event.release.assets[0].name }}" = "lavad" ]; then
+          echo "URL=${{ github.event.release.assets[0].id }}" >> $GITHUB_OUTPUT
+          echo "URL=${{ github.event.release.assets[0].url }}" >> $GITHUB_OUTPUT
+          echo "CHECK=true" >> $GITHUB_OUTPUT
+        else
+          echo "CHECK=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Upload build to release
+      run: |
+        upload_binary () {
+          echo "Uploading binary to: $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')"
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lavad)" \
+          --data-binary @build/lavad \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')
+        }
+
+        delete_binary(){
+          echo "Deleting existing binary"
+          curl \
+            -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            ${{ steps.existing_asset.outputs.URL }}
+        }
+
+        if ${{ steps.existing_asset.outputs.CHECK }}; then
+          delete_binary
+          upload_binary
+        else 
+          upload_binary
+        fi
+
+    - name: Check for existing Checksum
+      id: existing_checksum
+      run: |
+        #Get Checksum of new build
+        export CHECKSUM=$(sha256sum build/lavad | cut -d " " -f1)
+
+        #Get the existing body
+        existing_body=$(curl \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lavad)" \
+          ${{ github.event.release.url }} | jq '.body')
+        
+        if [[ $existing_body == *"$CHECKSUM"* ]]; then
+          echo "CHECK=true" >> $GITHUB_OUTPUT
+          echo "Checksum hasn't changed."
+        else
+          echo "CHECK=false" >> $GITHUB_OUTPUT
+        cat <<EOF >> /tmp/body
+        $(echo $existing_body | sed '$s/.$//')\r\nChecksum $CHECKSUM"
+        EOF
+          echo -E "NEW_BODY=$(cat /tmp/body)" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Append Binary Checksum
+      uses: actions/github-script@v6
+      if: ${{ steps.existing_checksum.outputs.CHECK }} == 'false'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ github.event.release.id }},
+            body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
+          })
