@@ -2,7 +2,7 @@ name: 'Release'
 
 on:
   release:
-    types: [created, edited]
+    types: [created, edited, prereleased]
 
 permissions:
   contents: write
@@ -32,6 +32,7 @@ jobs:
         make build
 
     - name: Test build
+      continue-on-error: true
       run: |
         response=$(build/lavad status --node http://public-rpc.lavanet.xyz:80/rpc/ | jq '.NodeInfo')
         if [ -z "${response}" ]; then
