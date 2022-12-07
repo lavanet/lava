@@ -148,10 +148,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, details["error"])
 			}
-			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
-			if index != int64(thisProviderIndex) {
-				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
+			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
+			if vrfErr != nil {
+				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
+				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
+			}
+			if index != int64(thisProviderIndex) {
+				details["error"] = "data reliability returned mismatch index"
+				details["VRF_index"] = strconv.FormatInt(index, 10)
+				details["thisProviderIndex"] = strconv.FormatInt(int64(thisProviderIndex), 10)
 				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
 			}
 			//all checks passed

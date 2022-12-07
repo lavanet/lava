@@ -782,8 +782,8 @@ func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[i
 	providersCount := uint32(s.consumerSessionManager.GetAtomicPairingAddressesLength())
 	indexes = make(map[int64]struct{}, len(vrfs))
 	for _, vrf := range vrfs {
-		index := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
-		if index == -1 {
+		index, err := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
+		if index == -1 || err != nil {
 			continue // no reliability this time.
 		}
 		if _, ok := indexes[index]; !ok {
@@ -980,7 +980,7 @@ func (s *Sentry) SendRelay(
 						// index belongs to original provider, nothing is wrong here, print info and continue
 						utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", &map[string]string{"provider": providerPubAddress, "Index": strconv.FormatInt(idxExtract, 10)})
 					} else if lavasession.DataReliabilityAlreadySentThisEpochError.Is(err) {
-						utils.LavaFormatInfo("DataReliability: Provider Already Sent Data Reliability This Epoch.", &map[string]string{"Provider": providerPubAddress, "Epoch": strconv.FormatUint(epoch, 10)})
+						utils.LavaFormatInfo("DataReliability: Already Sent Data Reliability This Epoch To This Provider.", &map[string]string{"Provider": providerPubAddress, "Epoch": strconv.FormatUint(epoch, 10)})
 					} else if lavasession.DataReliabilityEpochMismatchError.Is(err) {
 						utils.LavaFormatInfo("DataReliability: Epoch changed cannot send data reliability", &map[string]string{"original_epoch": strconv.FormatUint(sessionEpoch, 10), "data_reliability_epoch": strconv.FormatUint(epoch, 10)})
 						// if epoch changed, we can stop trying to get data reliability sessions
@@ -1015,7 +1015,7 @@ func (s *Sentry) SendRelay(
 					if errRet != nil {
 						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, &map[string]string{"sendReliabilityError": err.Error()})
 					}
-					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", errRet, &map[string]string{"Address": providerAddress,"sendReliabilityError":err.Error()})
+					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", errRet, &map[string]string{"Address": providerAddress, "sendReliabilityError": err.Error()})
 				}
 				err = s.consumerSessionManager.OnSessionDoneWithoutQoSChanges(singleConsumerSession)
 				return relay_rep, relay_req, err

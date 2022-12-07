@@ -606,11 +606,26 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 
-		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		vrfIndex, vrfErr := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		if vrfErr != nil {
+			dataReliabilityMarshalled, err := json.Marshal(request.DataReliability)
+			if err != nil {
+				dataReliabilityMarshalled = []byte{}
+			}
+			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified vrf value in data reliability request does not meet threshold", vrfErr,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
+					"dataReliability": string(dataReliabilityMarshalled), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
+					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
+					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
+		}
 		if authorisedUserResponse.Index != vrfIndex {
+			dataReliabilityMarshalled, err := json.Marshal(request.DataReliability)
+			if err != nil {
+				dataReliabilityMarshalled = []byte{}
+			}
 			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
-					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
+					"dataReliability": string(dataReliabilityMarshalled), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
