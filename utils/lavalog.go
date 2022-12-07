@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
 	"github.com/tendermint/tendermint/libs/log"
@@ -100,8 +101,8 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 		output = fmt.Sprintf("%s -- %+v", output, *extraAttributes)
 	}
 	logEvent.Msg(description)
-	// golog.Println(output)
-	return fmt.Errorf(output)
+	// here we return the same type of the original error message, this handles nil case as well
+	return sdkerrors.Wrap(err, output)
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {

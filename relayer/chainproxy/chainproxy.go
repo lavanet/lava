@@ -3,22 +3,26 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gofiber/fiber/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	"github.com/gofiber/websocket/v2"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
-	DefaultTimeout = 5 * time.Second
+	DefaultTimeout            = 5 * time.Second
+	ContextUserValueKeyDappID = "dappID"
 )
 
 type NodeMessage interface {
@@ -274,4 +278,25 @@ func SendRelay(
 		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
 	}
 	return reply, replyServer, err
+}
+
+func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+	webSocketCallback := callbackToBeCalled
+	handler := func(c *fiber.Ctx) error {
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
+		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) //this sets a user value in context and this is given to the callback
+		return webSocketCallback(c)                                 //uses external dappID
+	}
+	return handler
+}
+func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string{
+	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
+	if dappID, ok := dappIDLocal.(string); ok {
+		return dappID
+	}
+	return "NoDappID"
 }

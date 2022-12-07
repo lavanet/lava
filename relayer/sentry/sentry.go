@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -937,21 +936,21 @@ func (s *Sentry) SendRelay(
 	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
 	//error using this provider
 	if err != nil {
-		return nil, nil, 0, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
+		return nil, nil, 0, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 	}
 
 	if s.GetSpecComparesHashes() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil).Error())
+			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
-			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed provider reply validation", err, nil).Error())
+			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		//
 		// Compare finalized block hashes with previous providers
@@ -961,7 +960,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, nil, latency, sdkerrors.Wrapf(lavasession.SendRelayError, utils.LavaFormatError("failed to check finalized hashes", err, nil).Error())
+			return nil, nil, latency, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {

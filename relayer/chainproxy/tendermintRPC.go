@@ -219,7 +219,6 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		return fiber.ErrUpgradeRequired
 	})
-	dappID := ""
 	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
@@ -237,6 +236,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
+			dappID := ExtractDappIDFromWebsocketConnection(c)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
 				cp.portalLogs.LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
@@ -288,14 +288,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 		}
 	})
-	websocketCallbackWithDappID := func(c *fiber.Ctx) error {
-		dappID = "" //set external dappID
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
-		}
-		return webSocketCallback(c) //uses external dappID
-	}
+	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
 	app.Get("/ws/:dappId", websocketCallbackWithDappID)
 	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
