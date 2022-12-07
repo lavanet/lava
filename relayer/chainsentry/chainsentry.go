@@ -111,13 +111,15 @@ func (cs *ChainSentry) fetchAllPreviousBlocks(ctx context.Context, latestBlock i
 	return nil
 }
 
-func (cs *ChainSentry) forkChanged(ctx context.Context, latestBlock int64) bool {
+func (cs *ChainSentry) forkChangedOrGotNewBlock(ctx context.Context, latestBlock int64) (bool, error) {
+	if cs.latestBlockNum != latestBlock {
+		return true, nil
+	}
 	blockHash, err := cs.fetchBlockHashByNum(ctx, latestBlock)
 	if err != nil {
-		utils.LavaFormatError("ChainSentry fetchBlockHashByNum failed", err, &map[string]string{"block": strconv.FormatInt(latestBlock, 10)})
-		return true
+		return true, utils.LavaFormatError("ChainSentry fetchBlockHashByNum failed", err, &map[string]string{"block": strconv.FormatInt(latestBlock, 10)})
 	}
-	return cs.GetLatestBlockHash() != blockHash
+	return cs.GetLatestBlockHash() != blockHash, nil
 }
 
 func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
@@ -125,8 +127,8 @@ func (cs *ChainSentry) catchupOnFinalizedBlocks(ctx context.Context) error {
 	if err != nil {
 		return utils.LavaFormatError("error getting latestBlockNum on catchup", err, nil)
 	}
-
-	if cs.latestBlockNum != latestBlock || cs.forkChanged(ctx, latestBlock) {
+	shouldFetchAgain, err := cs.forkChangedOrGotNewBlock(ctx, latestBlock)
+	if shouldFetchAgain || err != nil {
 		err := cs.fetchAllPreviousBlocks(ctx, latestBlock)
 		if err != nil {
 			return utils.LavaFormatError("error getting all previous blocks on catchup", err, nil)

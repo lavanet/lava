@@ -296,7 +296,10 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
 	if dappID, ok := dappIDLocal.(string); ok {
-		return dappID
+		//zeroallocation policy for fiber.Ctx
+		buffer := make([]byte, len(dappID))
+		copy(buffer, dappID)
+		return string(buffer)
 	}
 	return "NoDappID"
 }
