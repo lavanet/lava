@@ -211,11 +211,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
-		}
+		dappID := ExtractDappIDFromFiberContext(c)
 		//TODO: fix msgSeed and print it here
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())

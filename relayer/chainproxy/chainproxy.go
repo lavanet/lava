@@ -9,13 +9,13 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
-	"github.com/gofiber/websocket/v2"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -293,10 +293,19 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 	}
 	return handler
 }
-func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string{
+func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
 	if dappID, ok := dappIDLocal.(string); ok {
 		return dappID
+	}
+	return "NoDappID"
+}
+
+func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
+	if len(c.Route().Params) > 1 {
+		dappID = c.Route().Params[1]
+		dappID = strings.Replace(dappID, "*", "", -1)
+		return
 	}
 	return "NoDappID"
 }
