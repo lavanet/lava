@@ -941,54 +941,6 @@
           ]
         },
         {
-          "name": "/staking/delegators/{delegatorAddr}/delegations",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "post",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "post",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
           "category": {
             "deterministic": true,
@@ -1417,30 +1369,6 @@
           },
           "compute_units": "10",
           "enabled": false,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "rest",
@@ -2386,30 +2314,6 @@
           ]
         },
         {
-          "name": "/cosmos/tx/v1beta1/txs/block/{height}",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
           "name": "/ibc/apps/interchain_accounts/host/v1/params",
           "category": {
             "deterministic": true,
@@ -2626,7 +2530,7 @@
           ]
         },
         {
-          "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
+          "name": "/cosmos/authz/v1beta1/grants",
           "category": {
             "deterministic": true,
             "local": false,
@@ -3202,7 +3106,30 @@
           ]
         },
         {
-          "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
+          "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "rest",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },{
+          "name": "/ibc/apps/router/v1/params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -3392,7 +3319,2344 @@
               "extra_compute_units": "0"
             }
           ]
-        }
+        }    ,{
+          "name": "cosmos.auth.v1beta1.Query.Account",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.auth.v1beta1.Query.Accounts",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.auth.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.authz.v1beta1.Query.Grants",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.AllBalances",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.Balance",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.DenomMetadata",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.DenomsMetadata",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.SupplyOf",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.TotalSupply",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "height",
+              "=",
+              "0"
+            ],
+            "parserFunc": "PARSE_DICTIONARY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "{\"height\":\"%d\"}",
+            "function_tag": "getBlockByNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "blockId",
+                "hash"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
+        },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "",
+            "function_tag": "getBlockNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "block",
+                "header",
+                "height"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetSyncing",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.CommunityPool",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegationRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegationTotalRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegatorValidators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegatorWithdrawAddress",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorCommission",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorOutstandingRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorSlashes",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.evidence.v1beta1.Query.AllEvidence",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.evidence.v1beta1.Query.Evidence",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.feegrant.v1beta1.Query.Allowance",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.feegrant.v1beta1.Query.Allowances",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Deposit",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Deposits",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Proposal",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Proposals",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.TallyResult",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Vote",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Votes",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.AnnualProvisions",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.Inflation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.params.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.SigningInfo",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.SigningInfos",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Delegation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorUnbondingDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorValidator",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorValidators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.HistoricalInfo",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Pool",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Redelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.UnbondingDelegation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Validator",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.ValidatorDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.ValidatorUnbondingDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Validators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.BroadcastTx",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            },
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.GetTx",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.GetTxsEvent",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            },
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.Simulate",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.AppliedPlan",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },{
+          "name": "cosmos.upgrade.v1beta1.Query.CurrentPlan",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.ModuleVersions",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.UpgradedConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.interchain_accounts.controller.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.interchain_accounts.host.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomHash",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomTrace",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomTraces",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.Channel",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ChannelClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ChannelConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.Channels",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ConnectionChannels",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.NextSequenceReceive",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketAcknowledgement",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketAcknowledgements",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketCommitment",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketCommitments",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketReceipt",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.UnreceivedAcks",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.UnreceivedPackets",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientParams",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientStates",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientStatus",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ConsensusStates",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.UpgradedClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.UpgradedConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ClientConnections",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.Connection",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ConnectionClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ConnectionConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.Connections",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "router.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    }
       ]
     },
     {
@@ -4334,54 +6598,6 @@
           ]
         },
         {
-          "name": "/staking/delegators/{delegatorAddr}/delegations",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "post",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "post",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
           "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
           "category": {
             "deterministic": true,
@@ -4810,30 +7026,6 @@
           },
           "compute_units": "10",
           "enabled": false,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
           "apiInterfaces": [
             {
               "interface": "rest",
@@ -5779,30 +7971,6 @@
           ]
         },
         {
-          "name": "/cosmos/tx/v1beta1/txs/block/{height}",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "rest",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
           "name": "/ibc/apps/interchain_accounts/host/v1/params",
           "category": {
             "deterministic": true,
@@ -6019,7 +8187,7 @@
           ]
         },
         {
-          "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
+          "name": "/cosmos/authz/v1beta1/grants",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6595,7 +8763,30 @@
           ]
         },
         {
-          "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
+          "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "rest",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },{
+          "name": "/ibc/apps/router/v1/params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6785,7 +8976,2344 @@
               "extra_compute_units": "0"
             }
           ]
-        }
+        }    ,{
+          "name": "cosmos.auth.v1beta1.Query.Account",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.auth.v1beta1.Query.Accounts",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.auth.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.authz.v1beta1.Query.Grants",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.AllBalances",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.Balance",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.DenomMetadata",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.DenomsMetadata",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.SupplyOf",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.bank.v1beta1.Query.TotalSupply",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "height",
+              "=",
+              "0"
+            ],
+            "parserFunc": "PARSE_DICTIONARY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "{\"height\":\"%d\"}",
+            "function_tag": "getBlockByNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "blockId",
+                "hash"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
+        },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ],
+          "parsing": {
+            "function_template": "",
+            "function_tag": "getBlockNumber",
+            "result_parsing": {
+              "parserArg": [
+                "0",
+                "block",
+                "header",
+                "height"
+              ],
+              "parserFunc": "PARSE_CANONICAL"
+            }
+          }
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetSyncing",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.CommunityPool",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegationRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegationTotalRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegatorValidators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.DelegatorWithdrawAddress",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorCommission",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorOutstandingRewards",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.distribution.v1beta1.Query.ValidatorSlashes",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.evidence.v1beta1.Query.AllEvidence",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.evidence.v1beta1.Query.Evidence",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.feegrant.v1beta1.Query.Allowance",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.feegrant.v1beta1.Query.Allowances",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Deposit",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Deposits",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Proposal",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Proposals",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.TallyResult",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Vote",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.gov.v1beta1.Query.Votes",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.AnnualProvisions",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.Inflation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.mint.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.params.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.SigningInfo",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.slashing.v1beta1.Query.SigningInfos",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Delegation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorUnbondingDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorValidator",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.DelegatorValidators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.HistoricalInfo",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Pool",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Redelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.UnbondingDelegation",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Validator",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.ValidatorDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.ValidatorUnbondingDelegations",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.staking.v1beta1.Query.Validators",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.BroadcastTx",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            },
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.GetTx",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.GetTxsEvent",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            },
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.tx.v1beta1.Service.Simulate",
+          "category": {
+            "deterministic": false,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "post",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.AppliedPlan",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },{
+          "name": "cosmos.upgrade.v1beta1.Query.CurrentPlan",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.ModuleVersions",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "cosmos.upgrade.v1beta1.Query.UpgradedConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "0"
+            ],
+            "parserFunc": "PARSE_BY_ARG"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.interchain_accounts.controller.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.interchain_accounts.host.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomHash",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomTrace",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.DenomTraces",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.applications.transfer.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.Channel",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ChannelClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ChannelConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.Channels",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.ConnectionChannels",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.NextSequenceReceive",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketAcknowledgement",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketAcknowledgements",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketCommitment",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketCommitments",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.PacketReceipt",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.UnreceivedAcks",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.channel.v1.Query.UnreceivedPackets",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientParams",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientStates",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ClientStatus",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.ConsensusStates",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.UpgradedClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query.UpgradedConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ClientConnections",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.Connection",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ConnectionClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.ConnectionConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query.Connections",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": false,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "router.v1.Query.Params",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    }
       ]
     }
   ],

@@ -19,7 +19,7 @@ func (qs *implementedQueryServer) Params(ctx context.Context, req *pairingtypes.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "lavanet.lava.pairing.Query/Params", reqMarshaled)
+	res, err := qs.cb(ctx, "lavanet.lava.pairing.Query.Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

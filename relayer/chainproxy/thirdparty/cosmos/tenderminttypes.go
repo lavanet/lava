@@ -19,7 +19,7 @@ func (qs *implementedQueryServer) GetNodeInfo(ctx context.Context, req *tm.GetNo
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -35,7 +35,7 @@ func (qs *implementedQueryServer) GetSyncing(ctx context.Context, req *tm.GetSyn
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetSyncing", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetSyncing", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -51,7 +51,7 @@ func (qs *implementedQueryServer) GetLatestBlock(ctx context.Context, req *tm.Ge
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -67,7 +67,7 @@ func (qs *implementedQueryServer) GetBlockByHeight(ctx context.Context, req *tm.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -83,7 +83,7 @@ func (qs *implementedQueryServer) GetLatestValidatorSet(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -99,7 +99,7 @@ func (qs *implementedQueryServer) GetValidatorSetByHeight(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -115,7 +115,7 @@ func (qs *implementedQueryServer) ABCIQuery(ctx context.Context, req *tm.ABCIQue
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/ABCIQuery", reqMarshaled)
+	res, err := qs.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.ABCIQuery", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

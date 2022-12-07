@@ -8,13 +8,32 @@ TEMPLATE = """
     }
 """
 
+# must have rest api already implemented
+
 # Lava:
-# grpc_server = "grpc.osmosis.zone:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json"
+# grpc_server = "public-rpc.lavanet.xyz:9090"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_lava.json"
 
 # Osmosis:
-grpc_server = "grpc.osmosis.zone:9090"
-spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json" # must have rest api already implemented
+# grpc_server = "grpc.osmosis.zone:9090"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json" 
+
+# Cosmos
+# grpc_server = "gaia-node-1.lavapro.xyz:9090"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_cosmoshub.json" 
+
+grpc_server = "juno-node-1.lavapro.xyz:9090"
+spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_juno.json" 
+
+# 
+# grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
+# grpcurl -plaintext public-rpc.lavanet.xyz:9090 list # LAV1
+# grpcurl -plaintext gaia-node-1.lavapro.xyz:9090 list # COS5
+# grpcurl -plaintext juno-node-1.lavapro.xyz:9090 list # JUNO
+# # --- #
+# grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COS5T
+# grpcurl -plaintext juno-node-1.lavapro.xyz:9092 list # JUNO-TEST
+
 
 special_cases_descriptors_with_no_rest_api = []
 
@@ -36,9 +55,21 @@ for rest_api in all_rest_apis:
 original_api_list = rest_api_list[:]
 total_number_of_descriptors = 0
 rest_lines_not_in_spec = []
+
+skip_services = ["tendermint.liquidity.v1beta1.Query","testdata","reflection"]
+
+def check_skip(service):
+    # print("checking serice skip on: %s" % service)
+    if service == "":
+        return True
+    for s in skip_services:
+        if s in service:
+            return True
+    return False        
+
 for service in arr:
     service = service.strip()
-    if service == "" or "reflection" in service or "testdata" in service:
+    if check_skip(service):
         continue
     print("Processing: ",service)
     descriptors = str(subprocess.check_output(f"grpcurl -plaintext {grpc_server} describe {service}",shell=True))[2:-1]
