@@ -31,7 +31,7 @@ service Query {
 
 // Queries a list of GetPairing items.
 	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}/{blockHeight}";
+		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
 	}
 
 // Queries a list of VerifyPairing items.
@@ -107,7 +107,6 @@ message QueryClientsResponse {
 message QueryGetPairingRequest {
   string chainID = 1;
   string client = 2;
-  int64 blockHeight = 3;
 }
 
 message QueryGetPairingResponse {

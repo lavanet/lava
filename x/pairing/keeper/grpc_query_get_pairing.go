@@ -32,20 +32,10 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, errors.New("spec not found or not enabled")
 	}
 
-	// If req.BlockHeight == -1, use current block. Else, use the blockHeight from the request (should be positive if not -1)
-	blockHeight := uint64(0)
-	if req.BlockHeight == -1 {
-		blockHeight = uint64(ctx.BlockHeight())
-	} else if req.BlockHeight < 0 && req.BlockHeight != -1 {
-		return nil, fmt.Errorf("invalid block height: %d", req.BlockHeight)
-	} else {
-		blockHeight = uint64(req.BlockHeight)
-	}
-
-	// Get pairing in a specific block height
-	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr, blockHeight)
+	// Get pairing list for latest block
+	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr)
 	if err != nil {
-		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, blockHeight, err)
+		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, err: %s", req.ChainID, clientAddr, err)
 	}
 
 	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)

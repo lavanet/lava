@@ -75,22 +75,20 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 
 //function used to get a new pairing from relayer and client
 //first argument has all metadata, second argument is only the addresses
-func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, errorRet error) {
-	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
-	if err != nil {
-		return nil, fmt.Errorf("%s", err)
-	}
-	clientStakeEntry, err := k.VerifyPairingData(ctx, chainID, clientAddress, epoch)
+func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
+	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
+
+	clientStakeEntry, err := k.VerifyPairingData(ctx, chainID, clientAddress, currentEpoch)
 	if err != nil {
 		//user is not valid for pairing
 		return nil, fmt.Errorf("invalid user for pairing: %s", err)
 	}
 
-	possibleProviders, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, chainID)
+	possibleProviders, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, currentEpoch, epochstoragetypes.ProviderKey, chainID)
 	if !found {
-		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", epoch, chainID)
+		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
 	}
-	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, epoch, chainID, clientStakeEntry.Geolocation)
+	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation)
 	return
 }
 
