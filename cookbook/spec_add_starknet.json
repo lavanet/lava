@@ -1,478 +1,499 @@
 {
-  "title": "Add Specs: StarkNet",
-  "description": "Adding new specification support for relaying StarkNet data on Lava",
-  "specs": [
-    {
-      "chainid": "STRK",
-      "name": "StarkNet mainnet",
-      "enabled": true,
-      "reliability_threshold": 268435455,
-      "compares_hashes": true,
-      "finalization_criteria": 1,
-      "saved_blocks": 3,
-      "average_block_time": "1800000",
-      "allowed_block_lag_for_qos_sync": "1",
-      "apis": [
-        { "name": "starknet_getBlockWithTxHashes",
-          "parsing": {
-            "function_tag": "getBlockByNumber",
-            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxs\",\"params\":[{\"block_number\":%d}],\"id\":1}",
-            "result_parsing": {
-              "parserArg": [
-                "0",
-                "block_hash"
-              ],
-              "parserFunc": "PARSE_CANONICAL"
-            }
-          },
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
+    "proposal": {
+        "title": "Add Specs: StarkNet",
+        "description": "Adding new specification support for relaying StarkNet data on Lava",
+        "specs": [
             {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
+                "index": "STRK",
+                "name": "StarkNet mainnet",
+                "enabled": true,
+                "reliability_threshold": 268435455,
+                "compares_hashes": true,
+                "finalization_criteria": 1,
+                "saved_blocks": 3,
+                "average_block_time": "1800000",
+                "allowed_block_lag_for_qos_sync": "1",
+                "apis": [
+                    {
+                        "name": "starknet_getBlockWithTxHashes",
+                        "parsing": {
+                            "function_tag": "getBlockByNumber",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxs\",\"params\":[{\"block_number\":%d}],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "block_hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        },
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getBlockWithTxs",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getStateUpdate",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getStorageAt",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getTransactionByHash",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getTransactionByBlockIdAndIndex",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getTransactionReceipt",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getClass",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getClassHashAt",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getBlockTransactionCount",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_call",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_estimateFee",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_blockNumber",
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_blockNumber\",\"params\":[],\"id\":1}",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0"
+                                ],
+                                "parser_func": "PARSE_BY_ARG"
+                            }
+                        },
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_blockHashAndNumber",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_chainId",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_pendingTransactions",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_syncing",
+                        "category": {
+                            "deterministic": false,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getEvents",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_getNonce",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    }
+                ]
             }
-          ]
-        },
-        {"name": "starknet_getBlockWithTxs",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getStateUpdate",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getStorageAt",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getTransactionByHash",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getTransactionByBlockIdAndIndex",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getTransactionReceipt",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getClass",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getClassHashAt",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getBlockTransactionCount",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_call",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_estimateFee",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_blockNumber",
-          "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_blockNumber\",\"params\":[],\"id\":1}",
-            "function_tag": "getBlockNumber",
-            "result_parsing": {
-              "parserArg": [
-                "0"
-              ],
-              "parserFunc": "PARSE_BY_ARG"
-            }
-          },
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_blockHashAndNumber",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_chainId",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_pendingTransactions",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_syncing",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getEvents",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {"name": "starknet_getNonce",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "deposit": "10000000ulava"
+        ]
+    },
+    "deposit": "10000000ulava"
 }

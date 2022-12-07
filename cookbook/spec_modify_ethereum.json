@@ -1,124 +1,168 @@
 {
-  "title": "Add Specs: Ethereum",
-  "description": "Adding new specification support for relaying Ethereum data on Lava",
-  "specs": [
-    {
-      "chainid": "ETH1",
-      "name": "Ethereum Mainnet",
-      "enabled": true,
-      "reliability_threshold" : 268435455,
-      "apis": [
-          {
-              "name": "eth_getBalance",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "20",
-              "enabled": false,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          },
-          {
-              "name": "eth_codeAt",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "30",
-              "enabled": true,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          },
-          {
-              "name": "eth_blockNumber",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "10",
-              "enabled": true,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          }
-      ]
+    "proposal": {
+        "title": "Add Specs: Ethereum",
+        "description": "Adding new specification support for relaying Ethereum data on Lava",
+        "specs": [
+            {
+                "index": "ETH1",
+                "name": "Ethereum Mainnet",
+                "enabled": true,
+                "reliability_threshold": 268435455,
+                "apis": [
+                    {
+                        "name": "eth_getBalance",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_codeAt",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "30",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_blockNumber",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "Ethereum Rinkeby",
+                "name": "Ethereum Rinkeby",
+                "enabled": true,
+                "apis": [
+                    {
+                        "name": "eth_getBalance",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_codeAt",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "30",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_blockNumber",
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     },
-    {
-      "chainid": "Ethereum Rinkeby",
-      "name": "Ethereum Rinkeby",
-      "enabled": true,
-      "apis": [
-          {
-              "name": "eth_getBalance",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "20",
-              "enabled": false,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          },
-          {
-              "name": "eth_codeAt",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "30",
-              "enabled": true,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          },
-          {
-              "name": "eth_blockNumber",
-              "category":{"deterministic":true,"local":false,"subscription":false,"stateful":0},
-					"block_parsing": {
-						"parserArg": [""],
-						"parserFunc": "EMPTY"
-					},
-							"compute_units": "10",
-              "enabled": true,
-              "apiInterfaces": [
-                {
-                  "interface": "jsonrpc",
-                  "type": "get",
-                  "extra_compute_units": "0"
-                }
-              ] 
-          }
-      ]
-    }
-  ],
-  "deposit": "10000000ulava"
-  }
+    "deposit": "10000000ulava"
+}
