@@ -1011,11 +1011,11 @@ func (s *Sentry) SendRelay(
 				}
 				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
-					err = s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
-					if err != nil {
-						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", err, nil)
+					errRet := s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
+					if errRet != nil {
+						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, &map[string]string{"sendReliabilityError": err.Error()})
 					}
-					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
+					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", errRet, &map[string]string{"Address": providerAddress,"sendReliabilityError":err.Error()})
 				}
 				err = s.consumerSessionManager.OnSessionDoneWithoutQoSChanges(singleConsumerSession)
 				return relay_rep, relay_req, err
