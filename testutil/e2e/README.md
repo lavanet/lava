@@ -1,5 +1,11 @@
 # Lava E2E
 
+Run using the following command
+
+```
+go test ./testutil/e2e/ -v -timeout 1200s
+```
+
 This E2E performs the steps below to test if the system is working as expected.
 
 1. Start lava in developer mode (equivalent to running the command "ignite chain serve" ).
