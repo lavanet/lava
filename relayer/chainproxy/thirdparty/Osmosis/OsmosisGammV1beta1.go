@@ -1,0 +1,200 @@
+
+package osmosis_thirdparty
+
+import (
+	"context"
+	"encoding/json"
+
+	// add protobuf here as pb_pkg
+	"github.com/lavanet/lava/utils"
+	"google.golang.org/protobuf/proto"
+)
+
+type implementedOsmosisGammV1beta1 struct {
+	pb_pkg.UnimplementedQueryServer
+	cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)
+}
+
+// this line is used by grpc_scaffolder #implementedOsmosisGammV1beta1
+
+
+
+func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountIn(ctx context.Context, req *pb_pkg.QuerySwapExactAmountInRequest) (*pb_pkg.QuerySwapExactAmountInResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountIn", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QuerySwapExactAmountInResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountOut(ctx context.Context, req *pb_pkg.QuerySwapExactAmountOutRequest) (*pb_pkg.QuerySwapExactAmountOutResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountOut", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QuerySwapExactAmountOutResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) NumPools(ctx context.Context, req *pb_pkg.QueryNumPoolsRequest) (*pb_pkg.QueryNumPoolsResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.NumPools", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryNumPoolsResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) PoolParams(ctx context.Context, req *pb_pkg.QueryPoolParamsRequest) (*pb_pkg.QueryPoolParamsResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolParams", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryPoolParamsResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_pkg.QueryPoolTypeRequest) (*pb_pkg.QueryPoolTypeResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolType", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryPoolTypeResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) SpotPrice(ctx context.Context, req *pb_pkg.QuerySpotPriceRequest) (*pb_pkg.QuerySpotPriceResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.SpotPrice", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QuerySpotPriceResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) TotalLiquidity(ctx context.Context, req *pb_pkg.QueryTotalLiquidityRequest) (*pb_pkg.QueryTotalLiquidityResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalLiquidity", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryTotalLiquidityResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context, req *pb_pkg.QueryTotalPoolLiquidityRequest) (*pb_pkg.QueryTotalPoolLiquidityResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryTotalPoolLiquidityResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+
+
+func (is *implementedOsmosisGammV1beta1) TotalShares(ctx context.Context, req *pb_pkg.QueryTotalSharesRequest) (*pb_pkg.QueryTotalSharesResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalShares", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryTotalSharesResponse{}
+	err = proto.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
+// this line is used by grpc_scaffolder #Method
+
+// this line is used by grpc_scaffolder #Methods

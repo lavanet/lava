@@ -2,13 +2,25 @@ import subprocess
 import os
 
 # Lava:
-grpc_server = "public-rpc.lavanet.xyz:9090"
-spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_lava.json"
-chain = "Lava"
+# grpc_server = "public-rpc.lavanet.xyz:9090"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_lava.json"
+# chain = "Lava"
 
 # Osmosis:
-# grpc_server = "grpc.osmosis.zone:9090"
+# grpc_server = "prod-pnet-osmosisnode-1.lavapro.xyz:9090"
 # spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_osmosis.json" 
+# chain = "Osmosis"
+
+# Cosmos
+# grpc_server = "gaia-node-1.lavapro.xyz:9090"
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_cosmoshub.json"
+# chain = "Cosmos"
+
+# JUNO
+grpc_server = "juno-node-1.lavapro.xyz:9090"
+spec_current_file_path = "/home/user/go/src/lava/cookbook/spec_add_juno.json"
+chain = "Juno"
+
 
 result_dir = "/home/user/go/src/lava/scripts/automation_scripts/automation_results/grpcClientProtobufs"
 
