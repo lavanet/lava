@@ -772,6 +772,9 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	//TODO: handle cache on fork for dataReliability = false
 	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
 	if err != nil || reply == nil {
+		if performance.NotConnectedError.Is(err) {
+			utils.LavaFormatError("cache not connected", err, nil)
+		}
 		//cache miss
 		reply, _, _, err = nodeMsg.Send(ctx, nil)
 		if err != nil {
