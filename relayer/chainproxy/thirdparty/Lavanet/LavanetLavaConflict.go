@@ -1,4 +1,3 @@
-
 package lavanet_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedLavanetLavaConflict struct {
@@ -16,8 +14,6 @@ type implementedLavanetLavaConflict struct {
 }
 
 // this line is used by grpc_scaffolder #implementedLavanetLavaConflict
-
-
 
 func (is *implementedLavanetLavaConflict) ConflictVote(ctx context.Context, req *pb_pkg.QueryGetConflictVoteRequest) (*pb_pkg.QueryGetConflictVoteResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedLavanetLavaConflict) ConflictVote(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGetConflictVoteResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaConflict) ConflictVoteAll(ctx context.Context, req *pb_pkg.QueryAllConflictVoteRequest) (*pb_pkg.QueryAllConflictVoteResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedLavanetLavaConflict) ConflictVoteAll(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllConflictVoteResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaConflict) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,12 +63,13 @@ func (is *implementedLavanetLavaConflict) Params(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

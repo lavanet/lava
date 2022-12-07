@@ -1,4 +1,3 @@
-
 package ibc_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedIbcCoreConnectionV1 struct {
@@ -16,8 +14,6 @@ type implementedIbcCoreConnectionV1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedIbcCoreConnectionV1
-
-
 
 func (is *implementedIbcCoreConnectionV1) ClientConnections(ctx context.Context, req *pb_pkg.QueryClientConnectionsRequest) (*pb_pkg.QueryClientConnectionsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedIbcCoreConnectionV1) ClientConnections(ctx context.Context,
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryClientConnectionsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcCoreConnectionV1) ConnectionClientState(ctx context.Context, req *pb_pkg.QueryConnectionClientStateRequest) (*pb_pkg.QueryConnectionClientStateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedIbcCoreConnectionV1) ConnectionClientState(ctx context.Cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryConnectionClientStateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcCoreConnectionV1) ConnectionConsensusState(ctx context.Context, req *pb_pkg.QueryConnectionConsensusStateRequest) (*pb_pkg.QueryConnectionConsensusStateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,12 +63,13 @@ func (is *implementedIbcCoreConnectionV1) ConnectionConsensusState(ctx context.C
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryConnectionConsensusStateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

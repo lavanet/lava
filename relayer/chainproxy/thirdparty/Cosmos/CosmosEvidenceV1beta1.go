@@ -1,4 +1,3 @@
-
 package cosmos_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmosEvidenceV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedCosmosEvidenceV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmosEvidenceV1beta1
-
-
 
 func (is *implementedCosmosEvidenceV1beta1) AllEvidence(ctx context.Context, req *pb_pkg.QueryAllEvidenceRequest) (*pb_pkg.QueryAllEvidenceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,12 +25,13 @@ func (is *implementedCosmosEvidenceV1beta1) AllEvidence(ctx context.Context, req
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllEvidenceResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

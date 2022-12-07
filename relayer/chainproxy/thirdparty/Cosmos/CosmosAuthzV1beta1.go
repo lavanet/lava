@@ -1,4 +1,3 @@
-
 package cosmos_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmosAuthzV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedCosmosAuthzV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmosAuthzV1beta1
-
-
 
 func (is *implementedCosmosAuthzV1beta1) Grants(ctx context.Context, req *pb_pkg.QueryGrantsRequest) (*pb_pkg.QueryGrantsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedCosmosAuthzV1beta1) Grants(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGrantsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthzV1beta1) GranteeGrants(ctx context.Context, req *pb_pkg.QueryGranteeGrantsRequest) (*pb_pkg.QueryGranteeGrantsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedCosmosAuthzV1beta1) GranteeGrants(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGranteeGrantsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthzV1beta1) GranterGrants(ctx context.Context, req *pb_pkg.QueryGranterGrantsRequest) (*pb_pkg.QueryGranterGrantsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,12 +63,13 @@ func (is *implementedCosmosAuthzV1beta1) GranterGrants(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGranterGrantsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

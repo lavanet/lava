@@ -1,4 +1,3 @@
-
 package ibc_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedIbcApplicationsInterchain_accountsControllerV1 struct {
@@ -16,8 +14,6 @@ type implementedIbcApplicationsInterchain_accountsControllerV1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedIbcApplicationsInterchain_accountsControllerV1
-
-
 
 func (is *implementedIbcApplicationsInterchain_accountsControllerV1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,12 +25,13 @@ func (is *implementedIbcApplicationsInterchain_accountsControllerV1) Params(ctx 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

@@ -1,4 +1,3 @@
-
 package cosmos_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmosGovV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedCosmosGovV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmosGovV1beta1
-
-
 
 func (is *implementedCosmosGovV1beta1) Deposit(ctx context.Context, req *pb_pkg.QueryDepositRequest) (*pb_pkg.QueryDepositResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedCosmosGovV1beta1) Deposit(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDepositResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Deposits(ctx context.Context, req *pb_pkg.QueryDepositsRequest) (*pb_pkg.QueryDepositsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedCosmosGovV1beta1) Deposits(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDepositsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedCosmosGovV1beta1) Params(ctx context.Context, req *pb_pkg.Q
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Proposal(ctx context.Context, req *pb_pkg.QueryProposalRequest) (*pb_pkg.QueryProposalResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedCosmosGovV1beta1) Proposal(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryProposalResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Proposals(ctx context.Context, req *pb_pkg.QueryProposalsRequest) (*pb_pkg.QueryProposalsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,15 +101,14 @@ func (is *implementedCosmosGovV1beta1) Proposals(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryProposalsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) TallyResult(ctx context.Context, req *pb_pkg.QueryTallyResultRequest) (*pb_pkg.QueryTallyResultResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -129,15 +120,14 @@ func (is *implementedCosmosGovV1beta1) TallyResult(ctx context.Context, req *pb_
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryTallyResultResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Vote(ctx context.Context, req *pb_pkg.QueryVoteRequest) (*pb_pkg.QueryVoteResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -149,15 +139,14 @@ func (is *implementedCosmosGovV1beta1) Vote(ctx context.Context, req *pb_pkg.Que
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryVoteResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosGovV1beta1) Votes(ctx context.Context, req *pb_pkg.QueryVotesRequest) (*pb_pkg.QueryVotesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -169,12 +158,13 @@ func (is *implementedCosmosGovV1beta1) Votes(ctx context.Context, req *pb_pkg.Qu
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryVotesResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

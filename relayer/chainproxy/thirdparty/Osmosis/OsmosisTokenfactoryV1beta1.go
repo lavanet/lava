@@ -1,4 +1,3 @@
-
 package osmosis_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedOsmosisTokenfactoryV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedOsmosisTokenfactoryV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedOsmosisTokenfactoryV1beta1
-
-
 
 func (is *implementedOsmosisTokenfactoryV1beta1) DenomAuthorityMetadata(ctx context.Context, req *pb_pkg.QueryDenomAuthorityMetadataRequest) (*pb_pkg.QueryDenomAuthorityMetadataResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedOsmosisTokenfactoryV1beta1) DenomAuthorityMetadata(ctx cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomAuthorityMetadataResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisTokenfactoryV1beta1) DenomsFromCreator(ctx context.Context, req *pb_pkg.QueryDenomsFromCreatorRequest) (*pb_pkg.QueryDenomsFromCreatorResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedOsmosisTokenfactoryV1beta1) DenomsFromCreator(ctx context.C
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomsFromCreatorResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisTokenfactoryV1beta1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,12 +63,13 @@ func (is *implementedOsmosisTokenfactoryV1beta1) Params(ctx context.Context, req
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

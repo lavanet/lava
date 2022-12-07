@@ -1,4 +1,3 @@
-
 package lavanet_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedLavanetLavaSpec struct {
@@ -16,8 +14,6 @@ type implementedLavanetLavaSpec struct {
 }
 
 // this line is used by grpc_scaffolder #implementedLavanetLavaSpec
-
-
 
 func (is *implementedLavanetLavaSpec) Chain(ctx context.Context, req *pb_pkg.QueryChainRequest) (*pb_pkg.QueryChainResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedLavanetLavaSpec) Chain(ctx context.Context, req *pb_pkg.Que
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryChainResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaSpec) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedLavanetLavaSpec) Params(ctx context.Context, req *pb_pkg.Qu
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaSpec) ShowAllChains(ctx context.Context, req *pb_pkg.QueryShowAllChainsRequest) (*pb_pkg.QueryShowAllChainsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedLavanetLavaSpec) ShowAllChains(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryShowAllChainsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb_pkg.QueryShowChainInfoRequest) (*pb_pkg.QueryShowChainInfoResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryShowChainInfoResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaSpec) SpecAll(ctx context.Context, req *pb_pkg.QueryAllSpecRequest) (*pb_pkg.QueryAllSpecResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,12 +101,13 @@ func (is *implementedLavanetLavaSpec) SpecAll(ctx context.Context, req *pb_pkg.Q
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllSpecResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

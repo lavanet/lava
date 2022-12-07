@@ -1,4 +1,3 @@
-
 package ibc_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedIbcApplicationsTransferV1 struct {
@@ -16,8 +14,6 @@ type implementedIbcApplicationsTransferV1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedIbcApplicationsTransferV1
-
-
 
 func (is *implementedIbcApplicationsTransferV1) DenomHash(ctx context.Context, req *pb_pkg.QueryDenomHashRequest) (*pb_pkg.QueryDenomHashResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedIbcApplicationsTransferV1) DenomHash(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomHashResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcApplicationsTransferV1) DenomTrace(ctx context.Context, req *pb_pkg.QueryDenomTraceRequest) (*pb_pkg.QueryDenomTraceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedIbcApplicationsTransferV1) DenomTrace(ctx context.Context, 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomTraceResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcApplicationsTransferV1) DenomTraces(ctx context.Context, req *pb_pkg.QueryDenomTracesRequest) (*pb_pkg.QueryDenomTracesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedIbcApplicationsTransferV1) DenomTraces(ctx context.Context,
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomTracesResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcApplicationsTransferV1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedIbcApplicationsTransferV1) Params(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedIbcApplicationsTransferV1) EscrowAddress(ctx context.Context, req *pb_pkg.QueryEscrowAddressRequest) (*pb_pkg.QueryEscrowAddressResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,12 +101,13 @@ func (is *implementedIbcApplicationsTransferV1) EscrowAddress(ctx context.Contex
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryEscrowAddressResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

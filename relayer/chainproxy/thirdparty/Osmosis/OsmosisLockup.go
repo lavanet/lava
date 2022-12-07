@@ -1,4 +1,3 @@
-
 package osmosis_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedOsmosisLockup struct {
@@ -16,8 +14,6 @@ type implementedOsmosisLockup struct {
 }
 
 // this line is used by grpc_scaffolder #implementedOsmosisLockup
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedCoins(ctx context.Context, req *pb_pkg.AccountLockedCoinsRequest) (*pb_pkg.AccountLockedCoinsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedOsmosisLockup) AccountLockedCoins(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedCoinsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, req *pb_pkg.AccountLockedDurationRequest) (*pb_pkg.AccountLockedDurationResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedDurationResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedLongerDuration(ctx context.Context, req *pb_pkg.AccountLockedLongerDurationRequest) (*pb_pkg.AccountLockedLongerDurationResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDuration(ctx context.Cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedLongerDurationDenom(ctx context.Context, req *pb_pkg.AccountLockedLongerDurationDenomRequest) (*pb_pkg.AccountLockedLongerDurationDenomResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationDenom(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationDenomResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedLongerDurationNotUnlockingOnly(ctx context.Context, req *pb_pkg.AccountLockedLongerDurationNotUnlockingOnlyRequest) (*pb_pkg.AccountLockedLongerDurationNotUnlockingOnlyResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,15 +101,14 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationNotUnlockingOnly(
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationNotUnlockingOnlyResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedPastTime(ctx context.Context, req *pb_pkg.AccountLockedPastTimeRequest) (*pb_pkg.AccountLockedPastTimeResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -129,15 +120,14 @@ func (is *implementedOsmosisLockup) AccountLockedPastTime(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedPastTimeDenom(ctx context.Context, req *pb_pkg.AccountLockedPastTimeDenomRequest) (*pb_pkg.AccountLockedPastTimeDenomResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -149,15 +139,14 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeDenom(ctx context.Conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeDenomResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountLockedPastTimeNotUnlockingOnly(ctx context.Context, req *pb_pkg.AccountLockedPastTimeNotUnlockingOnlyRequest) (*pb_pkg.AccountLockedPastTimeNotUnlockingOnlyResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -169,15 +158,14 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeNotUnlockingOnly(ctx co
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeNotUnlockingOnlyResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountUnlockableCoins(ctx context.Context, req *pb_pkg.AccountUnlockableCoinsRequest) (*pb_pkg.AccountUnlockableCoinsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -189,15 +177,14 @@ func (is *implementedOsmosisLockup) AccountUnlockableCoins(ctx context.Context, 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockableCoinsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountUnlockedBeforeTime(ctx context.Context, req *pb_pkg.AccountUnlockedBeforeTimeRequest) (*pb_pkg.AccountUnlockedBeforeTimeResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -209,15 +196,14 @@ func (is *implementedOsmosisLockup) AccountUnlockedBeforeTime(ctx context.Contex
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockedBeforeTimeResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) AccountUnlockingCoins(ctx context.Context, req *pb_pkg.AccountUnlockingCoinsRequest) (*pb_pkg.AccountUnlockingCoinsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -229,15 +215,14 @@ func (is *implementedOsmosisLockup) AccountUnlockingCoins(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockingCoinsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) LockedByID(ctx context.Context, req *pb_pkg.LockedRequest) (*pb_pkg.LockedResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -249,15 +234,14 @@ func (is *implementedOsmosisLockup) LockedByID(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.LockedResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg.LockedDenomRequest) (*pb_pkg.LockedDenomResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -269,15 +253,14 @@ func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.LockedDenomResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) ModuleBalance(ctx context.Context, req *pb_pkg.ModuleBalanceRequest) (*pb_pkg.ModuleBalanceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -289,15 +272,14 @@ func (is *implementedOsmosisLockup) ModuleBalance(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ModuleBalanceResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) ModuleLockedAmount(ctx context.Context, req *pb_pkg.ModuleLockedAmountRequest) (*pb_pkg.ModuleLockedAmountResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -309,15 +291,14 @@ func (is *implementedOsmosisLockup) ModuleLockedAmount(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ModuleLockedAmountResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Context, req *pb_pkg.SyntheticLockupsByLockupIDRequest) (*pb_pkg.SyntheticLockupsByLockupIDResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -329,12 +310,13 @@ func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.SyntheticLockupsByLockupIDResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

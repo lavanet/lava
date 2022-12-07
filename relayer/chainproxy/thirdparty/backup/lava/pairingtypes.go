@@ -2,6 +2,7 @@ package lava_thirdparty
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/lavanet/lava/utils"
@@ -24,7 +25,7 @@ func (qs *implementedQueryServer) Params(ctx context.Context, req *pairingtypes.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pairingtypes.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

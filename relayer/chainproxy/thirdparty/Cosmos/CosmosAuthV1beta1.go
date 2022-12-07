@@ -1,4 +1,3 @@
-
 package cosmos_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmosAuthV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedCosmosAuthV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmosAuthV1beta1
-
-
 
 func (is *implementedCosmosAuthV1beta1) Account(ctx context.Context, req *pb_pkg.QueryAccountRequest) (*pb_pkg.QueryAccountResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedCosmosAuthV1beta1) Account(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAccountResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthV1beta1) Accounts(ctx context.Context, req *pb_pkg.QueryAccountsRequest) (*pb_pkg.QueryAccountsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedCosmosAuthV1beta1) Accounts(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAccountsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthV1beta1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedCosmosAuthV1beta1) Params(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthV1beta1) ModuleAccounts(ctx context.Context, req *pb_pkg.QueryModuleAccountsRequest) (*pb_pkg.QueryModuleAccountsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedCosmosAuthV1beta1) ModuleAccounts(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryModuleAccountsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosAuthV1beta1) ModuleAccountByName(ctx context.Context, req *pb_pkg.QueryModuleAccountByNameRequest) (*pb_pkg.QueryModuleAccountByNameResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,12 +101,13 @@ func (is *implementedCosmosAuthV1beta1) ModuleAccountByName(ctx context.Context,
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryModuleAccountByNameResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

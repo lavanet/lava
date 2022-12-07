@@ -1,4 +1,3 @@
-
 package lavanet_thirdparty
 
 import (
@@ -7,7 +6,7 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
+	pb_pkg "github.com/lavanet/lava/x/pairing/types"
 )
 
 type implementedLavanetLavaPairing struct {
@@ -16,8 +15,6 @@ type implementedLavanetLavaPairing struct {
 }
 
 // this line is used by grpc_scaffolder #implementedLavanetLavaPairing
-
-
 
 func (is *implementedLavanetLavaPairing) Clients(ctx context.Context, req *pb_pkg.QueryClientsRequest) (*pb_pkg.QueryClientsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +26,14 @@ func (is *implementedLavanetLavaPairing) Clients(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryClientsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) EpochPayments(ctx context.Context, req *pb_pkg.QueryGetEpochPaymentsRequest) (*pb_pkg.QueryGetEpochPaymentsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +45,14 @@ func (is *implementedLavanetLavaPairing) EpochPayments(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGetEpochPaymentsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) EpochPaymentsAll(ctx context.Context, req *pb_pkg.QueryAllEpochPaymentsRequest) (*pb_pkg.QueryAllEpochPaymentsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +64,14 @@ func (is *implementedLavanetLavaPairing) EpochPaymentsAll(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllEpochPaymentsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) GetPairing(ctx context.Context, req *pb_pkg.QueryGetPairingRequest) (*pb_pkg.QueryGetPairingResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +83,14 @@ func (is *implementedLavanetLavaPairing) GetPairing(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGetPairingResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,15 +102,14 @@ func (is *implementedLavanetLavaPairing) Params(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) ProviderPaymentStorage(ctx context.Context, req *pb_pkg.QueryGetProviderPaymentStorageRequest) (*pb_pkg.QueryGetProviderPaymentStorageResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -129,15 +121,14 @@ func (is *implementedLavanetLavaPairing) ProviderPaymentStorage(ctx context.Cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGetProviderPaymentStorageResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) ProviderPaymentStorageAll(ctx context.Context, req *pb_pkg.QueryAllProviderPaymentStorageRequest) (*pb_pkg.QueryAllProviderPaymentStorageResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -149,15 +140,14 @@ func (is *implementedLavanetLavaPairing) ProviderPaymentStorageAll(ctx context.C
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllProviderPaymentStorageResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) Providers(ctx context.Context, req *pb_pkg.QueryProvidersRequest) (*pb_pkg.QueryProvidersResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -169,15 +159,14 @@ func (is *implementedLavanetLavaPairing) Providers(ctx context.Context, req *pb_
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryProvidersResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) UniquePaymentStorageClientProvider(ctx context.Context, req *pb_pkg.QueryGetUniquePaymentStorageClientProviderRequest) (*pb_pkg.QueryGetUniquePaymentStorageClientProviderResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -189,15 +178,14 @@ func (is *implementedLavanetLavaPairing) UniquePaymentStorageClientProvider(ctx 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGetUniquePaymentStorageClientProviderResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) UniquePaymentStorageClientProviderAll(ctx context.Context, req *pb_pkg.QueryAllUniquePaymentStorageClientProviderRequest) (*pb_pkg.QueryAllUniquePaymentStorageClientProviderResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -209,15 +197,14 @@ func (is *implementedLavanetLavaPairing) UniquePaymentStorageClientProviderAll(c
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllUniquePaymentStorageClientProviderResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) UserEntry(ctx context.Context, req *pb_pkg.QueryUserEntryRequest) (*pb_pkg.QueryUserEntryResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -229,15 +216,14 @@ func (is *implementedLavanetLavaPairing) UserEntry(ctx context.Context, req *pb_
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryUserEntryResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedLavanetLavaPairing) VerifyPairing(ctx context.Context, req *pb_pkg.QueryVerifyPairingRequest) (*pb_pkg.QueryVerifyPairingResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -249,12 +235,13 @@ func (is *implementedLavanetLavaPairing) VerifyPairing(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryVerifyPairingResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

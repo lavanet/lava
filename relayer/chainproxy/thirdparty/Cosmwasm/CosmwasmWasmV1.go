@@ -1,4 +1,3 @@
-
 package cosmwasm_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmwasmWasmV1 struct {
@@ -16,8 +14,6 @@ type implementedCosmwasmWasmV1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmwasmWasmV1
-
-
 
 func (is *implementedCosmwasmWasmV1) AllContractState(ctx context.Context, req *pb_pkg.QueryAllContractStateRequest) (*pb_pkg.QueryAllContractStateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedCosmwasmWasmV1) AllContractState(ctx context.Context, req *
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllContractStateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) Code(ctx context.Context, req *pb_pkg.QueryCodeRequest) (*pb_pkg.QueryCodeResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedCosmwasmWasmV1) Code(ctx context.Context, req *pb_pkg.Query
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryCodeResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) Codes(ctx context.Context, req *pb_pkg.QueryCodesRequest) (*pb_pkg.QueryCodesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedCosmwasmWasmV1) Codes(ctx context.Context, req *pb_pkg.Quer
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryCodesResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) ContractHistory(ctx context.Context, req *pb_pkg.QueryContractHistoryRequest) (*pb_pkg.QueryContractHistoryResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedCosmwasmWasmV1) ContractHistory(ctx context.Context, req *p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryContractHistoryResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) ContractInfo(ctx context.Context, req *pb_pkg.QueryContractInfoRequest) (*pb_pkg.QueryContractInfoResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,15 +101,14 @@ func (is *implementedCosmwasmWasmV1) ContractInfo(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryContractInfoResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) ContractsByCode(ctx context.Context, req *pb_pkg.QueryContractsByCodeRequest) (*pb_pkg.QueryContractsByCodeResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -129,15 +120,14 @@ func (is *implementedCosmwasmWasmV1) ContractsByCode(ctx context.Context, req *p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryContractsByCodeResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) PinnedCodes(ctx context.Context, req *pb_pkg.QueryPinnedCodesRequest) (*pb_pkg.QueryPinnedCodesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -149,15 +139,14 @@ func (is *implementedCosmwasmWasmV1) PinnedCodes(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryPinnedCodesResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) RawContractState(ctx context.Context, req *pb_pkg.QueryRawContractStateRequest) (*pb_pkg.QueryRawContractStateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -169,15 +158,14 @@ func (is *implementedCosmwasmWasmV1) RawContractState(ctx context.Context, req *
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryRawContractStateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) SmartContractState(ctx context.Context, req *pb_pkg.QuerySmartContractStateRequest) (*pb_pkg.QuerySmartContractStateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -189,15 +177,14 @@ func (is *implementedCosmwasmWasmV1) SmartContractState(ctx context.Context, req
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QuerySmartContractStateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmwasmWasmV1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -209,12 +196,13 @@ func (is *implementedCosmwasmWasmV1) Params(ctx context.Context, req *pb_pkg.Que
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

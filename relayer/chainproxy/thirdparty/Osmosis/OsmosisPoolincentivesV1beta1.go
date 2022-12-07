@@ -1,4 +1,3 @@
-
 package osmosis_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedOsmosisPoolincentivesV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedOsmosisPoolincentivesV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedOsmosisPoolincentivesV1beta1
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context, req *pb_pkg.QueryDistrInfoRequest) (*pb_pkg.QueryDistrInfoResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDistrInfoResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) ExternalIncentiveGauges(ctx context.Context, req *pb_pkg.QueryExternalIncentiveGaugesRequest) (*pb_pkg.QueryExternalIncentiveGaugesResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedOsmosisPoolincentivesV1beta1) ExternalIncentiveGauges(ctx c
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryExternalIncentiveGaugesResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) GaugeIds(ctx context.Context, req *pb_pkg.QueryGaugeIdsRequest) (*pb_pkg.QueryGaugeIdsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedOsmosisPoolincentivesV1beta1) GaugeIds(ctx context.Context,
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGaugeIdsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) IncentivizedPools(ctx context.Context, req *pb_pkg.QueryIncentivizedPoolsRequest) (*pb_pkg.QueryIncentivizedPoolsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedOsmosisPoolincentivesV1beta1) IncentivizedPools(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryIncentivizedPoolsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) LockableDurations(ctx context.Context, req *pb_pkg.QueryLockableDurationsRequest) (*pb_pkg.QueryLockableDurationsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,15 +101,14 @@ func (is *implementedOsmosisPoolincentivesV1beta1) LockableDurations(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryLockableDurationsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedOsmosisPoolincentivesV1beta1) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -129,12 +120,13 @@ func (is *implementedOsmosisPoolincentivesV1beta1) Params(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

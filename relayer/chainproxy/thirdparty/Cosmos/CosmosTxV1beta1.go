@@ -1,4 +1,3 @@
-
 package cosmos_thirdparty
 
 import (
@@ -7,7 +6,6 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedCosmosTxV1beta1 struct {
@@ -16,8 +14,6 @@ type implementedCosmosTxV1beta1 struct {
 }
 
 // this line is used by grpc_scaffolder #implementedCosmosTxV1beta1
-
-
 
 func (is *implementedCosmosTxV1beta1) BroadcastTx(ctx context.Context, req *pb_pkg.BroadcastTxRequest) (*pb_pkg.BroadcastTxResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -29,15 +25,14 @@ func (is *implementedCosmosTxV1beta1) BroadcastTx(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.BroadcastTxResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosTxV1beta1) GetBlockWithTxs(ctx context.Context, req *pb_pkg.GetBlockWithTxsRequest) (*pb_pkg.GetBlockWithTxsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -49,15 +44,14 @@ func (is *implementedCosmosTxV1beta1) GetBlockWithTxs(ctx context.Context, req *
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetBlockWithTxsResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosTxV1beta1) GetTx(ctx context.Context, req *pb_pkg.GetTxRequest) (*pb_pkg.GetTxResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -69,15 +63,14 @@ func (is *implementedCosmosTxV1beta1) GetTx(ctx context.Context, req *pb_pkg.Get
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetTxResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosTxV1beta1) GetTxsEvent(ctx context.Context, req *pb_pkg.GetTxsEventRequest) (*pb_pkg.GetTxsEventResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -89,15 +82,14 @@ func (is *implementedCosmosTxV1beta1) GetTxsEvent(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetTxsEventResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
-
-
 
 func (is *implementedCosmosTxV1beta1) Simulate(ctx context.Context, req *pb_pkg.SimulateRequest) (*pb_pkg.SimulateResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
@@ -109,12 +101,13 @@ func (is *implementedCosmosTxV1beta1) Simulate(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.SimulateResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
 // this line is used by grpc_scaffolder #Method
 
 // this line is used by grpc_scaffolder #Methods

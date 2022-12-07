@@ -6,7 +6,6 @@ import (
 
 	tm "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
 	"github.com/lavanet/lava/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 type implementedQueryServer struct {
@@ -24,7 +23,7 @@ func (qs *implementedQueryServer) GetNodeInfo(ctx context.Context, req *tm.GetNo
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetNodeInfoResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -40,7 +39,7 @@ func (qs *implementedQueryServer) GetSyncing(ctx context.Context, req *tm.GetSyn
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetSyncingResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -56,7 +55,7 @@ func (qs *implementedQueryServer) GetLatestBlock(ctx context.Context, req *tm.Ge
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetLatestBlockResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -72,7 +71,7 @@ func (qs *implementedQueryServer) GetBlockByHeight(ctx context.Context, req *tm.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetBlockByHeightResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -88,7 +87,7 @@ func (qs *implementedQueryServer) GetLatestValidatorSet(ctx context.Context, req
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetLatestValidatorSetResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -104,7 +103,7 @@ func (qs *implementedQueryServer) GetValidatorSetByHeight(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.GetValidatorSetByHeightResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -120,7 +119,7 @@ func (qs *implementedQueryServer) ABCIQuery(ctx context.Context, req *tm.ABCIQue
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &tm.ABCIQueryResponse{}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

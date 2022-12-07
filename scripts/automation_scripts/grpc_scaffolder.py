@@ -138,7 +138,7 @@ func (is *implemented###UNIQUENAME###) ###METHOD_NAME###(ctx context.Context, re
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	{"}"}
 	result := &pb_pkg.###RESPONSE###{"{}"}
-	err = proto.Unmarshal(res, result)
+	err = json.Unmarshal(res, result)
 	if err != nil {"{"}
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	{"}"}
