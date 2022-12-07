@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
+	pb_pkg "cosmossdk.io/api/cosmos/upgrade/v1beta1"
 	"github.com/lavanet/lava/utils"
 )
 

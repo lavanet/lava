@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
+	pb_pkg "cosmossdk.io/api/cosmos/bank/v1beta1"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -148,16 +148,16 @@ func (is *implementedCosmosBankV1beta1) TotalSupply(ctx context.Context, req *pb
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedCosmosBankV1beta1) BaseDenom(ctx context.Context, req *pb_pkg.QueryBaseDenomRequest) (*pb_pkg.QueryBaseDenomResponse, error) {
+func (is *implementedCosmosBankV1beta1) DenomOwners(ctx context.Context, req *pb_pkg.QueryDenomOwnersRequest) (*pb_pkg.QueryDenomOwnersResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.BaseDenom", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.DenomOwners", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
-	result := &pb_pkg.QueryBaseDenomResponse{}
+	result := &pb_pkg.QueryDenomOwnersResponse{}
 	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
@@ -165,18 +165,18 @@ func (is *implementedCosmosBankV1beta1) BaseDenom(ctx context.Context, req *pb_p
 	return result, nil
 }
 
-// this line is used by grpc_scaffolder #Method
+// // this line is used by grpc_scaffolder #Method
 
-func (is *implementedCosmosBankV1beta1) SupplyOfWithoutOffset(ctx context.Context, req *pb_pkg.QuerySupplyOfWithoutOffsetRequest) (*pb_pkg.QuerySupplyOfWithoutOffsetResponse, error) {
+func (is *implementedCosmosBankV1beta1) SendEnabled(ctx context.Context, req *pb_pkg.QuerySendEnabledRequest) (*pb_pkg.QuerySendEnabledResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SupplyOfWithoutOffset", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SendEnabled", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
-	result := &pb_pkg.QuerySupplyOfWithoutOffsetResponse{}
+	result := &pb_pkg.QuerySendEnabledResponse{}
 	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
@@ -184,24 +184,61 @@ func (is *implementedCosmosBankV1beta1) SupplyOfWithoutOffset(ctx context.Contex
 	return result, nil
 }
 
-// this line is used by grpc_scaffolder #Method
+// // this line is used by grpc_scaffolder #Method
 
-func (is *implementedCosmosBankV1beta1) TotalSupplyWithoutOffset(ctx context.Context, req *pb_pkg.QueryTotalSupplyWithoutOffsetRequest) (*pb_pkg.QueryTotalSupplyWithoutOffsetResponse, error) {
+func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg.QueryBalanceRequest) (*pb_pkg.QueryBalanceResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.TotalSupplyWithoutOffset", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.Balance", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
-	result := &pb_pkg.QueryTotalSupplyWithoutOffsetResponse{}
+	result := &pb_pkg.QueryBalanceResponse{}
 	err = json.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
 	return result, nil
 }
+
+// // this line is used by grpc_scaffolder #Method
+// func (is *implementedCosmosBankV1beta1) SupplyOfWithoutOffset(ctx context.Context, req *pb_pkg.QuerySupplyOfWithoutOffsetRequest) (*pb_pkg.QuerySupplyOfWithoutOffsetResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SupplyOfWithoutOffset", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.QuerySupplyOfWithoutOffsetResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
+
+// // this line is used by grpc_scaffolder #Method
+
+// func (is *implementedCosmosBankV1beta1) TotalSupplyWithoutOffset(ctx context.Context, req *pb_pkg.QueryTotalSupplyWithoutOffsetRequest) (*pb_pkg.QueryTotalSupplyWithoutOffsetResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.TotalSupplyWithoutOffset", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.QueryTotalSupplyWithoutOffsetResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 

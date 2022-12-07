@@ -6,6 +6,7 @@ import (
 
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
+	pb_pkg "github.com/lavanet/lava/x/spec/types"
 )
 
 type implementedLavanetLavaSpec struct {
@@ -14,25 +15,6 @@ type implementedLavanetLavaSpec struct {
 }
 
 // this line is used by grpc_scaffolder #implementedLavanetLavaSpec
-
-func (is *implementedLavanetLavaSpec) Chain(ctx context.Context, req *pb_pkg.QueryChainRequest) (*pb_pkg.QueryChainResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "lavanet.lava.spec.Query.Chain", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.QueryChainResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
-
-// this line is used by grpc_scaffolder #Method
 
 func (is *implementedLavanetLavaSpec) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)

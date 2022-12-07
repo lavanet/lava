@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
+	pb_pkg "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 type implementedLavanetLavaEpochstorage struct {
@@ -14,6 +14,23 @@ type implementedLavanetLavaEpochstorage struct {
 }
 
 // this line is used by grpc_scaffolder #implementedLavanetLavaEpochstorage
+
+func (is *implementedLavanetLavaEpochstorage) Params(ctx context.Context, req *pb_pkg.QueryParamsRequest) (*pb_pkg.QueryParamsResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "lavanet.lava.epochstorage.Query.Params", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryParamsResponse{}
+	err = json.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
 
 func (is *implementedLavanetLavaEpochstorage) EpochDetails(ctx context.Context, req *pb_pkg.QueryGetEpochDetailsRequest) (*pb_pkg.QueryGetEpochDetailsResponse, error) {
 	reqMarshaled, err := json.Marshal(req)
