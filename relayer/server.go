@@ -657,8 +657,8 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		relaySession.Proof = request
 		relaySession.Lock.Unlock()
 	}
-	if userSessions == nil || relaySession == nil {
-		return nil, nil, nil, nil, utils.LavaFormatError("relay Init has a UserSession Or RelaySession nil", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions), "relaySession": fmt.Sprintf("%+v", relaySession)})
+	if userSessions == nil {
+		return nil, nil, nil, nil, utils.LavaFormatError("relay Init has a nil UserSession", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions)})
 	}
 	return userAddr, nodeMsg, userSessions, relaySession, nil
 }
