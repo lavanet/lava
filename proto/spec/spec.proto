@@ -13,10 +13,10 @@ message Spec {
   string name = 2; 
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
   bool enabled = 4;
-  uint32 reliabilityThreshold = 5;
-  bool comparesHashes = 6;
-  uint32 finalizationCriteria = 7;
+  uint32 reliability_threshold = 5;
+  bool compares_hashes = 6;
+  uint32 finalization_criteria = 7;
   uint32 saved_blocks = 8;
-  int64 averageBlockTime =9;
-  int64 allowedBlockLagForQosSync = 10;
+  int64 average_block_time =9;
+  int64 allowed_block_lag_for_qos_sync = 10;
 }

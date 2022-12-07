@@ -8,10 +8,10 @@ import "gogoproto/gogo.proto";
 
 message ServiceApi {
   string name = 1; 
-  BlockParser blockParsing = 2 [(gogoproto.nullable) = false];
-  uint64 computeUnits = 3; 
+  BlockParser block_parsing = 2 [(gogoproto.nullable) = false];
+  uint64 compute_units = 3; 
   bool enabled = 4; 
-  repeated ApiInterface apiInterfaces = 5 [(gogoproto.nullable) = false]; 
+  repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
   SpecCategory category = 6;
   Parsing parsing = 7 [(gogoproto.nullable) = false];
 }
@@ -24,12 +24,12 @@ message Parsing {
 message ApiInterface {
   string interface = 1;
   string type = 2;
-  uint64 extraComputeUnits = 3; 
+  uint64 extra_compute_units = 3; 
 }
 
 message BlockParser {
-  repeated string parserArg = 1;
-  PARSER_FUNC parserFunc = 2;
+  repeated string parser_arg = 1;
+  PARSER_FUNC parser_func = 2;
 }
 
 enum PARSER_FUNC{

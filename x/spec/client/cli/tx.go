@@ -79,7 +79,7 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 			}
 
 			from := clientCtx.GetFromAddress()
-			content := types.NewSpecAddProposal(proposal.Title, proposal.Description, proposal.ToSpecs())
+			content := &proposal.Proposal
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
@@ -131,7 +131,7 @@ $ %s tx gov spec-proposal spec-modify <path/to/proposal.json> --from=<key_or_add
 			}
 
 			from := clientCtx.GetFromAddress()
-			content := types.NewSpecModifyProposal(proposal.Title, proposal.Description, proposal.ToSpecs())
+			content := &proposal.Proposal
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err

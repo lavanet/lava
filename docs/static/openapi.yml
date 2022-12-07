@@ -19580,7 +19580,9 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash (in hex format) of the denomination trace information.
+          description: >-
+            hash (in hex format) or denom (full denom with ibc prefix) of the
+            denomination trace information.
           in: path
           required: true
           type: string
@@ -30046,6 +30048,7 @@ paths:
             type: object
             properties:
               params:
+                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   minStakeProvider:
@@ -30077,7 +30080,6 @@ paths:
                     type: string
                   QoSWeight:
                     type: string
-                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30853,14 +30855,14 @@ paths:
                         properties:
                           name:
                             type: string
-                          blockParsing:
+                          block_parsing:
                             type: object
                             properties:
-                              parserArg:
+                              parser_arg:
                                 type: array
                                 items:
                                   type: string
-                              parserFunc:
+                              parser_func:
                                 type: string
                                 enum:
                                   - EMPTY
@@ -30879,12 +30881,12 @@ paths:
                                    - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                    - DEFAULT: means parameters are non related to block, and should fetch latest block
-                          computeUnits:
+                          compute_units:
                             type: string
                             format: uint64
                           enabled:
                             type: boolean
-                          apiInterfaces:
+                          api_interfaces:
                             type: array
                             items:
                               type: object
@@ -30893,7 +30895,7 @@ paths:
                                   type: string
                                 type:
                                   type: string
-                                extraComputeUnits:
+                                extra_compute_units:
                                   type: string
                                   format: uint64
                           category:
@@ -30918,11 +30920,11 @@ paths:
                               result_parsing:
                                 type: object
                                 properties:
-                                  parserArg:
+                                  parser_arg:
                                     type: array
                                     items:
                                       type: string
-                                  parserFunc:
+                                  parser_func:
                                     type: string
                                     enum:
                                       - EMPTY
@@ -30943,21 +30945,21 @@ paths:
                                        - DEFAULT: means parameters are non related to block, and should fetch latest block
                     enabled:
                       type: boolean
-                    reliabilityThreshold:
+                    reliability_threshold:
                       type: integer
                       format: int64
-                    comparesHashes:
+                    compares_hashes:
                       type: boolean
-                    finalizationCriteria:
+                    finalization_criteria:
                       type: integer
                       format: int64
                     saved_blocks:
                       type: integer
                       format: int64
-                    averageBlockTime:
+                    average_block_time:
                       type: string
                       format: int64
-                    allowedBlockLagForQosSync:
+                    allowed_block_lag_for_qos_sync:
                       type: string
                       format: int64
               pagination:
@@ -31088,14 +31090,14 @@ paths:
                       properties:
                         name:
                           type: string
-                        blockParsing:
+                        block_parsing:
                           type: object
                           properties:
-                            parserArg:
+                            parser_arg:
                               type: array
                               items:
                                 type: string
-                            parserFunc:
+                            parser_func:
                               type: string
                               enum:
                                 - EMPTY
@@ -31113,12 +31115,12 @@ paths:
                                  - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                  - DEFAULT: means parameters are non related to block, and should fetch latest block
-                        computeUnits:
+                        compute_units:
                           type: string
                           format: uint64
                         enabled:
                           type: boolean
-                        apiInterfaces:
+                        api_interfaces:
                           type: array
                           items:
                             type: object
@@ -31127,7 +31129,7 @@ paths:
                                 type: string
                               type:
                                 type: string
-                              extraComputeUnits:
+                              extra_compute_units:
                                 type: string
                                 format: uint64
                         category:
@@ -31152,11 +31154,11 @@ paths:
                             result_parsing:
                               type: object
                               properties:
-                                parserArg:
+                                parser_arg:
                                   type: array
                                   items:
                                     type: string
-                                parserFunc:
+                                parser_func:
                                   type: string
                                   enum:
                                     - EMPTY
@@ -31177,21 +31179,21 @@ paths:
                                      - DEFAULT: means parameters are non related to block, and should fetch latest block
                   enabled:
                     type: boolean
-                  reliabilityThreshold:
+                  reliability_threshold:
                     type: integer
                     format: int64
-                  comparesHashes:
+                  compares_hashes:
                     type: boolean
-                  finalizationCriteria:
+                  finalization_criteria:
                     type: integer
                     format: int64
                   saved_blocks:
                     type: integer
                     format: int64
-                  averageBlockTime:
+                  average_block_time:
                     type: string
                     format: int64
-                  allowedBlockLagForQosSync:
+                  allowed_block_lag_for_qos_sync:
                     type: string
                     format: int64
         default:
@@ -47597,14 +47599,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47644,14 +47646,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47662,14 +47664,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47680,14 +47682,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -49018,14 +49020,14 @@ definitions:
   ibc.core.channel.v1.ResponseResultType:
     type: string
     enum:
-      - RESPONSE_RESULT_UNSPECIFIED
-      - RESPONSE_RESULT_NOOP
-      - RESPONSE_RESULT_SUCCESS
-    default: RESPONSE_RESULT_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_NOOP
+      - RESPONSE_RESULT_TYPE_SUCCESS
+    default: RESPONSE_RESULT_TYPE_UNSPECIFIED
     description: |-
-      - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-       - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-       - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+       - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+       - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
     title: >-
       ResponseResultType defines the possible outcomes of the execution of a
       message
@@ -53197,6 +53199,7 @@ definitions:
     type: object
     properties:
       params:
+        description: params holds all the parameters of this module.
         type: object
         properties:
           minStakeProvider:
@@ -53228,7 +53231,6 @@ definitions:
             type: string
           QoSWeight:
             type: string
-        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object
@@ -53353,17 +53355,17 @@ definitions:
         type: string
       type:
         type: string
-      extraComputeUnits:
+      extra_compute_units:
         type: string
         format: uint64
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
-      parserArg:
+      parser_arg:
         type: array
         items:
           type: string
-      parserFunc:
+      parser_func:
         type: string
         enum:
           - EMPTY
@@ -53418,11 +53420,11 @@ definitions:
       result_parsing:
         type: object
         properties:
-          parserArg:
+          parser_arg:
             type: array
             items:
               type: string
-          parserFunc:
+          parser_func:
             type: string
             enum:
               - EMPTY
@@ -53459,14 +53461,14 @@ definitions:
                 properties:
                   name:
                     type: string
-                  blockParsing:
+                  block_parsing:
                     type: object
                     properties:
-                      parserArg:
+                      parser_arg:
                         type: array
                         items:
                           type: string
-                      parserFunc:
+                      parser_func:
                         type: string
                         enum:
                           - EMPTY
@@ -53484,12 +53486,12 @@ definitions:
                            - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                            - DEFAULT: means parameters are non related to block, and should fetch latest block
-                  computeUnits:
+                  compute_units:
                     type: string
                     format: uint64
                   enabled:
                     type: boolean
-                  apiInterfaces:
+                  api_interfaces:
                     type: array
                     items:
                       type: object
@@ -53498,7 +53500,7 @@ definitions:
                           type: string
                         type:
                           type: string
-                        extraComputeUnits:
+                        extra_compute_units:
                           type: string
                           format: uint64
                   category:
@@ -53523,11 +53525,11 @@ definitions:
                       result_parsing:
                         type: object
                         properties:
-                          parserArg:
+                          parser_arg:
                             type: array
                             items:
                               type: string
-                          parserFunc:
+                          parser_func:
                             type: string
                             enum:
                               - EMPTY
@@ -53547,21 +53549,21 @@ definitions:
                                - DEFAULT: means parameters are non related to block, and should fetch latest block
             enabled:
               type: boolean
-            reliabilityThreshold:
+            reliability_threshold:
               type: integer
               format: int64
-            comparesHashes:
+            compares_hashes:
               type: boolean
-            finalizationCriteria:
+            finalization_criteria:
               type: integer
               format: int64
             saved_blocks:
               type: integer
               format: int64
-            averageBlockTime:
+            average_block_time:
               type: string
               format: int64
-            allowedBlockLagForQosSync:
+            allowed_block_lag_for_qos_sync:
               type: string
               format: int64
       pagination:
@@ -53606,14 +53608,14 @@ definitions:
               properties:
                 name:
                   type: string
-                blockParsing:
+                block_parsing:
                   type: object
                   properties:
-                    parserArg:
+                    parser_arg:
                       type: array
                       items:
                         type: string
-                    parserFunc:
+                    parser_func:
                       type: string
                       enum:
                         - EMPTY
@@ -53631,12 +53633,12 @@ definitions:
                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
-                computeUnits:
+                compute_units:
                   type: string
                   format: uint64
                 enabled:
                   type: boolean
-                apiInterfaces:
+                api_interfaces:
                   type: array
                   items:
                     type: object
@@ -53645,7 +53647,7 @@ definitions:
                         type: string
                       type:
                         type: string
-                      extraComputeUnits:
+                      extra_compute_units:
                         type: string
                         format: uint64
                 category:
@@ -53670,11 +53672,11 @@ definitions:
                     result_parsing:
                       type: object
                       properties:
-                        parserArg:
+                        parser_arg:
                           type: array
                           items:
                             type: string
-                        parserFunc:
+                        parser_func:
                           type: string
                           enum:
                             - EMPTY
@@ -53694,21 +53696,21 @@ definitions:
                              - DEFAULT: means parameters are non related to block, and should fetch latest block
           enabled:
             type: boolean
-          reliabilityThreshold:
+          reliability_threshold:
             type: integer
             format: int64
-          comparesHashes:
+          compares_hashes:
             type: boolean
-          finalizationCriteria:
+          finalization_criteria:
             type: integer
             format: int64
           saved_blocks:
             type: integer
             format: int64
-          averageBlockTime:
+          average_block_time:
             type: string
             format: int64
-          allowedBlockLagForQosSync:
+          allowed_block_lag_for_qos_sync:
             type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
@@ -53757,14 +53759,14 @@ definitions:
     properties:
       name:
         type: string
-      blockParsing:
+      block_parsing:
         type: object
         properties:
-          parserArg:
+          parser_arg:
             type: array
             items:
               type: string
-          parserFunc:
+          parser_func:
             type: string
             enum:
               - EMPTY
@@ -53782,12 +53784,12 @@ definitions:
                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                - DEFAULT: means parameters are non related to block, and should fetch latest block
-      computeUnits:
+      compute_units:
         type: string
         format: uint64
       enabled:
         type: boolean
-      apiInterfaces:
+      api_interfaces:
         type: array
         items:
           type: object
@@ -53796,7 +53798,7 @@ definitions:
               type: string
             type:
               type: string
-            extraComputeUnits:
+            extra_compute_units:
               type: string
               format: uint64
       category:
@@ -53821,11 +53823,11 @@ definitions:
           result_parsing:
             type: object
             properties:
-              parserArg:
+              parser_arg:
                 type: array
                 items:
                   type: string
-              parserFunc:
+              parser_func:
                 type: string
                 enum:
                   - EMPTY
@@ -53857,14 +53859,14 @@ definitions:
           properties:
             name:
               type: string
-            blockParsing:
+            block_parsing:
               type: object
               properties:
-                parserArg:
+                parser_arg:
                   type: array
                   items:
                     type: string
-                parserFunc:
+                parser_func:
                   type: string
                   enum:
                     - EMPTY
@@ -53882,12 +53884,12 @@ definitions:
                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                      - DEFAULT: means parameters are non related to block, and should fetch latest block
-            computeUnits:
+            compute_units:
               type: string
               format: uint64
             enabled:
               type: boolean
-            apiInterfaces:
+            api_interfaces:
               type: array
               items:
                 type: object
@@ -53896,7 +53898,7 @@ definitions:
                     type: string
                   type:
                     type: string
-                  extraComputeUnits:
+                  extra_compute_units:
                     type: string
                     format: uint64
             category:
@@ -53921,11 +53923,11 @@ definitions:
                 result_parsing:
                   type: object
                   properties:
-                    parserArg:
+                    parser_arg:
                       type: array
                       items:
                         type: string
-                    parserFunc:
+                    parser_func:
                       type: string
                       enum:
                         - EMPTY
@@ -53945,21 +53947,21 @@ definitions:
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
       enabled:
         type: boolean
-      reliabilityThreshold:
+      reliability_threshold:
         type: integer
         format: int64
-      comparesHashes:
+      compares_hashes:
         type: boolean
-      finalizationCriteria:
+      finalization_criteria:
         type: integer
         format: int64
       saved_blocks:
         type: integer
         format: int64
-      averageBlockTime:
+      average_block_time:
         type: string
         format: int64
-      allowedBlockLagForQosSync:
+      allowed_block_lag_for_qos_sync:
         type: string
         format: int64
   lavanet.lava.spec.SpecCategory:
