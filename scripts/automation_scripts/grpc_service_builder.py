@@ -142,7 +142,7 @@ for i in info:
   parent_path = os.path.join(result_dir,parent_name)
   child_name:str = info[i]['child_dir']
   child_path = os.path.join(parent_path,child_name+".go")
-  childrens[i] = {"struct_name":"implemented"+child_name,
+  childrens[i] = {"struct_name":child_name,
     "package_name": parent_name.lower(),
     "child_name": child_name,
     "server_type": info[i]['type'],
