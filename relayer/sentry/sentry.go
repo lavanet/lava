@@ -1017,9 +1017,9 @@ func (s *Sentry) SendRelay(
 				if err != nil {
 					errRet := s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
 					if errRet != nil {
-						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, &map[string]string{"sendReliabilityError": err.Error()})
+						return nil, nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, &map[string]string{"sendReliabilityError": err.Error()})
 					}
-					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", errRet, &map[string]string{"Address": providerAddress, "sendReliabilityError": err.Error()})
+					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
 				}
 				err = s.consumerSessionManager.OnSessionDoneWithoutQoSChanges(singleConsumerSession)
 				return relay_rep, relay_req, err
