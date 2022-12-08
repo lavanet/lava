@@ -78,6 +78,10 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	// new staking takes effect from the next block
 	blockDeadline := uint64(ctx.BlockHeight()) + 1
 
+	if len(moniker) > 50 {
+		moniker = moniker[:50]
+	}
+
 	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
 	if entryExists {
 		//modify the entry
@@ -119,10 +123,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	if err != nil {
 		details["error"] = err.Error()
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_new_amount", details, "insufficient amount to pay for stake")
-	}
-
-	if len(moniker) > 50 {
-		moniker = moniker[:50]
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, Deadline: blockDeadline, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Vrfpk: vrfpk, Moniker: moniker}
