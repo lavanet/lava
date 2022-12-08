@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
+	pb_pkg "github.com/osmosis-labs/osmosis/x/pool-incentives/types"
 )
 
 type implementedOsmosisPoolincentivesV1beta1 struct {
@@ -34,22 +34,22 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedOsmosisPoolincentivesV1beta1) ExternalIncentiveGauges(ctx context.Context, req *pb_pkg.QueryExternalIncentiveGaugesRequest) (*pb_pkg.QueryExternalIncentiveGaugesResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.ExternalIncentiveGauges", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.QueryExternalIncentiveGaugesResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
+// func (is *implementedOsmosisPoolincentivesV1beta1) ExternalIncentiveGauges(ctx context.Context, req *pb_pkg.QueryExternalIncentiveGaugesRequest) (*pb_pkg.QueryExternalIncentiveGaugesResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.ExternalIncentiveGauges", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.QueryExternalIncentiveGaugesResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 

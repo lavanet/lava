@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
+	pb_pkg "github.com/osmosis-labs/osmosis/v13/x/epochs/types"
+
 	"github.com/lavanet/lava/utils"
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
+	pb_pkg "github.com/osmosis-labs/osmosis/x/mint/types"
 )
 
 type implementedOsmosisMintV1beta1 struct {

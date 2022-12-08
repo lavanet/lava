@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
+	pb_pkg "github.com/osmosis-labs/osmosis/v13/x/lockup/types"
 )
 
 type implementedOsmosisLockup struct {
@@ -34,22 +34,22 @@ func (is *implementedOsmosisLockup) AccountLockedCoins(ctx context.Context, req 
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, req *pb_pkg.AccountLockedDurationRequest) (*pb_pkg.AccountLockedDurationResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedDuration", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.AccountLockedDurationResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
+// func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, req *pb_pkg.AccountLockedDurationRequest) (*pb_pkg.AccountLockedDurationResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedDuration", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.AccountLockedDurationResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 
@@ -243,22 +243,22 @@ func (is *implementedOsmosisLockup) LockedByID(ctx context.Context, req *pb_pkg.
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg.LockedDenomRequest) (*pb_pkg.LockedDenomResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.LockedDenom", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.LockedDenomResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
+// func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg.LockedDenomRequest) (*pb_pkg.LockedDenomResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "osmosis.lockup.Query.LockedDenom", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.LockedDenomResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 
@@ -300,22 +300,22 @@ func (is *implementedOsmosisLockup) ModuleLockedAmount(ctx context.Context, req 
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Context, req *pb_pkg.SyntheticLockupsByLockupIDRequest) (*pb_pkg.SyntheticLockupsByLockupIDResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.SyntheticLockupsByLockupID", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.SyntheticLockupsByLockupIDResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
+// func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Context, req *pb_pkg.SyntheticLockupsByLockupIDRequest) (*pb_pkg.SyntheticLockupsByLockupIDResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "osmosis.lockup.Query.SyntheticLockupsByLockupID", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.SyntheticLockupsByLockupIDResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 
