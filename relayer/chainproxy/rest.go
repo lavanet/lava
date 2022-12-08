@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -37,6 +38,7 @@ type RestChainProxy struct {
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
+	cache      *performance.Cache
 }
 
 func (r *RestMessage) GetMsg() interface{} {
@@ -86,6 +88,13 @@ func (m RestMessage) GetResult() json.RawMessage {
 
 func (m RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
+}
+
+func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *RestChainProxy) GetCache() *performance.Cache {
+	return cp.cache
 }
 
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
@@ -202,14 +211,15 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-
-		log.Println("in <<< ", path)
+		dappID := ExtractDappIDFromFiberContext(c)
+		//TODO: fix msgSeed and print it here
+		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())
-		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, "", nil)
@@ -228,12 +238,17 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		query := "?" + string(URI.QueryString())
 		path := "/" + c.Params("*")
-		log.Println("in <<< ", path)
-		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet)
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
+		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, "", nil)

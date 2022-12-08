@@ -13,9 +13,9 @@ go run ./testutil/e2e/proxy/. $APTOS_REST  -p $MOCK_PORT -cache -id aptos &
 
 echo " ::: RUNNING APTOS PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2281 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer1 &
-lavad server 127.0.0.1 2282 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer2 &
-lavad server 127.0.0.1 2283 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer3 &
-lavad portal_server 127.0.0.1 3336 APT1 rest --from user4
+lavad server 127.0.0.1 2281 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2282 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2283 http://0.0.0.0:$MOCK_PORT/aptos/http APT1 rest --from servicer3 --log_level debug &
+lavad portal_server 127.0.0.1 3336 APT1 rest --from user4 --log_level debug
 
 echo " ::: APTOS PROVIDERS DONE! :::"

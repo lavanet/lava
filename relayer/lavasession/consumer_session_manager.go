@@ -189,7 +189,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	for index := 0; index < validAddressesLength; index++ {
 		if _, ok := ignoredProvidersList[csm.validAddresses[index]]; !ok { // not ignored -> yes valid
 			if validAddressesCounter == validAddressIndex {
-				return csm.validAddresses[validAddressIndex], nil
+				return csm.validAddresses[index], nil
 			}
 			validAddressesCounter += 1
 		}
@@ -202,6 +202,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	defer csm.lock.RUnlock()
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
+		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
 		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
@@ -325,6 +326,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
 	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressesEpoch != csm.atomicReadCurrentEpoch() {
+		utils.LavaFormatDebug("Getting session ignores banned addresses due to epoch mismatch", &map[string]string{"bannedAddresses": fmt.Sprintf("%+v", bannedAddresses), "bannedAddressesEpoch": strconv.FormatUint(bannedAddressesEpoch, 10), "currentEpoch": strconv.FormatUint(csm.atomicReadCurrentEpoch(), 10)})
 		return csm.GetSession(ctx, cuNeeded, nil)
 	} else {
 		return csm.GetSession(ctx, cuNeeded, bannedAddresses)

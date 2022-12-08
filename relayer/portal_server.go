@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -73,7 +74,20 @@ func PortalServer(
 
 	utils.LavaFormatInfo("Client pubkey: "+fmt.Sprintf("%s", clientKey.GetPubKey().Address()), nil)
 
-	//
-	//
+	cacheAddr, err := flagSet.GetString(performance.CacheFlagName)
+	if err != nil {
+		utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", flagSet)})
+	} else {
+		if cacheAddr != "" {
+			cache, err := performance.InitCache(ctx, cacheAddr)
+			if err != nil {
+				utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+			} else {
+				utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+				chainProxy.SetCache(cache)
+			}
+		}
+	}
+
 	chainProxy.PortalStart(ctx, privKey, listenAddr)
 }
