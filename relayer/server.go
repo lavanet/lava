@@ -4,9 +4,14 @@ import (
 	"bytes"
 	context "context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -1184,6 +1189,20 @@ func Server(
 		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr, "ChainID": ChainID})
 	}
 	s := grpc.NewServer()
+
+	wrappedServer := grpcweb.WrapServer(s)
+	handler := func(resp http.ResponseWriter, req *http.Request) {
+		// Set CORS headers
+		resp.Header().Set("Access-Control-Allow-Origin", "*")
+		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+
+		wrappedServer.ServeHTTP(resp, req)
+	}
+
+	httpServer := http.Server{
+		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
+	}
+
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -1191,8 +1210,13 @@ func Server(
 		case <-signalChan:
 			utils.LavaFormatInfo("Provider Server signalChan", nil)
 		}
-		cancel()
-		s.Stop()
+
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownRelease()
+		
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			utils.LavaFormatFatal("Provider failed to shutdown", err, &map[string]string{})
+		}
 	}()
 
 	Server := &relayServer{}
@@ -1200,7 +1224,7 @@ func Server(
 	pairingtypes.RegisterRelayerServer(s, Server)
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
-	if err := s.Serve(lis); err != nil {
+	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
 	}
 
