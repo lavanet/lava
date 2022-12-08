@@ -71,3 +71,53 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 	}
 
 }
+
+func TestModifyStakeProviderWithMoniker(t *testing.T) {
+	// Create teststruct ts
+	ts := &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
+	// Create a mock spec
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// Advance epoch
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	moniker := "exampleMoniker"
+
+	// Stake provider with moniker
+	sk, address := sigs.GenerateFloatingKey()
+	ts.providers = append(ts.providers, &account{secretKey: sk, address: address})
+	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
+	require.Nil(t, err)
+	endpoints := []epochstoragetypes.Endpoint{}
+	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: ts.spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
+	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake/2)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
+	require.Nil(t, err)
+
+	// Advance epoch to apply the stake
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// Get the stake entry and check the provider is staked
+	stakeEntry, foundProvider, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.GetIndex(), address)
+	require.True(t, foundProvider)
+	require.Equal(t, moniker, stakeEntry.Moniker)
+
+	//modify moniker
+	moniker = "anotherExampleMoniker"
+	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
+	require.Nil(t, err)
+
+	// Advance epoch to apply the stake
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+
+	// Get the stake entry and check the provider is staked
+	stakeEntry, foundProvider, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ProviderKey, ts.spec.GetIndex(), address)
+	require.True(t, foundProvider)
+
+	require.Equal(t, moniker, stakeEntry.Moniker)
+}
