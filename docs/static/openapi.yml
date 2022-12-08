@@ -29513,9 +29513,6 @@ paths:
                     items:
                       type: string
                       format: uint64
-                  averageBlockTime:
-                    type: string
-                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -30311,7 +30308,7 @@ paths:
           type: string
       tags:
         - Query
-  '/lavanet/lava/pairing/get_pairing/{chainID}/{client}/{blockHeight}':
+  '/lavanet/lava/pairing/get_pairing/{chainID}/{client}':
     get:
       summary: Queries a list of GetPairing items.
       operationId: LavanetLavaPairingGetPairing
@@ -30403,11 +30400,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: blockHeight
-          in: path
-          required: true
-          type: string
-          format: int64
       tags:
         - Query
   /lavanet/lava/pairing/params:
@@ -53081,9 +53073,6 @@ definitions:
         items:
           type: string
           format: uint64
-      averageBlockTime:
-        type: string
-        format: uint64
   lavanet.lava.epochstorage.FixatedParams:
     type: object
     properties:
@@ -53250,9 +53239,6 @@ definitions:
             items:
               type: string
               format: uint64
-          averageBlockTime:
-            type: string
-            format: uint64
   lavanet.lava.epochstorage.QueryGetFixatedParamsResponse:
     type: object
     properties:
