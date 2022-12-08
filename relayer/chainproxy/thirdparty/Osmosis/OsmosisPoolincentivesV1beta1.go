@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/pool-incentives/types"
 	"github.com/lavanet/lava/utils"
-	pb_pkg "github.com/osmosis-labs/osmosis/x/pool-incentives/types"
 )
 
 type implementedOsmosisPoolincentivesV1beta1 struct {

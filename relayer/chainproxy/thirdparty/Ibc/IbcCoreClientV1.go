@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	// add protobuf here as pb_pkg
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	"github.com/lavanet/lava/utils"
 )
 

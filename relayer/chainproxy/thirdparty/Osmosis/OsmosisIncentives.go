@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/incentives/types"
 	"github.com/lavanet/lava/utils"
-	pb_pkg "github.com/osmosis-labs/osmosis/v13/x/incentives/types"
 )
 
 type implementedOsmosisIncentives struct {
@@ -34,22 +34,22 @@ func (is *implementedOsmosisIncentives) ActiveGauges(ctx context.Context, req *p
 
 // this line is used by grpc_scaffolder #Method
 
-// func (is *implementedOsmosisIncentives) ActiveGaugesPerDenom(ctx context.Context, req *pb_pkg.ActiveGaugesPerDenomRequest) (*pb_pkg.ActiveGaugesPerDenomResponse, error) {
-// 	reqMarshaled, err := json.Marshal(req)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-// 	}
-// 	res, err := is.cb(ctx, "osmosis.incentives.Query.ActiveGaugesPerDenom", reqMarshaled)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-// 	}
-// 	result := &pb_pkg.ActiveGaugesPerDenomResponse{}
-// 	err = json.Unmarshal(res, result)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-// 	}
-// 	return result, nil
-// }
+func (is *implementedOsmosisIncentives) ActiveGaugesPerDenom(ctx context.Context, req *pb_pkg.ActiveGaugesPerDenomRequest) (*pb_pkg.ActiveGaugesPerDenomResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.incentives.Query.ActiveGaugesPerDenom", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.ActiveGaugesPerDenomResponse{}
+	err = json.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
 
 // this line is used by grpc_scaffolder #Method
 
@@ -91,22 +91,22 @@ func (is *implementedOsmosisIncentives) LockableDurations(ctx context.Context, r
 
 // this line is used by grpc_scaffolder #Method
 
-func (is *implementedOsmosisIncentives) ModuleDistributedCoins(ctx context.Context, req *pb_pkg.ModuleDistributedCoinsRequest) (*pb_pkg.ModuleDistributedCoinsResponse, error) {
-	reqMarshaled, err := json.Marshal(req)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.ModuleDistributedCoins", reqMarshaled)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-	}
-	result := &pb_pkg.ModuleDistributedCoinsResponse{}
-	err = json.Unmarshal(res, result)
-	if err != nil {
-		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-	}
-	return result, nil
-}
+// func (is *implementedOsmosisIncentives) ModuleDistributedCoins(ctx context.Context, req *pb_pkg.ModuleDistributedCoinsRequest) (*pb_pkg.ModuleDistributedCoinsResponse, error) {
+// 	reqMarshaled, err := json.Marshal(req)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+// 	}
+// 	res, err := is.cb(ctx, "osmosis.incentives.Query.ModuleDistributedCoins", reqMarshaled)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+// 	}
+// 	result := &pb_pkg.ModuleDistributedCoinsResponse{}
+// 	err = json.Unmarshal(res, result)
+// 	if err != nil {
+// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+// 	}
+// 	return result, nil
+// }
 
 // this line is used by grpc_scaffolder #Method
 
@@ -167,22 +167,22 @@ func (is *implementedOsmosisIncentives) UpcomingGauges(ctx context.Context, req 
 
 // this line is used by grpc_scaffolder #Method
 
-// func (is *implementedOsmosisIncentives) UpcomingGaugesPerDenom(ctx context.Context, req *pb_pkg.UpcomingGaugesPerDenomRequest) (*pb_pkg.UpcomingGaugesPerDenomResponse, error) {
-// 	reqMarshaled, err := json.Marshal(req)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-// 	}
-// 	res, err := is.cb(ctx, "osmosis.incentives.Query.UpcomingGaugesPerDenom", reqMarshaled)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-// 	}
-// 	result := &pb_pkg.UpcomingGaugesPerDenomResponse{}
-// 	err = json.Unmarshal(res, result)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-// 	}
-// 	return result, nil
-// }
+func (is *implementedOsmosisIncentives) UpcomingGaugesPerDenom(ctx context.Context, req *pb_pkg.UpcomingGaugesPerDenomRequest) (*pb_pkg.UpcomingGaugesPerDenomResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.incentives.Query.UpcomingGaugesPerDenom", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.UpcomingGaugesPerDenomResponse{}
+	err = json.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
 
 // this line is used by grpc_scaffolder #Method
 

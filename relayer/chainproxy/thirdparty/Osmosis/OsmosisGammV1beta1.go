@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/gamm/types"
 	"github.com/lavanet/lava/utils"
-	pb_pkg "github.com/osmosis-labs/osmosis/v13/x/gamm/types"
 )
 
 type implementedOsmosisGammV1beta1 struct {
@@ -91,22 +91,22 @@ func (is *implementedOsmosisGammV1beta1) PoolParams(ctx context.Context, req *pb
 
 // this line is used by grpc_scaffolder #Method
 
-// func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_pkg.QueryPoolTypeRequest) (*pb_pkg.QueryPoolTypeResponse, error) {
-// 	reqMarshaled, err := json.Marshal(req)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-// 	}
-// 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolType", reqMarshaled)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-// 	}
-// 	result := &pb_pkg.QueryPoolTypeResponse{}
-// 	err = json.Unmarshal(res, result)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-// 	}
-// 	return result, nil
-// }
+func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_pkg.QueryPoolTypeRequest) (*pb_pkg.QueryPoolTypeResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolType", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryPoolTypeResponse{}
+	err = json.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
 
 // this line is used by grpc_scaffolder #Method
 
@@ -148,22 +148,22 @@ func (is *implementedOsmosisGammV1beta1) TotalLiquidity(ctx context.Context, req
 
 // this line is used by grpc_scaffolder #Method
 
-// func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context, req *pb_pkg.QueryTotalPoolLiquidityRequest) (*pb_pkg.QueryTotalPoolLiquidityResponse, error) {
-// 	reqMarshaled, err := json.Marshal(req)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
-// 	}
-// 	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity", reqMarshaled)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
-// 	}
-// 	result := &pb_pkg.QueryTotalPoolLiquidityResponse{}
-// 	err = json.Unmarshal(res, result)
-// 	if err != nil {
-// 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
-// 	}
-// 	return result, nil
-// }
+func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context, req *pb_pkg.QueryTotalPoolLiquidityRequest) (*pb_pkg.QueryTotalPoolLiquidityResponse, error) {
+	reqMarshaled, err := json.Marshal(req)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
+	}
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity", reqMarshaled)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
+	}
+	result := &pb_pkg.QueryTotalPoolLiquidityResponse{}
+	err = json.Unmarshal(res, result)
+	if err != nil {
+		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
+	}
+	return result, nil
+}
 
 // this line is used by grpc_scaffolder #Method
 

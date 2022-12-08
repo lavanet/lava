@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/mint/types"
 	"github.com/lavanet/lava/utils"
-	pb_pkg "github.com/osmosis-labs/osmosis/x/mint/types"
 )
 
 type implementedOsmosisMintV1beta1 struct {
