@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"bytes"
