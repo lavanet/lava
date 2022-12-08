@@ -3,6 +3,7 @@ package sentry
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -772,7 +773,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	return false
 }
 
-func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[int64]struct{}) {
+func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool) (indexes map[int64]bool) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
 	//TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
@@ -780,14 +781,14 @@ func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[i
 	s.specMu.RUnlock()
 
 	providersCount := uint32(s.consumerSessionManager.GetAtomicPairingAddressesLength())
-	indexes = make(map[int64]struct{}, len(vrfs))
-	for _, vrf := range vrfs {
+	indexes = make(map[int64]bool, len(vrfs))
+	for vrfIndex, vrf := range vrfs {
 		index, err := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
 		if index == -1 || err != nil {
 			continue // no reliability this time.
 		}
 		if _, ok := indexes[index]; !ok {
-			indexes[index] = struct{}{}
+			indexes[index] = uniqueIdentifiers[vrfIndex]
 		}
 	}
 	return
@@ -915,6 +916,7 @@ type DataReliabilitySession struct {
 	singleConsumerSession *lavasession.SingleConsumerSession
 	epoch                 uint64
 	providerPublicAddress string
+	uniqueIdentifier      bool
 }
 
 type DataReliabilityResult struct {
@@ -971,8 +973,9 @@ func (s *Sentry) SendRelay(
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, sessionEpoch)
 			s.VrfSkMu.Unlock()
 			// get two indexesMap for data reliability.
-			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1})
-			for idxExtract := range indexesMap { // go over each unique index and get a session.
+			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1}, []bool{false, true})
+			utils.LavaFormatDebug("DataReliability Randomized Values", &map[string]string{"vrf0": strconv.FormatUint(uint64(binary.LittleEndian.Uint32(vrfRes0)), 10), "vrf1": strconv.FormatUint(uint64(binary.LittleEndian.Uint32(vrfRes1)), 10), "decisionMap": fmt.Sprintf("%+v", indexesMap)})
+			for idxExtract, uniqueIdentifier := range indexesMap { // go over each unique index and get a session.
 				// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
 				dataReliabilityConsumerSession, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract, sessionEpoch)
 				if err != nil {
@@ -994,6 +997,7 @@ func (s *Sentry) SendRelay(
 					singleConsumerSession: dataReliabilityConsumerSession,
 					epoch:                 epoch,
 					providerPublicAddress: providerPublicAddress,
+					uniqueIdentifier:      uniqueIdentifier,
 				})
 			}
 
@@ -1032,9 +1036,9 @@ func (s *Sentry) SendRelay(
 				// apply first request and reply to dataReliabilityVerifications
 				originalDataReliabilityResult := &DataReliabilityResult{reply: reply, relayRequest: request, providerPublicAddress: providerPubAddress}
 				dataReliabilityVerifications := make([]*DataReliabilityResult, 0)
-				uniqueIdentifier := []bool{true, false} // in the future if we want more vrfs we just change this boolean slice to the idx of the dataReliabilitySessions
-				for idx, dataReliabilitySession := range dataReliabilitySessions {
-					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, uniqueIdentifier[idx])
+
+				for _, dataReliabilitySession := range dataReliabilitySessions {
+					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, dataReliabilitySession.uniqueIdentifier)
 					if err == nil && reliabilityReply != nil {
 						dataReliabilityVerifications = append(dataReliabilityVerifications,
 							&DataReliabilityResult{
