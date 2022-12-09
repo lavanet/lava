@@ -6,8 +6,8 @@ package tendermint
 import (
 	fmt "fmt"
 	_go "github.com/confio/ics23/go"
-	types "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	types1 "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
+	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/23-commitment/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"

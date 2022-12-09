@@ -45,25 +45,25 @@ func (m *ReplacePoolIncentivesProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ReplacePoolIncentivesProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_ReplacePoolIncentivesProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReplacePoolIncentivesProposal.Merge(m, src)
+	// xxx_messageInfo_ReplacePoolIncentivesProposal.Merge(m, src)
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *ReplacePoolIncentivesProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReplacePoolIncentivesProposal.DiscardUnknown(m)
+	// xxx_messageInfo_ReplacePoolIncentivesProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_ReplacePoolIncentivesProposal proto.InternalMessageInfo
@@ -90,32 +90,32 @@ func (m *UpdatePoolIncentivesProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdatePoolIncentivesProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_UpdatePoolIncentivesProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdatePoolIncentivesProposal.Merge(m, src)
+	// xxx_messageInfo_UpdatePoolIncentivesProposal.Merge(m, src)
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpdatePoolIncentivesProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdatePoolIncentivesProposal.DiscardUnknown(m)
+	// xxx_messageInfo_UpdatePoolIncentivesProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdatePoolIncentivesProposal proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
-	proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
+	// proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
+	// proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
 }
 
 func init() {

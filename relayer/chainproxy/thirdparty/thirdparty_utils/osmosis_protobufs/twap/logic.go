@@ -7,8 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/osmosis-labs/osmosis/v13/osmomath"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap/types"
 )
 
 // geometricTwapMathBase is the base used for geometric twap calculation
@@ -21,25 +20,13 @@ var (
 )
 
 func newTwapRecord(k types.AmmInterface, ctx sdk.Context, poolId uint64, denom0, denom1 string) (types.TwapRecord, error) {
-	denom0, denom1, err := types.LexicographicalOrderDenoms(denom0, denom1)
-	if err != nil {
-		return types.TwapRecord{}, err
-	}
-	previousErrorTime := time.Time{} // no previous error
-	sp0, sp1, lastErrorTime := getSpotPrices(ctx, k, poolId, denom0, denom1, previousErrorTime)
-	return types.TwapRecord{
-		PoolId:                      poolId,
-		Asset0Denom:                 denom0,
-		Asset1Denom:                 denom1,
-		Height:                      ctx.BlockHeight(),
-		Time:                        ctx.BlockTime(),
-		P0LastSpotPrice:             sp0,
-		P1LastSpotPrice:             sp1,
-		P0ArithmeticTwapAccumulator: sdk.ZeroDec(),
-		P1ArithmeticTwapAccumulator: sdk.ZeroDec(),
-		GeometricTwapAccumulator:    sdk.ZeroDec(),
-		LastErrorTime:               lastErrorTime,
-	}, nil
+	// denom0, denom1, err := types.LexicographicalOrderDenoms(denom0, denom1)
+	// if err != nil {
+	// 	return types.TwapRecord{}, err
+	// }
+	// previousErrorTime := time.Time{} // no previous error
+	// sp0, sp1, lastErrorTime := getSpotPrices(ctx, k, poolId, denom0, denom1, previousErrorTime)
+	return types.TwapRecord{}, nil
 }
 
 // getSpotPrices gets the spot prices for the pool,
@@ -54,48 +41,48 @@ func getSpotPrices(
 	denom0, denom1 string,
 	previousErrorTime time.Time,
 ) (sp0 sdk.Dec, sp1 sdk.Dec, latestErrTime time.Time) {
-	latestErrTime = previousErrorTime
-	sp0, err0 := k.CalculateSpotPrice(ctx, poolId, denom0, denom1)
-	sp1, err1 := k.CalculateSpotPrice(ctx, poolId, denom1, denom0)
-	if err0 != nil || err1 != nil {
-		latestErrTime = ctx.BlockTime()
-		// In the event of an error, we just sanity replace empty values with zero values
-		// so that the numbers can be still be calculated within TWAPs over error values
-		// TODO: Should we be using the last spot price?
-		if (sp0 == sdk.Dec{}) {
-			sp0 = sdk.ZeroDec()
-		}
-		if (sp1 == sdk.Dec{}) {
-			sp1 = sdk.ZeroDec()
-		}
-	}
-	if sp0.GT(types.MaxSpotPrice) {
-		sp0, latestErrTime = types.MaxSpotPrice, ctx.BlockTime()
-	}
-	if sp1.GT(types.MaxSpotPrice) {
-		sp1, latestErrTime = types.MaxSpotPrice, ctx.BlockTime()
-	}
+	// latestErrTime = previousErrorTime
+	// sp0, err0 := k.CalculateSpotPrice(ctx, poolId, denom0, denom1)
+	// sp1, err1 := k.CalculateSpotPrice(ctx, poolId, denom1, denom0)
+	// if err0 != nil || err1 != nil {
+	// 	latestErrTime = ctx.BlockTime()
+	// 	// In the event of an error, we just sanity replace empty values with zero values
+	// 	// so that the numbers can be still be calculated within TWAPs over error values
+	// 	// TODO: Should we be using the last spot price?
+	// 	if (sp0 == sdk.Dec{}) {
+	// 		sp0 = sdk.ZeroDec()
+	// 	}
+	// 	if (sp1 == sdk.Dec{}) {
+	// 		sp1 = sdk.ZeroDec()
+	// 	}
+	// }
+	// if sp0.GT(types.MaxSpotPrice) {
+	// 	sp0, latestErrTime = types.MaxSpotPrice, ctx.BlockTime()
+	// }
+	// if sp1.GT(types.MaxSpotPrice) {
+	// 	sp1, latestErrTime = types.MaxSpotPrice, ctx.BlockTime()
+	// }
 	return sp0, sp1, latestErrTime
 }
 
 // afterCreatePool creates new twap records of all the unique pairs of denoms within a pool.
 func (k Keeper) afterCreatePool(ctx sdk.Context, poolId uint64) error {
-	denoms, err := k.ammkeeper.GetPoolDenoms(ctx, poolId)
-	denomPairs := types.GetAllUniqueDenomPairs(denoms)
-	for _, denomPair := range denomPairs {
-		record, err := newTwapRecord(k.ammkeeper, ctx, poolId, denomPair.Denom0, denomPair.Denom1)
-		// err should be impossible given GetAllUniqueDenomPairs guarantees
-		if err != nil {
-			return err
-		}
-		// we create a record here, because we need the record to exist in the event
-		// that there is a swap against this pool in this same block.
-		// furthermore, this protects against an edge case where a pool is created
-		// during EndBlock, after twapkeeper's endblock.
-		k.storeNewRecord(ctx, record)
-	}
-	k.trackChangedPool(ctx, poolId)
-	return err
+	// denoms, err := k.ammkeeper.GetPoolDenoms(ctx, poolId)
+	// denomPairs := types.GetAllUniqueDenomPairs(denoms)
+	// for _, denomPair := range denomPairs {
+	// 	record, err := newTwapRecord(k.ammkeeper, ctx, poolId, denomPair.Denom0, denomPair.Denom1)
+	// 	// err should be impossible given GetAllUniqueDenomPairs guarantees
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	// we create a record here, because we need the record to exist in the event
+	// 	// that there is a swap against this pool in this same block.
+	// 	// furthermore, this protects against an edge case where a pool is created
+	// 	// during EndBlock, after twapkeeper's endblock.
+	// 	k.storeNewRecord(ctx, record)
+	// }
+	// k.trackChangedPool(ctx, poolId)
+	return nil
 }
 
 func (k Keeper) EndBlock(ctx sdk.Context) {
@@ -123,29 +110,29 @@ func (k Keeper) EndBlock(ctx sdk.Context) {
 //     number of denoms in the pool.
 func (k Keeper) updateRecords(ctx sdk.Context, poolId uint64) error {
 	// Will only err if pool doesn't have most recent entry set
-	records, err := k.getAllMostRecentRecordsForPool(ctx, poolId)
-	if err != nil {
-		return err
-	}
+	// records, err := k.getAllMostRecentRecordsForPool(ctx, poolId)
+	// if err != nil {
+	// 	return err
+	// }
 
-	denoms, err := k.ammkeeper.GetPoolDenoms(ctx, poolId)
-	if err != nil {
-		return err
-	}
+	// denoms, err := k.ammkeeper.GetPoolDenoms(ctx, poolId)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// given # of denoms in the pool namely, that for `k` denoms in pool,
-	// there should be k * (k - 1) / 2 records
-	denomNum := len(denoms)
-	expectedRecordsLength := denomNum * (denomNum - 1) / 2
+	// // given # of denoms in the pool namely, that for `k` denoms in pool,
+	// // there should be k * (k - 1) / 2 records
+	// denomNum := len(denoms)
+	// expectedRecordsLength := denomNum * (denomNum - 1) / 2
 
-	if expectedRecordsLength != len(records) {
-		return types.InvalidRecordCountError{Expected: expectedRecordsLength, Actual: len(records)}
-	}
+	// if expectedRecordsLength != len(records) {
+	// 	return types.InvalidRecordCountError{Expected: expectedRecordsLength, Actual: len(records)}
+	// }
 
-	for _, record := range records {
-		newRecord := k.updateRecord(ctx, record)
-		k.storeNewRecord(ctx, newRecord)
-	}
+	// for _, record := range records {
+	// 	newRecord := k.updateRecord(ctx, record)
+	// 	k.storeNewRecord(ctx, newRecord)
+	// }
 	return nil
 }
 
@@ -185,29 +172,29 @@ func (k Keeper) pruneRecords(ctx sdk.Context) error {
 // pre-condition: newTime >= record.Time
 func recordWithUpdatedAccumulators(record types.TwapRecord, newTime time.Time) types.TwapRecord {
 	// return the given record: no need to calculate and update the accumulator if record time matches.
-	if record.Time.Equal(newTime) {
-		return record
-	}
-	newRecord := record
-	timeDelta := newTime.Sub(record.Time)
-	newRecord.Time = newTime
+	// if record.Time.Equal(newTime) {
+	return record
+	// }
+	// newRecord := record
+	// timeDelta := newTime.Sub(record.Time)
+	// newRecord.Time = newTime
 
-	// record.LastSpotPrice is the last spot price from the block the record was created in,
-	// thus it is treated as the effective spot price until the new time.
-	// (As there was no change until at or after this time)
-	p0NewAccum := types.SpotPriceMulDuration(record.P0LastSpotPrice, timeDelta)
-	newRecord.P0ArithmeticTwapAccumulator = newRecord.P0ArithmeticTwapAccumulator.Add(p0NewAccum)
+	// // record.LastSpotPrice is the last spot price from the block the record was created in,
+	// // thus it is treated as the effective spot price until the new time.
+	// // (As there was no change until at or after this time)
+	// p0NewAccum := types.SpotPriceMulDuration(record.P0LastSpotPrice, timeDelta)
+	// newRecord.P0ArithmeticTwapAccumulator = newRecord.P0ArithmeticTwapAccumulator.Add(p0NewAccum)
 
-	p1NewAccum := types.SpotPriceMulDuration(record.P1LastSpotPrice, timeDelta)
-	newRecord.P1ArithmeticTwapAccumulator = newRecord.P1ArithmeticTwapAccumulator.Add(p1NewAccum)
+	// p1NewAccum := types.SpotPriceMulDuration(record.P1LastSpotPrice, timeDelta)
+	// newRecord.P1ArithmeticTwapAccumulator = newRecord.P1ArithmeticTwapAccumulator.Add(p1NewAccum)
 
-	// logP0SpotPrice = log_{2}{P_0}
-	logP0SpotPrice := twapLog(record.P0LastSpotPrice)
-	// p0NewGeomAccum = log_{2}{P_0} * timeDelta
-	p0NewGeomAccum := types.SpotPriceMulDuration(logP0SpotPrice, timeDelta)
-	newRecord.GeometricTwapAccumulator = newRecord.GeometricTwapAccumulator.Add(p0NewGeomAccum)
+	// // logP0SpotPrice = log_{2}{P_0}
+	// logP0SpotPrice := twapLog(record.P0LastSpotPrice)
+	// // p0NewGeomAccum = log_{2}{P_0} * timeDelta
+	// p0NewGeomAccum := types.SpotPriceMulDuration(logP0SpotPrice, timeDelta)
+	// newRecord.GeometricTwapAccumulator = newRecord.GeometricTwapAccumulator.Add(p0NewGeomAccum)
 
-	return newRecord
+	// return newRecord
 }
 
 // getInterpolatedRecord returns a record for this pool, representing its accumulator state at time `t`.
@@ -271,14 +258,15 @@ func computeTwap(startRecord types.TwapRecord, endRecord types.TwapRecord, quote
 // computeArithmeticTwap computes and returns an arithmetic TWAP between
 // two records given the quote asset.
 func computeArithmeticTwap(startRecord types.TwapRecord, endRecord types.TwapRecord, quoteAsset string) sdk.Dec {
-	var accumDiff sdk.Dec
-	if quoteAsset == startRecord.Asset0Denom {
-		accumDiff = endRecord.P0ArithmeticTwapAccumulator.Sub(startRecord.P0ArithmeticTwapAccumulator)
-	} else {
-		accumDiff = endRecord.P1ArithmeticTwapAccumulator.Sub(startRecord.P1ArithmeticTwapAccumulator)
-	}
-	timeDelta := endRecord.Time.Sub(startRecord.Time)
-	return types.AccumDiffDivDuration(accumDiff, timeDelta)
+	// var accumDiff sdk.Dec
+	// if quoteAsset == startRecord.Asset0Denom {
+	// 	accumDiff = endRecord.P0ArithmeticTwapAccumulator.Sub(startRecord.P0ArithmeticTwapAccumulator)
+	// } else {
+	// 	accumDiff = endRecord.P1ArithmeticTwapAccumulator.Sub(startRecord.P1ArithmeticTwapAccumulator)
+	// }
+	// timeDelta := endRecord.Time.Sub(startRecord.Time)
+	// return types.AccumDiffDivDuration(accumDiff, timeDelta)
+	return sdk.Dec{}
 }
 
 // computeGeometricTwap computes and returns a geometric TWAP between
@@ -288,28 +276,29 @@ func computeArithmeticTwap(startRecord types.TwapRecord, endRecord types.TwapRec
 // - exponentiate the result to get the geometric mean.
 // - if quoted asset is asset 1, take reciprocal of the exponentiated result.
 func computeGeometricTwap(startRecord types.TwapRecord, endRecord types.TwapRecord, quoteAsset string) sdk.Dec {
-	accumDiff := endRecord.GeometricTwapAccumulator.Sub(startRecord.GeometricTwapAccumulator)
+	// accumDiff := endRecord.GeometricTwapAccumulator.Sub(startRecord.GeometricTwapAccumulator)
 
-	timeDelta := endRecord.Time.Sub(startRecord.Time)
-	arithmeticMeanOfLogPrices := types.AccumDiffDivDuration(accumDiff, timeDelta)
+	// timeDelta := endRecord.Time.Sub(startRecord.Time)
+	// arithmeticMeanOfLogPrices := types.AccumDiffDivDuration(accumDiff, timeDelta)
 
-	geometricMeanDenom0 := twapPow(arithmeticMeanOfLogPrices)
-	// N.B.: Geometric mean of recprocals is reciprocal of geometric mean.
-	// https://proofwiki.org/wiki/Geometric_Mean_of_Reciprocals_is_Reciprocal_of_Geometric_Mean
-	if quoteAsset == startRecord.Asset1Denom {
-		return sdk.OneDec().Quo(geometricMeanDenom0)
-	}
-	return geometricMeanDenom0
+	// geometricMeanDenom0 := twapPow(arithmeticMeanOfLogPrices)
+	// // N.B.: Geometric mean of recprocals is reciprocal of geometric mean.
+	// // https://proofwiki.org/wiki/Geometric_Mean_of_Reciprocals_is_Reciprocal_of_Geometric_Mean
+	// if quoteAsset == startRecord.Asset1Denom {
+	// 	return sdk.OneDec().Quo(geometricMeanDenom0)
+	// }
+	// return geometricMeanDenom0
+	return sdk.Dec{}
 }
 
 // twapLog returns the logarithm of the given spot price, base 2.
 // TODO: basic test
 func twapLog(price sdk.Dec) sdk.Dec {
-	return osmomath.BigDecFromSDKDec(price).LogBase2().SDKDec()
+	return sdk.Dec{}
 }
 
 // twapPow exponentiates the geometricTwapMathBase to the given exponent.
 // TODO: basic test and benchmark.
 func twapPow(exponent sdk.Dec) sdk.Dec {
-	return osmomath.PowApprox(geometricTwapMathBase, exponent, geometricTwapPowPrecision)
+	return sdk.Dec{}
 }

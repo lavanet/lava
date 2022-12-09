@@ -10,7 +10,6 @@ import (
 	juno_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Juno"
 	lava_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Lavanet"
 	osmosis_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Osmosis"
-	router_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Router"
 	"github.com/lavanet/lava/utils"
 	"google.golang.org/grpc"
 )
@@ -33,7 +32,6 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 	case "COS5", "COS5T":
 		cosmos_thirdparty.RegisterCosmosProtobufs(s, cb)
 		ibc_thirdparty.RegisterCosmosProtobufs(s, cb)
-		router_thirdparty.RegisterCosmosProtobufs(s, cb)
 	case "JUN1", "JUNT1":
 		cosmos_thirdparty.RegisterJunoProtobufs(s, cb)
 		ibc_thirdparty.RegisterJunoProtobufs(s, cb)

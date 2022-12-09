@@ -43,31 +43,31 @@ func (m *UpdateFeeTokenProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpdateFeeTokenProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateFeeTokenProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_UpdateFeeTokenProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *UpdateFeeTokenProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateFeeTokenProposal.Merge(m, src)
+	// xxx_messageInfo_UpdateFeeTokenProposal.Merge(m, src)
 }
 func (m *UpdateFeeTokenProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpdateFeeTokenProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateFeeTokenProposal.DiscardUnknown(m)
+	// xxx_messageInfo_UpdateFeeTokenProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdateFeeTokenProposal proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
+	// proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
 }
 
 func init() { proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }

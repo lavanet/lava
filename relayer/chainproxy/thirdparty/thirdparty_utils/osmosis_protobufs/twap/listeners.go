@@ -2,23 +2,20 @@ package twap
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	epochtypes "github.com/osmosis-labs/osmosis/v13/x/epochs/types"
-	"github.com/osmosis-labs/osmosis/v13/x/gamm/types"
 )
 
 var (
-	_ types.GammHooks       = &gammhook{}
-	_ epochtypes.EpochHooks = &epochhook{}
+// _ types.GammHooks       = &gammhook{}
+// _ epochtypes.EpochHooks = &epochhook{}
 )
 
 type epochhook struct {
 	k Keeper
 }
 
-func (k Keeper) EpochHooks() epochtypes.EpochHooks {
-	return &epochhook{k}
-}
+// func (k Keeper) EpochHooks() epochtypes.EpochHooks {
+// 	return &epochhook{k}
+// }
 
 func (hook *epochhook) AfterEpochEnd(ctx sdk.Context, epochIdentifier string, epochNumber int64) error {
 	if epochIdentifier == hook.k.PruneEpochIdentifier(ctx) {
@@ -37,9 +34,9 @@ type gammhook struct {
 	k Keeper
 }
 
-func (k Keeper) GammHooks() types.GammHooks {
-	return &gammhook{k}
-}
+// func (k Keeper) GammHooks() types.GammHooks {
+// 	return &gammhook{k}
+// }
 
 // AfterPoolCreated is called after CreatePool
 func (hook *gammhook) AfterPoolCreated(ctx sdk.Context, sender sdk.AccAddress, poolId uint64) {

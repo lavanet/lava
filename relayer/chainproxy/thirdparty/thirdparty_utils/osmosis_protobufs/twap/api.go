@@ -4,8 +4,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap/types"
 )
 
 type twapType bool
@@ -80,24 +79,24 @@ func (k Keeper) getTwap(
 	endTime time.Time,
 	strategy twapStrategy,
 ) (sdk.Dec, error) {
-	if startTime.After(endTime) {
-		return sdk.Dec{}, types.StartTimeAfterEndTimeError{StartTime: startTime, EndTime: endTime}
-	}
-	if endTime.Equal(ctx.BlockTime()) {
-		return k.getTwapToNow(ctx, poolId, baseAssetDenom, quoteAssetDenom, startTime, strategy)
-	} else if endTime.After(ctx.BlockTime()) {
-		return sdk.Dec{}, types.EndTimeInFutureError{EndTime: endTime, BlockTime: ctx.BlockTime()}
-	}
-	startRecord, err := k.getInterpolatedRecord(ctx, poolId, startTime, baseAssetDenom, quoteAssetDenom)
-	if err != nil {
-		return sdk.Dec{}, err
-	}
-	endRecord, err := k.getInterpolatedRecord(ctx, poolId, endTime, baseAssetDenom, quoteAssetDenom)
-	if err != nil {
-		return sdk.Dec{}, err
-	}
+	// if startTime.After(endTime) {
+	// 	return sdk.Dec{}, types.StartTimeAfterEndTimeError{StartTime: startTime, EndTime: endTime}
+	// }
+	// if endTime.Equal(ctx.BlockTime()) {
+	// 	return k.getTwapToNow(ctx, poolId, baseAssetDenom, quoteAssetDenom, startTime, strategy)
+	// } else if endTime.After(ctx.BlockTime()) {
+	// 	return sdk.Dec{}, types.EndTimeInFutureError{EndTime: endTime, BlockTime: ctx.BlockTime()}
+	// }
+	// startRecord, err := k.getInterpolatedRecord(ctx, poolId, startTime, baseAssetDenom, quoteAssetDenom)
+	// if err != nil {
+	// 	return sdk.Dec{}, err
+	// }
+	// endRecord, err := k.getInterpolatedRecord(ctx, poolId, endTime, baseAssetDenom, quoteAssetDenom)
+	// if err != nil {
+	return sdk.Dec{}, nil
+	// }
 
-	return strategy.computeTwap(startRecord, endRecord, quoteAssetDenom)
+	// return strategy.computeTwap(startRecord, endRecord, quoteAssetDenom)
 }
 
 // getTwapToNow computes and returns twap from the start time until the current block time. The type
@@ -110,20 +109,20 @@ func (k Keeper) getTwapToNow(
 	startTime time.Time,
 	strategy twapStrategy,
 ) (sdk.Dec, error) {
-	if startTime.After(ctx.BlockTime()) {
-		return sdk.Dec{}, types.StartTimeAfterEndTimeError{StartTime: startTime, EndTime: ctx.BlockTime()}
-	}
+	// if startTime.After(ctx.BlockTime()) {
+	// 	return sdk.Dec{}, types.StartTimeAfterEndTimeError{StartTime: startTime, EndTime: ctx.BlockTime()}
+	// }
 
-	startRecord, err := k.getInterpolatedRecord(ctx, poolId, startTime, baseAssetDenom, quoteAssetDenom)
-	if err != nil {
-		return sdk.Dec{}, err
-	}
-	endRecord, err := k.GetBeginBlockAccumulatorRecord(ctx, poolId, baseAssetDenom, quoteAssetDenom)
-	if err != nil {
-		return sdk.Dec{}, err
-	}
+	// startRecord, err := k.getInterpolatedRecord(ctx, poolId, startTime, baseAssetDenom, quoteAssetDenom)
+	// if err != nil {
+	// 	return sdk.Dec{}, err
+	// }
+	// endRecord, err := k.GetBeginBlockAccumulatorRecord(ctx, poolId, baseAssetDenom, quoteAssetDenom)
+	// if err != nil {
+	return sdk.Dec{}, nil
+	// }
 
-	return strategy.computeTwap(startRecord, endRecord, quoteAssetDenom)
+	// return strategy.computeTwap(startRecord, endRecord, quoteAssetDenom)
 }
 
 // GetBeginBlockAccumulatorRecord returns a TwapRecord struct corresponding to the state of pool `poolId`

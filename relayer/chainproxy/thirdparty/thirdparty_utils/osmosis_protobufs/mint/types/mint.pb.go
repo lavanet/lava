@@ -201,25 +201,25 @@ func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Params) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Params.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_Params.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *Params) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Params.Merge(m, src)
+	// xxx_messageInfo_Params.Merge(m, src)
 }
 func (m *Params) XXX_Size() int {
 	return m.Size()
 }
 func (m *Params) XXX_DiscardUnknown() {
-	xxx_messageInfo_Params.DiscardUnknown(m)
+	// xxx_messageInfo_Params.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
@@ -270,7 +270,7 @@ func init() {
 	proto.RegisterType((*Minter)(nil), "osmosis.mint.v1beta1.Minter")
 	proto.RegisterType((*WeightedAddress)(nil), "osmosis.mint.v1beta1.WeightedAddress")
 	proto.RegisterType((*DistributionProportions)(nil), "osmosis.mint.v1beta1.DistributionProportions")
-	proto.RegisterType((*Params)(nil), "osmosis.mint.v1beta1.Params")
+	// proto.RegisterType((*Params)(nil), "osmosis.mint.v1beta1.Params")
 }
 
 func init() { proto.RegisterFile("osmosis/mint/v1beta1/mint.proto", fileDescriptor_ccb38f8335e0f45b) }

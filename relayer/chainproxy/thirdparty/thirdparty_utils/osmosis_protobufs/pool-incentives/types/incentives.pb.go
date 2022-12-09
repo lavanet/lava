@@ -45,25 +45,25 @@ func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Params) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Params.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_Params.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *Params) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Params.Merge(m, src)
+	// xxx_messageInfo_Params.Merge(m, src)
 }
 func (m *Params) XXX_Size() int {
 	return m.Size()
 }
 func (m *Params) XXX_DiscardUnknown() {
-	xxx_messageInfo_Params.DiscardUnknown(m)
+	// xxx_messageInfo_Params.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
@@ -314,7 +314,7 @@ func (m *PoolToGauges) GetPoolToGauge() []PoolToGauge {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.poolincentives.v1beta1.Params")
+	// proto.RegisterType((*Params)(nil), "osmosis.poolincentives.v1beta1.Params")
 	proto.RegisterType((*LockableDurationsInfo)(nil), "osmosis.poolincentives.v1beta1.LockableDurationsInfo")
 	proto.RegisterType((*DistrInfo)(nil), "osmosis.poolincentives.v1beta1.DistrInfo")
 	proto.RegisterType((*DistrRecord)(nil), "osmosis.poolincentives.v1beta1.DistrRecord")

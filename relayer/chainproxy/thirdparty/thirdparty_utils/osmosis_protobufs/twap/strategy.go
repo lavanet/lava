@@ -2,7 +2,7 @@ package twap
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap/types"
 )
 
 // twapStrategy is an interface for computing TWAPs.

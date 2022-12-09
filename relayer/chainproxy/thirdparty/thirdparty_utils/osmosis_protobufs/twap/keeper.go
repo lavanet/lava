@@ -8,7 +8,7 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap/types"
 )
 
 type Keeper struct {
@@ -22,22 +22,22 @@ type Keeper struct {
 
 func NewKeeper(storeKey sdk.StoreKey, transientKey *sdk.TransientStoreKey, paramSpace paramtypes.Subspace, ammKeeper types.AmmInterface) *Keeper {
 	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
-	}
+	// if !paramSpace.HasKeyTable() {
+	// 	paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	// }
 
 	return &Keeper{storeKey: storeKey, transientKey: transientKey, paramSpace: paramSpace, ammkeeper: ammKeeper}
 }
 
 // GetParams returns the total set of twap parameters.
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
+	// k.paramSpace.GetParamSet(ctx, &params)
 	return params
 }
 
 // SetParams sets the total set of twap parameters.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramSpace.SetParamSet(ctx, &params)
+	// k.paramSpace.SetParamSet(ctx, &params)
 }
 
 func (k *Keeper) PruneEpochIdentifier(ctx sdk.Context) string {
@@ -51,9 +51,9 @@ func (k *Keeper) RecordHistoryKeepPeriod(ctx sdk.Context) time.Duration {
 // InitGenesis initializes the twap module's state from a provided genesis
 // state.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
-	if err := genState.Validate(); err != nil {
-		panic(err)
-	}
+	// if err := genState.Validate(); err != nil {
+	// 	panic(err)
+	// }
 
 	k.SetParams(ctx, genState.Params)
 

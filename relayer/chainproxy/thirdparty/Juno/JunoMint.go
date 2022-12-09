@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "github.com/CosmosContracts/juno/x/mint/types"
 	// add protobuf here as pb_pkg
 	"github.com/lavanet/lava/utils"
 )

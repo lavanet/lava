@@ -7,8 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/osmosis-labs/osmosis/v13/osmoutils"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap/types"
 )
 
 type timeTooOldError struct {
@@ -53,11 +52,11 @@ func (k Keeper) getChangedPools(ctx sdk.Context) []uint64 {
 
 // storeHistoricalTWAP writes a twap to the store, in all needed indexing.
 func (k Keeper) storeHistoricalTWAP(ctx sdk.Context, twap types.TwapRecord) {
-	store := ctx.KVStore(k.storeKey)
-	key1 := types.FormatHistoricalTimeIndexTWAPKey(twap.Time, twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
-	key2 := types.FormatHistoricalPoolIndexTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom, twap.Time)
-	osmoutils.MustSet(store, key1, &twap)
-	osmoutils.MustSet(store, key2, &twap)
+	// store := ctx.KVStore(k.storeKey)
+	// key1 := types.FormatHistoricalTimeIndexTWAPKey(twap.Time, twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
+	// key2 := types.FormatHistoricalPoolIndexTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom, twap.Time)
+	// osmoutils.MustSet(store, key1, &twap)
+	// osmoutils.MustSet(store, key2, &twap)
 }
 
 // pruneRecordsBeforeTimeButNewest prunes all records for each pool before the given time but the newest
@@ -74,53 +73,53 @@ func (k Keeper) storeHistoricalTWAP(ctx sdk.Context, twap types.TwapRecord) {
 // we keep the newest record that is older than the pruning time.
 // This is why we would keep the -50 hour and -1hour twaps despite a 48hr pruning period
 func (k Keeper) pruneRecordsBeforeTimeButNewest(ctx sdk.Context, lastKeptTime time.Time) error {
-	store := ctx.KVStore(k.storeKey)
+	// store := ctx.KVStore(k.storeKey)
 
-	// Reverse iterator guarantees that we iterate through the newest per pool first.
-	// Due to how it is indexed, we will only iterate times starting from
-	// lastKeptTime exclusively down to the oldest record.
-	iter := store.ReverseIterator(
-		[]byte(types.HistoricalTWAPTimeIndexPrefix),
-		types.FormatHistoricalTimeIndexTWAPKey(lastKeptTime, 0, "", ""))
-	defer iter.Close()
+	// // Reverse iterator guarantees that we iterate through the newest per pool first.
+	// // Due to how it is indexed, we will only iterate times starting from
+	// // lastKeptTime exclusively down to the oldest record.
+	// iter := store.ReverseIterator(
+	// 	[]byte(types.HistoricalTWAPTimeIndexPrefix),
+	// 	types.FormatHistoricalTimeIndexTWAPKey(lastKeptTime, 0, "", ""))
+	// defer iter.Close()
 
-	// We mark what (pool id, asset 0, asset 1) triplets we've seen.
-	// We prune all records for a triplet that we haven't already seen.
-	type uniqueTriplet struct {
-		poolId uint64
-		asset0 string
-		asset1 string
-	}
-	seenPoolAssetTriplets := map[uniqueTriplet]struct{}{}
+	// // We mark what (pool id, asset 0, asset 1) triplets we've seen.
+	// // We prune all records for a triplet that we haven't already seen.
+	// type uniqueTriplet struct {
+	// 	poolId uint64
+	// 	asset0 string
+	// 	asset1 string
+	// }
+	// seenPoolAssetTriplets := map[uniqueTriplet]struct{}{}
 
-	for ; iter.Valid(); iter.Next() {
-		twapToRemove, err := types.ParseTwapFromBz(iter.Value())
-		if err != nil {
-			return err
-		}
+	// for ; iter.Valid(); iter.Next() {
+	// 	twapToRemove, err := types.ParseTwapFromBz(iter.Value())
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		poolKey := uniqueTriplet{
-			poolId: twapToRemove.PoolId,
-			asset0: twapToRemove.Asset0Denom,
-			asset1: twapToRemove.Asset1Denom,
-		}
-		_, hasSeenPoolRecord := seenPoolAssetTriplets[poolKey]
-		if !hasSeenPoolRecord {
-			seenPoolAssetTriplets[poolKey] = struct{}{}
-			continue
-		}
+	// 	poolKey := uniqueTriplet{
+	// 		poolId: twapToRemove.PoolId,
+	// 		asset0: twapToRemove.Asset0Denom,
+	// 		asset1: twapToRemove.Asset1Denom,
+	// 	}
+	// 	_, hasSeenPoolRecord := seenPoolAssetTriplets[poolKey]
+	// 	if !hasSeenPoolRecord {
+	// 		seenPoolAssetTriplets[poolKey] = struct{}{}
+	// 		continue
+	// 	}
 
-		k.deleteHistoricalRecord(ctx, twapToRemove)
-	}
+	// 	k.deleteHistoricalRecord(ctx, twapToRemove)
+	// }
 	return nil
 }
 
 func (k Keeper) deleteHistoricalRecord(ctx sdk.Context, twap types.TwapRecord) {
-	store := ctx.KVStore(k.storeKey)
-	key1 := types.FormatHistoricalTimeIndexTWAPKey(twap.Time, twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
-	key2 := types.FormatHistoricalPoolIndexTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom, twap.Time)
-	store.Delete(key1)
-	store.Delete(key2)
+	// store := ctx.KVStore(k.storeKey)
+	// key1 := types.FormatHistoricalTimeIndexTWAPKey(twap.Time, twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
+	// key2 := types.FormatHistoricalPoolIndexTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom, twap.Time)
+	// store.Delete(key1)
+	// store.Delete(key2)
 }
 
 // getMostRecentRecordStoreRepresentation returns the most recent twap record in the store
@@ -129,45 +128,49 @@ func (k Keeper) deleteHistoricalRecord(ctx sdk.Context, twap types.TwapRecord) {
 // interpolated to the current block time, or after events in this block.
 // Neither of which apply to the record this returns.
 func (k Keeper) getMostRecentRecordStoreRepresentation(ctx sdk.Context, poolId uint64, asset0Denom string, asset1Denom string) (types.TwapRecord, error) {
-	asset0Denom, asset1Denom, err := types.LexicographicalOrderDenoms(asset0Denom, asset1Denom)
-	if err != nil {
-		return types.TwapRecord{}, err
-	}
-	store := ctx.KVStore(k.storeKey)
-	key := types.FormatMostRecentTWAPKey(poolId, asset0Denom, asset1Denom)
-	bz := store.Get(key)
-	twap, err := types.ParseTwapFromBz(bz)
-	if err != nil {
-		err = fmt.Errorf("error in get most recent twap, likely that asset 0 or asset 1 were wrong: %s %s."+
-			" Underlying error: %w", asset0Denom, asset1Denom, err)
-	}
-	return twap, err
+	// asset0Denom, asset1Denom, err := types.LexicographicalOrderDenoms(asset0Denom, asset1Denom)
+	// if err != nil {
+	// 	return types.TwapRecord{}, err
+	// }
+	// store := ctx.KVStore(k.storeKey)
+	// key := types.FormatMostRecentTWAPKey(poolId, asset0Denom, asset1Denom)
+	// bz := store.Get(key)
+	// twap, err := types.ParseTwapFromBz(bz)
+	// if err != nil {
+	// 	err = fmt.Errorf("error in get most recent twap, likely that asset 0 or asset 1 were wrong: %s %s."+
+	// 		" Underlying error: %w", asset0Denom, asset1Denom, err)
+	// }
+	// return twap, err
+	return types.TwapRecord{}, nil
 }
 
 // getAllMostRecentRecordsForPool returns all most recent twap records
 // (in state representation) for the provided pool id.
 func (k Keeper) getAllMostRecentRecordsForPool(ctx sdk.Context, poolId uint64) ([]types.TwapRecord, error) {
-	store := ctx.KVStore(k.storeKey)
-	return types.GetAllMostRecentTwapsForPool(store, poolId)
+	// store := ctx.KVStore(k.storeKey)
+	// return types.GetAllMostRecentTwapsForPool(store, poolId)
+	return []types.TwapRecord{}, nil
 }
 
 // getAllHistoricalTimeIndexedTWAPs returns all historical TWAPs indexed by time.
 func (k Keeper) getAllHistoricalTimeIndexedTWAPs(ctx sdk.Context) ([]types.TwapRecord, error) {
-	return osmoutils.GatherValuesFromStorePrefix(ctx.KVStore(k.storeKey), []byte(types.HistoricalTWAPTimeIndexPrefix), types.ParseTwapFromBz)
+	// return osmoutils.GatherValuesFromStorePrefix(ctx.KVStore(k.storeKey), []byte(types.HistoricalTWAPTimeIndexPrefix), types.ParseTwapFromBz)
+	return []types.TwapRecord{}, nil
 }
 
 // getAllHistoricalPoolIndexedTWAPs returns all historical TWAPs indexed by pool id.
 // nolint: unused
 func (k Keeper) getAllHistoricalPoolIndexedTWAPs(ctx sdk.Context) ([]types.TwapRecord, error) {
-	return osmoutils.GatherValuesFromStorePrefix(ctx.KVStore(k.storeKey), []byte(types.HistoricalTWAPPoolIndexPrefix), types.ParseTwapFromBz)
+	// return osmoutils.GatherValuesFromStorePrefix(ctx.KVStore(k.storeKey), []byte(types.HistoricalTWAPPoolIndexPrefix), types.ParseTwapFromBz)
+	return []types.TwapRecord{}, nil
 }
 
 // storeNewRecord stores a record, in both the most recent record store and historical stores.
 func (k Keeper) storeNewRecord(ctx sdk.Context, twap types.TwapRecord) {
-	store := ctx.KVStore(k.storeKey)
-	key := types.FormatMostRecentTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
-	osmoutils.MustSet(store, key, &twap)
-	k.storeHistoricalTWAP(ctx, twap)
+	// store := ctx.KVStore(k.storeKey)
+	// key := types.FormatMostRecentTWAPKey(twap.PoolId, twap.Asset0Denom, twap.Asset1Denom)
+	// osmoutils.MustSet(store, key, &twap)
+	// k.storeHistoricalTWAP(ctx, twap)
 }
 
 // getRecordAtOrBeforeTime on a given input (id, t, asset0, asset1)
@@ -183,31 +186,31 @@ func (k Keeper) storeNewRecord(ctx sdk.Context, twap types.TwapRecord) {
 // * there is no record for the asset pair (asset0, asset1) in particular
 //   - e.g. asset not in pool, or provided in wrong order.
 func (k Keeper) getRecordAtOrBeforeTime(ctx sdk.Context, poolId uint64, t time.Time, asset0Denom string, asset1Denom string) (types.TwapRecord, error) {
-	asset0Denom, asset1Denom, err := types.LexicographicalOrderDenoms(asset0Denom, asset1Denom)
-	if err != nil {
-		return types.TwapRecord{}, err
-	}
-	store := ctx.KVStore(k.storeKey)
-	// We make an iteration from time=t, to time=0 for this pool.
-	startKey := types.FormatHistoricalPoolIndexTimePrefix(poolId, asset0Denom, asset1Denom)
-	endKey := types.FormatHistoricalPoolIndexTimeSuffix(poolId, asset0Denom, asset1Denom, t)
-	reverseIterate := true
+	// asset0Denom, asset1Denom, err := types.LexicographicalOrderDenoms(asset0Denom, asset1Denom)
+	// if err != nil {
+	// 	return types.TwapRecord{}, err
+	// }
+	// store := ctx.KVStore(k.storeKey)
+	// // We make an iteration from time=t, to time=0 for this pool.
+	// startKey := types.FormatHistoricalPoolIndexTimePrefix(poolId, asset0Denom, asset1Denom)
+	// endKey := types.FormatHistoricalPoolIndexTimeSuffix(poolId, asset0Denom, asset1Denom, t)
+	// reverseIterate := true
 
-	twap, err := osmoutils.GetFirstValueInRange(store, startKey, endKey, reverseIterate, types.ParseTwapFromBz)
-	if err != nil {
-		// diagnose why we have no results by seeing what happens for getMostRecentRecord for this pool id
-		_, errDiagnose := k.getMostRecentRecord(ctx, poolId, asset0Denom, asset1Denom)
-		if errDiagnose != nil {
-			return types.TwapRecord{}, fmt.Errorf(
-				"getTwapRecord: querying for assets %s %s that are not in pool id %d",
-				asset0Denom, asset1Denom, poolId)
-		} else {
-			return types.TwapRecord{}, timeTooOldError{Time: t}
-		}
-	}
-	if twap.Asset0Denom != asset0Denom || twap.Asset1Denom != asset1Denom || twap.PoolId != poolId {
-		return types.TwapRecord{}, fmt.Errorf("internal error, got twap but its data is wrong")
-	}
-
-	return twap, nil
+	// twap, err := osmoutils.GetFirstValueInRange(store, startKey, endKey, reverseIterate, types.ParseTwapFromBz)
+	// if err != nil {
+	// 	// diagnose why we have no results by seeing what happens for getMostRecentRecord for this pool id
+	// 	_, errDiagnose := k.getMostRecentRecord(ctx, poolId, asset0Denom, asset1Denom)
+	// 	if errDiagnose != nil {
+	// 		return types.TwapRecord{}, fmt.Errorf(
+	// 			"getTwapRecord: querying for assets %s %s that are not in pool id %d",
+	// 			asset0Denom, asset1Denom, poolId)
+	// 	} else {
+	// 		return types.TwapRecord{}, timeTooOldError{Time: t}
+	// 	}
+	// }
+	// if twap.Asset0Denom != asset0Denom || twap.Asset1Denom != asset1Denom || twap.PoolId != poolId {
+	// 	return types.TwapRecord{}, fmt.Errorf("internal error, got twap but its data is wrong")
+	// }
+	return types.TwapRecord{}, nil
+	// return twap, nil
 }

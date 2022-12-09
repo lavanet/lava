@@ -40,25 +40,25 @@ func (m *SetSuperfluidAssetsProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SetSuperfluidAssetsProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SetSuperfluidAssetsProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_SetSuperfluidAssetsProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *SetSuperfluidAssetsProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SetSuperfluidAssetsProposal.Merge(m, src)
+	// xxx_messageInfo_SetSuperfluidAssetsProposal.Merge(m, src)
 }
 func (m *SetSuperfluidAssetsProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *SetSuperfluidAssetsProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_SetSuperfluidAssetsProposal.DiscardUnknown(m)
+	// xxx_messageInfo_SetSuperfluidAssetsProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_SetSuperfluidAssetsProposal proto.InternalMessageInfo
@@ -80,25 +80,25 @@ func (m *RemoveSuperfluidAssetsProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *RemoveSuperfluidAssetsProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RemoveSuperfluidAssetsProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_RemoveSuperfluidAssetsProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *RemoveSuperfluidAssetsProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveSuperfluidAssetsProposal.Merge(m, src)
+	// xxx_messageInfo_RemoveSuperfluidAssetsProposal.Merge(m, src)
 }
 func (m *RemoveSuperfluidAssetsProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *RemoveSuperfluidAssetsProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveSuperfluidAssetsProposal.DiscardUnknown(m)
+	// xxx_messageInfo_RemoveSuperfluidAssetsProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_RemoveSuperfluidAssetsProposal proto.InternalMessageInfo
@@ -121,33 +121,33 @@ func (m *UpdateUnpoolWhiteListProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpdateUnpoolWhiteListProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpdateUnpoolWhiteListProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_UpdateUnpoolWhiteListProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *UpdateUnpoolWhiteListProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateUnpoolWhiteListProposal.Merge(m, src)
+	// xxx_messageInfo_UpdateUnpoolWhiteListProposal.Merge(m, src)
 }
 func (m *UpdateUnpoolWhiteListProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpdateUnpoolWhiteListProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateUnpoolWhiteListProposal.DiscardUnknown(m)
+	// xxx_messageInfo_UpdateUnpoolWhiteListProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpdateUnpoolWhiteListProposal proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*SetSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal")
-	proto.RegisterType((*RemoveSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal")
-	proto.RegisterType((*UpdateUnpoolWhiteListProposal)(nil), "osmosis.superfluid.v1beta1.UpdateUnpoolWhiteListProposal")
+	// proto.RegisterType((*SetSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal")
+	// proto.RegisterType((*RemoveSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal")
+	// proto.RegisterType((*UpdateUnpoolWhiteListProposal)(nil), "osmosis.superfluid.v1beta1.UpdateUnpoolWhiteListProposal")
 }
 
 func init() {

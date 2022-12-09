@@ -267,25 +267,25 @@ func (m *UpgradeProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UpgradeProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UpgradeProposal.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_UpgradeProposal.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *UpgradeProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpgradeProposal.Merge(m, src)
+	// xxx_messageInfo_UpgradeProposal.Merge(m, src)
 }
 func (m *UpgradeProposal) XXX_Size() int {
 	return m.Size()
 }
 func (m *UpgradeProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpgradeProposal.DiscardUnknown(m)
+	// xxx_messageInfo_UpgradeProposal.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_UpgradeProposal proto.InternalMessageInfo
@@ -316,25 +316,25 @@ func (m *Height) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Height) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Height.Marshal(b, m, deterministic)
-	} else {
+	// if deterministic {
+	// 	return xxx_messageInfo_Height.Marshal(b, m, deterministic)
+	// } else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
-	}
+	// }
 }
 func (m *Height) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Height.Merge(m, src)
+	// xxx_messageInfo_Height.Merge(m, src)
 }
 func (m *Height) XXX_Size() int {
 	return m.Size()
 }
 func (m *Height) XXX_DiscardUnknown() {
-	xxx_messageInfo_Height.DiscardUnknown(m)
+	// xxx_messageInfo_Height.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_Height proto.InternalMessageInfo
@@ -390,8 +390,8 @@ func init() {
 	proto.RegisterType((*ConsensusStateWithHeight)(nil), "ibc.core.client.v1.ConsensusStateWithHeight")
 	proto.RegisterType((*ClientConsensusStates)(nil), "ibc.core.client.v1.ClientConsensusStates")
 	proto.RegisterType((*ClientUpdateProposal)(nil), "ibc.core.client.v1.ClientUpdateProposal")
-	proto.RegisterType((*UpgradeProposal)(nil), "ibc.core.client.v1.UpgradeProposal")
-	proto.RegisterType((*Height)(nil), "ibc.core.client.v1.Height")
+	// proto.RegisterType((*UpgradeProposal)(nil), "ibc.core.client.v1.UpgradeProposal")
+	// proto.RegisterType((*Height)(nil), "ibc.core.client.v1.Height")
 	proto.RegisterType((*Params)(nil), "ibc.core.client.v1.Params")
 }
 

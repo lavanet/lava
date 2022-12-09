@@ -1,7 +1,6 @@
 package twapmodule
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -16,12 +15,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/osmosis-labs/osmosis/v13/x/twap"
-	twapclient "github.com/osmosis-labs/osmosis/v13/x/twap/client"
-	twapcli "github.com/osmosis-labs/osmosis/v13/x/twap/client/cli"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/client/grpc"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/client/queryproto"
-	"github.com/osmosis-labs/osmosis/v13/x/twap/types"
+	"github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/twap"
+	// twapclient "github.com/osmosis-labs/osmosis/v13/x/twap/client"
+	// twapcli "github.com/osmosis-labs/osmosis/v13/x/twap/client/cli"
+	// "github.com/osmosis-labs/osmosis/v13/x/twap/client/grpc"
+	// "github.com/osmosis-labs/osmosis/v13/x/twap/client/queryproto"
+	// "github.com/osmosis-labs/osmosis/v13/x/twap/types"
 )
 
 var (
@@ -31,22 +30,24 @@ var (
 
 type AppModuleBasic struct{}
 
-func (AppModuleBasic) Name() string { return types.ModuleName }
+func (AppModuleBasic) Name() string { return "types.ModuleName " }
 
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesis())
+	// return cdc.MustMarshalJSON(types.DefaultGenesis())
+	return nil
 }
 
 // ValidateGenesis performs genesis state validation for the gamm module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var genState types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-	}
-	return genState.Validate()
+	// var genState types.GenesisState
+	// if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
+	// 	return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	// }
+	// return genState.Validate()
+	return nil
 }
 
 // ---------------------------------------
@@ -55,7 +56,7 @@ func (b AppModuleBasic) RegisterRESTRoutes(ctx client.Context, r *mux.Router) {
 }
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	queryproto.RegisterQueryHandlerClient(context.Background(), mux, queryproto.NewQueryClient(clientCtx)) //nolint:errcheck
+	// queryproto.RegisterQueryHandlerClient(context.Background(), mux, queryproto.NewQueryClient(clientCtx)) //nolint:errcheck
 }
 
 func (b AppModuleBasic) GetTxCmd() *cobra.Command {
@@ -64,7 +65,8 @@ func (b AppModuleBasic) GetTxCmd() *cobra.Command {
 }
 
 func (b AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return twapcli.GetQueryCmd()
+	// return twapcli.GetQueryCmd()
+	return nil
 }
 
 // RegisterInterfaces registers interfaces and implementations of the gamm module.
@@ -78,7 +80,7 @@ type AppModule struct {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	queryproto.RegisterQueryServer(cfg.QueryServer(), grpc.Querier{Q: twapclient.Querier{K: am.k}})
+	// queryproto.RegisterQueryServer(cfg.QueryServer(), grpc.Querier{Q: twapclient.Querier{K: am.k}})
 }
 
 func NewAppModule(twapKeeper twap.Keeper) AppModule {
@@ -96,23 +98,25 @@ func (am AppModule) Route() sdk.Route {
 }
 
 // QuerierRoute returns the gamm module's querier route name.
-func (AppModule) QuerierRoute() string { return types.RouterKey }
+func (AppModule) QuerierRoute() string {
+	return ""
+}
 
 // LegacyQuerierHandler returns the x/gamm module's sdk.Querier.
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(sdk.Context, []string, abci.RequestQuery) ([]byte, error) {
-		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", types.ModuleName)
+		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", "types.ModuleName")
 	}
 }
 
 // InitGenesis performs genesis initialization for the twap module.
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+	// var genesisState types.GenesisState
 
-	cdc.MustUnmarshalJSON(gs, &genesisState)
+	// cdc.MustUnmarshalJSON(gs, &genesisState)
 
-	am.k.InitGenesis(ctx, &genesisState)
+	// am.k.InitGenesis(ctx, &genesisState)
 	return []abci.ValidatorUpdate{}
 }
 
