@@ -417,6 +417,34 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
+func tendermintURITests(rpcURL string, testDuration time.Duration) error {
+	utils.LavaFormatInfo("Starting TENDERMINTRPC URI Tests", nil)
+	errors := []string{}
+	mostImportantApisToTest := []string{
+		"%s/health",
+		"%s/status",
+		"%s/block?height=1",
+		"%s/validator?height=1&page=1&per_page=1",
+		"%s/genesis",
+		"%s/genesis_chunked?chunk=1",
+	}
+	for start := time.Now(); time.Since(start) < testDuration; {
+		for _, api := range mostImportantApisToTest {
+			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("%s", err))
+			} else if strings.Contains(string(reply), "error") {
+				errors = append(errors, string(reply))
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6",
@@ -624,6 +652,7 @@ func runE2E() {
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
+	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 
 	if jsonErr != nil {
@@ -636,6 +665,12 @@ func runE2E() {
 		panic(tendermintErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
+	}
+
+	if tendermintURIErr != nil {
+		panic(tendermintURIErr)
+	} else {
+		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
 	}
 
 	if restErr != nil {
