@@ -32,7 +32,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -58,7 +58,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -84,7 +84,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -120,7 +120,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -146,7 +146,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -170,7 +170,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -196,7 +196,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -220,7 +220,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -244,7 +244,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -268,7 +268,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -292,7 +292,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -316,7 +316,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -342,7 +342,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -368,7 +368,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -392,7 +392,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -416,7 +416,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -440,7 +440,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -464,7 +464,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -488,7 +488,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -512,7 +512,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -536,7 +536,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -560,7 +560,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -596,7 +596,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -620,7 +620,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -644,7 +644,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -668,7 +668,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -692,7 +692,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -716,7 +716,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -742,7 +742,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -766,7 +766,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -790,7 +790,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -814,7 +814,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -851,7 +851,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -887,7 +887,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -911,7 +911,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -935,7 +935,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -959,7 +959,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -983,7 +983,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1007,7 +1007,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1031,7 +1031,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1055,7 +1055,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1079,7 +1079,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1103,7 +1103,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1127,7 +1127,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1151,7 +1151,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1175,7 +1175,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1199,7 +1199,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1223,7 +1223,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1247,7 +1247,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1271,7 +1271,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1295,7 +1295,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1319,7 +1319,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1343,7 +1343,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1367,7 +1367,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1391,7 +1391,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1415,7 +1415,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1439,7 +1439,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1463,7 +1463,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1487,7 +1487,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1511,7 +1511,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1535,7 +1535,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1559,7 +1559,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1583,7 +1583,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1607,7 +1607,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1631,7 +1631,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1655,7 +1655,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1679,7 +1679,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1703,7 +1703,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1727,7 +1727,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1751,7 +1751,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1775,7 +1775,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1799,7 +1799,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1823,7 +1823,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1847,7 +1847,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1871,7 +1871,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1895,7 +1895,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1919,7 +1919,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1943,7 +1943,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1967,7 +1967,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1991,7 +1991,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2015,7 +2015,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2039,7 +2039,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2063,7 +2063,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2087,7 +2087,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2111,7 +2111,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2135,7 +2135,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2159,7 +2159,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2183,7 +2183,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2207,7 +2207,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2231,7 +2231,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2255,7 +2255,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2279,7 +2279,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2303,7 +2303,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2327,7 +2327,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2351,7 +2351,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2375,7 +2375,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2399,7 +2399,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2423,7 +2423,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2447,7 +2447,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2471,7 +2471,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2495,7 +2495,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2519,7 +2519,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2543,7 +2543,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2567,13 +2567,13 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             },
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2597,7 +2597,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2621,7 +2621,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2645,7 +2645,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2669,7 +2669,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2693,7 +2693,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2717,7 +2717,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2741,7 +2741,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2765,7 +2765,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2789,7 +2789,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2813,7 +2813,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2837,7 +2837,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2861,7 +2861,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2885,7 +2885,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2909,7 +2909,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2933,7 +2933,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2957,7 +2957,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2981,7 +2981,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3005,7 +3005,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3029,7 +3029,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3053,7 +3053,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3077,7 +3077,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3101,7 +3101,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3125,7 +3125,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3149,7 +3149,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3173,7 +3173,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3197,7 +3197,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3221,7 +3221,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3245,7 +3245,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3269,7 +3269,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3293,7 +3293,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3317,7 +3317,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3341,7 +3341,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3365,7 +3365,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3389,7 +3389,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3413,7 +3413,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3437,7 +3437,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3461,7 +3461,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3485,7 +3485,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3509,7 +3509,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3533,7 +3533,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3557,7 +3557,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3581,7 +3581,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3605,7 +3605,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3629,7 +3629,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3653,7 +3653,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3677,7 +3677,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3701,7 +3701,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3725,7 +3725,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3749,7 +3749,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3773,7 +3773,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3797,7 +3797,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3821,7 +3821,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3845,7 +3845,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3869,7 +3869,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3893,7 +3893,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3917,7 +3917,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3941,7 +3941,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3965,7 +3965,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3989,7 +3989,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4013,7 +4013,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4037,7 +4037,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4061,7 +4061,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4085,7 +4085,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4109,7 +4109,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4133,7 +4133,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4157,7 +4157,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4181,7 +4181,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4205,7 +4205,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4229,7 +4229,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4253,7 +4253,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4277,7 +4277,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4301,7 +4301,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4338,7 +4338,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4364,7 +4364,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4390,7 +4390,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4426,7 +4426,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4452,7 +4452,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4476,7 +4476,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4502,7 +4502,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4526,7 +4526,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4550,7 +4550,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4574,7 +4574,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4598,7 +4598,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4622,7 +4622,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4648,7 +4648,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4674,7 +4674,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4698,7 +4698,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4722,7 +4722,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4746,7 +4746,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4770,7 +4770,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4794,7 +4794,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4818,7 +4818,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4842,7 +4842,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4866,7 +4866,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -4902,7 +4902,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -4926,7 +4926,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4950,7 +4950,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4974,7 +4974,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -4998,7 +4998,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5022,7 +5022,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5048,7 +5048,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "tendermintrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5072,7 +5072,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5096,7 +5096,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5120,7 +5120,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5157,7 +5157,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5193,7 +5193,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5217,7 +5217,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5241,7 +5241,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5265,7 +5265,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5289,7 +5289,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -5313,7 +5313,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5337,7 +5337,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5361,7 +5361,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5385,7 +5385,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5409,7 +5409,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5433,7 +5433,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5457,7 +5457,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5481,7 +5481,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5505,7 +5505,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5529,7 +5529,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5553,7 +5553,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5577,7 +5577,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5601,7 +5601,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5625,7 +5625,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5649,7 +5649,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5673,7 +5673,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5697,7 +5697,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5721,7 +5721,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5745,7 +5745,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5769,7 +5769,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5793,7 +5793,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5817,7 +5817,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5841,7 +5841,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5865,7 +5865,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5889,7 +5889,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5913,7 +5913,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5937,7 +5937,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5961,7 +5961,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -5985,7 +5985,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6009,7 +6009,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6033,7 +6033,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6057,7 +6057,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6081,7 +6081,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6105,7 +6105,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6129,7 +6129,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6153,7 +6153,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6177,7 +6177,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6201,7 +6201,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6225,7 +6225,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6249,7 +6249,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6273,7 +6273,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6297,7 +6297,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6321,7 +6321,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6345,7 +6345,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6369,7 +6369,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6393,7 +6393,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6417,7 +6417,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6441,7 +6441,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6465,7 +6465,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6489,7 +6489,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6513,7 +6513,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6537,7 +6537,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6561,7 +6561,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6585,7 +6585,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6609,7 +6609,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6633,7 +6633,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6657,7 +6657,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6681,7 +6681,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6705,7 +6705,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6729,7 +6729,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6753,7 +6753,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -6777,7 +6777,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -6801,7 +6801,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6825,7 +6825,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6849,7 +6849,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -6873,13 +6873,13 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             },
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -6903,7 +6903,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6927,7 +6927,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6951,7 +6951,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6975,7 +6975,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -6999,7 +6999,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7023,7 +7023,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7047,7 +7047,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7071,7 +7071,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7095,7 +7095,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7119,7 +7119,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7143,7 +7143,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7167,7 +7167,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7191,7 +7191,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7215,7 +7215,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7239,7 +7239,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7263,7 +7263,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7287,7 +7287,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7311,7 +7311,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7335,7 +7335,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7359,7 +7359,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7383,7 +7383,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7407,7 +7407,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7431,7 +7431,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7455,7 +7455,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7479,7 +7479,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7503,7 +7503,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7527,7 +7527,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7551,7 +7551,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7575,7 +7575,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7599,7 +7599,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7623,7 +7623,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7647,7 +7647,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7671,7 +7671,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7695,7 +7695,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7719,7 +7719,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7743,7 +7743,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7767,7 +7767,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7791,7 +7791,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7815,7 +7815,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7839,7 +7839,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7863,7 +7863,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7887,7 +7887,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7911,7 +7911,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7935,7 +7935,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7959,7 +7959,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -7983,7 +7983,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8007,7 +8007,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8031,7 +8031,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8055,7 +8055,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8079,7 +8079,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8103,7 +8103,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8127,7 +8127,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8151,7 +8151,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8175,7 +8175,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8199,7 +8199,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8223,7 +8223,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8247,7 +8247,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8271,7 +8271,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8295,7 +8295,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8319,7 +8319,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8343,7 +8343,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8367,7 +8367,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8391,7 +8391,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8415,7 +8415,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8439,7 +8439,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8463,7 +8463,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8487,7 +8487,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8511,7 +8511,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8535,7 +8535,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8559,7 +8559,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8583,7 +8583,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -8607,7 +8607,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "rest",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }

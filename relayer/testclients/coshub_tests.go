@@ -58,7 +58,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 
 			for _, api_interface := range apiInterfaceList {
 				httpMethod := http.MethodGet
-				if api_interface.Type == "post" {
+				if api_interface.Type == "POST" {
 					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue

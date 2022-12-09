@@ -176,6 +176,19 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
+
+	//put only the relevant interface
+	found := false
+	for _, apiinterface := range serviceApi.ApiInterfaces {
+		if apiinterface.Type == connectionType {
+			serviceApi.ApiInterfaces = []spectypes.ApiInterface{apiinterface}
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
 	// data contains the query string
 	nodeMsg := &RestMessage{
 		cp:             cp,

@@ -30898,10 +30898,12 @@ paths:
                                 extra_compute_units:
                                   type: string
                                   format: uint64
+                                deterministic:
+                                  type: boolean
                           category:
                             type: object
                             properties:
-                              deterministic:
+                              reserved:
                                 type: boolean
                               local:
                                 type: boolean
@@ -31132,10 +31134,12 @@ paths:
                               extra_compute_units:
                                 type: string
                                 format: uint64
+                              deterministic:
+                                type: boolean
                         category:
                           type: object
                           properties:
-                            deterministic:
+                            reserved:
                               type: boolean
                             local:
                               type: boolean
@@ -53358,6 +53362,8 @@ definitions:
       extra_compute_units:
         type: string
         format: uint64
+      deterministic:
+        type: boolean
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -53503,10 +53509,12 @@ definitions:
                         extra_compute_units:
                           type: string
                           format: uint64
+                        deterministic:
+                          type: boolean
                   category:
                     type: object
                     properties:
-                      deterministic:
+                      reserved:
                         type: boolean
                       local:
                         type: boolean
@@ -53650,10 +53658,12 @@ definitions:
                       extra_compute_units:
                         type: string
                         format: uint64
+                      deterministic:
+                        type: boolean
                 category:
                   type: object
                   properties:
-                    deterministic:
+                    reserved:
                       type: boolean
                     local:
                       type: boolean
@@ -53801,10 +53811,12 @@ definitions:
             extra_compute_units:
               type: string
               format: uint64
+            deterministic:
+              type: boolean
       category:
         type: object
         properties:
-          deterministic:
+          reserved:
             type: boolean
           local:
             type: boolean
@@ -53901,10 +53913,12 @@ definitions:
                   extra_compute_units:
                     type: string
                     format: uint64
+                  deterministic:
+                    type: boolean
             category:
               type: object
               properties:
-                deterministic:
+                reserved:
                   type: boolean
                 local:
                   type: boolean
@@ -53967,7 +53981,7 @@ definitions:
   lavanet.lava.spec.SpecCategory:
     type: object
     properties:
-      deterministic:
+      reserved:
         type: boolean
       local:
         type: boolean

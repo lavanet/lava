@@ -32,7 +32,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -56,7 +56,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -80,7 +80,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -104,7 +104,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -128,7 +128,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -162,7 +162,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -186,7 +186,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -210,7 +210,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -234,7 +234,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -258,7 +258,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -282,7 +282,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -306,7 +306,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -330,7 +330,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -354,7 +354,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -389,7 +389,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -413,7 +413,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -437,7 +437,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -461,7 +461,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -485,7 +485,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -509,7 +509,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -533,7 +533,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -557,7 +557,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -581,7 +581,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -605,7 +605,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -629,7 +629,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -653,7 +653,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -677,7 +677,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -701,7 +701,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -725,7 +725,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -749,7 +749,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -773,7 +773,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -798,7 +798,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -822,7 +822,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -846,7 +846,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -870,7 +870,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -894,7 +894,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -928,7 +928,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -952,7 +952,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -976,7 +976,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1000,7 +1000,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1024,7 +1024,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1048,7 +1048,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1072,7 +1072,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1096,7 +1096,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1120,7 +1120,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1155,7 +1155,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1179,7 +1179,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1203,7 +1203,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1227,7 +1227,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1251,7 +1251,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1275,7 +1275,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1299,7 +1299,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1323,7 +1323,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1347,7 +1347,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1371,7 +1371,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1395,7 +1395,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1419,7 +1419,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1443,7 +1443,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1467,7 +1467,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1491,7 +1491,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1515,7 +1515,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1539,7 +1539,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1563,7 +1563,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1587,7 +1587,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1624,7 +1624,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1648,7 +1648,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1672,7 +1672,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1696,7 +1696,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1720,7 +1720,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1754,7 +1754,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1778,7 +1778,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1802,7 +1802,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1826,7 +1826,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -1850,7 +1850,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1874,7 +1874,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1898,7 +1898,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1922,7 +1922,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1946,7 +1946,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -1981,7 +1981,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2005,7 +2005,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2029,7 +2029,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2053,7 +2053,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2077,7 +2077,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2101,7 +2101,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2125,7 +2125,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2149,7 +2149,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2173,7 +2173,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2197,7 +2197,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2221,7 +2221,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2245,7 +2245,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2269,7 +2269,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2293,7 +2293,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2317,7 +2317,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2341,7 +2341,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2365,7 +2365,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2390,7 +2390,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2414,7 +2414,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2438,7 +2438,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2462,7 +2462,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2486,7 +2486,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2520,7 +2520,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2544,7 +2544,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2568,7 +2568,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2592,7 +2592,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2616,7 +2616,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2640,7 +2640,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2664,7 +2664,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2688,7 +2688,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2712,7 +2712,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2747,7 +2747,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2771,7 +2771,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2795,7 +2795,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2819,7 +2819,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2843,7 +2843,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2867,7 +2867,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2891,7 +2891,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2915,7 +2915,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -2939,7 +2939,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2963,7 +2963,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -2987,7 +2987,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3011,7 +3011,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3035,7 +3035,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3059,7 +3059,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3083,7 +3083,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -3107,7 +3107,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -3131,7 +3131,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": true
                             }
@@ -3155,7 +3155,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }
@@ -3179,7 +3179,7 @@
                         "api_interfaces": [
                             {
                                 "interface": "jsonrpc",
-                                "type": "get",
+                                "type": "GET",
                                 "extra_compute_units": "0",
 	                            "deterministic": false
                             }

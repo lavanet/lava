@@ -44,7 +44,7 @@ func TestShowEpochDetails(t *testing.T) {
 		obj  types.EpochDetails
 	}{
 		{
-			desc: "get",
+			desc: "GET",
 			args: common,
 			obj:  obj,
 		},

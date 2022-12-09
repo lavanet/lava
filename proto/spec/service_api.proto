@@ -25,6 +25,7 @@ message ApiInterface {
   string interface = 1;
   string type = 2;
   uint64 extra_compute_units = 3; 
+  bool deterministic = 4;
 }
 
 message BlockParser {
@@ -42,7 +43,7 @@ enum PARSER_FUNC{
 }
 
 message SpecCategory{
-  bool deterministic = 1;
+  bool reserved = 1;
   bool local = 2;
   bool subscription = 3;
   uint32 stateful = 4;
