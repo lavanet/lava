@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"strings"
 
@@ -89,7 +88,6 @@ func (m GrpcMessage) GetResult() json.RawMessage { // Todo return errors here as
 		utils.LavaFormatError("m.formatter(msg)", err, nil)
 		return m.Result
 	}
-	// log.Println("m.formatter(): ", s)
 
 	return []byte(s)
 }
@@ -218,13 +216,12 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 		msg:            data,
 		connectionType: connectionType,
 	}
-	log.Println("[nodeMsg.msg]", string(nodeMsg.msg.([]byte)))
 
 	return nodeMsg, nil
 }
 
 func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
-	log.Println("gRPC PortalStart")
+	utils.LavaFormatInfo("gRPC PortalStart", nil)
 
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
@@ -232,7 +229,7 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	}
 
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
-		utils.LavaFormatInfo("GRPC GOT RELAY: "+method, nil)
+		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
 		if relayReply, _, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), ""); err != nil {
 			return nil, utils.LavaFormatError("Failed to SendRelay", err, nil)
@@ -281,9 +278,6 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	nm.methodDesc = methodDescriptor
-	log.Println("[REQ TYPE]", methodDescriptor.GetInputType())
-	log.Println("[RESP TYPE]", methodDescriptor.GetOutputType())
-	log.Println("[MSG]", nm.msg)
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
 	var reader io.Reader
@@ -291,15 +285,11 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	formatMessage := false
 	switch v := nm.msg.(type) {
 	case []byte:
-		log.Println("[switch]: []byte")
-		log.Println("[DEBUG]: reader", string(v))
 		if len(v) > 0 {
 			reader = bytes.NewReader(v)
 			formatMessage = true
 		}
 	case string:
-		log.Println("[switch]: string")
-		log.Println("[DEBUG]: reader", v)
 		if v != "" {
 			reader = strings.NewReader(v)
 			formatMessage = true
