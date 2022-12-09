@@ -28,7 +28,6 @@
                             }
                         },
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -45,14 +44,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getBlockWithTxs",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -69,14 +68,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getStateUpdate",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -93,14 +92,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getStorageAt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -117,14 +116,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -141,14 +140,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionByBlockIdAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -165,14 +164,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionReceipt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -189,14 +188,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getClass",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -213,14 +212,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getClassHashAt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -237,14 +236,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getBlockTransactionCount",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -261,14 +260,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_call",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -285,14 +284,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_estimateFee",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -309,7 +308,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
@@ -326,7 +326,6 @@
                             }
                         },
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -343,14 +342,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_blockHashAndNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -367,14 +366,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_chainId",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -391,14 +390,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_pendingTransactions",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -415,14 +414,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_syncing",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -439,14 +438,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "starknet_getEvents",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -463,14 +462,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "starknet_getNonce",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -487,7 +486,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     }

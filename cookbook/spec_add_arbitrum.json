@@ -17,7 +17,6 @@
                     {
                         "name": "rpc_modules",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -34,14 +33,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "net_version",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -58,14 +57,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_chainId",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -82,14 +81,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_syncing",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -106,14 +105,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_protocolVersion",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -130,14 +129,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_mining",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -154,14 +153,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_hashrate",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -178,14 +177,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_coinbase",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -202,14 +201,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "net_listening",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -226,14 +225,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "net_peerCount",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -250,14 +249,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_uninstallFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -274,14 +273,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_accounts",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -298,14 +297,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_blockNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -322,7 +321,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -339,7 +339,6 @@
                     {
                         "name": "eth_subscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": true,
                             "stateful": 0
@@ -356,14 +355,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_unsubscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": false,
                             "stateful": 0
@@ -380,14 +379,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_feeHistory",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -404,14 +403,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_maxPriorityFeePerGas",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -428,14 +427,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_createAccessList",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -452,14 +451,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionReceipt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -476,14 +475,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getCompilers",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -500,14 +499,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getWork",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -524,14 +523,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_compileLLL",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -548,14 +547,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleByBlockHashAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -572,14 +571,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleByBlockNumberAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -596,14 +595,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByBlockHashAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -620,14 +619,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByBlockNumberAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -644,14 +643,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleCountByBlockHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -668,14 +667,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleCountByBlockNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -692,14 +691,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "web3_clientVersion",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -716,14 +715,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "web3_sha3",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -740,14 +739,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockByNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -764,7 +763,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -782,7 +782,6 @@
                     {
                         "name": "eth_getStorageAt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -799,14 +798,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -823,14 +822,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_gasPrice",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -847,14 +846,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBalance",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -871,14 +870,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getCode",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -895,14 +894,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sign",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -919,14 +918,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_signTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -943,14 +942,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sendTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -967,14 +966,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getFilterChanges",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -991,14 +990,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newBlockFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1015,14 +1014,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1040,14 +1039,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newPendingTransactionFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1064,14 +1063,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockTransactionCountByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1088,14 +1087,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockTransactionCountByNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1112,14 +1111,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1136,14 +1135,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionCount",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1160,14 +1159,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_call",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1184,14 +1183,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getFilterLogs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1208,14 +1207,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getLogs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1233,14 +1232,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_estimateGas",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1257,14 +1256,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sendRawTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1281,7 +1280,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     }
@@ -1301,7 +1301,6 @@
                     {
                         "name": "rpc_modules",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1318,14 +1317,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "net_version",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1342,14 +1341,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_chainId",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1366,14 +1365,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_syncing",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1390,14 +1389,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_protocolVersion",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1414,14 +1413,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_mining",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1438,14 +1437,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_hashrate",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1462,14 +1461,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_coinbase",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1486,14 +1485,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "net_listening",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1510,14 +1509,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "net_peerCount",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1534,14 +1533,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_uninstallFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1558,14 +1557,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_accounts",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1582,14 +1581,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_blockNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1606,7 +1605,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -1623,7 +1623,6 @@
                     {
                         "name": "eth_subscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": true,
                             "stateful": 0
@@ -1640,14 +1639,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_unsubscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": false,
                             "stateful": 0
@@ -1664,14 +1663,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_feeHistory",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1688,14 +1687,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_maxPriorityFeePerGas",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1712,14 +1711,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_createAccessList",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1736,14 +1735,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionReceipt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1760,14 +1759,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getCompilers",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1784,14 +1783,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getWork",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1808,14 +1807,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_compileLLL",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1832,14 +1831,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleByBlockHashAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1856,14 +1855,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleByBlockNumberAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1880,14 +1879,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByBlockHashAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1904,14 +1903,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByBlockNumberAndIndex",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1928,14 +1927,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleCountByBlockHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1952,14 +1951,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getUncleCountByBlockNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1976,14 +1975,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "web3_clientVersion",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2000,14 +1999,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "web3_sha3",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2024,14 +2023,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockByNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2048,7 +2047,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -2066,7 +2066,6 @@
                     {
                         "name": "eth_getStorageAt",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2083,14 +2082,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2107,14 +2106,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_gasPrice",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2131,14 +2130,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBalance",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2155,14 +2154,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getCode",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2179,14 +2178,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sign",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2203,14 +2202,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_signTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2227,14 +2226,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sendTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2251,14 +2250,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getFilterChanges",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2275,14 +2274,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newBlockFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2299,14 +2298,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2324,14 +2323,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_newPendingTransactionFilter",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2348,14 +2347,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockTransactionCountByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2372,14 +2371,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockTransactionCountByNumber",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2396,14 +2395,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getBlockByHash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2420,14 +2419,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getTransactionCount",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2444,14 +2443,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_call",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2468,14 +2467,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_getFilterLogs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2492,14 +2491,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_getLogs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2517,14 +2516,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "eth_estimateGas",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2541,14 +2540,14 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "eth_sendRawTransaction",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2565,7 +2564,8 @@
                             {
                                 "interface": "jsonrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     }

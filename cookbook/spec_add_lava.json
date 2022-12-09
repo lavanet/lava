@@ -17,7 +17,6 @@
                     {
                         "name": "abci_info",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -34,14 +33,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "abci_query",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -60,14 +59,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "block",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -86,7 +85,8 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -105,7 +105,6 @@
                     {
                         "name": "block_by_hash",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -122,14 +121,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "block_results",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -148,14 +147,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "block_search",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -172,14 +171,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "blockchain",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -198,14 +197,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "broadcast_evidence",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -222,14 +221,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_async",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -246,14 +245,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_commit",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -270,14 +269,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_sync",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -294,14 +293,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "check_tx",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -318,14 +317,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "commit",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -344,14 +343,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "consensus_params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -370,14 +369,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "consensus_state",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -394,14 +393,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "dump_consensus_state",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -418,14 +417,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "genesis",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -442,14 +441,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "genesis_chunked",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -466,14 +465,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "health",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -490,14 +489,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "net_info",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -514,14 +513,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "num_unconfirmed_txs",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -538,14 +537,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "status",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -562,7 +561,8 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ],
                         "parsing": {
@@ -581,7 +581,6 @@
                     {
                         "name": "subscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": true,
                             "stateful": 0
@@ -598,14 +597,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "tx",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -622,14 +621,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "tx_search",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -646,14 +645,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "unconfirmed_txs",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -670,14 +669,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "unsubscribe",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": false,
                             "stateful": 0
@@ -694,14 +693,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "unsubscribe_all",
                         "category": {
-                            "deterministic": false,
                             "local": true,
                             "subscription": false,
                             "stateful": 0
@@ -718,14 +717,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "validators",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -744,14 +743,14 @@
                             {
                                 "interface": "tendermintrpc",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/node_info",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -768,14 +767,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/syncing",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -792,14 +791,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/blocks/latest",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -816,7 +815,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -836,7 +836,6 @@
                     {
                         "name": "/blocks/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -853,7 +852,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -872,7 +872,6 @@
                     {
                         "name": "/validatorsets/latest",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -889,14 +888,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/validatorsets/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -913,14 +912,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/txs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -937,14 +936,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/staking/delegators/{delegatorAddr}/delegations",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -961,14 +960,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -985,14 +984,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1009,14 +1008,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/inflation",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1033,14 +1032,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/interchain_accounts/controller/v1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1057,14 +1056,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/client_connections/{client_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1081,14 +1080,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1105,14 +1104,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/supply/{denom}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1129,14 +1128,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1153,14 +1152,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1177,14 +1176,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1201,14 +1200,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1225,14 +1224,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/client/v1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1249,14 +1248,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1273,14 +1272,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1297,14 +1296,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1321,19 +1320,20 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             },
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1350,14 +1350,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1374,14 +1374,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/simulate",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1398,14 +1398,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1422,14 +1422,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/provider_payment_storage",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1446,14 +1446,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1470,14 +1470,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1494,14 +1494,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1518,14 +1518,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1542,14 +1542,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/conflict/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1566,14 +1566,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1590,14 +1590,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/supply",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1614,14 +1614,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/community_pool",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1638,14 +1638,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1662,14 +1662,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1686,14 +1686,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1710,14 +1710,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/upgraded_consensus_states",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1734,14 +1734,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/balances/{address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1758,14 +1758,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1782,14 +1782,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1806,14 +1806,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1830,14 +1830,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/params/{params_type}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1854,14 +1854,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/annual_provisions",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1878,14 +1878,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1902,14 +1902,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1926,14 +1926,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1950,14 +1950,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1974,14 +1974,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/connections/{connection}/channels",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -1998,14 +1998,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2022,14 +2022,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/providers/{chainID}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2046,14 +2046,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2070,14 +2070,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/historical_info/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2094,14 +2094,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2118,14 +2118,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/epoch_details",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2142,14 +2142,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2166,14 +2166,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2190,14 +2190,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2214,14 +2214,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/module_versions",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2238,14 +2238,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2262,14 +2262,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2286,14 +2286,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2310,14 +2310,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2334,14 +2334,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2358,14 +2358,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/signing_infos",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2382,14 +2382,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2406,14 +2406,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/epoch_payments",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2430,14 +2430,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/denoms_metadata",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2454,14 +2454,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2478,14 +2478,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2502,14 +2502,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/params/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2526,14 +2526,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_status/{client_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2550,14 +2550,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2574,14 +2574,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/accounts",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2598,14 +2598,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2622,14 +2622,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2646,14 +2646,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs/block/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2670,14 +2670,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/interchain_accounts/host/v1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2694,14 +2694,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2718,14 +2718,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/stake_storage",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2742,14 +2742,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/accounts/{address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2766,14 +2766,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2790,14 +2790,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2814,14 +2814,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/spec/{index}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2838,14 +2838,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2862,14 +2862,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2886,14 +2886,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2910,14 +2910,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2934,14 +2934,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2958,14 +2958,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -2982,14 +2982,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3006,14 +3006,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/evidence/v1beta1/evidence",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3030,14 +3030,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/pool",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3054,14 +3054,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3078,14 +3078,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3102,14 +3102,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs/{hash}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3126,14 +3126,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3150,14 +3150,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3174,14 +3174,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/chain/{chainID}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3198,14 +3198,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3222,14 +3222,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3246,14 +3246,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3270,14 +3270,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3294,14 +3294,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3318,14 +3318,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/clients/{chainID}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3342,14 +3342,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3366,14 +3366,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/syncing",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3390,14 +3390,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3414,14 +3414,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_traces",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3438,14 +3438,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3462,14 +3462,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/params",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3486,14 +3486,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3510,14 +3510,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_states/{client_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3534,14 +3534,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/upgraded_client_states",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3558,14 +3558,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_states",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3582,14 +3582,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3606,14 +3606,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/current_plan",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3630,14 +3630,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3654,14 +3654,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/spec",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3678,14 +3678,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3702,14 +3702,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3726,14 +3726,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3750,14 +3750,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/consensus_states/{client_id}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3774,14 +3774,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/epoch_payments/{index}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3798,14 +3798,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/node_info",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3822,14 +3822,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3846,14 +3846,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3870,14 +3870,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -3894,7 +3894,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     }

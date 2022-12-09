@@ -17,7 +17,6 @@
                     {
                         "name": "/accounts/{address}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -34,14 +33,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/resources",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -58,14 +57,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/modules",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -82,14 +81,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/resource/{resource_type}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -106,14 +105,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/module/{module_name}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -130,14 +129,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/blocks/by_height/{block_height}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -154,7 +153,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ],
                         "parsing": {
@@ -172,7 +172,6 @@
                     {
                         "name": "/blocks/by_version/{version}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -189,14 +188,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/events/{event_key}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -213,14 +212,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/events/{creation_number}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -237,14 +236,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/events/{event_handle}/{field_name}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -261,14 +260,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/spec",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -285,14 +284,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/-/healthy",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -309,14 +308,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -333,7 +332,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ],
                         "parsing": {
@@ -351,7 +351,6 @@
                     {
                         "name": "/tables/{table_handle}/item",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -368,14 +367,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/transactions",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -392,19 +391,20 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             },
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/transactions/by_hash/{txn_hash}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -421,14 +421,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/transactions/by_version/{txn_version}",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -445,14 +445,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/transactions",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -469,14 +469,14 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     },
                     {
                         "name": "/transactions/batch",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -493,14 +493,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/transactions/simulate",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -517,14 +517,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/transactions/encode_submission",
                         "category": {
-                            "deterministic": false,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -541,14 +541,14 @@
                             {
                                 "interface": "rest",
                                 "type": "post",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": false
                             }
                         ]
                     },
                     {
                         "name": "/estimate_gas_price",
                         "category": {
-                            "deterministic": true,
                             "local": false,
                             "subscription": false,
                             "stateful": 0
@@ -565,7 +565,8 @@
                             {
                                 "interface": "rest",
                                 "type": "get",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+	                            "deterministic": true
                             }
                         ]
                     }
