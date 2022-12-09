@@ -626,7 +626,7 @@ func runE2E() {
 	defer lt.saveLogs()
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
-	lt.checkLava(time.Minute * 5)
+	lt.checkLava(time.Minute * 10)
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
