@@ -114,12 +114,12 @@ func (m *QueryParamsResponse) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.ibcratelimit.v1beta1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.ibcratelimit.v1beta1.QueryParamsResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.ibcratelimit.v1beta1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.ibcratelimit.v1beta1.QueryParamsResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/ibc-rate-limit/v1beta1/query.proto", fileDescriptor_9376d12c6390a846)
+	//proto.RegisterFile("osmosis/ibc-rate-limit/v1beta1/query.proto", fileDescriptor_9376d12c6390a846)
 }
 
 var fileDescriptor_9376d12c6390a846 = []byte{

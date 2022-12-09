@@ -256,13 +256,13 @@ func (m *IdentifiedPacketFees) GetPacketFees() []PacketFee {
 }
 
 func init() {
-	proto.RegisterType((*Fee)(nil), "ibc.applications.fee.v1.Fee")
-	proto.RegisterType((*PacketFee)(nil), "ibc.applications.fee.v1.PacketFee")
-	proto.RegisterType((*PacketFees)(nil), "ibc.applications.fee.v1.PacketFees")
-	proto.RegisterType((*IdentifiedPacketFees)(nil), "ibc.applications.fee.v1.IdentifiedPacketFees")
+	//proto.RegisterType((*Fee)(nil), "ibc.applications.fee.v1.Fee")
+	//proto.RegisterType((*PacketFee)(nil), "ibc.applications.fee.v1.PacketFee")
+	//proto.RegisterType((*PacketFees)(nil), "ibc.applications.fee.v1.PacketFees")
+	//proto.RegisterType((*IdentifiedPacketFees)(nil), "ibc.applications.fee.v1.IdentifiedPacketFees")
 }
 
-func init() { proto.RegisterFile("ibc/applications/fee/v1/fee.proto", fileDescriptor_cb3319f1af2a53e5) }
+func init() { }//proto.RegisterFile("ibc/applications/fee/v1/fee.proto", fileDescriptor_cb3319f1af2a53e5) }
 
 var fileDescriptor_cb3319f1af2a53e5 = []byte{
 	// 526 bytes of a gzipped FileDescriptorProto

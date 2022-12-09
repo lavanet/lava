@@ -423,14 +423,14 @@ func (m *Sequence) GetValue() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "cosmwasm.wasm.v1.GenesisState")
-	proto.RegisterType((*GenesisState_GenMsgs)(nil), "cosmwasm.wasm.v1.GenesisState.GenMsgs")
-	proto.RegisterType((*Code)(nil), "cosmwasm.wasm.v1.Code")
-	proto.RegisterType((*Contract)(nil), "cosmwasm.wasm.v1.Contract")
-	proto.RegisterType((*Sequence)(nil), "cosmwasm.wasm.v1.Sequence")
+	//proto.RegisterType((*GenesisState)(nil), "cosmwasm.wasm.v1.GenesisState")
+	//proto.RegisterType((*GenesisState_GenMsgs)(nil), "cosmwasm.wasm.v1.GenesisState.GenMsgs")
+	//proto.RegisterType((*Code)(nil), "cosmwasm.wasm.v1.Code")
+	//proto.RegisterType((*Contract)(nil), "cosmwasm.wasm.v1.Contract")
+	//proto.RegisterType((*Sequence)(nil), "cosmwasm.wasm.v1.Sequence")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/genesis.proto", fileDescriptor_2ab3f539b23472a6) }
+func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/genesis.proto", fileDescriptor_2ab3f539b23472a6) }
 
 var fileDescriptor_2ab3f539b23472a6 = []byte{
 	// 676 bytes of a gzipped FileDescriptorProto

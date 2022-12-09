@@ -161,12 +161,12 @@ func (m *CosmosTx) GetMessages() []*types.Any {
 
 func init() {
 	proto.RegisterEnum("ibc.applications.interchain_accounts.v1.Type", Type_name, Type_value)
-	proto.RegisterType((*InterchainAccountPacketData)(nil), "ibc.applications.interchain_accounts.v1.InterchainAccountPacketData")
-	proto.RegisterType((*CosmosTx)(nil), "ibc.applications.interchain_accounts.v1.CosmosTx")
+	//proto.RegisterType((*InterchainAccountPacketData)(nil), "ibc.applications.interchain_accounts.v1.InterchainAccountPacketData")
+	//proto.RegisterType((*CosmosTx)(nil), "ibc.applications.interchain_accounts.v1.CosmosTx")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/interchain_accounts/v1/packet.proto", fileDescriptor_89a080d7401cd393)
+	// proto.RegisterFile("ibc/applications/interchain_accounts/v1/packet.proto", fileDescriptor_89a080d7401cd393)
 }
 
 var fileDescriptor_89a080d7401cd393 = []byte{

@@ -199,13 +199,13 @@ func (m *QueryCurrentEpochResponse) GetCurrentEpoch() int64 {
 }
 
 func init() {
-	proto.RegisterType((*QueryEpochsInfoRequest)(nil), "osmosis.epochs.v1beta1.QueryEpochsInfoRequest")
-	proto.RegisterType((*QueryEpochsInfoResponse)(nil), "osmosis.epochs.v1beta1.QueryEpochsInfoResponse")
-	proto.RegisterType((*QueryCurrentEpochRequest)(nil), "osmosis.epochs.v1beta1.QueryCurrentEpochRequest")
-	proto.RegisterType((*QueryCurrentEpochResponse)(nil), "osmosis.epochs.v1beta1.QueryCurrentEpochResponse")
+	//proto.RegisterType((*QueryEpochsInfoRequest)(nil), "osmosis.epochs.v1beta1.QueryEpochsInfoRequest")
+	//proto.RegisterType((*QueryEpochsInfoResponse)(nil), "osmosis.epochs.v1beta1.QueryEpochsInfoResponse")
+	//proto.RegisterType((*QueryCurrentEpochRequest)(nil), "osmosis.epochs.v1beta1.QueryCurrentEpochRequest")
+	//proto.RegisterType((*QueryCurrentEpochResponse)(nil), "osmosis.epochs.v1beta1.QueryCurrentEpochResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/epochs/query.proto", fileDescriptor_574bd176519c765f) }
+func init() { }//proto.RegisterFile("osmosis/epochs/query.proto", fileDescriptor_574bd176519c765f) }
 
 var fileDescriptor_574bd176519c765f = []byte{
 	// 410 bytes of a gzipped FileDescriptorProto

@@ -912,27 +912,27 @@ func (m *QueryLockableDurationsResponse) GetLockableDurations() []time.Duration 
 }
 
 func init() {
-	proto.RegisterType((*ModuleToDistributeCoinsRequest)(nil), "osmosis.incentives.ModuleToDistributeCoinsRequest")
-	proto.RegisterType((*ModuleToDistributeCoinsResponse)(nil), "osmosis.incentives.ModuleToDistributeCoinsResponse")
-	proto.RegisterType((*GaugeByIDRequest)(nil), "osmosis.incentives.GaugeByIDRequest")
-	proto.RegisterType((*GaugeByIDResponse)(nil), "osmosis.incentives.GaugeByIDResponse")
-	proto.RegisterType((*GaugesRequest)(nil), "osmosis.incentives.GaugesRequest")
-	proto.RegisterType((*GaugesResponse)(nil), "osmosis.incentives.GaugesResponse")
-	proto.RegisterType((*ActiveGaugesRequest)(nil), "osmosis.incentives.ActiveGaugesRequest")
-	proto.RegisterType((*ActiveGaugesResponse)(nil), "osmosis.incentives.ActiveGaugesResponse")
-	proto.RegisterType((*ActiveGaugesPerDenomRequest)(nil), "osmosis.incentives.ActiveGaugesPerDenomRequest")
-	proto.RegisterType((*ActiveGaugesPerDenomResponse)(nil), "osmosis.incentives.ActiveGaugesPerDenomResponse")
-	proto.RegisterType((*UpcomingGaugesRequest)(nil), "osmosis.incentives.UpcomingGaugesRequest")
-	proto.RegisterType((*UpcomingGaugesResponse)(nil), "osmosis.incentives.UpcomingGaugesResponse")
-	proto.RegisterType((*UpcomingGaugesPerDenomRequest)(nil), "osmosis.incentives.UpcomingGaugesPerDenomRequest")
-	proto.RegisterType((*UpcomingGaugesPerDenomResponse)(nil), "osmosis.incentives.UpcomingGaugesPerDenomResponse")
-	proto.RegisterType((*RewardsEstRequest)(nil), "osmosis.incentives.RewardsEstRequest")
-	proto.RegisterType((*RewardsEstResponse)(nil), "osmosis.incentives.RewardsEstResponse")
-	proto.RegisterType((*QueryLockableDurationsRequest)(nil), "osmosis.incentives.QueryLockableDurationsRequest")
-	proto.RegisterType((*QueryLockableDurationsResponse)(nil), "osmosis.incentives.QueryLockableDurationsResponse")
+	//proto.RegisterType((*ModuleToDistributeCoinsRequest)(nil), "osmosis.incentives.ModuleToDistributeCoinsRequest")
+	//proto.RegisterType((*ModuleToDistributeCoinsResponse)(nil), "osmosis.incentives.ModuleToDistributeCoinsResponse")
+	//proto.RegisterType((*GaugeByIDRequest)(nil), "osmosis.incentives.GaugeByIDRequest")
+	//proto.RegisterType((*GaugeByIDResponse)(nil), "osmosis.incentives.GaugeByIDResponse")
+	//proto.RegisterType((*GaugesRequest)(nil), "osmosis.incentives.GaugesRequest")
+	//proto.RegisterType((*GaugesResponse)(nil), "osmosis.incentives.GaugesResponse")
+	//proto.RegisterType((*ActiveGaugesRequest)(nil), "osmosis.incentives.ActiveGaugesRequest")
+	//proto.RegisterType((*ActiveGaugesResponse)(nil), "osmosis.incentives.ActiveGaugesResponse")
+	//proto.RegisterType((*ActiveGaugesPerDenomRequest)(nil), "osmosis.incentives.ActiveGaugesPerDenomRequest")
+	//proto.RegisterType((*ActiveGaugesPerDenomResponse)(nil), "osmosis.incentives.ActiveGaugesPerDenomResponse")
+	//proto.RegisterType((*UpcomingGaugesRequest)(nil), "osmosis.incentives.UpcomingGaugesRequest")
+	//proto.RegisterType((*UpcomingGaugesResponse)(nil), "osmosis.incentives.UpcomingGaugesResponse")
+	//proto.RegisterType((*UpcomingGaugesPerDenomRequest)(nil), "osmosis.incentives.UpcomingGaugesPerDenomRequest")
+	//proto.RegisterType((*UpcomingGaugesPerDenomResponse)(nil), "osmosis.incentives.UpcomingGaugesPerDenomResponse")
+	//proto.RegisterType((*RewardsEstRequest)(nil), "osmosis.incentives.RewardsEstRequest")
+	//proto.RegisterType((*RewardsEstResponse)(nil), "osmosis.incentives.RewardsEstResponse")
+	//proto.RegisterType((*QueryLockableDurationsRequest)(nil), "osmosis.incentives.QueryLockableDurationsRequest")
+	//proto.RegisterType((*QueryLockableDurationsResponse)(nil), "osmosis.incentives.QueryLockableDurationsResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/incentives/query.proto", fileDescriptor_8124258a89427f98) }
+func init() { }//proto.RegisterFile("osmosis/incentives/query.proto", fileDescriptor_8124258a89427f98) }
 
 var fileDescriptor_8124258a89427f98 = []byte{
 	// 1057 bytes of a gzipped FileDescriptorProto

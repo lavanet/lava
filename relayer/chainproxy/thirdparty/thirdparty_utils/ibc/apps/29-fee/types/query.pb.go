@@ -1042,30 +1042,30 @@ func (m *QueryFeeEnabledChannelResponse) GetFeeEnabled() bool {
 }
 
 func init() {
-	proto.RegisterType((*QueryIncentivizedPacketsRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsRequest")
-	proto.RegisterType((*QueryIncentivizedPacketsResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsResponse")
-	proto.RegisterType((*QueryIncentivizedPacketRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketRequest")
-	proto.RegisterType((*QueryIncentivizedPacketResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketResponse")
-	proto.RegisterType((*QueryIncentivizedPacketsForChannelRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelRequest")
-	proto.RegisterType((*QueryIncentivizedPacketsForChannelResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelResponse")
-	proto.RegisterType((*QueryTotalRecvFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalRecvFeesRequest")
-	proto.RegisterType((*QueryTotalRecvFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalRecvFeesResponse")
-	proto.RegisterType((*QueryTotalAckFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalAckFeesRequest")
-	proto.RegisterType((*QueryTotalAckFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalAckFeesResponse")
-	proto.RegisterType((*QueryTotalTimeoutFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalTimeoutFeesRequest")
-	proto.RegisterType((*QueryTotalTimeoutFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalTimeoutFeesResponse")
-	proto.RegisterType((*QueryPayeeRequest)(nil), "ibc.applications.fee.v1.QueryPayeeRequest")
-	proto.RegisterType((*QueryPayeeResponse)(nil), "ibc.applications.fee.v1.QueryPayeeResponse")
-	proto.RegisterType((*QueryCounterpartyPayeeRequest)(nil), "ibc.applications.fee.v1.QueryCounterpartyPayeeRequest")
-	proto.RegisterType((*QueryCounterpartyPayeeResponse)(nil), "ibc.applications.fee.v1.QueryCounterpartyPayeeResponse")
-	proto.RegisterType((*QueryFeeEnabledChannelsRequest)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelsRequest")
-	proto.RegisterType((*QueryFeeEnabledChannelsResponse)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelsResponse")
-	proto.RegisterType((*QueryFeeEnabledChannelRequest)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelRequest")
-	proto.RegisterType((*QueryFeeEnabledChannelResponse)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelResponse")
+	//proto.RegisterType((*QueryIncentivizedPacketsRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsRequest")
+	//proto.RegisterType((*QueryIncentivizedPacketsResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsResponse")
+	//proto.RegisterType((*QueryIncentivizedPacketRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketRequest")
+	//proto.RegisterType((*QueryIncentivizedPacketResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketResponse")
+	//proto.RegisterType((*QueryIncentivizedPacketsForChannelRequest)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelRequest")
+	//proto.RegisterType((*QueryIncentivizedPacketsForChannelResponse)(nil), "ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelResponse")
+	//proto.RegisterType((*QueryTotalRecvFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalRecvFeesRequest")
+	//proto.RegisterType((*QueryTotalRecvFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalRecvFeesResponse")
+	//proto.RegisterType((*QueryTotalAckFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalAckFeesRequest")
+	//proto.RegisterType((*QueryTotalAckFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalAckFeesResponse")
+	//proto.RegisterType((*QueryTotalTimeoutFeesRequest)(nil), "ibc.applications.fee.v1.QueryTotalTimeoutFeesRequest")
+	//proto.RegisterType((*QueryTotalTimeoutFeesResponse)(nil), "ibc.applications.fee.v1.QueryTotalTimeoutFeesResponse")
+	//proto.RegisterType((*QueryPayeeRequest)(nil), "ibc.applications.fee.v1.QueryPayeeRequest")
+	//proto.RegisterType((*QueryPayeeResponse)(nil), "ibc.applications.fee.v1.QueryPayeeResponse")
+	//proto.RegisterType((*QueryCounterpartyPayeeRequest)(nil), "ibc.applications.fee.v1.QueryCounterpartyPayeeRequest")
+	//proto.RegisterType((*QueryCounterpartyPayeeResponse)(nil), "ibc.applications.fee.v1.QueryCounterpartyPayeeResponse")
+	//proto.RegisterType((*QueryFeeEnabledChannelsRequest)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelsRequest")
+	//proto.RegisterType((*QueryFeeEnabledChannelsResponse)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelsResponse")
+	//proto.RegisterType((*QueryFeeEnabledChannelRequest)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelRequest")
+	//proto.RegisterType((*QueryFeeEnabledChannelResponse)(nil), "ibc.applications.fee.v1.QueryFeeEnabledChannelResponse")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/fee/v1/query.proto", fileDescriptor_0638a8a78ca2503c)
+	// proto.RegisterFile("ibc/applications/fee/v1/query.proto", fileDescriptor_0638a8a78ca2503c)
 }
 
 var fileDescriptor_0638a8a78ca2503c = []byte{

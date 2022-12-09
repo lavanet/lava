@@ -363,17 +363,17 @@ func (m *MsgSubmitMisbehaviourResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgSubmitMisbehaviourResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgCreateClient)(nil), "ibc.core.client.v1.MsgCreateClient")
-	proto.RegisterType((*MsgCreateClientResponse)(nil), "ibc.core.client.v1.MsgCreateClientResponse")
-	proto.RegisterType((*MsgUpdateClient)(nil), "ibc.core.client.v1.MsgUpdateClient")
-	proto.RegisterType((*MsgUpdateClientResponse)(nil), "ibc.core.client.v1.MsgUpdateClientResponse")
-	proto.RegisterType((*MsgUpgradeClient)(nil), "ibc.core.client.v1.MsgUpgradeClient")
-	proto.RegisterType((*MsgUpgradeClientResponse)(nil), "ibc.core.client.v1.MsgUpgradeClientResponse")
-	proto.RegisterType((*MsgSubmitMisbehaviour)(nil), "ibc.core.client.v1.MsgSubmitMisbehaviour")
-	proto.RegisterType((*MsgSubmitMisbehaviourResponse)(nil), "ibc.core.client.v1.MsgSubmitMisbehaviourResponse")
+	//proto.RegisterType((*MsgCreateClient)(nil), "ibc.core.client.v1.MsgCreateClient")
+	//proto.RegisterType((*MsgCreateClientResponse)(nil), "ibc.core.client.v1.MsgCreateClientResponse")
+	//proto.RegisterType((*MsgUpdateClient)(nil), "ibc.core.client.v1.MsgUpdateClient")
+	//proto.RegisterType((*MsgUpdateClientResponse)(nil), "ibc.core.client.v1.MsgUpdateClientResponse")
+	//proto.RegisterType((*MsgUpgradeClient)(nil), "ibc.core.client.v1.MsgUpgradeClient")
+	//proto.RegisterType((*MsgUpgradeClientResponse)(nil), "ibc.core.client.v1.MsgUpgradeClientResponse")
+	//proto.RegisterType((*MsgSubmitMisbehaviour)(nil), "ibc.core.client.v1.MsgSubmitMisbehaviour")
+	//proto.RegisterType((*MsgSubmitMisbehaviourResponse)(nil), "ibc.core.client.v1.MsgSubmitMisbehaviourResponse")
 }
 
-func init() { proto.RegisterFile("ibc/core/client/v1/tx.proto", fileDescriptor_cb5dc4651eb49a04) }
+func init() { }//proto.RegisterFile("ibc/core/client/v1/tx.proto", fileDescriptor_cb5dc4651eb49a04) }
 
 var fileDescriptor_cb5dc4651eb49a04 = []byte{
 	// 623 bytes of a gzipped FileDescriptorProto

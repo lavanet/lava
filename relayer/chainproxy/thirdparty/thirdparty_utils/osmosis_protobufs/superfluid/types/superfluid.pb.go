@@ -390,17 +390,17 @@ func (m *UnpoolWhitelistedPools) GetIds() []uint64 {
 }
 
 func init() {
-	proto.RegisterEnum("osmosis.superfluid.SuperfluidAssetType", SuperfluidAssetType_name, SuperfluidAssetType_value)
-	proto.RegisterType((*SuperfluidAsset)(nil), "osmosis.superfluid.SuperfluidAsset")
-	proto.RegisterType((*SuperfluidIntermediaryAccount)(nil), "osmosis.superfluid.SuperfluidIntermediaryAccount")
-	proto.RegisterType((*OsmoEquivalentMultiplierRecord)(nil), "osmosis.superfluid.OsmoEquivalentMultiplierRecord")
-	proto.RegisterType((*SuperfluidDelegationRecord)(nil), "osmosis.superfluid.SuperfluidDelegationRecord")
-	proto.RegisterType((*LockIdIntermediaryAccountConnection)(nil), "osmosis.superfluid.LockIdIntermediaryAccountConnection")
-	proto.RegisterType((*UnpoolWhitelistedPools)(nil), "osmosis.superfluid.UnpoolWhitelistedPools")
+	// proto.RegisterEnum("osmosis.superfluid.SuperfluidAssetType", SuperfluidAssetType_name, SuperfluidAssetType_value)
+	//proto.RegisterType((*SuperfluidAsset)(nil), "osmosis.superfluid.SuperfluidAsset")
+	//proto.RegisterType((*SuperfluidIntermediaryAccount)(nil), "osmosis.superfluid.SuperfluidIntermediaryAccount")
+	//proto.RegisterType((*OsmoEquivalentMultiplierRecord)(nil), "osmosis.superfluid.OsmoEquivalentMultiplierRecord")
+	//proto.RegisterType((*SuperfluidDelegationRecord)(nil), "osmosis.superfluid.SuperfluidDelegationRecord")
+	//proto.RegisterType((*LockIdIntermediaryAccountConnection)(nil), "osmosis.superfluid.LockIdIntermediaryAccountConnection")
+	//proto.RegisterType((*UnpoolWhitelistedPools)(nil), "osmosis.superfluid.UnpoolWhitelistedPools")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/superfluid/superfluid.proto", fileDescriptor_79d3c29d82dbb734)
+	//proto.RegisterFile("osmosis/superfluid/superfluid.proto", fileDescriptor_79d3c29d82dbb734)
 }
 
 var fileDescriptor_79d3c29d82dbb734 = []byte{

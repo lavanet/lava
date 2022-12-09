@@ -67,10 +67,10 @@ func (m *UpdateFeeTokenProposal) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdateFeeTokenProposal proto.InternalMessageInfo
 
 func init() {
-	// proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
+	// //proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
 }
 
-func init() { proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
+func init() { }//proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
 
 var fileDescriptor_2c4a51bafc82863d = []byte{
 	// 312 bytes of a gzipped FileDescriptorProto

@@ -107,12 +107,12 @@ func (m *ModuleRoute) GetPoolType() PoolType {
 }
 
 func init() {
-	proto.RegisterEnum("osmosis.swaprouter.v1beta1.PoolType", PoolType_name, PoolType_value)
-	proto.RegisterType((*ModuleRoute)(nil), "osmosis.swaprouter.v1beta1.ModuleRoute")
+	// proto.RegisterEnum("osmosis.swaprouter.v1beta1.PoolType", PoolType_name, PoolType_value)
+	//proto.RegisterType((*ModuleRoute)(nil), "osmosis.swaprouter.v1beta1.ModuleRoute")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/swaprouter/v1beta1/module_route.proto", fileDescriptor_c26575d86edff56b)
+	//proto.RegisterFile("osmosis/swaprouter/v1beta1/module_route.proto", fileDescriptor_c26575d86edff56b)
 }
 
 var fileDescriptor_c26575d86edff56b = []byte{

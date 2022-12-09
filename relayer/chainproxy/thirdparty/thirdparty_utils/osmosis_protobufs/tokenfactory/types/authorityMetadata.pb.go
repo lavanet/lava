@@ -73,11 +73,11 @@ func (m *DenomAuthorityMetadata) GetAdmin() string {
 }
 
 func init() {
-	proto.RegisterType((*DenomAuthorityMetadata)(nil), "osmosis.tokenfactory.v1beta1.DenomAuthorityMetadata")
+	//proto.RegisterType((*DenomAuthorityMetadata)(nil), "osmosis.tokenfactory.v1beta1.DenomAuthorityMetadata")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/tokenfactory/v1beta1/authorityMetadata.proto", fileDescriptor_99435de88ae175f7)
+	//proto.RegisterFile("osmosis/tokenfactory/v1beta1/authorityMetadata.proto", fileDescriptor_99435de88ae175f7)
 }
 
 var fileDescriptor_99435de88ae175f7 = []byte{

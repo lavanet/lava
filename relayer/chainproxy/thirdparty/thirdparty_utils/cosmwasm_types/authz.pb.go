@@ -446,18 +446,20 @@ func (m *AcceptedMessagesFilter) XXX_DiscardUnknown() {
 var xxx_messageInfo_AcceptedMessagesFilter proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ContractExecutionAuthorization)(nil), "cosmwasm.wasm.v1.ContractExecutionAuthorization")
-	proto.RegisterType((*ContractMigrationAuthorization)(nil), "cosmwasm.wasm.v1.ContractMigrationAuthorization")
-	proto.RegisterType((*ContractGrant)(nil), "cosmwasm.wasm.v1.ContractGrant")
-	proto.RegisterType((*MaxCallsLimit)(nil), "cosmwasm.wasm.v1.MaxCallsLimit")
-	proto.RegisterType((*MaxFundsLimit)(nil), "cosmwasm.wasm.v1.MaxFundsLimit")
-	proto.RegisterType((*CombinedLimit)(nil), "cosmwasm.wasm.v1.CombinedLimit")
-	proto.RegisterType((*AllowAllMessagesFilter)(nil), "cosmwasm.wasm.v1.AllowAllMessagesFilter")
-	proto.RegisterType((*AcceptedMessageKeysFilter)(nil), "cosmwasm.wasm.v1.AcceptedMessageKeysFilter")
-	proto.RegisterType((*AcceptedMessagesFilter)(nil), "cosmwasm.wasm.v1.AcceptedMessagesFilter")
+	//proto.RegisterType((*ContractExecutionAuthorization)(nil), "cosmwasm.wasm.v1.ContractExecutionAuthorization")
+	//proto.RegisterType((*ContractMigrationAuthorization)(nil), "cosmwasm.wasm.v1.ContractMigrationAuthorization")
+	//proto.RegisterType((*ContractGrant)(nil), "cosmwasm.wasm.v1.ContractGrant")
+	//proto.RegisterType((*MaxCallsLimit)(nil), "cosmwasm.wasm.v1.MaxCallsLimit")
+	//proto.RegisterType((*MaxFundsLimit)(nil), "cosmwasm.wasm.v1.MaxFundsLimit")
+	//proto.RegisterType((*CombinedLimit)(nil), "cosmwasm.wasm.v1.CombinedLimit")
+	//proto.RegisterType((*AllowAllMessagesFilter)(nil), "cosmwasm.wasm.v1.AllowAllMessagesFilter")
+	//proto.RegisterType((*AcceptedMessageKeysFilter)(nil), "cosmwasm.wasm.v1.AcceptedMessageKeysFilter")
+	//proto.RegisterType((*AcceptedMessagesFilter)(nil), "cosmwasm.wasm.v1.AcceptedMessagesFilter")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/authz.proto", fileDescriptor_36ff3a20cf32b258) }
+func init() { 
+	// proto.RegisterFile("cosmwasm/wasm/v1/authz.proto", fileDescriptor_36ff3a20cf32b258) 
+}
 
 var fileDescriptor_36ff3a20cf32b258 = []byte{
 	// 578 bytes of a gzipped FileDescriptorProto

@@ -94,11 +94,11 @@ func (m *GenesisState) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "ibc.core.connection.v1.GenesisState")
+	//proto.RegisterType((*GenesisState)(nil), "ibc.core.connection.v1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("ibc/core/connection/v1/genesis.proto", fileDescriptor_1879d34bc6ac3cd7)
+	//proto.RegisterFile("ibc/core/connection/v1/genesis.proto", fileDescriptor_1879d34bc6ac3cd7)
 }
 
 var fileDescriptor_1879d34bc6ac3cd7 = []byte{

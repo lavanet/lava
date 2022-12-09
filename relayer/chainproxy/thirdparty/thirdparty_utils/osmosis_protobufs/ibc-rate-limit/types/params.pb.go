@@ -69,11 +69,11 @@ func (m *Params) GetContractAddress() string {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.ibcratelimit.v1beta1.Params")
+	//proto.RegisterType((*Params)(nil), "osmosis.ibcratelimit.v1beta1.Params")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/ibc-rate-limit/v1beta1/params.proto", fileDescriptor_ca004105b8c54072)
+	//proto.RegisterFile("osmosis/ibc-rate-limit/v1beta1/params.proto", fileDescriptor_ca004105b8c54072)
 }
 
 var fileDescriptor_ca004105b8c54072 = []byte{

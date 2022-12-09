@@ -309,12 +309,12 @@ func (m *SyntheticLock) GetDuration() time.Duration {
 
 func init() {
 	proto.RegisterEnum("osmosis.lockup.LockQueryType", LockQueryType_name, LockQueryType_value)
-	proto.RegisterType((*PeriodLock)(nil), "osmosis.lockup.PeriodLock")
-	proto.RegisterType((*QueryCondition)(nil), "osmosis.lockup.QueryCondition")
-	proto.RegisterType((*SyntheticLock)(nil), "osmosis.lockup.SyntheticLock")
+	//proto.RegisterType((*PeriodLock)(nil), "osmosis.lockup.PeriodLock")
+	//proto.RegisterType((*QueryCondition)(nil), "osmosis.lockup.QueryCondition")
+	//proto.RegisterType((*SyntheticLock)(nil), "osmosis.lockup.SyntheticLock")
 }
 
-func init() { proto.RegisterFile("osmosis/lockup/lock.proto", fileDescriptor_7e9d7527a237b489) }
+func init() { }//proto.RegisterFile("osmosis/lockup/lock.proto", fileDescriptor_7e9d7527a237b489) }
 
 var fileDescriptor_7e9d7527a237b489 = []byte{
 	// 595 bytes of a gzipped FileDescriptorProto

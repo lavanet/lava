@@ -547,19 +547,19 @@ func (m *MsgForceUnlockResponse) GetSuccess() bool {
 }
 
 func init() {
-	proto.RegisterType((*MsgLockTokens)(nil), "osmosis.lockup.MsgLockTokens")
-	proto.RegisterType((*MsgLockTokensResponse)(nil), "osmosis.lockup.MsgLockTokensResponse")
-	proto.RegisterType((*MsgBeginUnlockingAll)(nil), "osmosis.lockup.MsgBeginUnlockingAll")
-	proto.RegisterType((*MsgBeginUnlockingAllResponse)(nil), "osmosis.lockup.MsgBeginUnlockingAllResponse")
-	proto.RegisterType((*MsgBeginUnlocking)(nil), "osmosis.lockup.MsgBeginUnlocking")
-	proto.RegisterType((*MsgBeginUnlockingResponse)(nil), "osmosis.lockup.MsgBeginUnlockingResponse")
-	proto.RegisterType((*MsgExtendLockup)(nil), "osmosis.lockup.MsgExtendLockup")
-	proto.RegisterType((*MsgExtendLockupResponse)(nil), "osmosis.lockup.MsgExtendLockupResponse")
-	proto.RegisterType((*MsgForceUnlock)(nil), "osmosis.lockup.MsgForceUnlock")
-	proto.RegisterType((*MsgForceUnlockResponse)(nil), "osmosis.lockup.MsgForceUnlockResponse")
+	//proto.RegisterType((*MsgLockTokens)(nil), "osmosis.lockup.MsgLockTokens")
+	//proto.RegisterType((*MsgLockTokensResponse)(nil), "osmosis.lockup.MsgLockTokensResponse")
+	//proto.RegisterType((*MsgBeginUnlockingAll)(nil), "osmosis.lockup.MsgBeginUnlockingAll")
+	//proto.RegisterType((*MsgBeginUnlockingAllResponse)(nil), "osmosis.lockup.MsgBeginUnlockingAllResponse")
+	//proto.RegisterType((*MsgBeginUnlocking)(nil), "osmosis.lockup.MsgBeginUnlocking")
+	//proto.RegisterType((*MsgBeginUnlockingResponse)(nil), "osmosis.lockup.MsgBeginUnlockingResponse")
+	//proto.RegisterType((*MsgExtendLockup)(nil), "osmosis.lockup.MsgExtendLockup")
+	//proto.RegisterType((*MsgExtendLockupResponse)(nil), "osmosis.lockup.MsgExtendLockupResponse")
+	//proto.RegisterType((*MsgForceUnlock)(nil), "osmosis.lockup.MsgForceUnlock")
+	//proto.RegisterType((*MsgForceUnlockResponse)(nil), "osmosis.lockup.MsgForceUnlockResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/lockup/tx.proto", fileDescriptor_bcdad5af0d24735f) }
+func init() { }//proto.RegisterFile("osmosis/lockup/tx.proto", fileDescriptor_bcdad5af0d24735f) }
 
 var fileDescriptor_bcdad5af0d24735f = []byte{
 	// 631 bytes of a gzipped FileDescriptorProto

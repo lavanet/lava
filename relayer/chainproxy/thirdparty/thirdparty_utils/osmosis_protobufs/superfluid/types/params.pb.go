@@ -68,10 +68,10 @@ func (m *Params) XXX_DiscardUnknown() {
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.superfluid.Params")
+	//proto.RegisterType((*Params)(nil), "osmosis.superfluid.Params")
 }
 
-func init() { proto.RegisterFile("osmosis/superfluid/params.proto", fileDescriptor_0985261dfaf2a82e) }
+func init() { }//proto.RegisterFile("osmosis/superfluid/params.proto", fileDescriptor_0985261dfaf2a82e) }
 
 var fileDescriptor_0985261dfaf2a82e = []byte{
 	// 260 bytes of a gzipped FileDescriptorProto

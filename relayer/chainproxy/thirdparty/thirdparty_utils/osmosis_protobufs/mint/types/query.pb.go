@@ -192,13 +192,13 @@ func (m *QueryEpochProvisionsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_QueryEpochProvisionsResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.mint.v1beta1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.mint.v1beta1.QueryParamsResponse")
-	proto.RegisterType((*QueryEpochProvisionsRequest)(nil), "osmosis.mint.v1beta1.QueryEpochProvisionsRequest")
-	proto.RegisterType((*QueryEpochProvisionsResponse)(nil), "osmosis.mint.v1beta1.QueryEpochProvisionsResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.mint.v1beta1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.mint.v1beta1.QueryParamsResponse")
+	//proto.RegisterType((*QueryEpochProvisionsRequest)(nil), "osmosis.mint.v1beta1.QueryEpochProvisionsRequest")
+	//proto.RegisterType((*QueryEpochProvisionsResponse)(nil), "osmosis.mint.v1beta1.QueryEpochProvisionsResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/mint/v1beta1/query.proto", fileDescriptor_cd2f42111e753fbb) }
+func init() { }//proto.RegisterFile("osmosis/mint/v1beta1/query.proto", fileDescriptor_cd2f42111e753fbb) }
 
 var fileDescriptor_cd2f42111e753fbb = []byte{
 	// 394 bytes of a gzipped FileDescriptorProto

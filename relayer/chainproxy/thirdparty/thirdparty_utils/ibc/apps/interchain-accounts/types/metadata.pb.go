@@ -117,11 +117,11 @@ func (m *Metadata) GetTxType() string {
 }
 
 func init() {
-	proto.RegisterType((*Metadata)(nil), "ibc.applications.interchain_accounts.v1.Metadata")
+	//proto.RegisterType((*Metadata)(nil), "ibc.applications.interchain_accounts.v1.Metadata")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/interchain_accounts/v1/metadata.proto", fileDescriptor_c29c32e397d1f21e)
+	// proto.RegisterFile("ibc/applications/interchain_accounts/v1/metadata.proto", fileDescriptor_c29c32e397d1f21e)
 }
 
 var fileDescriptor_c29c32e397d1f21e = []byte{

@@ -647,24 +647,24 @@ func (m *QueryExternalIncentiveGaugesResponse) GetData() []types1.Gauge {
 }
 
 func init() {
-	proto.RegisterType((*QueryGaugeIdsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsRequest")
-	proto.RegisterType((*QueryGaugeIdsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsResponse")
-	proto.RegisterType((*QueryGaugeIdsResponse_GaugeIdWithDuration)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsResponse.GaugeIdWithDuration")
-	proto.RegisterType((*QueryDistrInfoRequest)(nil), "osmosis.poolincentives.v1beta1.QueryDistrInfoRequest")
-	proto.RegisterType((*QueryDistrInfoResponse)(nil), "osmosis.poolincentives.v1beta1.QueryDistrInfoResponse")
-	proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryParamsResponse")
-	proto.RegisterType((*QueryLockableDurationsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryLockableDurationsRequest")
-	proto.RegisterType((*QueryLockableDurationsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryLockableDurationsResponse")
-	proto.RegisterType((*QueryIncentivizedPoolsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryIncentivizedPoolsRequest")
-	proto.RegisterType((*IncentivizedPool)(nil), "osmosis.poolincentives.v1beta1.IncentivizedPool")
-	proto.RegisterType((*QueryIncentivizedPoolsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryIncentivizedPoolsResponse")
-	proto.RegisterType((*QueryExternalIncentiveGaugesRequest)(nil), "osmosis.poolincentives.v1beta1.QueryExternalIncentiveGaugesRequest")
-	proto.RegisterType((*QueryExternalIncentiveGaugesResponse)(nil), "osmosis.poolincentives.v1beta1.QueryExternalIncentiveGaugesResponse")
+	//proto.RegisterType((*QueryGaugeIdsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsRequest")
+	//proto.RegisterType((*QueryGaugeIdsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsResponse")
+	//proto.RegisterType((*QueryGaugeIdsResponse_GaugeIdWithDuration)(nil), "osmosis.poolincentives.v1beta1.QueryGaugeIdsResponse.GaugeIdWithDuration")
+	//proto.RegisterType((*QueryDistrInfoRequest)(nil), "osmosis.poolincentives.v1beta1.QueryDistrInfoRequest")
+	//proto.RegisterType((*QueryDistrInfoResponse)(nil), "osmosis.poolincentives.v1beta1.QueryDistrInfoResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryParamsResponse")
+	//proto.RegisterType((*QueryLockableDurationsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryLockableDurationsRequest")
+	//proto.RegisterType((*QueryLockableDurationsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryLockableDurationsResponse")
+	//proto.RegisterType((*QueryIncentivizedPoolsRequest)(nil), "osmosis.poolincentives.v1beta1.QueryIncentivizedPoolsRequest")
+	//proto.RegisterType((*IncentivizedPool)(nil), "osmosis.poolincentives.v1beta1.IncentivizedPool")
+	//proto.RegisterType((*QueryIncentivizedPoolsResponse)(nil), "osmosis.poolincentives.v1beta1.QueryIncentivizedPoolsResponse")
+	//proto.RegisterType((*QueryExternalIncentiveGaugesRequest)(nil), "osmosis.poolincentives.v1beta1.QueryExternalIncentiveGaugesRequest")
+	//proto.RegisterType((*QueryExternalIncentiveGaugesResponse)(nil), "osmosis.poolincentives.v1beta1.QueryExternalIncentiveGaugesResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/pool-incentives/v1beta1/query.proto", fileDescriptor_302873ecccbc7636)
+	//proto.RegisterFile("osmosis/pool-incentives/v1beta1/query.proto", fileDescriptor_302873ecccbc7636)
 }
 
 var fileDescriptor_302873ecccbc7636 = []byte{

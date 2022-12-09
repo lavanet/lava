@@ -269,10 +269,10 @@ func (m *MsgAddToGaugeResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgAddToGaugeResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgCreateGauge)(nil), "osmosis.incentives.MsgCreateGauge")
-	proto.RegisterType((*MsgCreateGaugeResponse)(nil), "osmosis.incentives.MsgCreateGaugeResponse")
-	proto.RegisterType((*MsgAddToGauge)(nil), "osmosis.incentives.MsgAddToGauge")
-	proto.RegisterType((*MsgAddToGaugeResponse)(nil), "osmosis.incentives.MsgAddToGaugeResponse")
+	//proto.RegisterType((*MsgCreateGauge)(nil), "osmosis.incentives.MsgCreateGauge")
+	//proto.RegisterType((*MsgCreateGaugeResponse)(nil), "osmosis.incentives.MsgCreateGaugeResponse")
+	//proto.RegisterType((*MsgAddToGauge)(nil), "osmosis.incentives.MsgAddToGauge")
+	//proto.RegisterType((*MsgAddToGaugeResponse)(nil), "osmosis.incentives.MsgAddToGaugeResponse")
 }
 
 func init() { proto.RegisterFile("osmosis/incentives/tx.proto", fileDescriptor_8ea120e22291556e) }

@@ -112,12 +112,12 @@ func (m *QueryParamsResponse) GetParams() *Params {
 }
 
 func init() {
-	proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.interchain_accounts.host.v1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.interchain_accounts.host.v1.QueryParamsResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.interchain_accounts.host.v1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.interchain_accounts.host.v1.QueryParamsResponse")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/interchain_accounts/host/v1/query.proto", fileDescriptor_e6b7e23fc90c353a)
+	// proto.RegisterFile("ibc/applications/interchain_accounts/host/v1/query.proto", fileDescriptor_e6b7e23fc90c353a)
 }
 
 var fileDescriptor_e6b7e23fc90c353a = []byte{

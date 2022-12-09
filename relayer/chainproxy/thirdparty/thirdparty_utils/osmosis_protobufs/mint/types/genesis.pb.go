@@ -89,11 +89,11 @@ func (m *GenesisState) GetReductionStartedEpoch() int64 {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "osmosis.mint.v1beta1.GenesisState")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.mint.v1beta1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/mint/v1beta1/genesis.proto", fileDescriptor_12e6a5511ad3feeb)
+	//proto.RegisterFile("osmosis/mint/v1beta1/genesis.proto", fileDescriptor_12e6a5511ad3feeb)
 }
 
 var fileDescriptor_12e6a5511ad3feeb = []byte{

@@ -141,12 +141,12 @@ func (m *Params) GetReceiveEnabled() bool {
 }
 
 func init() {
-	proto.RegisterType((*DenomTrace)(nil), "ibc.applications.transfer.v1.DenomTrace")
-	proto.RegisterType((*Params)(nil), "ibc.applications.transfer.v1.Params")
+	//proto.RegisterType((*DenomTrace)(nil), "ibc.applications.transfer.v1.DenomTrace")
+	//proto.RegisterType((*Params)(nil), "ibc.applications.transfer.v1.Params")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/transfer/v1/transfer.proto", fileDescriptor_5041673e96e97901)
+	//proto.RegisterFile("ibc/applications/transfer/v1/transfer.proto", fileDescriptor_5041673e96e97901)
 }
 
 var fileDescriptor_5041673e96e97901 = []byte{

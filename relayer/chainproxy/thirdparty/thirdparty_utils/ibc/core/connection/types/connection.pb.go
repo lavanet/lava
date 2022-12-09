@@ -404,17 +404,17 @@ func (m *Params) GetMaxExpectedTimePerBlock() uint64 {
 
 func init() {
 	proto.RegisterEnum("ibc.core.connection.v1.State", State_name, State_value)
-	proto.RegisterType((*ConnectionEnd)(nil), "ibc.core.connection.v1.ConnectionEnd")
-	proto.RegisterType((*IdentifiedConnection)(nil), "ibc.core.connection.v1.IdentifiedConnection")
-	proto.RegisterType((*Counterparty)(nil), "ibc.core.connection.v1.Counterparty")
-	proto.RegisterType((*ClientPaths)(nil), "ibc.core.connection.v1.ClientPaths")
-	proto.RegisterType((*ConnectionPaths)(nil), "ibc.core.connection.v1.ConnectionPaths")
-	proto.RegisterType((*Version)(nil), "ibc.core.connection.v1.Version")
-	proto.RegisterType((*Params)(nil), "ibc.core.connection.v1.Params")
+	//proto.RegisterType((*ConnectionEnd)(nil), "ibc.core.connection.v1.ConnectionEnd")
+	//proto.RegisterType((*IdentifiedConnection)(nil), "ibc.core.connection.v1.IdentifiedConnection")
+	//proto.RegisterType((*Counterparty)(nil), "ibc.core.connection.v1.Counterparty")
+	//proto.RegisterType((*ClientPaths)(nil), "ibc.core.connection.v1.ClientPaths")
+	//proto.RegisterType((*ConnectionPaths)(nil), "ibc.core.connection.v1.ConnectionPaths")
+	//proto.RegisterType((*Version)(nil), "ibc.core.connection.v1.Version")
+	//proto.RegisterType((*Params)(nil), "ibc.core.connection.v1.Params")
 }
 
 func init() {
-	proto.RegisterFile("ibc/core/connection/v1/connection.proto", fileDescriptor_90572467c054e43a)
+	//proto.RegisterFile("ibc/core/connection/v1/connection.proto", fileDescriptor_90572467c054e43a)
 }
 
 var fileDescriptor_90572467c054e43a = []byte{

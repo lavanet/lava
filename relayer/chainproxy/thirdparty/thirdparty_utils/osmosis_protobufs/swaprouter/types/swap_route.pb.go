@@ -128,12 +128,12 @@ func (m *SwapAmountOutRoute) GetTokenInDenom() string {
 }
 
 func init() {
-	proto.RegisterType((*SwapAmountInRoute)(nil), "osmosis.swaprouter.v1beta1.SwapAmountInRoute")
-	proto.RegisterType((*SwapAmountOutRoute)(nil), "osmosis.swaprouter.v1beta1.SwapAmountOutRoute")
+	//proto.RegisterType((*SwapAmountInRoute)(nil), "osmosis.swaprouter.v1beta1.SwapAmountInRoute")
+	//proto.RegisterType((*SwapAmountOutRoute)(nil), "osmosis.swaprouter.v1beta1.SwapAmountOutRoute")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/swaprouter/v1beta1/swap_route.proto", fileDescriptor_9eda4cafb53adf83)
+	//proto.RegisterFile("osmosis/swaprouter/v1beta1/swap_route.proto", fileDescriptor_9eda4cafb53adf83)
 }
 
 var fileDescriptor_9eda4cafb53adf83 = []byte{

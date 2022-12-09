@@ -267,13 +267,13 @@ func (m *Params) GetMintingRewardsDistributionStartEpoch() int64 {
 }
 
 func init() {
-	proto.RegisterType((*Minter)(nil), "osmosis.mint.v1beta1.Minter")
-	proto.RegisterType((*WeightedAddress)(nil), "osmosis.mint.v1beta1.WeightedAddress")
-	proto.RegisterType((*DistributionProportions)(nil), "osmosis.mint.v1beta1.DistributionProportions")
-	// proto.RegisterType((*Params)(nil), "osmosis.mint.v1beta1.Params")
+	//proto.RegisterType((*Minter)(nil), "osmosis.mint.v1beta1.Minter")
+	//proto.RegisterType((*WeightedAddress)(nil), "osmosis.mint.v1beta1.WeightedAddress")
+	//proto.RegisterType((*DistributionProportions)(nil), "osmosis.mint.v1beta1.DistributionProportions")
+	// //proto.RegisterType((*Params)(nil), "osmosis.mint.v1beta1.Params")
 }
 
-func init() { proto.RegisterFile("osmosis/mint/v1beta1/mint.proto", fileDescriptor_ccb38f8335e0f45b) }
+func init() { }//proto.RegisterFile("osmosis/mint/v1beta1/mint.proto", fileDescriptor_ccb38f8335e0f45b) }
 
 var fileDescriptor_ccb38f8335e0f45b = []byte{
 	// 766 bytes of a gzipped FileDescriptorProto

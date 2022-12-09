@@ -359,17 +359,17 @@ func (m *MsgPayPacketFeeAsyncResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgPayPacketFeeAsyncResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgRegisterPayee)(nil), "ibc.applications.fee.v1.MsgRegisterPayee")
-	proto.RegisterType((*MsgRegisterPayeeResponse)(nil), "ibc.applications.fee.v1.MsgRegisterPayeeResponse")
-	proto.RegisterType((*MsgRegisterCounterpartyPayee)(nil), "ibc.applications.fee.v1.MsgRegisterCounterpartyPayee")
-	proto.RegisterType((*MsgRegisterCounterpartyPayeeResponse)(nil), "ibc.applications.fee.v1.MsgRegisterCounterpartyPayeeResponse")
-	proto.RegisterType((*MsgPayPacketFee)(nil), "ibc.applications.fee.v1.MsgPayPacketFee")
-	proto.RegisterType((*MsgPayPacketFeeResponse)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeResponse")
-	proto.RegisterType((*MsgPayPacketFeeAsync)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeAsync")
-	proto.RegisterType((*MsgPayPacketFeeAsyncResponse)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeAsyncResponse")
+	//proto.RegisterType((*MsgRegisterPayee)(nil), "ibc.applications.fee.v1.MsgRegisterPayee")
+	//proto.RegisterType((*MsgRegisterPayeeResponse)(nil), "ibc.applications.fee.v1.MsgRegisterPayeeResponse")
+	//proto.RegisterType((*MsgRegisterCounterpartyPayee)(nil), "ibc.applications.fee.v1.MsgRegisterCounterpartyPayee")
+	//proto.RegisterType((*MsgRegisterCounterpartyPayeeResponse)(nil), "ibc.applications.fee.v1.MsgRegisterCounterpartyPayeeResponse")
+	//proto.RegisterType((*MsgPayPacketFee)(nil), "ibc.applications.fee.v1.MsgPayPacketFee")
+	//proto.RegisterType((*MsgPayPacketFeeResponse)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeResponse")
+	//proto.RegisterType((*MsgPayPacketFeeAsync)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeAsync")
+	//proto.RegisterType((*MsgPayPacketFeeAsyncResponse)(nil), "ibc.applications.fee.v1.MsgPayPacketFeeAsyncResponse")
 }
 
-func init() { proto.RegisterFile("ibc/applications/fee/v1/tx.proto", fileDescriptor_05c93128649f1b96) }
+func init() { }//proto.RegisterFile("ibc/applications/fee/v1/tx.proto", fileDescriptor_05c93128649f1b96) }
 
 var fileDescriptor_05c93128649f1b96 = []byte{
 	// 699 bytes of a gzipped FileDescriptorProto

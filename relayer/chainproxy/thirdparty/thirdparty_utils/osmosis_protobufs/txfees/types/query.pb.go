@@ -373,18 +373,18 @@ func (m *QueryBaseDenomResponse) GetBaseDenom() string {
 }
 
 func init() {
-	proto.RegisterType((*QueryFeeTokensRequest)(nil), "osmosis.txfees.v1beta1.QueryFeeTokensRequest")
-	proto.RegisterType((*QueryFeeTokensResponse)(nil), "osmosis.txfees.v1beta1.QueryFeeTokensResponse")
-	proto.RegisterType((*QueryDenomSpotPriceRequest)(nil), "osmosis.txfees.v1beta1.QueryDenomSpotPriceRequest")
-	proto.RegisterType((*QueryDenomSpotPriceResponse)(nil), "osmosis.txfees.v1beta1.QueryDenomSpotPriceResponse")
-	proto.RegisterType((*QueryDenomPoolIdRequest)(nil), "osmosis.txfees.v1beta1.QueryDenomPoolIdRequest")
-	proto.RegisterType((*QueryDenomPoolIdResponse)(nil), "osmosis.txfees.v1beta1.QueryDenomPoolIdResponse")
-	proto.RegisterType((*QueryBaseDenomRequest)(nil), "osmosis.txfees.v1beta1.QueryBaseDenomRequest")
-	proto.RegisterType((*QueryBaseDenomResponse)(nil), "osmosis.txfees.v1beta1.QueryBaseDenomResponse")
+	//proto.RegisterType((*QueryFeeTokensRequest)(nil), "osmosis.txfees.v1beta1.QueryFeeTokensRequest")
+	//proto.RegisterType((*QueryFeeTokensResponse)(nil), "osmosis.txfees.v1beta1.QueryFeeTokensResponse")
+	//proto.RegisterType((*QueryDenomSpotPriceRequest)(nil), "osmosis.txfees.v1beta1.QueryDenomSpotPriceRequest")
+	//proto.RegisterType((*QueryDenomSpotPriceResponse)(nil), "osmosis.txfees.v1beta1.QueryDenomSpotPriceResponse")
+	//proto.RegisterType((*QueryDenomPoolIdRequest)(nil), "osmosis.txfees.v1beta1.QueryDenomPoolIdRequest")
+	//proto.RegisterType((*QueryDenomPoolIdResponse)(nil), "osmosis.txfees.v1beta1.QueryDenomPoolIdResponse")
+	//proto.RegisterType((*QueryBaseDenomRequest)(nil), "osmosis.txfees.v1beta1.QueryBaseDenomRequest")
+	//proto.RegisterType((*QueryBaseDenomResponse)(nil), "osmosis.txfees.v1beta1.QueryBaseDenomResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/txfees/v1beta1/query.proto", fileDescriptor_6cbc1b48c44dfdd6)
+	//proto.RegisterFile("osmosis/txfees/v1beta1/query.proto", fileDescriptor_6cbc1b48c44dfdd6)
 }
 
 var fileDescriptor_6cbc1b48c44dfdd6 = []byte{

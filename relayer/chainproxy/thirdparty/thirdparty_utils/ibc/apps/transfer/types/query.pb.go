@@ -506,20 +506,20 @@ func (m *QueryEscrowAddressResponse) GetEscrowAddress() string {
 }
 
 func init() {
-	proto.RegisterType((*QueryDenomTraceRequest)(nil), "ibc.applications.transfer.v1.QueryDenomTraceRequest")
-	proto.RegisterType((*QueryDenomTraceResponse)(nil), "ibc.applications.transfer.v1.QueryDenomTraceResponse")
-	proto.RegisterType((*QueryDenomTracesRequest)(nil), "ibc.applications.transfer.v1.QueryDenomTracesRequest")
-	proto.RegisterType((*QueryDenomTracesResponse)(nil), "ibc.applications.transfer.v1.QueryDenomTracesResponse")
-	proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.transfer.v1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.transfer.v1.QueryParamsResponse")
-	proto.RegisterType((*QueryDenomHashRequest)(nil), "ibc.applications.transfer.v1.QueryDenomHashRequest")
-	proto.RegisterType((*QueryDenomHashResponse)(nil), "ibc.applications.transfer.v1.QueryDenomHashResponse")
-	proto.RegisterType((*QueryEscrowAddressRequest)(nil), "ibc.applications.transfer.v1.QueryEscrowAddressRequest")
-	proto.RegisterType((*QueryEscrowAddressResponse)(nil), "ibc.applications.transfer.v1.QueryEscrowAddressResponse")
+	//proto.RegisterType((*QueryDenomTraceRequest)(nil), "ibc.applications.transfer.v1.QueryDenomTraceRequest")
+	//proto.RegisterType((*QueryDenomTraceResponse)(nil), "ibc.applications.transfer.v1.QueryDenomTraceResponse")
+	//proto.RegisterType((*QueryDenomTracesRequest)(nil), "ibc.applications.transfer.v1.QueryDenomTracesRequest")
+	//proto.RegisterType((*QueryDenomTracesResponse)(nil), "ibc.applications.transfer.v1.QueryDenomTracesResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "ibc.applications.transfer.v1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "ibc.applications.transfer.v1.QueryParamsResponse")
+	//proto.RegisterType((*QueryDenomHashRequest)(nil), "ibc.applications.transfer.v1.QueryDenomHashRequest")
+	//proto.RegisterType((*QueryDenomHashResponse)(nil), "ibc.applications.transfer.v1.QueryDenomHashResponse")
+	//proto.RegisterType((*QueryEscrowAddressRequest)(nil), "ibc.applications.transfer.v1.QueryEscrowAddressRequest")
+	//proto.RegisterType((*QueryEscrowAddressResponse)(nil), "ibc.applications.transfer.v1.QueryEscrowAddressResponse")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/transfer/v1/query.proto", fileDescriptor_a638e2800a01538c)
+	//proto.RegisterFile("ibc/applications/transfer/v1/query.proto", fileDescriptor_a638e2800a01538c)
 }
 
 var fileDescriptor_a638e2800a01538c = []byte{

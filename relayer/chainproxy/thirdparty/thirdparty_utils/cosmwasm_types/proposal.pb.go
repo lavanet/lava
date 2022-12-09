@@ -723,22 +723,22 @@ func (m *StoreAndInstantiateContractProposal) XXX_DiscardUnknown() {
 var xxx_messageInfo_StoreAndInstantiateContractProposal proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*StoreCodeProposal)(nil), "cosmwasm.wasm.v1.StoreCodeProposal")
-	proto.RegisterType((*InstantiateContractProposal)(nil), "cosmwasm.wasm.v1.InstantiateContractProposal")
-	proto.RegisterType((*InstantiateContract2Proposal)(nil), "cosmwasm.wasm.v1.InstantiateContract2Proposal")
-	proto.RegisterType((*MigrateContractProposal)(nil), "cosmwasm.wasm.v1.MigrateContractProposal")
-	proto.RegisterType((*SudoContractProposal)(nil), "cosmwasm.wasm.v1.SudoContractProposal")
-	proto.RegisterType((*ExecuteContractProposal)(nil), "cosmwasm.wasm.v1.ExecuteContractProposal")
-	proto.RegisterType((*UpdateAdminProposal)(nil), "cosmwasm.wasm.v1.UpdateAdminProposal")
-	proto.RegisterType((*ClearAdminProposal)(nil), "cosmwasm.wasm.v1.ClearAdminProposal")
-	proto.RegisterType((*PinCodesProposal)(nil), "cosmwasm.wasm.v1.PinCodesProposal")
-	proto.RegisterType((*UnpinCodesProposal)(nil), "cosmwasm.wasm.v1.UnpinCodesProposal")
-	proto.RegisterType((*AccessConfigUpdate)(nil), "cosmwasm.wasm.v1.AccessConfigUpdate")
-	proto.RegisterType((*UpdateInstantiateConfigProposal)(nil), "cosmwasm.wasm.v1.UpdateInstantiateConfigProposal")
-	proto.RegisterType((*StoreAndInstantiateContractProposal)(nil), "cosmwasm.wasm.v1.StoreAndInstantiateContractProposal")
+	//proto.RegisterType((*StoreCodeProposal)(nil), "cosmwasm.wasm.v1.StoreCodeProposal")
+	//proto.RegisterType((*InstantiateContractProposal)(nil), "cosmwasm.wasm.v1.InstantiateContractProposal")
+	//proto.RegisterType((*InstantiateContract2Proposal)(nil), "cosmwasm.wasm.v1.InstantiateContract2Proposal")
+	//proto.RegisterType((*MigrateContractProposal)(nil), "cosmwasm.wasm.v1.MigrateContractProposal")
+	//proto.RegisterType((*SudoContractProposal)(nil), "cosmwasm.wasm.v1.SudoContractProposal")
+	//proto.RegisterType((*ExecuteContractProposal)(nil), "cosmwasm.wasm.v1.ExecuteContractProposal")
+	//proto.RegisterType((*UpdateAdminProposal)(nil), "cosmwasm.wasm.v1.UpdateAdminProposal")
+	//proto.RegisterType((*ClearAdminProposal)(nil), "cosmwasm.wasm.v1.ClearAdminProposal")
+	//proto.RegisterType((*PinCodesProposal)(nil), "cosmwasm.wasm.v1.PinCodesProposal")
+	//proto.RegisterType((*UnpinCodesProposal)(nil), "cosmwasm.wasm.v1.UnpinCodesProposal")
+	//proto.RegisterType((*AccessConfigUpdate)(nil), "cosmwasm.wasm.v1.AccessConfigUpdate")
+	//proto.RegisterType((*UpdateInstantiateConfigProposal)(nil), "cosmwasm.wasm.v1.UpdateInstantiateConfigProposal")
+	//proto.RegisterType((*StoreAndInstantiateContractProposal)(nil), "cosmwasm.wasm.v1.StoreAndInstantiateContractProposal")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/proposal.proto", fileDescriptor_be6422d717c730cb) }
+func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/proposal.proto", fileDescriptor_be6422d717c730cb) }
 
 var fileDescriptor_be6422d717c730cb = []byte{
 	// 981 bytes of a gzipped FileDescriptorProto

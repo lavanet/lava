@@ -145,13 +145,13 @@ func (m *UpdateUnpoolWhiteListProposal) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdateUnpoolWhiteListProposal proto.InternalMessageInfo
 
 func init() {
-	// proto.RegisterType((*SetSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal")
-	// proto.RegisterType((*RemoveSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal")
-	// proto.RegisterType((*UpdateUnpoolWhiteListProposal)(nil), "osmosis.superfluid.v1beta1.UpdateUnpoolWhiteListProposal")
+	// //proto.RegisterType((*SetSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal")
+	// //proto.RegisterType((*RemoveSuperfluidAssetsProposal)(nil), "osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal")
+	// //proto.RegisterType((*UpdateUnpoolWhiteListProposal)(nil), "osmosis.superfluid.v1beta1.UpdateUnpoolWhiteListProposal")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/superfluid/v1beta1/gov.proto", fileDescriptor_2e37d6a8d0e42294)
+	//proto.RegisterFile("osmosis/superfluid/v1beta1/gov.proto", fileDescriptor_2e37d6a8d0e42294)
 }
 
 var fileDescriptor_2e37d6a8d0e42294 = []byte{

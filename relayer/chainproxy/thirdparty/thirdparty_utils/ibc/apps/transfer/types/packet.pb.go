@@ -107,11 +107,11 @@ func (m *FungibleTokenPacketData) GetMemo() string {
 }
 
 func init() {
-	proto.RegisterType((*FungibleTokenPacketData)(nil), "ibc.applications.transfer.v2.FungibleTokenPacketData")
+	//proto.RegisterType((*FungibleTokenPacketData)(nil), "ibc.applications.transfer.v2.FungibleTokenPacketData")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/transfer/v2/packet.proto", fileDescriptor_653ca2ce9a5ca313)
+	//proto.RegisterFile("ibc/applications/transfer/v2/packet.proto", fileDescriptor_653ca2ce9a5ca313)
 }
 
 var fileDescriptor_653ca2ce9a5ca313 = []byte{

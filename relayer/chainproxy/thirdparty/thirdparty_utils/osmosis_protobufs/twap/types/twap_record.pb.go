@@ -138,11 +138,11 @@ func (m *TwapRecord) GetLastErrorTime() time.Time {
 }
 
 func init() {
-	proto.RegisterType((*TwapRecord)(nil), "osmosis.twap.v1beta1.TwapRecord")
+	//proto.RegisterType((*TwapRecord)(nil), "osmosis.twap.v1beta1.TwapRecord")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/twap/v1beta1/twap_record.proto", fileDescriptor_dbf5c78678e601aa)
+	//proto.RegisterFile("osmosis/twap/v1beta1/twap_record.proto", fileDescriptor_dbf5c78678e601aa)
 }
 
 var fileDescriptor_dbf5c78678e601aa = []byte{

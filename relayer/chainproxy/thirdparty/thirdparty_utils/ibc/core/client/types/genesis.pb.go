@@ -210,12 +210,12 @@ func (m *IdentifiedGenesisMetadata) GetClientMetadata() []GenesisMetadata {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "ibc.core.client.v1.GenesisState")
-	proto.RegisterType((*GenesisMetadata)(nil), "ibc.core.client.v1.GenesisMetadata")
-	proto.RegisterType((*IdentifiedGenesisMetadata)(nil), "ibc.core.client.v1.IdentifiedGenesisMetadata")
+	//proto.RegisterType((*GenesisState)(nil), "ibc.core.client.v1.GenesisState")
+	//proto.RegisterType((*GenesisMetadata)(nil), "ibc.core.client.v1.GenesisMetadata")
+	//proto.RegisterType((*IdentifiedGenesisMetadata)(nil), "ibc.core.client.v1.IdentifiedGenesisMetadata")
 }
 
-func init() { proto.RegisterFile("ibc/core/client/v1/genesis.proto", fileDescriptor_bcd0c0f1f2e6a91a) }
+func init() { }//proto.RegisterFile("ibc/core/client/v1/genesis.proto", fileDescriptor_bcd0c0f1f2e6a91a) }
 
 var fileDescriptor_bcd0c0f1f2e6a91a = []byte{
 	// 539 bytes of a gzipped FileDescriptorProto

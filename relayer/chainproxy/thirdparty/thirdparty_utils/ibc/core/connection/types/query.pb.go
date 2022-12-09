@@ -701,22 +701,22 @@ func (m *QueryConnectionParamsResponse) GetParams() *Params {
 }
 
 func init() {
-	proto.RegisterType((*QueryConnectionRequest)(nil), "ibc.core.connection.v1.QueryConnectionRequest")
-	proto.RegisterType((*QueryConnectionResponse)(nil), "ibc.core.connection.v1.QueryConnectionResponse")
-	proto.RegisterType((*QueryConnectionsRequest)(nil), "ibc.core.connection.v1.QueryConnectionsRequest")
-	proto.RegisterType((*QueryConnectionsResponse)(nil), "ibc.core.connection.v1.QueryConnectionsResponse")
-	proto.RegisterType((*QueryClientConnectionsRequest)(nil), "ibc.core.connection.v1.QueryClientConnectionsRequest")
-	proto.RegisterType((*QueryClientConnectionsResponse)(nil), "ibc.core.connection.v1.QueryClientConnectionsResponse")
-	proto.RegisterType((*QueryConnectionClientStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionClientStateRequest")
-	proto.RegisterType((*QueryConnectionClientStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionClientStateResponse")
-	proto.RegisterType((*QueryConnectionConsensusStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateRequest")
-	proto.RegisterType((*QueryConnectionConsensusStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateResponse")
-	proto.RegisterType((*QueryConnectionParamsRequest)(nil), "ibc.core.connection.v1.QueryConnectionParamsRequest")
-	proto.RegisterType((*QueryConnectionParamsResponse)(nil), "ibc.core.connection.v1.QueryConnectionParamsResponse")
+	//proto.RegisterType((*QueryConnectionRequest)(nil), "ibc.core.connection.v1.QueryConnectionRequest")
+	//proto.RegisterType((*QueryConnectionResponse)(nil), "ibc.core.connection.v1.QueryConnectionResponse")
+	//proto.RegisterType((*QueryConnectionsRequest)(nil), "ibc.core.connection.v1.QueryConnectionsRequest")
+	//proto.RegisterType((*QueryConnectionsResponse)(nil), "ibc.core.connection.v1.QueryConnectionsResponse")
+	//proto.RegisterType((*QueryClientConnectionsRequest)(nil), "ibc.core.connection.v1.QueryClientConnectionsRequest")
+	//proto.RegisterType((*QueryClientConnectionsResponse)(nil), "ibc.core.connection.v1.QueryClientConnectionsResponse")
+	//proto.RegisterType((*QueryConnectionClientStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionClientStateRequest")
+	//proto.RegisterType((*QueryConnectionClientStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionClientStateResponse")
+	//proto.RegisterType((*QueryConnectionConsensusStateRequest)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateRequest")
+	//proto.RegisterType((*QueryConnectionConsensusStateResponse)(nil), "ibc.core.connection.v1.QueryConnectionConsensusStateResponse")
+	//proto.RegisterType((*QueryConnectionParamsRequest)(nil), "ibc.core.connection.v1.QueryConnectionParamsRequest")
+	//proto.RegisterType((*QueryConnectionParamsResponse)(nil), "ibc.core.connection.v1.QueryConnectionParamsResponse")
 }
 
 func init() {
-	proto.RegisterFile("ibc/core/connection/v1/query.proto", fileDescriptor_cd8d529f8c7cd06b)
+	//proto.RegisterFile("ibc/core/connection/v1/query.proto", fileDescriptor_cd8d529f8c7cd06b)
 }
 
 var fileDescriptor_cd8d529f8c7cd06b = []byte{

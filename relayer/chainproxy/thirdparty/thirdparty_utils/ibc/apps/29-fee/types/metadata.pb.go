@@ -80,11 +80,11 @@ func (m *Metadata) GetAppVersion() string {
 }
 
 func init() {
-	proto.RegisterType((*Metadata)(nil), "ibc.applications.fee.v1.Metadata")
+	//proto.RegisterType((*Metadata)(nil), "ibc.applications.fee.v1.Metadata")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/fee/v1/metadata.proto", fileDescriptor_03d0f000eda681ce)
+	// proto.RegisterFile("ibc/applications/fee/v1/metadata.proto", fileDescriptor_03d0f000eda681ce)
 }
 
 var fileDescriptor_03d0f000eda681ce = []byte{

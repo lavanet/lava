@@ -483,19 +483,19 @@ func (m *Model) XXX_DiscardUnknown() {
 var xxx_messageInfo_Model proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterEnum("cosmwasm.wasm.v1.AccessType", AccessType_name, AccessType_value)
-	proto.RegisterEnum("cosmwasm.wasm.v1.ContractCodeHistoryOperationType", ContractCodeHistoryOperationType_name, ContractCodeHistoryOperationType_value)
-	proto.RegisterType((*AccessTypeParam)(nil), "cosmwasm.wasm.v1.AccessTypeParam")
-	proto.RegisterType((*AccessConfig)(nil), "cosmwasm.wasm.v1.AccessConfig")
-	proto.RegisterType((*Params)(nil), "cosmwasm.wasm.v1.Params")
-	proto.RegisterType((*CodeInfo)(nil), "cosmwasm.wasm.v1.CodeInfo")
-	proto.RegisterType((*ContractInfo)(nil), "cosmwasm.wasm.v1.ContractInfo")
-	proto.RegisterType((*ContractCodeHistoryEntry)(nil), "cosmwasm.wasm.v1.ContractCodeHistoryEntry")
-	proto.RegisterType((*AbsoluteTxPosition)(nil), "cosmwasm.wasm.v1.AbsoluteTxPosition")
-	proto.RegisterType((*Model)(nil), "cosmwasm.wasm.v1.Model")
+	// proto.RegisterEnum("cosmwasm.wasm.v1.AccessType", AccessType_name, AccessType_value)
+	// proto.RegisterEnum("cosmwasm.wasm.v1.ContractCodeHistoryOperationType", ContractCodeHistoryOperationType_name, ContractCodeHistoryOperationType_value)
+	//proto.RegisterType((*AccessTypeParam)(nil), "cosmwasm.wasm.v1.AccessTypeParam")
+	//proto.RegisterType((*AccessConfig)(nil), "cosmwasm.wasm.v1.AccessConfig")
+	//proto.RegisterType((*Params)(nil), "cosmwasm.wasm.v1.Params")
+	//proto.RegisterType((*CodeInfo)(nil), "cosmwasm.wasm.v1.CodeInfo")
+	//proto.RegisterType((*ContractInfo)(nil), "cosmwasm.wasm.v1.ContractInfo")
+	//proto.RegisterType((*ContractCodeHistoryEntry)(nil), "cosmwasm.wasm.v1.ContractCodeHistoryEntry")
+	//proto.RegisterType((*AbsoluteTxPosition)(nil), "cosmwasm.wasm.v1.AbsoluteTxPosition")
+	//proto.RegisterType((*Model)(nil), "cosmwasm.wasm.v1.Model")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/types.proto", fileDescriptor_e6155d98fa173e02) }
+func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/types.proto", fileDescriptor_e6155d98fa173e02) }
 
 var fileDescriptor_e6155d98fa173e02 = []byte{
 	// 1178 bytes of a gzipped FileDescriptorProto

@@ -77,11 +77,11 @@ func (m *GenesisState) GetFeetokens() []FeeToken {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "osmosis.txfees.v1beta1.GenesisState")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.txfees.v1beta1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/txfees/v1beta1/genesis.proto", fileDescriptor_4423c18e3d020b37)
+	//proto.RegisterFile("osmosis/txfees/v1beta1/genesis.proto", fileDescriptor_4423c18e3d020b37)
 }
 
 var fileDescriptor_4423c18e3d020b37 = []byte{

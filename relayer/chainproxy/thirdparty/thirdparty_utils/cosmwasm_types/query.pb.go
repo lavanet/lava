@@ -1081,32 +1081,32 @@ func (m *QueryContractsByCreatorResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_QueryContractsByCreatorResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*QueryContractInfoRequest)(nil), "cosmwasm.wasm.v1.QueryContractInfoRequest")
-	proto.RegisterType((*QueryContractInfoResponse)(nil), "cosmwasm.wasm.v1.QueryContractInfoResponse")
-	proto.RegisterType((*QueryContractHistoryRequest)(nil), "cosmwasm.wasm.v1.QueryContractHistoryRequest")
-	proto.RegisterType((*QueryContractHistoryResponse)(nil), "cosmwasm.wasm.v1.QueryContractHistoryResponse")
-	proto.RegisterType((*QueryContractsByCodeRequest)(nil), "cosmwasm.wasm.v1.QueryContractsByCodeRequest")
-	proto.RegisterType((*QueryContractsByCodeResponse)(nil), "cosmwasm.wasm.v1.QueryContractsByCodeResponse")
-	proto.RegisterType((*QueryAllContractStateRequest)(nil), "cosmwasm.wasm.v1.QueryAllContractStateRequest")
-	proto.RegisterType((*QueryAllContractStateResponse)(nil), "cosmwasm.wasm.v1.QueryAllContractStateResponse")
-	proto.RegisterType((*QueryRawContractStateRequest)(nil), "cosmwasm.wasm.v1.QueryRawContractStateRequest")
-	proto.RegisterType((*QueryRawContractStateResponse)(nil), "cosmwasm.wasm.v1.QueryRawContractStateResponse")
-	proto.RegisterType((*QuerySmartContractStateRequest)(nil), "cosmwasm.wasm.v1.QuerySmartContractStateRequest")
-	proto.RegisterType((*QuerySmartContractStateResponse)(nil), "cosmwasm.wasm.v1.QuerySmartContractStateResponse")
-	proto.RegisterType((*QueryCodeRequest)(nil), "cosmwasm.wasm.v1.QueryCodeRequest")
-	proto.RegisterType((*CodeInfoResponse)(nil), "cosmwasm.wasm.v1.CodeInfoResponse")
-	proto.RegisterType((*QueryCodeResponse)(nil), "cosmwasm.wasm.v1.QueryCodeResponse")
-	proto.RegisterType((*QueryCodesRequest)(nil), "cosmwasm.wasm.v1.QueryCodesRequest")
-	proto.RegisterType((*QueryCodesResponse)(nil), "cosmwasm.wasm.v1.QueryCodesResponse")
-	proto.RegisterType((*QueryPinnedCodesRequest)(nil), "cosmwasm.wasm.v1.QueryPinnedCodesRequest")
-	proto.RegisterType((*QueryPinnedCodesResponse)(nil), "cosmwasm.wasm.v1.QueryPinnedCodesResponse")
-	proto.RegisterType((*QueryParamsRequest)(nil), "cosmwasm.wasm.v1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "cosmwasm.wasm.v1.QueryParamsResponse")
-	proto.RegisterType((*QueryContractsByCreatorRequest)(nil), "cosmwasm.wasm.v1.QueryContractsByCreatorRequest")
-	proto.RegisterType((*QueryContractsByCreatorResponse)(nil), "cosmwasm.wasm.v1.QueryContractsByCreatorResponse")
+	//proto.RegisterType((*QueryContractInfoRequest)(nil), "cosmwasm.wasm.v1.QueryContractInfoRequest")
+	//proto.RegisterType((*QueryContractInfoResponse)(nil), "cosmwasm.wasm.v1.QueryContractInfoResponse")
+	//proto.RegisterType((*QueryContractHistoryRequest)(nil), "cosmwasm.wasm.v1.QueryContractHistoryRequest")
+	//proto.RegisterType((*QueryContractHistoryResponse)(nil), "cosmwasm.wasm.v1.QueryContractHistoryResponse")
+	//proto.RegisterType((*QueryContractsByCodeRequest)(nil), "cosmwasm.wasm.v1.QueryContractsByCodeRequest")
+	//proto.RegisterType((*QueryContractsByCodeResponse)(nil), "cosmwasm.wasm.v1.QueryContractsByCodeResponse")
+	//proto.RegisterType((*QueryAllContractStateRequest)(nil), "cosmwasm.wasm.v1.QueryAllContractStateRequest")
+	//proto.RegisterType((*QueryAllContractStateResponse)(nil), "cosmwasm.wasm.v1.QueryAllContractStateResponse")
+	//proto.RegisterType((*QueryRawContractStateRequest)(nil), "cosmwasm.wasm.v1.QueryRawContractStateRequest")
+	//proto.RegisterType((*QueryRawContractStateResponse)(nil), "cosmwasm.wasm.v1.QueryRawContractStateResponse")
+	//proto.RegisterType((*QuerySmartContractStateRequest)(nil), "cosmwasm.wasm.v1.QuerySmartContractStateRequest")
+	//proto.RegisterType((*QuerySmartContractStateResponse)(nil), "cosmwasm.wasm.v1.QuerySmartContractStateResponse")
+	//proto.RegisterType((*QueryCodeRequest)(nil), "cosmwasm.wasm.v1.QueryCodeRequest")
+	//proto.RegisterType((*CodeInfoResponse)(nil), "cosmwasm.wasm.v1.CodeInfoResponse")
+	//proto.RegisterType((*QueryCodeResponse)(nil), "cosmwasm.wasm.v1.QueryCodeResponse")
+	//proto.RegisterType((*QueryCodesRequest)(nil), "cosmwasm.wasm.v1.QueryCodesRequest")
+	//proto.RegisterType((*QueryCodesResponse)(nil), "cosmwasm.wasm.v1.QueryCodesResponse")
+	//proto.RegisterType((*QueryPinnedCodesRequest)(nil), "cosmwasm.wasm.v1.QueryPinnedCodesRequest")
+	//proto.RegisterType((*QueryPinnedCodesResponse)(nil), "cosmwasm.wasm.v1.QueryPinnedCodesResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "cosmwasm.wasm.v1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "cosmwasm.wasm.v1.QueryParamsResponse")
+	//proto.RegisterType((*QueryContractsByCreatorRequest)(nil), "cosmwasm.wasm.v1.QueryContractsByCreatorRequest")
+	//proto.RegisterType((*QueryContractsByCreatorResponse)(nil), "cosmwasm.wasm.v1.QueryContractsByCreatorResponse")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/query.proto", fileDescriptor_9677c207036b9f2b) }
+func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/query.proto", fileDescriptor_9677c207036b9f2b) }
 
 var fileDescriptor_9677c207036b9f2b = []byte{
 	// 1331 bytes of a gzipped FileDescriptorProto

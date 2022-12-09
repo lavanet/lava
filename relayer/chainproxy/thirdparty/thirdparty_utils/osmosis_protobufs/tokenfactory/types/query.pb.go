@@ -298,16 +298,16 @@ func (m *QueryDenomsFromCreatorResponse) GetDenoms() []string {
 }
 
 func init() {
-	proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryParamsResponse")
-	proto.RegisterType((*QueryDenomAuthorityMetadataRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomAuthorityMetadataRequest")
-	proto.RegisterType((*QueryDenomAuthorityMetadataResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomAuthorityMetadataResponse")
-	proto.RegisterType((*QueryDenomsFromCreatorRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomsFromCreatorRequest")
-	proto.RegisterType((*QueryDenomsFromCreatorResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomsFromCreatorResponse")
+	//proto.RegisterType((*QueryParamsRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryParamsRequest")
+	//proto.RegisterType((*QueryParamsResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryParamsResponse")
+	//proto.RegisterType((*QueryDenomAuthorityMetadataRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomAuthorityMetadataRequest")
+	//proto.RegisterType((*QueryDenomAuthorityMetadataResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomAuthorityMetadataResponse")
+	//proto.RegisterType((*QueryDenomsFromCreatorRequest)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomsFromCreatorRequest")
+	//proto.RegisterType((*QueryDenomsFromCreatorResponse)(nil), "osmosis.tokenfactory.v1beta1.QueryDenomsFromCreatorResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/tokenfactory/v1beta1/query.proto", fileDescriptor_6f22013ad0f72e3f)
+	//proto.RegisterFile("osmosis/tokenfactory/v1beta1/query.proto", fileDescriptor_6f22013ad0f72e3f)
 }
 
 var fileDescriptor_6f22013ad0f72e3f = []byte{

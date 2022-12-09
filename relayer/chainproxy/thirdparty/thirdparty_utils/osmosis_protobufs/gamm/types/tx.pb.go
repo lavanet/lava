@@ -946,27 +946,27 @@ func (m *MsgExitSwapExternAmountOutResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgExitSwapExternAmountOutResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgJoinPool)(nil), "osmosis.gamm.v1beta1.MsgJoinPool")
-	proto.RegisterType((*MsgJoinPoolResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinPoolResponse")
-	proto.RegisterType((*MsgExitPool)(nil), "osmosis.gamm.v1beta1.MsgExitPool")
-	proto.RegisterType((*MsgExitPoolResponse)(nil), "osmosis.gamm.v1beta1.MsgExitPoolResponse")
-	proto.RegisterType((*SwapAmountInRoute)(nil), "osmosis.gamm.v1beta1.SwapAmountInRoute")
-	proto.RegisterType((*MsgSwapExactAmountIn)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountIn")
-	proto.RegisterType((*MsgSwapExactAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountInResponse")
-	proto.RegisterType((*SwapAmountOutRoute)(nil), "osmosis.gamm.v1beta1.SwapAmountOutRoute")
-	proto.RegisterType((*MsgSwapExactAmountOut)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountOut")
-	proto.RegisterType((*MsgSwapExactAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountOutResponse")
-	proto.RegisterType((*MsgJoinSwapExternAmountIn)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn")
-	proto.RegisterType((*MsgJoinSwapExternAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapExternAmountInResponse")
-	proto.RegisterType((*MsgJoinSwapShareAmountOut)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut")
-	proto.RegisterType((*MsgJoinSwapShareAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOutResponse")
-	proto.RegisterType((*MsgExitSwapShareAmountIn)(nil), "osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn")
-	proto.RegisterType((*MsgExitSwapShareAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgExitSwapShareAmountInResponse")
-	proto.RegisterType((*MsgExitSwapExternAmountOut)(nil), "osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut")
-	proto.RegisterType((*MsgExitSwapExternAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgExitSwapExternAmountOutResponse")
+	//proto.RegisterType((*MsgJoinPool)(nil), "osmosis.gamm.v1beta1.MsgJoinPool")
+	//proto.RegisterType((*MsgJoinPoolResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinPoolResponse")
+	//proto.RegisterType((*MsgExitPool)(nil), "osmosis.gamm.v1beta1.MsgExitPool")
+	//proto.RegisterType((*MsgExitPoolResponse)(nil), "osmosis.gamm.v1beta1.MsgExitPoolResponse")
+	//proto.RegisterType((*SwapAmountInRoute)(nil), "osmosis.gamm.v1beta1.SwapAmountInRoute")
+	//proto.RegisterType((*MsgSwapExactAmountIn)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountIn")
+	//proto.RegisterType((*MsgSwapExactAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountInResponse")
+	//proto.RegisterType((*SwapAmountOutRoute)(nil), "osmosis.gamm.v1beta1.SwapAmountOutRoute")
+	//proto.RegisterType((*MsgSwapExactAmountOut)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountOut")
+	//proto.RegisterType((*MsgSwapExactAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgSwapExactAmountOutResponse")
+	//proto.RegisterType((*MsgJoinSwapExternAmountIn)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn")
+	//proto.RegisterType((*MsgJoinSwapExternAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapExternAmountInResponse")
+	//proto.RegisterType((*MsgJoinSwapShareAmountOut)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut")
+	//proto.RegisterType((*MsgJoinSwapShareAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOutResponse")
+	//proto.RegisterType((*MsgExitSwapShareAmountIn)(nil), "osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn")
+	//proto.RegisterType((*MsgExitSwapShareAmountInResponse)(nil), "osmosis.gamm.v1beta1.MsgExitSwapShareAmountInResponse")
+	//proto.RegisterType((*MsgExitSwapExternAmountOut)(nil), "osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut")
+	//proto.RegisterType((*MsgExitSwapExternAmountOutResponse)(nil), "osmosis.gamm.v1beta1.MsgExitSwapExternAmountOutResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/gamm/v1beta1/tx.proto", fileDescriptor_cfc8fd3ac7df3247) }
+func init() { }//proto.RegisterFile("osmosis/gamm/v1beta1/tx.proto", fileDescriptor_cfc8fd3ac7df3247) }
 
 var fileDescriptor_cfc8fd3ac7df3247 = []byte{
 	// 1121 bytes of a gzipped FileDescriptorProto

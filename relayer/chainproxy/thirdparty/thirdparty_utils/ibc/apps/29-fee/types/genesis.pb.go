@@ -346,15 +346,15 @@ func (m *ForwardRelayerAddress) GetPacketId() types.PacketId {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "ibc.applications.fee.v1.GenesisState")
-	proto.RegisterType((*FeeEnabledChannel)(nil), "ibc.applications.fee.v1.FeeEnabledChannel")
-	proto.RegisterType((*RegisteredPayee)(nil), "ibc.applications.fee.v1.RegisteredPayee")
-	proto.RegisterType((*RegisteredCounterpartyPayee)(nil), "ibc.applications.fee.v1.RegisteredCounterpartyPayee")
-	proto.RegisterType((*ForwardRelayerAddress)(nil), "ibc.applications.fee.v1.ForwardRelayerAddress")
+	//proto.RegisterType((*GenesisState)(nil), "ibc.applications.fee.v1.GenesisState")
+	//proto.RegisterType((*FeeEnabledChannel)(nil), "ibc.applications.fee.v1.FeeEnabledChannel")
+	//proto.RegisterType((*RegisteredPayee)(nil), "ibc.applications.fee.v1.RegisteredPayee")
+	//proto.RegisterType((*RegisteredCounterpartyPayee)(nil), "ibc.applications.fee.v1.RegisteredCounterpartyPayee")
+	//proto.RegisterType((*ForwardRelayerAddress)(nil), "ibc.applications.fee.v1.ForwardRelayerAddress")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/fee/v1/genesis.proto", fileDescriptor_7191992e856dff95)
+	// proto.RegisterFile("ibc/applications/fee/v1/genesis.proto", fileDescriptor_7191992e856dff95)
 }
 
 var fileDescriptor_7191992e856dff95 = []byte{

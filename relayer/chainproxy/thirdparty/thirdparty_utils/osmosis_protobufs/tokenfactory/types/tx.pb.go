@@ -511,20 +511,20 @@ func (m *MsgSetDenomMetadataResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgSetDenomMetadataResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgCreateDenom)(nil), "osmosis.tokenfactory.v1beta1.MsgCreateDenom")
-	proto.RegisterType((*MsgCreateDenomResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgCreateDenomResponse")
-	proto.RegisterType((*MsgMint)(nil), "osmosis.tokenfactory.v1beta1.MsgMint")
-	proto.RegisterType((*MsgMintResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgMintResponse")
-	proto.RegisterType((*MsgBurn)(nil), "osmosis.tokenfactory.v1beta1.MsgBurn")
-	proto.RegisterType((*MsgBurnResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgBurnResponse")
-	proto.RegisterType((*MsgChangeAdmin)(nil), "osmosis.tokenfactory.v1beta1.MsgChangeAdmin")
-	proto.RegisterType((*MsgChangeAdminResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgChangeAdminResponse")
-	proto.RegisterType((*MsgSetDenomMetadata)(nil), "osmosis.tokenfactory.v1beta1.MsgSetDenomMetadata")
-	proto.RegisterType((*MsgSetDenomMetadataResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgSetDenomMetadataResponse")
+	//proto.RegisterType((*MsgCreateDenom)(nil), "osmosis.tokenfactory.v1beta1.MsgCreateDenom")
+	//proto.RegisterType((*MsgCreateDenomResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgCreateDenomResponse")
+	//proto.RegisterType((*MsgMint)(nil), "osmosis.tokenfactory.v1beta1.MsgMint")
+	//proto.RegisterType((*MsgMintResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgMintResponse")
+	//proto.RegisterType((*MsgBurn)(nil), "osmosis.tokenfactory.v1beta1.MsgBurn")
+	//proto.RegisterType((*MsgBurnResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgBurnResponse")
+	//proto.RegisterType((*MsgChangeAdmin)(nil), "osmosis.tokenfactory.v1beta1.MsgChangeAdmin")
+	//proto.RegisterType((*MsgChangeAdminResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgChangeAdminResponse")
+	//proto.RegisterType((*MsgSetDenomMetadata)(nil), "osmosis.tokenfactory.v1beta1.MsgSetDenomMetadata")
+	//proto.RegisterType((*MsgSetDenomMetadataResponse)(nil), "osmosis.tokenfactory.v1beta1.MsgSetDenomMetadataResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/tokenfactory/v1beta1/tx.proto", fileDescriptor_283b6c9a90a846b4)
+	//proto.RegisterFile("osmosis/tokenfactory/v1beta1/tx.proto", fileDescriptor_283b6c9a90a846b4)
 }
 
 var fileDescriptor_283b6c9a90a846b4 = []byte{

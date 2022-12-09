@@ -515,19 +515,19 @@ func (m *MsgUnPoolWhitelistedPoolResponse) GetExitedLockIds() []uint64 {
 }
 
 func init() {
-	proto.RegisterType((*MsgSuperfluidDelegate)(nil), "osmosis.superfluid.MsgSuperfluidDelegate")
-	proto.RegisterType((*MsgSuperfluidDelegateResponse)(nil), "osmosis.superfluid.MsgSuperfluidDelegateResponse")
-	proto.RegisterType((*MsgSuperfluidUndelegate)(nil), "osmosis.superfluid.MsgSuperfluidUndelegate")
-	proto.RegisterType((*MsgSuperfluidUndelegateResponse)(nil), "osmosis.superfluid.MsgSuperfluidUndelegateResponse")
-	proto.RegisterType((*MsgSuperfluidUnbondLock)(nil), "osmosis.superfluid.MsgSuperfluidUnbondLock")
-	proto.RegisterType((*MsgSuperfluidUnbondLockResponse)(nil), "osmosis.superfluid.MsgSuperfluidUnbondLockResponse")
-	proto.RegisterType((*MsgLockAndSuperfluidDelegate)(nil), "osmosis.superfluid.MsgLockAndSuperfluidDelegate")
-	proto.RegisterType((*MsgLockAndSuperfluidDelegateResponse)(nil), "osmosis.superfluid.MsgLockAndSuperfluidDelegateResponse")
-	proto.RegisterType((*MsgUnPoolWhitelistedPool)(nil), "osmosis.superfluid.MsgUnPoolWhitelistedPool")
-	proto.RegisterType((*MsgUnPoolWhitelistedPoolResponse)(nil), "osmosis.superfluid.MsgUnPoolWhitelistedPoolResponse")
+	//proto.RegisterType((*MsgSuperfluidDelegate)(nil), "osmosis.superfluid.MsgSuperfluidDelegate")
+	//proto.RegisterType((*MsgSuperfluidDelegateResponse)(nil), "osmosis.superfluid.MsgSuperfluidDelegateResponse")
+	//proto.RegisterType((*MsgSuperfluidUndelegate)(nil), "osmosis.superfluid.MsgSuperfluidUndelegate")
+	//proto.RegisterType((*MsgSuperfluidUndelegateResponse)(nil), "osmosis.superfluid.MsgSuperfluidUndelegateResponse")
+	//proto.RegisterType((*MsgSuperfluidUnbondLock)(nil), "osmosis.superfluid.MsgSuperfluidUnbondLock")
+	//proto.RegisterType((*MsgSuperfluidUnbondLockResponse)(nil), "osmosis.superfluid.MsgSuperfluidUnbondLockResponse")
+	//proto.RegisterType((*MsgLockAndSuperfluidDelegate)(nil), "osmosis.superfluid.MsgLockAndSuperfluidDelegate")
+	//proto.RegisterType((*MsgLockAndSuperfluidDelegateResponse)(nil), "osmosis.superfluid.MsgLockAndSuperfluidDelegateResponse")
+	//proto.RegisterType((*MsgUnPoolWhitelistedPool)(nil), "osmosis.superfluid.MsgUnPoolWhitelistedPool")
+	//proto.RegisterType((*MsgUnPoolWhitelistedPoolResponse)(nil), "osmosis.superfluid.MsgUnPoolWhitelistedPoolResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/superfluid/tx.proto", fileDescriptor_55b645f187d22814) }
+func init() { }//proto.RegisterFile("osmosis/superfluid/tx.proto", fileDescriptor_55b645f187d22814) }
 
 var fileDescriptor_55b645f187d22814 = []byte{
 	// 608 bytes of a gzipped FileDescriptorProto

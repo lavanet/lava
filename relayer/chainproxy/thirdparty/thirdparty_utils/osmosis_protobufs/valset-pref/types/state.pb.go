@@ -114,12 +114,12 @@ func (m *ValidatorSetPreferences) XXX_DiscardUnknown() {
 var xxx_messageInfo_ValidatorSetPreferences proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ValidatorPreference)(nil), "osmosis.valsetpref.v1beta1.ValidatorPreference")
-	proto.RegisterType((*ValidatorSetPreferences)(nil), "osmosis.valsetpref.v1beta1.ValidatorSetPreferences")
+	//proto.RegisterType((*ValidatorPreference)(nil), "osmosis.valsetpref.v1beta1.ValidatorPreference")
+	//proto.RegisterType((*ValidatorSetPreferences)(nil), "osmosis.valsetpref.v1beta1.ValidatorSetPreferences")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/valset-pref/v1beta1/state.proto", fileDescriptor_d3010474a5b89fce)
+	//proto.RegisterFile("osmosis/valset-pref/v1beta1/state.proto", fileDescriptor_d3010474a5b89fce)
 }
 
 var fileDescriptor_d3010474a5b89fce = []byte{

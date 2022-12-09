@@ -374,17 +374,17 @@ func (m *MsgConnectionOpenConfirmResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgConnectionOpenConfirmResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgConnectionOpenInit)(nil), "ibc.core.connection.v1.MsgConnectionOpenInit")
-	proto.RegisterType((*MsgConnectionOpenInitResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenInitResponse")
-	proto.RegisterType((*MsgConnectionOpenTry)(nil), "ibc.core.connection.v1.MsgConnectionOpenTry")
-	proto.RegisterType((*MsgConnectionOpenTryResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenTryResponse")
-	proto.RegisterType((*MsgConnectionOpenAck)(nil), "ibc.core.connection.v1.MsgConnectionOpenAck")
-	proto.RegisterType((*MsgConnectionOpenAckResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenAckResponse")
-	proto.RegisterType((*MsgConnectionOpenConfirm)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirm")
-	proto.RegisterType((*MsgConnectionOpenConfirmResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirmResponse")
+	//proto.RegisterType((*MsgConnectionOpenInit)(nil), "ibc.core.connection.v1.MsgConnectionOpenInit")
+	//proto.RegisterType((*MsgConnectionOpenInitResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenInitResponse")
+	//proto.RegisterType((*MsgConnectionOpenTry)(nil), "ibc.core.connection.v1.MsgConnectionOpenTry")
+	//proto.RegisterType((*MsgConnectionOpenTryResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenTryResponse")
+	//proto.RegisterType((*MsgConnectionOpenAck)(nil), "ibc.core.connection.v1.MsgConnectionOpenAck")
+	//proto.RegisterType((*MsgConnectionOpenAckResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenAckResponse")
+	//proto.RegisterType((*MsgConnectionOpenConfirm)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirm")
+	//proto.RegisterType((*MsgConnectionOpenConfirmResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirmResponse")
 }
 
-func init() { proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
+func init() { }//proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
 
 var fileDescriptor_5d00fde5fc97399e = []byte{
 	// 929 bytes of a gzipped FileDescriptorProto

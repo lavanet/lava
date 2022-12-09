@@ -85,11 +85,11 @@ func (m *GenesisState) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "ibc.applications.transfer.v1.GenesisState")
+	//proto.RegisterType((*GenesisState)(nil), "ibc.applications.transfer.v1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/transfer/v1/genesis.proto", fileDescriptor_a4f788affd5bea89)
+	// proto.RegisterFile("ibc/applications/transfer/v1/genesis.proto", fileDescriptor_a4f788affd5bea89)
 }
 
 var fileDescriptor_a4f788affd5bea89 = []byte{

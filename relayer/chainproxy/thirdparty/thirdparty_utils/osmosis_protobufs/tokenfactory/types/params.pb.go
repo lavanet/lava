@@ -72,11 +72,11 @@ func (m *Params) GetDenomCreationFee() github_com_cosmos_cosmos_sdk_types.Coins 
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.tokenfactory.v1beta1.Params")
+	//proto.RegisterType((*Params)(nil), "osmosis.tokenfactory.v1beta1.Params")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/tokenfactory/v1beta1/params.proto", fileDescriptor_cc8299d306f3ff47)
+	//proto.RegisterFile("osmosis/tokenfactory/v1beta1/params.proto", fileDescriptor_cc8299d306f3ff47)
 }
 
 var fileDescriptor_cc8299d306f3ff47 = []byte{

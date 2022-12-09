@@ -129,12 +129,12 @@ func (m *GenesisState) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.swaprouter.v1beta1.Params")
-	proto.RegisterType((*GenesisState)(nil), "osmosis.swaprouter.v1beta1.GenesisState")
+	//proto.RegisterType((*Params)(nil), "osmosis.swaprouter.v1beta1.Params")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.swaprouter.v1beta1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/swaprouter/v1beta1/genesis.proto", fileDescriptor_7ec914d8a231e19c)
+	//proto.RegisterFile("osmosis/swaprouter/v1beta1/genesis.proto", fileDescriptor_7ec914d8a231e19c)
 }
 
 var fileDescriptor_7ec914d8a231e19c = []byte{

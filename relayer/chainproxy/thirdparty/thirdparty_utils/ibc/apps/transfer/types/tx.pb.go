@@ -134,12 +134,12 @@ func (m *MsgTransferResponse) GetSequence() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*MsgTransfer)(nil), "ibc.applications.transfer.v1.MsgTransfer")
-	proto.RegisterType((*MsgTransferResponse)(nil), "ibc.applications.transfer.v1.MsgTransferResponse")
+	//proto.RegisterType((*MsgTransfer)(nil), "ibc.applications.transfer.v1.MsgTransfer")
+	//proto.RegisterType((*MsgTransferResponse)(nil), "ibc.applications.transfer.v1.MsgTransferResponse")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/transfer/v1/tx.proto", fileDescriptor_7401ed9bed2f8e09)
+	//proto.RegisterFile("ibc/applications/transfer/v1/tx.proto", fileDescriptor_7401ed9bed2f8e09)
 }
 
 var fileDescriptor_7401ed9bed2f8e09 = []byte{

@@ -207,14 +207,14 @@ func (m *MerkleProof) GetProofs() []*_go.CommitmentProof {
 }
 
 func init() {
-	proto.RegisterType((*MerkleRoot)(nil), "ibc.core.commitment.v1.MerkleRoot")
-	proto.RegisterType((*MerklePrefix)(nil), "ibc.core.commitment.v1.MerklePrefix")
-	// proto.RegisterType((*MerklePath)(nil), "ibc.core.commitment.v1.MerklePath")
-	proto.RegisterType((*MerkleProof)(nil), "ibc.core.commitment.v1.MerkleProof")
+	//proto.RegisterType((*MerkleRoot)(nil), "ibc.core.commitment.v1.MerkleRoot")
+	//proto.RegisterType((*MerklePrefix)(nil), "ibc.core.commitment.v1.MerklePrefix")
+	// //proto.RegisterType((*MerklePath)(nil), "ibc.core.commitment.v1.MerklePath")
+	//proto.RegisterType((*MerkleProof)(nil), "ibc.core.commitment.v1.MerkleProof")
 }
 
 func init() {
-	proto.RegisterFile("ibc/core/commitment/v1/commitment.proto", fileDescriptor_7921d88972a41469)
+	//proto.RegisterFile("ibc/core/commitment/v1/commitment.proto", fileDescriptor_7921d88972a41469)
 }
 
 var fileDescriptor_7921d88972a41469 = []byte{

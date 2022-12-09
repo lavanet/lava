@@ -80,11 +80,11 @@ func (m *FeeToken) GetPoolID() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*FeeToken)(nil), "osmosis.txfees.v1beta1.FeeToken")
+	//proto.RegisterType((*FeeToken)(nil), "osmosis.txfees.v1beta1.FeeToken")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/txfees/v1beta1/feetoken.proto", fileDescriptor_c50689857adfcfe0)
+	//proto.RegisterFile("osmosis/txfees/v1beta1/feetoken.proto", fileDescriptor_c50689857adfcfe0)
 }
 
 var fileDescriptor_c50689857adfcfe0 = []byte{

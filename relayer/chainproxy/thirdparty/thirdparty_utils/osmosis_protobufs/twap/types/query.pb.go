@@ -337,15 +337,15 @@ func (m *ParamsResponse) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*ArithmeticTwapRequest)(nil), "osmosis.twap.v1beta1.ArithmeticTwapRequest")
-	proto.RegisterType((*ArithmeticTwapResponse)(nil), "osmosis.twap.v1beta1.ArithmeticTwapResponse")
-	proto.RegisterType((*ArithmeticTwapToNowRequest)(nil), "osmosis.twap.v1beta1.ArithmeticTwapToNowRequest")
-	proto.RegisterType((*ArithmeticTwapToNowResponse)(nil), "osmosis.twap.v1beta1.ArithmeticTwapToNowResponse")
-	proto.RegisterType((*ParamsRequest)(nil), "osmosis.twap.v1beta1.ParamsRequest")
-	proto.RegisterType((*ParamsResponse)(nil), "osmosis.twap.v1beta1.ParamsResponse")
+	//proto.RegisterType((*ArithmeticTwapRequest)(nil), "osmosis.twap.v1beta1.ArithmeticTwapRequest")
+	//proto.RegisterType((*ArithmeticTwapResponse)(nil), "osmosis.twap.v1beta1.ArithmeticTwapResponse")
+	//proto.RegisterType((*ArithmeticTwapToNowRequest)(nil), "osmosis.twap.v1beta1.ArithmeticTwapToNowRequest")
+	//proto.RegisterType((*ArithmeticTwapToNowResponse)(nil), "osmosis.twap.v1beta1.ArithmeticTwapToNowResponse")
+	//proto.RegisterType((*ParamsRequest)(nil), "osmosis.twap.v1beta1.ParamsRequest")
+	//proto.RegisterType((*ParamsResponse)(nil), "osmosis.twap.v1beta1.ParamsResponse")
 }
 
-func init() { proto.RegisterFile("osmosis/twap/v1beta1/query.proto", fileDescriptor_141a22dba58615af) }
+func init() { }//proto.RegisterFile("osmosis/twap/v1beta1/query.proto", fileDescriptor_141a22dba58615af) }
 
 var fileDescriptor_141a22dba58615af = []byte{
 	// 676 bytes of a gzipped FileDescriptorProto

@@ -181,13 +181,13 @@ func (m *GenesisState) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "osmosis.downtimedetector.v1beta1.Params")
-	proto.RegisterType((*GenesisDowntimeEntry)(nil), "osmosis.downtimedetector.v1beta1.GenesisDowntimeEntry")
-	proto.RegisterType((*GenesisState)(nil), "osmosis.downtimedetector.v1beta1.GenesisState")
+	//proto.RegisterType((*Params)(nil), "osmosis.downtimedetector.v1beta1.Params")
+	//proto.RegisterType((*GenesisDowntimeEntry)(nil), "osmosis.downtimedetector.v1beta1.GenesisDowntimeEntry")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.downtimedetector.v1beta1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/downtime-detector/v1beta1/genesis.proto", fileDescriptor_4581e137a44782af)
+	//proto.RegisterFile("osmosis/downtime-detector/v1beta1/genesis.proto", fileDescriptor_4581e137a44782af)
 }
 
 var fileDescriptor_4581e137a44782af = []byte{

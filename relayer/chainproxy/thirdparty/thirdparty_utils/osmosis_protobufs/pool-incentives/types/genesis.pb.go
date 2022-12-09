@@ -98,11 +98,11 @@ func (m *GenesisState) GetPoolToGauges() *PoolToGauges {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "osmosis.poolincentives.v1beta1.GenesisState")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.poolincentives.v1beta1.GenesisState")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/pool-incentives/v1beta1/genesis.proto", fileDescriptor_cc1f078212600632)
+	//proto.RegisterFile("osmosis/pool-incentives/v1beta1/genesis.proto", fileDescriptor_cc1f078212600632)
 }
 
 var fileDescriptor_cc1f078212600632 = []byte{

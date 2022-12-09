@@ -80,11 +80,11 @@ func (m *Params) GetAllowMessages() []string {
 }
 
 func init() {
-	proto.RegisterType((*Params)(nil), "ibc.applications.interchain_accounts.host.v1.Params")
+	//proto.RegisterType((*Params)(nil), "ibc.applications.interchain_accounts.host.v1.Params")
 }
 
 func init() {
-	proto.RegisterFile("ibc/applications/interchain_accounts/host/v1/host.proto", fileDescriptor_48e202774f13d08e)
+	// proto.RegisterFile("ibc/applications/interchain_accounts/host/v1/host.proto", fileDescriptor_48e202774f13d08e)
 }
 
 var fileDescriptor_48e202774f13d08e = []byte{

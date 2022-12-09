@@ -393,18 +393,18 @@ func (m *MsgWithdrawDelegationRewardsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgWithdrawDelegationRewardsResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgSetValidatorSetPreference)(nil), "osmosis.valsetpref.v1beta1.MsgSetValidatorSetPreference")
-	proto.RegisterType((*MsgSetValidatorSetPreferenceResponse)(nil), "osmosis.valsetpref.v1beta1.MsgSetValidatorSetPreferenceResponse")
-	proto.RegisterType((*MsgDelegateToValidatorSet)(nil), "osmosis.valsetpref.v1beta1.MsgDelegateToValidatorSet")
-	proto.RegisterType((*MsgDelegateToValidatorSetResponse)(nil), "osmosis.valsetpref.v1beta1.MsgDelegateToValidatorSetResponse")
-	proto.RegisterType((*MsgUndelegateFromValidatorSet)(nil), "osmosis.valsetpref.v1beta1.MsgUndelegateFromValidatorSet")
-	proto.RegisterType((*MsgUndelegateFromValidatorSetResponse)(nil), "osmosis.valsetpref.v1beta1.MsgUndelegateFromValidatorSetResponse")
-	proto.RegisterType((*MsgWithdrawDelegationRewards)(nil), "osmosis.valsetpref.v1beta1.MsgWithdrawDelegationRewards")
-	proto.RegisterType((*MsgWithdrawDelegationRewardsResponse)(nil), "osmosis.valsetpref.v1beta1.MsgWithdrawDelegationRewardsResponse")
+	//proto.RegisterType((*MsgSetValidatorSetPreference)(nil), "osmosis.valsetpref.v1beta1.MsgSetValidatorSetPreference")
+	//proto.RegisterType((*MsgSetValidatorSetPreferenceResponse)(nil), "osmosis.valsetpref.v1beta1.MsgSetValidatorSetPreferenceResponse")
+	//proto.RegisterType((*MsgDelegateToValidatorSet)(nil), "osmosis.valsetpref.v1beta1.MsgDelegateToValidatorSet")
+	//proto.RegisterType((*MsgDelegateToValidatorSetResponse)(nil), "osmosis.valsetpref.v1beta1.MsgDelegateToValidatorSetResponse")
+	//proto.RegisterType((*MsgUndelegateFromValidatorSet)(nil), "osmosis.valsetpref.v1beta1.MsgUndelegateFromValidatorSet")
+	//proto.RegisterType((*MsgUndelegateFromValidatorSetResponse)(nil), "osmosis.valsetpref.v1beta1.MsgUndelegateFromValidatorSetResponse")
+	//proto.RegisterType((*MsgWithdrawDelegationRewards)(nil), "osmosis.valsetpref.v1beta1.MsgWithdrawDelegationRewards")
+	//proto.RegisterType((*MsgWithdrawDelegationRewardsResponse)(nil), "osmosis.valsetpref.v1beta1.MsgWithdrawDelegationRewardsResponse")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/valset-pref/v1beta1/tx.proto", fileDescriptor_daa95be02b2fc560)
+	//proto.RegisterFile("osmosis/valset-pref/v1beta1/tx.proto", fileDescriptor_daa95be02b2fc560)
 }
 
 var fileDescriptor_daa95be02b2fc560 = []byte{

@@ -133,12 +133,12 @@ func (m *GenesisDenom) GetAuthorityMetadata() DenomAuthorityMetadata {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "osmosis.tokenfactory.v1beta1.GenesisState")
-	proto.RegisterType((*GenesisDenom)(nil), "osmosis.tokenfactory.v1beta1.GenesisDenom")
+	//proto.RegisterType((*GenesisState)(nil), "osmosis.tokenfactory.v1beta1.GenesisState")
+	//proto.RegisterType((*GenesisDenom)(nil), "osmosis.tokenfactory.v1beta1.GenesisDenom")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/tokenfactory/v1beta1/genesis.proto", fileDescriptor_5749c3f71850298b)
+	//proto.RegisterFile("osmosis/tokenfactory/v1beta1/genesis.proto", fileDescriptor_5749c3f71850298b)
 }
 
 var fileDescriptor_5749c3f71850298b = []byte{

@@ -701,23 +701,23 @@ func (m *MsgClearAdminResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgClearAdminResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgStoreCode)(nil), "cosmwasm.wasm.v1.MsgStoreCode")
-	proto.RegisterType((*MsgStoreCodeResponse)(nil), "cosmwasm.wasm.v1.MsgStoreCodeResponse")
-	proto.RegisterType((*MsgInstantiateContract)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract")
-	proto.RegisterType((*MsgInstantiateContract2)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract2")
-	proto.RegisterType((*MsgInstantiateContractResponse)(nil), "cosmwasm.wasm.v1.MsgInstantiateContractResponse")
-	proto.RegisterType((*MsgInstantiateContract2Response)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract2Response")
-	proto.RegisterType((*MsgExecuteContract)(nil), "cosmwasm.wasm.v1.MsgExecuteContract")
-	proto.RegisterType((*MsgExecuteContractResponse)(nil), "cosmwasm.wasm.v1.MsgExecuteContractResponse")
-	proto.RegisterType((*MsgMigrateContract)(nil), "cosmwasm.wasm.v1.MsgMigrateContract")
-	proto.RegisterType((*MsgMigrateContractResponse)(nil), "cosmwasm.wasm.v1.MsgMigrateContractResponse")
-	proto.RegisterType((*MsgUpdateAdmin)(nil), "cosmwasm.wasm.v1.MsgUpdateAdmin")
-	proto.RegisterType((*MsgUpdateAdminResponse)(nil), "cosmwasm.wasm.v1.MsgUpdateAdminResponse")
-	proto.RegisterType((*MsgClearAdmin)(nil), "cosmwasm.wasm.v1.MsgClearAdmin")
-	proto.RegisterType((*MsgClearAdminResponse)(nil), "cosmwasm.wasm.v1.MsgClearAdminResponse")
+	//proto.RegisterType((*MsgStoreCode)(nil), "cosmwasm.wasm.v1.MsgStoreCode")
+	//proto.RegisterType((*MsgStoreCodeResponse)(nil), "cosmwasm.wasm.v1.MsgStoreCodeResponse")
+	//proto.RegisterType((*MsgInstantiateContract)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract")
+	//proto.RegisterType((*MsgInstantiateContract2)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract2")
+	//proto.RegisterType((*MsgInstantiateContractResponse)(nil), "cosmwasm.wasm.v1.MsgInstantiateContractResponse")
+	//proto.RegisterType((*MsgInstantiateContract2Response)(nil), "cosmwasm.wasm.v1.MsgInstantiateContract2Response")
+	//proto.RegisterType((*MsgExecuteContract)(nil), "cosmwasm.wasm.v1.MsgExecuteContract")
+	//proto.RegisterType((*MsgExecuteContractResponse)(nil), "cosmwasm.wasm.v1.MsgExecuteContractResponse")
+	//proto.RegisterType((*MsgMigrateContract)(nil), "cosmwasm.wasm.v1.MsgMigrateContract")
+	//proto.RegisterType((*MsgMigrateContractResponse)(nil), "cosmwasm.wasm.v1.MsgMigrateContractResponse")
+	//proto.RegisterType((*MsgUpdateAdmin)(nil), "cosmwasm.wasm.v1.MsgUpdateAdmin")
+	//proto.RegisterType((*MsgUpdateAdminResponse)(nil), "cosmwasm.wasm.v1.MsgUpdateAdminResponse")
+	//proto.RegisterType((*MsgClearAdmin)(nil), "cosmwasm.wasm.v1.MsgClearAdmin")
+	//proto.RegisterType((*MsgClearAdminResponse)(nil), "cosmwasm.wasm.v1.MsgClearAdminResponse")
 }
 
-func init() { proto.RegisterFile("cosmwasm/wasm/v1/tx.proto", fileDescriptor_4f74d82755520264) }
+func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/tx.proto", fileDescriptor_4f74d82755520264) }
 
 var fileDescriptor_4f74d82755520264 = []byte{
 	// 840 bytes of a gzipped FileDescriptorProto

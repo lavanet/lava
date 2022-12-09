@@ -114,12 +114,12 @@ func (m *UpdatePoolIncentivesProposal) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdatePoolIncentivesProposal proto.InternalMessageInfo
 
 func init() {
-	// proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
-	// proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
+	// //proto.RegisterType((*ReplacePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal")
+	// //proto.RegisterType((*UpdatePoolIncentivesProposal)(nil), "osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/pool-incentives/v1beta1/gov.proto", fileDescriptor_96caede426ba9516)
+	//proto.RegisterFile("osmosis/pool-incentives/v1beta1/gov.proto", fileDescriptor_96caede426ba9516)
 }
 
 var fileDescriptor_96caede426ba9516 = []byte{

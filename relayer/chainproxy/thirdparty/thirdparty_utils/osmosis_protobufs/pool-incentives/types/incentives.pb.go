@@ -314,16 +314,16 @@ func (m *PoolToGauges) GetPoolToGauge() []PoolToGauge {
 }
 
 func init() {
-	// proto.RegisterType((*Params)(nil), "osmosis.poolincentives.v1beta1.Params")
-	proto.RegisterType((*LockableDurationsInfo)(nil), "osmosis.poolincentives.v1beta1.LockableDurationsInfo")
-	proto.RegisterType((*DistrInfo)(nil), "osmosis.poolincentives.v1beta1.DistrInfo")
-	proto.RegisterType((*DistrRecord)(nil), "osmosis.poolincentives.v1beta1.DistrRecord")
-	proto.RegisterType((*PoolToGauge)(nil), "osmosis.poolincentives.v1beta1.PoolToGauge")
-	proto.RegisterType((*PoolToGauges)(nil), "osmosis.poolincentives.v1beta1.PoolToGauges")
+	// //proto.RegisterType((*Params)(nil), "osmosis.poolincentives.v1beta1.Params")
+	//proto.RegisterType((*LockableDurationsInfo)(nil), "osmosis.poolincentives.v1beta1.LockableDurationsInfo")
+	//proto.RegisterType((*DistrInfo)(nil), "osmosis.poolincentives.v1beta1.DistrInfo")
+	//proto.RegisterType((*DistrRecord)(nil), "osmosis.poolincentives.v1beta1.DistrRecord")
+	//proto.RegisterType((*PoolToGauge)(nil), "osmosis.poolincentives.v1beta1.PoolToGauge")
+	//proto.RegisterType((*PoolToGauges)(nil), "osmosis.poolincentives.v1beta1.PoolToGauges")
 }
 
 func init() {
-	proto.RegisterFile("osmosis/pool-incentives/v1beta1/incentives.proto", fileDescriptor_a8153bad03e553d1)
+	//proto.RegisterFile("osmosis/pool-incentives/v1beta1/incentives.proto", fileDescriptor_a8153bad03e553d1)
 }
 
 var fileDescriptor_a8153bad03e553d1 = []byte{
