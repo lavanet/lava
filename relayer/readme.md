@@ -28,7 +28,8 @@ lavad test_client 0 --from alice
 lavad portal_server 127.0.0.1 3333 0 --from user2
 geth attach ws://127.0.0.1:3333/ws
 ```
-
+### debug
+for a more verbose logging use the flag: --log_level debug
 ## Debug the relayer mutexes
 
 This flag turns on warnings for mutexes thay are locked for a long time

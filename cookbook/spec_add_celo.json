@@ -310,9 +310,9 @@
           },
           "block_parsing": {
             "parserArg": [
-              ""
+              "latest"
             ],
-            "parserFunc": "EMPTY"
+            "parserFunc": "DEFAULT"
           },
           "compute_units": "10",
           "enabled": true,
