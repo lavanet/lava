@@ -92,7 +92,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
 				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
 			}
-			if !spec.ComparesHashes {
+			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}

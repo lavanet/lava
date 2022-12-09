@@ -940,7 +940,7 @@ func (s *Sentry) SendRelay(
 		return nil, nil, 0, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
 	}
 
-	if s.GetSpecComparesHashes() && reply != nil {
+	if s.GetSpecDataReliabilityEnabled() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
@@ -1148,11 +1148,11 @@ func checkFinalizedHashes(s *Sentry, providerAcc string, latestBlock int64, fina
 }
 
 func (s *Sentry) IsFinalizedBlock(requestedBlock int64, latestBlock int64) bool {
-	return spectypes.IsFinalizedBlock(requestedBlock, latestBlock, s.GetSpecFinalizationCriteria())
+	return spectypes.IsFinalizedBlock(requestedBlock, latestBlock, s.GetSpecBlockDistanceForFinalizedData())
 }
 
 func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
-	finalization_criteria := int64(s.GetSpecFinalizationCriteria())
+	finalization_criteria := int64(s.GetSpecBlockDistanceForFinalizedData())
 	return latestBlock - finalization_criteria
 }
 
@@ -1238,16 +1238,16 @@ func (s *Sentry) GetSpecName() string {
 	return s.serverSpec.Name
 }
 
-func (s *Sentry) GetSpecComparesHashes() bool {
-	return s.serverSpec.ComparesHashes
+func (s *Sentry) GetSpecDataReliabilityEnabled() bool {
+	return s.serverSpec.DataReliabilityEnabled
 }
 
-func (s *Sentry) GetSpecFinalizationCriteria() uint32 {
-	return s.serverSpec.FinalizationCriteria
+func (s *Sentry) GetSpecBlockDistanceForFinalizedData() uint32 {
+	return s.serverSpec.BlockDistanceForFinalizedData
 }
 
-func (s *Sentry) GetSpecSavedBlocks() uint32 {
-	return s.serverSpec.SavedBlocks
+func (s *Sentry) GetSpecBlocksInFinalizationProof() uint32 {
+	return s.serverSpec.BlocksInFinalizationProof
 }
 
 func (s *Sentry) GetChainID() string {

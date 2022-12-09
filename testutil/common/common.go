@@ -29,11 +29,11 @@ func CreateMockSpec() spectypes.Spec {
 	spec.Index = specName
 	spec.Enabled = true
 	spec.ReliabilityThreshold = 4294967295
-	spec.FinalizationCriteria = 0
-	spec.ComparesHashes = true
+	spec.BlockDistanceForFinalizedData = 0
+	spec.DataReliabilityEnabled = true
 	apiInterface := spectypes.ApiInterface{Interface: "mockInt", Type: "GET"}
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: []spectypes.ApiInterface{apiInterface}})
-	spec.FinalizationCriteria = 0
+	spec.BlockDistanceForFinalizedData = 0
 	return spec
 }
 
@@ -99,7 +99,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	//reply 0
 	msg.ResponseConflict.ConflictRelayData0.Reply.Nonce = 10
 	msg.ResponseConflict.ConflictRelayData0.Reply.FinalizedBlocksHashes = []byte{}
-	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(spec.FinalizationCriteria)
+	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(spec.BlockDistanceForFinalizedData)
 	msg.ResponseConflict.ConflictRelayData0.Reply.Data = []byte("DUMMYREPLY")
 	sig, err = sigs.SignRelayResponse(provider0.SK, msg.ResponseConflict.ConflictRelayData0.Reply, msg.ResponseConflict.ConflictRelayData0.Request)
 	if err != nil {

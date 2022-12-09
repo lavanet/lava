@@ -159,7 +159,7 @@ func SendRelay(
 		if !isSubscription {
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
-			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
+			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 			if err != nil {
 				return nil, nil, nil, 0, err
 			}
@@ -209,7 +209,7 @@ func SendRelay(
 			return nil, nil, err
 		}
 
-		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
+		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 		if err != nil {
 			return nil, nil, err
 		}

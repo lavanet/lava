@@ -30950,12 +30950,12 @@ paths:
                     reliability_threshold:
                       type: integer
                       format: int64
-                    compares_hashes:
+                    data_reliability_enabled:
                       type: boolean
-                    finalization_criteria:
+                    block_distance_for_finalized_data:
                       type: integer
                       format: int64
-                    saved_blocks:
+                    blocks_in_finalization_proof:
                       type: integer
                       format: int64
                     average_block_time:
@@ -31186,12 +31186,12 @@ paths:
                   reliability_threshold:
                     type: integer
                     format: int64
-                  compares_hashes:
+                  data_reliability_enabled:
                     type: boolean
-                  finalization_criteria:
+                  block_distance_for_finalized_data:
                     type: integer
                     format: int64
-                  saved_blocks:
+                  blocks_in_finalization_proof:
                     type: integer
                     format: int64
                   average_block_time:
@@ -53560,12 +53560,12 @@ definitions:
             reliability_threshold:
               type: integer
               format: int64
-            compares_hashes:
+            data_reliability_enabled:
               type: boolean
-            finalization_criteria:
+            block_distance_for_finalized_data:
               type: integer
               format: int64
-            saved_blocks:
+            blocks_in_finalization_proof:
               type: integer
               format: int64
             average_block_time:
@@ -53709,12 +53709,12 @@ definitions:
           reliability_threshold:
             type: integer
             format: int64
-          compares_hashes:
+          data_reliability_enabled:
             type: boolean
-          finalization_criteria:
+          block_distance_for_finalized_data:
             type: integer
             format: int64
-          saved_blocks:
+          blocks_in_finalization_proof:
             type: integer
             format: int64
           average_block_time:
@@ -53964,12 +53964,12 @@ definitions:
       reliability_threshold:
         type: integer
         format: int64
-      compares_hashes:
+      data_reliability_enabled:
         type: boolean
-      finalization_criteria:
+      block_distance_for_finalized_data:
         type: integer
         format: int64
-      saved_blocks:
+      blocks_in_finalization_proof:
         type: integer
         format: int64
       average_block_time:

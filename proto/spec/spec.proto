@@ -14,9 +14,9 @@ message Spec {
   repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
   bool enabled = 4;
   uint32 reliability_threshold = 5;
-  bool compares_hashes = 6;
-  uint32 finalization_criteria = 7;
-  uint32 saved_blocks = 8;
+  bool data_reliability_enabled = 6;
+  uint32 block_distance_for_finalized_data = 7;
+  uint32 blocks_in_finalization_proof = 8;
   int64 average_block_time =9;
   int64 allowed_block_lag_for_qos_sync = 10;
 }

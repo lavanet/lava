@@ -127,7 +127,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, spec spectypes.Spec
 		}
 	}
 
-	if spec.ComparesHashes {
+	if spec.DataReliabilityEnabled {
 		for _, tag := range []string{spectypes.GET_BLOCKNUM, spectypes.GET_BLOCK_BY_NUM} {
 			if found := functionTags[tag]; !found {
 				return utils.LavaError(ctx, logger, "spec_add_ch_mis", details, fmt.Sprintf("missing tagged functions for hash comparison: %s", tag))
