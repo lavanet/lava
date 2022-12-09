@@ -424,9 +424,6 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 		"%s/health",
 		"%s/status",
 		"%s/block?height=1",
-		"%s/validator?height=1&page=1&per_page=1",
-		"%s/genesis",
-		"%s/genesis_chunked?chunk=1",
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for _, api := range mostImportantApisToTest {
