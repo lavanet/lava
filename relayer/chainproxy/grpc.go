@@ -6,14 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/fullstorydev/grpcurl"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
@@ -277,32 +275,6 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, &map[string]string{"addr": nm.cp.nodeUrl})
 	}
 
-	_, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, nil, grpcurl.FormatOptions{
-		EmitJSONDefaultFields: false,
-		IncludeTextSeparator:  false,
-		AllowUnknownFields:    true,
-	})
-	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, &map[string]string{"addr": nm.cp.nodeUrl})
-	}
-	nm.formatter = formatter
-
-	var reader io.Reader
-	switch v := nm.msg.(type) {
-	case []byte:
-		log.Println("[switch]: []byte")
-		log.Println("[DEBUG]: reader", string(v))
-		reader = bytes.NewReader(v)
-	case string:
-		log.Println("[switch]: string")
-		log.Println("[DEBUG]: reader", v)
-		reader = strings.NewReader(v)
-	case proto.Message:
-		log.Println("[switch]: proto.Message") // do nothing
-	default:
-		return nil, "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
-	}
-
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
 		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl})
@@ -314,23 +286,52 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	log.Println("[MSG]", nm.msg)
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
-	var reqBytes []byte
-	if reqBytes, err = ioutil.ReadAll(reader); err != nil {
-		return nil, "", nil, utils.LavaFormatError("ioutil.ReadAll(reader)", err, nil)
-	}
+	var reader io.Reader
 	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
-	if len(reqBytes) != 0 {
-		if err = jsonpb.UnmarshalString(string(reqBytes), msg); err != nil {
-			return nil, "", nil, utils.LavaFormatError("proto.Unmarshal(t, msg)", err, &map[string]string{"bytes": string(reqBytes), "addr": nm.cp.nodeUrl})
+	formatMessage := false
+	switch v := nm.msg.(type) {
+	case []byte:
+		log.Println("[switch]: []byte")
+		log.Println("[DEBUG]: reader", string(v))
+		if len(v) > 0 {
+			reader = bytes.NewReader(v)
+			formatMessage = true
+		}
+	case string:
+		log.Println("[switch]: string")
+		log.Println("[DEBUG]: reader", v)
+		if v != "" {
+			reader = strings.NewReader(v)
+			formatMessage = true
+		}
+	case proto.Message:
+		utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
+		msg = v
+	default:
+		return nil, "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
+	}
+
+	rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+		EmitJSONDefaultFields: false,
+		IncludeTextSeparator:  false,
+		AllowUnknownFields:    true,
+	})
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, &map[string]string{"addr": nm.cp.nodeUrl})
+	}
+	nm.formatter = formatter
+	if formatMessage {
+		err = rp.Next(msg)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, nil)
 		}
 	}
+
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nm.path, msg, response, conn)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"addr": nm.cp.nodeUrl, "Method": nm.path, "msg": fmt.Sprintf("%s", nm.msg)})
 	}
-
-	// log.Println("INVOKE RESPONSE:", response)
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
