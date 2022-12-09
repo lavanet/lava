@@ -21,7 +21,7 @@ func (is *implementedOsmosisTxfeesV1beta1) BaseDenom(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query.BaseDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query/BaseDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisTxfeesV1beta1) DenomPoolId(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query.DenomPoolId", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query/DenomPoolId", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisTxfeesV1beta1) DenomSpotPrice(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query.DenomSpotPrice", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query/DenomSpotPrice", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedOsmosisTxfeesV1beta1) FeeTokens(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query.FeeTokens", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.txfees.v1beta1.Query/FeeTokens", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
