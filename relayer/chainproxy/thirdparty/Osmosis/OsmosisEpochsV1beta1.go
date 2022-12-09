@@ -6,6 +6,7 @@ import (
 
 	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/epochs/types"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -26,7 +27,7 @@ func (is *implementedOsmosisEpochsV1beta1) CurrentEpoch(ctx context.Context, req
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryCurrentEpochResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -45,7 +46,7 @@ func (is *implementedOsmosisEpochsV1beta1) EpochInfos(ctx context.Context, req *
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryEpochsInfoResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

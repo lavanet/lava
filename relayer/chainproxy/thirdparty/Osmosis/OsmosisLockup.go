@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/golang/protobuf/proto"
 	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/lockup/types"
 	"github.com/lavanet/lava/utils"
 )
@@ -25,7 +26,7 @@ func (is *implementedOsmosisLockup) AccountLockedCoins(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedCoinsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -44,7 +45,7 @@ func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedDurationResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -63,7 +64,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDuration(ctx context.Cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -82,7 +83,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationDenom(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationDenomResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -101,7 +102,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationNotUnlockingOnly(
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedLongerDurationNotUnlockingOnlyResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -120,7 +121,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTime(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -139,7 +140,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeDenom(ctx context.Conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeDenomResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -158,7 +159,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeNotUnlockingOnly(ctx co
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountLockedPastTimeNotUnlockingOnlyResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -177,7 +178,7 @@ func (is *implementedOsmosisLockup) AccountUnlockableCoins(ctx context.Context, 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockableCoinsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -196,7 +197,7 @@ func (is *implementedOsmosisLockup) AccountUnlockedBeforeTime(ctx context.Contex
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockedBeforeTimeResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -215,7 +216,7 @@ func (is *implementedOsmosisLockup) AccountUnlockingCoins(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.AccountUnlockingCoinsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -234,7 +235,7 @@ func (is *implementedOsmosisLockup) LockedByID(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.LockedResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -253,7 +254,7 @@ func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.LockedDenomResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -272,7 +273,7 @@ func (is *implementedOsmosisLockup) ModuleBalance(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ModuleBalanceResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -291,7 +292,7 @@ func (is *implementedOsmosisLockup) ModuleLockedAmount(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ModuleLockedAmountResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -310,7 +311,7 @@ func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.SyntheticLockupsByLockupIDResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

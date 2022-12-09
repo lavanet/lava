@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	pb_pkg "cosmossdk.io/api/cosmos/bank/v1beta1"
+	"github.com/golang/protobuf/proto"
+	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/bank/types"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -25,7 +26,7 @@ func (is *implementedCosmosBankV1beta1) AllBalances(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllBalancesResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -44,7 +45,7 @@ func (is *implementedCosmosBankV1beta1) DenomMetadata(ctx context.Context, req *
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomMetadataResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -63,7 +64,7 @@ func (is *implementedCosmosBankV1beta1) DenomsMetadata(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomsMetadataResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -82,7 +83,7 @@ func (is *implementedCosmosBankV1beta1) Params(ctx context.Context, req *pb_pkg.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -101,7 +102,7 @@ func (is *implementedCosmosBankV1beta1) SpendableBalances(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QuerySpendableBalancesResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -120,7 +121,7 @@ func (is *implementedCosmosBankV1beta1) SupplyOf(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QuerySupplyOfResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -139,7 +140,7 @@ func (is *implementedCosmosBankV1beta1) TotalSupply(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryTotalSupplyResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -158,7 +159,7 @@ func (is *implementedCosmosBankV1beta1) DenomOwners(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDenomOwnersResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -177,7 +178,7 @@ func (is *implementedCosmosBankV1beta1) SendEnabled(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QuerySendEnabledResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -196,7 +197,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryBalanceResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -214,7 +215,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
 // 	result := &pb_pkg.QuerySupplyOfWithoutOffsetResponse{}
-// 	err = json.Unmarshal(res, result)
+// 	err = proto.Unmarshal(res, result)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 // 	}
@@ -233,7 +234,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
 // 	result := &pb_pkg.QueryTotalSupplyWithoutOffsetResponse{}
-// 	err = json.Unmarshal(res, result)
+// 	err = proto.Unmarshal(res, result)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 // 	}

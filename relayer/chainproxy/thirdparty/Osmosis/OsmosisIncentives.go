@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/golang/protobuf/proto"
 	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/incentives/types"
 	"github.com/lavanet/lava/utils"
 )
@@ -25,7 +26,7 @@ func (is *implementedOsmosisIncentives) ActiveGauges(ctx context.Context, req *p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ActiveGaugesResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -44,7 +45,7 @@ func (is *implementedOsmosisIncentives) ActiveGaugesPerDenom(ctx context.Context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ActiveGaugesPerDenomResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -63,7 +64,7 @@ func (is *implementedOsmosisIncentives) GaugeByID(ctx context.Context, req *pb_p
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GaugeByIDResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -82,7 +83,7 @@ func (is *implementedOsmosisIncentives) LockableDurations(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryLockableDurationsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -101,7 +102,7 @@ func (is *implementedOsmosisIncentives) LockableDurations(ctx context.Context, r
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
 // 	result := &pb_pkg.ModuleDistributedCoinsResponse{}
-// 	err = json.Unmarshal(res, result)
+// 	err = proto.Unmarshal(res, result)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 // 	}
@@ -120,7 +121,7 @@ func (is *implementedOsmosisIncentives) ModuleToDistributeCoins(ctx context.Cont
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.ModuleToDistributeCoinsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -139,7 +140,7 @@ func (is *implementedOsmosisIncentives) RewardsEst(ctx context.Context, req *pb_
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.RewardsEstResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -158,7 +159,7 @@ func (is *implementedOsmosisIncentives) UpcomingGauges(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.UpcomingGaugesResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -177,7 +178,7 @@ func (is *implementedOsmosisIncentives) UpcomingGaugesPerDenom(ctx context.Conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.UpcomingGaugesPerDenomResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

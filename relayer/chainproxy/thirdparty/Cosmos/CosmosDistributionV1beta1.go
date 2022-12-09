@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	pb_pkg "cosmossdk.io/api/cosmos/distribution/v1beta1"
+	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -25,7 +26,7 @@ func (is *implementedCosmosDistributionV1beta1) CommunityPool(ctx context.Contex
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryCommunityPoolResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -44,7 +45,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegationRewards(ctx context.Co
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDelegationRewardsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -63,7 +64,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegationTotalRewards(ctx conte
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDelegationTotalRewardsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -82,7 +83,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegatorValidators(ctx context.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDelegatorValidatorsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -101,7 +102,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegatorWithdrawAddress(ctx con
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDelegatorWithdrawAddressResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -120,7 +121,7 @@ func (is *implementedCosmosDistributionV1beta1) Params(ctx context.Context, req 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -139,7 +140,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorCommission(ctx context.
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryValidatorCommissionResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -158,7 +159,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorOutstandingRewards(ctx 
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryValidatorOutstandingRewardsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -177,7 +178,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorSlashes(ctx context.Con
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryValidatorSlashesResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

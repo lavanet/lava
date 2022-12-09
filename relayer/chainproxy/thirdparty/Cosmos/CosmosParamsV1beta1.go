@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	pb_pkg "cosmossdk.io/api/cosmos/params/v1beta1"
+	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -25,7 +26,7 @@ func (is *implementedCosmosParamsV1beta1) Params(ctx context.Context, req *pb_pk
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

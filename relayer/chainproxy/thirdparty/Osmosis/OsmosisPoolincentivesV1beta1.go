@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/golang/protobuf/proto"
 	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/osmosis_protobufs/pool-incentives/types"
 	"github.com/lavanet/lava/utils"
 )
@@ -25,7 +26,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryDistrInfoResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -44,7 +45,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
 // 	result := &pb_pkg.QueryExternalIncentiveGaugesResponse{}
-// 	err = json.Unmarshal(res, result)
+// 	err = proto.Unmarshal(res, result)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 // 	}
@@ -63,7 +64,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) GaugeIds(ctx context.Context,
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryGaugeIdsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -82,7 +83,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) IncentivizedPools(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryIncentivizedPoolsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -101,7 +102,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) LockableDurations(ctx context
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryLockableDurationsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -120,7 +121,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) Params(ctx context.Context, r
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

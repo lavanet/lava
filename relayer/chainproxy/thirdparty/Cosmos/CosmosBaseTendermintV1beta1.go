@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	pb_pkg "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
+	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -20,12 +21,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetLatestBlock(ctx context.Con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetLatestBlockResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -39,12 +40,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetBlockByHeight(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetBlockByHeightResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -58,12 +59,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetLatestValidatorSet(ctx cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetLatestValidatorSetResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -77,12 +78,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetNodeInfo(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetNodeInfoResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -96,12 +97,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetSyncing(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetSyncing", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetSyncing", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetSyncingResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -115,12 +116,12 @@ func (is *implementedCosmosBaseTendermintV1beta1) GetValidatorSetByHeight(ctx co
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.GetValidatorSetByHeightResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

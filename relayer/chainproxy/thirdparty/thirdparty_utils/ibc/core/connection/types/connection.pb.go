@@ -403,7 +403,7 @@ func (m *Params) GetMaxExpectedTimePerBlock() uint64 {
 }
 
 func init() {
-	proto.RegisterEnum("ibc.core.connection.v1.State", State_name, State_value)
+	// proto.RegisterEnum("ibc.core.connection.v1.State", State_name, State_value)
 	//proto.RegisterType((*ConnectionEnd)(nil), "ibc.core.connection.v1.ConnectionEnd")
 	//proto.RegisterType((*IdentifiedConnection)(nil), "ibc.core.connection.v1.IdentifiedConnection")
 	//proto.RegisterType((*Counterparty)(nil), "ibc.core.connection.v1.Counterparty")

@@ -3819,7 +3819,7 @@
             }
           ]
         },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
           "category": {
             "deterministic": true,
             "local": false,
@@ -3855,7 +3855,7 @@
             }
           }
         },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
           "category": {
             "deterministic": true,
             "local": false,
@@ -4146,7 +4146,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
           "category": {
             "deterministic": true,
             "local": false,
@@ -4169,7 +4169,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
           "category": {
             "deterministic": false,
             "local": false,
@@ -4192,7 +4192,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetSyncing",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
           "category": {
             "deterministic": false,
             "local": false,
@@ -4215,7 +4215,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6347,7 +6347,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.Clients",
+          "name": "lavanet.lava.pairing.Query/Clients",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6370,7 +6370,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.EpochPayments",
+          "name": "lavanet.lava.pairing.Query/EpochPayments",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6393,7 +6393,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.EpochPaymentsAll",
+          "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6416,7 +6416,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.GetPairing",
+          "name": "lavanet.lava.pairing.Query/GetPairing",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6439,7 +6439,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.Params",
+          "name": "lavanet.lava.pairing.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6462,7 +6462,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.ProviderPaymentStorage",
+          "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6485,7 +6485,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.ProviderPaymentStorageAll",
+          "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6508,7 +6508,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.Providers",
+          "name": "lavanet.lava.pairing.Query/Providers",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6531,7 +6531,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.UniquePaymentStorageClientProvider",
+          "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6554,7 +6554,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.UniquePaymentStorageClientProviderAll",
+          "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6577,7 +6577,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.UserEntry",
+          "name": "lavanet.lava.pairing.Query/UserEntry",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6600,7 +6600,7 @@
             }
           ]
     },{
-          "name": "lavanet.lava.pairing.Query.VerifyPairing",
+          "name": "lavanet.lava.pairing.Query/VerifyPairing",
           "category": {
             "deterministic": true,
             "local": false,

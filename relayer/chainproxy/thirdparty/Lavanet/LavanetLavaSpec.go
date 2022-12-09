@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	// add protobuf here as pb_pkg
+	"github.com/golang/protobuf/proto"
 	"github.com/lavanet/lava/utils"
 	pb_pkg "github.com/lavanet/lava/x/spec/types"
 )
@@ -26,7 +27,7 @@ func (is *implementedLavanetLavaSpec) Params(ctx context.Context, req *pb_pkg.Qu
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryParamsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -45,7 +46,7 @@ func (is *implementedLavanetLavaSpec) ShowAllChains(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryShowAllChainsResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -64,7 +65,7 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryShowChainInfoResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}
@@ -83,7 +84,7 @@ func (is *implementedLavanetLavaSpec) SpecAll(ctx context.Context, req *pb_pkg.Q
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
 	result := &pb_pkg.QueryAllSpecResponse{}
-	err = json.Unmarshal(res, result)
+	err = proto.Unmarshal(res, result)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Unmarshal", err, nil)
 	}

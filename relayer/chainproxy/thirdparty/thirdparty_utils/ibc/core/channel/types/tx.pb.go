@@ -891,7 +891,7 @@ func (m *MsgAcknowledgementResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgAcknowledgementResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterEnum("ibc.core.channel.v1.ResponseResultType", ResponseResultType_name, ResponseResultType_value)
+	// proto.RegisterEnum("ibc.core.channel.v1.ResponseResultType", ResponseResultType_name, ResponseResultType_value)
 	//proto.RegisterType((*MsgChannelOpenInit)(nil), "ibc.core.channel.v1.MsgChannelOpenInit")
 	//proto.RegisterType((*MsgChannelOpenInitResponse)(nil), "ibc.core.channel.v1.MsgChannelOpenInitResponse")
 	//proto.RegisterType((*MsgChannelOpenTry)(nil), "ibc.core.channel.v1.MsgChannelOpenTry")

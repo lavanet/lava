@@ -16,7 +16,7 @@ require (
 	github.com/ignite-hq/cli v0.22.1
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.19
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/grpc v1.51.0
@@ -26,6 +26,7 @@ require (
 
 require (
 	cosmossdk.io/api v0.2.5
+	cosmossdk.io/math v1.0.0-beta.4
 	github.com/CosmosContracts/juno v1.0.2
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8

@@ -3,9 +3,6 @@ package cosmos_thirdparty
 import (
 	"context"
 
-	auth "cosmossdk.io/api/cosmos/auth/v1beta1"
-	authz "cosmossdk.io/api/cosmos/authz/v1beta1"
-	bank "cosmossdk.io/api/cosmos/bank/v1beta1"
 	tendermint "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
 	dist "cosmossdk.io/api/cosmos/distribution/v1beta1"
 	evidence "cosmossdk.io/api/cosmos/evidence/v1beta1"
@@ -15,9 +12,11 @@ import (
 	params "cosmossdk.io/api/cosmos/params/v1beta1"
 	slashing "cosmossdk.io/api/cosmos/slashing/v1beta1"
 	staking "cosmossdk.io/api/cosmos/staking/v1beta1"
-	tx "cosmossdk.io/api/cosmos/tx/v1beta1"
 	upgrade "cosmossdk.io/api/cosmos/upgrade/v1beta1"
-
+	auth "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/auth/types"
+	authz "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/authz"
+	bank "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/bank/types"
+	tx "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/tx/v1beta1"
 	"google.golang.org/grpc"
 )
 
