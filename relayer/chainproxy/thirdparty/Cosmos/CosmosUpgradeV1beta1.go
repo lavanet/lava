@@ -21,7 +21,7 @@ func (is *implementedCosmosUpgradeV1beta1) AppliedPlan(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query.AppliedPlan", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query/AppliedPlan", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosUpgradeV1beta1) CurrentPlan(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query.CurrentPlan", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query/CurrentPlan", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosUpgradeV1beta1) ModuleVersions(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query.ModuleVersions", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query/ModuleVersions", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosUpgradeV1beta1) UpgradedConsensusState(ctx context.Co
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query.UpgradedConsensusState", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

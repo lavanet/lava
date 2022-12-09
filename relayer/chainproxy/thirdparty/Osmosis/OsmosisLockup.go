@@ -21,7 +21,7 @@ func (is *implementedOsmosisLockup) AccountLockedCoins(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedCoins", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedCoins", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisLockup) AccountLockedDuration(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedDuration", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedDuration", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDuration(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedLongerDuration", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedLongerDuration", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationDenom(ctx context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedLongerDurationDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedLongerDurationDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedOsmosisLockup) AccountLockedLongerDurationNotUnlockingOnly(
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedLongerDurationNotUnlockingOnly", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTime(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedPastTime", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedPastTime", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeDenom(ctx context.Conte
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedPastTimeDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedPastTimeDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedOsmosisLockup) AccountLockedPastTimeNotUnlockingOnly(ctx co
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountLockedPastTimeNotUnlockingOnly", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedOsmosisLockup) AccountUnlockableCoins(ctx context.Context, 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountUnlockableCoins", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountUnlockableCoins", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -192,7 +192,7 @@ func (is *implementedOsmosisLockup) AccountUnlockedBeforeTime(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountUnlockedBeforeTime", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountUnlockedBeforeTime", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -211,7 +211,7 @@ func (is *implementedOsmosisLockup) AccountUnlockingCoins(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.AccountUnlockingCoins", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/AccountUnlockingCoins", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -230,7 +230,7 @@ func (is *implementedOsmosisLockup) LockedByID(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.LockedByID", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/LockedByID", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -249,7 +249,7 @@ func (is *implementedOsmosisLockup) LockedDenom(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.LockedDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/LockedDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -268,7 +268,7 @@ func (is *implementedOsmosisLockup) ModuleBalance(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.ModuleBalance", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/ModuleBalance", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -287,7 +287,7 @@ func (is *implementedOsmosisLockup) ModuleLockedAmount(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.ModuleLockedAmount", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/ModuleLockedAmount", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -306,7 +306,7 @@ func (is *implementedOsmosisLockup) SyntheticLockupsByLockupID(ctx context.Conte
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.lockup.Query.SyntheticLockupsByLockupID", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.lockup.Query/SyntheticLockupsByLockupID", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

@@ -21,7 +21,7 @@ func (is *implementedCosmosTxV1beta1) BroadcastTx(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service.BroadcastTx", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service/BroadcastTx", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosTxV1beta1) GetBlockWithTxs(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service.GetBlockWithTxs", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service/GetBlockWithTxs", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosTxV1beta1) GetTx(ctx context.Context, req *pb_pkg.Get
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service.GetTx", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service/GetTx", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosTxV1beta1) GetTxsEvent(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service.GetTxsEvent", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service/GetTxsEvent", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosTxV1beta1) Simulate(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service.Simulate", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.tx.v1beta1.Service/Simulate", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

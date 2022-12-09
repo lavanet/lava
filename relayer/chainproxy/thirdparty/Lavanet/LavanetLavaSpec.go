@@ -22,7 +22,7 @@ func (is *implementedLavanetLavaSpec) Params(ctx context.Context, req *pb_pkg.Qu
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.spec.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.spec.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -41,7 +41,7 @@ func (is *implementedLavanetLavaSpec) ShowAllChains(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.spec.Query.ShowAllChains", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.spec.Query/ShowAllChains", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -60,7 +60,7 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.spec.Query.ShowChainInfo", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.spec.Query/ShowChainInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -79,7 +79,7 @@ func (is *implementedLavanetLavaSpec) SpecAll(ctx context.Context, req *pb_pkg.Q
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.spec.Query.SpecAll", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.spec.Query/SpecAll", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

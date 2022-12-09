@@ -22,7 +22,7 @@ func (is *implementedOsmosisEpochsV1beta1) CurrentEpoch(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.epochs.v1beta1.Query.CurrentEpoch", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.epochs.v1beta1.Query/CurrentEpoch", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -41,7 +41,7 @@ func (is *implementedOsmosisEpochsV1beta1) EpochInfos(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.epochs.v1beta1.Query.EpochInfos", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.epochs.v1beta1.Query/EpochInfos", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

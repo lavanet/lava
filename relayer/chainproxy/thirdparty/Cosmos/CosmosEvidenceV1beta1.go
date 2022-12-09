@@ -21,7 +21,7 @@ func (is *implementedCosmosEvidenceV1beta1) AllEvidence(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.evidence.v1beta1.Query.AllEvidence", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.evidence.v1beta1.Query/AllEvidence", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

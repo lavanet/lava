@@ -21,7 +21,7 @@ func (is *implementedCosmosParamsV1beta1) Params(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.params.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.params.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

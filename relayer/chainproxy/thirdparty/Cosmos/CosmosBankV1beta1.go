@@ -21,7 +21,7 @@ func (is *implementedCosmosBankV1beta1) AllBalances(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.AllBalances", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/AllBalances", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosBankV1beta1) DenomMetadata(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.DenomMetadata", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/DenomMetadata", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosBankV1beta1) DenomsMetadata(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.DenomsMetadata", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/DenomsMetadata", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosBankV1beta1) Params(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosBankV1beta1) SpendableBalances(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SpendableBalances", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/SpendableBalances", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedCosmosBankV1beta1) SupplyOf(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SupplyOf", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/SupplyOf", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedCosmosBankV1beta1) TotalSupply(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.TotalSupply", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/TotalSupply", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedCosmosBankV1beta1) DenomOwners(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.DenomOwners", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/DenomOwners", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedCosmosBankV1beta1) SendEnabled(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SendEnabled", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/SendEnabled", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -192,7 +192,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.Balance", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/Balance", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -210,7 +210,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 // 	}
-// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.SupplyOfWithoutOffset", reqMarshaled)
+// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset", reqMarshaled)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
@@ -229,7 +229,7 @@ func (is *implementedCosmosBankV1beta1) Balance(ctx context.Context, req *pb_pkg
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 // 	}
-// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query.TotalSupplyWithoutOffset", reqMarshaled)
+// 	res, err := is.cb(ctx, "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset", reqMarshaled)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}

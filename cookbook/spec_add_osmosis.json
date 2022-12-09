@@ -5149,7 +5149,7 @@
             }
           ]
         }      ,{
-          "name": "cosmos.auth.v1beta1.Query.Account",
+          "name": "cosmos.auth.v1beta1.Query/Account",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5172,7 +5172,7 @@
             }
           ]
     },{
-          "name": "cosmos.auth.v1beta1.Query.Accounts",
+          "name": "cosmos.auth.v1beta1.Query/Accounts",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5195,7 +5195,7 @@
             }
           ]
     },{
-          "name": "cosmos.auth.v1beta1.Query.ModuleAccounts",
+          "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5218,7 +5218,7 @@
             }
           ]
     },{
-          "name": "cosmos.auth.v1beta1.Query.Params",
+          "name": "cosmos.auth.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5241,7 +5241,7 @@
             }
           ]
     },{
-          "name": "cosmos.authz.v1beta1.Query.Grants",
+          "name": "cosmos.authz.v1beta1.Query/Grants",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5264,7 +5264,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.AllBalances",
+          "name": "cosmos.bank.v1beta1.Query/AllBalances",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5287,7 +5287,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.Balance",
+          "name": "cosmos.bank.v1beta1.Query/Balance",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5310,7 +5310,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.BaseDenom",
+          "name": "cosmos.bank.v1beta1.Query/BaseDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5333,7 +5333,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.DenomMetadata",
+          "name": "cosmos.bank.v1beta1.Query/DenomMetadata",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5356,7 +5356,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.DenomsMetadata",
+          "name": "cosmos.bank.v1beta1.Query/DenomsMetadata",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5379,7 +5379,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.Params",
+          "name": "cosmos.bank.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5402,7 +5402,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.SupplyOf",
+          "name": "cosmos.bank.v1beta1.Query/SupplyOf",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5425,7 +5425,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.SupplyOfWithoutOffset",
+          "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5448,7 +5448,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.TotalSupply",
+          "name": "cosmos.bank.v1beta1.Query/TotalSupply",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5471,7 +5471,7 @@
             }
           ]
     },{
-          "name": "cosmos.bank.v1beta1.Query.TotalSupplyWithoutOffset",
+          "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5494,7 +5494,7 @@
             }
           ]
           },{
-            "name": "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight",
+            "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
             "category": {
               "deterministic": true,
               "local": false,
@@ -5531,7 +5531,7 @@
               }
             }
           },{
-            "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock",
+            "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
             "category": {
               "deterministic": true,
               "local": false,
@@ -5567,7 +5567,7 @@
               }
             }
           },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5590,7 +5590,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
           "category": {
             "deterministic": false,
             "local": false,
@@ -5613,7 +5613,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetSyncing",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
           "category": {
             "deterministic": false,
             "local": false,
@@ -5636,7 +5636,7 @@
             }
           ]
     },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5659,7 +5659,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.CommunityPool",
+          "name": "cosmos.distribution.v1beta1.Query/CommunityPool",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5682,7 +5682,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.DelegationRewards",
+          "name": "cosmos.distribution.v1beta1.Query/DelegationRewards",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5705,7 +5705,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.DelegationTotalRewards",
+          "name": "cosmos.distribution.v1beta1.Query/DelegationTotalRewards",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5728,7 +5728,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.DelegatorValidators",
+          "name": "cosmos.distribution.v1beta1.Query/DelegatorValidators",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5751,7 +5751,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.DelegatorWithdrawAddress",
+          "name": "cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5774,7 +5774,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.Params",
+          "name": "cosmos.distribution.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5797,7 +5797,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.ValidatorCommission",
+          "name": "cosmos.distribution.v1beta1.Query/ValidatorCommission",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5820,7 +5820,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.ValidatorOutstandingRewards",
+          "name": "cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5843,7 +5843,7 @@
             }
           ]
     },{
-          "name": "cosmos.distribution.v1beta1.Query.ValidatorSlashes",
+          "name": "cosmos.distribution.v1beta1.Query/ValidatorSlashes",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5866,7 +5866,7 @@
             }
           ]
     },{
-          "name": "cosmos.evidence.v1beta1.Query.AllEvidence",
+          "name": "cosmos.evidence.v1beta1.Query/AllEvidence",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5889,7 +5889,7 @@
             }
           ]
     },{
-          "name": "cosmos.evidence.v1beta1.Query.Evidence",
+          "name": "cosmos.evidence.v1beta1.Query/Evidence",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5912,7 +5912,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Deposit",
+          "name": "cosmos.gov.v1beta1.Query/Deposit",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5935,7 +5935,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Deposits",
+          "name": "cosmos.gov.v1beta1.Query/Deposits",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5958,7 +5958,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Params",
+          "name": "cosmos.gov.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -5981,7 +5981,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Proposal",
+          "name": "cosmos.gov.v1beta1.Query/Proposal",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6004,7 +6004,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Proposals",
+          "name": "cosmos.gov.v1beta1.Query/Proposals",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6027,7 +6027,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.TallyResult",
+          "name": "cosmos.gov.v1beta1.Query/TallyResult",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6050,7 +6050,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Vote",
+          "name": "cosmos.gov.v1beta1.Query/Vote",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6073,7 +6073,7 @@
             }
           ]
     },{
-          "name": "cosmos.gov.v1beta1.Query.Votes",
+          "name": "cosmos.gov.v1beta1.Query/Votes",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6096,7 +6096,7 @@
             }
           ]
     },{
-          "name": "cosmos.params.v1beta1.Query.Params",
+          "name": "cosmos.params.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6119,7 +6119,7 @@
             }
           ]
     },{
-          "name": "cosmos.slashing.v1beta1.Query.Params",
+          "name": "cosmos.slashing.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6142,7 +6142,7 @@
             }
           ]
     },{
-          "name": "cosmos.slashing.v1beta1.Query.SigningInfo",
+          "name": "cosmos.slashing.v1beta1.Query/SigningInfo",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6165,7 +6165,7 @@
             }
           ]
     },{
-          "name": "cosmos.slashing.v1beta1.Query.SigningInfos",
+          "name": "cosmos.slashing.v1beta1.Query/SigningInfos",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6188,7 +6188,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Delegation",
+          "name": "cosmos.staking.v1beta1.Query/Delegation",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6211,7 +6211,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.DelegatorDelegations",
+          "name": "cosmos.staking.v1beta1.Query/DelegatorDelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6234,7 +6234,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.DelegatorUnbondingDelegations",
+          "name": "cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6257,7 +6257,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.DelegatorValidator",
+          "name": "cosmos.staking.v1beta1.Query/DelegatorValidator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6280,7 +6280,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.DelegatorValidators",
+          "name": "cosmos.staking.v1beta1.Query/DelegatorValidators",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6303,7 +6303,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.HistoricalInfo",
+          "name": "cosmos.staking.v1beta1.Query/HistoricalInfo",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6326,7 +6326,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Params",
+          "name": "cosmos.staking.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6349,7 +6349,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Pool",
+          "name": "cosmos.staking.v1beta1.Query/Pool",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6372,7 +6372,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Redelegations",
+          "name": "cosmos.staking.v1beta1.Query/Redelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6395,7 +6395,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.UnbondingDelegation",
+          "name": "cosmos.staking.v1beta1.Query/UnbondingDelegation",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6418,7 +6418,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Validator",
+          "name": "cosmos.staking.v1beta1.Query/Validator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6441,7 +6441,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.ValidatorDelegations",
+          "name": "cosmos.staking.v1beta1.Query/ValidatorDelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6464,7 +6464,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.ValidatorUnbondingDelegations",
+          "name": "cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6487,7 +6487,7 @@
             }
           ]
     },{
-          "name": "cosmos.staking.v1beta1.Query.Validators",
+          "name": "cosmos.staking.v1beta1.Query/Validators",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6510,7 +6510,7 @@
             }
           ]
     },{
-          "name": "cosmos.tx.v1beta1.Service.BroadcastTx",
+          "name": "cosmos.tx.v1beta1.Service/BroadcastTx",
           "category": {
             "deterministic": false,
             "local": false,
@@ -6538,7 +6538,7 @@
             }
           ]
     },{
-          "name": "cosmos.tx.v1beta1.Service.GetTx",
+          "name": "cosmos.tx.v1beta1.Service/GetTx",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6561,7 +6561,7 @@
             }
           ]
     },{
-          "name": "cosmos.tx.v1beta1.Service.GetTxsEvent",
+          "name": "cosmos.tx.v1beta1.Service/GetTxsEvent",
           "category": {
             "deterministic": false,
             "local": false,
@@ -6589,7 +6589,7 @@
             }
           ]
     },{
-          "name": "cosmos.tx.v1beta1.Service.Simulate",
+          "name": "cosmos.tx.v1beta1.Service/Simulate",
           "category": {
             "deterministic": false,
             "local": false,
@@ -6612,7 +6612,7 @@
             }
           ]
     },{
-          "name": "cosmos.upgrade.v1beta1.Query.AppliedPlan",
+          "name": "cosmos.upgrade.v1beta1.Query/AppliedPlan",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6635,7 +6635,7 @@
             }
           ]
     },{
-          "name": "cosmos.upgrade.v1beta1.Query.CurrentPlan",
+          "name": "cosmos.upgrade.v1beta1.Query/CurrentPlan",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6658,7 +6658,7 @@
             }
           ]
     },{
-          "name": "cosmos.upgrade.v1beta1.Query.ModuleVersions",
+          "name": "cosmos.upgrade.v1beta1.Query/ModuleVersions",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6681,7 +6681,7 @@
             }
           ]
     },{
-          "name": "cosmos.upgrade.v1beta1.Query.UpgradedConsensusState",
+          "name": "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6704,7 +6704,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.AllContractState",
+          "name": "cosmwasm.wasm.v1.Query/AllContractState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6727,7 +6727,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.Code",
+          "name": "cosmwasm.wasm.v1.Query/Code",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6750,7 +6750,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.Codes",
+          "name": "cosmwasm.wasm.v1.Query/Codes",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6773,7 +6773,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.ContractHistory",
+          "name": "cosmwasm.wasm.v1.Query/ContractHistory",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6796,7 +6796,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.ContractInfo",
+          "name": "cosmwasm.wasm.v1.Query/ContractInfo",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6819,7 +6819,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.ContractsByCode",
+          "name": "cosmwasm.wasm.v1.Query/ContractsByCode",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6842,7 +6842,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.PinnedCodes",
+          "name": "cosmwasm.wasm.v1.Query/PinnedCodes",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6865,7 +6865,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.RawContractState",
+          "name": "cosmwasm.wasm.v1.Query/RawContractState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6888,7 +6888,7 @@
             }
           ]
     },{
-          "name": "cosmwasm.wasm.v1.Query.SmartContractState",
+          "name": "cosmwasm.wasm.v1.Query/SmartContractState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6911,7 +6911,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.interchain_accounts.host.v1.Query.Params",
+          "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6934,7 +6934,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.transfer.v1.Query.DenomHash",
+          "name": "ibc.applications.transfer.v1.Query/DenomHash",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6957,7 +6957,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.transfer.v1.Query.DenomTrace",
+          "name": "ibc.applications.transfer.v1.Query/DenomTrace",
           "category": {
             "deterministic": true,
             "local": false,
@@ -6980,7 +6980,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.transfer.v1.Query.DenomTraces",
+          "name": "ibc.applications.transfer.v1.Query/DenomTraces",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7003,7 +7003,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.transfer.v1.Query.EscrowAddress",
+          "name": "ibc.applications.transfer.v1.Query/EscrowAddress",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7026,7 +7026,7 @@
             }
           ]
     },{
-          "name": "ibc.applications.transfer.v1.Query.Params",
+          "name": "ibc.applications.transfer.v1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7049,7 +7049,7 @@
             }
           ]
         },{
-          "name": "ibc.core.channel.v1.Query.Channel",
+          "name": "ibc.core.channel.v1.Query/Channel",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7072,7 +7072,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.ChannelClientState",
+          "name": "ibc.core.channel.v1.Query/ChannelClientState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7095,7 +7095,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.ChannelConsensusState",
+          "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7118,7 +7118,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.Channels",
+          "name": "ibc.core.channel.v1.Query/Channels",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7141,7 +7141,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.ConnectionChannels",
+          "name": "ibc.core.channel.v1.Query/ConnectionChannels",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7164,7 +7164,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.NextSequenceReceive",
+          "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7187,7 +7187,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.PacketAcknowledgement",
+          "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7210,7 +7210,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.PacketAcknowledgements",
+          "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7233,7 +7233,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.PacketCommitment",
+          "name": "ibc.core.channel.v1.Query/PacketCommitment",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7256,7 +7256,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.PacketCommitments",
+          "name": "ibc.core.channel.v1.Query/PacketCommitments",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7279,7 +7279,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.PacketReceipt",
+          "name": "ibc.core.channel.v1.Query/PacketReceipt",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7302,7 +7302,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.UnreceivedAcks",
+          "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7325,7 +7325,7 @@
             }
           ]
     },{
-          "name": "ibc.core.channel.v1.Query.UnreceivedPackets",
+          "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7348,7 +7348,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ClientParams",
+          "name": "ibc.core.client.v1.Query/ClientParams",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7371,7 +7371,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ClientState",
+          "name": "ibc.core.client.v1.Query/ClientState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7394,7 +7394,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ClientStates",
+          "name": "ibc.core.client.v1.Query/ClientStates",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7417,7 +7417,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ClientStatus",
+          "name": "ibc.core.client.v1.Query/ClientStatus",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7440,7 +7440,7 @@
             }
           ]
     },{
-        "name": "osmosis.superfluid.Query.TotalDelegationByValidatorForDenom",
+        "name": "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -7463,7 +7463,7 @@
           }
         ]
   },{
-          "name": "ibc.core.client.v1.Query.ConsensusState",
+          "name": "ibc.core.client.v1.Query/ConsensusState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7486,7 +7486,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ConsensusStateHeights",
+          "name": "ibc.core.client.v1.Query/ConsensusStateHeights",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7509,76 +7509,7 @@
             }
           ]
     },{
-          "name": "ibc.core.client.v1.Query.ConsensusStates",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "grpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-    },{
-          "name": "ibc.core.client.v1.Query.UpgradedClientState",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-            "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "grpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-    },{
-          "name": "ibc.core.client.v1.Query.UpgradedConsensusState",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-            "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "grpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-    },{
-          "name": "ibc.core.connection.v1.Query.ClientConnections",
+          "name": "ibc.core.client.v1.Query/ConsensusStates",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7601,7 +7532,53 @@
             }
           ]
     },{
-          "name": "ibc.core.connection.v1.Query.Connection",
+          "name": "ibc.core.client.v1.Query/UpgradedClientState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+            "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+            "latest"
+            ],
+            "parserFunc": "DEFAULT"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "ibc.core.connection.v1.Query/ClientConnections",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7624,7 +7601,7 @@
             }
           ]
     },{
-          "name": "ibc.core.connection.v1.Query.ConnectionClientState",
+          "name": "ibc.core.connection.v1.Query/Connection",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7647,7 +7624,7 @@
             }
           ]
     },{
-          "name": "ibc.core.connection.v1.Query.ConnectionConsensusState",
+          "name": "ibc.core.connection.v1.Query/ConnectionClientState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7670,7 +7647,7 @@
             }
           ]
     },{
-          "name": "ibc.core.connection.v1.Query.Connections",
+          "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7693,7 +7670,7 @@
             }
           ]
     },{
-          "name": "osmosis.epochs.v1beta1.Query.CurrentEpoch",
+          "name": "ibc.core.connection.v1.Query/Connections",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7702,6 +7679,29 @@
           },
           "block_parsing": {
             "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "10",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "grpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+    },{
+          "name": "osmosis.epochs.v1beta1.Query/CurrentEpoch",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
             "latest"
             ],
             "parserFunc": "DEFAULT"
@@ -7716,7 +7716,7 @@
             }
           ]
     },{
-          "name": "osmosis.epochs.v1beta1.Query.EpochInfos",
+          "name": "osmosis.epochs.v1beta1.Query/EpochInfos",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7739,7 +7739,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountIn",
+          "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7762,7 +7762,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountOut",
+          "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7785,7 +7785,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.NumPools",
+          "name": "osmosis.gamm.v1beta1.Query/NumPools",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7808,7 +7808,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.Pool",
+          "name": "osmosis.gamm.v1beta1.Query/Pool",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7831,7 +7831,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.PoolParams",
+          "name": "osmosis.gamm.v1beta1.Query/PoolParams",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7854,7 +7854,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.PoolType",
+          "name": "osmosis.gamm.v1beta1.Query/PoolType",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7877,7 +7877,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.Pools",
+          "name": "osmosis.gamm.v1beta1.Query/Pools",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7900,7 +7900,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.SpotPrice",
+          "name": "osmosis.gamm.v1beta1.Query/SpotPrice",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7923,7 +7923,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.TotalLiquidity",
+          "name": "osmosis.gamm.v1beta1.Query/TotalLiquidity",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7946,7 +7946,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity",
+          "name": "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7969,7 +7969,7 @@
             }
           ]
     },{
-          "name": "osmosis.gamm.v1beta1.Query.TotalShares",
+          "name": "osmosis.gamm.v1beta1.Query/TotalShares",
           "category": {
             "deterministic": true,
             "local": false,
@@ -7992,7 +7992,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.ActiveGauges",
+          "name": "osmosis.incentives.Query/ActiveGauges",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8015,7 +8015,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.ActiveGaugesPerDenom",
+          "name": "osmosis.incentives.Query/ActiveGaugesPerDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8038,7 +8038,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.GaugeByID",
+          "name": "osmosis.incentives.Query/GaugeByID",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8061,7 +8061,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.Gauges",
+          "name": "osmosis.incentives.Query/Gauges",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8084,7 +8084,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.LockableDurations",
+          "name": "osmosis.incentives.Query/LockableDurations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8107,7 +8107,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.ModuleDistributedCoins",
+          "name": "osmosis.incentives.Query/ModuleDistributedCoins",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8130,7 +8130,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.ModuleToDistributeCoins",
+          "name": "osmosis.incentives.Query/ModuleToDistributeCoins",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8153,7 +8153,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.RewardsEst",
+          "name": "osmosis.incentives.Query/RewardsEst",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8176,7 +8176,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.UpcomingGauges",
+          "name": "osmosis.incentives.Query/UpcomingGauges",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8199,7 +8199,7 @@
             }
           ]
     },{
-          "name": "osmosis.incentives.Query.UpcomingGaugesPerDenom",
+          "name": "osmosis.incentives.Query/UpcomingGaugesPerDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8222,7 +8222,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedCoins",
+          "name": "osmosis.lockup.Query/AccountLockedCoins",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8245,7 +8245,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedDuration",
+          "name": "osmosis.lockup.Query/AccountLockedDuration",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8268,7 +8268,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedLongerDuration",
+          "name": "osmosis.lockup.Query/AccountLockedLongerDuration",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8291,7 +8291,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedLongerDurationDenom",
+          "name": "osmosis.lockup.Query/AccountLockedLongerDurationDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8314,7 +8314,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedLongerDurationNotUnlockingOnly",
+          "name": "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8337,7 +8337,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedPastTime",
+          "name": "osmosis.lockup.Query/AccountLockedPastTime",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8360,7 +8360,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedPastTimeDenom",
+          "name": "osmosis.lockup.Query/AccountLockedPastTimeDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8383,7 +8383,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountLockedPastTimeNotUnlockingOnly",
+          "name": "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8406,7 +8406,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountUnlockableCoins",
+          "name": "osmosis.lockup.Query/AccountUnlockableCoins",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8429,7 +8429,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountUnlockedBeforeTime",
+          "name": "osmosis.lockup.Query/AccountUnlockedBeforeTime",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8452,7 +8452,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.AccountUnlockingCoins",
+          "name": "osmosis.lockup.Query/AccountUnlockingCoins",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8475,7 +8475,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.LockedByID",
+          "name": "osmosis.lockup.Query/LockedByID",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8498,7 +8498,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.LockedDenom",
+          "name": "osmosis.lockup.Query/LockedDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8521,7 +8521,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.ModuleBalance",
+          "name": "osmosis.lockup.Query/ModuleBalance",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8544,7 +8544,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.ModuleLockedAmount",
+          "name": "osmosis.lockup.Query/ModuleLockedAmount",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8567,7 +8567,7 @@
             }
           ]
     },{
-          "name": "osmosis.lockup.Query.SyntheticLockupsByLockupID",
+          "name": "osmosis.lockup.Query/SyntheticLockupsByLockupID",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8590,7 +8590,7 @@
             }
           ]
     },{
-          "name": "osmosis.mint.v1beta1.Query.EpochProvisions",
+          "name": "osmosis.mint.v1beta1.Query/EpochProvisions",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8613,7 +8613,7 @@
             }
           ]
     },{
-          "name": "osmosis.mint.v1beta1.Query.Params",
+          "name": "osmosis.mint.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8636,7 +8636,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.DistrInfo",
+          "name": "osmosis.poolincentives.v1beta1.Query/DistrInfo",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8659,7 +8659,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.ExternalIncentiveGauges",
+          "name": "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8682,7 +8682,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.GaugeIds",
+          "name": "osmosis.poolincentives.v1beta1.Query/GaugeIds",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8705,7 +8705,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.IncentivizedPools",
+          "name": "osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8728,7 +8728,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.LockableDurations",
+          "name": "osmosis.poolincentives.v1beta1.Query/LockableDurations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8751,7 +8751,7 @@
             }
           ]
     },{
-          "name": "osmosis.poolincentives.v1beta1.Query.Params",
+          "name": "osmosis.poolincentives.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8774,7 +8774,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.AllAssets",
+          "name": "osmosis.superfluid.Query/AllAssets",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8797,7 +8797,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.AllIntermediaryAccounts",
+          "name": "osmosis.superfluid.Query/AllIntermediaryAccounts",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8820,7 +8820,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.AssetMultiplier",
+          "name": "osmosis.superfluid.Query/AssetMultiplier",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8843,7 +8843,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.AssetType",
+          "name": "osmosis.superfluid.Query/AssetType",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8866,7 +8866,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.ConnectedIntermediaryAccount",
+          "name": "osmosis.superfluid.Query/ConnectedIntermediaryAccount",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8889,7 +8889,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.EstimateSuperfluidDelegatedAmountByValidatorDenom",
+          "name": "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8912,7 +8912,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.Params",
+          "name": "osmosis.superfluid.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8935,7 +8935,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.SuperfluidDelegationAmount",
+          "name": "osmosis.superfluid.Query/SuperfluidDelegationAmount",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8958,7 +8958,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.SuperfluidDelegationsByDelegator",
+          "name": "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -8981,7 +8981,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.SuperfluidDelegationsByValidatorDenom",
+          "name": "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9004,7 +9004,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.SuperfluidUndelegationsByDelegator",
+          "name": "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9027,7 +9027,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.TotalDelegationByDelegator",
+          "name": "osmosis.superfluid.Query/TotalDelegationByDelegator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9050,7 +9050,7 @@
             }
           ]
     },{
-          "name": "osmosis.superfluid.Query.TotalSuperfluidDelegations",
+          "name": "osmosis.superfluid.Query/TotalSuperfluidDelegations",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9073,7 +9073,7 @@
             }
           ]
     },{
-          "name": "osmosis.tokenfactory.v1beta1.Query.DenomAuthorityMetadata",
+          "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9096,7 +9096,7 @@
             }
           ]
     },{
-          "name": "osmosis.tokenfactory.v1beta1.Query.DenomsFromCreator",
+          "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9119,7 +9119,7 @@
             }
           ]
     },{
-          "name": "osmosis.tokenfactory.v1beta1.Query.Params",
+          "name": "osmosis.tokenfactory.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9142,7 +9142,7 @@
             }
           ]
     },{
-          "name": "osmosis.twap.v1beta1.Query.ArithmeticTwap",
+          "name": "osmosis.twap.v1beta1.Query/ArithmeticTwap",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9165,7 +9165,7 @@
             }
           ]
     },{
-          "name": "osmosis.twap.v1beta1.Query.ArithmeticTwapToNow",
+          "name": "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9188,7 +9188,7 @@
             }
           ]
     },{
-          "name": "osmosis.twap.v1beta1.Query.Params",
+          "name": "osmosis.twap.v1beta1.Query/Params",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9211,7 +9211,7 @@
             }
           ]
     },{
-          "name": "osmosis.txfees.v1beta1.Query.BaseDenom",
+          "name": "osmosis.txfees.v1beta1.Query/BaseDenom",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9234,7 +9234,7 @@
             }
           ]
     },{
-          "name": "osmosis.txfees.v1beta1.Query.DenomPoolId",
+          "name": "osmosis.txfees.v1beta1.Query/DenomPoolId",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9257,7 +9257,7 @@
             }
           ]
     },{
-          "name": "osmosis.txfees.v1beta1.Query.DenomSpotPrice",
+          "name": "osmosis.txfees.v1beta1.Query/DenomSpotPrice",
           "category": {
             "deterministic": true,
             "local": false,
@@ -9280,7 +9280,7 @@
             }
           ]
     },{
-          "name": "osmosis.txfees.v1beta1.Query.FeeTokens",
+          "name": "osmosis.txfees.v1beta1.Query/FeeTokens",
           "category": {
             "deterministic": true,
             "local": false,
@@ -14452,7 +14452,7 @@
           }
         ]
       }      ,{
-        "name": "cosmos.auth.v1beta1.Query.Account",
+        "name": "cosmos.auth.v1beta1.Query/Account",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14475,7 +14475,7 @@
           }
         ]
   },{
-        "name": "cosmos.auth.v1beta1.Query.Accounts",
+        "name": "cosmos.auth.v1beta1.Query/Accounts",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14498,7 +14498,7 @@
           }
         ]
   },{
-        "name": "cosmos.auth.v1beta1.Query.ModuleAccounts",
+        "name": "cosmos.auth.v1beta1.Query/ModuleAccounts",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14521,7 +14521,7 @@
           }
         ]
   },{
-        "name": "cosmos.auth.v1beta1.Query.Params",
+        "name": "cosmos.auth.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14544,7 +14544,7 @@
           }
         ]
   },{
-        "name": "cosmos.authz.v1beta1.Query.Grants",
+        "name": "cosmos.authz.v1beta1.Query/Grants",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14567,7 +14567,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.AllBalances",
+        "name": "cosmos.bank.v1beta1.Query/AllBalances",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14590,7 +14590,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.Balance",
+        "name": "cosmos.bank.v1beta1.Query/Balance",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14613,7 +14613,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.BaseDenom",
+        "name": "cosmos.bank.v1beta1.Query/BaseDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14636,7 +14636,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.DenomMetadata",
+        "name": "cosmos.bank.v1beta1.Query/DenomMetadata",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14659,7 +14659,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.DenomsMetadata",
+        "name": "cosmos.bank.v1beta1.Query/DenomsMetadata",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14682,7 +14682,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.Params",
+        "name": "cosmos.bank.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14705,7 +14705,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.SupplyOf",
+        "name": "cosmos.bank.v1beta1.Query/SupplyOf",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14728,7 +14728,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.SupplyOfWithoutOffset",
+        "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14751,7 +14751,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.TotalSupply",
+        "name": "cosmos.bank.v1beta1.Query/TotalSupply",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14774,7 +14774,7 @@
           }
         ]
   },{
-        "name": "cosmos.bank.v1beta1.Query.TotalSupplyWithoutOffset",
+        "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14797,7 +14797,7 @@
           }
         ]
         },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetBlockByHeight",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight",
           "category": {
             "deterministic": true,
             "local": false,
@@ -14834,7 +14834,7 @@
             }
           }
         },{
-          "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestBlock",
+          "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock",
           "category": {
             "deterministic": true,
             "local": false,
@@ -14870,7 +14870,7 @@
             }
           }
         },{
-        "name": "cosmos.base.tendermint.v1beta1.Service.GetLatestValidatorSet",
+        "name": "cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14893,7 +14893,7 @@
           }
         ]
   },{
-        "name": "cosmos.base.tendermint.v1beta1.Service.GetNodeInfo",
+        "name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
         "category": {
           "deterministic": false,
           "local": false,
@@ -14916,7 +14916,7 @@
           }
         ]
   },{
-        "name": "cosmos.base.tendermint.v1beta1.Service.GetSyncing",
+        "name": "cosmos.base.tendermint.v1beta1.Service/GetSyncing",
         "category": {
           "deterministic": false,
           "local": false,
@@ -14939,7 +14939,7 @@
           }
         ]
   },{
-        "name": "cosmos.base.tendermint.v1beta1.Service.GetValidatorSetByHeight",
+        "name": "cosmos.base.tendermint.v1beta1.Service/GetValidatorSetByHeight",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14962,7 +14962,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.CommunityPool",
+        "name": "cosmos.distribution.v1beta1.Query/CommunityPool",
         "category": {
           "deterministic": true,
           "local": false,
@@ -14985,7 +14985,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.DelegationRewards",
+        "name": "cosmos.distribution.v1beta1.Query/DelegationRewards",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15008,7 +15008,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.DelegationTotalRewards",
+        "name": "cosmos.distribution.v1beta1.Query/DelegationTotalRewards",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15031,7 +15031,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.DelegatorValidators",
+        "name": "cosmos.distribution.v1beta1.Query/DelegatorValidators",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15054,7 +15054,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.DelegatorWithdrawAddress",
+        "name": "cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15077,7 +15077,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.Params",
+        "name": "cosmos.distribution.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15100,7 +15100,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.ValidatorCommission",
+        "name": "cosmos.distribution.v1beta1.Query/ValidatorCommission",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15123,7 +15123,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.ValidatorOutstandingRewards",
+        "name": "cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15146,7 +15146,7 @@
           }
         ]
   },{
-        "name": "cosmos.distribution.v1beta1.Query.ValidatorSlashes",
+        "name": "cosmos.distribution.v1beta1.Query/ValidatorSlashes",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15169,7 +15169,7 @@
           }
         ]
   },{
-        "name": "cosmos.evidence.v1beta1.Query.AllEvidence",
+        "name": "cosmos.evidence.v1beta1.Query/AllEvidence",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15192,7 +15192,7 @@
           }
         ]
   },{
-        "name": "cosmos.evidence.v1beta1.Query.Evidence",
+        "name": "cosmos.evidence.v1beta1.Query/Evidence",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15215,7 +15215,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Deposit",
+        "name": "cosmos.gov.v1beta1.Query/Deposit",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15238,7 +15238,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Deposits",
+        "name": "cosmos.gov.v1beta1.Query/Deposits",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15261,7 +15261,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Params",
+        "name": "cosmos.gov.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15284,7 +15284,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Proposal",
+        "name": "cosmos.gov.v1beta1.Query/Proposal",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15307,7 +15307,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Proposals",
+        "name": "cosmos.gov.v1beta1.Query/Proposals",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15330,7 +15330,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.TallyResult",
+        "name": "cosmos.gov.v1beta1.Query/TallyResult",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15353,7 +15353,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Vote",
+        "name": "cosmos.gov.v1beta1.Query/Vote",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15376,7 +15376,7 @@
           }
         ]
   },{
-        "name": "cosmos.gov.v1beta1.Query.Votes",
+        "name": "cosmos.gov.v1beta1.Query/Votes",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15399,7 +15399,7 @@
           }
         ]
   },{
-        "name": "cosmos.params.v1beta1.Query.Params",
+        "name": "cosmos.params.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15422,7 +15422,7 @@
           }
         ]
   },{
-        "name": "cosmos.slashing.v1beta1.Query.Params",
+        "name": "cosmos.slashing.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15445,7 +15445,7 @@
           }
         ]
   },{
-        "name": "cosmos.slashing.v1beta1.Query.SigningInfo",
+        "name": "cosmos.slashing.v1beta1.Query/SigningInfo",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15468,7 +15468,7 @@
           }
         ]
   },{
-        "name": "cosmos.slashing.v1beta1.Query.SigningInfos",
+        "name": "cosmos.slashing.v1beta1.Query/SigningInfos",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15491,7 +15491,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Delegation",
+        "name": "cosmos.staking.v1beta1.Query/Delegation",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15514,7 +15514,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.DelegatorDelegations",
+        "name": "cosmos.staking.v1beta1.Query/DelegatorDelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15537,7 +15537,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.DelegatorUnbondingDelegations",
+        "name": "cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15560,7 +15560,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.DelegatorValidator",
+        "name": "cosmos.staking.v1beta1.Query/DelegatorValidator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15583,7 +15583,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.DelegatorValidators",
+        "name": "cosmos.staking.v1beta1.Query/DelegatorValidators",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15606,7 +15606,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.HistoricalInfo",
+        "name": "cosmos.staking.v1beta1.Query/HistoricalInfo",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15629,7 +15629,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Params",
+        "name": "cosmos.staking.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15652,7 +15652,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Pool",
+        "name": "cosmos.staking.v1beta1.Query/Pool",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15675,7 +15675,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Redelegations",
+        "name": "cosmos.staking.v1beta1.Query/Redelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15698,7 +15698,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.UnbondingDelegation",
+        "name": "cosmos.staking.v1beta1.Query/UnbondingDelegation",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15721,7 +15721,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Validator",
+        "name": "cosmos.staking.v1beta1.Query/Validator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15744,7 +15744,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.ValidatorDelegations",
+        "name": "cosmos.staking.v1beta1.Query/ValidatorDelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15767,7 +15767,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.ValidatorUnbondingDelegations",
+        "name": "cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15790,7 +15790,7 @@
           }
         ]
   },{
-        "name": "cosmos.staking.v1beta1.Query.Validators",
+        "name": "cosmos.staking.v1beta1.Query/Validators",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15813,7 +15813,7 @@
           }
         ]
   },{
-        "name": "cosmos.tx.v1beta1.Service.BroadcastTx",
+        "name": "cosmos.tx.v1beta1.Service/BroadcastTx",
         "category": {
           "deterministic": false,
           "local": false,
@@ -15841,7 +15841,7 @@
           }
         ]
   },{
-        "name": "cosmos.tx.v1beta1.Service.GetTx",
+        "name": "cosmos.tx.v1beta1.Service/GetTx",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15864,7 +15864,7 @@
           }
         ]
   },{
-        "name": "cosmos.tx.v1beta1.Service.GetTxsEvent",
+        "name": "cosmos.tx.v1beta1.Service/GetTxsEvent",
         "category": {
           "deterministic": false,
           "local": false,
@@ -15892,7 +15892,7 @@
           }
         ]
   },{
-        "name": "cosmos.tx.v1beta1.Service.Simulate",
+        "name": "cosmos.tx.v1beta1.Service/Simulate",
         "category": {
           "deterministic": false,
           "local": false,
@@ -15915,7 +15915,7 @@
           }
         ]
   },{
-        "name": "cosmos.upgrade.v1beta1.Query.AppliedPlan",
+        "name": "cosmos.upgrade.v1beta1.Query/AppliedPlan",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15938,7 +15938,7 @@
           }
         ]
   },{
-        "name": "cosmos.upgrade.v1beta1.Query.CurrentPlan",
+        "name": "cosmos.upgrade.v1beta1.Query/CurrentPlan",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15961,7 +15961,7 @@
           }
         ]
   },{
-        "name": "cosmos.upgrade.v1beta1.Query.ModuleVersions",
+        "name": "cosmos.upgrade.v1beta1.Query/ModuleVersions",
         "category": {
           "deterministic": true,
           "local": false,
@@ -15984,7 +15984,7 @@
           }
         ]
   },{
-        "name": "cosmos.upgrade.v1beta1.Query.UpgradedConsensusState",
+        "name": "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16007,7 +16007,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.AllContractState",
+        "name": "cosmwasm.wasm.v1.Query/AllContractState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16030,7 +16030,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.Code",
+        "name": "cosmwasm.wasm.v1.Query/Code",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16053,7 +16053,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.Codes",
+        "name": "cosmwasm.wasm.v1.Query/Codes",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16076,7 +16076,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.ContractHistory",
+        "name": "cosmwasm.wasm.v1.Query/ContractHistory",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16099,7 +16099,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.ContractInfo",
+        "name": "cosmwasm.wasm.v1.Query/ContractInfo",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16122,7 +16122,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.ContractsByCode",
+        "name": "cosmwasm.wasm.v1.Query/ContractsByCode",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16145,7 +16145,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.PinnedCodes",
+        "name": "cosmwasm.wasm.v1.Query/PinnedCodes",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16168,7 +16168,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.RawContractState",
+        "name": "cosmwasm.wasm.v1.Query/RawContractState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16191,7 +16191,7 @@
           }
         ]
   },{
-        "name": "cosmwasm.wasm.v1.Query.SmartContractState",
+        "name": "cosmwasm.wasm.v1.Query/SmartContractState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16214,7 +16214,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.interchain_accounts.host.v1.Query.Params",
+        "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16237,7 +16237,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.transfer.v1.Query.DenomHash",
+        "name": "ibc.applications.transfer.v1.Query/DenomHash",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16260,7 +16260,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.transfer.v1.Query.DenomTrace",
+        "name": "ibc.applications.transfer.v1.Query/DenomTrace",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16283,7 +16283,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.transfer.v1.Query.DenomTraces",
+        "name": "ibc.applications.transfer.v1.Query/DenomTraces",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16306,7 +16306,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.transfer.v1.Query.EscrowAddress",
+        "name": "ibc.applications.transfer.v1.Query/EscrowAddress",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16329,7 +16329,7 @@
           }
         ]
   },{
-        "name": "ibc.applications.transfer.v1.Query.Params",
+        "name": "ibc.applications.transfer.v1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16352,7 +16352,7 @@
           }
         ]
       },{
-        "name": "ibc.core.channel.v1.Query.Channel",
+        "name": "ibc.core.channel.v1.Query/Channel",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16375,7 +16375,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.ChannelClientState",
+        "name": "ibc.core.channel.v1.Query/ChannelClientState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16398,7 +16398,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.ChannelConsensusState",
+        "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16421,7 +16421,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.Channels",
+        "name": "ibc.core.channel.v1.Query/Channels",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16444,7 +16444,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.ConnectionChannels",
+        "name": "ibc.core.channel.v1.Query/ConnectionChannels",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16467,7 +16467,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.NextSequenceReceive",
+        "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16490,7 +16490,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.PacketAcknowledgement",
+        "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16513,7 +16513,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.PacketAcknowledgements",
+        "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16536,7 +16536,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.PacketCommitment",
+        "name": "ibc.core.channel.v1.Query/PacketCommitment",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16559,7 +16559,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.PacketCommitments",
+        "name": "ibc.core.channel.v1.Query/PacketCommitments",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16582,7 +16582,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.PacketReceipt",
+        "name": "ibc.core.channel.v1.Query/PacketReceipt",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16605,7 +16605,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.UnreceivedAcks",
+        "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16628,7 +16628,7 @@
           }
         ]
   },{
-        "name": "ibc.core.channel.v1.Query.UnreceivedPackets",
+        "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16651,7 +16651,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.ClientParams",
+        "name": "ibc.core.client.v1.Query/ClientParams",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16674,7 +16674,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.ClientState",
+        "name": "ibc.core.client.v1.Query/ClientState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16697,7 +16697,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.ClientStates",
+        "name": "ibc.core.client.v1.Query/ClientStates",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16720,7 +16720,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.ClientStatus",
+        "name": "ibc.core.client.v1.Query/ClientStatus",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16743,76 +16743,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.ConsensusState",
-        "category": {
-          "deterministic": true,
-          "local": false,
-          "subscription": false,
-          "stateful": 0
-        },
-        "block_parsing": {
-          "parserArg": [
-            ""
-          ],
-          "parserFunc": "EMPTY"
-        },
-        "compute_units": "10",
-        "enabled": true,
-        "apiInterfaces": [
-          {
-            "interface": "grpc",
-            "type": "get",
-            "extra_compute_units": "0"
-          }
-        ]
-  },{
-        "name": "ibc.core.client.v1.Query.ConsensusStateHeights",
-        "category": {
-          "deterministic": true,
-          "local": false,
-          "subscription": false,
-          "stateful": 0
-        },
-        "block_parsing": {
-          "parserArg": [
-          "latest"
-          ],
-          "parserFunc": "DEFAULT"
-        },
-        "compute_units": "10",
-        "enabled": true,
-        "apiInterfaces": [
-          {
-            "interface": "grpc",
-            "type": "get",
-            "extra_compute_units": "0"
-          }
-        ]
-  },{
-        "name": "osmosis.superfluid.Query.TotalDelegationByValidatorForDenom",
-        "category": {
-          "deterministic": true,
-          "local": false,
-          "subscription": false,
-          "stateful": 0
-        },
-        "block_parsing": {
-          "parserArg": [
-          "latest"
-          ],
-          "parserFunc": "DEFAULT"
-        },
-        "compute_units": "10",
-        "enabled": true,
-        "apiInterfaces": [
-          {
-            "interface": "grpc",
-            "type": "get",
-            "extra_compute_units": "0"
-          }
-        ]
-  },{
-        "name": "ibc.core.client.v1.Query.ConsensusStates",
+        "name": "ibc.core.client.v1.Query/ConsensusState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16835,7 +16766,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.UpgradedClientState",
+        "name": "ibc.core.client.v1.Query/ConsensusStateHeights",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16858,7 +16789,7 @@
           }
         ]
   },{
-        "name": "ibc.core.client.v1.Query.UpgradedConsensusState",
+        "name": "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16881,30 +16812,7 @@
           }
         ]
   },{
-        "name": "ibc.core.connection.v1.Query.ClientConnections",
-        "category": {
-          "deterministic": true,
-          "local": false,
-          "subscription": false,
-          "stateful": 0
-        },
-        "block_parsing": {
-          "parserArg": [
-            ""
-          ],
-          "parserFunc": "EMPTY"
-        },
-        "compute_units": "10",
-        "enabled": true,
-        "apiInterfaces": [
-          {
-            "interface": "grpc",
-            "type": "get",
-            "extra_compute_units": "0"
-          }
-        ]
-  },{
-        "name": "ibc.core.connection.v1.Query.Connection",
+        "name": "ibc.core.client.v1.Query/ConsensusStates",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16927,7 +16835,53 @@
           }
         ]
   },{
-        "name": "ibc.core.connection.v1.Query.ConnectionClientState",
+        "name": "ibc.core.client.v1.Query/UpgradedClientState",
+        "category": {
+          "deterministic": true,
+          "local": false,
+          "subscription": false,
+          "stateful": 0
+        },
+        "block_parsing": {
+          "parserArg": [
+          "latest"
+          ],
+          "parserFunc": "DEFAULT"
+        },
+        "compute_units": "10",
+        "enabled": true,
+        "apiInterfaces": [
+          {
+            "interface": "grpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }
+        ]
+  },{
+        "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
+        "category": {
+          "deterministic": true,
+          "local": false,
+          "subscription": false,
+          "stateful": 0
+        },
+        "block_parsing": {
+          "parserArg": [
+          "latest"
+          ],
+          "parserFunc": "DEFAULT"
+        },
+        "compute_units": "10",
+        "enabled": true,
+        "apiInterfaces": [
+          {
+            "interface": "grpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }
+        ]
+  },{
+        "name": "ibc.core.connection.v1.Query/ClientConnections",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16950,7 +16904,7 @@
           }
         ]
   },{
-        "name": "ibc.core.connection.v1.Query.ConnectionConsensusState",
+        "name": "ibc.core.connection.v1.Query/Connection",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16973,7 +16927,7 @@
           }
         ]
   },{
-        "name": "ibc.core.connection.v1.Query.Connections",
+        "name": "ibc.core.connection.v1.Query/ConnectionClientState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -16996,7 +16950,7 @@
           }
         ]
   },{
-        "name": "osmosis.epochs.v1beta1.Query.CurrentEpoch",
+        "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17005,6 +16959,52 @@
         },
         "block_parsing": {
           "parserArg": [
+            ""
+          ],
+          "parserFunc": "EMPTY"
+        },
+        "compute_units": "10",
+        "enabled": true,
+        "apiInterfaces": [
+          {
+            "interface": "grpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }
+        ]
+  },{
+        "name": "ibc.core.connection.v1.Query/Connections",
+        "category": {
+          "deterministic": true,
+          "local": false,
+          "subscription": false,
+          "stateful": 0
+        },
+        "block_parsing": {
+          "parserArg": [
+            ""
+          ],
+          "parserFunc": "EMPTY"
+        },
+        "compute_units": "10",
+        "enabled": true,
+        "apiInterfaces": [
+          {
+            "interface": "grpc",
+            "type": "get",
+            "extra_compute_units": "0"
+          }
+        ]
+  },{
+        "name": "osmosis.epochs.v1beta1.Query/CurrentEpoch",
+        "category": {
+          "deterministic": true,
+          "local": false,
+          "subscription": false,
+          "stateful": 0
+        },
+        "block_parsing": {
+          "parserArg": [
           "latest"
           ],
           "parserFunc": "DEFAULT"
@@ -17019,7 +17019,7 @@
           }
         ]
   },{
-        "name": "osmosis.epochs.v1beta1.Query.EpochInfos",
+        "name": "osmosis.epochs.v1beta1.Query/EpochInfos",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17042,7 +17042,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountIn",
+        "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17065,7 +17065,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountOut",
+        "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17088,7 +17088,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.NumPools",
+        "name": "osmosis.gamm.v1beta1.Query/NumPools",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17111,7 +17111,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.Pool",
+        "name": "osmosis.gamm.v1beta1.Query/Pool",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17134,7 +17134,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.PoolParams",
+        "name": "osmosis.gamm.v1beta1.Query/PoolParams",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17157,7 +17157,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.PoolType",
+        "name": "osmosis.gamm.v1beta1.Query/PoolType",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17180,7 +17180,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.Pools",
+        "name": "osmosis.gamm.v1beta1.Query/Pools",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17203,7 +17203,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.SpotPrice",
+        "name": "osmosis.gamm.v1beta1.Query/SpotPrice",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17226,7 +17226,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.TotalLiquidity",
+        "name": "osmosis.gamm.v1beta1.Query/TotalLiquidity",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17249,7 +17249,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity",
+        "name": "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17272,7 +17272,7 @@
           }
         ]
   },{
-        "name": "osmosis.gamm.v1beta1.Query.TotalShares",
+        "name": "osmosis.gamm.v1beta1.Query/TotalShares",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17295,7 +17295,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.ActiveGauges",
+        "name": "osmosis.incentives.Query/ActiveGauges",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17318,7 +17318,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.ActiveGaugesPerDenom",
+        "name": "osmosis.incentives.Query/ActiveGaugesPerDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17341,7 +17341,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.GaugeByID",
+        "name": "osmosis.incentives.Query/GaugeByID",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17364,7 +17364,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.Gauges",
+        "name": "osmosis.incentives.Query/Gauges",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17387,7 +17387,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.LockableDurations",
+        "name": "osmosis.incentives.Query/LockableDurations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17410,7 +17410,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.ModuleDistributedCoins",
+        "name": "osmosis.incentives.Query/ModuleDistributedCoins",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17433,7 +17433,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.ModuleToDistributeCoins",
+        "name": "osmosis.incentives.Query/ModuleToDistributeCoins",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17456,7 +17456,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.RewardsEst",
+        "name": "osmosis.incentives.Query/RewardsEst",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17479,7 +17479,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.UpcomingGauges",
+        "name": "osmosis.incentives.Query/UpcomingGauges",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17502,7 +17502,7 @@
           }
         ]
   },{
-        "name": "osmosis.incentives.Query.UpcomingGaugesPerDenom",
+        "name": "osmosis.incentives.Query/UpcomingGaugesPerDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17525,7 +17525,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedCoins",
+        "name": "osmosis.lockup.Query/AccountLockedCoins",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17548,7 +17548,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedDuration",
+        "name": "osmosis.lockup.Query/AccountLockedDuration",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17571,7 +17571,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedLongerDuration",
+        "name": "osmosis.lockup.Query/AccountLockedLongerDuration",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17594,7 +17594,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedLongerDurationDenom",
+        "name": "osmosis.lockup.Query/AccountLockedLongerDurationDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17617,7 +17617,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedLongerDurationNotUnlockingOnly",
+        "name": "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17640,7 +17640,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedPastTime",
+        "name": "osmosis.lockup.Query/AccountLockedPastTime",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17663,7 +17663,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedPastTimeDenom",
+        "name": "osmosis.lockup.Query/AccountLockedPastTimeDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17686,7 +17686,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountLockedPastTimeNotUnlockingOnly",
+        "name": "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17709,7 +17709,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountUnlockableCoins",
+        "name": "osmosis.lockup.Query/AccountUnlockableCoins",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17732,7 +17732,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountUnlockedBeforeTime",
+        "name": "osmosis.lockup.Query/AccountUnlockedBeforeTime",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17755,7 +17755,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.AccountUnlockingCoins",
+        "name": "osmosis.lockup.Query/AccountUnlockingCoins",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17778,7 +17778,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.LockedByID",
+        "name": "osmosis.lockup.Query/LockedByID",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17801,7 +17801,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.LockedDenom",
+        "name": "osmosis.lockup.Query/LockedDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17824,7 +17824,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.ModuleBalance",
+        "name": "osmosis.lockup.Query/ModuleBalance",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17847,7 +17847,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.ModuleLockedAmount",
+        "name": "osmosis.lockup.Query/ModuleLockedAmount",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17870,7 +17870,7 @@
           }
         ]
   },{
-        "name": "osmosis.lockup.Query.SyntheticLockupsByLockupID",
+        "name": "osmosis.lockup.Query/SyntheticLockupsByLockupID",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17893,7 +17893,7 @@
           }
         ]
   },{
-        "name": "osmosis.mint.v1beta1.Query.EpochProvisions",
+        "name": "osmosis.mint.v1beta1.Query/EpochProvisions",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17916,7 +17916,7 @@
           }
         ]
   },{
-        "name": "osmosis.mint.v1beta1.Query.Params",
+        "name": "osmosis.mint.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17939,7 +17939,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.DistrInfo",
+        "name": "osmosis.poolincentives.v1beta1.Query/DistrInfo",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17962,7 +17962,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.ExternalIncentiveGauges",
+        "name": "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges",
         "category": {
           "deterministic": true,
           "local": false,
@@ -17985,7 +17985,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.GaugeIds",
+        "name": "osmosis.poolincentives.v1beta1.Query/GaugeIds",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18008,7 +18008,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.IncentivizedPools",
+        "name": "osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18031,7 +18031,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.LockableDurations",
+        "name": "osmosis.poolincentives.v1beta1.Query/LockableDurations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18054,7 +18054,7 @@
           }
         ]
   },{
-        "name": "osmosis.poolincentives.v1beta1.Query.Params",
+        "name": "osmosis.poolincentives.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18077,7 +18077,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.AllAssets",
+        "name": "osmosis.superfluid.Query/AllAssets",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18100,7 +18100,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.AllIntermediaryAccounts",
+        "name": "osmosis.superfluid.Query/AllIntermediaryAccounts",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18123,7 +18123,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.AssetMultiplier",
+        "name": "osmosis.superfluid.Query/AssetMultiplier",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18146,7 +18146,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.AssetType",
+        "name": "osmosis.superfluid.Query/AssetType",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18169,7 +18169,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.ConnectedIntermediaryAccount",
+        "name": "osmosis.superfluid.Query/ConnectedIntermediaryAccount",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18192,7 +18192,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.EstimateSuperfluidDelegatedAmountByValidatorDenom",
+        "name": "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18215,7 +18215,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.Params",
+        "name": "osmosis.superfluid.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18238,7 +18238,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.SuperfluidDelegationAmount",
+        "name": "osmosis.superfluid.Query/SuperfluidDelegationAmount",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18261,7 +18261,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.SuperfluidDelegationsByDelegator",
+        "name": "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18284,7 +18284,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.SuperfluidDelegationsByValidatorDenom",
+        "name": "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18307,7 +18307,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.SuperfluidUndelegationsByDelegator",
+        "name": "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18330,7 +18330,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.TotalDelegationByDelegator",
+        "name": "osmosis.superfluid.Query/TotalDelegationByDelegator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18353,7 +18353,7 @@
           }
         ]
   },{
-        "name": "osmosis.superfluid.Query.TotalSuperfluidDelegations",
+        "name": "osmosis.superfluid.Query/TotalSuperfluidDelegations",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18376,7 +18376,7 @@
           }
         ]
   },{
-        "name": "osmosis.tokenfactory.v1beta1.Query.DenomAuthorityMetadata",
+        "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18399,7 +18399,7 @@
           }
         ]
   },{
-        "name": "osmosis.tokenfactory.v1beta1.Query.DenomsFromCreator",
+        "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18422,7 +18422,7 @@
           }
         ]
   },{
-        "name": "osmosis.tokenfactory.v1beta1.Query.Params",
+        "name": "osmosis.tokenfactory.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18445,7 +18445,7 @@
           }
         ]
   },{
-        "name": "osmosis.twap.v1beta1.Query.ArithmeticTwap",
+        "name": "osmosis.twap.v1beta1.Query/ArithmeticTwap",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18468,7 +18468,7 @@
           }
         ]
   },{
-        "name": "osmosis.twap.v1beta1.Query.ArithmeticTwapToNow",
+        "name": "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18491,7 +18491,7 @@
           }
         ]
   },{
-        "name": "osmosis.twap.v1beta1.Query.Params",
+        "name": "osmosis.twap.v1beta1.Query/Params",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18514,7 +18514,7 @@
           }
         ]
   },{
-        "name": "osmosis.txfees.v1beta1.Query.BaseDenom",
+        "name": "osmosis.txfees.v1beta1.Query/BaseDenom",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18537,7 +18537,7 @@
           }
         ]
   },{
-        "name": "osmosis.txfees.v1beta1.Query.DenomPoolId",
+        "name": "osmosis.txfees.v1beta1.Query/DenomPoolId",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18560,7 +18560,7 @@
           }
         ]
   },{
-        "name": "osmosis.txfees.v1beta1.Query.DenomSpotPrice",
+        "name": "osmosis.txfees.v1beta1.Query/DenomSpotPrice",
         "category": {
           "deterministic": true,
           "local": false,
@@ -18583,7 +18583,7 @@
           }
         ]
   },{
-        "name": "osmosis.txfees.v1beta1.Query.FeeTokens",
+        "name": "osmosis.txfees.v1beta1.Query/FeeTokens",
         "category": {
           "deterministic": true,
           "local": false,

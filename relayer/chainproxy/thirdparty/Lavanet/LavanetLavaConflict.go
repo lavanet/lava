@@ -21,7 +21,7 @@ func (is *implementedLavanetLavaConflict) ConflictVote(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.conflict.Query.ConflictVote", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.conflict.Query/ConflictVote", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedLavanetLavaConflict) ConflictVoteAll(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.conflict.Query.ConflictVoteAll", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.conflict.Query/ConflictVoteAll", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedLavanetLavaConflict) Params(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "lavanet.lava.conflict.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "lavanet.lava.conflict.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

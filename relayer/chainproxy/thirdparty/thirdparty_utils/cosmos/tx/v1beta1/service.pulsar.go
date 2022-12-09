@@ -10217,24 +10217,24 @@ var file_cosmos_tx_v1beta1_service_proto_depIdxs = []int32{
 	23, // 16: cosmos.tx.v1beta1.GetBlockWithTxsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
 	21, // 17: cosmos.tx.v1beta1.TxDecodeResponse.tx:type_name -> cosmos.tx.v1beta1.Tx
 	21, // 18: cosmos.tx.v1beta1.TxEncodeRequest.tx:type_name -> cosmos.tx.v1beta1.Tx
-	6,  // 19: cosmos.tx.v1beta1.Service.Simulate:input_type -> cosmos.tx.v1beta1.SimulateRequest
-	8,  // 20: cosmos.tx.v1beta1.Service.GetTx:input_type -> cosmos.tx.v1beta1.GetTxRequest
-	4,  // 21: cosmos.tx.v1beta1.Service.BroadcastTx:input_type -> cosmos.tx.v1beta1.BroadcastTxRequest
-	2,  // 22: cosmos.tx.v1beta1.Service.GetTxsEvent:input_type -> cosmos.tx.v1beta1.GetTxsEventRequest
-	10, // 23: cosmos.tx.v1beta1.Service.GetBlockWithTxs:input_type -> cosmos.tx.v1beta1.GetBlockWithTxsRequest
-	12, // 24: cosmos.tx.v1beta1.Service.TxDecode:input_type -> cosmos.tx.v1beta1.TxDecodeRequest
-	14, // 25: cosmos.tx.v1beta1.Service.TxEncode:input_type -> cosmos.tx.v1beta1.TxEncodeRequest
-	16, // 26: cosmos.tx.v1beta1.Service.TxEncodeAmino:input_type -> cosmos.tx.v1beta1.TxEncodeAminoRequest
-	18, // 27: cosmos.tx.v1beta1.Service.TxDecodeAmino:input_type -> cosmos.tx.v1beta1.TxDecodeAminoRequest
-	7,  // 28: cosmos.tx.v1beta1.Service.Simulate:output_type -> cosmos.tx.v1beta1.SimulateResponse
-	9,  // 29: cosmos.tx.v1beta1.Service.GetTx:output_type -> cosmos.tx.v1beta1.GetTxResponse
-	5,  // 30: cosmos.tx.v1beta1.Service.BroadcastTx:output_type -> cosmos.tx.v1beta1.BroadcastTxResponse
-	3,  // 31: cosmos.tx.v1beta1.Service.GetTxsEvent:output_type -> cosmos.tx.v1beta1.GetTxsEventResponse
-	11, // 32: cosmos.tx.v1beta1.Service.GetBlockWithTxs:output_type -> cosmos.tx.v1beta1.GetBlockWithTxsResponse
-	13, // 33: cosmos.tx.v1beta1.Service.TxDecode:output_type -> cosmos.tx.v1beta1.TxDecodeResponse
-	15, // 34: cosmos.tx.v1beta1.Service.TxEncode:output_type -> cosmos.tx.v1beta1.TxEncodeResponse
-	17, // 35: cosmos.tx.v1beta1.Service.TxEncodeAmino:output_type -> cosmos.tx.v1beta1.TxEncodeAminoResponse
-	19, // 36: cosmos.tx.v1beta1.Service.TxDecodeAmino:output_type -> cosmos.tx.v1beta1.TxDecodeAminoResponse
+	6,  // 19: cosmos.tx.v1beta1.Service/Simulate:input_type -> cosmos.tx.v1beta1.SimulateRequest
+	8,  // 20: cosmos.tx.v1beta1.Service/GetTx:input_type -> cosmos.tx.v1beta1.GetTxRequest
+	4,  // 21: cosmos.tx.v1beta1.Service/BroadcastTx:input_type -> cosmos.tx.v1beta1.BroadcastTxRequest
+	2,  // 22: cosmos.tx.v1beta1.Service/GetTxsEvent:input_type -> cosmos.tx.v1beta1.GetTxsEventRequest
+	10, // 23: cosmos.tx.v1beta1.Service/GetBlockWithTxs:input_type -> cosmos.tx.v1beta1.GetBlockWithTxsRequest
+	12, // 24: cosmos.tx.v1beta1.Service/TxDecode:input_type -> cosmos.tx.v1beta1.TxDecodeRequest
+	14, // 25: cosmos.tx.v1beta1.Service/TxEncode:input_type -> cosmos.tx.v1beta1.TxEncodeRequest
+	16, // 26: cosmos.tx.v1beta1.Service/TxEncodeAmino:input_type -> cosmos.tx.v1beta1.TxEncodeAminoRequest
+	18, // 27: cosmos.tx.v1beta1.Service/TxDecodeAmino:input_type -> cosmos.tx.v1beta1.TxDecodeAminoRequest
+	7,  // 28: cosmos.tx.v1beta1.Service/Simulate:output_type -> cosmos.tx.v1beta1.SimulateResponse
+	9,  // 29: cosmos.tx.v1beta1.Service/GetTx:output_type -> cosmos.tx.v1beta1.GetTxResponse
+	5,  // 30: cosmos.tx.v1beta1.Service/BroadcastTx:output_type -> cosmos.tx.v1beta1.BroadcastTxResponse
+	3,  // 31: cosmos.tx.v1beta1.Service/GetTxsEvent:output_type -> cosmos.tx.v1beta1.GetTxsEventResponse
+	11, // 32: cosmos.tx.v1beta1.Service/GetBlockWithTxs:output_type -> cosmos.tx.v1beta1.GetBlockWithTxsResponse
+	13, // 33: cosmos.tx.v1beta1.Service/TxDecode:output_type -> cosmos.tx.v1beta1.TxDecodeResponse
+	15, // 34: cosmos.tx.v1beta1.Service/TxEncode:output_type -> cosmos.tx.v1beta1.TxEncodeResponse
+	17, // 35: cosmos.tx.v1beta1.Service/TxEncodeAmino:output_type -> cosmos.tx.v1beta1.TxEncodeAminoResponse
+	19, // 36: cosmos.tx.v1beta1.Service/TxDecodeAmino:output_type -> cosmos.tx.v1beta1.TxDecodeAminoResponse
 	28, // [28:37] is the sub-list for method output_type
 	19, // [19:28] is the sub-list for method input_type
 	19, // [19:19] is the sub-list for extension type_name

@@ -21,7 +21,7 @@ func (is *implementedOsmosisMintV1beta1) EpochProvisions(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query.EpochProvisions", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query/EpochProvisions", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisMintV1beta1) Params(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.mint.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

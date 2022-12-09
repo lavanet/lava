@@ -21,7 +21,7 @@ func (is *implementedCosmwasmWasmV1) AllContractState(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.AllContractState", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/AllContractState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmwasmWasmV1) Code(ctx context.Context, req *pb_pkg.Query
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.Code", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/Code", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmwasmWasmV1) Codes(ctx context.Context, req *pb_pkg.Quer
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.Codes", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/Codes", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmwasmWasmV1) ContractHistory(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.ContractHistory", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/ContractHistory", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmwasmWasmV1) ContractInfo(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.ContractInfo", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/ContractInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedCosmwasmWasmV1) ContractsByCode(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.ContractsByCode", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/ContractsByCode", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedCosmwasmWasmV1) PinnedCodes(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.PinnedCodes", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/PinnedCodes", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedCosmwasmWasmV1) RawContractState(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.RawContractState", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/RawContractState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedCosmwasmWasmV1) SmartContractState(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.SmartContractState", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/SmartContractState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -192,7 +192,7 @@ func (is *implementedCosmwasmWasmV1) Params(ctx context.Context, req *pb_pkg.Que
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmwasm.wasm.v1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

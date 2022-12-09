@@ -21,7 +21,7 @@ func (is *implementedCosmosMintV1beta1) AnnualProvisions(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query.AnnualProvisions", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query/AnnualProvisions", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosMintV1beta1) Inflation(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query.Inflation", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query/Inflation", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosMintV1beta1) Params(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.mint.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

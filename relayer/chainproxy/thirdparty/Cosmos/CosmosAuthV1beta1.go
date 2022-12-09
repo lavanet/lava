@@ -21,7 +21,7 @@ func (is *implementedCosmosAuthV1beta1) Account(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query.Account", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query/Account", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosAuthV1beta1) Accounts(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query.Accounts", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query/Accounts", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosAuthV1beta1) Params(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosAuthV1beta1) ModuleAccounts(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query.ModuleAccounts", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query/ModuleAccounts", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosAuthV1beta1) ModuleAccountByName(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query.ModuleAccountByName", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.auth.v1beta1.Query/ModuleAccountByName", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

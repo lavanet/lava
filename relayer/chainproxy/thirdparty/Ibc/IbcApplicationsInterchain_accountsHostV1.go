@@ -21,7 +21,7 @@ func (is *implementedIbcApplicationsInterchain_accountsHostV1) Params(ctx contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.interchain_accounts.host.v1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.interchain_accounts.host.v1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

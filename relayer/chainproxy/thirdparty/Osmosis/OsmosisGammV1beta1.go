@@ -21,7 +21,7 @@ func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountIn(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountIn", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisGammV1beta1) EstimateSwapExactAmountOut(ctx context.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.EstimateSwapExactAmountOut", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisGammV1beta1) NumPools(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.NumPools", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/NumPools", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedOsmosisGammV1beta1) PoolParams(ctx context.Context, req *pb
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolParams", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/PoolParams", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedOsmosisGammV1beta1) PoolType(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.PoolType", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/PoolType", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedOsmosisGammV1beta1) SpotPrice(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.SpotPrice", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/SpotPrice", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedOsmosisGammV1beta1) TotalLiquidity(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalLiquidity", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalLiquidity", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedOsmosisGammV1beta1) TotalPoolLiquidity(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalPoolLiquidity", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedOsmosisGammV1beta1) TotalShares(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query.TotalShares", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.gamm.v1beta1.Query/TotalShares", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

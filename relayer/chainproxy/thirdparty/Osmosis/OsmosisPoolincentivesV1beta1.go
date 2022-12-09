@@ -21,7 +21,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.DistrInfo", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/DistrInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) DistrInfo(ctx context.Context
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 // 	}
-// 	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.ExternalIncentiveGauges", reqMarshaled)
+// 	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges", reqMarshaled)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) GaugeIds(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.GaugeIds", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/GaugeIds", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) IncentivizedPools(ctx context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.IncentivizedPools", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/IncentivizedPools", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) LockableDurations(ctx context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.LockableDurations", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/LockableDurations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedOsmosisPoolincentivesV1beta1) Params(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.poolincentives.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

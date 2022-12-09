@@ -21,7 +21,7 @@ func (is *implementedOsmosisTwapV1beta1) ArithmeticTwap(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query.ArithmeticTwap", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query/ArithmeticTwap", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisTwapV1beta1) ArithmeticTwapToNow(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query.ArithmeticTwapToNow", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisTwapV1beta1) Params(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.twap.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

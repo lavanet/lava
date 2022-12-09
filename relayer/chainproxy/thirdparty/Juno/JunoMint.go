@@ -22,7 +22,7 @@ func (is *implementedJunoMint) AnnualProvisions(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "juno.mint.Query.AnnualProvisions", reqMarshaled)
+	res, err := is.cb(ctx, "juno.mint.Query/AnnualProvisions", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -41,7 +41,7 @@ func (is *implementedJunoMint) Inflation(ctx context.Context, req *pb_pkg.QueryI
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "juno.mint.Query.Inflation", reqMarshaled)
+	res, err := is.cb(ctx, "juno.mint.Query/Inflation", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -60,7 +60,7 @@ func (is *implementedJunoMint) Params(ctx context.Context, req *pb_pkg.QueryPara
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "juno.mint.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "juno.mint.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

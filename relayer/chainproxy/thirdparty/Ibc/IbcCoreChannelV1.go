@@ -21,7 +21,7 @@ func (is *implementedIbcCoreChannelV1) Channel(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.Channel", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/Channel", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedIbcCoreChannelV1) ChannelClientState(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.ChannelClientState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/ChannelClientState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedIbcCoreChannelV1) ChannelConsensusState(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.ChannelConsensusState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/ChannelConsensusState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedIbcCoreChannelV1) Channels(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.Channels", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/Channels", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedIbcCoreChannelV1) ConnectionChannels(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.ConnectionChannels", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/ConnectionChannels", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedIbcCoreChannelV1) NextSequenceReceive(ctx context.Context, 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.NextSequenceReceive", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/NextSequenceReceive", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedIbcCoreChannelV1) PacketAcknowledgement(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.PacketAcknowledgement", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/PacketAcknowledgement", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedIbcCoreChannelV1) PacketAcknowledgements(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.PacketAcknowledgements", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/PacketAcknowledgements", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedIbcCoreChannelV1) PacketCommitment(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.PacketCommitment", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/PacketCommitment", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -192,7 +192,7 @@ func (is *implementedIbcCoreChannelV1) PacketCommitments(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.PacketCommitments", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/PacketCommitments", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -211,7 +211,7 @@ func (is *implementedIbcCoreChannelV1) PacketReceipt(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.PacketReceipt", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/PacketReceipt", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -230,7 +230,7 @@ func (is *implementedIbcCoreChannelV1) UnreceivedAcks(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.UnreceivedAcks", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/UnreceivedAcks", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -249,7 +249,7 @@ func (is *implementedIbcCoreChannelV1) UnreceivedPackets(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.channel.v1.Query.UnreceivedPackets", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.channel.v1.Query/UnreceivedPackets", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

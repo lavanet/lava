@@ -21,7 +21,7 @@ func (is *implementedCosmosSlashingV1beta1) Params(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosSlashingV1beta1) SigningInfo(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query.SigningInfo", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query/SigningInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosSlashingV1beta1) SigningInfos(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query.SigningInfos", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.slashing.v1beta1.Query/SigningInfos", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

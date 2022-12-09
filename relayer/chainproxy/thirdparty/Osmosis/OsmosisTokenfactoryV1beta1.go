@@ -21,7 +21,7 @@ func (is *implementedOsmosisTokenfactoryV1beta1) DenomAuthorityMetadata(ctx cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query.DenomAuthorityMetadata", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisTokenfactoryV1beta1) DenomsFromCreator(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query.DenomsFromCreator", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisTokenfactoryV1beta1) Params(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.tokenfactory.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

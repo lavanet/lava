@@ -21,7 +21,7 @@ func (is *implementedIbcCoreClientV1) ClientParams(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ClientParams", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ClientParams", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedIbcCoreClientV1) ClientState(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ClientState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ClientState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedIbcCoreClientV1) ClientStates(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ClientStates", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ClientStates", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedIbcCoreClientV1) ClientStatus(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ClientStatus", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ClientStatus", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedIbcCoreClientV1) ConsensusState(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ConsensusState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ConsensusState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedIbcCoreClientV1) ConsensusStates(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ConsensusStates", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ConsensusStates", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedIbcCoreClientV1) UpgradedClientState(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.UpgradedClientState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/UpgradedClientState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedIbcCoreClientV1) UpgradedConsensusState(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.UpgradedConsensusState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/UpgradedConsensusState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedIbcCoreClientV1) ConsensusStateHeights(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.client.v1.Query.ConsensusStateHeights", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.client.v1.Query/ConsensusStateHeights", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

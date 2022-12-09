@@ -21,7 +21,7 @@ func (is *implementedIbcCoreConnectionV1) ClientConnections(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.connection.v1.Query.ClientConnections", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.connection.v1.Query/ClientConnections", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedIbcCoreConnectionV1) ConnectionClientState(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.connection.v1.Query.ConnectionClientState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.connection.v1.Query/ConnectionClientState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedIbcCoreConnectionV1) ConnectionConsensusState(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.core.connection.v1.Query.ConnectionConsensusState", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.core.connection.v1.Query/ConnectionConsensusState", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

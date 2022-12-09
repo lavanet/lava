@@ -21,7 +21,7 @@ func (is *implementedCosmosDistributionV1beta1) CommunityPool(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.CommunityPool", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/CommunityPool", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegationRewards(ctx context.Co
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.DelegationRewards", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/DelegationRewards", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegationTotalRewards(ctx conte
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.DelegationTotalRewards", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/DelegationTotalRewards", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegatorValidators(ctx context.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.DelegatorValidators", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/DelegatorValidators", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosDistributionV1beta1) DelegatorWithdrawAddress(ctx con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.DelegatorWithdrawAddress", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedCosmosDistributionV1beta1) Params(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorCommission(ctx context.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.ValidatorCommission", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/ValidatorCommission", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorOutstandingRewards(ctx 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.ValidatorOutstandingRewards", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/ValidatorOutstandingRewards", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedCosmosDistributionV1beta1) ValidatorSlashes(ctx context.Con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query.ValidatorSlashes", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.distribution.v1beta1.Query/ValidatorSlashes", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

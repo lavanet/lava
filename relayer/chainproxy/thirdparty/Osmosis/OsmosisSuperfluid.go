@@ -22,7 +22,7 @@ func (is *implementedOsmosisSuperfluid) TotalDelegationByValidatorForDenom(ctx c
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.TotalDelegationByValidatorForDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -41,7 +41,7 @@ func (is *implementedOsmosisSuperfluid) AllAssets(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.AllAssets", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/AllAssets", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -60,7 +60,7 @@ func (is *implementedOsmosisSuperfluid) AllIntermediaryAccounts(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.AllIntermediaryAccounts", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/AllIntermediaryAccounts", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -79,7 +79,7 @@ func (is *implementedOsmosisSuperfluid) AssetMultiplier(ctx context.Context, req
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.AssetMultiplier", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/AssetMultiplier", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -98,7 +98,7 @@ func (is *implementedOsmosisSuperfluid) AssetType(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.AssetType", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/AssetType", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -117,7 +117,7 @@ func (is *implementedOsmosisSuperfluid) ConnectedIntermediaryAccount(ctx context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.ConnectedIntermediaryAccount", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/ConnectedIntermediaryAccount", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -136,7 +136,7 @@ func (is *implementedOsmosisSuperfluid) EstimateSuperfluidDelegatedAmountByValid
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.EstimateSuperfluidDelegatedAmountByValidatorDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -155,7 +155,7 @@ func (is *implementedOsmosisSuperfluid) Params(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -174,7 +174,7 @@ func (is *implementedOsmosisSuperfluid) SuperfluidDelegationAmount(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.SuperfluidDelegationAmount", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/SuperfluidDelegationAmount", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -193,7 +193,7 @@ func (is *implementedOsmosisSuperfluid) SuperfluidDelegationsByDelegator(ctx con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.SuperfluidDelegationsByDelegator", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -212,7 +212,7 @@ func (is *implementedOsmosisSuperfluid) SuperfluidDelegationsByValidatorDenom(ct
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.SuperfluidDelegationsByValidatorDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -231,7 +231,7 @@ func (is *implementedOsmosisSuperfluid) SuperfluidUndelegationsByDelegator(ctx c
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.SuperfluidUndelegationsByDelegator", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -250,7 +250,7 @@ func (is *implementedOsmosisSuperfluid) TotalDelegationByDelegator(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.TotalDelegationByDelegator", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/TotalDelegationByDelegator", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -269,7 +269,7 @@ func (is *implementedOsmosisSuperfluid) TotalSuperfluidDelegations(ctx context.C
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.superfluid.Query.TotalSuperfluidDelegations", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.superfluid.Query/TotalSuperfluidDelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

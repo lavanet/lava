@@ -21,7 +21,7 @@ func (is *implementedCosmosGovV1beta1) Deposit(ctx context.Context, req *pb_pkg.
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Deposit", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Deposit", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosGovV1beta1) Deposits(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Deposits", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Deposits", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosGovV1beta1) Params(ctx context.Context, req *pb_pkg.Q
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosGovV1beta1) Proposal(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Proposal", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Proposal", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosGovV1beta1) Proposals(ctx context.Context, req *pb_pk
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Proposals", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Proposals", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedCosmosGovV1beta1) TallyResult(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.TallyResult", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/TallyResult", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedCosmosGovV1beta1) Vote(ctx context.Context, req *pb_pkg.Que
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Vote", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Vote", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedCosmosGovV1beta1) Votes(ctx context.Context, req *pb_pkg.Qu
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query.Votes", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.gov.v1beta1.Query/Votes", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

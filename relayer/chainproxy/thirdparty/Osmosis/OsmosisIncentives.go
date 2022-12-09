@@ -21,7 +21,7 @@ func (is *implementedOsmosisIncentives) ActiveGauges(ctx context.Context, req *p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.ActiveGauges", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/ActiveGauges", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedOsmosisIncentives) ActiveGaugesPerDenom(ctx context.Context
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.ActiveGaugesPerDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/ActiveGaugesPerDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedOsmosisIncentives) GaugeByID(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.GaugeByID", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/GaugeByID", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedOsmosisIncentives) LockableDurations(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.LockableDurations", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/LockableDurations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedOsmosisIncentives) LockableDurations(ctx context.Context, r
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 // 	}
-// 	res, err := is.cb(ctx, "osmosis.incentives.Query.ModuleDistributedCoins", reqMarshaled)
+// 	res, err := is.cb(ctx, "osmosis.incentives.Query/ModuleDistributedCoins", reqMarshaled)
 // 	if err != nil {
 // 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 // 	}
@@ -116,7 +116,7 @@ func (is *implementedOsmosisIncentives) ModuleToDistributeCoins(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.ModuleToDistributeCoins", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/ModuleToDistributeCoins", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedOsmosisIncentives) RewardsEst(ctx context.Context, req *pb_
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.RewardsEst", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/RewardsEst", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedOsmosisIncentives) UpcomingGauges(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.UpcomingGauges", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/UpcomingGauges", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedOsmosisIncentives) UpcomingGaugesPerDenom(ctx context.Conte
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "osmosis.incentives.Query.UpcomingGaugesPerDenom", reqMarshaled)
+	res, err := is.cb(ctx, "osmosis.incentives.Query/UpcomingGaugesPerDenom", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

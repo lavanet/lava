@@ -21,7 +21,7 @@ func (is *implementedCosmosStakingV1beta1) Delegation(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.Delegation", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/Delegation", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosStakingV1beta1) DelegatorDelegations(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.DelegatorDelegations", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/DelegatorDelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosStakingV1beta1) DelegatorUnbondingDelegations(ctx con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.DelegatorUnbondingDelegations", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/DelegatorUnbondingDelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedCosmosStakingV1beta1) DelegatorValidator(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.DelegatorValidator", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/DelegatorValidator", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedCosmosStakingV1beta1) DelegatorValidators(ctx context.Conte
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.DelegatorValidators", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/DelegatorValidators", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -116,7 +116,7 @@ func (is *implementedCosmosStakingV1beta1) HistoricalInfo(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.HistoricalInfo", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/HistoricalInfo", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -135,7 +135,7 @@ func (is *implementedCosmosStakingV1beta1) Params(ctx context.Context, req *pb_p
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -154,7 +154,7 @@ func (is *implementedCosmosStakingV1beta1) Pool(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.Pool", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/Pool", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -173,7 +173,7 @@ func (is *implementedCosmosStakingV1beta1) Redelegations(ctx context.Context, re
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.Redelegations", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/Redelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -192,7 +192,7 @@ func (is *implementedCosmosStakingV1beta1) ValidatorDelegations(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.ValidatorDelegations", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/ValidatorDelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -211,7 +211,7 @@ func (is *implementedCosmosStakingV1beta1) ValidatorUnbondingDelegations(ctx con
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query.ValidatorUnbondingDelegations", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.staking.v1beta1.Query/ValidatorUnbondingDelegations", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

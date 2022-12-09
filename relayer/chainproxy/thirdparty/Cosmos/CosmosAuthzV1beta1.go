@@ -21,7 +21,7 @@ func (is *implementedCosmosAuthzV1beta1) Grants(ctx context.Context, req *pb_pkg
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query.Grants", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query/Grants", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedCosmosAuthzV1beta1) GranteeGrants(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query.GranteeGrants", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query/GranteeGrants", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedCosmosAuthzV1beta1) GranterGrants(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query.GranterGrants", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.authz.v1beta1.Query/GranterGrants", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

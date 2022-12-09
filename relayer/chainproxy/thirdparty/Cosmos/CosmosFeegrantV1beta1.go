@@ -22,7 +22,7 @@ func (is *implementedCosmosFeegrantV1beta1) Allowance(ctx context.Context, req *
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query.Allowance", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/Allowance", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -41,7 +41,7 @@ func (is *implementedCosmosFeegrantV1beta1) Allowances(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query.Allowances", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/Allowances", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -60,7 +60,7 @@ func (is *implementedCosmosFeegrantV1beta1) AllowancesByGranter(ctx context.Cont
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query.AllowancesByGranter", reqMarshaled)
+	res, err := is.cb(ctx, "cosmos.feegrant.v1beta1.Query/AllowancesByGranter", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}

@@ -21,7 +21,7 @@ func (is *implementedIbcApplicationsTransferV1) DenomHash(ctx context.Context, r
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query.DenomHash", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query/DenomHash", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -40,7 +40,7 @@ func (is *implementedIbcApplicationsTransferV1) DenomTrace(ctx context.Context, 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query.DenomTrace", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query/DenomTrace", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -59,7 +59,7 @@ func (is *implementedIbcApplicationsTransferV1) DenomTraces(ctx context.Context,
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query.DenomTraces", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query/DenomTraces", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -78,7 +78,7 @@ func (is *implementedIbcApplicationsTransferV1) Params(ctx context.Context, req 
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query.Params", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query/Params", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
@@ -97,7 +97,7 @@ func (is *implementedIbcApplicationsTransferV1) EscrowAddress(ctx context.Contex
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to proto.Marshal(req)", err, nil)
 	}
-	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query.EscrowAddress", reqMarshaled)
+	res, err := is.cb(ctx, "ibc.applications.transfer.v1.Query/EscrowAddress", reqMarshaled)
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed to SendRelay cb", err, nil)
 	}
