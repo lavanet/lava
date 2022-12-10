@@ -10,14 +10,13 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) *MsgStakeProvider {
+func NewMsgStakeProvider(creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:     creator,
 		ChainID:     chainID,
 		Amount:      amount,
 		Endpoints:   endpoints,
 		Geolocation: geolocation,
-		Moniker:     moniker,
 	}
 }
 
