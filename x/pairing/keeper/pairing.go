@@ -221,14 +221,14 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 	return returnedProviders
 }
 
-func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (timeLeftToNextEpoch uint64, err error) {
+func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 
 	// Get current epoch
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	// Check when the last average block time calculation occured. If we're not in the same epoch as latestEpochBlockTimeCalculation, re-calculate the time
 	if currentEpoch != latestEpochBlockTimeCalculation || averageBlockTime == -1 {
-		err = k.calculateAverageBlockTime(ctx)
+		err := k.calculateAverageBlockTime(ctx)
 		if err != nil {
 			return 0, fmt.Errorf("could not calculate average block time, err: %s", err)
 		}
@@ -247,7 +247,7 @@ func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (timeLeftToNextEpoch uin
 	blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(ctx.BlockHeight())
 
 	// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
-	timeLeftToNextEpoch = blocksUntilNewEpoch * uint64(averageBlockTime)
+	timeLeftToNextEpoch := blocksUntilNewEpoch * uint64(averageBlockTime)
 
 	return timeLeftToNextEpoch, nil
 }
