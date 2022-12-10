@@ -25,7 +25,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	// Advance an epoch and get current epoch
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
-	// Create new QosWeight value (=0.5) for SimulateParamChange() because current QosWeight value is 0
+	// Simulate QosWeight to be 0.5 - the default value in the time of this writing
 	initQos := sdk.NewDecWithPrec(5, 1)
 	initQosBytes, _ := initQos.MarshalJSON()
 	initQosStr := string(initQosBytes[:])

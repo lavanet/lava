@@ -63,7 +63,7 @@ func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 	moduleAcc := sdk.AccAddress([]byte(senderModule))
 
 	if amt.Len() > 1 {
-		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
+		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
 	}
 	coin := amt[0]
 
