@@ -138,6 +138,7 @@ func (lt *lavaTest) checkStakeLava() {
 			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) == 0 {
+			fmt.Println("ProviderQueryRes: ", providerQueryRes)
 			panic("Staking Failed PROVIDER")
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
