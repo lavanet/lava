@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"strconv"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -264,7 +263,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			msg []byte
 			err error
 		)
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
@@ -326,14 +325,14 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "", dappID)
 		if err != nil {
-			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, err))
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
 		}
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))

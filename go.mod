@@ -19,27 +19,25 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.19
 	github.com/tendermint/tm-db v0.6.7
+	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
-	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	cosmossdk.io/api v0.2.5
-	cosmossdk.io/math v1.0.0-beta.4
 	github.com/CosmosContracts/juno v1.0.2
 	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/gogoproto v1.4.3
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/golang/protobuf v1.5.2
-	github.com/jhump/protoreflect v1.14.0
 	github.com/ignite-hq/cli v0.22.1-0.20220610070456-1b33c09fceb7
+	github.com/jhump/protoreflect v1.14.0
 	github.com/joho/godotenv v1.3.0
 	github.com/newrelic/go-agent/v3 v3.20.0
 	github.com/spf13/pflag v1.0.5
-	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
 )
 
 require (
@@ -196,7 +194,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
-	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/net v0.2.0
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/term v0.2.0 // indirect

@@ -43,12 +43,15 @@ func NewPortalLogs() (*PortalLogs, error) {
 	return &PortalLogs{newRelicApplication}, err
 }
 
+func (cp *PortalLogs) GetMessageSeed() string {
+	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
+}
+
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
-	guID := "GUID" + msgSeed
 	var ret string
-	ret = "Error GUID: " + guID
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"GUID": guID})
+	ret = "Error GUID: " + msgSeed
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}

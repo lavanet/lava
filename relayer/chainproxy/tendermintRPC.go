@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -224,7 +222,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			msg []byte
 			err error
 		)
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
@@ -285,14 +283,14 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "", dappID)
 		if err != nil {
-			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))
@@ -306,16 +304,16 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			dappID = c.Route().Params[1]
 			dappID = strings.Replace(dappID, "*", "", -1)
 		}
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, "", "", dappID)
 		if err != nil {
-			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", "", msgSeed, err)
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
 			if string(c.Body()) != "" {
-				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, msgSeed))
+				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, errMasking))
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))

@@ -19,6 +19,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/thirdparty"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -54,6 +55,7 @@ type GrpcChainProxy struct {
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
 	chainID    string
+	cache      *performance.Cache
 }
 
 func (r *GrpcMessage) GetMsg() interface{} {
@@ -220,6 +222,13 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	return nodeMsg, nil
 }
 
+func (cp *GrpcChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *GrpcChainProxy) GetCache() *performance.Cache {
+	return cp.cache
+}
+
 func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
 	utils.LavaFormatInfo("gRPC PortalStart", nil)
 
@@ -229,11 +238,15 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	}
 
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
-		if relayReply, _, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), ""); err != nil {
-			return nil, utils.LavaFormatError("Failed to SendRelay", err, nil)
+		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID"); err != nil {
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
+			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
 		}
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
 		return relayReply.Data, nil
 	}
 
