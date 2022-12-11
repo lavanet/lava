@@ -38,7 +38,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	}
 	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type(), chainID, indexInStakeStorage)
 	if err != nil {
-		details := map[string]string{stake_type(): creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
+		details := map[string]string{stake_type(): creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10), "error": err.Error()}
 		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
 	}
 	blockHeight := uint64(ctx.BlockHeight())
