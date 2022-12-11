@@ -17,11 +17,13 @@ import (
 
 var _ = strconv.Itoa(0)
 
+const FlagMoniker = "moniker"
+
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [optional: moniker/name]",
 		Short: "Broadcast message stakeProvider",
-		Args:  cobra.RangeArgs(4, 5),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -51,10 +53,9 @@ func CmdStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			moniker := ""
-			if len(args) > 4 {
-				moniker = args[4]
-			}
+
+			moniker, _ := cmd.Flags().GetString(FlagMoniker)
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
@@ -69,7 +70,7 @@ func CmdStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-
+	cmd.Flags().String(FlagMoniker, "", "The validator's name")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
