@@ -67,7 +67,6 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 
 // NewSpecProposalsHandler creates a new governance Handler for a Spec
 func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
-	log.Println(k)
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *types.SpecAddProposal:

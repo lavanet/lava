@@ -19,12 +19,12 @@ go run ./testutil/e2e/proxy/. $OSMO_HOST -p $MOCK_PORT_B -cache -id osmosis_rpc 
 
 echo " ::: RUNNING OSMOSIS PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2231 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer1 &
-lavad server 127.0.0.1 2232 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer2 &
-lavad server 127.0.0.1 2233 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer3 &
-lavad server 127.0.0.1 2241 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer1 &
-lavad server 127.0.0.1 2242 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer2 &
-lavad server 127.0.0.1 2243 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer3 
+lavad server 127.0.0.1 2231 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2232 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2233 http://0.0.0.0:$MOCK_PORT_A/rest/ COS3 rest --from servicer3 --log_level debug &
+lavad server 127.0.0.1 2241 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2242 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2243 http://0.0.0.0:$MOCK_PORT_B/rpc/ COS3 tendermintrpc --from servicer3 --log_level debug 
 
 # Multi Port Proxy
 # lavad server 127.0.0.1 2231 http://0.0.0.0:2031/rest/ COS3 rest --from servicer1 &

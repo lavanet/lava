@@ -220,7 +220,6 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		return fiber.ErrUpgradeRequired
 	})
-
 	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
@@ -238,7 +237,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet)
+			dappID := ExtractDappIDFromWebsocketConnection(c)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
 			if err != nil {
 				cp.portalLogs.LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -289,19 +289,20 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 		}
 	})
-
-	app.Get("/ws/:dappId", webSocketCallback)
-	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	app.Get("/ws/:dappId", websocketCallbackWithDappID)
+	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet)
+		dappID := ExtractDappIDFromFiberContext(c)
+		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))
@@ -310,16 +311,21 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
 		path := c.Params("*")
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", "", msgSeed, err)
 			if string(c.Body()) != "" {
 				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, msgSeed))
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), "", nil)
 		return c.SendString(string(reply.Data))

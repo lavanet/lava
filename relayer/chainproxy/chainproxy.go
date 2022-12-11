@@ -3,12 +3,16 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -17,7 +21,8 @@ import (
 )
 
 const (
-	DefaultTimeout = 5 * time.Second
+	DefaultTimeout            = 5 * time.Second
+	ContextUserValueKeyDappID = "dappID"
 )
 
 type NodeMessage interface {
@@ -35,6 +40,8 @@ type ChainProxy interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	GetConsumerSessionManager() *lavasession.ConsumerSessionManager
+	SetCache(*performance.Cache)
+	GetCache() *performance.Cache
 }
 
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
@@ -94,6 +101,7 @@ func SendRelay(
 	url string,
 	req string,
 	connectionType string,
+	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 
 	// Unmarshal request
@@ -149,7 +157,14 @@ func SendRelay(
 		if isSubscription {
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
-			reply, err = c.Relay(connectCtx, relayRequest)
+			cache := cp.GetCache()
+			reply, err = cache.GetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+			if err != nil || reply == nil {
+				if performance.NotConnectedError.Is(err) {
+					utils.LavaFormatError("cache not connected", err, nil)
+				}
+				reply, err = c.Relay(connectCtx, relayRequest)
+			}
 		}
 		currentLatency := time.Since(relaySentTime)
 		if err != nil {
@@ -159,10 +174,14 @@ func SendRelay(
 		if !isSubscription {
 			//update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
+			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 			if err != nil {
 				return nil, nil, nil, 0, err
 			}
+			cache := cp.GetCache()
+			// TODO: response sanity, check its under an expected format add that format to spec
+			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
 			return reply, nil, relayRequest, currentLatency, nil
 		}
 		// isSubscription
@@ -240,7 +259,7 @@ func SendRelay(
 				}
 				// compare error1 with error2
 				if secondSessionError.Error() != firstSessionError.Error() {
-					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error()})
+					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error(), "firstProviderAddr": originalProviderAddress, "secondProviderAddr": providerPublicAddress})
 				} else {
 					// if both errors are the same, just return the first error.
 					return nil, nil, firstSessionError
@@ -248,7 +267,7 @@ func SendRelay(
 			}
 			// retry attempt succeeded! can continue normally
 		} else {
-			return nil, nil, err
+			return nil, nil, firstSessionError
 		}
 	}
 	if !isSubscription {
@@ -258,5 +277,41 @@ func SendRelay(
 	} else {
 		err = cp.GetConsumerSessionManager().OnSessionDoneIncreaseRelayAndCu(singleConsumerSession) // session done successfully
 	}
+	if reply.Data == nil && err == nil {
+		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
+	}
 	return reply, replyServer, err
+}
+
+func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
+	webSocketCallback := callbackToBeCalled
+	handler := func(c *fiber.Ctx) error {
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
+		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) //this sets a user value in context and this is given to the callback
+		return webSocketCallback(c)                                 //uses external dappID
+	}
+	return handler
+}
+func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
+	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
+	if dappID, ok := dappIDLocal.(string); ok {
+		//zeroallocation policy for fiber.Ctx
+		buffer := make([]byte, len(dappID))
+		copy(buffer, dappID)
+		return string(buffer)
+	}
+	return "NoDappID"
+}
+
+func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
+	if len(c.Route().Params) > 1 {
+		dappID = c.Route().Params[1]
+		dappID = strings.Replace(dappID, "*", "", -1)
+		return
+	}
+	return "NoDappID"
 }
