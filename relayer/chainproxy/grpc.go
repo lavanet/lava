@@ -50,6 +50,8 @@ type GrpcMessage struct {
 }
 
 type GrpcChainProxy struct {
+	conn       *GRPCConnector
+	nConns     uint
 	nodeUrl    string
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
@@ -62,14 +64,16 @@ func (r *GrpcMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewGrpcChainProxy(nodeUrl string, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, chainID string) ChainProxy {
+func NewGrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, chainID string) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &GrpcChainProxy{
 		nodeUrl:    nodeUrl,
+		nConns:     nConns,
 		sentry:     sentry,
 		csm:        csm,
 		portalLogs: pLogs,
 		chainID:    chainID,
+		cache:      nil,
 	}
 }
 
@@ -190,7 +194,12 @@ func (cp *GrpcChainProxy) GetSentry() *sentry.Sentry {
 	return cp.sentry
 }
 
-func (cp *GrpcChainProxy) Start(context.Context) error {
+func (cp *GrpcChainProxy) Start(ctx context.Context) error {
+	cp.conn = NewGRPCConnector(ctx, cp.nConns, cp.nodeUrl)
+	if cp.conn == nil {
+		return utils.LavaFormatError("g_conn == nil", nil, nil)
+	}
+
 	return nil
 }
 
@@ -269,14 +278,15 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
+	conn, err := nm.cp.conn.GetRpc(true)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, nil)
+	}
+	defer nm.cp.conn.ReturnRpc(conn)
 
 	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, nm.cp.nodeUrl, grpc.WithInsecure(), grpc.WithBlock()) // TODO, keep an open connection similar to others
-	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("dialing the gRPC client failed.", err, &map[string]string{"addr": nm.cp.nodeUrl})
-	}
-	defer conn.Close()
+
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := descriptorSourceFromServer(cl)
 	svc, methodName := ParseSymbol(nm.path)
@@ -302,19 +312,6 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			reader = bytes.NewReader(v)
 			formatMessage = true
 		}
-		// TODO: Test this json unmarshal should work.
-		msg2 := msgFactory.NewMessage(methodDescriptor.GetInputType())
-		err = json.Unmarshal(v, msg2)
-		if err != nil {
-			utils.LavaFormatError("Failed to json unmarshal", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
-		}
-	case string:
-		if v != "" {
-			reader = strings.NewReader(v)
-			formatMessage = true
-		}
-	case proto.Message:
-		msg = v
 	default:
 		return nil, "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%T", v)})
 	}

@@ -54,7 +54,7 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *Po
 	case "rest":
 		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
 	case "grpc":
-		return NewGrpcChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs, chainID), nil
+		return NewGrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs, chainID), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
