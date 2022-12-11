@@ -564,62 +564,66 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	var relaySession *RelaySession
 	var userSessions *UserSessions
 	if request.DataReliability != nil {
-		if request.RelayNum <= lavasession.DataReliabilitySessionId && request.CuSum == lavasession.DataReliabilityCuSum {
-			userSessions = getOrCreateUserSessions(userAddr.String())
-			vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
-			if err != nil {
-				return nil, nil, nil, nil, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err, &map[string]string{
-					"userAddr": userAddr.String(),
-				})
-			}
-
-			userSessions.Lock.Lock()
-			if epochData, ok := userSessions.dataByEpoch[uint64(request.BlockHeight)]; ok {
-				//data reliability message
-				if epochData.DataReliability != nil {
-					userSessions.Lock.Unlock()
-					return nil, nil, nil, nil, utils.LavaFormatError("Simulation: dataReliability can only be used once per client per epoch", nil,
-						&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
-				}
-			}
-			userSessions.Lock.Unlock()
-			// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
-			if vrf_pk == nil {
-				return nil, nil, nil, nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
-					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String()})
-			}
-			// verify the providerSig is ineed a signature by a valid provider on this query
-			valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
-			if err != nil {
-				return nil, nil, nil, nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
-					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
-			}
-			if !valid {
-				return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
-					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
-			}
-			//verify data reliability fields correspond to the right vrf
-			valid = utils.VerifyVrfProof(request, *vrf_pk, uint64(request.BlockHeight))
-			if !valid {
-				return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
-					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
-			}
-
-			vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
-			if authorisedUserResponse.Index != vrfIndex {
-				return nil, nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
-					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
-						"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
-						"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
-						"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
-			}
-			utils.LavaFormatInfo("Simulation: server got valid DataReliability request", nil)
-
-			userSessions.Lock.Lock()
-			getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
-			userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
-			userSessions.Lock.Unlock()
+		if request.RelayNum > lavasession.DataReliabilitySessionId {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's relay num is larger than the data reliability session ID", nil, &map[string]string{"relayNum": strconv.FormatUint(request.RelayNum, 10), "DataReliabilitySessionId": strconv.Itoa(lavasession.DataReliabilitySessionId)})
 		}
+		if request.CuSum != lavasession.DataReliabilityCuSum {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's CU sum is not equal to the data reliability CU sum", nil, &map[string]string{"cuSum": strconv.FormatUint(request.CuSum, 10), "DataReliabilityCuSum": strconv.Itoa(lavasession.DataReliabilityCuSum)})
+		}
+		userSessions = getOrCreateUserSessions(userAddr.String())
+		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
+		if err != nil {
+			return nil, nil, nil, nil, utils.LavaFormatError("failed to get vrfpk and maxCURes for data reliability!", err, &map[string]string{
+				"userAddr": userAddr.String(),
+			})
+		}
+
+		userSessions.Lock.Lock()
+		if epochData, ok := userSessions.dataByEpoch[uint64(request.BlockHeight)]; ok {
+			//data reliability message
+			if epochData.DataReliability != nil {
+				userSessions.Lock.Unlock()
+				return nil, nil, nil, nil, utils.LavaFormatError("Simulation: dataReliability can only be used once per client per epoch", nil,
+					&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", epochData.DataReliability)})
+			}
+		}
+		userSessions.Lock.Unlock()
+		// data reliability is not session dependant, its always sent with sessionID 0 and if not we don't care
+		if vrf_pk == nil {
+			return nil, nil, nil, nil, utils.LavaFormatError("dataReliability Triggered with vrf_pk == nil", nil,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String()})
+		}
+		// verify the providerSig is ineed a signature by a valid provider on this query
+		valid, err := s.VerifyReliabilityAddressSigning(ctx, userAddr, request)
+		if err != nil {
+			return nil, nil, nil, nil, utils.LavaFormatError("VerifyReliabilityAddressSigning invalid", err,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+		}
+		if !valid {
+			return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability Provider signing", nil,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+		}
+		//verify data reliability fields correspond to the right vrf
+		valid = utils.VerifyVrfProof(request, *vrf_pk, uint64(request.BlockHeight))
+		if !valid {
+			return nil, nil, nil, nil, utils.LavaFormatError("invalid DataReliability fields, VRF wasn't verified with provided proof", nil,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
+		}
+
+		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		if authorisedUserResponse.Index != vrfIndex {
+			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
+					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
+					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
+					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
+		}
+		utils.LavaFormatInfo("Simulation: server got valid DataReliability request", nil)
+
+		userSessions.Lock.Lock()
+		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
+		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
+		userSessions.Lock.Unlock()
 
 	} else {
 		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
