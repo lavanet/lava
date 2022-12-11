@@ -19495,7 +19495,9 @@ paths:
                         }
       parameters:
         - name: hash
-          description: hash (in hex format) of the denomination trace information.
+          description: >-
+            hash (in hex format) or denom (full denom with ibc prefix) of the
+            denomination trace information.
           in: path
           required: true
           type: string
@@ -29073,6 +29075,11 @@ paths:
                   earliestStart:
                     type: string
                     format: uint64
+                  deletedEpochs:
+                    type: array
+                    items:
+                      type: string
+                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -29956,6 +29963,7 @@ paths:
             type: object
             properties:
               params:
+                description: params holds all the parameters of this module.
                 type: object
                 properties:
                   minStakeProvider:
@@ -29987,7 +29995,6 @@ paths:
                     type: string
                   QoSWeight:
                     type: string
-                description: Params defines the parameters for the module.
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -47299,14 +47306,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47346,14 +47353,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47364,14 +47371,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -47382,14 +47389,14 @@ definitions:
       result:
         type: string
         enum:
-          - RESPONSE_RESULT_UNSPECIFIED
-          - RESPONSE_RESULT_NOOP
-          - RESPONSE_RESULT_SUCCESS
-        default: RESPONSE_RESULT_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED
+          - RESPONSE_RESULT_TYPE_NOOP
+          - RESPONSE_RESULT_TYPE_SUCCESS
+        default: RESPONSE_RESULT_TYPE_UNSPECIFIED
         description: |-
-          - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-           - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-           - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+          - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+           - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+           - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
         title: >-
           ResponseResultType defines the possible outcomes of the execution of a
           message
@@ -48720,14 +48727,14 @@ definitions:
   ibc.core.channel.v1.ResponseResultType:
     type: string
     enum:
-      - RESPONSE_RESULT_UNSPECIFIED
-      - RESPONSE_RESULT_NOOP
-      - RESPONSE_RESULT_SUCCESS
-    default: RESPONSE_RESULT_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED
+      - RESPONSE_RESULT_TYPE_NOOP
+      - RESPONSE_RESULT_TYPE_SUCCESS
+    default: RESPONSE_RESULT_TYPE_UNSPECIFIED
     description: |-
-      - RESPONSE_RESULT_UNSPECIFIED: Default zero value enumeration
-       - RESPONSE_RESULT_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-       - RESPONSE_RESULT_SUCCESS: The message was executed successfully
+      - RESPONSE_RESULT_TYPE_UNSPECIFIED: Default zero value enumeration
+       - RESPONSE_RESULT_TYPE_NOOP: The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+       - RESPONSE_RESULT_TYPE_SUCCESS: The message was executed successfully
     title: >-
       ResponseResultType defines the possible outcomes of the execution of a
       message
@@ -52121,6 +52128,11 @@ definitions:
       earliestStart:
         type: string
         format: uint64
+      deletedEpochs:
+        type: array
+        items:
+          type: string
+          format: uint64
   lavanet.lava.epochstorage.FixatedParams:
     type: object
     properties:
@@ -52280,6 +52292,11 @@ definitions:
           earliestStart:
             type: string
             format: uint64
+          deletedEpochs:
+            type: array
+            items:
+              type: string
+              format: uint64
   lavanet.lava.epochstorage.QueryGetFixatedParamsResponse:
     type: object
     properties:
@@ -52454,6 +52471,17 @@ definitions:
               type: string
             vrfpk:
               type: string
+  lavanet.lava.pairing.CacheUsage:
+    type: object
+    properties:
+      CacheHits:
+        type: string
+        format: uint64
+      CacheMisses:
+        type: string
+        format: uint64
+  lavanet.lava.pairing.Empty:
+    type: object
   lavanet.lava.pairing.EpochPayments:
     type: object
     properties:
@@ -52889,6 +52917,7 @@ definitions:
     type: object
     properties:
       params:
+        description: params holds all the parameters of this module.
         type: object
         properties:
           minStakeProvider:
@@ -52920,7 +52949,6 @@ definitions:
             type: string
           QoSWeight:
             type: string
-        description: Params defines the parameters for the module.
     description: QueryParamsResponse is response type for the Query/Params RPC method.
   lavanet.lava.pairing.QueryProvidersResponse:
     type: object

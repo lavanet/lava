@@ -56,11 +56,20 @@ func (k Keeper) GetEarliestEpochStart(ctx sdk.Context) uint64 {
 	return details.EarliestStart
 }
 
-func (k Keeper) SetEarliestEpochStart(ctx sdk.Context, block uint64) {
+func (k Keeper) GetDeletedEpochs(ctx sdk.Context) []uint64 {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
 		panic("did not find EpochDetails")
 	}
+	return details.DeletedEpochs
+}
+
+func (k Keeper) SetEarliestEpochStart(ctx sdk.Context, block uint64, deletedEpochs []uint64) {
+	details, found := k.GetEpochDetails(ctx)
+	if !found {
+		panic("did not find EpochDetails")
+	}
+	details.DeletedEpochs = deletedEpochs
 	details.EarliestStart = block
 	k.SetEpochDetails(ctx, details)
 }

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"runtime/debug"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
 	"github.com/tendermint/tendermint/libs/log"
@@ -42,12 +44,30 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	return errors.New(err_msg)
 }
 
+func LoggingLevel(logLevel string) {
+	switch logLevel {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+	LavaFormatInfo("setting log level", &map[string]string{"loglevel": logLevel})
+}
+
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
-	NoColor := os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor})
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
 	}
 
 	var logEvent *zerolog.Event
@@ -81,8 +101,12 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 		output = fmt.Sprintf("%s -- %+v", output, *extraAttributes)
 	}
 	logEvent.Msg(description)
-	// golog.Println(output)
-	return fmt.Errorf(output)
+	// here we return the same type of the original error message, this handles nil case as well
+	errRet := sdkerrors.Wrap(err, output)
+	if errRet == nil { //we always want to return an error if lavaFormatError was called
+		return fmt.Errorf(output)
+	}
+	return errRet
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {

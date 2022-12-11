@@ -9,6 +9,7 @@ import (
 	vrf "github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
@@ -19,7 +20,11 @@ const (
 	sk_vrf_prefix = "vrf-sk-"
 )
 
-func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint32) (index int64) {
+var (
+	VRFValueAboveReliabilityThresholdError = sdkerrors.New("VRFValueAboveReliabilityThreshold Error", 1, "calculated vrf does not result in a smaller value than threshold") // client could'nt connect to any provider.
+)
+
+func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint32) (index int64, err error) {
 	vrf_num := binary.LittleEndian.Uint32(vrf)
 	if vrf_num <= reliabilityThreshold {
 		// need to send relay with VRF
@@ -27,6 +32,7 @@ func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint
 		index = int64(vrf_num % modulo)
 	} else {
 		index = -1
+		err = VRFValueAboveReliabilityThresholdError.Wrapf("Vrf Does not meet threshold: %d VS threshold: %d", vrf_num, reliabilityThreshold)
 	}
 	return
 }

@@ -94,7 +94,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 			if PairingListEmptyError.Is(err) {
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
-				// This provider does'nt have enough compute units for this session, we block it for this session and continue to another provider.
+				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
@@ -189,7 +189,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	for index := 0; index < validAddressesLength; index++ {
 		if _, ok := ignoredProvidersList[csm.validAddresses[index]]; !ok { // not ignored -> yes valid
 			if validAddressesCounter == validAddressIndex {
-				return csm.validAddresses[validAddressIndex], nil
+				return csm.validAddresses[index], nil
 			}
 			validAddressesCounter += 1
 		}
@@ -202,6 +202,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	defer csm.lock.RUnlock()
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
+		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
 		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
@@ -232,7 +233,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 }
 
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
-// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise does'nt take effect.
+// Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
 func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64) error {
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
@@ -256,7 +257,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it does'nt exist already
+		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}
 	}
@@ -325,6 +326,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
 	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressesEpoch != csm.atomicReadCurrentEpoch() {
+		utils.LavaFormatDebug("Getting session ignores banned addresses due to epoch mismatch", &map[string]string{"bannedAddresses": fmt.Sprintf("%+v", bannedAddresses), "bannedAddressesEpoch": strconv.FormatUint(bannedAddressesEpoch, 10), "currentEpoch": strconv.FormatUint(csm.atomicReadCurrentEpoch(), 10)})
 		return csm.GetSession(ctx, cuNeeded, nil)
 	} else {
 		return csm.GetSession(ctx, cuNeeded, bannedAddresses)
@@ -476,6 +478,21 @@ func (csm *ConsumerSessionManager) OnSessionDoneWithoutQoSChanges(consumerSessio
 		// if we managed to lock throw an error for misuse.
 		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
 	}
+	return nil
+}
+
+// On a successful Subscribe relay
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSession *SingleConsumerSession) error {
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+
+	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
+	consumerSession.LatestRelayCu = 0                      // reset cu just in case
+	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
+	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	return nil
 }
 

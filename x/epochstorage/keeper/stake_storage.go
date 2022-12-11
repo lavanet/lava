@@ -68,32 +68,21 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 	return
 }
 
-func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) (err error) {
-	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
-	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
-	if err != nil {
-		return err
+func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) {
+
+	for _, block := range k.GetDeletedEpochs(ctx) {
+		allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
+		for _, chainID := range allChainIDs {
+			k.RemoveStakeStorageByBlockAndChain(ctx, storageType, block, chainID)
+		}
 	}
-	if uint64(ctx.BlockHeight()) < blocksToSaveAtEarliestEpoch {
-		return nil
-	}
-	block := uint64(ctx.BlockHeight()) - blocksToSaveAtEarliestEpoch
-	if earliestEpochBlock > block {
-		return nil
-	}
-	//we passed the distance to earliest session block, so remove the entries and update the earliestSessionBlock
-	allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
-	for _, chainID := range allChainIDs {
-		k.RemoveStakeStorageByBlockAndChain(ctx, storageType, earliestEpochBlock, chainID)
-	}
-	//TODO: after a long period go over all entries and find leftovers, to make sure edge cases are handled
-	return nil
 }
 
-func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
+func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	currentBlock := uint64(ctx.BlockHeight())
 	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
 	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock) //we take the epochs memory size at earliestEpochBlock, and not the current one
+	deletedEpochs := []uint64{}
 	if err != nil {
 		// this is critical, no recovery from this
 		panic(fmt.Sprintf("Critical Error: could not progress EarliestEpochstart %s\nearliestEpochBlock: %d, fixations: %+v", err, earliestEpochBlock, k.GetAllFixatedParams(ctx)))
@@ -104,6 +93,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
 	changed := false
 	for earliestEpochBlock < lastBlockInMemory {
+		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
 		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
 		if err != nil {
 			// this is critical, no recovery from this
@@ -119,7 +109,7 @@ func (k Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
 	logger := k.Logger(ctx)
 	//now update the earliest epoch start
 	utils.LogLavaEvent(ctx, logger, "earliest_epoch", map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)}, "updated earliest epoch block")
-	k.SetEarliestEpochStart(ctx, earliestEpochBlock)
+	k.SetEarliestEpochStart(ctx, earliestEpochBlock, deletedEpochs)
 }
 
 func (k Keeper) StakeStorageKey(storageType string, block uint64, chainID string) string {
@@ -209,7 +199,7 @@ func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage 
 	return
 }
 
-func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
 		return types.StakeEntry{}, false, 0
@@ -226,7 +216,7 @@ func (k Keeper) StakeEntryByAddress(ctx sdk.Context, storageType string, chainID
 	return
 }
 
-func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID string, idx uint64) {
+func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, idx uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
 		return
@@ -235,7 +225,7 @@ func (k Keeper) RemoveStakeEntry(ctx sdk.Context, storageType string, chainID st
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
 }
 
-func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
+func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
 	//this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	var entries = []types.StakeEntry{}
@@ -264,7 +254,7 @@ func (k Keeper) AppendStakeEntry(ctx sdk.Context, storageType string, chainID st
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
 }
 
-func (k Keeper) ModifyStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
+func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
 	//this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
@@ -423,7 +413,7 @@ func (k Keeper) PopUnstakeEntries(ctx sdk.Context, storageType string, block uin
 // ------------------------------------------------
 
 // takes the current stake storage and puts it in epoch storage
-func (k Keeper) StoreEpochStakeStorage(ctx sdk.Context, block uint64, storageType string) {
+func (k Keeper) StoreCurrentEpochStakeStorage(ctx sdk.Context, block uint64, storageType string) {
 	allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	for _, chainID := range allChainIDs {
 		tmpStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
@@ -486,4 +476,49 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType 
 		return nil, false
 	}
 	return stakeStorage.StakeEntries, true
+}
+
+//append to epoch stake entries ONLY if it doesn't exist
+func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) (added bool, err error) {
+	epoch := k.GetEpochStart(ctx)
+	stakeEntry.Deadline = epoch
+	storage, found := k.getStakeStorageEpoch(ctx, epoch, storageType, chainID)
+	if !found {
+		entries := []types.StakeEntry{}
+		//create a new one
+		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, epoch, chainID), StakeEntries: entries}
+	}
+	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
+	if err != nil {
+		return false, err
+	}
+
+	for _, clientStakeEntry := range storage.StakeEntries {
+		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
+		if err != nil {
+			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
+		}
+		if clientAddr.Equals(entryAddr) {
+			return false, nil //stake already exists in this epoch
+		}
+	}
+
+	//put it in the right place
+	entries := storage.StakeEntries
+	sortFunc := func(i int) bool {
+		return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+	}
+	//returns the smallest index in which the sort func is true
+	index := sort.Search(len(entries), sortFunc)
+	if index < len(entries) {
+		entries = append(entries[:index+1], entries[index:]...)
+		entries[index] = stakeEntry
+	} else {
+		//put in the end
+		entries = append(entries, stakeEntry)
+	}
+
+	storage.StakeEntries = entries
+	k.SetStakeStorage(ctx, storage)
+	return true, nil
 }

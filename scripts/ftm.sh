@@ -14,11 +14,11 @@ go run ./testutil/e2e/proxy/. $FTM_HOST  -p $MOCK_PORT -cache -id ftm &
 
 echo " ::: RUNNING FTM PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2251 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer1 &
-lavad server 127.0.0.1 2252 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer2 &
-lavad server 127.0.0.1 2253 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer3 &
-lavad server 127.0.0.1 2254 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer4 &
-lavad server 127.0.0.1 2255 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer5 &
-lavad portal_server 127.0.0.1 3336 FTM250 jsonrpc --from user1
+lavad server 127.0.0.1 2251 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2252 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2253 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer3 --log_level debug &
+lavad server 127.0.0.1 2254 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer4 --log_level debug &
+lavad server 127.0.0.1 2255 http://0.0.0.0:$MOCK_PORT/ftm/http FTM250 jsonrpc --from servicer5 --log_level debug &
+lavad portal_server 127.0.0.1 3336 FTM250 jsonrpc --from user1 --log_level debug
 
 echo " ::: FTM PROVIDERS DONE! :::"

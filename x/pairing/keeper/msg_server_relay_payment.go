@@ -148,10 +148,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["error"] = err.Error()
 				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, details["error"])
 			}
-			index := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
-			if index != int64(thisProviderIndex) {
-				details["error"] = "data reliability data did not pass the threshold or returned mismatch index"
+			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
+			if vrfErr != nil {
+				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
+				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
+			}
+			if index != int64(thisProviderIndex) {
+				details["error"] = "data reliability returned mismatch index"
+				details["VRF_index"] = strconv.FormatInt(index, 10)
+				details["thisProviderIndex"] = strconv.FormatInt(int64(thisProviderIndex), 10)
 				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
 			}
 			//all checks passed
@@ -294,7 +300,7 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
 			continue
 		}
-		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.StakeEntryByAddress(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
+		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
 		// if !entryExists provider is alraedy unstaked
 		if !entryExists {
 			continue // if provider is not staked, nothing to do.
@@ -362,6 +368,6 @@ func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEp
 }
 
 func (k msgServer) unSafeUnstakeProviderEntry(ctx sdk.Context, providerKey string, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) {
-	k.epochStorageKeeper.RemoveStakeEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
 	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
 }

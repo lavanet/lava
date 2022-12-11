@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -38,6 +39,7 @@ type RestChainProxy struct {
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
+	cache      *performance.Cache
 }
 
 func (r *RestMessage) GetMsg() interface{} {
@@ -89,6 +91,13 @@ func (m RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
+func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *RestChainProxy) GetCache() *performance.Cache {
+	return cp.cache
+}
+
 func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	serviceApi, ok := cp.GetSentry().GetSpecApiByTag(spectypes.GET_BLOCK_BY_NUM)
 	if !ok {
@@ -109,7 +118,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blockData, err := parser.ParseMessageResponse((nodeMsg.(*RestMessage)), serviceApi.Parsing.ResultParsing)
@@ -136,12 +145,16 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  cp.nodeUrl,
+			"Method":   nodeMsg.path,
+			"Response": string(nodeMsg.Result),
+		})
 	}
 
 	return blocknum, nil
@@ -173,7 +186,7 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
-
+	// data contains the query string
 	nodeMsg := &RestMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
@@ -199,14 +212,15 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("in <<< "+path, nil)
+		dappID := ExtractDappIDFromFiberContext(c)
+		//TODO: fix msgSeed and print it here
+		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())
-		reply, _, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
@@ -219,13 +233,24 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		cp.portalLogs.LogStartTransaction("rest-http")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 
+		URI := c.Request().URI()
+		if strings.Contains(URI.String(), "favicon.ico") {
+			return nil
+		}
+
+		query := "?" + string(URI.QueryString())
 		path := "/" + c.Params("*")
-		utils.LavaFormatInfo("in <<< "+path, nil)
-		reply, _, _, err := SendRelay(ctx, cp, privKey, path, "", http.MethodGet)
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
+		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		responseBody := string(reply.Data)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
@@ -237,7 +262,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
-	return
 }
 
 func (nm *RestMessage) RequestedBlock() int64 {
@@ -263,7 +287,12 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
-	req, err := http.NewRequest(connectionTypeSlected, nm.cp.nodeUrl+nm.path, msgBuffer)
+	url := nm.cp.nodeUrl + nm.path
+	// Only get calls uses query params the rest uses the body
+	if connectionTypeSlected == http.MethodGet {
+		url += string(nm.msg)
+	}
+	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

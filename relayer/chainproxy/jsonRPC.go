@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -69,6 +70,7 @@ type JrpcChainProxy struct {
 	sentry     *sentry.Sentry
 	csm        *lavasession.ConsumerSessionManager
 	portalLogs *PortalLogs
+	cache      *performance.Cache
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
@@ -79,7 +81,14 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *
 		sentry:     sentry,
 		csm:        csm,
 		portalLogs: pLogs,
+		cache:      nil,
 	}
+}
+func (cp *JrpcChainProxy) SetCache(cache *performance.Cache) {
+	cp.cache = cache
+}
+func (cp *JrpcChainProxy) GetCache() *performance.Cache {
+	return cp.cache
 }
 
 func (cp *JrpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
@@ -100,12 +109,16 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blocknum, err := parser.ParseBlockFromReply(nodeMsg.msg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, err
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{
+			"nodeUrl":  cp.nodeUrl,
+			"Method":   nodeMsg.msg.Method,
+			"Response": string(nodeMsg.msg.Result),
+		})
 	}
 
 	return blocknum, nil
@@ -133,7 +146,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	_, _, _, err = nodeMsg.Send(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
 	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
@@ -245,7 +258,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 		return fiber.ErrUpgradeRequired
 	})
-
 	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
@@ -262,7 +274,8 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
-			reply, replyServer, _, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			dappID := ExtractDappIDFromWebsocketConnection(c)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 				continue
@@ -307,19 +320,20 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			}
 		}
 	})
-
-	app.Get("/ws/:dappId", webSocketCallback)
-	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	app.Get("/ws/:dappId", websocketCallbackWithDappID)
+	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
-		reply, _, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
+		dappID := ExtractDappIDFromFiberContext(c)
+		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "", dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`))
+			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, err))
 		}
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))
@@ -371,6 +385,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
+		//this later causes returning an error
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {

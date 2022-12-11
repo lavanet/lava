@@ -3,6 +3,7 @@ package sentry
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -18,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -586,8 +586,8 @@ func (s *Sentry) Start(ctx context.Context) {
 			s.SetBlockHeight(data.Block.Height)
 
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
-				fmt.Printf("New epoch: Height: %d \n", data.Block.Height)
-				utils.LavaFormatInfo("New epoch received", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
+				utils.LavaFormatInfo("New Epoch Event", nil)
+				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
@@ -610,7 +610,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				//update expected payments deadline, and log missing payments
 				//TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
-					s.IdentifyMissingPayments(ctx)
+					s.IdentifyMissingPayments()
 				}
 				//
 				// Update pairing
@@ -704,20 +704,32 @@ func (s *Sentry) FetchChainParams(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sentry) IdentifyMissingPayments(ctx context.Context) {
+func (s *Sentry) IdentifyMissingPayments() {
 	lastBlockInMemory := atomic.LoadUint64(&s.earliestSavedBlock)
 	s.PaymentsMu.Lock()
+
+	var updatedExpectedPayments []PaymentRequest
+
 	for idx, expectedPay := range s.expectedPayments {
+		// Exclude and log missing payments
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
 			utils.LavaFormatError("Identified Missing Payment", nil,
 				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
 					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
 					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
-			s.expectedPayments = append(s.expectedPayments[:idx], s.expectedPayments[idx+1:]...)
+
+			continue
 		}
+
+		// Include others
+		updatedExpectedPayments = append(updatedExpectedPayments, s.expectedPayments[idx])
 	}
+
+	// Update expectedPayment
+	s.expectedPayments = updatedExpectedPayments
+
 	s.PaymentsMu.Unlock()
-	//can be modified in this race window, so we double check
+	//can be modified in this race window, so we double-check
 
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
@@ -761,7 +773,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	return false
 }
 
-func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[int64]struct{}) {
+func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool) (indexes map[int64]bool) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
 	//TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
@@ -769,14 +781,14 @@ func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte) (indexes map[i
 	s.specMu.RUnlock()
 
 	providersCount := uint32(s.consumerSessionManager.GetAtomicPairingAddressesLength())
-	indexes = make(map[int64]struct{}, len(vrfs))
-	for _, vrf := range vrfs {
-		index := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
-		if index == -1 {
+	indexes = make(map[int64]bool, len(vrfs))
+	for vrfIndex, vrf := range vrfs {
+		index, err := utils.GetIndexForVrf(vrf, providersCount, reliabilityThreshold)
+		if index == -1 || err != nil {
 			continue // no reliability this time.
 		}
 		if _, ok := indexes[index]; !ok {
-			indexes[index] = struct{}{}
+			indexes[index] = uniqueIdentifiers[vrfIndex]
 		}
 	}
 	return
@@ -805,7 +817,7 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 				SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 				// TODO:: should break here? is one enough or search for more?
-				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash)})
+				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
 			}
 		}
 	}
@@ -819,7 +831,7 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	maxBlockNum := int64(0)
 	for blockNum := range finalizedBlocks {
 		if !s.IsFinalizedBlock(blockNum, latestBlock) {
-			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", nil, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 		}
 
 		sorted[idx] = blockNum
@@ -836,14 +848,14 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 	for index := range sorted {
 		if index != 0 && sorted[index]-1 != sorted[index-1] {
 			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", nil, &map[string]string{"curr block": strconv.FormatInt(sorted[index], 10), "prev block": strconv.FormatInt(sorted[index-1], 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 		}
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
 		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
 	}
 
 	// New reply should have blocknum >= from block same provider
@@ -904,6 +916,7 @@ type DataReliabilitySession struct {
 	singleConsumerSession *lavasession.SingleConsumerSession
 	epoch                 uint64
 	providerPublicAddress string
+	uniqueIdentifier      bool
 }
 
 type DataReliabilityResult struct {
@@ -925,21 +938,21 @@ func (s *Sentry) SendRelay(
 	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
 	//error using this provider
 	if err != nil {
-		return nil, nil, 0, sdkerrors.Wrapf(lavasession.SendRelayError, err.Error())
+		return nil, nil, 0, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 	}
 
 	if s.GetSpecComparesHashes() && reply != nil {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", err, nil)
+			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", err, nil)
+			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		//
 		// Compare finalized block hashes with previous providers
@@ -949,7 +962,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed to finalize hashes", err, nil)
+			return nil, nil, latency, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -960,8 +973,9 @@ func (s *Sentry) SendRelay(
 			vrfRes0, vrfRes1 := utils.CalculateVrfOnRelay(request, reply, s.VrfSk, sessionEpoch)
 			s.VrfSkMu.Unlock()
 			// get two indexesMap for data reliability.
-			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1})
-			for idxExtract := range indexesMap { // go over each unique index and get a session.
+			indexesMap := s.DataReliabilityThresholdToSession([][]byte{vrfRes0, vrfRes1}, []bool{false, true})
+			utils.LavaFormatDebug("DataReliability Randomized Values", &map[string]string{"vrf0": strconv.FormatUint(uint64(binary.LittleEndian.Uint32(vrfRes0)), 10), "vrf1": strconv.FormatUint(uint64(binary.LittleEndian.Uint32(vrfRes1)), 10), "decisionMap": fmt.Sprintf("%+v", indexesMap)})
+			for idxExtract, uniqueIdentifier := range indexesMap { // go over each unique index and get a session.
 				// the key in the indexesMap are unique indexes to fetch from consumerSessionManager
 				dataReliabilityConsumerSession, providerPublicAddress, epoch, err := s.consumerSessionManager.GetDataReliabilitySession(ctx, providerPubAddress, idxExtract, sessionEpoch)
 				if err != nil {
@@ -969,7 +983,7 @@ func (s *Sentry) SendRelay(
 						// index belongs to original provider, nothing is wrong here, print info and continue
 						utils.LavaFormatInfo("DataReliability: Trying to get the same provider index as original request", &map[string]string{"provider": providerPubAddress, "Index": strconv.FormatInt(idxExtract, 10)})
 					} else if lavasession.DataReliabilityAlreadySentThisEpochError.Is(err) {
-						utils.LavaFormatInfo("DataReliability: Provider Already Sent Data Reliability This Epoch.", &map[string]string{"Provider": providerPubAddress, "Epoch": strconv.FormatUint(epoch, 10)})
+						utils.LavaFormatInfo("DataReliability: Already Sent Data Reliability This Epoch To This Provider.", &map[string]string{"Provider": providerPubAddress, "Epoch": strconv.FormatUint(epoch, 10)})
 					} else if lavasession.DataReliabilityEpochMismatchError.Is(err) {
 						utils.LavaFormatInfo("DataReliability: Epoch changed cannot send data reliability", &map[string]string{"original_epoch": strconv.FormatUint(sessionEpoch, 10), "data_reliability_epoch": strconv.FormatUint(epoch, 10)})
 						// if epoch changed, we can stop trying to get data reliability sessions
@@ -983,6 +997,7 @@ func (s *Sentry) SendRelay(
 					singleConsumerSession: dataReliabilityConsumerSession,
 					epoch:                 epoch,
 					providerPublicAddress: providerPublicAddress,
+					uniqueIdentifier:      uniqueIdentifier,
 				})
 			}
 
@@ -1000,9 +1015,9 @@ func (s *Sentry) SendRelay(
 				}
 				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
-					err = s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
-					if err != nil {
-						utils.LavaFormatError("OnDataReliabilitySessionFailure Error", err, nil)
+					errRet := s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
+					if errRet != nil {
+						return nil, nil, utils.LavaFormatError("OnDataReliabilitySessionFailure Error", errRet, &map[string]string{"sendReliabilityError": err.Error()})
 					}
 					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
 				}
@@ -1021,9 +1036,9 @@ func (s *Sentry) SendRelay(
 				// apply first request and reply to dataReliabilityVerifications
 				originalDataReliabilityResult := &DataReliabilityResult{reply: reply, relayRequest: request, providerPublicAddress: providerPubAddress}
 				dataReliabilityVerifications := make([]*DataReliabilityResult, 0)
-				uniqueIdentifier := []bool{true, false} // in the future if we want more vrfs we just change this boolean slice to the idx of the dataReliabilitySessions
-				for idx, dataReliabilitySession := range dataReliabilitySessions {
-					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, uniqueIdentifier[idx])
+
+				for _, dataReliabilitySession := range dataReliabilitySessions {
+					reliabilityReply, reliabilityRequest, err := sendReliabilityRelay(dataReliabilitySession.singleConsumerSession, dataReliabilitySession.providerPublicAddress, dataReliabilitySession.uniqueIdentifier)
 					if err == nil && reliabilityReply != nil {
 						dataReliabilityVerifications = append(dataReliabilityVerifications,
 							&DataReliabilityResult{
@@ -1242,6 +1257,10 @@ func (s *Sentry) GetChainID() string {
 	return s.serverSpec.Index
 }
 
+func (s *Sentry) GetAverageBlockTime() int64 {
+	return s.serverSpec.AverageBlockTime
+}
+
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
@@ -1440,10 +1459,20 @@ func NewSentry(
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
 	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
-	switch request.RequestBlock {
+	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
+}
+
+func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
+	switch requestedBlock {
 	case spectypes.LATEST_BLOCK:
-		request.RequestBlock = response.LatestBlock
+		return latestBlock
+	case spectypes.SAFE_BLOCK:
+		return latestBlock
+	case spectypes.FINALIZED_BLOCK:
+		return latestBlock
 	case spectypes.EARLIEST_BLOCK:
-		request.RequestBlock = spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
+		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
+	return requestedBlock
+
 }

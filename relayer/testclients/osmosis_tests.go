@@ -37,7 +37,7 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 		for httpMethod, api := range mostImportantApisToTest {
 			for _, api_value := range api {
 				for i := 0; i < 20; i++ {
-					reply, _, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod)
+					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "osmo_test")
 					if err != nil {
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
@@ -50,14 +50,14 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 
 		// other osmosis tests
 		for i := 0; i < 100; i++ {
-			reply, _, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet)
+			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println("1:" + err.Error())
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
-			reply, _, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST, http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, OSMOSIS_NUM_POOLS_URL_REST, OSMOSIS_NUM_POOLS_DATA_REST, http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println("1:" + err.Error())
 				errors = append(errors, fmt.Sprintf("%s", err))
@@ -68,28 +68,28 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 
 	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 100; i++ {
-			reply, _, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet)
+			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 			}
-			reply, _, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 			}
-			reply, _, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
 			} else {
 				prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 			}
-			reply, _, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet)
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet, "osmo_test")
 			if err != nil {
 				log.Println(err)
 				errors = append(errors, fmt.Sprintf("%s", err))
