@@ -289,16 +289,21 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			reader = bytes.NewReader(v)
 			formatMessage = true
 		}
+		// TODO: Test this json unmarshal should work.
+		msg2 := msgFactory.NewMessage(methodDescriptor.GetInputType())
+		err = json.Unmarshal(v, msg2)
+		if err != nil {
+			utils.LavaFormatError("Failed to json unmarshal", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
+		}
 	case string:
 		if v != "" {
 			reader = strings.NewReader(v)
 			formatMessage = true
 		}
 	case proto.Message:
-		utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
 		msg = v
 	default:
-		return nil, "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%s", v)})
+		return nil, "", nil, utils.LavaFormatError("Unsupported type for gRPC msg", nil, &map[string]string{"type": fmt.Sprintf("%T", v)})
 	}
 
 	rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
