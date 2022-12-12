@@ -420,17 +420,19 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 	utils.LavaFormatInfo("Starting TENDERMINTRPC URI Tests", nil)
 	errors := []string{}
-	mostImportantApisToTest := []string{
-		"%s/health",
-		"%s/status",
-		"%s/block?height=1",
+	mostImportantApisToTest := map[string]bool{
+		"%s/health":                              true,
+		"%s/status":                              true,
+		"%s/block?height=1":                      true,
+		"%s/blockchain?minHeight=0&maxHeight=10": true,
+		"%s/dial_peers?persistent=true&unconditional=true&private=true": false, //this is a rpc affecting query and is not available on the spec so it should fail
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
-		for _, api := range mostImportantApisToTest {
+		for api, noFail := range mostImportantApisToTest {
 			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
-			if err != nil {
+			if err != nil && noFail {
 				errors = append(errors, fmt.Sprintf("%s", err))
-			} else if strings.Contains(string(reply), "error") {
+			} else if strings.Contains(string(reply), "error") && noFail {
 				errors = append(errors, string(reply))
 			}
 		}
