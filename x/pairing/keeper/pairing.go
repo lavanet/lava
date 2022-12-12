@@ -221,6 +221,12 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 	return returnedProviders
 }
 
+// Define and initialize averageBlockTime and latestEpochBlockTimeCalculation
+var (
+	averageBlockTime                float64 = -1
+	latestEpochBlockTimeCalculation uint64  = 0 // the latest epoch that an average block time calculation was performed (supposed to make the average block time calculation at most once per epoch)
+)
+
 func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 
 	// Get current epoch
@@ -232,6 +238,7 @@ func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 		if err != nil {
 			return 0, fmt.Errorf("could not calculate average block time, err: %s", err)
 		}
+		latestEpochBlockTimeCalculation = currentEpoch
 	}
 
 	// Get the next epoch from the present reference
@@ -251,11 +258,6 @@ func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 
 	return timeLeftToNextEpoch, nil
 }
-
-var (
-	averageBlockTime                float64 = -1
-	latestEpochBlockTimeCalculation uint64  = 0 // the latest epoch that an average block time calculation was performed (supposed to make the average block time calculation at most once per epoch)
-)
 
 func (k Keeper) calculateAverageBlockTime(ctx sdk.Context) (err error) {
 
@@ -323,9 +325,10 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context) (err error) {
 		}
 	}
 
+	// Make sure the time is a non-zero positive
 	averageBlockTime = minBlockTime
-	if averageBlockTime < 0 {
-		return fmt.Errorf("block creation time is less then zero")
+	if averageBlockTime <= 0 {
+		return fmt.Errorf("block creation time is not a non-zero positive number")
 	}
 
 	return nil
