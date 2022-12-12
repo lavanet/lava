@@ -176,6 +176,9 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			rawParams := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
 			for _, param := range rawParams {
 				splittedParam := strings.Split(param, "=")
+				if len(splittedParam) != 2 {
+					return nil, utils.LavaFormatError("Cannot parse query params", nil, nil)
+				}
 				params[splittedParam[0]] = splittedParam[1]
 			}
 			msg.Params = params
