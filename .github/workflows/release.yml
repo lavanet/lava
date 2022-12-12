@@ -64,7 +64,7 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Content-Type: $(file -b --mime-type build/lavad)" \
           --data-binary @build/lavad \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
         }
 
         delete_binary(){
