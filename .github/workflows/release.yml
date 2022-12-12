@@ -11,6 +11,7 @@ jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: default
     defaults:
       run:
@@ -23,7 +24,7 @@ jobs:
     - name: Configure Go
       uses: actions/setup-go@v3
       with:
-        go-version: '^1.19'
+        go-version: '^1.18.2'
         check-latest: true
         cache: true
 
@@ -64,7 +65,7 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Content-Type: $(file -b --mime-type build/lavad)" \
           --data-binary @build/lavad \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
         }
 
         delete_binary(){

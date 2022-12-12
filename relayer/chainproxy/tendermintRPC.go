@@ -167,19 +167,21 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			ID:      []byte("1"),
 			Version: "2.0",
 			Method:  parsedMethod,
-		} //other parameters don't matter
-		// TODO: will be easier to parse the params in a map instead of an array, as calling with a map should be now supported
+		}
 		if strings.Contains(path[idx+1:], "=") {
-			params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
-			params := make([]interface{}, len(params_raw))
-			for i := range params_raw {
-				params[i] = params_raw[i]
+			params := make(map[string]interface{})
+			rawParams := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
+			for _, param := range rawParams {
+				splitParam := strings.Split(param, "=")
+				if len(splitParam) != 2 {
+					return nil, utils.LavaFormatError("Cannot parse query params", nil, &map[string]string{"params": param})
+				}
+				params[splitParam[0]] = splitParam[1]
 			}
 			msg.Params = params
 		} else {
 			msg.Params = make([]interface{}, 0)
 		}
-		//convert the list of strings to a list of interfaces
 	}
 	//
 	// Check api is supported and save it in nodeMsg
@@ -298,6 +300,12 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
+		URI := c.Request().URI()
+		if strings.Contains(URI.String(), "favicon.ico") {
+			return nil
+		}
+
+		query := "?" + string(URI.QueryString())
 		path := c.Params("*")
 		dappID := ""
 		if len(c.Route().Params) > 1 {
@@ -306,7 +314,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", "", dappID)
+		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", "", dappID)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
