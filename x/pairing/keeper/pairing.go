@@ -188,7 +188,7 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
 		modRes := hashAsNumber.Mod(stakeSum.Amount)
 
-		var newStakeSum = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
+		newStakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
 		// we loop the servicers list form the end because the list is sorted, biggest is last,
 		// and statistically this will have less iterations
 

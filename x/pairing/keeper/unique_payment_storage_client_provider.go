@@ -63,8 +63,7 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 	return
 }
 
-func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string,
-	block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
+func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
 	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier, chainID)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {

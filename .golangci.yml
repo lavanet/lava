@@ -11,7 +11,7 @@ linters:
     - exportloopref
     - goconst
     - gocritic
-    #- gofumpt
+    - gofumpt
     - gosec
     - gosimple
     - govet

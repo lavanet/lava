@@ -167,8 +167,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
-			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(),
-				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
+			details := map[string]string{
+				"epoch":     strconv.FormatUint(epochStart, 10),
+				"client":    clientAddr.String(),
+				"provider":  providerAddr.String(),
+				"error":     err.Error(),
+				"unique_ID": strconv.FormatUint(relay.SessionId, 16),
+			}
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 		allowedCU, err := k.GetAllowedCUForBlock(ctx, uint64(relay.BlockHeight), userStake)
@@ -186,7 +191,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"error":                         err.Error(),
 				"CU":                            strconv.FormatUint(relay.CuSum, 10),
 				"cuToPay":                       strconv.FormatUint(cuToPay, 10),
-				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10)}
+				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10),
+			}
 			return errorLogAndFormat("relay_payment_user_limit", details, "user bypassed CU limit")
 		}
 		if cuToPay > relay.CuSum {

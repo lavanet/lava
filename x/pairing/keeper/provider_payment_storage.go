@@ -92,8 +92,7 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 	return &userPaymentStorageInEpoch, usedCUConsumerTotal, nil
 }
 
-func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string,
-	uniquePaymentStorage []*types.UniquePaymentStorageClientProvider, providerAddress string) (usedCUProviderTotal uint64, failed error) {
+func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddress string, uniquePaymentStorage []*types.UniquePaymentStorageClientProvider, providerAddress string) (usedCUProviderTotal uint64, failed error) {
 	usedCUProviderTotal = 0
 	for _, uniquePayment := range uniquePaymentStorage {
 		if k.GetConsumerFromUniquePayment(uniquePayment) == consumerAddress {
