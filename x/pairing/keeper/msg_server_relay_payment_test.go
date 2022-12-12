@@ -85,6 +85,74 @@ func (ts *testStruct) getProvider(addr string) *account {
 	return nil
 }
 
+// Test that a provider payment is valid if he asked it within the chain's memory, and check the payment object
+func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
+
+	// setup testnet with mock spec, a staked client and a staked provider
+	ts := setupForPaymentTest(t)
+
+	// Get epochsToSave - the number of epochs chain can save to its memory
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	// Advance epochsToSave*2 epochs (i.e. in the next epoch, the first epoch will be forgotten)
+	for i := 0; i < int(2*epochsToSave); i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	// Get currentEpoch, lastBlockInEpoch, blockNumInEpoch
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	lastBlockInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx)) - 1
+	blockNumInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
+
+	// define tests - different epoch+blocks, valid tells if the payment request should work
+	tests := []struct {
+		name  string
+		epoch uint64
+		block uint64
+		valid bool
+	}{
+		{"PaymentCurrentEpoch", currentEpoch, 0, true},                                                                 // first block of current epoch
+		{"PaymentPreviousEpoch", currentEpoch - blockNumInEpoch, 0, true},                                              // first block of previous epoch
+		{"PaymentEndOfMemoryEpochLastBlock", currentEpoch - epochsToSave*blockNumInEpoch, lastBlockInEpoch, true},      // last block of end of memory epoch
+		{"PaymentEndOfMemoryEpochFirstBlock", currentEpoch - epochsToSave*blockNumInEpoch, 0, true},                    // first block of end of memory epoch
+		{"PaymentOutOfMemoryEpochLastBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, lastBlockInEpoch, false}, // first block of out of memory epoch (end of memory+1)
+		{"PaymentOutOfMemoryEpochFirstBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, 0, false},               // last block of out of memory epoch (end of memory+1)
+	}
+
+	sessionCounter := 0
+	for _, tt := range tests {
+		sessionCounter += 1
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
+			relayRequest := &types.RelayRequest{
+				Provider:        ts.providers[0].address.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(sessionCounter),
+				ChainID:         ts.spec.Name,
+				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+				BlockHeight:     int64(tt.epoch + tt.block),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: nil,
+			}
+
+			// Sign and send the payment requests for block 0 tx
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			relayRequest.Sig = sig
+			require.Nil(t, err)
+
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
+			var Relays []*types.RelayRequest
+			Relays = append(Relays, relayRequest)
+			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+		})
+	}
+}
+
 func setupForPaymentTest(t *testing.T) *testStruct {
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -1485,81 +1553,6 @@ func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types
 	} else {
 		// payment is not valid, should result in an error
 		require.NotNil(t, err)
-	}
-}
-
-// Test that a provider payment is valid if he asked it within the chain's memory, and check the payment object
-func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
-
-	// setup testnet with mock spec, a staked client and a staked provider
-	ts := setupForPaymentTest(t)
-
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-	err := ts.addClient(1)
-	require.Nil(t, err)
-	err = ts.addProvider(1)
-	require.Nil(t, err)
-
-	// Get epochsToSave - the number of epochs chain can save to its memory
-	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
-	require.Nil(t, err)
-
-	// Advance epochsToSave*2 epochs (i.e. in the next epoch, the first epoch will be forgotten)
-	for i := 0; i < int(2*epochsToSave); i++ {
-		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	}
-
-	// Get currentEpoch, lastBlockInEpoch, blockNumInEpoch
-	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-	lastBlockInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx)) - 1
-	blockNumInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
-
-	// define tests - different epoch+blocks, valid tells if the payment request should work
-	tests := []struct {
-		name  string
-		epoch uint64
-		block uint64
-		valid bool
-	}{
-		{"PaymentCurrentEpoch", currentEpoch, 0, true},                                                                 // first block of current epoch
-		{"PaymentPreviousEpoch", currentEpoch - blockNumInEpoch, 0, true},                                              // first block of previous epoch
-		{"PaymentEndOfMemoryEpochLastBlock", currentEpoch - epochsToSave*blockNumInEpoch, lastBlockInEpoch, true},      // last block of end of memory epoch
-		{"PaymentEndOfMemoryEpochFirstBlock", currentEpoch - epochsToSave*blockNumInEpoch, 0, true},                    // first block of end of memory epoch
-		{"PaymentOutOfMemoryEpochLastBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, lastBlockInEpoch, false}, // first block of out of memory epoch (end of memory+1)
-		{"PaymentOutOfMemoryEpochFirstBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, 0, false},               // last block of out of memory epoch (end of memory+1)
-	}
-
-	sessionCounter := 0
-	for _, tt := range tests {
-		sessionCounter += 1
-		t.Run(tt.name, func(t *testing.T) {
-
-			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
-			relayRequest := &types.RelayRequest{
-				Provider:        ts.providers[0].address.String(),
-				ApiUrl:          "",
-				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
-				ChainID:         ts.spec.Name,
-				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch + tt.block),
-				RelayNum:        0,
-				RequestBlock:    -1,
-				DataReliability: nil,
-			}
-
-			// Sign and send the payment requests for block 0 tx
-			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
-			relayRequest.Sig = sig
-			require.Nil(t, err)
-
-			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			var Relays []*types.RelayRequest
-			Relays = append(Relays, relayRequest)
-			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
-			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
-		})
 	}
 }
 

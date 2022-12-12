@@ -128,50 +128,51 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	initEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
-	epochBlocksTwenty := uint64(20)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	// Get the current values of EpochBlocks and EpochsToSave
+	epochBlocks, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
-	epochsToSaveTen := uint64(10)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
 
-	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)                                          // blockHeight = 20
-	epochBeforeChangeToTen := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx)) // blockHeight = 20
+	// Advance an epoch to apply EpochBlocks change
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochBeforeChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// change the EpochBlocks parameter to 10
-	epochBlocksTen := uint64(10)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTen, 10)+"\"")
+	// Decrease the epochBlocks param
+	newDecreasedEpochBlocks := epochBlocks / 2
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(newDecreasedEpochBlocks, 10)+"\"")
 	require.Nil(t, err)
 
 	// Advance an epoch so the change applies, and another one
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 40
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 50
-	epochAfterChangeToTen := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochAfterChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// Advance epochs to reach blockHeight of 160
-	// This will create a situation where a provider with the old EpochBlocks can get paid, but shouldn't
-	for i := 0; i < 11; i++ {
+	// The heart of the test. Make sure that the number of blocks that we'll advance is smaller than memory limit of a provider that uses the old EpochBlocks
+	require.Less(t, (epochsToSave+1)*newDecreasedEpochBlocks+epochAfterChange, epochBeforeChange+(epochsToSave*epochBlocks))
+
+	// Advance EpochsToSave+1 epochs. This will create a situation where a provider with the old EpochBlocks can get paid, but shouldn't
+	for i := 0; i < int(epochsToSave)+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
-	// define tests - different epoch+blocks, valid tells if the payment request should work
+	// define tests - different epoch, valid tells if the payment request should work
 	tests := []struct {
 		name  string
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochBlocksChangesToTen", epochBeforeChangeToTen, false},
-		{"PaymentAfterEpochBlocksChangesToTen", epochAfterChangeToTen, false},
+		{"PaymentBeforeEpochBlocksChanges", epochBeforeChange, false},
+		{"PaymentAfterEpochBlocksChanges", epochAfterChange, false},
 	}
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
+			// Create relay request that was done in the test's epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &pairingtypes.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
@@ -208,33 +209,38 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	initEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
-	epochBlocksTwenty := uint64(20)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	// Get the current values of EpochBlocks and EpochsToSave
+	epochBlocks, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
-	epochsToSaveTen := uint64(10)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
 
-	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)                                            // blockHeight = 20
-	epochBeforeChangeToFifty := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx)) // blockHeight = 20
+	// Advance an epoch to apply EpochBlocks change
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochBeforeChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// change the EpochBlocks parameter to 50
-	epochBlocksFifty := uint64(50)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksFifty, 10)+"\"")
+	// Increase the epochBlocks param
+	newIncreasedEpochBlocks := epochBlocks * 2
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(newIncreasedEpochBlocks, 10)+"\"")
 	require.Nil(t, err)
 
 	// Advance an epoch so the change applies, and another one
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 40
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 90
-	epochAfterChangeToFifty := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochAfterChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// Advance epochs to reach blockHeight of 240
-	// This will create a situation where a provider with the old EpochBlocks can't be paid, which shouldn't happen
-	for i := 0; i < 3; i++ {
+	// Calculate the memory limit of a provider with the new EpochBlocks (in epochs) from the current epoch
+	memoryLimit := (epochBlocks * epochsToSave) + epochBeforeChange
+	memoryLimitInEpochsUsingNewEpochBlocks := (memoryLimit - epochAfterChange) / newIncreasedEpochBlocks // amount of epochs (of new EpochBlocks) that we need to advance to get to the memory of a provider that uses the old EpochBlocks
+
+	// The heart of the test. Make sure that the number of epochs that we'll advance is smaller than EpochsToSave (we're gonna advance memoryLimitInEpochsUsingNewEpochBlocks+1, and we already advanced an epoch before)
+	require.Less(t, memoryLimitInEpochsUsingNewEpochBlocks+2, epochsToSave)
+
+	// Advance enough epochs to create a situation where a provider with the old EpochBlocks can't be paid, which shouldn't happen (from old EpochBlocks perspective, too many blocks past. But, the number of epochs that past are smaller than EpochsToSave)
+	for i := 0; i < int(memoryLimitInEpochsUsingNewEpochBlocks)+1; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -244,8 +250,8 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochBlocksChangesToFifty", epochBeforeChangeToFifty, false},
-		{"PaymentAfterEpochBlocksChangesToFifty", epochAfterChangeToFifty, true},
+		{"PaymentBeforeEpochBlocksChange", epochBeforeChange, false},
+		{"PaymentAfterEpochBlocksChange", epochAfterChange, true},
 	}
 
 	for ti, tt := range tests {
@@ -287,35 +293,38 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
 	// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = initEpochBlocks
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // 20
+	initEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// The test assumes that EpochBlocks default value is 20, and EpochsToSave is 10 - make sure it is
-	epochBlocksTwenty := uint64(20)
-	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
+	// Get the current values of EpochBlocks and EpochsToSave
+	epochBlocks, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
-	epochsToSaveTen := uint64(10)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTen, 10)+"\"")
-	require.Nil(t, err)
-
-	// Advance an epoch to apply EpochBlocks change. From here, the documented blockHeight is with offset of initEpochBlocks
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 20
-	epochBeforeChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-
-	// change the EpochToSave parameter to 2
-	epochsToSaveTwo := uint64(2)
-	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSaveTwo, 10)+"\"")
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
 	require.Nil(t, err)
 
-	// Advance an epoch so the change applies
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // blockHeight = 40
-	epochAfterChangeToTwo := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	// Advance an epoch to apply EpochBlocks change
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochBeforeChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
 
-	// Advance epochs to reach blockHeight of 99
-	// This will create a situation where a provider with old EpochsToSave from epochBeforeChangeToTwo can get paid (but it shouldn't). Also a provider from epochAfterChangeToTwo with the new EpochsToSave should get paid since block 99 is inside the memory (it belongs to the epoch that starts on blockHeight=80)
-	for i := 0; i < 2; i++ {
+	// Decrease the epochBlocks param
+	newDecreasedEpochsToSave := epochsToSave / 2
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(newDecreasedEpochsToSave, 10)+"\"")
+	require.Nil(t, err)
+
+	// Advance an epoch so the change applies, and another one
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochAfterChange := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	// The heart of the test. Make sure that the number of epochs that we'll advance from epochBeforeChange is smaller than EpochsToSave (we're gonna advance newDecreasedEpochsToSave, and we already advanced 2 epochs before)
+	require.Less(t, newDecreasedEpochsToSave+2, epochsToSave)
+
+	// Advance epochs to create a situation where a provider with old EpochsToSave from epochBeforeChange can get paid (but it shouldn't, since we advanced newDecreasedEpochsToSave+2 epochs). Also a provider from epochAfterChange with the new EpochsToSave should get paid since we're one block before newDecreasedEpochsToSave+1 (which is the end of the memory for the new EpochsToSave)
+	for i := 0; i < int(newDecreasedEpochsToSave); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
-	for i := 0; i < 19; i++ {
+
+	for i := 0; i < int(epochBlocks)-1; i++ {
 		ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 	}
 
@@ -325,15 +334,15 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 		epoch uint64
 		valid bool
 	}{
-		{"PaymentBeforeEpochsToSaveChangesToTwo", epochBeforeChangeToTwo, false},
-		{"PaymentAfterEpochsToSaveChangesToTwoBlockInMemory", epochAfterChangeToTwo, true},
-		{"PaymentAfterEpochsToSaveChangesToTwoBlockOutsideOfMemory", epochAfterChangeToTwo, false}, // the chain advances inside the loop test when it reaches this test
+		{"PaymentBeforeEpochsToSaveChanges", epochBeforeChange, false},
+		{"PaymentAfterEpochsToSaveChangesBlockInMemory", epochAfterChange, true},         // the chain is one block before the memory ends for the provider from epochAfterChange
+		{"PaymentAfterEpochsToSaveChangesBlockOutsideOfMemory", epochAfterChange, false}, // the chain advances inside the loop test when it reaches this test. Here we pass the memory of the provider from epochAfterChange
 	}
 
 	for ti, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			// advace to blockHeight 100 -> the provider shouldn't be able to get its payments (epoch out of memory)
+			// advance to one block to reach the start of the newDecreasedEpochsToSave+1 epoch -> the provider from epochAfterChange shouldn't be able to get its payments (epoch out of memory)
 			if ti == 2 {
 				ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
 			}
@@ -460,7 +469,7 @@ func TestRelayPaymentGovStakeToMaxCUListMaxCUDecrease(t *testing.T) {
 	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
+		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, MaxComputeUnits: 5000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, MaxComputeUnits: 15000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, MaxComputeUnits: 50000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, MaxComputeUnits: 250000},
@@ -556,7 +565,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdIncrease(t *testing.T) {
 	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
+		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, MaxComputeUnits: 5000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, MaxComputeUnits: 15000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, MaxComputeUnits: 50000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, MaxComputeUnits: 250000},
@@ -749,7 +758,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 	err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(epochBlocksTwenty, 10)+"\"")
 	require.Nil(t, err)
 	DefaultStakeToMaxCUList := pairingtypes.StakeToMaxCUList{List: []pairingtypes.StakeToMaxCU{
-		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, MaxComputeUnits: 5000},
+		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, MaxComputeUnits: 5000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, MaxComputeUnits: 15000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, MaxComputeUnits: 50000},
 		{StakeThreshold: sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, MaxComputeUnits: 250000},
@@ -776,7 +785,7 @@ func TestRelayPaymentGovStakeToMaxCUListStakeThresholdMultipleChanges(t *testing
 		{10, 20000, 0},   // Test #0
 		{400, 16000, 1},  // Test #1
 		{2001, 14000, 2}, // Test #2
-		{0, 0, 0},        // Test #3
+		{1, 0, 0},        // Test #3
 	}
 
 	// define tests - for each test, the paymentEpoch will be +-1 of the latest epoch start of the test
@@ -873,5 +882,163 @@ func TestStakePaymentUnstake(t *testing.T) {
 	// advance enough epochs to make the provider get its money back, this will panic if there's something wrong in the unstake process
 	for i := 0; i < 11; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+}
+
+// TODO: Currently the test passes since second call to verifyRelayPaymentObjects is called with true (see TODO comment right next to it). It should be false. After bug CNS-83 is fixed, change this test
+// Test that the payment object is deleted in the end of the memory and can't be used to double spend all while making gov changes
+func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing.T) {
+
+	tests := []struct {
+		name                string // Test name
+		decreaseEpochBlocks bool   // flag to indicate if EpochBlocks is decreased or not
+	}{
+		{"DecreasedEpochBlocks", true},
+		{"IncreasedEpochBlocks", false},
+	}
+
+	for _, tt := range tests {
+
+		// setup testnet with mock spec, a staked client and a staked provider
+		ts := setupForPaymentTest(t)
+
+		// Advance an epoch because gov params can't change in block 0 (this is a bug. In the time of this writing, it's not fixed)
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		initEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+		// Get epochBlocks and epochsToSave
+		epochBlocks, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
+		require.Nil(t, err)
+		epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), initEpoch)
+		require.Nil(t, err)
+
+		// Change the epochBlocks param
+		newEpochBlocks := uint64(0)
+		if tt.decreaseEpochBlocks {
+			newEpochBlocks = epochBlocks / 2
+		} else {
+			newEpochBlocks = epochBlocks * 2
+		}
+		err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochBlocks), "\""+strconv.FormatUint(newEpochBlocks, 10)+"\"")
+		require.Nil(t, err)
+
+		// Advance an epoch to apply EpochBlocks change
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		epochAfterEpochBlocksChanged := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+		relayRequest := &pairingtypes.RelayRequest{
+			Provider:        ts.providers[0].address.String(),
+			ApiUrl:          "",
+			Data:            []byte(ts.spec.Apis[0].Name),
+			SessionId:       uint64(1),
+			ChainID:         ts.spec.Name,
+			CuSum:           uint64(10000),
+			BlockHeight:     int64(epochAfterEpochBlocksChanged),
+			RelayNum:        0,
+			RequestBlock:    -1,
+			DataReliability: nil,
+		}
+
+		// Sign the payment request
+		sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+		relayRequest.Sig = sig
+		require.Nil(t, err)
+
+		// Add the relay request to the Relays array (for relayPaymentMessage())
+		var Relays []*pairingtypes.RelayRequest
+		Relays = append(Relays, relayRequest)
+
+		// get payment
+		relayPaymentMessage := pairingtypes.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+		payAndVerifyBalance(t, ts, relayPaymentMessage, true, ts.clients[0].address, ts.providers[0].address)
+
+		// Advance epoch and verify the relay payment objects
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		verifyRelayPaymentObjects(t, ts, relayRequest, true)
+
+		// try to get payment again - shouldn't work because of double spend (that's why it's called with false)
+		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].address, ts.providers[0].address)
+
+		// Advance enough epochs so the chain will forget the relay payment object (the chain's memory is limited). Note, we already advanced one epoch since epochAfterEpochBlocksChanged (the relay payment object's creation epoch)
+		for i := 0; i < int(epochsToSave)-1; i++ {
+			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+		}
+
+		// Check the relay payment object is deleted
+		verifyRelayPaymentObjects(t, ts, relayRequest, true) // TODO: fix bug CNS-83 and turn to false (the real expected value).
+
+		// try to get payment again - shouldn't work (relay payment object should not exist and if it exists, the code shouldn't allow double spending)
+		payAndVerifyBalance(t, ts, relayPaymentMessage, false, ts.clients[0].address, ts.providers[0].address)
+
+	}
+}
+
+// Helper function to verify the relay payment objects that are saved on-chain after getting payment from a relay request
+func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairingtypes.RelayRequest, objectExists bool) {
+
+	// Get EpochPayment struct from current epoch and perform basic verifications
+	epochPayments, found, epochPaymentKey := ts.keepers.Pairing.GetEpochPaymentsFromBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()))
+	if objectExists {
+		require.Equal(t, true, found)
+		require.Equal(t, epochPaymentKey, epochPayments.GetIndex())
+	} else {
+		require.Equal(t, false, found)
+		return
+	}
+
+	// Get the providerPaymentStorageKey
+	providerPaymentStorageKey := ts.keepers.Pairing.GetProviderPaymentStorageKey(sdk.UnwrapSDKContext(ts.ctx), ts.spec.Name, uint64(relayRequest.GetBlockHeight()), ts.providers[0].address)
+
+	// Get the providerPaymentStorage struct from epochPayments
+	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
+	for _, providerPaymentStorageFromEpochPaymentsElem := range epochPayments.GetClientsPayments() {
+		if providerPaymentStorageFromEpochPaymentsElem.GetIndex() == providerPaymentStorageKey {
+			providerPaymentStorageFromEpochPayments = *providerPaymentStorageFromEpochPaymentsElem
+		}
+	}
+	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
+	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorageFromEpochPayments.GetEpoch())
+	usedCUFromproviderPaymentStorageFromEpochPayments, err := ts.keepers.Pairing.GetTotalUsedCUForConsumerPerEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].address.String(), providerPaymentStorageFromEpochPayments.UniquePaymentStorageClientProvider, ts.providers[0].address.String())
+	require.Nil(t, err)
+	require.Equal(t, relayRequest.GetCuSum(), usedCUFromproviderPaymentStorageFromEpochPayments)
+
+	// Get the UniquePaymentStorageClientProvider key
+	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].address, ts.providers[0].address, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
+
+	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
+	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}
+	for _, uniquePaymentStorageClientProviderFromProviderPaymentStorageElem := range providerPaymentStorageFromEpochPayments.GetUniquePaymentStorageClientProvider() {
+		if uniquePaymentStorageClientProviderFromProviderPaymentStorageElem.GetIndex() == uniquePaymentStorageClientProviderKey {
+			uniquePaymentStorageClientProviderFromProviderPaymentStorage = *uniquePaymentStorageClientProviderFromProviderPaymentStorageElem
+		}
+	}
+	require.NotEmpty(t, uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetIndex())
+	require.Equal(t, uint64(relayRequest.GetBlockHeight()), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetBlock())
+
+	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
+	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetChainID(), ts.clients[0].address, uint64(relayRequest.GetBlockHeight()))
+	require.Nil(t, err)
+	clientMaxCU, err := ts.keepers.Pairing.ClientMaxCUProviderForBlock(sdk.UnwrapSDKContext(ts.ctx), uint64(relayRequest.GetBlockHeight()), clientStakeEntry)
+	require.Nil(t, err)
+	if clientMaxCU < relayRequest.CuSum {
+		require.Equal(t, relayRequest.GetCuSum(), clientMaxCU)
+	} else {
+		require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
+	}
+
+	// Get the providerPaymentStorage struct directly
+	providerPaymentStorage, found := ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageKey)
+	require.Equal(t, true, found)
+	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorage.GetEpoch())
+
+	// Get one of the UniquePaymentStorageClientProvider struct directly
+	uniquePaymentStorageClientProvider, found := ts.keepers.Pairing.GetUniquePaymentStorageClientProvider(sdk.UnwrapSDKContext(ts.ctx), uniquePaymentStorageClientProviderKey)
+	require.Equal(t, true, found)
+	require.Equal(t, uint64(relayRequest.GetBlockHeight()), uniquePaymentStorageClientProvider.GetBlock())
+
+	if clientMaxCU < relayRequest.CuSum {
+		require.Equal(t, relayRequest.GetCuSum(), clientMaxCU)
+	} else {
+		require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProvider.GetUsedCU())
 	}
 }
