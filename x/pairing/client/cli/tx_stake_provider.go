@@ -70,7 +70,7 @@ func CmdStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-	cmd.Flags().String(FlagMoniker, "", "The validator's name")
+	cmd.Flags().String(FlagMoniker, "", "The provider's name")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
