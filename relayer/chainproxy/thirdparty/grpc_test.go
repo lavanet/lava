@@ -37,27 +37,6 @@ func TestLavaGRPC(t *testing.T) {
 	log.Println("response:", resp1)
 }
 
-func TestLavaWebGRPC(t *testing.T) {
-	ctx := context.Background()
-
-	req := &pairing.QueryClientsRequest{ChainID: "LAV1"}
-	resp := &pairing.QueryClientsResponse{}
-
-	conn, err := grpc.DialContext(ctx, lavaGRPC, grpc.WithInsecure(), grpc.WithBlock())
-	require.Nil(t, err)
-
-	defer conn.Close()
-	err = grpc.Invoke(ctx, "lavanet.lava.pairing.Query/Clients", req, resp, conn)
-	require.Nil(t, err)
-	log.Println("response:", resp)
-
-	req1 := &pairing.QueryProvidersRequest{ChainID: "LAV1"}
-	resp1 := &pairing.QueryProvidersResponse{}
-	err = grpc.Invoke(ctx, "lavanet.lava.pairing.Query/Providers", req1, resp1, conn)
-	require.Nil(t, err)
-	log.Println("response:", resp1)
-}
-
 func TestJunGRPC(t *testing.T) {
 	ctx := context.Background()
 
