@@ -232,6 +232,12 @@ func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 	// Get current epoch
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
 
+	// In case of a chain fork, the first epoch could be non-zero. So, if the previous epoch getter fails, we assign averageBlockTime = -1 so it'll definitely enter the next if block and calculate the average block time
+	_, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		averageBlockTime = -1
+	}
+
 	// Check when the last average block time calculation occured. If we're not in the same epoch as latestEpochBlockTimeCalculation, re-calculate the time
 	if currentEpoch != latestEpochBlockTimeCalculation || averageBlockTime == -1 {
 		err := k.calculateAverageBlockTime(ctx)
