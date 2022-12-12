@@ -20,7 +20,7 @@ func (m Migrator) MigrateToV020(ctx sdk.Context) error {
 func initBlockLastUpdated(ctx sdk.Context, k keeper.Keeper) error {
 	specs := k.GetAllSpec(ctx)
 	for _, spec := range specs {
-		spec.BlockLastUpdated = uint64(0)
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 		k.SetSpec(ctx, spec)
 	}
 
