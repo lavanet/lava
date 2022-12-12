@@ -31,11 +31,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Server struct {
-	cp      *GrpcChainProxy
-	privKey *btcec.PrivateKey
-}
-
 type GrpcMessage struct {
 	methodDesc *desc.MethodDescriptor
 	formatter  grpcurl.Formatter
@@ -64,7 +59,7 @@ func (r *GrpcMessage) GetMsg() interface{} {
 	return r.msg
 }
 
-func NewGrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs, chainID string) ChainProxy {
+func NewGrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
 	nodeUrl = strings.TrimSuffix(nodeUrl, "/")
 	return &GrpcChainProxy{
 		nodeUrl:    nodeUrl,
@@ -72,7 +67,7 @@ func NewGrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *
 		sentry:     sentry,
 		csm:        csm,
 		portalLogs: pLogs,
-		chainID:    chainID,
+		chainID:    sentry.GetChainID(),
 		cache:      nil,
 	}
 }

@@ -1146,7 +1146,7 @@ func Server(
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
 	}
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs, g_serverChainID)
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
 
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": ChainID})
