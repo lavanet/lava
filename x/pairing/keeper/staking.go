@@ -19,7 +19,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		return epochstoragetypes.ClientKey
 	}
 
-	//TODO: basic validation for chain ID
+	// TODO: basic validation for chain ID
 	specChainID := chainID
 
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
@@ -33,9 +33,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	} else {
 		minStake = k.MinStakeClient(ctx)
 	}
-	//if we get here, the spec is active and supported
+	// if we get here, the spec is active and supported
 
-	if amount.IsLT(minStake) { //we count on this to also check the denom
+	if amount.IsLT(minStake) { // we count on this to also check the denom
 		details := map[string]string{"spec": specChainID, stake_type(): creator, "stake": amount.String(), "minStake": minStake.String()}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_amount", details, "insufficient "+stake_type()+" stake amount")
 	}
@@ -44,7 +44,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 		details := map[string]string{stake_type(): creator, "error": err.Error()}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_addr", details, "invalid "+stake_type()+" address")
 	}
-	//define the function here for later use
+	// define the function here for later use
 	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) error {
 		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
 			return fmt.Errorf("insufficient balance for staking %s current balance: %s", neededAmount, k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom))
@@ -67,7 +67,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_endpoints", details, "invalid "+stake_type()+" endpoints implementation for the given spec")
 		}
 	} else {
-		//clients need to provide their VRF PK before running to limit brute forcing the random functions
+		// clients need to provide their VRF PK before running to limit brute forcing the random functions
 		err := utils.VerifyVRF(vrfpk)
 		if err != nil {
 			details := map[string]string{stake_type(): creator, "error": err.Error()}
@@ -80,7 +80,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
 	if entryExists {
-		//modify the entry
+		// modify the entry
 		if existingEntry.Address != creator {
 			details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), stake_type(): creator}
 			utils.LavaError(ctx, logger, "stake_"+stake_type()+"_panic", details, "returned stake entry by address doesn't match sender address!")
@@ -94,14 +94,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 				details["neededStake"] = amount.Sub(existingEntry.Stake).String()
 				return utils.LavaError(ctx, logger, "stake_"+stake_type()+"_update_amount", details, "insufficient funds to pay for difference in stake")
 			}
-			//
-			//TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
+
+			// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
 			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
 
-			//paid the difference to module
+			// paid the difference to module
 			existingEntry.Stake = amount
-			//we dont change vrfpk, deadlines and chain once they are set, if they need to change, unstake first
+			// we dont change vrfpk, deadlines and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpoints
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stake_type(), chainID, existingEntry, indexInStakeStorage)
@@ -124,7 +124,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, stake_type(), chainID, stakeEntry)
 	appended := false
 	if !provider {
-		//this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
+		// this is done so consumers can use services upon staking for the first time and dont have to wait for the next epoch
 		appended, err = k.epochStorageKeeper.BypassCurrentAndAppendNewEpochStakeEntry(ctx, stake_type(), chainID, stakeEntry)
 
 		if err != nil {
@@ -139,13 +139,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {
 	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID)
-	geolocMap := map[string]bool{} //TODO: turn this into spectypes.ApiInterface
+	geolocMap := map[string]bool{} // TODO: turn this into spectypes.ApiInterface
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 	geolocKey := func(intefaceName string, geolocation uint64) string {
 		return intefaceName + "_" + strconv.FormatUint(geolocation, 10)
 	}
 	for idx := uint64(0); idx < geolocations; idx++ {
-		//geolocation is a bit mask for areas, each bit turns support for an area
+		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
 			for expectedApiInterface := range expectedInterfaces {
@@ -153,7 +153,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 			}
 		}
 	}
-	//check all endpoints only implement expected interfaces
+	// check all endpoints only implement expected interfaces
 	for _, endpoint := range endpoints {
 		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
 		if geolocMap[key] {
@@ -162,16 +162,16 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 			return fmt.Errorf("servicer implemented api interfaces that are not in the spec: %s, current expected: %+v", key, geolocMap)
 		}
 	}
-	//check all expected api interfaces are implemented
+	// check all expected api interfaces are implemented
 	for _, endpoint := range endpoints {
 		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
 		if geolocMap[key] {
-			//interface is implemented and expected
+			// interface is implemented and expected
 			delete(geolocMap, key) // remove this from expected implementations
 		}
 	}
 	if len(geolocMap) == 0 {
-		//all interfaces and geolocations were implemented
+		// all interfaces and geolocations were implemented
 		return nil
 	}
 	return fmt.Errorf("not all expected interfaces are implemented for all geolocations: %+v, missing implementation count: %d", geolocMap, len(geolocMap))

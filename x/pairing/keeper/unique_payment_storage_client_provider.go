@@ -22,7 +22,6 @@ func (k Keeper) SetUniquePaymentStorageClientProvider(ctx sdk.Context, uniquePay
 func (k Keeper) GetUniquePaymentStorageClientProvider(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.UniquePaymentStorageClientProvider, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UniquePaymentStorageClientProviderKeyPrefix))
 
@@ -41,7 +40,6 @@ func (k Keeper) GetUniquePaymentStorageClientProvider(
 func (k Keeper) RemoveUniquePaymentStorageClientProvider(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UniquePaymentStorageClientProviderKeyPrefix))
 	store.Delete(types.UniquePaymentStorageClientProviderKey(
@@ -93,7 +91,6 @@ func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddre
 	providerLength, clientLength := len(providerAddress.String()), len(userAddress.String())
 	if providerLength > maxAdrLengthProvider {
 		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %d == %d", providerAddress.String(), maxAdrLengthProvider, len(providerAddress.String())))
-
 	} else if clientLength > maxAdrLengthUser {
 		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %d == %d", userAddress.String(), maxAdrLengthUser, len(userAddress.String())))
 	}
@@ -105,6 +102,7 @@ func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddre
 func charToAsciiNumber(char rune) int {
 	return int(char)
 }
+
 func asciiNumberToChar(asciiNum int) rune {
 	return rune(asciiNum)
 }

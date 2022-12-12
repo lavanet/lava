@@ -22,7 +22,6 @@ func (k Keeper) SetProviderPaymentStorage(ctx sdk.Context, providerPaymentStorag
 func (k Keeper) GetProviderPaymentStorage(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.ProviderPaymentStorage, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ProviderPaymentStorageKeyPrefix))
 
@@ -41,7 +40,6 @@ func (k Keeper) GetProviderPaymentStorage(
 func (k Keeper) RemoveProviderPaymentStorage(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ProviderPaymentStorageKeyPrefix))
 	store.Delete(types.ProviderPaymentStorageKey(
@@ -70,11 +68,11 @@ func (k Keeper) GetProviderPaymentStorageKey(ctx sdk.Context, chainID string, ep
 }
 
 func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64, err error) {
-	//key is chainID+_+epoch+_+user
+	// key is chainID+_+epoch+_+user
 	key := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
 	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, userAddress, providerAddress, uniqueIdentifier, usedCU)
 	if !isUnique {
-		//tried to use an existing identifier!
+		// tried to use an existing identifier!
 		return nil, 0, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
 	}
 	userPaymentStorageInEpoch, found := k.GetProviderPaymentStorage(ctx, key)
