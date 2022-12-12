@@ -175,11 +175,11 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			params := make(map[string]interface{})
 			rawParams := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
 			for _, param := range rawParams {
-				splittedParam := strings.Split(param, "=")
-				if len(splittedParam) != 2 {
-					return nil, utils.LavaFormatError("Cannot parse query params", nil, nil)
+				splitParam := strings.Split(param, "=")
+				if len(splitParam) != 2 {
+					return nil, utils.LavaFormatError("Cannot parse query params", nil, &map[string]string{"params": param})
 				}
-				params[splittedParam[0]] = splittedParam[1]
+				params[splitParam[0]] = splitParam[1]
 			}
 			msg.Params = params
 		} else {
