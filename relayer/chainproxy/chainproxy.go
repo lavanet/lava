@@ -199,9 +199,9 @@ func SendRelay(
 			Provider:              providerAddress,
 			ApiUrl:                url,
 			Data:                  []byte(req),
-			SessionId:             lavasession.DataReliabilitySessionId, //sessionID for reliability is 0
+			SessionId:             uint64(0), //sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
+			CuSum:                 0, // consumerSession.CuSum == 0
 			BlockHeight:           blockHeight,
 			RelayNum:              0, // consumerSession.RelayNum == 0
 			RequestBlock:          requestedBlock,
