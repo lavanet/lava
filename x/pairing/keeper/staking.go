@@ -90,6 +90,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 			utils.LavaError(ctx, logger, "stake_"+stake_type()+"_panic", details, "returned stake entry by address doesn't match sender address!")
 		}
 		details := map[string]string{"spec": specChainID, stake_type(): senderAddr.String(), "deadline": strconv.FormatUint(blockDeadline, 10), "stake": amount.String()}
+		details["moniker"] = moniker
 		if existingEntry.Stake.IsLT(amount) {
 			// increasing stake is allowed
 			err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
