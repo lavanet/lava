@@ -64,7 +64,7 @@ func CreateUpgradeHandler(
 		pairingMigrator.MigrateToV4(ctx)
 
 		// 3. earliest block == this epoch.
-		keepers.EpochstorageKeeper.SetEarliestEpochStart(ctx, currentEpoch)
+		keepers.EpochstorageKeeper.SetEarliestEpochStart(ctx, currentEpoch, []uint64{})
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
 }
