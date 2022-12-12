@@ -417,6 +417,33 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
+func tendermintURITests(rpcURL string, testDuration time.Duration) error {
+	utils.LavaFormatInfo("Starting TENDERMINTRPC URI Tests", nil)
+	errors := []string{}
+	mostImportantApisToTest := map[string]bool{
+		"%s/health":                              true,
+		"%s/status":                              true,
+		"%s/block?height=1":                      true,
+		"%s/blockchain?minHeight=0&maxHeight=10": true,
+		"%s/dial_peers?persistent=true&unconditional=true&private=true": false, //this is a rpc affecting query and is not available on the spec so it should fail
+	}
+	for start := time.Now(); time.Since(start) < testDuration; {
+		for api, noFail := range mostImportantApisToTest {
+			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
+			if err != nil && noFail {
+				errors = append(errors, fmt.Sprintf("%s", err))
+			} else if strings.Contains(string(reply), "error") && noFail {
+				errors = append(errors, string(reply))
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --log_level debug",
@@ -601,7 +628,7 @@ func runE2E() {
 	defer lt.saveLogs()
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
-	lt.checkLava(time.Minute * 5)
+	lt.checkLava(time.Minute * 10)
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
@@ -624,6 +651,7 @@ func runE2E() {
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
+	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 
 	if jsonErr != nil {
@@ -636,6 +664,12 @@ func runE2E() {
 		panic(tendermintErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
+	}
+
+	if tendermintURIErr != nil {
+		panic(tendermintURIErr)
+	} else {
+		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
 	}
 
 	if restErr != nil {
