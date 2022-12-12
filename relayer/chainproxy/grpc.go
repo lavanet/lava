@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -254,15 +255,19 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		return relayReply.Data, nil
 	}
 
-	s, err := thirdparty.RegisterServer(cp.chainID, sendRelayCallback)
+	_, httpServer, err := thirdparty.RegisterServer(cp.chainID, sendRelayCallback)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, &map[string]string{"listenAddr": listenAddr})
 	}
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
-	if err = s.Serve(lis); err != nil {
-		utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
+
+	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		utils.LavaFormatFatal("Portal failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": cp.sentry.GetChainID()})
 	}
+	// if err = s.Serve(lis); err != nil {
+	// 	utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
+	// }
 }
 
 func descriptorSourceFromServer(refClient *grpcreflect.Client) DescriptorSource {

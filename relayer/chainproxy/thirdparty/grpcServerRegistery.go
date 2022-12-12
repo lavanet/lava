@@ -2,8 +2,10 @@ package thirdparty
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	cosmos_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Cosmos"
 	cosmwasm "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Cosmwasm"
 	ibc_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Ibc"
@@ -11,12 +13,26 @@ import (
 	lava_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Lavanet"
 	osmosis_thirdparty "github.com/lavanet/lava/relayer/chainproxy/thirdparty/Osmosis"
 	"github.com/lavanet/lava/utils"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
 
-func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, error) {
+func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, http.Server, error) {
 
 	s := grpc.NewServer()
+	wrappedServer := grpcweb.WrapServer(s)
+	handler := func(resp http.ResponseWriter, req *http.Request) {
+		// Set CORS headers
+		resp.Header().Set("Access-Control-Allow-Origin", "*")
+		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+
+		wrappedServer.ServeHTTP(resp, req)
+	}
+
+	httpServer := http.Server{
+		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
+	}
 
 	utils.LavaFormatInfo("Registering Chain:"+chain, nil)
 	switch chain {
@@ -43,5 +59,5 @@ func RegisterServer(chain string, cb func(ctx context.Context, method string, re
 
 	utils.LavaFormatInfo("gogoreflection.Register()", nil)
 	gogoreflection.Register(s)
-	return s, nil
+	return s, httpServer, nil
 }
