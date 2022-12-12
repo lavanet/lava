@@ -84,7 +84,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		payReliability := false
 		// validate data reliability
 		if relay.DataReliability != nil {
-
 			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !found {
@@ -280,7 +279,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, "UnresponsiveProviders", map[string]string{"err:": err.Error()}, "Error UnresponsiveProviders could not unstake")
 		}
-
 	}
 	return &types.MsgRelayPaymentResponse{}, nil
 }
@@ -343,7 +341,6 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 				// unstake provider
 				utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
 				k.unSafeUnstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
-
 			}
 		}
 		// set the final provider payment storage state including the complaints

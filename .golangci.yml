@@ -24,6 +24,18 @@ linters:
     - typecheck
     - unconvert
     - unused
+    - forcetypeassert
+    - goconst
+    - gofmt
+    - goimports
+    - gosimple
+    - importas
+    - ineffassign
+    - nilnil
+    - typecheck
+    - unconvert
+    - unused
+    - whitespace
 
 issues:
   exclude-rules:
