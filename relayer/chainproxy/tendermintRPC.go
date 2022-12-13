@@ -12,6 +12,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
@@ -211,6 +212,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
+	app.Use(favicon.New())
+
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
 		// IsWebSocketUpgrade returns true if the client
@@ -311,12 +314,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
-		URI := c.Request().URI()
-		if strings.Contains(URI.String(), "favicon.ico") {
-			return nil
-		}
 
-		query := "?" + string(URI.QueryString())
+		query := "?" + string(c.Request().URI().QueryString())
 		path := c.Params("*")
 		dappID := ""
 		if len(c.Route().Params) > 1 {
