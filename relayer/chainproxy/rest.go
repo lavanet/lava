@@ -13,7 +13,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
+	favicon2 "github.com/lavanet/lava/relayer/chainproxy/favicon"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
@@ -203,7 +203,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use(favicon.New())
+	app.Use(favicon2.New())
 
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
