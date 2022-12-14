@@ -264,7 +264,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
-				cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				if len(reply.Data) > 100 {
+					cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data[:100]), "", nil)
+				} else {
+					cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				}
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
@@ -280,8 +284,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 						cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 						// break
 					}
-
-					cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+					if len(reply.Data) > 100 {
+						cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data[:100]), "", nil)
+					} else {
+						cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+					}
 				}
 			} else {
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
@@ -289,7 +296,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
 					continue
 				}
-				cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				if len(reply.Data) > 100 {
+					cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data[:100]), "", nil)
+				} else {
+					cp.portalLogs.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				}
 			}
 		}
 	})
@@ -308,7 +319,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
-		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+		if len(reply.Data) > 100 {
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data[:100]), msgSeed, nil)
+		} else {
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+		}
 		return c.SendString(string(reply.Data))
 	})
 
@@ -333,7 +348,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
-		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), "", nil)
+		if len(reply.Data) > 100 {
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data[:100]), "", nil)
+		} else {
+			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), "", nil)
+		}
 		return c.SendString(string(reply.Data))
 	})
 	//
