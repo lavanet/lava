@@ -13,9 +13,11 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 )
 
-const restString string = "rest"
-const postString string = "post"
-const tendermintString string = "tendermintrpc"
+const (
+	restString       string = "rest"
+	postString       string = "post"
+	tendermintString string = "tendermintrpc"
+)
 
 // AptosTests
 func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
@@ -27,13 +29,14 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 		version := "2406784"
 		account := "0x10f9091d233fd38b9d774bc641ed71ea7d3a21a0254fdfa9556901e9fad6a533"
 
-		mostImportantApisToTest := map[string][]string{http.MethodGet: {
-			"/blocks/by_height/5",
-			"/blocks/by_version/" + version,
-			"/accounts/" + account,
-			"/accounts/" + account + "/resources",
-			"/accounts/" + account + "/modules",
-		},
+		mostImportantApisToTest := map[string][]string{
+			http.MethodGet: {
+				"/blocks/by_height/5",
+				"/blocks/by_version/" + version,
+				"/accounts/" + account,
+				"/accounts/" + account + "/resources",
+				"/accounts/" + account + "/modules",
+			},
 			http.MethodPost: {},
 		}
 

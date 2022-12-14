@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
-
 	"runtime/debug"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -40,7 +39,7 @@ func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[s
 	err_msg := fmt.Sprintf("ERR_%s: %s %s", name, description, attributes_str)
 	logger.Error(err_msg)
 	// ctx.EventManager().EmitEvent(sdk.NewEvent("ERR_"+name, eventAttrs...))
-	//TODO: add error types, create them here and return
+	// TODO: add error types, create them here and return
 	return errors.New(err_msg)
 }
 

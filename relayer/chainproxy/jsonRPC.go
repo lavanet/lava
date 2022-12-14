@@ -85,9 +85,11 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *
 		cache:      nil,
 	}
 }
+
 func (cp *JrpcChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *JrpcChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -236,7 +238,7 @@ func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method st
 		requestedBlock: requestedBlock,
 		msg: &JsonrpcMessage{
 			Version: "2.0",
-			ID:      []byte("1"), //TODO:: use ids
+			ID:      []byte("1"), // TODO:: use ids
 			Method:  method,
 			Params:  params,
 		},

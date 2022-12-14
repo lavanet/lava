@@ -21,7 +21,6 @@ func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
 func (k Keeper) GetSpec(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.Spec, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 
@@ -40,7 +39,6 @@ func (k Keeper) GetSpec(
 func (k Keeper) RemoveSpec(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 	store.Delete(types.SpecKey(
@@ -88,7 +86,7 @@ func GetSpecIDFromBytes(bz []byte) uint64 {
 }
 
 func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
-	//TODO: make this with an iterator
+	// TODO: make this with an iterator
 	allSpecs := k.GetAllSpec(ctx)
 	for _, spec := range allSpecs {
 		chainIDs = append(chainIDs, spec.Index)

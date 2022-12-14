@@ -15,6 +15,7 @@ import (
 func DetectionIndex(msg *types.MsgDetection, epochStart uint64) string {
 	return msg.Creator + msg.ResponseConflict.ConflictRelayData0.Request.Provider + msg.ResponseConflict.ConflictRelayData1.Request.Provider + strconv.FormatUint(epochStart, 10)
 }
+
 func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*types.MsgDetectionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Keeper.Logger(ctx)
@@ -107,7 +108,6 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID string, exemptions []string) []string {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epoch)
-
 	if err != nil {
 		return make([]string, 0)
 	}

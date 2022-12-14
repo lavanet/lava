@@ -56,7 +56,7 @@ func (k Keeper) EpochsToSave(ctx sdk.Context, block uint64) (res uint64, err err
 
 // EpochsToSaveRaw returns the EpochsToSave param
 func (k Keeper) EpochsToSaveRaw(ctx sdk.Context) (res uint64) {
-	//TODO: change to support param change
+	// TODO: change to support param change
 	k.paramstore.Get(ctx, types.KeyEpochsToSave, &res)
 	return
 }

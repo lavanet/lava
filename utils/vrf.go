@@ -20,9 +20,7 @@ const (
 	sk_vrf_prefix = "vrf-sk-"
 )
 
-var (
-	VRFValueAboveReliabilityThresholdError = sdkerrors.New("VRFValueAboveReliabilityThreshold Error", 1, "calculated vrf does not result in a smaller value than threshold") // client could'nt connect to any provider.
-)
+var VRFValueAboveReliabilityThresholdError = sdkerrors.New("VRFValueAboveReliabilityThreshold Error", 1, "calculated vrf does not result in a smaller value than threshold") // client could'nt connect to any provider.
 
 func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint32) (index int64, err error) {
 	vrf_num := binary.LittleEndian.Uint32(vrf)

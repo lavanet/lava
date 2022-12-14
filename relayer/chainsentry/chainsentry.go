@@ -48,7 +48,7 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 	if requestedBlock < 0 {
 		requestedBlock = sentry.ReplaceRequestedBlock(requestedBlock, latestBlockNum)
 	}
-	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
+	hashes := make(map[int64]interface{}, len(cs.blocksQueue))
 
 	for indexInQueue := 0; indexInQueue < cs.numFinalBlocks; indexInQueue++ {
 		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(indexInQueue+1)

@@ -31,7 +31,6 @@ func (k Keeper) FixatedParamsAll(c context.Context, req *types.QueryAllFixatedPa
 		fixatedParamss = append(fixatedParamss, fixatedParams)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

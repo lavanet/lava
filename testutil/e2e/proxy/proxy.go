@@ -13,17 +13,21 @@ import (
 
 var mockFolder string = "testutil/e2e/proxy/mockMaps/"
 
-var responsesChanged bool = false
-var realCount int = 0
-var cacheCount int = 0
-var fakeCount int = 0
+var (
+	responsesChanged bool = false
+	realCount        int  = 0
+	cacheCount       int  = 0
+	fakeCount        int  = 0
+)
 
 var fakeResponse bool = false
 
-var saveJsonEvery int = 10 // in seconds
-var epochTime int = 3      // in seconds
-var epochCount int = 0     // starting epoch count
-var proxies []proxyProcess = []proxyProcess{}
+var (
+	saveJsonEvery int            = 10 // in seconds
+	epochTime     int            = 3  // in seconds
+	epochCount    int            = 0  // starting epoch count
+	proxies       []proxyProcess = []proxyProcess{}
+)
 
 type proxyProcess struct {
 	id        string
@@ -202,6 +206,7 @@ func fakeResult(val string, fake string) string {
 	}
 	return strings.Join(parts, ",")
 }
+
 func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	host := p.host
 	mock := p.mock

@@ -90,7 +90,7 @@ type providerDataContainer struct {
 	BlockHeight           int64
 	RelayNum              uint64
 	LatestBlock           int64
-	//TODO:: keep relay request for conflict reporting
+	// TODO:: keep relay request for conflict reporting
 }
 
 type ProviderHashesConsensus struct {
@@ -298,7 +298,6 @@ func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.Ap
 	spec, err := s.specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		ChainID: s.ChainID,
 	})
-
 	if err != nil {
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, &map[string]string{"ChainID": s.ChainID})
 	}
@@ -447,8 +446,9 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 				for idx, providerAddr := range providerAddrList {
 					if s.Acc == providerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
 						utils.LavaFormatInfo("Received relay payment",
-							&map[string]string{"Amount": e.Events["lava_relay_payment.Mint"][idx],
-								"CU": e.Events["lava_relay_payment.CU"][idx],
+							&map[string]string{
+								"Amount": e.Events["lava_relay_payment.Mint"][idx],
+								"CU":     e.Events["lava_relay_payment.CU"][idx],
 							})
 						CU := e.Events["lava_relay_payment.CU"][idx]
 						paidCU, err := strconv.ParseUint(CU, 10, 64)
@@ -528,7 +528,6 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 			}
 		default:
 			{
-
 			}
 		}
 	}
@@ -538,7 +537,7 @@ func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.A
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	for idx, expectedPayment := range s.expectedPayments {
-		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
+		// TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
 		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) && uniqueID == expectedPayment.UniqueIdentifier {
 			// found payment for expected payment
 			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
@@ -566,6 +565,7 @@ func (s *Sentry) AppendToReceivedPayments(paymentReq PaymentRequest) {
 	defer s.PaymentsMu.Unlock()
 	s.receivedPayments = append(s.receivedPayments, paymentReq)
 }
+
 func (s *Sentry) PrintExpectedPayments() string {
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
@@ -609,7 +609,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 
 				// update expected payments deadline, and log missing payments
-				//TODO: make this from the event lava_earliest_epoch instead
+				// TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
 					s.IdentifyMissingPayments()
 				}
@@ -678,7 +678,6 @@ func (s *Sentry) Start(ctx context.Context) {
 			}
 		default:
 			{
-
 			}
 		}
 	}
@@ -718,9 +717,11 @@ func (s *Sentry) IdentifyMissingPayments() {
 		// Exclude and log missing payments
 		if uint64(expectedPay.BlockHeightDeadline) < lastBlockInMemory {
 			utils.LavaFormatError("Identified Missing Payment", nil,
-				&map[string]string{"expectedPay.CU": strconv.FormatUint(expectedPay.CU, 10),
+				&map[string]string{
+					"expectedPay.CU":                  strconv.FormatUint(expectedPay.CU, 10),
 					"expectedPay.BlockHeightDeadline": strconv.FormatInt(expectedPay.BlockHeightDeadline, 10),
-					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10)})
+					"lastBlockInMemory":               strconv.FormatUint(lastBlockInMemory, 10),
+				})
 
 			continue
 		}
@@ -735,8 +736,10 @@ func (s *Sentry) IdentifyMissingPayments() {
 	s.PaymentsMu.Unlock()
 	// can be modified in this race window, so we double-check
 
-	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
-		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
+	utils.LavaFormatInfo("Service report", &map[string]string{
+		"total CU serviced":      strconv.FormatUint(s.GetCUServiced(), 10),
+		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10),
+	})
 }
 
 // expecting caller to lock
@@ -767,8 +770,10 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	// they have different data! report!
 	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
-	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
-		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
+	responseConflict := conflicttypes.ResponseConflict{
+		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
+		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1},
+	}
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
@@ -779,7 +784,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 
 func (s *Sentry) DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool) (indexes map[int64]bool) {
 	// check for the VRF thresholds and if holds true send a relay to the provider
-	//TODO: improve with blacklisted address, and the module-1
+	// TODO: improve with blacklisted address, and the module-1
 	s.specMu.RLock()
 	reliabilityThreshold := s.serverSpec.ReliabilityThreshold
 	s.specMu.RUnlock()
@@ -858,8 +863,10 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 
 	// check that latest finalized block address + 1 points to a non finalized block
 	if s.IsFinalizedBlock(maxBlockNum+1, latestBlock) {
-		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", nil, &map[string]string{"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks)})
+		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", nil, &map[string]string{
+			"maxBlockNum": strconv.FormatInt(maxBlockNum, 10),
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc, "finalizedBlocks": fmt.Sprintf("%+v", finalizedBlocks),
+		})
 	}
 
 	// New reply should have blocknum >= from block same provider
@@ -872,8 +879,10 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 		SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
 
-		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", nil, &map[string]string{"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc})
+		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", nil, &map[string]string{
+			"session.LatestBlock": strconv.FormatInt(session.LatestBlock, 10),
+			"latestBlock":         strconv.FormatInt(latestBlock, 10), "ChainID": s.ChainID, "Provider": providerAcc,
+		})
 	}
 
 	return nil
@@ -1009,13 +1018,14 @@ func (s *Sentry) SendRelay(
 				s.VrfSkMu.Lock()
 				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
-				dataReliability := &pairingtypes.VRFData{Differentiator: differentiator,
-					VrfValue:    vrf_res,
-					VrfProof:    vrf_proof,
-					ProviderSig: reply.Sig,
-					AllDataHash: sigs.AllDataHash(reply, request),
-					QueryHash:   utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
-					Sig:         nil,                                // calculated in cb_send_reliability
+				dataReliability := &pairingtypes.VRFData{
+					Differentiator: differentiator,
+					VrfValue:       vrf_res,
+					VrfProof:       vrf_proof,
+					ProviderSig:    reply.Sig,
+					AllDataHash:    sigs.AllDataHash(reply, request),
+					QueryHash:      utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
+					Sig:            nil,                                // calculated in cb_send_reliability
 				}
 				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
@@ -1266,7 +1276,7 @@ func (s *Sentry) GetAverageBlockTime() int64 {
 func (s *Sentry) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	s.specMu.RLock()
 	defer s.specMu.RUnlock()
-	//TODO: make it faster and better by not doing a regex instead using a better algorithm
+	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range s.serverApis {
 		re, err := regexp.Compile(apiName)
 		if err != nil {

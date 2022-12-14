@@ -10,8 +10,10 @@ import (
 
 const TIMEOUT = 10
 
-var TimeoutMutex = "false"
-var TimeoutMutexBoolean, _ = strconv.ParseBool(TimeoutMutex)
+var (
+	TimeoutMutex           = "false"
+	TimeoutMutexBoolean, _ = strconv.ParseBool(TimeoutMutex)
+)
 
 type Lockable interface {
 	Lock()

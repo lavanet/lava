@@ -133,14 +133,16 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 
 func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*TendemintRpcMessage, error) {
 	nodeMsg := &TendemintRpcMessage{
-		JrpcMessage: JrpcMessage{serviceApi: serviceApi,
+		JrpcMessage: JrpcMessage{
+			serviceApi: serviceApi,
 			msg: &JsonrpcMessage{
 				Version: "2.0",
-				ID:      []byte("1"), //TODO:: use ids
+				ID:      []byte("1"), // TODO:: use ids
 				Method:  method,
 				Params:  params,
 			},
-			requestedBlock: requestedBlock},
+			requestedBlock: requestedBlock,
+		},
 		cp: cp,
 	}
 	return nodeMsg, nil
@@ -199,8 +201,10 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	}
 
 	nodeMsg := &TendemintRpcMessage{
-		JrpcMessage: JrpcMessage{serviceApi: serviceApi,
-			msg: &msg, requestedBlock: requestedBlock},
+		JrpcMessage: JrpcMessage{
+			serviceApi: serviceApi,
+			msg:        &msg, requestedBlock: requestedBlock,
+		},
 		cp: cp,
 	}
 	return nodeMsg, nil

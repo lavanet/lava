@@ -94,6 +94,7 @@ func (m RestMessage) ParseBlock(inp string) (int64, error) {
 func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *RestChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -214,7 +215,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
-		//TODO: fix msgSeed and print it here
+		// TODO: fix msgSeed and print it here
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
@@ -308,7 +309,6 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
-
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

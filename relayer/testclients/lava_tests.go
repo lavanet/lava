@@ -19,16 +19,18 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 	if apiInterface == restString {
 		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
-		mostImportantApisToTest := map[string][]string{http.MethodGet: {
-			"/blocks/latest",
-			"/lavanet/lava/pairing/providers/LAV1",
-			"/lavanet/lava/pairing/clients/LAV1",
-			fmt.Sprintf("/lavanet/lava/pairing/get_pairing/LAV1/%s", clientAdress),
-			// fmt.Sprintf("/lavanet/lava/pairing/verify_pairing/LAV1/%s/%s/%d", clientAdress, clientAdress, 78), // verify pairing needs more work. as block is changed every iterations
-			fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
-			"/cosmos/gov/v1beta1/proposals",
-			"/lavanet/lava/spec/spec",
-			"/blocks/1"},
+		mostImportantApisToTest := map[string][]string{
+			http.MethodGet: {
+				"/blocks/latest",
+				"/lavanet/lava/pairing/providers/LAV1",
+				"/lavanet/lava/pairing/clients/LAV1",
+				fmt.Sprintf("/lavanet/lava/pairing/get_pairing/LAV1/%s", clientAdress),
+				// fmt.Sprintf("/lavanet/lava/pairing/verify_pairing/LAV1/%s/%s/%d", clientAdress, clientAdress, 78), // verify pairing needs more work. as block is changed every iterations
+				fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", clientAdress),
+				"/cosmos/gov/v1beta1/proposals",
+				"/lavanet/lava/spec/spec",
+				"/blocks/1",
+			},
 			http.MethodPost: {},
 		}
 

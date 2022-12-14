@@ -25,8 +25,10 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-const MetadataApi = "rpc"
-const EngineApi = "engine"
+const (
+	MetadataApi = "rpc"
+	EngineApi   = "engine"
+)
 
 // CodecOption specifies which type of messages a codec supports.
 //

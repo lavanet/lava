@@ -24,7 +24,6 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&psm.blockedEpoch)
 }
 
-//
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) bool {
 	if epoch <= psm.atomicReadBlockedEpoch() {
 		return false

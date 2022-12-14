@@ -40,7 +40,6 @@ func NewKeeper(
 	}
 
 	keeper := &Keeper{
-
 		cdc:        cdc,
 		storeKey:   storeKey,
 		memKey:     memKey,

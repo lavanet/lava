@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -45,8 +44,8 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64, isProvider bool) {
 	if isProvider {
-		endpoints := []epochtypes.Endpoint{}
-		endpoints = append(endpoints, epochtypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
+		endpoints := []epochstoragetypes.Endpoint{}
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
 		_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 		require.Nil(t, err)
 	} else {

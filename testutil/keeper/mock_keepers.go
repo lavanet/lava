@@ -9,8 +9,7 @@ import (
 )
 
 // account keeper mock
-type mockAccountKeeper struct {
-}
+type mockAccountKeeper struct{}
 
 func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI {
 	return nil
@@ -80,6 +79,7 @@ func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 
 	return fmt.Errorf("didnt find staked coins")
 }
+
 func (k *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
 	acc := sdk.AccAddress([]byte(moduleName))
 	k.AddToBalance(acc, amounts)
@@ -123,9 +123,11 @@ func (b *MockBlockStore) SetHeight(height int64) {
 func (b *MockBlockStore) Base() int64 {
 	return 0
 }
+
 func (b *MockBlockStore) Height() int64 {
 	return b.height
 }
+
 func (b *MockBlockStore) Size() int64 {
 	return 0
 }
@@ -133,9 +135,11 @@ func (b *MockBlockStore) Size() int64 {
 func (b *MockBlockStore) LoadBaseMeta() *tenderminttypes.BlockMeta {
 	return nil
 }
+
 func (b *MockBlockStore) LoadBlockMeta(height int64) *tenderminttypes.BlockMeta {
 	return &tenderminttypes.BlockMeta{}
 }
+
 func (b *MockBlockStore) LoadBlock(height int64) *tenderminttypes.Block {
 	return &tenderminttypes.Block{}
 }
@@ -150,6 +154,7 @@ func (b *MockBlockStore) PruneBlocks(height int64) (uint64, error) {
 func (b *MockBlockStore) LoadBlockByHash(hash []byte) *tenderminttypes.Block {
 	return nil
 }
+
 func (b *MockBlockStore) LoadBlockPart(height int64, index int) *tenderminttypes.Part {
 	return nil
 }
@@ -157,6 +162,7 @@ func (b *MockBlockStore) LoadBlockPart(height int64, index int) *tenderminttypes
 func (b *MockBlockStore) LoadBlockCommit(height int64) *tenderminttypes.Commit {
 	return nil
 }
+
 func (b *MockBlockStore) LoadSeenCommit(height int64) *tenderminttypes.Commit {
 	return nil
 }

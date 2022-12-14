@@ -210,7 +210,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if endpoint.Client == nil {
-				connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnectionInMS)
+				connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 				conn, err := cswp.connectRawClient(connectCtx, endpoint.Addr)
 				cancel()
 				if err != nil {
@@ -268,7 +268,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
 	}
 
-	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
+	latencyThreshold := LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
 
 	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
@@ -298,8 +298,10 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
 		utils.LavaFormatInfo("QoS Sync report",
-			&map[string]string{"Sync": cs.QoSInfo.LastQoSReport.Sync.String(),
+			&map[string]string{
+				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
-				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)})
+				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
+			})
 	}
 }

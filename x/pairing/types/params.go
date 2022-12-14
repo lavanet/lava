@@ -34,7 +34,7 @@ var (
 var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
 	// TODO: Determine the default value
-	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) //0
+	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) // 0
 )
 
 var (
@@ -59,7 +59,6 @@ var (
 	KeyStakeToMaxCUList = []byte("StakeToMaxCUList")
 	// TODO: Determine the default value
 	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
-
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, 5000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, 15000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, 50000},
@@ -73,6 +72,7 @@ var (
 	KeyUnpayLimit             = []byte("UnpayLimit")
 	DefaultUnpayLimit sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1 = 10%
 )
+
 var (
 	KeySlashLimit             = []byte("SlashLimit")
 	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) // 0.2 = 20%

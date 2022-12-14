@@ -20,7 +20,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	var apiInterfacesStructList []*types.ApiList
 	var interfaceList []string
 	var chainID string
-	var foundChain bool = false
+	foundChain := false
 
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {

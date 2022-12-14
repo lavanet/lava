@@ -2,8 +2,7 @@ package types
 
 import "encoding/json"
 
-//reference: https://github.com/gogo/protobuf/blob/master/custom_types.md
-
+// reference: https://github.com/gogo/protobuf/blob/master/custom_types.md
 func (cuList StakeToMaxCUList) Equal(other StakeToMaxCUList) bool {
 	if len(cuList.List) != len(other.List) {
 		return false

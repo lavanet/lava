@@ -25,7 +25,6 @@ func (k Keeper) SetStakeStorage(ctx sdk.Context, stakeStorage types.StakeStorage
 func (k Keeper) GetStakeStorage(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.StakeStorage, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
 
@@ -44,7 +43,6 @@ func (k Keeper) GetStakeStorage(
 func (k Keeper) RemoveStakeStorage(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
 	store.Delete(types.StakeStorageKey(
@@ -227,7 +225,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
-	var entries = []types.StakeEntry{}
+	entries := []types.StakeEntry{}
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
@@ -259,7 +257,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 	if !found {
 		panic("called modify when there is no stakeStorage")
 	}
-	//TODO: more efficient: only create a new list once, after the second index is identified
+	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := []types.StakeEntry{}
 	entries = append(entries, stakeStorage.StakeEntries[:removeIndex]...)

@@ -165,7 +165,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
 		}
 		block := unmarshaledDataTyped[param_index]
-		//TODO: turn this into type assertion instead
+		// TODO: turn this into type assertion instead
 
 		retArr := make([]interface{}, 0)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
@@ -177,13 +177,15 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 }
 
 // expect input to be keys[a,b,c] and a canonical object such as
-// {
-//   "a": {
-//       "b": {
-//          "c": "wanted result"
-//        }
-//    }
-// }
+//
+//	{
+//	  "a": {
+//	      "b": {
+//	         "c": "wanted result"
+//	       }
+//	   }
+//	}
+//
 // should output an interface array with "wanted result" in first index 0
 func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	inp := input[0]
@@ -240,7 +242,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		}
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, fmt.Errorf("Not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
+		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
 	}
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
 }
@@ -280,7 +282,7 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		}
 		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
 	default:
-		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
 }
 
@@ -320,7 +322,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
 		}
 		block := unmarshaledDataTyped[param_index]
-		//TODO: turn this into type assertion instead
+		// TODO: turn this into type assertion instead
 		retArr := make([]interface{}, 0)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
 		return retArr, nil
@@ -337,6 +339,6 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		retArr = append(retArr, value)
 		return retArr, nil
 	default:
-		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
 }

@@ -24,7 +24,6 @@ func (k Keeper) SetFixatedParams(ctx sdk.Context, fixatedParams types.FixatedPar
 func (k Keeper) GetFixatedParams(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.FixatedParams, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.FixatedParamsKeyPrefix))
 
@@ -43,7 +42,6 @@ func (k Keeper) GetFixatedParams(
 func (k Keeper) RemoveFixatedParams(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.FixatedParamsKeyPrefix))
 	store.Delete(types.FixatedParamsKey(
@@ -137,6 +135,7 @@ func (k Keeper) CleanAllOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 		k.CleanOlderFixatedParams(ctx, fixationKey, startIdx)
 	}
 }
+
 func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, startIdx uint64) {
 	var idx uint64
 	var thisIdxKey string

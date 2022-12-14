@@ -34,6 +34,7 @@ func mapToJsonFile(mMap mockMap, outfile string) error {
 
 	return nil
 }
+
 func jsonFileToMap(jsonfile string) (m map[string]string) {
 	// open json file
 	m = map[string]string{}
