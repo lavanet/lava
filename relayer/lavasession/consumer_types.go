@@ -127,7 +127,7 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64) error {
 func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if (cswp.UsedComputeUnits - cu) < 0 {
+	if cswp.UsedComputeUnits < cu {
 		return NegativeComputeUnitsAmountError
 	}
 	cswp.UsedComputeUnits -= cu

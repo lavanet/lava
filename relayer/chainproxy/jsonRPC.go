@@ -105,7 +105,7 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := []interface{}{}
-	nodeMsg, err := cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+	nodeMsg, err := cp.NewMessage(&serviceApi, spectypes.LATEST_BLOCK, params)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -140,7 +140,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
-		nodeMsg, err = cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+		nodeMsg, err = cp.NewMessage(&serviceApi, spectypes.LATEST_BLOCK, params)
 	}
 
 	if err != nil {
@@ -226,7 +226,8 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	return nodeMsg, nil
 }
 
-func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*JrpcMessage, error) {
+func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, requestedBlock int64, params []interface{}) (*JrpcMessage, error) {
+	method := serviceApi.GetName()
 	serviceApi, err := cp.getSupportedApi(method)
 	if err != nil {
 		return nil, err

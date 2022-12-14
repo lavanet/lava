@@ -31,10 +31,10 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 
 func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) error {
 	attributes_str := ""
-	eventAttrs := []sdk.Attribute{}
+	// eventAttrs := []sdk.Attribute{}
 	for key, val := range attributes {
 		attributes_str += fmt.Sprintf("%s: %s,", key, val)
-		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
+		// eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
 	}
 	err_msg := fmt.Sprintf("ERR_%s: %s %s", name, description, attributes_str)
 	logger.Error(err_msg)

@@ -240,7 +240,6 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 	//
 	// Set
 	pairing := []*lavasession.ConsumerSessionsWithProvider{}
-	pairingAddresses := []string{} // this object will not be mutated for vrf calculations
 	for _, provider := range providers {
 		//
 		// Sanity
@@ -281,7 +280,6 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 			ReliabilitySent: false,
 			PairingEpoch:    s.GetCurrentEpochHeight(),
 		})
-		pairingAddresses = append(pairingAddresses, provider.Address)
 	}
 
 	// replace previous pairing with new providers
