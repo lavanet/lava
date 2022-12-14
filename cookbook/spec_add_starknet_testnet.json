@@ -3,8 +3,8 @@
   "description": "Adding new specification support for relaying StarkNet data on Lava",
   "specs": [
     {
-      "chainid": "STRK",
-      "name": "StarkNet mainnet",
+      "chainid": "STRKT",
+      "name": "StarkNet testnet",
       "enabled": true,
       "reliability_threshold": 268435455,
       "compares_hashes": true,
