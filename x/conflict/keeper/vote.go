@@ -109,7 +109,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			k.pairingKeeper.JailEntry(ctx, accAddress, true, conflictVote.ChainID, uint64(conflictVote.VoteStartBlock), blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
+			k.pairingKeeper.JailEntry(ctx, accAddress, true, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
 			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, true, conflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {

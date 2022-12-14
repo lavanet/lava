@@ -149,7 +149,7 @@ func askForRewards(staleEpochHeight int64) {
 
 	for _, staleEpoch := range staleEpochs {
 		g_rewardsSessions_mutex.Lock()
-		staleEpochSessions, ok := g_rewardsSessions[uint64(staleEpoch)]
+		staleEpochSessions, ok := g_rewardsSessions[staleEpoch]
 		g_rewardsSessions_mutex.Unlock()
 		if !ok {
 			continue
@@ -183,7 +183,7 @@ func askForRewards(staleEpochHeight int64) {
 				})
 			}
 
-			userSessionsEpochData, ok := userSessions.dataByEpoch[uint64(staleEpoch)]
+			userSessionsEpochData, ok := userSessions.dataByEpoch[staleEpoch]
 			if !ok {
 				utils.LavaFormatError("get rewards Missing epoch data for this user", err, &map[string]string{
 					"address":         userSessions.user,
@@ -212,7 +212,7 @@ func askForRewards(staleEpochHeight int64) {
 		}
 
 		g_rewardsSessions_mutex.Lock()
-		delete(g_rewardsSessions, uint64(staleEpoch)) // All rewards handles for that epoch
+		delete(g_rewardsSessions, staleEpoch) // All rewards handles for that epoch
 		g_rewardsSessions_mutex.Unlock()
 	}
 
@@ -808,7 +808,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 			&map[string]string{"finalizedBlockHashes": fmt.Sprintf("%v", finalizedBlockHashes)})
 	}
 
-	reply.FinalizedBlocksHashes = []byte(jsonStr)
+	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
 
 	getSignaturesFromRequest := func(request pairingtypes.RelayRequest) error {

@@ -26,7 +26,7 @@ func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint
 	vrf_num := binary.LittleEndian.Uint32(vrf)
 	if vrf_num <= reliabilityThreshold {
 		// need to send relay with VRF
-		modulo := uint32(providersCount)
+		modulo := providersCount
 		index = int64(vrf_num % modulo)
 	} else {
 		index = -1
@@ -42,7 +42,7 @@ func verifyVRF(queryHash []byte, reliabilityData *pairingtypes.VRFData, vrf_pk V
 		differentiator = []uint8{1}
 	}
 	relayEpochStartBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(relayEpochStartBytes, uint64(relayEpochStart))
+	binary.LittleEndian.PutUint64(relayEpochStartBytes, relayEpochStart)
 	vrf_data := bytes.Join([][]byte{queryHash, relayEpochStartBytes, providerSig, differentiator}, nil)
 	return vrf_pk.pk.Verify(vrf_data, reliabilityData.VrfValue, reliabilityData.VrfProof)
 }

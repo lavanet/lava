@@ -139,7 +139,7 @@ func (k Keeper) CleanAllOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, startIdx uint64) {
 	var idx uint64
 	var thisIdxKey string
-	for idx = uint64(startIdx); true; idx++ {
+	for idx = startIdx; true; idx++ {
 		thisIdxKey = k.fixatedParamsKey(fixationKey, idx)
 		_, found := k.GetFixatedParams(ctx, thisIdxKey)
 		if !found {

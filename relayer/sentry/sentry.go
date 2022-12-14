@@ -1413,9 +1413,9 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 		if data_len == 0 {
 			return 0
 		} else if data_len%2 == 0 {
-			median = int64((data[data_len/2-1] + data[data_len/2]) / 2.0)
+			median = (data[data_len/2-1] + data[data_len/2]/2.0)
 		} else {
-			median = int64(data[data_len/2])
+			median = data[data_len/2]
 		}
 		return median
 	}

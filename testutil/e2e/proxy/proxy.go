@@ -237,7 +237,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		jStruct.ID = 0
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
-			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
+			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", val)
 			cacheCount += 1
 
 			// Change Response

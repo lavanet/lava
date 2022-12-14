@@ -33,7 +33,7 @@ var max_path_size_rpc_client = 108 // C.max_socket_path_size()
 
 // ipcListen will create a Unix socket on the given endpoint.
 func ipcListen(endpoint string) (net.Listener, error) {
-	if len(endpoint) > int(max_path_size_rpc_client) {
+	if len(endpoint) > max_path_size_rpc_client {
 		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", max_path_size_rpc_client),
 			"endpoint", endpoint)
 	}

@@ -148,7 +148,7 @@ func (cs *ChainSentry) GetLatestBlockHash() string {
 func (cs *ChainSentry) Start(ctx context.Context) error {
 	// how often to query latest block.
 	ticker := time.NewTicker(
-		time.Millisecond * time.Duration(int64(cs.chainProxy.GetSentry().GetAverageBlockTime())))
+		time.Millisecond * time.Duration(cs.chainProxy.GetSentry().GetAverageBlockTime()))
 
 	// Polls blocks and keeps a queue of them
 	go func() {
