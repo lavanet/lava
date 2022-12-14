@@ -61,14 +61,12 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			}
 
 			for _, api_interface := range apiInterfaceList {
-				httpMethod := http.MethodGet
 				if api_interface.Type == postString {
-					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue
 				}
 				log.Printf("%s", apiName)
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod, "lava_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "lava_test")
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))

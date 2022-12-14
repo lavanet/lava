@@ -68,14 +68,12 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			}
 
 			for _, api_interface := range apiInterfaceList {
-				httpMethod := http.MethodGet
 				if api_interface.Type == postString {
-					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue
 				}
 				log.Printf("%s", apiName)
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod, "aptos_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "aptos_test")
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
