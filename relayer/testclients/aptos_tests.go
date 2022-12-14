@@ -48,7 +48,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
 					} else {
-						log.Println(fmt.Sprintf("LavaTestsResponse: %v\n", reply))
+						log.Printf("LavaTestsResponse: %v\n", reply)
 						// prettyPrintReply(*reply, "LavaTestsResponse")
 					}
 				}
@@ -74,7 +74,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 					// for now we dont want to run the post apis in this test
 					continue
 				}
-				log.Println(fmt.Sprintf("%s", apiName))
+				log.Printf("%s", apiName)
 				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod, "aptos_test")
 				if err != nil {
 					log.Println(err)
@@ -85,7 +85,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			}
 		}
 	} else {
-		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
+		log.Printf("currently no tests for %s protocol", apiInterface)
 		return nil
 	}
 

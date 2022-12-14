@@ -25,10 +25,7 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 }
 
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) bool {
-	if epoch <= psm.atomicReadBlockedEpoch() {
-		return false
-	}
-	return true
+	return epoch > psm.atomicReadBlockedEpoch()
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer

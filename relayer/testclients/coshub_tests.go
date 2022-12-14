@@ -66,7 +66,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 						// for now we dont want to run the post apis in this test
 						continue
 					}
-					log.Println(fmt.Sprintf("%s", apiName))
+					log.Printf("%s", apiName)
 					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod, "coshub_test")
 					if err != nil {
 						log.Println(err)
@@ -112,7 +112,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 		}
 	default:
 		{
-			log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
+			log.Printf("currently no tests for %s protocol", apiInterface)
 			return nil
 		}
 	}

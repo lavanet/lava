@@ -79,7 +79,7 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 
 func ParseDefault(rpcInput RPCInput, input []string, dataSource int) []interface{} {
 	retArr := make([]interface{}, 0)
-	retArr = append(retArr, fmt.Sprintf("%s", input[0]))
+	retArr = append(retArr, input[0])
 	return retArr
 }
 
