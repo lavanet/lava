@@ -654,7 +654,6 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
 		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
-
 	} else {
 		relaySession, err = getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
