@@ -523,7 +523,7 @@ func processUnsubscribe(apiName string, userAddr sdk.AccAddress, reqParams inter
 }
 
 func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (sdk.AccAddress, chainproxy.NodeMessage, *UserSessions, *RelaySession, error) {
-	// client blockheight can only be at at prev epoch but not ealier
+	// client blockheight can only be at at prev epoch but not earlier
 	if request.BlockHeight < int64(g_sentry.GetPrevEpochHeight()) {
 		return nil, nil, nil, nil, utils.LavaFormatError("user reported very old lava block height", nil, &map[string]string{
 			"current lava block":   strconv.FormatInt(g_sentry.GetBlockHeight(), 10),
@@ -550,7 +550,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		// TODO: cache this client, no need to run the query every time
 		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeightToAuthorize)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10), "userRequest": fmt.Sprintf("%+v", request)})
+			return nil, nil, utils.LavaFormatError("user not authorized or error occurred", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10), "userRequest": fmt.Sprintf("%+v", request)})
 		}
 		// Parse message, check valid api, etc
 		nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
@@ -1018,7 +1018,7 @@ func voteEventHandler(ctx context.Context, voteID string, voteDeadline uint64, v
 		// we have an existing vote with this ID
 		if voteParams != nil {
 			if voteParams.GetCloseVote() {
-				// we are closing the vote, so its okay we ahve this voteID
+				// we are closing the vote, so its okay we have this voteID
 				utils.LavaFormatInfo("Received Vote termination event for vote, cleared entry",
 					&map[string]string{"voteID": voteID})
 				delete(g_votes, voteID)

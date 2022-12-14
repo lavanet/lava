@@ -153,7 +153,7 @@ func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, sta
 func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, block uint64) (fixated types.FixatedParams, err error) {
 	fixationGetParam, ok := k.fixationRegistries[fixationKey]
 	if !ok {
-		return types.FixatedParams{}, fmt.Errorf("fixation not found for fixation key %s in fixation registeries", fixationKey)
+		return types.FixatedParams{}, fmt.Errorf("fixation not found for fixation key %s in fixation registers", fixationKey)
 	}
 	for idx := uint64(0); true; idx++ {
 		thisIdxKey := k.fixatedParamsKey(fixationKey, idx)
