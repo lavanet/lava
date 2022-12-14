@@ -13,7 +13,6 @@ linters:
     - goconst
     - gocritic
     - gofumpt
-    - gosec
     - gosimple
     - govet
     - ineffassign
@@ -24,25 +23,26 @@ linters:
     - stylecheck
     - typecheck
     - unconvert
-    - unused
+    #- unused we have a lot of unused code that we dont want to delete
     - forcetypeassert
     - goconst
     - gofmt
     - goimports
-    - gosimple
     - importas
     - ineffassign
     - nilnil
     - typecheck
     - unconvert
-    - unused
     - whitespace
 
 issues:
   exclude-rules:
-    - text: "Use of weak random number generator"
+    - text: "singleCaseSwitch"
       linters:
-        - gosec
+        - gocritic
+    - text: "ifElseChain"
+      linters:
+        - gocritic
     - text: "ST1003:"
       linters:
         - stylecheck
