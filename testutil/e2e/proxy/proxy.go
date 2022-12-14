@@ -1,4 +1,4 @@
-package main
+package mockproxy
 
 import (
 	"encoding/json"
@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-var mockFolder string = "testutil/e2e/proxy/mockMaps/"
+// var mockFolder string = "testutil/e2e/proxy/mockMaps/"
+var mockFolder string = "/mockMaps/"
 
 var (
 	responsesChanged bool = false
@@ -59,10 +60,11 @@ func getDomain(s string) (domain string) {
 
 var current *proxyProcess
 
-func main() {
+func main(host *string, port *string) {
 	// CLI ARGS
-	host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
-	port := flag.String("p", "1111", "PORT")
+	fmt.Println("Proxy Main")
+	// host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
+	// port := flag.String("p", "1111", "PORT")
 	id := flag.String("id", "", "ID (optional) - will set the default host id instead of the full domain name"+
 		"\nUsage Example:\n	$ go run proxy.go randomnumberapi.com -id random -cache")
 	cache := flag.Bool("cache", true, "CACHE (optional) - This will make proxy return from cache if possible "+
@@ -75,9 +77,9 @@ func main() {
 
 	flag.Parse()
 	if *help || (*host == "" && flag.NArg() == 0) {
-		fmt.Println("\ngo run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict")
+		fmt.Println("go run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict")
 		fmt.Println("	Usage Example:")
-		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache")
+		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache ")
 		flag.Usage()
 	} else if *host == "" {
 		if len(os.Args) > 0 {
@@ -92,6 +94,7 @@ func main() {
 	println()
 
 	domain := getDomain(*host)
+	println("domain:" + domain)
 	if *id != "" {
 		domain = *id
 	} else {
@@ -331,6 +334,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		if current != nil {
 			id = current.id + ":" + current.port
 		}
-		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id)
+		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id, "")
 	}
 }

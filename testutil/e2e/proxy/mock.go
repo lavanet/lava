@@ -1,4 +1,4 @@
-package main
+package mockproxy
 
 import (
 	"encoding/json"
@@ -38,7 +38,12 @@ func mapToJsonFile(mMap mockMap, outfile string) error {
 func jsonFileToMap(jsonfile string) map[string]string {
 	// open json file
 	m := map[string]string{}
-	jsonFile, err := os.Open(jsonfile)
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println(" ::: XXX ::: Could not get pwd ::: ", err)
+		return m
+	}
+	jsonFile, err := os.Open(path + "/" + jsonfile)
 	if err != nil {
 		fmt.Println(" ::: XXX ::: Could not open "+jsonfile+" ::: ", err)
 		return m
