@@ -16,12 +16,12 @@ go run ./testutil/e2e/proxy/. $JUNO_RPC -p $MOCK_PORT_B -cache -id juno_rpc  &
 
 echo " ::: RUNNING JUN1 PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2371 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer1 &
-lavad server 127.0.0.1 2372 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer2 &
-lavad server 127.0.0.1 2373 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer3 &
-lavad server 127.0.0.1 2361 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer1 &
-lavad server 127.0.0.1 2362 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer2 &
-lavad server 127.0.0.1 2363 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer3 
+lavad server 127.0.0.1 2371 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2372 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2373 http://0.0.0.0:$MOCK_PORT_A/ JUN1 rest --from servicer3 --log_level debug &
+lavad server 127.0.0.1 2361 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer1 --log_level debug &
+lavad server 127.0.0.1 2362 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer2 --log_level debug &
+lavad server 127.0.0.1 2363 http://0.0.0.0:$MOCK_PORT_B/ JUN1 tendermintrpc --from servicer3 --log_level debug 
 
 
 echo " ::: JUN1 PROVIDERS DONE! :::"

@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"bufio"
@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,10 +35,12 @@ import (
 )
 
 type lavaTest struct {
-	grpcConn     *grpc.ClientConn
-	lavadPath    string
-	logs         map[string]*bytes.Buffer
-	providerType map[string][]epochStorageTypes.Endpoint
+	testFinishedProperly bool
+	grpcConn             *grpc.ClientConn
+	lavadPath            string
+	logs                 map[string]*bytes.Buffer
+	commands             []exec.Cmd
+	providerType         map[string][]epochStorageTypes.Endpoint
 }
 
 func init() {
@@ -99,12 +102,12 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 
 func (lt *lavaTest) stakeLava() {
 	stakeCommand := "./scripts/init.sh"
-	lt.logs["stakeLava"] = new(bytes.Buffer)
+	lt.logs["1_stakeLava"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   stakeCommand,
 		Args:   strings.Split(stakeCommand, " "),
-		Stdout: lt.logs["stakeLava"],
-		Stderr: lt.logs["stakeLava"],
+		Stdout: lt.logs["1_stakeLava"],
+		Stderr: lt.logs["1_stakeLava"],
 	}
 	err := cmd.Start()
 	if err != nil {
@@ -166,56 +169,89 @@ func (lt *lavaTest) startJSONRPCProxy() {
 	if err != nil {
 		panic("Could not find go executable path")
 	}
-	proxyCommand := goExecutablePath + " run ./testutil/e2e/proxy/. eth"
-	lt.logs["jsonProxy"] = new(bytes.Buffer)
+	proxyCommand := goExecutablePath + " test ./testutil/e2e/proxy/. -v eth"
+	lt.logs["2_jsonProxy"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   goExecutablePath,
 		Args:   strings.Split(proxyCommand, " "),
-		Stdout: lt.logs["jsonProxy"],
-		Stderr: lt.logs["jsonProxy"],
+		Stdout: lt.logs["2_jsonProxy"],
+		Stderr: lt.logs["2_jsonProxy"],
 	}
 	err = cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+	lt.commands = append(lt.commands, cmd)
+	go func() {
+		lt.listenCmdCommand(cmd, "startJSONRPCProxy process returned unexpectedly")
+	}()
 }
 
 func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1",
-		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2",
-		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3",
-		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4",
-		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5",
+		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5 --log_level debug",
 	}
-	lt.logs["jsonProvider"] = new(bytes.Buffer)
-	for _, providerCommand := range providerCommands {
+	lt.logs["3_jsonProvider"] = new(bytes.Buffer)
+	for idx, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["jsonProvider"],
-			Stderr: lt.logs["jsonProvider"],
+			Stdout: lt.logs["3_jsonProvider"],
+			Stderr: lt.logs["3_jsonProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
 		}
+		lt.commands = append(lt.commands, cmd)
+		go func(idx int) {
+			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+		}(idx)
 	}
 }
 
 func (lt *lavaTest) startJSONRPCGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
-	lt.logs["jsonGateway"] = new(bytes.Buffer)
+	utils.LavaFormatInfo("startJSONRPCGateway:", nil)
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --log_level debug"
+	lt.logs["4_jsonGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["jsonGateway"],
-		Stderr: lt.logs["jsonGateway"],
+		Stdout: lt.logs["4_jsonGateway"],
+		Stderr: lt.logs["4_jsonGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+
+	lt.commands = append(lt.commands, cmd)
+	go func() {
+		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly")
+	}()
+}
+
+func (lt *lavaTest) finishTestSuccessfully() {
+	lt.testFinishedProperly = true
+	for _, cmd := range lt.commands { // kill all the project commands
+		cmd.Process.Kill()
+	}
+}
+
+func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string) {
+	err := cmd.Wait()
+	if err != nil {
+		utils.LavaFormatError("cmd wait err", err, nil)
+	}
+	if lt.testFinishedProperly {
+		return
+	}
+	lt.saveLogs()
+	panic(panicReason)
 }
 
 // If after timeout and the check does not return it means it failed
@@ -232,7 +268,7 @@ func (lt *lavaTest) checkJSONRPCGateway(rpcURL string, timeout time.Duration) {
 		}
 		time.Sleep(time.Second)
 	}
-	panic("JSONRPC Check Failed")
+	panic("checkJSONRPCGateway: JSONRPC Check Failed Gateway didn't respond")
 }
 
 func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
@@ -341,40 +377,48 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6",
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7",
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8",
-		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9",
-		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10",
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --log_level debug",
 	}
-	lt.logs["tendermintProvider"] = new(bytes.Buffer)
-	for _, providerCommand := range providerCommands {
+	lt.logs["7_tendermintProvider"] = new(bytes.Buffer)
+	for idx, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["tendermintProvider"],
-			Stderr: lt.logs["tendermintProvider"],
+			Stdout: lt.logs["7_tendermintProvider"],
+			Stderr: lt.logs["7_tendermintProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
 		}
+		lt.commands = append(lt.commands, cmd)
+		go func(idx int) {
+			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+		}(idx)
 	}
 }
 
 func (lt *lavaTest) startTendermintGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2"
-	lt.logs["tendermintGateway"] = new(bytes.Buffer)
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --log_level debug"
+	lt.logs["8_tendermintGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["tendermintGateway"],
-		Stderr: lt.logs["tendermintGateway"],
+		Stdout: lt.logs["8_tendermintGateway"],
+		Stderr: lt.logs["8_tendermintGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+	lt.commands = append(lt.commands, cmd)
+	go func() {
+		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly")
+	}()
 }
 
 func (lt *lavaTest) checkTendermintGateway(rpcURL string, timeout time.Duration) {
@@ -417,42 +461,77 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
+func tendermintURITests(rpcURL string, testDuration time.Duration) error {
+	utils.LavaFormatInfo("Starting TENDERMINTRPC URI Tests", nil)
+	errors := []string{}
+	mostImportantApisToTest := map[string]bool{
+		"%s/health":                              true,
+		"%s/status":                              true,
+		"%s/block?height=1":                      true,
+		"%s/blockchain?minHeight=0&maxHeight=10": true,
+		"%s/dial_peers?persistent=true&unconditional=true&private=true": false, //this is a rpc affecting query and is not available on the spec so it should fail
+	}
+	for start := time.Now(); time.Since(start) < testDuration; {
+		for api, noFail := range mostImportantApisToTest {
+			reply, err := getRequest(fmt.Sprintf(api, rpcURL))
+			if err != nil && noFail {
+				errors = append(errors, fmt.Sprintf("%s", err))
+			} else if strings.Contains(string(reply), "error") && noFail {
+				errors = append(errors, string(reply))
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6",
-		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7",
-		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8",
-		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9",
-		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10",
+		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10 --log_level debug",
 	}
-	lt.logs["restProvider"] = new(bytes.Buffer)
-	for _, providerCommand := range providerCommands {
+	lt.logs["5_restProvider"] = new(bytes.Buffer)
+	for idx, providerCommand := range providerCommands {
 		cmd := exec.Cmd{
 			Path:   lt.lavadPath,
 			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["restProvider"],
-			Stderr: lt.logs["restProvider"],
+			Stdout: lt.logs["5_restProvider"],
+			Stderr: lt.logs["5_restProvider"],
 		}
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
 		}
+		lt.commands = append(lt.commands, cmd)
+		go func(idx int) {
+			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+		}(idx)
 	}
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user3"
-	lt.logs["restGateway"] = new(bytes.Buffer)
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user3 --log_level debug"
+	lt.logs["6_restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
 		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["restGateway"],
-		Stderr: lt.logs["restGateway"],
+		Stdout: lt.logs["6_restGateway"],
+		Stderr: lt.logs["6_restGateway"],
 	}
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+	lt.commands = append(lt.commands, cmd)
+	go func() {
+		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly")
+	}()
 }
 
 func (lt *lavaTest) checkRESTGateway(rpcURL string, timeout time.Duration) {
@@ -531,6 +610,7 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
+		utils.LavaFormatInfo(logBuffer.String(), nil)
 	}
 }
 
@@ -598,10 +678,18 @@ func runE2E() {
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 	}
 	// use defer to save logs in case the tests fail
-	defer lt.saveLogs()
+	defer func() {
+		if r := recover(); r != nil {
+			lt.saveLogs()
+			panic("E2E Failed")
+		} else {
+			lt.saveLogs()
+		}
+	}()
+
 	utils.LavaFormatInfo("Starting Lava", nil)
 	go lt.startLava(context.Background())
-	lt.checkLava(time.Minute * 5)
+	lt.checkLava(time.Minute * 10)
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
@@ -624,6 +712,7 @@ func runE2E() {
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
+	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 
 	if jsonErr != nil {
@@ -638,6 +727,12 @@ func runE2E() {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
 	}
 
+	if tendermintURIErr != nil {
+		panic(tendermintURIErr)
+	} else {
+		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
+	}
+
 	if restErr != nil {
 		panic(restErr)
 	} else {
@@ -645,4 +740,5 @@ func runE2E() {
 	}
 
 	lt.checkPayments(time.Minute * 10)
+	lt.finishTestSuccessfully()
 }

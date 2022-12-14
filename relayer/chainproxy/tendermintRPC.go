@@ -12,6 +12,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
@@ -170,19 +171,21 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			ID:      []byte("1"),
 			Version: "2.0",
 			Method:  parsedMethod,
-		} //other parameters don't matter
-		// TODO: will be easier to parse the params in a map instead of an array, as calling with a map should be now supported
+		}
 		if strings.Contains(path[idx+1:], "=") {
-			params_raw := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
-			params := make([]interface{}, len(params_raw))
-			for i := range params_raw {
-				params[i] = params_raw[i]
+			params := make(map[string]interface{})
+			rawParams := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
+			for _, param := range rawParams {
+				splitParam := strings.Split(param, "=")
+				if len(splitParam) != 2 {
+					return nil, utils.LavaFormatError("Cannot parse query params", nil, &map[string]string{"params": param})
+				}
+				params[splitParam[0]] = splitParam[1]
 			}
 			msg.Params = params
 		} else {
 			msg.Params = make([]interface{}, 0)
 		}
-		//convert the list of strings to a list of interfaces
 	}
 	//
 	// Check api is supported and save it in nodeMsg
@@ -209,6 +212,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
+	app.Use(favicon.New())
+
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
 		// IsWebSocketUpgrade returns true if the client
@@ -219,7 +224,6 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		return fiber.ErrUpgradeRequired
 	})
-
 	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
@@ -237,7 +241,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() //incase there's a problem make sure to cancel the connection
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "")
+			dappID := ExtractDappIDFromWebsocketConnection(c)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
 				cp.portalLogs.LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -288,19 +293,20 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			}
 		}
 	})
-
-	app.Get("/ws/:dappId", webSocketCallback)
-	app.Get("/:dappId/websocket", webSocketCallback) // catching http://ip:port/1/websocket requests.
+	websocketCallbackWithDappID := ConstructFiberCallbackWithDappIDExtraction(webSocketCallback)
+	app.Get("/ws/:dappId", websocketCallbackWithDappID)
+	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://ip:port/1/websocket requests.
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("http in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body())})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "")
+		dappID := ExtractDappIDFromFiberContext(c)
+		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "", dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))
@@ -308,17 +314,24 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")
+
+		query := "?" + string(c.Request().URI().QueryString())
 		path := c.Params("*")
+		dappID := ""
+		if len(c.Route().Params) > 1 {
+			dappID = c.Route().Params[1]
+			dappID = strings.Replace(dappID, "*", "", -1)
+		}
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
-		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path})
-		reply, _, err := SendRelay(ctx, cp, privKey, path, "", "")
+		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
+		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", "", dappID)
 		if err != nil {
 			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", "", msgSeed, err)
 			if string(c.Body()) != "" {
 				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, msgSeed))
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information" %s}`, msgSeed))
+			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, msgSeed))
 		}
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), "", nil)
 		return c.SendString(string(reply.Data))

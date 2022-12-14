@@ -4,9 +4,14 @@ import (
 	"bytes"
 	context "context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -27,12 +32,14 @@ import (
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/chainsentry"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/spf13/pflag"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
 )
@@ -546,7 +553,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		//TODO: cache this client, no need to run the query every time
 		authorisedUserResponse, err := g_sentry.IsAuthorizedConsumer(ctx, userAddr.String(), blockHeightToAuthorize)
 		if err != nil {
-			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10)})
+			return nil, nil, utils.LavaFormatError("user not authorized or error occured", err, &map[string]string{"userAddr": userAddr.String(), "block": strconv.FormatUint(blockHeightToAuthorize, 10), "userRequest": fmt.Sprintf("%+v", request)})
 		}
 		// Parse message, check valid api, etc
 		nodeMsg, err := g_chainProxy.ParseMsg(request.ApiUrl, request.Data, request.ConnectionType)
@@ -564,6 +571,12 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	var relaySession *RelaySession
 	var userSessions *UserSessions
 	if request.DataReliability != nil {
+		if request.RelayNum > lavasession.DataReliabilitySessionId {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's relay num is larger than the data reliability session ID", nil, &map[string]string{"relayNum": strconv.FormatUint(request.RelayNum, 10), "DataReliabilitySessionId": strconv.Itoa(lavasession.DataReliabilitySessionId)})
+		}
+		if request.CuSum != lavasession.DataReliabilityCuSum {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's CU sum is not equal to the data reliability CU sum", nil, &map[string]string{"cuSum": strconv.FormatUint(request.CuSum, 10), "DataReliabilityCuSum": strconv.Itoa(lavasession.DataReliabilityCuSum)})
+		}
 		userSessions = getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
@@ -604,11 +617,26 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(), "dataReliability": fmt.Sprintf("%v", request.DataReliability)})
 		}
 
-		vrfIndex := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		vrfIndex, vrfErr := utils.GetIndexForVrf(request.DataReliability.VrfValue, uint32(g_sentry.GetProvidersCount()), g_sentry.GetReliabilityThreshold())
+		if vrfErr != nil {
+			dataReliabilityMarshalled, err := json.Marshal(request.DataReliability)
+			if err != nil {
+				dataReliabilityMarshalled = []byte{}
+			}
+			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified vrf value in data reliability request does not meet threshold", vrfErr,
+				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
+					"dataReliability": string(dataReliabilityMarshalled), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
+					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
+					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
+		}
 		if authorisedUserResponse.Index != vrfIndex {
+			dataReliabilityMarshalled, err := json.Marshal(request.DataReliability)
+			if err != nil {
+				dataReliabilityMarshalled = []byte{}
+			}
 			return nil, nil, nil, nil, utils.LavaFormatError("Provider identified invalid vrfIndex in data reliability request, the given index and self index are different", nil,
 				&map[string]string{"requested epoch": strconv.FormatInt(request.BlockHeight, 10), "userAddr": userAddr.String(),
-					"dataReliability": fmt.Sprintf("%+v", request.DataReliability), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
+					"dataReliability": string(dataReliabilityMarshalled), "relayEpochStart": strconv.FormatInt(request.BlockHeight, 10),
 					"vrfIndex":   strconv.FormatInt(vrfIndex, 10),
 					"self Index": strconv.FormatInt(authorisedUserResponse.Index, 10)})
 		}
@@ -618,12 +646,15 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
 		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
+
 	} else {
-		relaySession, err := getOrCreateSession(ctx, userAddr.String(), request)
+		relaySession, err = getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
-
+		if relaySession == nil {
+			return nil, nil, nil, nil, utils.LavaFormatError("getOrCreateSession has a RelaySession nil without an error", nil, nil)
+		}
 		relaySession.Lock.Lock()
 		pairingEpoch := relaySession.GetPairingEpoch()
 
@@ -643,7 +674,6 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 				&map[string]string{"pairingEpoch": strconv.FormatUint(pairingEpoch, 10), "userAddr": userAddr.String(),
 					"relay request": fmt.Sprintf("%v", request)})
 		}
-
 		// Update session
 		err = updateSessionCu(relaySession, userSessions, nodeMsg.GetServiceApi(), request, pairingEpoch)
 		if err != nil {
@@ -654,12 +684,16 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		relaySession.Proof = request
 		relaySession.Lock.Unlock()
 	}
+	if userSessions == nil {
+		return nil, nil, nil, nil, utils.LavaFormatError("relay Init has a nil UserSession", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions)})
+	}
 	return userAddr, nodeMsg, userSessions, relaySession, nil
 }
 
 func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
 	if userSessions == nil || relaySession == nil { // verify sessions are not nil
-		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, nil)
+
+		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions), "relaySession": fmt.Sprintf("%+v", relaySession)})
 	}
 	// deal with relaySession
 	computeUnits := nodeMsg.GetServiceApi().ComputeUnits
@@ -725,10 +759,40 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	default:
 		reqMsg = nil
 	}
+	latestBlock := int64(0)
+	finalizedBlockHashes := map[int64]interface{}{}
+	var requestedBlockHash []byte = nil
+	if g_sentry.GetSpecComparesHashes() {
+		// Add latest block and finalized data
+		var requestedBlockHashStr string
+		var err error
+		latestBlock, finalizedBlockHashes, requestedBlockHashStr, err = g_chainSentry.GetLatestBlockData(request.RequestBlock)
+		if err != nil {
+			return nil, utils.LavaFormatError("Could not guarantee data reliability", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+		if requestedBlockHashStr == "" {
+			//avoid using cache, but can still service
+			utils.LavaFormatWarning("no hash data for requested block", nil, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		} else {
+			requestedBlockHash = []byte(requestedBlockHashStr)
+		}
 
-	reply, _, _, err := nodeMsg.Send(ctx, nil)
-	if err != nil {
-		return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
+	}
+	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
+	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
+	cache := g_chainProxy.GetCache()
+	//TODO: handle cache on fork for dataReliability = false
+	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
+	if err != nil || reply == nil {
+		if performance.NotConnectedError.Is(err) {
+			utils.LavaFormatError("cache not connected", err, nil)
+		}
+		//cache miss
+		reply, _, _, err = nodeMsg.Send(ctx, nil)
+		if err != nil {
+			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
+		}
+		cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
 	}
 
 	apiName := nodeMsg.GetServiceApi().Name
@@ -739,14 +803,6 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		}
 	}
 	// TODO: verify that the consumer still listens, if it took to much time to get the response we cant update the CU.
-
-	latestBlock := int64(0)
-	finalizedBlockHashes := map[int64]interface{}{}
-
-	if g_sentry.GetSpecComparesHashes() {
-		// Add latest block and finalized
-		latestBlock, finalizedBlockHashes = g_chainSentry.GetLatestBlockData()
-	}
 
 	jsonStr, err := json.Marshal(finalizedBlockHashes)
 	if err != nil {
@@ -1034,6 +1090,7 @@ func Server(
 	nodeUrl string,
 	ChainID string,
 	apiInterface string,
+	flagSet *pflag.FlagSet,
 ) {
 	utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
 	//
@@ -1139,6 +1196,20 @@ func Server(
 		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr, "ChainID": ChainID})
 	}
 	s := grpc.NewServer()
+
+	wrappedServer := grpcweb.WrapServer(s)
+	handler := func(resp http.ResponseWriter, req *http.Request) {
+		// Set CORS headers
+		resp.Header().Set("Access-Control-Allow-Origin", "*")
+		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+
+		wrappedServer.ServeHTTP(resp, req)
+	}
+
+	httpServer := http.Server{
+		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
+	}
+
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -1146,8 +1217,13 @@ func Server(
 		case <-signalChan:
 			utils.LavaFormatInfo("Provider Server signalChan", nil)
 		}
-		cancel()
-		s.Stop()
+
+		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownRelease()
+		
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			utils.LavaFormatFatal("Provider failed to shutdown", err, &map[string]string{})
+		}
 	}()
 
 	Server := &relayServer{}
@@ -1155,8 +1231,23 @@ func Server(
 	pairingtypes.RegisterRelayerServer(s, Server)
 
 	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
-	if err := s.Serve(lis); err != nil {
+	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": ChainID})
+	}
+
+	cacheAddr, err := flagSet.GetString(performance.CacheFlagName)
+	if err != nil {
+		utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", flagSet)})
+	} else {
+		if cacheAddr != "" {
+			cache, err := performance.InitCache(ctx, cacheAddr)
+			if err != nil {
+				utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+			} else {
+				utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+				chainProxy.SetCache(cache)
+			}
+		}
 	}
 
 	askForRewards(int64(g_sentry.GetCurrentEpochHeight()))

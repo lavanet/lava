@@ -11,7 +11,7 @@ func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvi
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	//stakes a new provider entry
-	err := k.Keeper.StakeNewEntry(ctx, true, msg.Creator, msg.ChainID, msg.Amount, msg.Endpoints, msg.Geolocation, "")
+	err := k.Keeper.StakeNewEntry(ctx, true, msg.Creator, msg.ChainID, msg.Amount, msg.Endpoints, msg.Geolocation, "", msg.Moniker)
 
 	return &types.MsgStakeProviderResponse{}, err
 }

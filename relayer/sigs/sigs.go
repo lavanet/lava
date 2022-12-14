@@ -19,7 +19,7 @@ import (
 )
 
 func GetKeyName(clientCtx client.Context) (string, error) {
-	_, name, _, err := client.GetFromFields(clientCtx.Keyring, clientCtx.From, false)
+	_, name, _, err := client.GetFromFields(clientCtx, clientCtx.Keyring, clientCtx.From)
 	if err != nil {
 		return "", err
 	}

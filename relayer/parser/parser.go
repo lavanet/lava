@@ -30,6 +30,10 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 		return spectypes.EARLIEST_BLOCK, nil
 	case "pending":
 		return spectypes.PENDING_BLOCK, nil
+	case "safe":
+		return spectypes.SAFE_BLOCK, nil
+	case "finalized":
+		return spectypes.FINALIZED_BLOCK, nil
 	default:
 		//try to parse a number
 	}
