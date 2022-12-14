@@ -56,7 +56,6 @@ func getDomain(s string) (domain string) {
 var current *proxyProcess
 
 func main() {
-
 	// CLI ARGS
 	host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
 	port := flag.String("p", "1111", "PORT")
@@ -204,7 +203,6 @@ func fakeResult(val string, fake string) string {
 	return strings.Join(parts, ",")
 }
 func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
-
 	host := p.host
 	mock := p.mock
 
@@ -227,7 +225,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
 		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
-
 	} else {
 		// Return Cached data if found in history and fromCache is set on
 		jStruct := &jsonStruct{}
@@ -248,14 +245,12 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			time.Sleep(500 * time.Millisecond)
 			rw.WriteHeader(200)
 			rw.Write([]byte(val))
-
 		} else {
 			// Recreating Request
 			proxyRequest, err := createProxyRequest(req, host, rawBodyS)
 			if err != nil {
 				println(err.Error())
 			} else {
-
 				// Send Request to Host & Get Response
 				proxyRes, err := sendRequest(proxyRequest)
 				// respBody := []byte("error")
@@ -284,7 +279,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 						println(err.Error())
 						respBody = []byte(err.Error())
 					} else {
-
 						// Send Request to Host & Get Response
 						proxyRes, err = sendRequest(proxyRequest)
 						if err != nil {
@@ -307,7 +301,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 							println()
 						}
 					}
-
 				}
 
 				// Change Response

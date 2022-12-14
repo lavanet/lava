@@ -102,7 +102,6 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byt
 func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
 	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
 	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.SessionId, relayReq.BlockHeight, relayReq.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
-
 }
 
 func DataToSignResponseFinalizationDataInner(latestBlock int64, sessionID uint64, blockHeight int64, relayNum uint64, finalizedBlockHashes []byte, clientAddress sdk.AccAddress) (dataToSign []byte) {
@@ -145,7 +144,6 @@ func RecoverPubKey(sig []byte, msgHash []byte) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgHash)
 	if err != nil {
-
 		return nil, utils.LavaFormatError("RecoverCompact", err, &map[string]string{
 			"sigLen": strconv.FormatInt(int64(len(sig)), 10),
 		})

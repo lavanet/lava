@@ -44,7 +44,6 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 }
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64, isProvider bool) {
-
 	if isProvider {
 		endpoints := []epochtypes.Endpoint{}
 		endpoints = append(endpoints, epochtypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})

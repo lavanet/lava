@@ -65,5 +65,4 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 	}
 
 	return nil
-
 }

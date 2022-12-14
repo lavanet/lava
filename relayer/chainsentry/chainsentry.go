@@ -73,7 +73,6 @@ func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
 
 func (cs *ChainSentry) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	return cs.chainProxy.FetchBlockHashByNum(ctx, blockNum)
-
 }
 
 func (cs *ChainSentry) Init(ctx context.Context) error {

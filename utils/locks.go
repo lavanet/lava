@@ -48,7 +48,6 @@ func (dm *LavaMutex) waitForTimeout() {
 			}
 		}
 	}()
-
 }
 
 func (dm *LavaMutex) Lock() {

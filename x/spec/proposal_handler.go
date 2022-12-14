@@ -34,7 +34,6 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 }
 
 func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
-
 	for _, c := range p.Changes {
 		ss, ok := k.GetSubspace(c.Subspace)
 		if !ok {
@@ -139,7 +138,6 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecModifyProposal) error {
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
-
 		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Find by name

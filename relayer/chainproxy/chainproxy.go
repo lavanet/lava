@@ -58,7 +58,6 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *Po
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, comparesHashes bool) error {
-
 	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 	if err != nil {
 		return err
@@ -103,7 +102,6 @@ func SendRelay(
 	connectionType string,
 	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
-
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {

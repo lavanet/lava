@@ -138,7 +138,6 @@ func (k Keeper) CleanAllOlderFixatedParams(ctx sdk.Context, startIdx uint64) {
 	}
 }
 func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, startIdx uint64) {
-
 	var idx uint64
 	var thisIdxKey string
 	for idx = uint64(startIdx); true; idx++ {
@@ -150,7 +149,6 @@ func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, sta
 		k.RemoveFixatedParams(ctx, thisIdxKey)
 	}
 	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": thisIdxKey}, "fixation cleaned")
-
 }
 
 func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, block uint64) (fixated types.FixatedParams, err error) {

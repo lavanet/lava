@@ -76,7 +76,6 @@ type JrpcChainProxy struct {
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
-
 	return &JrpcChainProxy{
 		nodeUrl:    nodeUrl,
 		nConns:     nConns,

@@ -440,7 +440,6 @@ func (s *Sentry) Init(ctx context.Context) error {
 
 func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 	for e := range s.NewTransactionEvents {
-
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
 			//got new TX event
@@ -527,7 +526,6 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					go s.voteInitiationCb(ctx, voteID, voteDeadline, voteParams)
 				}
 			}
-
 		}
 	}
 }
@@ -571,7 +569,6 @@ func (s *Sentry) PrintExpectedPayments() string {
 }
 
 func (s *Sentry) Start(ctx context.Context) {
-
 	if !s.isUser {
 		//listen for transactions for proof of relay payment
 		go s.ListenForTXEvents(ctx)
@@ -675,7 +672,6 @@ func (s *Sentry) Start(ctx context.Context) {
 					}
 				}
 			}
-
 		}
 	}
 }
@@ -1160,7 +1156,6 @@ func (s *Sentry) GetLatestFinalizedBlock(latestBlock int64) int64 {
 }
 
 func (s *Sentry) clearAuthResponseCache(blockHeight int64) {
-
 	// Clear cache
 	s.authorizationCacheMutex.Lock()
 	defer s.authorizationCacheMutex.Unlock()
@@ -1185,7 +1180,6 @@ func (s *Sentry) getAuthResponseFromCache(consumer string, blockHeight uint64) *
 }
 
 func (s *Sentry) IsAuthorizedConsumer(ctx context.Context, consumer string, blockHeight uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
-
 	res := s.getAuthResponseFromCache(consumer, blockHeight)
 	if res != nil {
 		// User was authorized before, response returned from cache.
@@ -1360,7 +1354,6 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 }
 
 func (s *Sentry) ExpectedBlockHeight() (int64, int) {
-
 	averageBlockTime_ms := s.serverSpec.AverageBlockTime
 	listExpectedBlockHeights := []int64{}
 
@@ -1371,7 +1364,6 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 				if highestBlockNumber < providerDataContainer.LatestFinalizedBlock {
 					highestBlockNumber = providerDataContainer.LatestFinalizedBlock
 				}
-
 			}
 		}
 		return highestBlockNumber
@@ -1474,5 +1466,4 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
 	return requestedBlock
-
 }

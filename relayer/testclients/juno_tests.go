@@ -59,7 +59,6 @@ func JunoTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 				prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 			}
 		}
-
 	} else if apiInterface == "tendermintrpc" {
 		for i := 0; i < 100; i++ {
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "juno_test")

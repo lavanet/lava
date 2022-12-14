@@ -144,7 +144,6 @@ func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int) context.Context
 }
 
 func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Context {
-
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if uint64(unwrapedCtx.BlockHeight()) == block {
 		return ctx
@@ -174,7 +173,6 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-
 		block := uint64(unwrapedCtx.BlockHeight())
 
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)

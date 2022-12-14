@@ -160,7 +160,6 @@ func askForRewards(staleEpochHeight int64) {
 				//this can happen if the data reliability created a session, we dont save a proof on data reliability message
 
 				if session.UniqueIdentifier != 0 {
-
 					utils.LavaFormatError("Missing proof, cannot get rewards for this session, deleting it", nil, &map[string]string{
 						"UniqueIdentifier": strconv.FormatUint(session.UniqueIdentifier, 10),
 					})
@@ -298,7 +297,6 @@ func askForRewards(staleEpochHeight int64) {
 		} else {
 			if strings.Contains(summarized, "incorrect account sequence") {
 				hasSequenceError = true
-
 			}
 		}
 	}
@@ -685,7 +683,6 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 
 func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *RelaySession, nodeMsg chainproxy.NodeMessage) error {
 	if userSessions == nil || relaySession == nil { // verify sessions are not nil
-
 		return utils.LavaFormatError("relayFailure had a UserSession Or RelaySession nil", nil, &map[string]string{"userSessions": fmt.Sprintf("%+v", userSessions), "relaySession": fmt.Sprintf("%+v", relaySession)})
 	}
 	// deal with relaySession
@@ -741,7 +738,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 }
 
 func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, userAddr sdk.AccAddress, nodeMsg chainproxy.NodeMessage) (*pairingtypes.RelayReply, error) {
-
 	// Send
 	var reqMsg *chainproxy.JsonrpcMessage
 	var reqParams interface{}
@@ -769,7 +765,6 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		} else {
 			requestedBlockHash = []byte(requestedBlockHashStr)
 		}
-
 	}
 	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
 	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
@@ -859,7 +854,6 @@ func (s *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pai
 }
 
 func (s *relayServer) TryRelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, nodeMsg chainproxy.NodeMessage, userSessions *UserSessions) error {
-
 	var reply *pairingtypes.RelayReply
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
@@ -937,7 +931,6 @@ func (s *relayServer) TryRelaySubscribe(request *pairingtypes.RelayRequest, srv 
 }
 
 func (relayServ *relayServer) VerifyReliabilityAddressSigning(ctx context.Context, consumer sdk.AccAddress, request *pairingtypes.RelayRequest) (valid bool, err error) {
-
 	queryHash := utils.CalculateQueryHash(*request)
 	if !bytes.Equal(queryHash, request.DataReliability.QueryHash) {
 		return false, utils.LavaFormatError("query hash mismatch on data reliability message", nil,

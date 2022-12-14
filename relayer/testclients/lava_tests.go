@@ -17,7 +17,6 @@ import (
 func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
 	errors := []string{}
 	if apiInterface == "rest" {
-
 		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
 		mostImportantApisToTest := map[string][]string{http.MethodGet: {
@@ -74,10 +73,8 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 				} else {
 					prettyPrintReply(*reply, "LavaTestsResponse")
 				}
-
 			}
 		}
-
 	} else {
 		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
 		return nil

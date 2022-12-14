@@ -47,7 +47,6 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get EpochStart for specific block")
-
 		}
 		index := DetectionIndex(msg, epochStart)
 		found := k.Keeper.AllocateNewConflictVote(ctx, index)
@@ -61,13 +60,11 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		epochBlocks, err := k.epochstorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get epochblocks")
-
 		}
 		
 		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()) + k.VotePeriod(ctx)*epochBlocks)
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get NextEpoch")
-
 		}
 		conflictVote.VoteDeadline = voteDeadline
 		conflictVote.ApiUrl = msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl

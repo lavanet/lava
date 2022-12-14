@@ -512,7 +512,6 @@ func (c *Client) newMessageMapWithID(method string, id json.RawMessage, paramsIn
 		// if msg.Params, err = json.Marshal(paramsMap); err != nil {
 		// 	return nil, err
 		// }
-
 	}
 	return msg, nil
 }

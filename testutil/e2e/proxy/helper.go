@@ -61,7 +61,6 @@ func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRe
 	return proxyReq, nil
 }
 func sendRequest(request *http.Request) (*http.Response, error) {
-
 	client := &http.Client{}
 	proxyRes, err := client.Do(request)
 

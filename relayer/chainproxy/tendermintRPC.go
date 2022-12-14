@@ -156,7 +156,6 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		if err != nil {
 			return nil, err
 		}
-
 	} else {
 		//assuming URI
 		var parsedMethod string

@@ -69,7 +69,6 @@ func (k Keeper) GetAllStakeStorage(ctx sdk.Context) (list []types.StakeStorage) 
 }
 
 func (k Keeper) RemoveOldEpochData(ctx sdk.Context, storageType string) {
-
 	for _, block := range k.GetDeletedEpochs(ctx) {
 		allChainIDs := k.specKeeper.GetAllChainIDs(ctx)
 		for _, chainID := range allChainIDs {

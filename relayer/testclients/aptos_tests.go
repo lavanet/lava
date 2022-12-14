@@ -75,10 +75,8 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				} else {
 					prettyPrintReply(*reply, "LavaTestsResponse")
 				}
-
 			}
 		}
-
 	} else {
 		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
 		return nil

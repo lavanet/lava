@@ -75,7 +75,6 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 	}
 
 	return retval, nil
-
 }
 
 func ParseDefault(rpcInput RPCInput, input []string, dataSource int) []interface{} {
@@ -110,7 +109,6 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 		if err != nil {
 			return spectypes.NOT_APPLICABLE, err
 		}
-
 	}
 	return rpcInput.ParseBlock(blockstr)
 }
@@ -165,7 +163,6 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
-
 		}
 		block := unmarshaledDataTyped[param_index]
 		//TODO: turn this into type assertion instead
@@ -177,7 +174,6 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		// Parse by arg can be only list as we dont have the name of the height property.
 		return nil, utils.LavaFormatInfo("Parse type unsupported in parse by arg, only list parameters are currently supported", &map[string]string{"request": fmt.Sprintf("%s", unmarshaledDataTyped)})
 	}
-
 }
 
 //expect input to be keys[a,b,c] and a canonical object such as
@@ -238,7 +234,6 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				default:
 					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
 				}
-
 			} else {
 				return nil, fmt.Errorf("invalid parser input format, %s missing from %s", key, unmarshaledDataTyped)
 			}
@@ -287,7 +282,6 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 	default:
 		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
-
 }
 
 func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
@@ -345,5 +339,4 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 	default:
 		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
 	}
-
 }

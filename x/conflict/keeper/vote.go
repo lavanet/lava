@@ -173,7 +173,6 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, ConflictVote types.ConflictV
 				}
 			}
 		}
-
 	} else {
 		eventName = types.ConflictVoteUnresolvedEventName
 		eventData["voteFailed"] = "not_enough_voters"

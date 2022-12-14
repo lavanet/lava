@@ -79,7 +79,6 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 }
 
 func (lt *lavaTest) checkLava(timeout time.Duration) {
-
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
 	for start := time.Now(); time.Since(start) < timeout; {
