@@ -152,15 +152,22 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 	// log.Println("%s", reply)
-
-	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
+	msgParsed, ok := nodeMsg.GetMsg().(*JsonrpcMessage)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - nodeMsg.GetMsg().(*JsonrpcMessage) - type assertion failed, type:" + fmt.Sprintf("%s", nodeMsg.GetMsg()))
+	}
+	blockData, err := parser.ParseMessageResponse(msgParsed, serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return "", err
 	}
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	parsedIndexString, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string) - type assertion failed, type:" + fmt.Sprintf("%s", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX]))
+	}
+	return parsedIndexString, nil
 }
 
 func (cp JsonrpcMessage) GetParams() interface{} {

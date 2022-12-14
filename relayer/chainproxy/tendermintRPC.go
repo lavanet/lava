@@ -62,7 +62,11 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("Error On Send FetchLatestBlockNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
-	blocknum, err := parser.ParseBlockFromReply(nodeMsg.GetMsg().(*JsonrpcMessage), serviceApi.Parsing.ResultParsing)
+	msgParsed, ok := nodeMsg.GetMsg().(*JsonrpcMessage)
+	if !ok {
+		return spectypes.NOT_APPLICABLE, fmt.Errorf("FetchLatestBlockNum - nodeMsg.GetMsg().(*JsonrpcMessage) - type assertion failed, type:" + fmt.Sprintf("%s", nodeMsg.GetMsg()))
+	}
+	blocknum, err := parser.ParseBlockFromReply(msgParsed, serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -99,7 +103,10 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 
-	msg := (nodeMsg.GetMsg().(*JsonrpcMessage))
+	msg, ok := nodeMsg.GetMsg().(*JsonrpcMessage)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - nodeMsg.GetMsg().(*JsonrpcMessage) - type assertion failed, type:" + fmt.Sprintf("%s", nodeMsg.GetMsg()))
+	}
 	blockData, err := parser.ParseMessageResponse(msg, serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return "", utils.LavaFormatError("Failed To Parse FetchLatestBlockNum", err, &map[string]string{

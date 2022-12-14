@@ -106,11 +106,11 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(epoch uint64, 
 	// }
 	// if we don't have a session we need to create a new one.
 	// return psm.createANewSingleProviderSession(providerSessionWithConsumer, sessionId)
-	return nil, nil
+	return &SingleProviderSession{}, nil
 }
 
 func (psm *ProviderSessionManager) getNewSession(epoch uint64, address string) (singleProviderSession *SingleProviderSession, err error) {
-	return nil, nil
+	return &SingleProviderSession{}, nil
 }
 
 func (psm *ProviderSessionManager) ReportConsumer() (address string, epoch uint64, err error) {

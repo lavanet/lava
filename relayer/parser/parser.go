@@ -89,7 +89,11 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	if err != nil || result == nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
-	return rpcInput.ParseBlock(result[0].(string))
+	resString, ok := result[0].(string)
+	if !ok {
+		return spectypes.NOT_APPLICABLE, fmt.Errorf("ParseBlockFromParams - result[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", result[0]))
+	}
+	return rpcInput.ParseBlock(resString)
 }
 
 // this function returns the block that was requested,

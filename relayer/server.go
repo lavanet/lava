@@ -510,12 +510,19 @@ func processUnsubscribe(apiName string, userAddr sdk.AccAddress, reqParams inter
 	defer userSessions.Lock.Unlock()
 	switch p := reqParams.(type) {
 	case []interface{}:
-		subscriptionID := p[0].(string)
+		subscriptionID, ok := p[0].(string)
+		if !ok {
+			return fmt.Errorf("processUnsubscribe - p[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p[0]))
+		}
 		processUnsubscribeEthereum(subscriptionID, userSessions)
 	case map[string]interface{}:
 		subscriptionID := ""
 		if apiName == "unsubscribe" {
-			subscriptionID = p["query"].(string)
+			var ok bool
+			subscriptionID, ok = p["query"].(string)
+			if !ok {
+				return fmt.Errorf("processUnsubscribe - p['query'].(string) - type assertion failed, type:" + fmt.Sprintf("%s", p["query"]))
+			}
 		}
 		processUnsubscribeTendermint(apiName, subscriptionID, userSessions)
 	}

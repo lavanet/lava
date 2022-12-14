@@ -125,7 +125,11 @@ func (e wsHandshakeError) Error() string {
 func originIsAllowed(allowedOrigins mapset.Set, browserOrigin string) bool {
 	it := allowedOrigins.Iterator()
 	for origin := range it.C {
-		if ruleAllowsOrigin(origin.(string), browserOrigin) {
+		originString, ok := origin.(string)
+		if !ok {
+			panic("originIsAllowed - origin.(string) - type assertion failed: " + fmt.Sprintf("%s", origin))
+		}
+		if ruleAllowsOrigin(originString, browserOrigin) {
 			return true
 		}
 	}
@@ -247,8 +251,14 @@ func newWebsocketCodec(conn *websocket.Conn, host string, req http.Header) Serve
 		conn.SetReadDeadline(time.Time{})
 		return nil
 	})
+	newCodec := NewFuncCodec(conn, conn.WriteJSON, conn.ReadJSON)
+	codec, ok := newCodec.(*jsonCodec)
+	if !ok {
+		panic("newWebsocketCodec - newCodec.(*jsonCodec) - type assertion failed, type:" + fmt.Sprintf("%s", newCodec))
+	}
+
 	wc := &websocketCodec{
-		jsonCodec: NewFuncCodec(conn, conn.WriteJSON, conn.ReadJSON).(*jsonCodec),
+		jsonCodec: codec,
 		conn:      conn,
 		pingReset: make(chan struct{}, 1),
 		info: PeerInfo{
