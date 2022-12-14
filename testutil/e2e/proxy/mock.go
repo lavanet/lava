@@ -35,13 +35,13 @@ func mapToJsonFile(mMap mockMap, outfile string) error {
 	return nil
 }
 
-func jsonFileToMap(jsonfile string) (m map[string]string) {
+func jsonFileToMap(jsonfile string) map[string]string {
 	// open json file
-	m = map[string]string{}
+	m := map[string]string{}
 	jsonFile, err := os.Open(jsonfile)
 	if err != nil {
 		fmt.Println(" ::: XXX ::: Could not open "+jsonfile+" ::: ", err)
-		return
+		return m
 	}
 	defer jsonFile.Close()
 
@@ -69,5 +69,5 @@ func jsonFileToMap(jsonfile string) (m map[string]string) {
 	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
 	println()
 
-	return
+	return m
 }
