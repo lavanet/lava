@@ -19,6 +19,7 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
+	Analytics           *RelayAnalytics
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
@@ -29,15 +30,15 @@ func NewPortalLogs() (*PortalLogs, error) {
 		return &PortalLogs{}, nil
 	}
 
-	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
-	NEW_RELIC_LICENSE_KEY := os.Getenv("NEW_RELIC_LICENSE_KEY")
-	if NEW_RELIC_APP_NAME == "" || NEW_RELIC_LICENSE_KEY == "" {
+	NewRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
+	NewRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	if NewRelicAppName == "" || NewRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables", nil)
 		return &PortalLogs{}, nil
 	}
 	newRelicApplication, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
-		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
+		newrelic.ConfigAppName(NewRelicAppName),
+		newrelic.ConfigLicense(NewRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
 	return &PortalLogs{newRelicApplication}, err
@@ -84,4 +85,8 @@ func (cp *PortalLogs) LogStartTransaction(name string) {
 		txn := cp.newRelicApplication.StartTransaction(name)
 		defer txn.End()
 	}
+}
+
+func (cp *PortalLogs) ResetAnalytics() {
+	cp.Analytics = &RelayAnalytics{}
 }
