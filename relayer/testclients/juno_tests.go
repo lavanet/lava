@@ -13,7 +13,7 @@ import (
 
 func JunoTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) error {
 	errors := []string{}
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		// most important api test
 		mostImportantApisToTest := map[string][]string{
 			http.MethodGet: {

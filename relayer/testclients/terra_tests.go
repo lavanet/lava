@@ -13,7 +13,7 @@ import (
 
 func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) error {
 	errors := []string{}
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		for i := 0; i < 10; i++ {
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet, "terra_test")
 			if err != nil {
@@ -23,7 +23,7 @@ func TerraTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 				prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 			}
 		}
-	} else if apiInterface == "tendermintrpc" {
+	} else if apiInterface == tendermintString {
 		for i := 0; i < 10; i++ {
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "terra_test")
 			if err != nil {

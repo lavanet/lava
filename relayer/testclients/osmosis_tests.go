@@ -13,7 +13,7 @@ import (
 
 func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string) error {
 	errors := []string{}
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		// most important api test
 		mostImportantApisToTest := map[string][]string{
 			http.MethodGet: {
@@ -65,7 +65,7 @@ func OsmosisTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey
 				prettyPrintReply(*reply, "OSMOSIS_NUM_POOLS_URL_REST")
 			}
 		}
-	} else if apiInterface == "tendermintrpc" {
+	} else if apiInterface == tendermintString {
 		for i := 0; i < 100; i++ {
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "osmo_test")
 			if err != nil {

@@ -16,7 +16,7 @@ import (
 // CosmoshubTests
 func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
 	errors := []string{}
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
 		mostImportantApisToTest := map[string][]string{http.MethodGet: {
@@ -57,7 +57,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 
 			for _, api_interface := range apiInterfaceList {
 				httpMethod := http.MethodGet
-				if api_interface.Type == "post" {
+				if api_interface.Type == postString {
 					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue
@@ -72,7 +72,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 				}
 			}
 		}
-	} else if apiInterface == "tendermintrpc" {
+	} else if apiInterface == tendermintString {
 		for i := 0; i < 100; i++ {
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "coshub_test")
 			if err != nil {

@@ -13,11 +13,15 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 )
 
+const restString string = "rest"
+const postString string = "post"
+const tendermintString string = "tendermintrpc"
+
 // AptosTests
 func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
 	errors := []string{}
 	log.Println("Aptos test")
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		log.Println("starting run important apis")
 		// clientAdress := clientCtx.FromAddress
 		version := "2406784"
@@ -62,7 +66,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 
 			for _, api_interface := range apiInterfaceList {
 				httpMethod := http.MethodGet
-				if api_interface.Type == "post" {
+				if api_interface.Type == postString {
 					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue

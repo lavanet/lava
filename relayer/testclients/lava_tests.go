@@ -16,7 +16,7 @@ import (
 // LavaTests
 func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
 	errors := []string{}
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		log.Println("starting run important apis")
 		clientAdress := clientCtx.FromAddress
 		mostImportantApisToTest := map[string][]string{http.MethodGet: {
@@ -60,7 +60,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 
 			for _, api_interface := range apiInterfaceList {
 				httpMethod := http.MethodGet
-				if api_interface.Type == "post" {
+				if api_interface.Type == postString {
 					httpMethod = http.MethodPost
 					// for now we dont want to run the post apis in this test
 					continue
