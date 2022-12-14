@@ -575,6 +575,12 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	var relaySession *RelaySession
 	var userSessions *UserSessions
 	if request.DataReliability != nil {
+		if request.RelayNum > lavasession.DataReliabilitySessionId {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's relay num is larger than the data reliability session ID", nil, &map[string]string{"relayNum": strconv.FormatUint(request.RelayNum, 10), "DataReliabilitySessionId": strconv.Itoa(lavasession.DataReliabilitySessionId)})
+		}
+		if request.CuSum != lavasession.DataReliabilityCuSum {
+			return nil, nil, nil, nil, utils.LavaFormatError("request's CU sum is not equal to the data reliability CU sum", nil, &map[string]string{"cuSum": strconv.FormatUint(request.CuSum, 10), "DataReliabilityCuSum": strconv.Itoa(lavasession.DataReliabilityCuSum)})
+		}
 		userSessions = getOrCreateUserSessions(userAddr.String())
 		vrf_pk, maxcuRes, err := g_sentry.GetVrfPkAndMaxCuForUser(ctx, userAddr.String(), request.ChainID, request.BlockHeight)
 		if err != nil {
@@ -648,6 +654,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		getOrCreateDataByEpoch(userSessions, uint64(request.BlockHeight), maxcuRes, vrf_pk, userAddr.String())
 		userSessions.dataByEpoch[uint64(request.BlockHeight)].DataReliability = request.DataReliability
 		userSessions.Lock.Unlock()
+
 	} else {
 		relaySession, err = getOrCreateSession(ctx, userAddr.String(), request)
 		if err != nil {
