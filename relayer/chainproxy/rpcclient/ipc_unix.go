@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	max_path_size_rpc_client = 108 //C.max_socket_path_size()
+	max_path_size_rpc_client = 108 // C.max_socket_path_size()
 )
 
 // ipcListen will create a Unix socket on the given endpoint.

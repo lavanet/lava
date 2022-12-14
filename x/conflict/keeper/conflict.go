@@ -15,7 +15,7 @@ func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *type
 }
 
 func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.ResponseConflict, clientAddr sdk.AccAddress) error {
-	//1. validate mismatching data
+	// 1. validate mismatching data
 	chainID := conflictData.ConflictRelayData0.Request.ChainID
 	if chainID != conflictData.ConflictRelayData1.Request.ChainID {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.ChainID)
@@ -40,7 +40,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RequestBlock, conflictData.ConflictRelayData1.Request.RequestBlock)
 	}
 
-	//1.5 validate params
+	// 1.5 validate params
 	epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
 	if err != nil {
 		return fmt.Errorf("could not find epoch for block %d", block)
@@ -59,7 +59,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	}
 
 	k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
-	//2. validate signer
+	// 2. validate signer
 	_, err = k.epochstorageKeeper.GetStakeEntryForClientEpoch(ctx, chainID, clientAddr, epochStart)
 	if err != nil {
 		return fmt.Errorf("did not find a stake entry for consumer %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
@@ -86,7 +86,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if err != nil {
 		return err
 	}
-	//3. validate providers signatures and stakeEntry for that epoch
+	// 3. validate providers signatures and stakeEntry for that epoch
 	providerAddressFromRelayReplyAndVerifyStakeEntry := func(request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply, first bool) (providerAddress sdk.AccAddress, err error) {
 		print_st := "first"
 		if !first {
@@ -114,7 +114,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if err != nil {
 		return err
 	}
-	//4. validate finalization
+	// 4. validate finalization
 	validateResponseFinalizationData := func(expectedAddress sdk.AccAddress, response *pairingtypes.RelayReply, request *pairingtypes.RelayRequest, first bool) (err error) {
 		print_st := "first"
 		if !first {
@@ -132,7 +132,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		if !derived_providerAccAddress.Equals(expectedAddress) {
 			return fmt.Errorf("mismatching %s provider address signature and responseFinazalizationData %s , %s", print_st, derived_providerAccAddress, expectedAddress)
 		}
-		//validate the responses are finalized
+		// validate the responses are finalized
 		if !k.specKeeper.IsFinalizedBlock(ctx, chainID, request.RequestBlock, response.LatestBlock) {
 			return fmt.Errorf("block isn't finalized on %s provider! %d,%d ", print_st, request.RequestBlock, response.LatestBlock)
 		}
@@ -146,7 +146,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if err != nil {
 		return err
 	}
-	//5. validate mismatching responses
+	// 5. validate mismatching responses
 	if bytes.Equal(conflictData.ConflictRelayData0.Reply.Data, conflictData.ConflictRelayData1.Reply.Data) {
 		return fmt.Errorf("no conflict between providers data responses, its the same")
 	}

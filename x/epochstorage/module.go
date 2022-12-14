@@ -171,15 +171,15 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	if am.keeper.IsEpochStart(ctx) {
 		block := uint64(ctx.BlockHeight())
 
-		//save params for this epoch
+		// save params for this epoch
 		am.keeper.FixateParams(ctx, block)
 
-		//on Epoch start we need to do:
-		//1. update Epoch start
-		//2. update the StakeStorage
+		// on Epoch start we need to do:
+		// 1. update Epoch start
+		// 2. update the StakeStorage
 		// on epoch start block end: (because other modules need this info) to clear their storages
-		//3. remove old StakeStorage
-		//4. update earliest epoch start
+		// 3. remove old StakeStorage
+		// 4. update earliest epoch start
 
 		am.keeper.SetEpochDetailsStart(ctx, block)
 

@@ -23,12 +23,12 @@ var (
 
 var (
 	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
-	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) //0.1
+	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
 )
 
 var (
 	KeyBurnCoinsPerCU             = []byte("BurnCoinsPerCU")
-	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
+	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
 var (
@@ -71,21 +71,21 @@ var (
 
 var (
 	KeyUnpayLimit             = []byte("UnpayLimit")
-	DefaultUnpayLimit sdk.Dec = sdk.NewDecWithPrec(1, 1) //0.1 = 10%
+	DefaultUnpayLimit sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1 = 10%
 )
 var (
 	KeySlashLimit             = []byte("SlashLimit")
-	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) //0.2 = 20%
+	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) // 0.2 = 20%
 )
 
 var (
 	KeyDataReliabilityReward             = []byte("DataReliabilityReward")
-	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
+	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
 var (
 	KeyQoSWeight             = []byte("QoSWeight")
-	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) //0.5
+	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) // 0.5
 )
 
 // ParamKeyTable the param key table for launch module

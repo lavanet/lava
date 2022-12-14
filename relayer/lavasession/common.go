@@ -16,7 +16,7 @@ const (
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
 )
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
 const (
 	PercentileToCalculateLatency = 0.9
 	MinProvidersForSync          = 0.6

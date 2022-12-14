@@ -11,7 +11,7 @@ const (
 	StateReveal = 1
 )
 
-//vote status for each voter
+// vote status for each voter
 const (
 	NoVote             = 0
 	Commit             = 1
@@ -30,9 +30,9 @@ const (
 )
 
 func CommitVoteData(nonce int64, dataHash []byte) []byte {
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, uint64(nonce))
-	commitData := append(nonceBytes, dataHash...)
+	commitData := make([]byte, 8) // nonce bytes
+	binary.LittleEndian.PutUint64(commitData, uint64(nonce))
+	commitData = append(commitData, dataHash...)
 	commitDataHash := tendermintcrypto.Sha256(commitData)
 	return commitDataHash
 }

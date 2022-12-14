@@ -23,7 +23,7 @@ type ChainSentry struct {
 	quit chan bool
 	// Spec blockQueueMu (rw mutex)
 	blockQueueMu utils.LavaMutex
-	blocksQueue  []string //holds all past hashes up until latest block
+	blocksQueue  []string // holds all past hashes up until latest block
 }
 
 func (cs *ChainSentry) GetLatestBlockNum() int64 {
@@ -56,10 +56,10 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 			continue
 		}
 		if indexInQueue < cs.numFinalBlocks {
-			//only return numFinalBlocks in the finalization guarantee
+			// only return numFinalBlocks in the finalization guarantee
 			hashes[blockNum] = cs.blocksQueue[indexInQueue]
 		}
-		//keep iterating on the others to find a match for the request
+		// keep iterating on the others to find a match for the request
 		if blockNum == requestedBlock {
 			requestedBlockHash = cs.blocksQueue[indexInQueue]
 		}
@@ -91,7 +91,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 
 func (cs *ChainSentry) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) error {
 	tmpArr := []string{}
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock; i++ { //save all blocks from the past up until latest block
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock; i++ { // save all blocks from the past up until latest block
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
 			utils.LavaFormatError("could not get block data in chainSentry", err, &map[string]string{"block": strconv.FormatInt(i, 10)})

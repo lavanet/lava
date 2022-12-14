@@ -59,7 +59,7 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 	if !ok {
 		return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, epochstoragetypes.ModuleName)
 	}
-	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
+	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) // set the LatestParamChange
 
 	return nil
 }

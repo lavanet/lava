@@ -8,7 +8,7 @@ import (
 	tenderminttypes "github.com/tendermint/tendermint/types"
 )
 
-//account keeper mock
+// account keeper mock
 type mockAccountKeeper struct {
 }
 
@@ -20,7 +20,7 @@ func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return sdk.AccAddress([]byte(moduleName))
 }
 
-//mock bank keeper
+// mock bank keeper
 type mockBankKeeper struct {
 	balance    map[string]sdk.Coins
 	moduleBank map[string]map[string]sdk.Coins
@@ -41,7 +41,7 @@ func (k *mockBankKeeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom 
 }
 
 func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
-	//TODO support multiple coins
+	// TODO support multiple coins
 	moduleAcc := sdk.AccAddress([]byte(recipientModule))
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
@@ -64,7 +64,7 @@ func (k *mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAdd
 }
 
 func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	//TODO support multiple coins
+	// TODO support multiple coins
 	coin := amt[0]
 	moduleAcc := sdk.AccAddress([]byte(senderModule))
 	if module, ok := k.moduleBank[moduleAcc.String()]; ok {

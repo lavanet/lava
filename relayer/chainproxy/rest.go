@@ -238,7 +238,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)

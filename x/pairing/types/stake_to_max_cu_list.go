@@ -32,7 +32,7 @@ func (cuList StakeToMaxCUList) Compare(other StakeToMaxCUList) int {
 	return 0
 }
 
-//func NewPopulatedT(r randyThetest) *T {}
+// func NewPopulatedT(r randyThetest) *T {}
 
 func (cuList StakeToMaxCUList) MarshalJSON() ([]byte, error) {
 	return json.Marshal(cuList.List)

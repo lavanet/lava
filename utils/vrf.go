@@ -83,7 +83,7 @@ func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
 }
 
 func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool, currentEpoch uint64) (data []byte) {
-	//vrf is calculated on: query hash, relayer signature and 0/1 byte
+	// vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
 	currentEpochBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(currentEpochBytes, currentEpoch)
@@ -96,7 +96,7 @@ func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes
 }
 
 func VerifyVRF(vrfpk string) error {
-	//everything is okay
+	// everything is okay
 	if vrfpk == "" {
 		return fmt.Errorf("can't stake with an empty vrf pk bech32 string")
 	}

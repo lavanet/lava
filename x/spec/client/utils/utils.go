@@ -113,9 +113,9 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret 
 	return ret, nil
 }
 
-func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (ApiInterfaces []types.ApiInterface) {
+func ConvertJSONApiInterface(apiinterfacesJSON []ApiInterfaceJSON) (apiInterfaces []types.ApiInterface) {
 	for _, apiinterface := range apiinterfacesJSON {
-		ApiInterfaces = append(ApiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type, ExtraComputeUnits: uint64(apiinterface.ExtraComputeUnits)})
+		apiInterfaces = append(apiInterfaces, types.ApiInterface{Interface: apiinterface.Interface, Type: apiinterface.Type, ExtraComputeUnits: uint64(apiinterface.ExtraComputeUnits)})
 	}
 
 	return

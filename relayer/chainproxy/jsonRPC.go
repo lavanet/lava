@@ -278,7 +278,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel() //incase there's a problem make sure to cancel the connection
+			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
@@ -290,7 +290,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) //this reply contains the RPC ID
+				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
 					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -396,7 +396,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
-		//this later causes returning an error
+		// this later causes returning an error
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {

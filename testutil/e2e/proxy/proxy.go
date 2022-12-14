@@ -71,9 +71,9 @@ func main() {
 
 	flag.Parse()
 	if *help || (*host == "" && flag.NArg() == 0) {
-		fmt.Println("\ngo run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict\n")
+		fmt.Println("\ngo run proxy.go [host] -p [port] OPTIONAL -cache -alt [JSONFILE] -strict")
 		fmt.Println("	Usage Example:")
-		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache \n")
+		fmt.Println("	$ go run proxy.go -host google.com/ -p 1111 -cache")
 		flag.Usage()
 	} else if *host == "" {
 		if len(os.Args) > 0 {
@@ -312,7 +312,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				}
 				responsesChanged = true
 
-				//Return Response
+				// Return Response
 				if respBody == nil {
 					respBody = []byte("error")
 				}
@@ -326,6 +326,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		if current != nil {
 			id = current.id + ":" + current.port
 		}
-		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id, "\n")
+		fmt.Println("_________________________________", realCount, "/", cacheCount, ": proxy sent (new/from cache)", id)
 	}
 }

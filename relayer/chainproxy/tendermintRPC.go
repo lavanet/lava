@@ -29,7 +29,7 @@ type TendemintRpcMessage struct {
 }
 
 type tendermintRpcChainProxy struct {
-	//embedding the jrpc chain proxy because the only diff is on parse message
+	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
 }
 
@@ -151,13 +151,13 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {
-		//assuming jsonrpc
+		// assuming jsonrpc
 		err := json.Unmarshal(data, &msg)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		//assuming URI
+		// assuming URI
 		var parsedMethod string
 		idx := strings.Index(path, "?")
 		if idx == -1 {
@@ -173,7 +173,7 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		}
 		if strings.Contains(path[idx+1:], "=") {
 			params := make(map[string]interface{})
-			rawParams := strings.Split(path[idx+1:], "&") //list with structure ['height=0x500',...]
+			rawParams := strings.Split(path[idx+1:], "&") // list with structure ['height=0x500',...]
 			for _, param := range rawParams {
 				splitParam := strings.Split(param, "=")
 				if len(splitParam) != 2 {
@@ -239,7 +239,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel() //incase there's a problem make sure to cancel the connection
+			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
@@ -251,7 +251,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) //this reply contains the RPC ID
+				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
 					cp.portalLogs.LogRequestAndResponse("tendermint ws", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -319,7 +319,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		msgSeed := strconv.Itoa(rand.Intn(10000000000))
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})

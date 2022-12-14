@@ -64,7 +64,7 @@ func SignVRFData(pkey *btcSecp256k1.PrivateKey, vrfData *pairingtypes.VRFData) (
 
 func SignRelay(pkey *btcSecp256k1.PrivateKey, request pairingtypes.RelayRequest) ([]byte, error) {
 	//
-	request.DataReliability = nil //its not a part of the signature, its a separate part
+	request.DataReliability = nil // its not a part of the signature, its a separate part
 	request.Sig = []byte{}
 	msgData := []byte(request.String())
 	// Sign
@@ -100,7 +100,7 @@ func DataToVerifyProviderSig(request *pairingtypes.RelayRequest, data_hash []byt
 }
 
 func DataToSignResponseFinalizationData(relayResponse *pairingtypes.RelayReply, relayReq *pairingtypes.RelayRequest, clientAddress sdk.AccAddress) (dataToSign []byte) {
-	//sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
+	// sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
 	return DataToSignResponseFinalizationDataInner(relayResponse.LatestBlock, relayReq.SessionId, relayReq.BlockHeight, relayReq.RelayNum, relayResponse.FinalizedBlocksHashes, clientAddress)
 }
 
@@ -169,7 +169,7 @@ func ValidateSignerOnVRFData(signer sdk.AccAddress, dataReliability pairingtypes
 	if err != nil {
 		return false, fmt.Errorf("RecoverPubKeyFromVRFData: %w", err)
 	}
-	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) //signer
+	signerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String()) // signer
 	if err != nil {
 		return false, fmt.Errorf("AccAddressFromHex : %w", err)
 	}
@@ -188,7 +188,7 @@ func RecoverProviderPubKeyFromVrfDataOnly(dataReliability *pairingtypes.VRFData)
 	if err != nil {
 		return nil, fmt.Errorf("err: %w DataReliability: %+v", err, dataReliability)
 	}
-	providerAccAddress, err = sdk.AccAddressFromHex(pubKey.Address().String()) //consumer signer
+	providerAccAddress, err = sdk.AccAddressFromHex(pubKey.Address().String()) // consumer signer
 	return
 }
 
@@ -202,7 +202,7 @@ func RecoverProviderPubKeyFromQueryAndAllDataHash(request *pairingtypes.RelayReq
 }
 
 func RecoverProviderPubKeyFromVrfDataAndQuery(request *pairingtypes.RelayRequest) (secp256k1.PubKey, error) {
-	//we take the all data hash from reliability
+	// we take the all data hash from reliability
 	return RecoverProviderPubKeyFromQueryAndAllDataHash(request, request.DataReliability.AllDataHash, request.DataReliability.ProviderSig)
 }
 

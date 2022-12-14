@@ -157,7 +157,7 @@ func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Cont
 	return ctx
 }
 
-//Make sure you save the new context
+// Make sure you save the new context
 func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -169,14 +169,14 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 	return AdvanceToBlock(ctx, ks, nextEpochBlockNum)
 }
 
-//Make sure you save the new context
+// Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 		block := uint64(unwrapedCtx.BlockHeight())
 
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
-		//begin block
+		// begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
 		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ProviderKey)
 		ks.Epochstorage.StoreCurrentEpochStakeStorage(unwrapedCtx, block, epochstoragetypes.ClientKey)

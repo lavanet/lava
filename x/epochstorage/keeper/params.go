@@ -24,14 +24,14 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	//Unstake Hold Blocks is always used for the latest, but we want to use the fixated
+	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
 	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocks), block, &res)
 	return
 }
 
 // UnstakeHoldBlocksRaw returns the UnstakeHoldBlocks param
 func (k Keeper) UnstakeHoldBlocksRaw(ctx sdk.Context) (res uint64) {
-	//Unstake Hold Blocks is always used for the latest, but we want to use the fixated
+	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
 	k.paramstore.Get(ctx, types.KeyUnstakeHoldBlocks, &res)
 	return
 }
@@ -83,11 +83,11 @@ func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro er
 }
 
 func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64, err error) {
-	//get epochBlocks directly because we also need an epoch start on the current grid and when fixation was saved is an epoch start
+	// get epochBlocks directly because we also need an epoch start on the current grid and when fixation was saved is an epoch start
 	fixtedParams, err := k.GetFixatedParamsForBlock(ctx, string(types.KeyEpochBlocks), block)
 	var blocksCycle uint64
 	utils.Deserialize(fixtedParams.Parameter, &blocksCycle)
-	epochStartInGrid := fixtedParams.FixationBlock //fixation block is always <= block
+	epochStartInGrid := fixtedParams.FixationBlock // fixation block is always <= block
 	blockRelativeToGrid := block - epochStartInGrid
 	return blockRelativeToGrid % blocksCycle, err
 }
@@ -121,7 +121,7 @@ func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (pr
 	if epochStart <= 0 {
 		return 0, utils.LavaFormatError("GetPreviousEpochStartForBlock", fmt.Errorf("GetPreviousEpochStartForBlock tried to fetch epoch beyond zero"), nil)
 	}
-	previousEpochStart, _, err2 := k.GetEpochStartForBlock(ctx, epochStart-1) //we take one block before the target epoch so it belongs to the previous epoch
+	previousEpochStart, _, err2 := k.GetEpochStartForBlock(ctx, epochStart-1) // we take one block before the target epoch so it belongs to the previous epoch
 	if err != nil {
 		erro = err
 	} else if err2 != nil {

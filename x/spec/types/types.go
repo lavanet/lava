@@ -19,7 +19,7 @@ const (
 
 var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
 
-//allows unmarshaling parser func
+// allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(PARSER_FUNC_name[int32(s)])

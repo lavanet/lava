@@ -53,7 +53,7 @@ func (dm *LavaMutex) waitForTimeout() {
 func (dm *LavaMutex) Lock() {
 	if TimeoutMutexBoolean {
 		tempLineAndFile := dm.getLineAndFile()
-		dm.lockCount = dm.lockCount + 1
+		dm.lockCount++
 		fmt.Printf("Lock: %s, count %d ... ", tempLineAndFile, dm.lockCount)
 		dm.mu.Lock()
 		fmt.Printf("locked \n")
@@ -70,7 +70,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 		tempLineAndFile := dm.getLineAndFile()
 		isLocked = dm.mu.TryLock()
 		if isLocked {
-			dm.lockCount = dm.lockCount + 1
+			dm.lockCount++
 			// fmt.Println("TryLock Locked: ", tempLineAndFile)
 			dm.lineAndFile = tempLineAndFile
 			dm.SecondsLeft = TIMEOUT
@@ -85,7 +85,7 @@ func (dm *LavaMutex) TryLock() (isLocked bool) {
 func (dm *LavaMutex) Unlock() {
 	if TimeoutMutexBoolean {
 		// fmt.Println("Unlock: ", dm.getLineAndFile())
-		dm.lockCount = dm.lockCount - 1
+		dm.lockCount++
 		dm.quit <- true
 	}
 	dm.mu.Unlock()

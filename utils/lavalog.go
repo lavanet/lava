@@ -64,7 +64,7 @@ func LoggingLevel(logLevel string) {
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	// os.Getenv("LAVA_DISABLE_COLORS") == "true"
 	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
@@ -103,7 +103,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	logEvent.Msg(description)
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
-	if errRet == nil { //we always want to return an error if lavaFormatError was called
+	if errRet == nil { // we always want to return an error if lavaFormatError was called
 		return fmt.Errorf(output)
 	}
 	return errRet

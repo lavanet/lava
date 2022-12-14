@@ -53,7 +53,7 @@ type Endpoint struct {
 
 type ConsumerSessionsWithProvider struct {
 	Lock             utils.LavaMutex
-	Acc              string //public lava address // change at the end to PublicLavaAddress
+	Acc              string // public lava address // change at the end to PublicLavaAddress
 	Endpoints        []*Endpoint
 	Sessions         map[int64]*SingleConsumerSession
 	MaxComputeUnits  uint64
@@ -153,14 +153,14 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
-	//try to lock an existing session, if can't create a new one
+	// try to lock an existing session, if can't create a new one
 	numberOfBlockedSessions := 0
 	for sessionID, session := range cswp.Sessions {
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
 		}
 		if session.Endpoint != endpoint {
-			//skip sessions that don't belong to the active connection
+			// skip sessions that don't belong to the active connection
 			continue
 		}
 		if numberOfBlockedSessions >= MaxAllowedBlockListedSessionPerProvider {
@@ -183,7 +183,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 	}
 
 	randomSessionId := int64(0)
-	for randomSessionId == 0 { //we don't allow 0
+	for randomSessionId == 0 { // we don't allow 0
 		randomSessionId = rand.Int63()
 	}
 
@@ -286,7 +286,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
+		if blockHeightDiff <= 0 { // if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {

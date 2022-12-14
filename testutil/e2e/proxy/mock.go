@@ -8,7 +8,7 @@ import (
 )
 
 type mockMap struct {
-	requests map[string]string //`json:"requests"`
+	requests map[string]string // `json:"requests"`
 }
 
 func mapToJsonFile(mMap mockMap, outfile string) error {

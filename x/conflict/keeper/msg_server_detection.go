@@ -38,12 +38,12 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "error": err.Error()}, "Simulation: response conflict detection error")
 		}
 
-		//the conflict detection transaction is valid!, start a vote
-		//TODO: 1. start a vote, with vote ID (unique, list index isn't good because its changing, use a map)
-		//2. create an event to declare vote
-		//3. accept incoming commit transactions for this vote,
-		//4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
-		//5. majority wins, minority gets penalised
+		// the conflict detection transaction is valid!, start a vote
+		// TODO: 1. start a vote, with vote ID (unique, list index isn't good because its changing, use a map)
+		// 2. create an event to declare vote
+		// 3. accept incoming commit transactions for this vote,
+		// 4. after vote ends, accept reveal transactions, strike down every provider that voted (only valid if there was a commit)
+		// 5. majority wins, minority gets penalised
 		epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(msg.ResponseConflict.ConflictRelayData0.Request.BlockHeight))
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get EpochStart for specific block")
@@ -61,8 +61,8 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get epochblocks")
 		}
-		
-		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()) + k.VotePeriod(ctx)*epochBlocks)
+
+		voteDeadline, err := k.Keeper.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight())+k.VotePeriod(ctx)*epochBlocks)
 		if err != nil {
 			return nil, utils.LavaError(ctx, logger, "response_conflict_detection", map[string]string{"client": msg.Creator, "provider0": msg.ResponseConflict.ConflictRelayData0.Request.Provider, "provider1": msg.ResponseConflict.ConflictRelayData1.Request.Provider}, "Simulation: could not get NextEpoch")
 		}

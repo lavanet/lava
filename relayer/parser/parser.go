@@ -35,7 +35,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	case "finalized":
 		return spectypes.FINALIZED_BLOCK, nil
 	default:
-		//try to parse a number
+		// try to parse a number
 	}
 	blockNum, err := strconv.ParseInt(block, 0, 64)
 	if err != nil {
@@ -47,7 +47,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	return blockNum, nil
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
 	var retval []interface{}
 	var err error
@@ -83,7 +83,7 @@ func ParseDefault(rpcInput RPCInput, input []string, dataSource int) []interface
 	return retArr
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_PARAMS)
 	if err != nil || result == nil {
@@ -92,7 +92,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	return rpcInput.ParseBlock(result[0].(string))
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
@@ -113,7 +113,7 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 	return rpcInput.ParseBlock(blockstr)
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser) ([]interface{}, error) {
 	return Parse(rpcInput, resultParser, PARSE_RESULT)
 }
@@ -145,7 +145,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 }
 
 func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	//specified block is one of the direct parameters, input should be one string defining the location of the block
+	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
 		return nil, fmt.Errorf("invalid input format, input length: %d", len(input))
 	}
@@ -176,7 +176,7 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	}
 }
 
-//expect input to be keys[a,b,c] and a canonical object such as
+// expect input to be keys[a,b,c] and a canonical object such as
 // {
 //   "a": {
 //       "b": {
@@ -315,7 +315,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 				}
 			}
 		}
-		//did not find a named property
+		// did not find a named property
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
 		}

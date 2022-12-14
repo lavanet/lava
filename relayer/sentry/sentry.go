@@ -54,15 +54,15 @@ type VoteParams struct {
 
 func (vp *VoteParams) GetCloseVote() bool {
 	if vp == nil {
-		//default returns false
+		// default returns false
 		return false
 	}
 	return vp.CloseVote
 }
 
-//Constants
+// Constants
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) //TODO move to params pairing
+var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
 const (
 	MaxConsecutiveConnectionAttempts = 3
 	PercentileToCalculateLatency     = 0.9
@@ -240,7 +240,7 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 	//
 	// Set
 	pairing := []*lavasession.ConsumerSessionsWithProvider{}
-	pairingAddresses := []string{} //this object will not be mutated for vrf calculations
+	pairingAddresses := []string{} // this object will not be mutated for vrf calculations
 	for _, provider := range providers {
 		//
 		// Sanity
@@ -252,7 +252,7 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
-			//only take into account endpoints that use the same api interface
+			// only take into account endpoints that use the same api interface
 			if endpoint.UseType == s.ApiInterface {
 				relevantEndpoints = append(relevantEndpoints, endpoint)
 			}
@@ -322,7 +322,7 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryGetSpecResponse) (retServer
 			// TODO: find a better spot for this (more optimized, precompile regex, etc)
 			for _, apiInterface := range api.ApiInterfaces {
 				if apiInterface.Interface != s.ApiInterface {
-					//spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+					// spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
 					continue
 				}
 				if apiInterface.Interface == "rest" {
@@ -358,7 +358,7 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 	// Check if updated
 	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
 	if bytes.Equal(s.specHash, hash) {
-		//spec for chain didnt change
+		// spec for chain didnt change
 		return nil
 	}
 	s.specHash = hash
@@ -442,7 +442,7 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 	for e := range s.NewTransactionEvents {
 		switch data := e.Data.(type) {
 		case tenderminttypes.EventDataTx:
-			//got new TX event
+			// got new TX event
 			if providerAddrList, ok := e.Events["lava_relay_payment.provider"]; ok {
 				for idx, providerAddr := range providerAddrList {
 					if s.Acc == providerAddr && s.ChainID == e.Events["lava_relay_payment.chainID"][idx] {
@@ -526,6 +526,10 @@ func (s *Sentry) ListenForTXEvents(ctx context.Context) {
 					go s.voteInitiationCb(ctx, voteID, voteDeadline, voteParams)
 				}
 			}
+		default:
+			{
+
+			}
 		}
 	}
 }
@@ -536,7 +540,7 @@ func (s *Sentry) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.A
 	for idx, expectedPayment := range s.expectedPayments {
 		//TODO: make sure the payment is not too far from expected block, expectedPayment.BlockHeightDeadline == blockHeight
 		if expectedPayment.CU == paidCUToFInd && expectedPayment.Client.Equals(expectedClient) && uniqueID == expectedPayment.UniqueIdentifier {
-			//found payment for expected payment
+			// found payment for expected payment
 			s.expectedPayments[idx] = s.expectedPayments[len(s.expectedPayments)-1] // replace the element at delete index with the last one
 			s.expectedPayments = s.expectedPayments[:len(s.expectedPayments)-1]     // remove last element
 			return true
@@ -550,7 +554,7 @@ func (s *Sentry) GetPaidCU() uint64 {
 }
 
 func (s *Sentry) UpdatePaidCU(extraPaidCU uint64) {
-	//we lock because we dont want the value changing after we read it before we store
+	// we lock because we dont want the value changing after we read it before we store
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUPaid)
@@ -570,7 +574,7 @@ func (s *Sentry) PrintExpectedPayments() string {
 
 func (s *Sentry) Start(ctx context.Context) {
 	if !s.isUser {
-		//listen for transactions for proof of relay payment
+		// listen for transactions for proof of relay payment
 		go s.ListenForTXEvents(ctx)
 	}
 	//
@@ -604,7 +608,7 @@ func (s *Sentry) Start(ctx context.Context) {
 					utils.LavaFormatError("failed to get spec", err, nil)
 				}
 
-				//update expected payments deadline, and log missing payments
+				// update expected payments deadline, and log missing payments
 				//TODO: make this from the event lava_earliest_epoch instead
 				if !s.isUser {
 					s.IdentifyMissingPayments()
@@ -672,6 +676,10 @@ func (s *Sentry) Start(ctx context.Context) {
 					}
 				}
 			}
+		default:
+			{
+
+			}
 		}
 	}
 }
@@ -725,7 +733,7 @@ func (s *Sentry) IdentifyMissingPayments() {
 	s.expectedPayments = updatedExpectedPayments
 
 	s.PaymentsMu.Unlock()
-	//can be modified in this race window, so we double-check
+	// can be modified in this race window, so we double-check
 
 	utils.LavaFormatInfo("Service report", &map[string]string{"total CU serviced": strconv.FormatUint(s.GetCUServiced(), 10),
 		"total CU that got paid": strconv.FormatUint(s.GetPaidCU(), 10)})
@@ -754,10 +762,10 @@ func (s *Sentry) connectRawClient(ctx context.Context, addr string) (*pairingtyp
 func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply, request0 *pairingtypes.RelayRequest, reply1 *pairingtypes.RelayReply, request1 *pairingtypes.RelayRequest) (ok bool) {
 	compare_result := bytes.Compare(reply0.Data, reply1.Data)
 	if compare_result == 0 {
-		//they have equal data
+		// they have equal data
 		return true
 	}
-	//they have different data! report!
+	// they have different data! report!
 	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(reply0.Data), "Data1": string(reply1.Data)})
 	responseConflict := conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: reply0, Request: request0},
 		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: reply1, Request: request1}}
@@ -765,7 +773,7 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	s.ClientCtx.SkipConfirm = true
 	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
 	SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
-	//report the conflict
+	// report the conflict
 	return false
 }
 
@@ -932,7 +940,7 @@ func (s *Sentry) SendRelay(
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, error) {
 	// callback user
 	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
-	//error using this provider
+	// error using this provider
 	if err != nil {
 		return nil, nil, 0, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 	}
@@ -1006,8 +1014,8 @@ func (s *Sentry) SendRelay(
 					VrfProof:    vrf_proof,
 					ProviderSig: reply.Sig,
 					AllDataHash: sigs.AllDataHash(reply, request),
-					QueryHash:   utils.CalculateQueryHash(*request), //calculated from query body anyway, but we will use this on payment
-					Sig:         nil,                                //calculated in cb_send_reliability
+					QueryHash:   utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
+					Sig:         nil,                                // calculated in cb_send_reliability
 				}
 				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
@@ -1320,16 +1328,16 @@ func (s *Sentry) GetCUServiced() uint64 {
 	return atomic.LoadUint64(&s.totalCUServiced)
 }
 
-func (s *Sentry) SetCUServiced(CU uint64) {
-	atomic.StoreUint64(&s.totalCUServiced, CU)
+func (s *Sentry) SetCUServiced(cu uint64) {
+	atomic.StoreUint64(&s.totalCUServiced, cu)
 }
 
-func (s *Sentry) UpdateCUServiced(CU uint64) {
-	//we lock because we dont want the value changing after we read it before we store
+func (s *Sentry) UpdateCUServiced(cu uint64) {
+	// we lock because we dont want the value changing after we read it before we store
 	s.PaymentsMu.Lock()
 	defer s.PaymentsMu.Unlock()
 	currentCU := atomic.LoadUint64(&s.totalCUServiced)
-	atomic.StoreUint64(&s.totalCUServiced, currentCU+CU)
+	atomic.StoreUint64(&s.totalCUServiced, currentCU+cu)
 }
 
 func (s *Sentry) GetMaxCUForUser(ctx context.Context, address string, chainID string) (maxCu uint64, err error) {
@@ -1368,7 +1376,7 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 		}
 		return highestBlockNumber
 	}
-	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) //update the highest in place
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
 	highestBlockNumber = FindHighestBlockNumber(s.providerHashesConsensus)
 
 	now := time.Now()
@@ -1376,8 +1384,8 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 		listExpectedBH := []int64{}
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
-				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) //interpolation
-				//limit the interpolation to the highest seen block height
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime).Milliseconds() / averageBlockTime_ms) // interpolation
+				// limit the interpolation to the highest seen block height
 				if expected > highestBlockNumber {
 					expected = highestBlockNumber
 				}
@@ -1450,7 +1458,7 @@ func NewSentry(
 }
 
 func UpdateRequestedBlock(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply) {
-	//since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
+	// since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
 	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
 

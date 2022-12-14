@@ -61,7 +61,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account, provider1 Account, spec spectypes.Spec) (conflicttypes.MsgDetection, error) {
 	var msg conflicttypes.MsgDetection
 	msg.Creator = consumer.Addr.String()
-	//request 0
+	// request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
 	msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
@@ -84,7 +84,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 
 	msg.ResponseConflict.ConflictRelayData0.Request.Sig = sig
 
-	//request 1
+	// request 1
 	temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
 	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Request.Provider = provider1.Addr.String()
@@ -95,7 +95,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	}
 	msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
 
-	//reply 0
+	// reply 0
 	msg.ResponseConflict.ConflictRelayData0.Reply.Nonce = 10
 	msg.ResponseConflict.ConflictRelayData0.Reply.FinalizedBlocksHashes = []byte{}
 	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(spec.FinalizationCriteria)
@@ -111,7 +111,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	}
 	msg.ResponseConflict.ConflictRelayData0.Reply.SigBlocks = sigBlocks
 
-	//reply 1
+	// reply 1
 	temp, _ = msg.ResponseConflict.ConflictRelayData0.Reply.Marshal()
 	msg.ResponseConflict.ConflictRelayData1.Reply.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, []byte("DIFF")...)
