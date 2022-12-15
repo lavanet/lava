@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -361,7 +362,7 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
-		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+		connectCtx, cancel := context.WithTimeout(ctx, time.Duration(nm.serviceApi.ComputeUnits*uint64(time.Second)))
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
 	}
