@@ -57,9 +57,12 @@ func convertMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
 		Version: rpcMsg.Version,
 		ID:      rpcMsg.ID,
 		Method:  rpcMsg.Method,
-		Params:  rpcMsg.Params,
 		Error:   rpcMsg.Error,
 		Result:  rpcMsg.Result,
+	}
+
+	if rpcMsg.Params != nil {
+		msg.Params = rpcMsg.Params
 	}
 
 	return msg, nil
