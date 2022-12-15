@@ -148,13 +148,13 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		relaySentTime := time.Now()
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient
 		var reply *pairingtypes.RelayReply
 
+		relaySentTime := time.Now()
 		if isSubscription {
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
@@ -194,11 +194,11 @@ func SendRelay(
 		return reply, &replyServer, relayRequest, currentLatency, fromCache, nil
 	}
 
-	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error) {
 		//client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
-			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+			return nil, nil, 0, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
@@ -219,27 +219,28 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 		relayRequest.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
+		relaySentTime := time.Now()
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
-
+		currentLatency := time.Since(relaySentTime)
 		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 
-		return reply, relayRequest, nil
+		return reply, relayRequest, currentLatency, nil
 	}
 
 	reply, replyServer, relayLatency, isCachedResult, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
