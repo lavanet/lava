@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultTimeout            = 5 * time.Second
+	TimePerCU                 = uint64(time.Second)
 	ContextUserValueKeyDappID = "dappID"
 )
 
