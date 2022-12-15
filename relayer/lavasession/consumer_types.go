@@ -302,4 +302,5 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
 				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)})
 	}
+
 }

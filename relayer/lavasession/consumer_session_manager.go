@@ -265,6 +265,26 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	return nil
 }
 
+// A Session can be created but unused if consumer found the response in cache. so we need to unlock the session
+// and decrease the cu that were applied
+func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsumerSession) error {
+	if consumerSession.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer consumerSession.lock.Unlock()
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "OnSessionUnUsed: consumerSession.lock must be locked before accessing this method, additional info:")
+	}
+	cuToDecrease := consumerSession.LatestRelayCu
+	consumerSession.LatestRelayCu = 0                            // making sure no one uses it in a wrong way
+	parentConsumerSessionsWithProvider := consumerSession.Client // must read this pointer before unlocking
+	// finished with consumerSession here can unlock.
+	consumerSession.lock.Unlock()                                                    // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
@@ -510,10 +530,14 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
 	}
 
+	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
+
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
 	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
 		consumerSession.Blocklisted = true // block this session from future usages
+	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
+		consumerSession.Blocklisted = true
 	}
 
 	var blockProvider, reportProvider bool

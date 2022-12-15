@@ -15,19 +15,19 @@ lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 sleep 4
 lavad tx pairing stake-client "ETH1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-client "GTH1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "COS3"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "CELO"   200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "LAV1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "COS4"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "ALFAJORES" 200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "ARB1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "ARBN"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "APT1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "STRK"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
-lavad tx pairing stake-client "JUN1"   200000ulava 1 -y --from user4 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "COS5"   200000ulava 1 -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-client "POLYGON1"   200000ulava 1 -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "COS3"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "FTM250" 200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "CELO"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "LAV1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "COS4"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "ALFAJORES" 200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "ARB1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "ARBN"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "APT1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "STRK"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto"  --gas-prices $GASPRICE
+lavad tx pairing stake-client "JUN1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "COS5"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-client "POLYGON1"   200000ulava 1 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 
 # Ethereum providers
