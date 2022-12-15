@@ -353,6 +353,26 @@ func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, 
 	}
 }
 
+// On a successful DataReliability session we don't need to increase and update any field, we just need to unlock the session.
+func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession *SingleConsumerSession,
+	latestServicedBlock int64,
+	specComputeUnits uint64,
+	currentLatency time.Duration,
+	expectedBH int64,
+	numOfProviders int,
+	providersCount uint64,
+) error {
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
+		// if we managed to lock throw an error for misuse.
+		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	}
+	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
+	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
+	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
+	return nil
+}
+
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
 func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession *SingleConsumerSession,
@@ -489,16 +509,6 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 	}
 
 	return consumerSession, providerAddress, currentEpoch, nil
-}
-
-// On a successful DataReliability session we don't need to increase and update any field, we just need to unlock the session.
-func (csm *ConsumerSessionManager) OnSessionDoneWithoutQoSChanges(consumerSession *SingleConsumerSession) error {
-	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
-	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
-		// if we managed to lock throw an error for misuse.
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
-	}
-	return nil
 }
 
 // On a successful Subscribe relay
