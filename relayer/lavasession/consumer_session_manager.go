@@ -265,8 +265,8 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	return nil
 }
 
-// A Session can be created but unused if consumer found the response in cache. so we need to unlock the session
-// and decrease the cu that were applied
+// A Session can be created but unused if consumer found the response in the cache.
+// So we need to unlock the session and decrease the cu that were applied
 func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsumerSession) error {
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
