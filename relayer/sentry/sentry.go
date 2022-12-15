@@ -932,7 +932,7 @@ func (s *Sentry) SendRelay(
 	providerPubAddress string,
 	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error),
 	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
-	deterministic bool,
+	specCategory *spectypes.SpecCategory,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, error) {
 	// callback user
 	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
@@ -965,7 +965,7 @@ func (s *Sentry) SendRelay(
 			return nil, nil, latency, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 
-		if deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
+		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
 			var dataReliabilitySessions []*DataReliabilitySession
 
 			// handle data reliability

@@ -360,6 +360,10 @@ func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *JrpcMessage) GetInterface() *spectypes.ApiInterface {
+	return &nm.serviceApi.ApiInterfaces[0]
+}
+
 func (nm *JrpcMessage) RequestedBlock() int64 {
 	return nm.requestedBlock
 }

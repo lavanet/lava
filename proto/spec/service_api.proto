@@ -12,7 +12,7 @@ message ServiceApi {
   uint64 compute_units = 3; 
   bool enabled = 4; 
   repeated ApiInterface api_interfaces = 5 [(gogoproto.nullable) = false]; 
-  SpecCategory category = 6;
+  SpecCategory reserved = 6;
   Parsing parsing = 7 [(gogoproto.nullable) = false];
 }
 
@@ -25,7 +25,7 @@ message ApiInterface {
   string interface = 1;
   string type = 2;
   uint64 extra_compute_units = 3; 
-  bool deterministic = 4;
+  SpecCategory category = 4;
 }
 
 message BlockParser {
@@ -43,7 +43,7 @@ enum PARSER_FUNC{
 }
 
 message SpecCategory{
-  bool reserved = 1;
+  bool deterministic = 1;
   bool local = 2;
   bool subscription = 3;
   uint32 stateful = 4;

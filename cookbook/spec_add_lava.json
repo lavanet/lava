@@ -16,11 +16,6 @@
                 "apis": [
                     {
                         "name": "abci_info",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -31,20 +26,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "abci_query",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -57,20 +52,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "block",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -83,10 +78,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -104,11 +104,6 @@
                     },
                     {
                         "name": "block_by_hash",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -119,20 +114,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "block_results",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -145,20 +140,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "block_search",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -169,20 +164,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "blockchain",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "maxHeight",
@@ -195,20 +190,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "broadcast_evidence",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -219,20 +214,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_async",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -243,20 +238,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_commit",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -267,20 +262,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "broadcast_tx_sync",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -291,20 +286,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "check_tx",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -315,20 +310,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "commit",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -341,20 +336,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "consensus_params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -367,20 +362,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "consensus_state",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -391,20 +386,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "dump_consensus_state",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -415,20 +410,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "genesis",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -439,20 +434,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "genesis_chunked",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -463,20 +458,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "health",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -487,20 +482,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "net_info",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -511,20 +506,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "num_unconfirmed_txs",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -535,20 +530,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "status",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -559,10 +554,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -580,11 +580,6 @@
                     },
                     {
                         "name": "subscribe",
-                        "category": {
-                            "local": true,
-                            "subscription": true,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -595,20 +590,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": true,
+		                            "subscription": true,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "tx",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -619,20 +614,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "tx_search",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -643,20 +638,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "unconfirmed_txs",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -667,20 +662,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "unsubscribe",
-                        "category": {
-                            "local": true,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -691,20 +686,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": true,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "unsubscribe_all",
-                        "category": {
-                            "local": true,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -715,20 +710,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": true,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "validators",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "height",
@@ -741,20 +736,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/node_info",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -765,20 +760,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/syncing",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -789,20 +784,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/blocks/latest",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -813,10 +808,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -835,11 +835,6 @@
                     },
                     {
                         "name": "/blocks/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -850,10 +845,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -871,11 +871,6 @@
                     },
                     {
                         "name": "/validatorsets/latest",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -886,20 +881,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/validatorsets/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -910,20 +905,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/txs",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -934,20 +929,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/staking/delegators/{delegatorAddr}/delegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -958,20 +953,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -982,20 +977,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1006,20 +1001,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/inflation",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1030,20 +1025,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/interchain_accounts/controller/v1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1054,20 +1049,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/client_connections/{client_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1078,20 +1073,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1102,20 +1097,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/supply/{denom}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1126,20 +1121,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/withdraw_address",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1150,20 +1145,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1174,20 +1169,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1198,20 +1193,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1222,20 +1217,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/client/v1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1246,20 +1241,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/slashes",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1270,20 +1265,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1294,20 +1289,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1318,26 +1313,31 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             },
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/latest",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1348,20 +1348,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1372,20 +1372,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/simulate",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1396,20 +1396,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1420,20 +1420,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/provider_payment_storage",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1444,20 +1444,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/user_entry/{address}/{chainID}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1468,20 +1468,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/issued/{granter}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1492,20 +1492,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1516,20 +1516,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegations/{delegator_addr}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1540,20 +1540,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/conflict/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1564,20 +1564,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "3"
@@ -1588,20 +1588,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/supply",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1612,20 +1612,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/community_pool",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1636,20 +1636,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards/{validator_address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1660,20 +1660,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1684,20 +1684,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/signing_infos/{cons_address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1708,20 +1708,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/upgraded_consensus_states",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1732,20 +1732,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/balances/{address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1756,20 +1756,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1780,20 +1780,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1804,20 +1804,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/stake_storage/{index}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1828,20 +1828,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/params/{params_type}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1852,20 +1852,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/mint/v1beta1/annual_provisions",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1876,20 +1876,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1900,20 +1900,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -1924,20 +1924,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/validators",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1948,20 +1948,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -1972,20 +1972,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/connections/{connection}/channels",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -1996,20 +1996,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2020,20 +2020,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/providers/{chainID}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2044,20 +2044,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/redelegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2068,20 +2068,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/historical_info/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -2092,20 +2092,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2116,20 +2116,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/epoch_details",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2140,20 +2140,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2164,20 +2164,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/denoms_metadata/{denom}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2188,20 +2188,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2212,20 +2212,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/module_versions",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2236,20 +2236,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -2260,20 +2260,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2284,20 +2284,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/provider_payment_storage/{index}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2308,20 +2308,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2332,20 +2332,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/delegators/{delegator_addr}/validators/{validator_addr}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2356,20 +2356,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/slashing/v1beta1/signing_infos",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2380,20 +2380,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections/{connection_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2404,20 +2404,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/epoch_payments",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2428,20 +2428,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/denoms_metadata",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2452,20 +2452,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2476,20 +2476,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/commission",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2500,20 +2500,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/params/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2524,20 +2524,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_status/{client_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2548,20 +2548,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2572,20 +2572,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/accounts",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2596,20 +2596,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/validators/{validator_address}/outstanding_rewards",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2620,20 +2620,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2644,20 +2644,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs/block/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2668,20 +2668,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/interchain_accounts/host/v1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2692,20 +2692,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2716,20 +2716,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/stake_storage",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2740,20 +2740,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/auth/v1beta1/accounts/{address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2764,20 +2764,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/allowances/{grantee}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2788,20 +2788,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/connection/v1/connections",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2812,20 +2812,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/spec/{index}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2836,20 +2836,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -2860,20 +2860,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2884,20 +2884,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2908,20 +2908,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -2932,20 +2932,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/spendable_balances/{address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2956,20 +2956,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/delegators/{delegator_address}/rewards",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -2980,20 +2980,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3004,20 +3004,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/evidence/v1beta1/evidence",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3028,20 +3028,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/pool",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3052,20 +3052,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3076,20 +3076,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/epochstorage/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3100,20 +3100,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/tx/v1beta1/txs/{hash}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3124,20 +3124,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3148,20 +3148,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/unbonding_delegations",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3172,20 +3172,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/chain/{chainID}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3196,20 +3196,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3220,20 +3220,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3244,20 +3244,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3268,20 +3268,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators/{validator_addr}/delegations/{delegator_addr}/unbonding_delegation",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3292,20 +3292,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3316,20 +3316,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/clients/{chainID}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3340,20 +3340,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/get_pairing/{chainID}/{client}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3364,20 +3364,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/syncing",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3388,20 +3388,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/feegrant/v1beta1/allowance/{granter}/{grantee}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3412,20 +3412,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_traces",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3436,20 +3436,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3460,20 +3460,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/distribution/v1beta1/params",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3484,20 +3484,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3508,20 +3508,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_states/{client_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3532,20 +3532,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/upgraded_client_states",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3556,20 +3556,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/client_states",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3580,20 +3580,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3604,20 +3604,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/current_plan",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3628,20 +3628,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3652,20 +3652,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/spec/spec",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3676,20 +3676,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/bank/v1beta1/balances/{address}/by_denom",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3700,20 +3700,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3724,20 +3724,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3748,20 +3748,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/ibc/core/client/v1/consensus_states/{client_id}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3772,20 +3772,20 @@
                         "enabled": false,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/lavanet/lava/pairing/epoch_payments/{index}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3796,20 +3796,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/base/tendermint/v1beta1/node_info",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -3820,20 +3820,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3844,20 +3844,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/staking/v1beta1/validators",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3868,20 +3868,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -3892,10 +3892,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     }

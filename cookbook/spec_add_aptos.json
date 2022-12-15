@@ -16,11 +16,6 @@
                 "apis": [
                     {
                         "name": "/accounts/{address}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -31,20 +26,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/resources",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -55,20 +50,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/modules",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -79,20 +74,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/resource/{resource_type}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -103,20 +98,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/module/{module_name}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -127,20 +122,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/blocks/by_height/{block_height}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "0"
@@ -151,10 +146,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -171,11 +171,6 @@
                     },
                     {
                         "name": "/blocks/by_version/{version}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -186,20 +181,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/events/{event_key}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -210,20 +205,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/events/{creation_number}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -234,20 +229,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/events/{event_handle}/{field_name}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -258,20 +253,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/spec",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -282,20 +277,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/-/healthy",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -306,20 +301,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -330,10 +325,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ],
                         "parsing": {
@@ -350,11 +350,6 @@
                     },
                     {
                         "name": "/tables/{table_handle}/item",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -365,20 +360,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -389,26 +384,31 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             },
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions/by_hash/{txn_hash}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -419,20 +419,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions/by_version/{txn_version}",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -443,20 +443,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/accounts/{address}/transactions",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -467,20 +467,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions/batch",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -491,20 +491,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions/simulate",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -515,20 +515,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/transactions/encode_submission",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -539,20 +539,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "type": "post",
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "/estimate_gas_price",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 "latest"
@@ -563,10 +563,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "rest",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     }

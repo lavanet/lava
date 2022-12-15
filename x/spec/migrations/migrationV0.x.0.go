@@ -22,7 +22,10 @@ func updateSpecsVersion(ctx sdk.Context, k keeper.Keeper) error {
 	for spec := range specs {
 		for api := range specs[spec].Apis {
 			for apiinterface := range specs[spec].Apis[api].ApiInterfaces {
-				specs[spec].Apis[api].ApiInterfaces[apiinterface].Deterministic = specs[spec].Apis[api].Category.Reserved
+				specs[spec].Apis[api].ApiInterfaces[apiinterface].Category.Deterministic = specs[spec].Apis[api].Reserved.Deterministic
+				specs[spec].Apis[api].ApiInterfaces[apiinterface].Category.Local = specs[spec].Apis[api].Reserved.Local
+				specs[spec].Apis[api].ApiInterfaces[apiinterface].Category.Stateful = specs[spec].Apis[api].Reserved.Stateful
+				specs[spec].Apis[api].ApiInterfaces[apiinterface].Category.Subscription = specs[spec].Apis[api].Reserved.Subscription
 			}
 		}
 		k.SetSpec(ctx, specs[spec])

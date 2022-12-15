@@ -27,11 +27,6 @@
                                 "parser_func": "PARSE_CANONICAL"
                             }
                         },
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -42,20 +37,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getBlockWithTxs",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -66,20 +61,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getStateUpdate",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -90,20 +85,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getStorageAt",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -114,20 +109,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionByHash",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -138,20 +133,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionByBlockIdAndIndex",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -162,20 +157,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getTransactionReceipt",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -186,20 +181,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getClass",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -210,20 +205,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getClassHashAt",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -234,20 +229,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getBlockTransactionCount",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -258,20 +253,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_call",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -282,20 +277,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_estimateFee",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -306,10 +301,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
@@ -325,11 +325,6 @@
                                 "parser_func": "PARSE_BY_ARG"
                             }
                         },
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -340,20 +335,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_blockHashAndNumber",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -364,20 +359,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_chainId",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -388,20 +383,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_pendingTransactions",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -412,20 +407,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_syncing",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -436,20 +431,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": false
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getEvents",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -460,20 +455,20 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     },
                     {
                         "name": "starknet_getNonce",
-                        "category": {
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
                         "block_parsing": {
                             "parser_arg": [
                                 ""
@@ -484,10 +479,15 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
                                 "interface": "jsonrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0",
-	                            "deterministic": true
+                                "extra_compute_units": "0"
                             }
                         ]
                     }

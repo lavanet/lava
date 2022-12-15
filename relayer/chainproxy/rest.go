@@ -283,6 +283,10 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *RestMessage) GetInterface() *spectypes.ApiInterface {
+	return &nm.serviceApi.ApiInterfaces[0]
+}
+
 func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
