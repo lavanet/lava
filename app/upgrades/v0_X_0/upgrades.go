@@ -1,4 +1,4 @@
-package v020
+package v0_X_0
 
 import (
 	"log"
@@ -25,7 +25,7 @@ func CreateUpgradeHandler(
 		//delete all existing conflicts
 
 		migrator := migrations.NewMigrator(keepers.SpecKeeper)
-		migrator.MigrateToV020(ctx)
+		migrator.MigrateToV0X0(ctx)
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}

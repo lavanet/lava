@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
@@ -14,10 +13,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
-
-const minCU = 1
 
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
@@ -81,80 +77,27 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 
 func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	for _, spec := range p.Specs {
+
 		_, found := k.GetSpec(ctx, spec.Index)
 
+		logger := k.Logger(ctx)
+
+		details, err := spec.ValidateSpec(k.MaxCU(ctx))
+
+		if err != nil {
+			return utils.LavaError(ctx, logger, "invalid_spec", details, err.Error())
+		}
+		k.SetSpec(ctx, spec)
+		//TODO: add api types once its implemented to the event
+
+		var name string
 		if found {
-			err := handleSpecModifyProposal(ctx, k, spec)
-			if err != nil {
-				return err
-			}
+			name = "spec_add"
 		} else {
-			err := handleSpecAddProposal(ctx, k, spec)
-			if err != nil {
-				return err
-			}
+			name = "spec_modify"
 		}
+
+		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")
 	}
-	return nil
-}
-
-func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, spec spectypes.Spec) error {
-	logger := k.Logger(ctx)
-	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
-	functionTags := map[string]bool{}
-
-	for _, api := range spec.Apis {
-		if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
-			details["api"] = api.Name
-			return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
-		}
-
-		if api.Parsing.FunctionTag != "" {
-			// Validate tag name
-			result := false
-			for _, tag := range spectypes.SupportedTags {
-				if tag == api.Parsing.FunctionTag {
-					result = true
-					functionTags[api.Parsing.FunctionTag] = true
-				}
-			}
-
-			if !result {
-				details["api"] = api.Name
-				return utils.LavaError(ctx, logger, "spec_add_ft_inv", details, "Unsupported function tag")
-			}
-		}
-	}
-
-	if spec.DataReliabilityEnabled {
-		for _, tag := range []string{spectypes.GET_BLOCKNUM, spectypes.GET_BLOCK_BY_NUM} {
-			if found := functionTags[tag]; !found {
-				return utils.LavaError(ctx, logger, "spec_add_ch_mis", details, fmt.Sprintf("missing tagged functions for hash comparison: %s", tag))
-			}
-		}
-	}
-
-	k.SetSpec(ctx, spec)
-	//TODO: add api types once its implemented to the event
-
-	utils.LogLavaEvent(ctx, logger, "spec_add", details, "Gov Proposal Accepted Spec Added")
-
-	return nil
-}
-
-func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, spec spectypes.Spec) error {
-	logger := k.Logger(ctx)
-	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
-
-	for _, api := range spec.Apis {
-		if api.ComputeUnits < minCU || api.ComputeUnits > k.MaxCU(ctx) {
-			details["api"] = api.Name
-			return utils.LavaError(ctx, logger, "spec_add_cu_oor", details, "Compute units out or range")
-		}
-	}
-
-	k.SetSpec(ctx, spec)
-	utils.LogLavaEvent(ctx, logger, "spec_modify", details, "Gov Proposal Accepted Spec Modified")
-
 	return nil
 }

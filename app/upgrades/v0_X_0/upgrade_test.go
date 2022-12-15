@@ -1,6 +1,6 @@
 //go:build ignore
 
-package v020_test
+package v0_x_0_test
 
 import (
 	"testing"

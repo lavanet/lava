@@ -13,7 +13,7 @@ func NewMigrator(keeper keeper.Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
-func (m Migrator) MigrateToV020(ctx sdk.Context) error {
+func (m Migrator) MigrateToV0X0(ctx sdk.Context) error {
 	return updateSpecsVersion(ctx, m.keeper)
 }
 
