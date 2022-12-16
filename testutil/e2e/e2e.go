@@ -250,7 +250,6 @@ func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string) {
 	if lt.testFinishedProperly {
 		return
 	}
-	lt.saveLogs()
 	panic(panicReason)
 }
 
