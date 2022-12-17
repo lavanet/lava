@@ -94,7 +94,7 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 		}
 	}
 
-	txf.WithGas(gasUsed)
+	txf = txf.WithGas(gasUsed)
 
 	gasFee := txf.GasPrices()[0]
 	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
