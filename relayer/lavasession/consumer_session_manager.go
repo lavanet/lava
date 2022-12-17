@@ -430,7 +430,7 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 	}
 	if !connected { // if we are not connected at the end
 		// failed to get an endpoint connection from that provider. return an error.
-		return nil, FailedToConnectToEndPointForDataReliabilityError
+		return nil, utils.LavaFormatError("", FailedToConnectToEndPointForDataReliabilityError, &map[string]string{"provider": providerAddress})
 	}
 	return endpoint, nil
 }
