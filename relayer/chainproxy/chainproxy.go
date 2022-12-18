@@ -36,7 +36,7 @@ type ChainProxy interface {
 	Start(context.Context) error
 	GetSentry() *sentry.Sentry
 	ParseMsg(string, []byte, string) (NodeMessage, error)
-	PortalStart(context.Context, *btcec.PrivateKey, string)
+	PortalStart(context.Context, *btcec.PrivateKey, string, string)
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	GetConsumerSessionManager() *lavasession.ConsumerSessionManager

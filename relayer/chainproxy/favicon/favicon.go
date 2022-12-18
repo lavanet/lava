@@ -1,11 +1,15 @@
 package favicon
 
 import (
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/lavanet/lava/utils"
 )
+
+const FaviconFlag = "favicon-path"
 
 // Config defines the config for middleware.
 type Config struct {
@@ -13,29 +17,21 @@ type Config struct {
 	//
 	// Optional. Default: nil
 	Next func(c *fiber.Ctx) bool
-
 	// File holds the path to an actual favicon that will be cached
 	//
-	// Optional. Default: ""
+	// Optional. Default: "Lava icon",
 	Data []byte `json:"data"`
-
+	// Optional if you would like to change the favicon file you can provide a path to your favicon file
+	FaviconFilePath string `json:"favicon_file_path"`
 	// FileSystem is an optional alternate filesystem to search for the favicon in.
 	// An example of this could be an embedded or network filesystem
 	//
 	// Optional. Default: nil
 	FileSystem http.FileSystem `json:"-"`
-
 	// CacheControl defines how the Cache-Control header in the response should be set
 	//
 	// Optional. Default: "public, max-age=31536000"
 	CacheControl string `json:"cache_control"`
-}
-
-// ConfigDefault is the default config
-var ConfigDefault = Config{
-	Next:         nil,
-	Data:         lavaIcon,
-	CacheControl: "public, max-age=31536000",
 }
 
 const (
@@ -44,31 +40,43 @@ const (
 	hZero  = "0"
 )
 
+func GetDefaultParametersConfig(faviconFilePath string) *Config {
+	return &Config{
+		Next:            nil,
+		Data:            lavaIcon,
+		FaviconFilePath: faviconFilePath,
+		CacheControl:    "public, max-age=31536000",
+	}
+}
+
+func (cfg *Config) parseFaviconIconFromPath() {
+	if cfg.FaviconFilePath == "" {
+		return
+	}
+	data, err := ioutil.ReadFile(cfg.FaviconFilePath)
+	if err != nil {
+		utils.LavaFormatError("Failed to Read File", err, &map[string]string{"file": cfg.FaviconFilePath})
+		return
+	}
+	cfg.Data = data
+}
+
 // New creates a new middleware handler
-func New(config ...Config) fiber.Handler {
-	// Set default config
-	cfg := ConfigDefault
+func New(config ...*Config) fiber.Handler {
+	var cfg *Config
 
-	// Override config if provided
-	if len(config) > 0 {
+	if config != nil {
+		// Override config if provided
+		if len(config) != 1 {
+			panic("Wrong Favicon Config Length")
+		}
 		cfg = config[0]
-
-		// Set default values
-		if cfg.Next == nil {
-			cfg.Next = ConfigDefault.Next
-		}
-		if cfg.CacheControl == "" {
-			cfg.CacheControl = ConfigDefault.CacheControl
-		}
+	} else {
+		cfg = GetDefaultParametersConfig("")
 	}
 
 	// Load icon if provided
-	var (
-		icon    []byte
-		iconLen string
-	)
-	icon = ConfigDefault.Data
-	iconLen = strconv.Itoa(len(icon))
+	cfg.parseFaviconIconFromPath()
 
 	// Return new handler
 	return func(c *fiber.Ctx) error {
@@ -95,11 +103,11 @@ func New(config ...Config) fiber.Handler {
 		}
 
 		// Serve cached favicon
-		if len(icon) > 0 {
-			c.Set(fiber.HeaderContentLength, iconLen)
+		if len(cfg.Data) > 0 {
+			c.Set(fiber.HeaderContentLength, strconv.Itoa(len(cfg.Data)))
 			c.Set(fiber.HeaderContentType, hType)
 			c.Set(fiber.HeaderCacheControl, cfg.CacheControl)
-			return c.Status(fiber.StatusOK).Send(icon)
+			return c.Status(fiber.StatusOK).Send(cfg.Data)
 		}
 
 		return c.SendStatus(fiber.StatusNoContent)

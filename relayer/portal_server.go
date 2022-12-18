@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/chainproxy/favicon"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -89,5 +90,10 @@ func PortalServer(
 		}
 	}
 
-	chainProxy.PortalStart(ctx, privKey, listenAddr)
+	favicon, err := flagSet.GetString(favicon.FaviconFlag)
+	if err != nil {
+		utils.LavaFormatError("Failed To Load Favicon Flag", err, nil)
+	}
+
+	chainProxy.PortalStart(ctx, privKey, listenAddr, favicon)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/chainproxy/favicon"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
@@ -148,6 +149,7 @@ func main() {
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdPortalServer.Flags().String(favicon.FaviconFlag, "", "local path to a favicon icon file to use when accessed portal via browser")
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)

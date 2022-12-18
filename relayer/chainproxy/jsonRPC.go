@@ -12,7 +12,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	favicon2 "github.com/lavanet/lava/relayer/chainproxy/favicon"
+	"github.com/lavanet/lava/relayer/chainproxy/favicon"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
@@ -245,12 +245,12 @@ func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method st
 	return nodeMsg, nil
 }
 
-func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string) {
+func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.PrivateKey, listenAddr string, faviconPath string) {
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use(favicon2.New())
+	app.Use(favicon.New(favicon.GetDefaultParametersConfig(faviconPath)))
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-WebSocket")
