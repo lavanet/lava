@@ -19,7 +19,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
+	//TODO: validate chainID
 	// check client address
 	clientAddr, err := sdk.AccAddressFromBech32(req.Client)
 	if err != nil {
