@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultTimeout            = 5 * time.Second
+	TimePerCU                 = uint64(time.Second)
 	ContextUserValueKeyDappID = "dappID"
 )
 
@@ -313,4 +314,8 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 		return
 	}
 	return "NoDappID"
+}
+
+func getTimePerCu(cu uint64) time.Duration {
+	return time.Duration(cu * TimePerCU)
 }

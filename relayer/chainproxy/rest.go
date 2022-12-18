@@ -277,7 +277,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
 	httpClient := http.Client{
-		Timeout: DefaultTimeout, // Timeout after 5 seconds
+		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
 	}
 
 	var connectionTypeSlected string = http.MethodGet
