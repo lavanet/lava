@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -213,13 +214,17 @@ func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, storageType strin
 	return
 }
 
-func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, idx uint64) {
+func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, idx uint64) error {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, storageType, chainID)
 	if !found {
-		return
+		return errors.ErrNotFound
+	}
+	if idx >= uint64(len(stakeStorage.StakeEntries)) {
+		return errors.ErrNotFound
 	}
 	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
 	k.SetStakeStorageCurrent(ctx, storageType, chainID, stakeStorage)
+	return nil
 }
 
 func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry types.StakeEntry) {

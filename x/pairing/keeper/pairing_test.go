@@ -6,13 +6,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPairingUniqueness(t *testing.T) {
 	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	//init keepers state
 	spec := common.CreateMockSpec()

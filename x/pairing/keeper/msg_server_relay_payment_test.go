@@ -85,6 +85,74 @@ func (ts *testStruct) getProvider(addr string) *account {
 	return nil
 }
 
+// Test that a provider payment is valid if he asked it within the chain's memory, and check the payment object
+func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
+
+	// setup testnet with mock spec, a staked client and a staked provider
+	ts := setupForPaymentTest(t)
+
+	// Get epochsToSave - the number of epochs chain can save to its memory
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	require.Nil(t, err)
+
+	// Advance epochsToSave*2 epochs (i.e. in the next epoch, the first epoch will be forgotten)
+	for i := 0; i < int(2*epochsToSave); i++ {
+		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	}
+
+	// Get currentEpoch, lastBlockInEpoch, blockNumInEpoch
+	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+	lastBlockInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx)) - 1
+	blockNumInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
+
+	// define tests - different epoch+blocks, valid tells if the payment request should work
+	tests := []struct {
+		name  string
+		epoch uint64
+		block uint64
+		valid bool
+	}{
+		{"PaymentCurrentEpoch", currentEpoch, 0, true},                                                                 // first block of current epoch
+		{"PaymentPreviousEpoch", currentEpoch - blockNumInEpoch, 0, true},                                              // first block of previous epoch
+		{"PaymentEndOfMemoryEpochLastBlock", currentEpoch - epochsToSave*blockNumInEpoch, lastBlockInEpoch, true},      // last block of end of memory epoch
+		{"PaymentEndOfMemoryEpochFirstBlock", currentEpoch - epochsToSave*blockNumInEpoch, 0, true},                    // first block of end of memory epoch
+		{"PaymentOutOfMemoryEpochLastBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, lastBlockInEpoch, false}, // first block of out of memory epoch (end of memory+1)
+		{"PaymentOutOfMemoryEpochFirstBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, 0, false},               // last block of out of memory epoch (end of memory+1)
+	}
+
+	sessionCounter := 0
+	for _, tt := range tests {
+		sessionCounter += 1
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
+			relayRequest := &types.RelayRequest{
+				Provider:        ts.providers[0].address.String(),
+				ApiUrl:          "",
+				Data:            []byte(ts.spec.Apis[0].Name),
+				SessionId:       uint64(sessionCounter),
+				ChainID:         ts.spec.Name,
+				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
+				BlockHeight:     int64(tt.epoch + tt.block),
+				RelayNum:        0,
+				RequestBlock:    -1,
+				DataReliability: nil,
+			}
+
+			// Sign and send the payment requests for block 0 tx
+			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
+			relayRequest.Sig = sig
+			require.Nil(t, err)
+
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
+			var Relays []*types.RelayRequest
+			Relays = append(Relays, relayRequest)
+			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
+			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+		})
+	}
+}
+
 func setupForPaymentTest(t *testing.T) *testStruct {
 	ts := &testStruct{
 		providers: make([]*account, 0),
@@ -92,7 +160,13 @@ func setupForPaymentTest(t *testing.T) *testStruct {
 	}
 	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
 
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
+	// Create mock spec, stake a client and a provider
+	ts.spec = common.CreateMockSpec()
+	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	err := ts.addClient(1)
+	require.Nil(t, err)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
 
 	return ts
 }
@@ -216,20 +290,28 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	// require.Zero(t, balance)
 }
 
-func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int) (ts *testStruct) {
-	ts = setupForPaymentTest(t)
+func setupClientsAndProvidersForUnresponsiveness(t *testing.T, amountOfClients int, amountOfProviders int) (ts *testStruct) {
+	ts = &testStruct{
+		providers: make([]*account, 0),
+		clients:   make([]*account, 0),
+	}
+	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
+
+	// Create mock spec, stake a client and a provider
 	ts.spec = common.CreateMockSpec()
 	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
 	err := ts.addClient(amountOfClients)
 	require.Nil(t, err)
-	err = ts.addProvider(2)
+	err = ts.addProvider(amountOfProviders)
 	require.Nil(t, err)
 	return ts
 }
 
 func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 	testClientAmount := 4
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	testProviderAmount := 2
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
@@ -291,7 +373,8 @@ func TestRelayPaymentUnstakingProviderForUnresponsiveness(t *testing.T) {
 
 func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
 	testClientAmount := 4
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	testProviderAmount := 2
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -377,7 +460,8 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessContinueComplainingAfte
 // only one epoch is not enough for the unstaking to happen need atleast two epochs in the past
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation(t *testing.T) {
 	testClientAmount := 4
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	testProviderAmount := 2
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	unresponsiveProvidersData, err := json.Marshal([]string{ts.providers[1].address.String()})
@@ -415,7 +499,8 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 
 func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *testing.T) {
 	testClientAmount := 4
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	testProviderAmount := 2
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 	for i := 0; i < 2; i++ { // move to epoch 3 so we can check enough epochs in the past
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
@@ -472,7 +557,8 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 // In this test we will test the protection from unstaking if the amount of previous serices*2 is greater than complaints
 func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t *testing.T) {
 	testClientAmount := 4
-	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount)
+	testProviderAmount := 2
+	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers) // after payment move one epoch to stake
 
 	var RelaysForUnresponsiveProviderInFirstTwoEpochs []*types.RelayRequest
@@ -1142,7 +1228,7 @@ GetWrongProvider:
 	require.NotNil(t, err)
 }
 
-// provider attempts to do a datareliability even though it is not triggered (below the threshold)
+// provider attempts to do a data reliability even though it is not triggered (below the threshold)
 func TestRelayPaymentDataReliabilityBelowReliabilityThreshold(t *testing.T) {
 	ts := setupForPaymentTest(t)
 
@@ -1443,6 +1529,33 @@ func TestRelayPaymentDataReliabilityDoubleSpendDifferentEpoch(t *testing.T) {
 	require.NotNil(t, err)
 }
 
+// Helper function to perform payment and verify the balances (if valid, provider's balance should increase and consumer should decrease)
+func payAndVerifyBalance(t *testing.T, ts *testStruct, relayPaymentMessage types.MsgRelayPayment, valid bool, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress) {
+
+	// Get provider's and consumer's before payment
+	balance := ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64()
+	stakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
+
+	// perform payment
+	_, err := ts.servers.PairingServer.RelayPayment(ts.ctx, &relayPaymentMessage)
+	if valid {
+		// payment is valid, provider's balance should increase
+		mint := ts.keepers.Pairing.MintCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx))
+		want := mint.MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum)) // The compensation for a single query
+		require.Equal(t, balance+want.TruncateInt64(),
+			ts.keepers.BankKeeper.GetBalance(sdk.UnwrapSDKContext(ts.ctx), providerAddress, epochstoragetypes.TokenDenom).Amount.Int64())
+
+		// payment is valid, consumer's balance should decrease
+		burn := ts.keepers.Pairing.BurnCoinsPerCU(sdk.UnwrapSDKContext(ts.ctx)).MulInt64(int64(relayPaymentMessage.GetRelays()[0].CuSum))
+		newStakeClient, _, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), epochstoragetypes.ClientKey, ts.spec.Index, clientAddress)
+		require.Equal(t, stakeClient.Stake.Amount.Int64()-burn.TruncateInt64(), newStakeClient.Stake.Amount.Int64())
+
+	} else {
+		// payment is not valid, should result in an error
+		require.NotNil(t, err)
+	}
+}
+
 func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts := setupForPaymentTest(t) //reset the keepers state before each state
@@ -1452,6 +1565,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	require.Nil(t, err)
 	err = ts.addProvider(1)
 	require.Nil(t, err)
+
 	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	relayRequest := &types.RelayRequest{
