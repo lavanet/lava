@@ -7,9 +7,14 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
+const (
+	defaultGasPrice      = "0.000000001ulava"
+	defaultGasAdjustment = 1.5
+)
+
 func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
-	txf = txf.WithGasPrices("0.000000001ulava")
-	txf = txf.WithGasAdjustment(1.5)
+	txf = txf.WithGasPrices(defaultGasPrice)
+	txf = txf.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
@@ -61,8 +66,8 @@ func prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error
 }
 
 func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
-	txf = txf.WithGasPrices("0.000000001ulava")
-	txf = txf.WithGasAdjustment(1.5)
+	txf = txf.WithGasPrices(defaultGasPrice)
+	txf = txf.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
