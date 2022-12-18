@@ -60,7 +60,7 @@ var (
 	// TODO: Determine the default value
 	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
 
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, 5000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, 5000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, 15000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, 50000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, 250000},
@@ -339,6 +339,9 @@ func validateStakeToMaxCUList(v interface{}) error {
 	}
 
 	for i, stakeToMaxCU := range stakeToMaxCUList.List {
+		if stakeToMaxCU.StakeThreshold.Amount.Sign() == -1 || stakeToMaxCU.StakeThreshold.Amount.Int64() == 0 {
+			return fmt.Errorf("invalid stakeThreshold %v. Must be non-zero positive integer", stakeToMaxCU.StakeThreshold)
+		}
 		if i > 0 {
 			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
 				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {
