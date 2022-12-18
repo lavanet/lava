@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -273,7 +272,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
 	httpClient := http.Client{
-		Timeout: time.Duration(nm.serviceApi.ComputeUnits * TimePerCU),
+		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
 	}
 
 	var connectionTypeSlected string = http.MethodGet

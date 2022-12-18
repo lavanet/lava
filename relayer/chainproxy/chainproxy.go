@@ -316,3 +316,7 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	}
 	return "NoDappID"
 }
+
+func getTimePerCu(cu uint64) time.Duration {
+	return time.Duration(cu * TimePerCU)
+}
