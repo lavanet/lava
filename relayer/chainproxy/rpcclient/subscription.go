@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"strings"
@@ -52,7 +53,7 @@ func NewID() ID {
 
 // randomIDGenerator returns a function generates a random IDs.
 func randomIDGenerator() func() ID {
-	var buf = make([]byte, 8)
+	buf := make([]byte, 8)
 	var seed int64
 	if _, err := crand.Read(buf); err == nil {
 		seed = int64(binary.BigEndian.Uint64(buf))
@@ -335,7 +336,11 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 		switch chosen {
 		case 0: // <-sub.quit
 			if !recv.IsNil() {
-				err = recv.Interface().(error)
+				var ok bool
+				err, ok = recv.Interface().(error)
+				if !ok {
+					return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(error) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+				}
 			}
 			if err == errUnsubscribed {
 				// Exiting because Unsubscribe was called, unsubscribe on server.
@@ -344,7 +349,10 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 			return false, err
 
 		case 1: // <-sub.in
-			msg := recv.Interface().(*JsonrpcMessage)
+			msg, ok := recv.Interface().(*JsonrpcMessage)
+			if !ok {
+				return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(*JsonrpcMessage) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+			}
 			if msg.Error != nil {
 				return true, err
 			}

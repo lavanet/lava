@@ -24,12 +24,8 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&psm.blockedEpoch)
 }
 
-//
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) bool {
-	if epoch <= psm.atomicReadBlockedEpoch() {
-		return false
-	}
-	return true
+	return epoch > psm.atomicReadBlockedEpoch()
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
@@ -54,16 +50,17 @@ func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string
 	return false, nil
 }
 
-func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch uint64, relayNum uint64, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
+func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch uint64, relayNum uint64, sessionId uint64) (*SingleProviderSession, error) {
 	if psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, &map[string]string{"RequestedEpoch": strconv.FormatUint(epoch, 10)})
 		return nil, InvalidEpochError
 	}
+
 	activeConsumer, err := psm.IsActiveConsumer(epoch, address)
 	if err != nil {
 		return nil, err
 	}
-
+	var singleProviderSession *SingleProviderSession
 	if activeConsumer {
 		singleProviderSession, err = psm.getSessionFromAnActiveConsumer(epoch, address, sessionId) // after getting session verify relayNum etc..
 	} else if relayNum == 0 {
@@ -84,7 +81,7 @@ func (psm *ProviderSessionManager) GetSession(address string, id uint64, epoch u
 
 	// validate later relayNum etc..
 
-	return nil, nil
+	return singleProviderSession, nil
 }
 
 // func (psm *ProviderSessionManager) createANewSingleProviderSession(providerSessionWithConsumer *ProviderSessionsWithConsumer, sessionId uint64) (singleProviderSession *SingleProviderSession, err error) {
@@ -109,11 +106,11 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(epoch uint64, 
 	// }
 	// if we don't have a session we need to create a new one.
 	// return psm.createANewSingleProviderSession(providerSessionWithConsumer, sessionId)
-	return nil, nil
+	return
 }
 
 func (psm *ProviderSessionManager) getNewSession(epoch uint64, address string) (singleProviderSession *SingleProviderSession, err error) {
-	return nil, nil
+	return
 }
 
 func (psm *ProviderSessionManager) ReportConsumer() (address string, epoch uint64, err error) {

@@ -24,7 +24,6 @@ import (
 )
 
 type LavaKeepers struct {
-
 	// Standard Keepers
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper

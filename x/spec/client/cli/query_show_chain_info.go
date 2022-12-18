@@ -27,7 +27,6 @@ func CmdShowChainInfo() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryShowChainInfoRequest{
-
 				ChainName: reqChainName,
 			}
 

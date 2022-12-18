@@ -28,7 +28,6 @@ func CmdGetPairing() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryGetPairingRequest{
-
 				ChainID: reqChainID,
 				Client:  reqClient,
 			}

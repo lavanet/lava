@@ -24,13 +24,13 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider is not in the voters list")
 	}
 	if conflictVote.Votes[index].Result != types.NoVote {
-		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider already commited")
+		return nil, utils.LavaError(ctx, logger, "response_conflict_detection_commit", map[string]string{"provider": msg.Creator, "voteID": msg.VoteID}, "provider already committed")
 	}
 
 	conflictVote.Votes[index].Hash = msg.Hash
 	conflictVote.Votes[index].Result = types.Commit
 	k.SetConflictVote(ctx, conflictVote)
 
-	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotCommitEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "conflict commit recieved")
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotCommitEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "conflict commit received")
 	return &types.MsgConflictVoteCommitResponse{}, nil
 }

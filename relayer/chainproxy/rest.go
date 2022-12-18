@@ -94,6 +94,7 @@ func (m RestMessage) ParseBlock(inp string) (int64, error) {
 func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *RestChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -128,7 +129,11 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	parsedIndexString, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string) - type assertion failed, type:" + fmt.Sprintf("%s", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX]))
+	}
+	return parsedIndexString, nil
 }
 
 func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -214,7 +219,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
-		//TODO: fix msgSeed and print it here
+		// TODO: fix msgSeed and print it here
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
@@ -238,7 +243,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
@@ -308,7 +313,6 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
-
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

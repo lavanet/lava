@@ -45,6 +45,6 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	}
 
 	k.SetConflictVote(ctx, conflictVote)
-	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotRevealEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "Simulation: conflict reveal recieved")
+	utils.LogLavaEvent(ctx, logger, types.ConflictVoteGotRevealEventName, map[string]string{"voteID": msg.VoteID, "provider": msg.Creator}, "Simulation: conflict reveal received")
 	return &types.MsgConflictVoteRevealResponse{}, nil
 }

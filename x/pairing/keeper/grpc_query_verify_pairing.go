@@ -19,7 +19,7 @@ func (k Keeper) VerifyPairing(goCtx context.Context, req *types.QueryVerifyPairi
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
-	//TODO: handle spec changes
+	// TODO:handle spec changes
 	if !foundAndActive {
 		return &types.QueryVerifyPairingResponse{Valid: false}, errors.New("spec not found or not enabled")
 	}

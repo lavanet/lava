@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
-
 	"runtime/debug"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -32,15 +31,15 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 
 func LavaError(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) error {
 	attributes_str := ""
-	eventAttrs := []sdk.Attribute{}
+	// eventAttrs := []sdk.Attribute{}
 	for key, val := range attributes {
 		attributes_str += fmt.Sprintf("%s: %s,", key, val)
-		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
+		// eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
 	}
 	err_msg := fmt.Sprintf("ERR_%s: %s %s", name, description, attributes_str)
 	logger.Error(err_msg)
 	// ctx.EventManager().EmitEvent(sdk.NewEvent("ERR_"+name, eventAttrs...))
-	//TODO: add error types, create them here and return
+	// TODO: add error types, create them here and return
 	return errors.New(err_msg)
 }
 
@@ -64,7 +63,7 @@ func LoggingLevel(logLevel string) {
 
 func LavaFormatLog(description string, err error, extraAttributes *map[string]string, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	//os.Getenv("LAVA_DISABLE_COLORS") == "true"
+	// os.Getenv("LAVA_DISABLE_COLORS") == "true"
 	NoColor := true
 	if os.Getenv("LAVA_OUTPUT") != "json" {
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
@@ -103,7 +102,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	logEvent.Msg(description)
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
-	if errRet == nil { //we always want to return an error if lavaFormatError was called
+	if errRet == nil { // we always want to return an error if lavaFormatError was called
 		return fmt.Errorf(output)
 	}
 	return errRet

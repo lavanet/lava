@@ -76,7 +76,6 @@ type JrpcChainProxy struct {
 }
 
 func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *lavasession.ConsumerSessionManager, pLogs *PortalLogs) ChainProxy {
-
 	return &JrpcChainProxy{
 		nodeUrl:    nodeUrl,
 		nConns:     nConns,
@@ -86,9 +85,11 @@ func NewJrpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, csm *
 		cache:      nil,
 	}
 }
+
 func (cp *JrpcChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *JrpcChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -104,7 +105,7 @@ func (cp *JrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := []interface{}{}
-	nodeMsg, err := cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+	nodeMsg, err := cp.NewMessage(&serviceApi, spectypes.LATEST_BLOCK, params)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -139,7 +140,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
-		nodeMsg, err = cp.NewMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+		nodeMsg, err = cp.NewMessage(&serviceApi, spectypes.LATEST_BLOCK, params)
 	}
 
 	if err != nil {
@@ -151,15 +152,22 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 		return "", utils.LavaFormatError("Error On Send FetchBlockHashByNum", err, &map[string]string{"nodeUrl": cp.nodeUrl})
 	}
 	// log.Println("%s", reply)
-
-	blockData, err := parser.ParseMessageResponse((nodeMsg.GetMsg().(*JsonrpcMessage)), serviceApi.Parsing.ResultParsing)
+	msgParsed, ok := nodeMsg.GetMsg().(*JsonrpcMessage)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - nodeMsg.GetMsg().(*JsonrpcMessage) - type assertion failed, type:" + fmt.Sprintf("%s", nodeMsg.GetMsg()))
+	}
+	blockData, err := parser.ParseMessageResponse(msgParsed, serviceApi.Parsing.ResultParsing)
 	if err != nil {
 		return "", err
 	}
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	parsedIndexString, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string) - type assertion failed, type:" + fmt.Sprintf("%s", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX]))
+	}
+	return parsedIndexString, nil
 }
 
 func (cp JsonrpcMessage) GetParams() interface{} {
@@ -225,7 +233,8 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	return nodeMsg, nil
 }
 
-func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*JrpcMessage, error) {
+func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, requestedBlock int64, params []interface{}) (*JrpcMessage, error) {
+	method := serviceApi.GetName()
 	serviceApi, err := cp.getSupportedApi(method)
 	if err != nil {
 		return nil, err
@@ -237,7 +246,7 @@ func (cp *JrpcChainProxy) NewMessage(serviceApi *spectypes.ServiceApi, method st
 		requestedBlock: requestedBlock,
 		msg: &JsonrpcMessage{
 			Version: "2.0",
-			ID:      []byte("1"), //TODO:: use ids
+			ID:      []byte("1"), // TODO:: use ids
 			Method:  method,
 			Params:  params,
 		},
@@ -279,7 +288,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
 
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel() //incase there's a problem make sure to cancel the connection
+			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
 			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
 			if err != nil {
@@ -291,7 +300,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) //this reply contains the RPC ID
+				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
 					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
@@ -397,7 +406,7 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			Code:    1,
 			Message: fmt.Sprintf("%s", err),
 		}
-		//this later causes returning an error
+		// this later causes returning an error
 	} else {
 		replyMessage, err = convertMsg(rpcMessage)
 		if err != nil {

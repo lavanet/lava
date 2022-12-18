@@ -77,15 +77,13 @@ func PortalServer(
 	cacheAddr, err := flagSet.GetString(performance.CacheFlagName)
 	if err != nil {
 		utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", flagSet)})
-	} else {
-		if cacheAddr != "" {
-			cache, err := performance.InitCache(ctx, cacheAddr)
-			if err != nil {
-				utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
-			} else {
-				utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
-				chainProxy.SetCache(cache)
-			}
+	} else if cacheAddr != "" {
+		cache, err := performance.InitCache(ctx, cacheAddr)
+		if err != nil {
+			utils.LavaFormatError("Failed To Connect to cache at address", err, &map[string]string{"address": cacheAddr})
+		} else {
+			utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
+			chainProxy.SetCache(cache)
 		}
 	}
 

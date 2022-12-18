@@ -176,16 +176,16 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		}
 	}
 	if am.keeper.IsEpochStart(ctx) {
-		//on session start we need to do:
+		// on session start we need to do:
 		// 1. remove old session payments
 		// 2. unstake any unstaking providers
 		// 3. unstake any unstaking users
 
-		//1.
+		// 1.
 		err := am.keeper.RemoveOldEpochPayment(ctx)
 		logOnErr(err, "RemoveOldEpochPayment")
 
-		//2+3.
+		// 2+3.
 		err = am.keeper.CheckUnstakingForCommit(ctx)
 		logOnErr(err, "CheckUnstakingForCommit")
 	}
