@@ -20,7 +20,6 @@ func StarknetTests(ctx context.Context, chainID string, rpcURL string, chainProx
 
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for j := 0; j < 10; j++ {
-
 			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, JSONRPC_STRK_BLOCKNUMBER, "", "starkner_test")
 			if err != nil {
 				return utils.LavaFormatError("error starknet_blockNumber", err, nil)
@@ -32,7 +31,6 @@ func StarknetTests(ctx context.Context, chainID string, rpcURL string, chainProx
 				return utils.LavaFormatError("error starknet_blockHashAndNumber", err, nil)
 			}
 			prettyPrintReply(*reply, "JSONRPC_STRK_BLOCKHASHANDNUMBER")
-
 		}
 		time.Sleep(1 * time.Second)
 	}

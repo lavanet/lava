@@ -19,7 +19,6 @@ func (k Keeper) SetConflictVote(ctx sdk.Context, conflictVote types.ConflictVote
 func (k Keeper) GetConflictVote(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.ConflictVote, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ConflictVoteKeyPrefix))
 
@@ -38,7 +37,6 @@ func (k Keeper) GetConflictVote(
 func (k Keeper) RemoveConflictVote(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ConflictVoteKeyPrefix))
 	store.Delete(types.ConflictVoteKey(

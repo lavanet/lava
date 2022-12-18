@@ -9,11 +9,11 @@ import (
 )
 
 // SetSpec set a specific Spec in the store from its index
-func (k Keeper) SetSpec(ctx sdk.Context, Spec types.Spec) {
+func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
-	b := k.cdc.MustMarshal(&Spec)
+	b := k.cdc.MustMarshal(&spec)
 	store.Set(types.SpecKey(
-		Spec.Index,
+		spec.Index,
 	), b)
 }
 
@@ -21,7 +21,6 @@ func (k Keeper) SetSpec(ctx sdk.Context, Spec types.Spec) {
 func (k Keeper) GetSpec(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.Spec, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 
@@ -40,7 +39,6 @@ func (k Keeper) GetSpec(
 func (k Keeper) RemoveSpec(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
 	store.Delete(types.SpecKey(
@@ -64,10 +62,9 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	return
 }
 
-//returns whether a spec name is a valid spec in the consensus
-//first return value is found and active, second argument is found only
+// returns whether a spec name is a valid spec in the consensus
+// first return value is found and active, second argument is found only
 func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
-
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
@@ -89,7 +86,7 @@ func GetSpecIDFromBytes(bz []byte) uint64 {
 }
 
 func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
-	//TODO: make this with an iterator
+	// TODO: make this with an iterator
 	allSpecs := k.GetAllSpec(ctx)
 	for _, spec := range allSpecs {
 		chainIDs = append(chainIDs, spec.Index)
@@ -97,13 +94,13 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 	return
 }
 
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (ExpectedInterfaces map[string]bool) {
-	ExpectedInterfaces = make(map[string]bool)
+func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (expectedInterfaces map[string]bool) {
+	expectedInterfaces = make(map[string]bool)
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		for _, api := range spec.Apis {
 			for _, apiInterface := range api.ApiInterfaces {
-				ExpectedInterfaces[apiInterface.Interface] = true
+				expectedInterfaces[apiInterface.Interface] = true
 			}
 		}
 	}

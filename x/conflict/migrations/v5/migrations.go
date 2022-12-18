@@ -1,7 +1,6 @@
 package v4 // migrations.go
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -22,7 +21,7 @@ func DeleteOpenConflicts(ctx sdk.Context, storeKey storetypes.StoreKey, cdc code
 	iterator := sdk.KVStorePrefixIterator(oldStore, []byte{})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		log.Println(fmt.Sprintf("@@@ Key: %s @@@", string(iterator.Key())))
+		log.Printf("@@@ Key: %s @@@", string(iterator.Key()))
 		oldStore.Delete(iterator.Key()) // Delete old key, value
 	}
 	return nil

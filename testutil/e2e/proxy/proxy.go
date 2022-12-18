@@ -14,17 +14,21 @@ import (
 // var mockFolder string = "testutil/e2e/proxy/mockMaps/"
 var mockFolder string = "/mockMaps/"
 
-var responsesChanged bool = false
-var realCount int = 0
-var cacheCount int = 0
-var fakeCount int = 0
+var (
+	responsesChanged bool = false
+	realCount        int  = 0
+	cacheCount       int  = 0
+	fakeCount        int  = 0
+)
 
 var fakeResponse bool = false
 
-var saveJsonEvery int = 10 // in seconds
-var epochTime int = 3      // in seconds
-var epochCount int = 0     // starting epoch count
-var proxies []proxyProcess = []proxyProcess{}
+var (
+	saveJsonEvery int            = 10 // in seconds
+	epochTime     int            = 3  // in seconds
+	epochCount    int            = 0  // starting epoch count
+	proxies       []proxyProcess = []proxyProcess{}
+)
 
 type proxyProcess struct {
 	id        string
@@ -205,8 +209,8 @@ func fakeResult(val string, fake string) string {
 	}
 	return strings.Join(parts, ",")
 }
-func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 
+func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	host := p.host
 	mock := p.mock
 
@@ -229,7 +233,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
 		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
-
 	} else {
 		// Return Cached data if found in history and fromCache is set on
 		jStruct := &jsonStruct{}
@@ -237,7 +240,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		jStruct.ID = 0
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
-			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", string(val))
+			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", val)
 			cacheCount += 1
 
 			// Change Response
@@ -250,14 +253,12 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			time.Sleep(500 * time.Millisecond)
 			rw.WriteHeader(200)
 			rw.Write([]byte(val))
-
 		} else {
 			// Recreating Request
 			proxyRequest, err := createProxyRequest(req, host, rawBodyS)
 			if err != nil {
 				println(err.Error())
 			} else {
-
 				// Send Request to Host & Get Response
 				proxyRes, err := sendRequest(proxyRequest)
 				// respBody := []byte("error")
@@ -286,7 +287,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 						println(err.Error())
 						respBody = []byte(err.Error())
 					} else {
-
 						// Send Request to Host & Get Response
 						proxyRes, err = sendRequest(proxyRequest)
 						if err != nil {
@@ -309,7 +309,6 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 							println()
 						}
 					}
-
 				}
 
 				// Change Response
@@ -321,7 +320,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				}
 				responsesChanged = true
 
-				//Return Response
+				// Return Response
 				if respBody == nil {
 					respBody = []byte("error")
 				}

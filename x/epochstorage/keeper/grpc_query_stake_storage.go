@@ -31,7 +31,6 @@ func (k Keeper) StakeStorageAll(c context.Context, req *types.QueryAllStakeStora
 		stakeStorages = append(stakeStorages, stakeStorage)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

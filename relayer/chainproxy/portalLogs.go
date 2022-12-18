@@ -58,7 +58,6 @@ func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
 func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
-
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)

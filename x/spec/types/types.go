@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 )
 
-const NOT_APPLICABLE int64 = -1
-const LATEST_BLOCK int64 = -2
-const EARLIEST_BLOCK int64 = -3
-const PENDING_BLOCK int64 = -4
-const SAFE_BLOCK int64 = -5
-const FINALIZED_BLOCK int64 = -6
+const (
+	NOT_APPLICABLE  int64 = -1
+	LATEST_BLOCK    int64 = -2
+	EARLIEST_BLOCK  int64 = -3
+	PENDING_BLOCK   int64 = -4
+	SAFE_BLOCK      int64 = -5
+	FINALIZED_BLOCK int64 = -6
+)
+
 const (
 	GET_BLOCKNUM                = "getBlockNumber"
 	GET_BLOCK_BY_NUM            = "getBlockByNumber"
@@ -19,7 +22,7 @@ const (
 
 var SupportedTags = [...]string{GET_BLOCKNUM, GET_BLOCK_BY_NUM}
 
-//allows unmarshaling parser func
+// allows unmarshaling parser func
 func (s PARSER_FUNC) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(PARSER_FUNC_name[int32(s)])
@@ -43,7 +46,7 @@ func IsFinalizedBlock(requestedBlock int64, latestBlock int64, finalizationCrite
 	switch requestedBlock {
 	case NOT_APPLICABLE:
 		return false
-		//TODO: handle safe & finalized key words, currently returns false
+		// TODO: handle safe & finalized key words, currently returns false
 	default:
 		if requestedBlock < 0 {
 			return false

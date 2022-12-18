@@ -27,7 +27,6 @@ func CmdProviders() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryProvidersRequest{
-
 				ChainID: reqChainID,
 			}
 

@@ -29,7 +29,7 @@ func CreateUpgradeHandler(
 		log.Println("#   STARTING UPGRADE   #")
 		log.Println("########################")
 
-		//delete all existing conflicts
+		// delete all existing conflicts
 		migrator := keeper.NewMigrator(keepers.ConflictKeeper)
 		migrator.MigrateToV5(ctx)
 

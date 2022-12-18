@@ -34,8 +34,6 @@ func TestNewStakeClient(t *testing.T) {
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-
 	tests := []struct {
 		name  string
 		stake sdk.Coin
@@ -85,7 +83,6 @@ func TestAddStakeClient(t *testing.T) {
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 	firstStake := amount / 10
 	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(firstStake)), Geolocation: 1, Vrfpk: vrfPk.String()})
 	require.Nil(t, err)
@@ -131,8 +128,6 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 
 	spec := common.CreateMockSpec()
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
-
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	stake := balance / 10
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)

@@ -17,7 +17,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	//TODO: validate chainID
+	// TODO: validate chainID
 
 	clientAddr, err := sdk.AccAddressFromBech32(req.Client)
 	if err != nil {
@@ -25,7 +25,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
-	//TODO: handle spec changes
+	// TODO: handle spec changes
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")
 	}

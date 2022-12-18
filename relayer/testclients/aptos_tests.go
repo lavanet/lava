@@ -13,23 +13,30 @@ import (
 	"github.com/lavanet/lava/relayer/sentry"
 )
 
+const (
+	restString       string = "rest"
+	postString       string = "post"
+	tendermintString string = "tendermintrpc"
+)
+
 // AptosTests
 func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *btcec.PrivateKey, apiInterface string, s *sentry.Sentry, clientCtx client.Context) error {
 	errors := []string{}
 	log.Println("Aptos test")
-	if apiInterface == "rest" {
+	if apiInterface == restString {
 		log.Println("starting run important apis")
 		// clientAdress := clientCtx.FromAddress
 		version := "2406784"
 		account := "0x10f9091d233fd38b9d774bc641ed71ea7d3a21a0254fdfa9556901e9fad6a533"
 
-		mostImportantApisToTest := map[string][]string{http.MethodGet: {
-			"/blocks/by_height/5",
-			"/blocks/by_version/" + version,
-			"/accounts/" + account,
-			"/accounts/" + account + "/resources",
-			"/accounts/" + account + "/modules",
-		},
+		mostImportantApisToTest := map[string][]string{
+			http.MethodGet: {
+				"/blocks/by_height/5",
+				"/blocks/by_version/" + version,
+				"/accounts/" + account,
+				"/accounts/" + account + "/resources",
+				"/accounts/" + account + "/modules",
+			},
 			http.MethodPost: {},
 		}
 
@@ -41,7 +48,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
 					} else {
-						log.Println(fmt.Sprintf("LavaTestsResponse: %v\n", reply))
+						log.Printf("LavaTestsResponse: %v\n", reply)
 						// prettyPrintReply(*reply, "LavaTestsResponse")
 					}
 				}
@@ -61,26 +68,22 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 			}
 
 			for _, api_interface := range apiInterfaceList {
-				httpMethod := http.MethodGet
-				if api_interface.Type == "post" {
-					httpMethod = http.MethodPost
+				if api_interface.Type == postString {
 					// for now we dont want to run the post apis in this test
 					continue
 				}
-				log.Println(fmt.Sprintf("%s", apiName))
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", httpMethod, "aptos_test")
+				log.Printf("%s", apiName)
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "aptos_test")
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "LavaTestsResponse")
 				}
-
 			}
 		}
-
 	} else {
-		log.Println(fmt.Sprintf("currently no tests for %s protocol", apiInterface))
+		log.Printf("currently no tests for %s protocol", apiInterface)
 		return nil
 	}
 
