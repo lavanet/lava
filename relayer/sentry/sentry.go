@@ -950,29 +950,29 @@ func (s *Sentry) SendRelay(
 	consumerSession *lavasession.SingleConsumerSession,
 	sessionEpoch uint64,
 	providerPubAddress string,
-	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error),
-	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error),
+	cb_send_relay func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error),
+	cb_send_reliability func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error),
 	specCategory *spectypes.SpecCategory,
-) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, error) {
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, time.Duration, bool, error) {
 	// callback user
-	reply, replyServer, request, latency, err := cb_send_relay(consumerSession)
+	reply, replyServer, request, latency, fromCache, err := cb_send_relay(consumerSession)
 	// error using this provider
 	if err != nil {
-		return nil, nil, 0, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+		return nil, nil, 0, fromCache, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 	}
 
-	if s.GetSpecComparesHashes() && reply != nil {
+	if s.GetSpecComparesHashes() && reply != nil && !fromCache {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed in unmarshalling finalized blocks data", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+			return nil, nil, latency, fromCache, utils.LavaFormatError("failed in unmarshalling finalized blocks data", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		latestBlock := reply.LatestBlock
 
 		// validate that finalizedBlocks makes sense
 		err = s.validateProviderReply(finalizedBlocks, latestBlock, providerPubAddress, consumerSession)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed provider reply validation", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+			return nil, nil, latency, fromCache, utils.LavaFormatError("failed provider reply validation", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 		//
 		// Compare finalized block hashes with previous providers
@@ -982,7 +982,7 @@ func (s *Sentry) SendRelay(
 		// check for discrepancy with old epoch
 		_, err := checkFinalizedHashes(s, providerPubAddress, latestBlock, finalizedBlocks, request, reply)
 		if err != nil {
-			return nil, nil, latency, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+			return nil, nil, latency, fromCache, utils.LavaFormatError("failed to check finalized hashes", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 		}
 
 		if specCategory.Deterministic && s.IsFinalizedBlock(request.RequestBlock, reply.LatestBlock) {
@@ -1022,6 +1022,7 @@ func (s *Sentry) SendRelay(
 			}
 
 			sendReliabilityRelay := func(singleConsumerSession *lavasession.SingleConsumerSession, providerAddress string, differentiator bool) (relay_rep *pairingtypes.RelayReply, relay_req *pairingtypes.RelayRequest, err error) {
+				var dataReliabilityLatency time.Duration
 				s.VrfSkMu.Lock()
 				vrf_res, vrf_proof := utils.ProveVrfOnRelay(request, reply, s.VrfSk, differentiator, sessionEpoch)
 				s.VrfSkMu.Unlock()
@@ -1034,7 +1035,7 @@ func (s *Sentry) SendRelay(
 					QueryHash:      utils.CalculateQueryHash(*request), // calculated from query body anyway, but we will use this on payment
 					Sig:            nil,                                // calculated in cb_send_reliability
 				}
-				relay_rep, relay_req, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
+				relay_rep, relay_req, dataReliabilityLatency, err = cb_send_reliability(singleConsumerSession, dataReliability, providerAddress)
 				if err != nil {
 					errRet := s.consumerSessionManager.OnDataReliabilitySessionFailure(singleConsumerSession, err)
 					if errRet != nil {
@@ -1042,7 +1043,9 @@ func (s *Sentry) SendRelay(
 					}
 					return nil, nil, utils.LavaFormatError("sendReliabilityRelay Could not get reply to reliability relay from provider", err, &map[string]string{"Address": providerAddress})
 				}
-				err = s.consumerSessionManager.OnSessionDoneWithoutQoSChanges(singleConsumerSession)
+
+				expectedBH, numOfProviders := s.ExpectedBlockHeight()
+				err = s.consumerSessionManager.OnDataReliabilitySessionDone(singleConsumerSession, relay_rep.LatestBlock, singleConsumerSession.LatestRelayCu, dataReliabilityLatency, expectedBH, numOfProviders, s.GetProvidersCount())
 				return relay_rep, relay_req, err
 			}
 
@@ -1077,7 +1080,7 @@ func (s *Sentry) SendRelay(
 		}
 	}
 
-	return reply, replyServer, latency, nil
+	return reply, replyServer, latency, fromCache, nil
 }
 
 // Verify all dataReliabilityVerifications with one another
