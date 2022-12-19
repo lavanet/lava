@@ -229,6 +229,7 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 func (cp *GrpcChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *GrpcChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }

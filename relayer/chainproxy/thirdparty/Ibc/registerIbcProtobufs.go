@@ -13,7 +13,6 @@ import (
 )
 
 func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	ibcapplicationstransferv1 := &implementedIbcApplicationsTransferV1{cb: cb}
 	pb_pkg1.RegisterQueryServer(s, ibcapplicationstransferv1)
 
@@ -36,7 +35,6 @@ func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method s
 }
 
 func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	ibcapplicationsinterchain_accountshostv1 := &implementedIbcApplicationsInterchain_accountsHostV1{cb: cb}
 	pb_pkg5.RegisterQueryServer(s, ibcapplicationsinterchain_accountshostv1)
 
@@ -59,7 +57,6 @@ func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, metho
 }
 
 func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	ibcapplicationsinterchain_accountscontrollerv1 := &implementedIbcApplicationsInterchain_accountsControllerV1{cb: cb}
 	pb_pkg6.RegisterQueryServer(s, ibcapplicationsinterchain_accountscontrollerv1)
 
@@ -82,7 +79,6 @@ func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method
 }
 
 func RegisterJunoProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	ibcapplicationsinterchain_accountshostv1 := &implementedIbcApplicationsInterchain_accountsHostV1{cb: cb}
 	pb_pkg5.RegisterQueryServer(s, ibcapplicationsinterchain_accountshostv1)
 

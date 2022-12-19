@@ -21,7 +21,6 @@ import (
 )
 
 func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosbasetendermintv1beta1 := &implementedCosmosBaseTendermintV1beta1{cb: cb}
 	tendermint.RegisterServiceServer(s, cosmosbasetendermintv1beta1)
 
@@ -65,7 +64,6 @@ func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method s
 }
 
 func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 
@@ -106,7 +104,6 @@ func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, metho
 }
 
 func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 
@@ -153,7 +150,6 @@ func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method
 }
 
 func RegisterJunoProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 

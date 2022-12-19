@@ -15,7 +15,6 @@ import (
 )
 
 func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, error) {
-
 	s := grpc.NewServer()
 
 	utils.LavaFormatInfo("Registering Chain:"+chain, nil)

@@ -17,7 +17,6 @@ import (
 )
 
 func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	osmosissuperfluid := &implementedOsmosisSuperfluid{cb: cb}
 	pkg1.RegisterQueryServer(s, osmosissuperfluid)
 
