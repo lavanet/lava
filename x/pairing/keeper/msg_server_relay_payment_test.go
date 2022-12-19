@@ -85,61 +85,75 @@ func (ts *testStruct) getProvider(addr string) *account {
 	return nil
 }
 
-// Test that a provider payment is valid if he asked it within the chain's memory, and check the payment object
+// Test that a provider payment is valid if he asked it within the chain's memory, and check the relay payment object (RPO)
 func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 
 	// setup testnet with mock spec, a staked client and a staked provider
 	ts := setupForPaymentTest(t)
 
-	// Get epochsToSave - the number of epochs chain can save to its memory
-	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+	// Advance epoch to apply client and provider stake
+	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	firstEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+
+	// Get epochsToSave, and epochBlocks
+	epochsToSave, err := ts.keepers.Epochstorage.EpochsToSave(sdk.UnwrapSDKContext(ts.ctx), firstEpoch)
+	require.Nil(t, err)
+	epochBlocks, err := ts.keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ts.ctx), firstEpoch)
 	require.Nil(t, err)
 
-	// Advance epochsToSave*2 epochs (i.e. in the next epoch, the first epoch will be forgotten)
-	for i := 0; i < int(2*epochsToSave); i++ {
-		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	}
+	// The last block offset in each epoch is epochBlocks-1
+	lastBlockInEpoch := epochBlocks - 1
 
-	// Get currentEpoch, lastBlockInEpoch, blockNumInEpoch
-	currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-	lastBlockInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx)) - 1
-	blockNumInEpoch := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
+	// Create a relay request from the current epoch
 
 	// define tests - different epoch+blocks, valid tells if the payment request should work
 	tests := []struct {
-		name  string
-		epoch uint64
-		block uint64
-		valid bool
+		name            string
+		epochsToAdvance uint64 // number of epochs to advance in the test
+		blocksToAdvance uint64 // number of blocks to advance in the test
+		valid           bool
 	}{
-		{"PaymentCurrentEpoch", currentEpoch, 0, true},                                                                 // first block of current epoch
-		{"PaymentPreviousEpoch", currentEpoch - blockNumInEpoch, 0, true},                                              // first block of previous epoch
-		{"PaymentEndOfMemoryEpochLastBlock", currentEpoch - epochsToSave*blockNumInEpoch, lastBlockInEpoch, true},      // last block of end of memory epoch
-		{"PaymentEndOfMemoryEpochFirstBlock", currentEpoch - epochsToSave*blockNumInEpoch, 0, true},                    // first block of end of memory epoch
-		{"PaymentOutOfMemoryEpochLastBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, lastBlockInEpoch, false}, // first block of out of memory epoch (end of memory+1)
-		{"PaymentOutOfMemoryEpochFirstBlock", currentEpoch - (epochsToSave+1)*blockNumInEpoch, 0, false},               // last block of out of memory epoch (end of memory+1)
+		{"PaymentFirstEpoch", 0, 0, true},                                // first block of current epoch
+		{"PaymentEndOfMemoryEpochFirstBlock", epochsToSave, 0, true},     // first block of end of memory epoch
+		{"PaymentEndOfMemoryEpochLastBlock", 0, lastBlockInEpoch, true},  // last block of end of memory epoch
+		{"PaymentOutOfMemoryEpochFirstBlock", 0, 1, false},               // first block of out of memory epoch (end of memory+1)
+		{"PaymentOutOfMemoryEpochLastBlock", 0, lastBlockInEpoch, false}, // last block of out of memory epoch (end of memory+1)
 	}
 
-	sessionCounter := 0
+	sessionCounter := uint64(0)
 	for _, tt := range tests {
 		sessionCounter += 1
 		t.Run(tt.name, func(t *testing.T) {
 
-			// Create relay request that was done in the test's epoch+block. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
+			// Advance epochs according to the epochsToAdvance
+			if tt.epochsToAdvance != 0 {
+				for i := 0; i < int(tt.epochsToAdvance); i++ {
+					ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				}
+			}
+
+			// Advance blocks according to the blocksToAdvance
+			if tt.blocksToAdvance != 0 {
+				for i := 0; i < int(tt.blocksToAdvance); i++ {
+					ts.ctx = testkeeper.AdvanceBlock(ts.ctx, ts.keepers)
+				}
+			}
+
+			// Create relay request that was done in the first epoch. Change session ID each iteration to avoid double spending error (provider asks reward for the same transaction twice)
 			relayRequest := &types.RelayRequest{
 				Provider:        ts.providers[0].address.String(),
 				ApiUrl:          "",
 				Data:            []byte(ts.spec.Apis[0].Name),
-				SessionId:       uint64(sessionCounter),
+				SessionId:       sessionCounter,
 				ChainID:         ts.spec.Name,
 				CuSum:           ts.spec.Apis[0].ComputeUnits * 10,
-				BlockHeight:     int64(tt.epoch + tt.block),
+				BlockHeight:     int64(firstEpoch),
 				RelayNum:        0,
 				RequestBlock:    -1,
 				DataReliability: nil,
 			}
 
-			// Sign and send the payment requests for block 0 tx
+			// Sign and send the payment requests
 			sig, err := sigs.SignRelay(ts.clients[0].secretKey, *relayRequest)
 			relayRequest.Sig = sig
 			require.Nil(t, err)
@@ -149,8 +163,13 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			Relays = append(Relays, relayRequest)
 			relayPaymentMessage := types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays}
 			payAndVerifyBalance(t, ts, relayPaymentMessage, tt.valid, ts.clients[0].address, ts.providers[0].address)
+
+			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
+			verifyRelayPaymentObjects(t, ts, relayRequest, tt.valid)
+
 		})
 	}
+
 }
 
 func setupForPaymentTest(t *testing.T) *testStruct {
