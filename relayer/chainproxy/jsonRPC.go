@@ -391,7 +391,7 @@ func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 }
 
 func (nm *JrpcMessage) GetInterface() *spectypes.ApiInterface {
-	return &nm.serviceApi.ApiInterfaces[0]
+	return nm.apiInterface
 }
 
 func (nm *JrpcMessage) RequestedBlock() int64 {

@@ -285,7 +285,7 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 }
 
 func (nm *RestMessage) GetInterface() *spectypes.ApiInterface {
-	return &nm.serviceApi.ApiInterfaces[0]
+	return nm.apiInterface
 }
 
 func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
