@@ -19,7 +19,7 @@ func checkSpecProposal(spec Spec) error {
 	}
 
 	checkUnique := map[string]bool{}
-	for _, api := range spec.Apis {
+	for i, api := range spec.Apis {
 		if len(strings.TrimSpace(api.Name)) == 0 {
 			return sdkerrors.Wrap(ErrBlankApiName, "api name cannot be blank")
 		}
@@ -27,7 +27,7 @@ func checkSpecProposal(spec Spec) error {
 			return sdkerrors.Wrap(ErrDuplicateApiName, fmt.Sprintf("api name must be unique: %s", api.Name))
 		}
 		if len(api.ApiInterfaces) == 0 {
-			return sdkerrors.Wrap(ErrDuplicateApiName, "api interface cannot be empty")
+			return sdkerrors.Wrap(ErrBlankApiName, fmt.Sprintf("api interface cannot be empty at spec:%s, api %d", spec.Name, i))
 		}
 		checkUnique[api.Name] = true
 	}

@@ -94,9 +94,9 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 
 		var name string
 		if found {
-			name = SPEC_ADD
-		} else {
 			name = SPEC_MODIFY
+		} else {
+			name = SPEC_ADD
 		}
 
 		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")

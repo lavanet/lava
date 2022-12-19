@@ -37,12 +37,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -61,12 +61,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -85,12 +85,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -109,12 +109,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -133,12 +133,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -157,12 +157,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -181,12 +181,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -205,12 +205,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -229,41 +229,42 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             }
                         ]
                     },
-                    {"name": "starknet_getClassAt",
-                    "block_parsing": {
-                      "parserArg": [
-                        ""
-                      ],
-                      "parserFunc": "EMPTY"
-                    },
-                    "compute_units": "1",
-                    "enabled": true,
-                    "apiInterfaces": [
-                        {
-                        "category": {
-                            "deterministic": true,
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
+                    {
+                        "name": "starknet_getClassAt",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
                         },
-                        "interface": "jsonrpc",
-                        "type": "get",
-                        "extra_compute_units": "0"
-                      }
-                    ]
-                  },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "get",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
                     {
                         "name": "starknet_getBlockTransactionCount",
                         "block_parsing": {
@@ -276,12 +277,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -300,12 +301,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -324,12 +325,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -358,12 +359,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -382,12 +383,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -406,12 +407,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -430,12 +431,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -454,12 +455,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -478,12 +479,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -502,12 +503,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "jsonrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0"
