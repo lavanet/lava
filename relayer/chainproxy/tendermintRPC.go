@@ -53,7 +53,7 @@ func (cp *tendermintRpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int
 	}
 
 	params := []interface{}{}
-	nodeMsg, err := cp.newMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+	nodeMsg, err := cp.newMessage(&serviceApi, spectypes.LATEST_BLOCK, params, http.MethodGet)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -88,11 +88,11 @@ func (cp *tendermintRpcChainProxy) FetchBlockHashByNum(ctx context.Context, bloc
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)), "")
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.Parsing.FunctionTemplate, blockNum)), http.MethodGet)
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
-		nodeMsg, err = cp.newMessage(&serviceApi, serviceApi.GetName(), spectypes.LATEST_BLOCK, params)
+		nodeMsg, err = cp.newMessage(&serviceApi, spectypes.LATEST_BLOCK, params, http.MethodGet)
 	}
 
 	if err != nil {
@@ -139,14 +139,27 @@ func NewtendermintRpcChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sent
 	}
 }
 
-func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, method string, requestedBlock int64, params []interface{}) (*TendemintRpcMessage, error) {
+func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, requestedBlock int64, params []interface{}, connectionType string) (*TendemintRpcMessage, error) {
+	// put only the relevant interface
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
-			serviceApi: serviceApi,
+			serviceApi:   serviceApi,
+			apiInterface: apiInterface,
 			msg: &JsonrpcMessage{
 				Version: "2.0",
 				ID:      []byte("1"), // TODO:: use ids
-				Method:  method,
+				Method:  serviceApi.GetName(),
 				Params:  params,
 			},
 			requestedBlock: requestedBlock,
