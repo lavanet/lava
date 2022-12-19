@@ -312,8 +312,8 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	if nm.apiInterface.Interface != "" {
-		connectionTypeSlected = nm.apiInterface.Interface
+	if nm.apiInterface.Type != "" {
+		connectionTypeSlected = nm.apiInterface.Type
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
