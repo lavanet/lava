@@ -104,8 +104,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 	// The last block offset in each epoch is epochBlocks-1
 	lastBlockInEpoch := epochBlocks - 1
 
-	// Create a relay request from the current epoch
-
 	// define tests - different epoch+blocks, valid tells if the payment request should work
 	tests := []struct {
 		name            string
