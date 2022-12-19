@@ -940,11 +940,8 @@ func (s *Sentry) SendRelay(
 	if err != nil {
 		return nil, nil, 0, fromCache, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
 	}
-	if fromCache {
-		return reply, replyServer, latency, fromCache, nil
-	}
 
-	if s.GetSpecComparesHashes() && reply != nil {
+	if s.GetSpecComparesHashes() && reply != nil && !fromCache {
 		finalizedBlocks := map[int64]string{} // TODO:: define struct in relay response
 		err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 		if err != nil {

@@ -40,7 +40,7 @@ type SingleConsumerSession struct {
 	RelayNum                    uint64
 	LatestBlock                 int64
 	Endpoint                    *Endpoint
-	Blocklisted                 bool   // if session lost sync we blacklist it.
+	BlockListed                 bool   // if session lost sync we blacklist it.
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
 }
 
@@ -168,7 +168,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 		}
 
 		if session.lock.TryLock() {
-			if session.Blocklisted { // this session cannot be used.
+			if session.BlockListed { // this session cannot be used.
 				numberOfBlockedSessions += 1 // increase the number of blocked sessions so we can block this provider is too many are blocklisted
 				session.lock.Unlock()
 				continue

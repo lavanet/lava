@@ -265,13 +265,21 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	return nil
 }
 
-// A Session can be created but unused if consumer found the response in the cache.
-// So we need to unlock the session and decrease the cu that were applied
-func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsumerSession) error {
+// Verify the consumerSession is locked when getting to this function, if its not locked throw an error
+func (csm *ConsumerSessionManager) verifyLock(consumerSession *SingleConsumerSession) error {
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
 		defer consumerSession.lock.Unlock()
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "OnSessionUnUsed: consumerSession.lock must be locked before accessing this method, additional info:")
+		return LockMisUseDetectedError
+	}
+	return nil
+}
+
+// A Session can be created but unused if consumer found the response in the cache.
+// So we need to unlock the session and decrease the cu that were applied
+func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsumerSession) error {
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnSessionUnUsed, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	consumerSession.LatestRelayCu = 0                            // making sure no one uses it in a wrong way
@@ -288,14 +296,12 @@ func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsum
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
-	if consumerSession.lock.TryLock() { // verify.
-		// if we managed to lock throw an error for misuse.
-		defer consumerSession.lock.Unlock()
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method, additional info:")
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
 
 	// consumer Session should be locked here. so we can just apply the session failure here.
-	if consumerSession.Blocklisted {
+	if consumerSession.BlockListed {
 		// if consumer session is already blocklisted return an error.
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
@@ -304,10 +310,8 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
-		consumerSession.Blocklisted = true // block this session from future usages
-	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
-		consumerSession.Blocklisted = true
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || SessionOutOfSyncError.Is(errorReceived) {
+		consumerSession.BlockListed = true // block this session from future usages
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
@@ -362,11 +366,11 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	numOfProviders int,
 	providersCount uint64,
 ) error {
-	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
-	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
-		// if we managed to lock throw an error for misuse.
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnDataReliabilitySessionDone, consumerSession.lock must be locked before accessing this method")
 	}
+
+	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	consumerSession.CalculateQoS(specComputeUnits, currentLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
@@ -385,12 +389,11 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	providersCount uint64,
 ) error {
 	// release locks, update CU, relaynum etc..
-	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
-	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
-		// if we managed to lock throw an error for misuse.
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnSessionDone, consumerSession.lock must be locked before accessing this method")
 	}
 
+	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
@@ -513,12 +516,11 @@ func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context
 
 // On a successful Subscribe relay
 func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSession *SingleConsumerSession) error {
-	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
-	if consumerSession.lock.TryLock() { // verify consumerSession was locked.
-		// if we managed to lock throw an error for misuse.
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method")
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
 	}
 
+	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.RelayNum += RelayNumberIncrement       // increase relayNum
@@ -529,25 +531,22 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseRelayAndCu(consumerSessi
 // On a failed DataReliability session we don't decrease the cu unlike a normal session, we just unlock and verify if we need to block this session or provider.
 func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
-	if consumerSession.lock.TryLock() { // verify.
-		// if we managed to lock throw an error for misuse.
-		defer consumerSession.lock.Unlock()
-		return sdkerrors.Wrapf(LockMisUseDetectedError, "consumerSession.lock must be locked before accessing this method, additional info:")
+	if err := csm.verifyLock(consumerSession); err != nil {
+		return sdkerrors.Wrapf(err, "OnDataReliabilitySessionFailure consumerSession.lock must be locked before accessing this method")
 	}
 	// consumer Session should be locked here. so we can just apply the session failure here.
-	if consumerSession.Blocklisted {
+	if consumerSession.BlockListed {
 		// if consumer session is already blocklisted return an error.
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
 	}
-
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
 	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
-		consumerSession.Blocklisted = true // block this session from future usages
+		consumerSession.BlockListed = true // block this session from future usages
 	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
-		consumerSession.Blocklisted = true
+		consumerSession.BlockListed = true
 	}
 
 	var blockProvider, reportProvider bool

@@ -122,7 +122,6 @@ func SendRelay(
 
 	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error) {
 		//client session is locked here
-		fromCache := false
 		blockHeight = int64(epoch) // epochs heights only
 
 		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
@@ -143,7 +142,7 @@ func SendRelay(
 		}
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, nil, 0, fromCache, err
+			return nil, nil, nil, 0, false, err
 		}
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
@@ -167,14 +166,13 @@ func SendRelay(
 				reply, err = c.Relay(connectCtx, relayRequest)
 			} else {
 				// Info was fetched from cache, so we need to change the state
-				fromCache = true
 				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-				return reply, nil, relayRequest, 0, fromCache, nil
+				return reply, nil, relayRequest, 0, true, nil
 			}
 		}
 		currentLatency := time.Since(relaySentTime)
 		if err != nil {
-			return nil, nil, nil, 0, fromCache, err
+			return nil, nil, nil, 0, false, err
 		}
 
 		if !isSubscription {
@@ -183,15 +181,15 @@ func SendRelay(
 			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
-				return nil, nil, nil, 0, fromCache, err
+				return nil, nil, nil, 0, false, err
 			}
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
 			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
-			return reply, nil, relayRequest, currentLatency, fromCache, nil
+			return reply, nil, relayRequest, currentLatency, false, nil
 		}
 		// isSubscription
-		return reply, &replyServer, relayRequest, currentLatency, fromCache, nil
+		return reply, &replyServer, relayRequest, currentLatency, false, nil
 	}
 
 	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error) {
