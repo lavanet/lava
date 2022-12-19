@@ -120,7 +120,7 @@ func SendRelay(
 	// consumerSession is locked here.
 
 	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error) {
-		//client session is locked here
+		// client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
 		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
@@ -192,7 +192,7 @@ func SendRelay(
 	}
 
 	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error) {
-		//client session is locked here
+		// client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
 			return nil, nil, 0, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
