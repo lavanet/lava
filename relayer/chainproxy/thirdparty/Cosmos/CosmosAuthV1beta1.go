@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	pb_pkg "cosmossdk.io/api/cosmos/auth/v1beta1"
 	"github.com/golang/protobuf/proto"
-	pb_pkg "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/auth/types"
 	"github.com/lavanet/lava/utils"
 )
 
