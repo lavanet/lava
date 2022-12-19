@@ -31,7 +31,6 @@ func (k Keeper) ConflictVoteAll(c context.Context, req *types.QueryAllConflictVo
 		conflictVotes = append(conflictVotes, conflictVote)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

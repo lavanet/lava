@@ -205,12 +205,18 @@ func (c *callback) call(ctx context.Context, method string, args []reflect.Value
 	// Run the callback.
 	results := c.fn.Call(fullargs)
 	if len(results) == 0 {
-		return nil, nil
+		var ret interface{}
+		return ret, nil
 	}
 	if c.errPos >= 0 && !results[c.errPos].IsNil() {
 		// Method has returned non-nil error value.
-		err := results[c.errPos].Interface().(error)
-		return reflect.Value{}, err
+		err := results[c.errPos].Interface()
+		var ok bool
+		errRet, ok := err.(error)
+		if !ok {
+			return reflect.Value{}, fmt.Errorf("(c *callback) call - errRet, ok := err.(error) - type assertion failed" + fmt.Sprintf("%s", err))
+		}
+		return reflect.Value{}, errRet
 	}
 	return results[0].Interface(), nil
 }

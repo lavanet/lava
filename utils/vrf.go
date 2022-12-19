@@ -20,15 +20,13 @@ const (
 	sk_vrf_prefix = "vrf-sk-"
 )
 
-var (
-	VRFValueAboveReliabilityThresholdError = sdkerrors.New("VRFValueAboveReliabilityThreshold Error", 1, "calculated vrf does not result in a smaller value than threshold") // client could'nt connect to any provider.
-)
+var VRFValueAboveReliabilityThresholdError = sdkerrors.New("VRFValueAboveReliabilityThreshold Error", 1, "calculated vrf does not result in a smaller value than threshold") // client could'nt connect to any provider.
 
 func GetIndexForVrf(vrf []byte, providersCount uint32, reliabilityThreshold uint32) (index int64, err error) {
 	vrf_num := binary.LittleEndian.Uint32(vrf)
 	if vrf_num <= reliabilityThreshold {
 		// need to send relay with VRF
-		modulo := uint32(providersCount)
+		modulo := providersCount
 		index = int64(vrf_num % modulo)
 	} else {
 		index = -1
@@ -44,7 +42,7 @@ func verifyVRF(queryHash []byte, reliabilityData *pairingtypes.VRFData, vrf_pk V
 		differentiator = []uint8{1}
 	}
 	relayEpochStartBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(relayEpochStartBytes, uint64(relayEpochStart))
+	binary.LittleEndian.PutUint64(relayEpochStartBytes, relayEpochStart)
 	vrf_data := bytes.Join([][]byte{queryHash, relayEpochStartBytes, providerSig, differentiator}, nil)
 	return vrf_pk.pk.Verify(vrf_data, reliabilityData.VrfValue, reliabilityData.VrfProof)
 }
@@ -83,7 +81,7 @@ func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
 }
 
 func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes.RelayReply, differentiator bool, currentEpoch uint64) (data []byte) {
-	//vrf is calculated on: query hash, relayer signature and 0/1 byte
+	// vrf is calculated on: query hash, relayer signature and 0/1 byte
 	queryHash := CalculateQueryHash(*request)
 	currentEpochBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(currentEpochBytes, currentEpoch)
@@ -96,7 +94,7 @@ func FormatDataForVrf(request *pairingtypes.RelayRequest, response *pairingtypes
 }
 
 func VerifyVRF(vrfpk string) error {
-	//everything is okay
+	// everything is okay
 	if vrfpk == "" {
 		return fmt.Errorf("can't stake with an empty vrf pk bech32 string")
 	}

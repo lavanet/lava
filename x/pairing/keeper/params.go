@@ -95,6 +95,7 @@ func (k Keeper) UnpayLimit(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyUnpayLimit, &res)
 	return
 }
+
 func (k Keeper) SlashLimit(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeySlashLimit, &res)
 	return

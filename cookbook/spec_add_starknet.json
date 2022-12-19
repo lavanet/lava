@@ -231,6 +231,29 @@
             }
           ]
         },
+        {"name": "starknet_getClassAt",
+          "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+          },
+          "block_parsing": {
+            "parserArg": [
+              ""
+            ],
+            "parserFunc": "EMPTY"
+          },
+          "compute_units": "1",
+          "enabled": true,
+          "apiInterfaces": [
+            {
+              "interface": "jsonrpc",
+              "type": "get",
+              "extra_compute_units": "0"
+            }
+          ]
+        },
         {"name": "starknet_getBlockTransactionCount",
           "category": {
             "deterministic": true,
@@ -256,7 +279,7 @@
         },
         {"name": "starknet_call",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0
@@ -381,7 +404,7 @@
         },
         {"name": "starknet_pendingTransactions",
           "category": {
-            "deterministic": true,
+            "deterministic": false,
             "local": false,
             "subscription": false,
             "stateful": 0

@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultTimeout            = 5 * time.Second
+	TimePerCU                 = uint64(time.Second)
 	ContextUserValueKeyDappID = "dappID"
 )
 
@@ -60,7 +61,6 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *Po
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, comparesHashes bool) error {
-
 	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 	if err != nil {
 		return err
@@ -105,14 +105,13 @@ func SendRelay(
 	connectionType string,
 	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
-
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, nil, err
 	}
 	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
-	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
+	blockHeight := int64(-1) // to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
@@ -123,7 +122,7 @@ func SendRelay(
 	// consumerSession is locked here.
 
 	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error) {
-		//client session is locked here
+		// client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
 		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
@@ -174,7 +173,7 @@ func SendRelay(
 		}
 
 		if !isSubscription {
-			//update relay request requestedBlock to the provided one in case it was arbitrary
+			// update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
@@ -191,7 +190,7 @@ func SendRelay(
 	}
 
 	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
-		//client session is locked here
+		// client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
 			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
@@ -201,9 +200,9 @@ func SendRelay(
 			Provider:              providerAddress,
 			ApiUrl:                url,
 			Data:                  []byte(req),
-			SessionId:             uint64(0), //sessionID for reliability is 0
+			SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 0, // consumerSession.CuSum == 0
+			CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
 			BlockHeight:           blockHeight,
 			RelayNum:              0, // consumerSession.RelayNum == 0
 			RequestBlock:          requestedBlock,
@@ -292,17 +291,18 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
-		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) //this sets a user value in context and this is given to the callback
-		return webSocketCallback(c)                                 //uses external dappID
+		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
+		return webSocketCallback(c)                                 // uses external dappID
 	}
 	return handler
 }
+
 func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
 	if dappID, ok := dappIDLocal.(string); ok {
-		//zeroallocation policy for fiber.Ctx
+		// zeroallocation policy for fiber.Ctx
 		buffer := make([]byte, len(dappID))
 		copy(buffer, dappID)
 		return string(buffer)
@@ -313,8 +313,12 @@ func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	if len(c.Route().Params) > 1 {
 		dappID = c.Route().Params[1]
-		dappID = strings.Replace(dappID, "*", "", -1)
+		dappID = strings.ReplaceAll(dappID, "*", "")
 		return
 	}
 	return "NoDappID"
+}
+
+func getTimePerCu(cu uint64) time.Duration {
+	return time.Duration(cu * TimePerCU)
 }

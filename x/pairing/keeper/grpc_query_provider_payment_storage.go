@@ -31,7 +31,6 @@ func (k Keeper) ProviderPaymentStorageAll(c context.Context, req *types.QueryAll
 		providerPaymentStorages = append(providerPaymentStorages, providerPaymentStorage)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

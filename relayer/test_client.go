@@ -91,6 +91,8 @@ func TestClient(
 		testErrors = testclients.JunoTests(ctx, chainProxy, privKey, apiInterface)
 	case "COS5":
 		testErrors = testclients.CosmoshubTests(ctx, chainProxy, privKey, apiInterface, sentry, clientCtx)
+	case "STRK":
+		testErrors = testclients.StarknetTests(ctx, chainID, "http://127.0.0.1:3345/1", chainProxy, privKey, testDuration)
 	}
 
 	if testErrors != nil {

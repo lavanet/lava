@@ -30,7 +30,7 @@ func prettyPrintReply(reply types.RelayReply, name string) {
 	reply.SigBlocks = nil
 	reply.FinalizedBlocksHashes = nil
 	if len(reply.Data) > 200 {
-		reply.Data = bytes.Join([][]byte{reply.Data[:200], []byte("...TooLong...")}, nil) //too long is ugly
+		reply.Data = bytes.Join([][]byte{reply.Data[:200], []byte("...TooLong...")}, nil) // too long is ugly
 	}
 	log.Printf("reply %s, %s", name, reply.String())
 }
