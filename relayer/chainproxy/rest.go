@@ -60,18 +60,32 @@ func (cp *RestChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessi
 	return cp.csm
 }
 
-func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, error) {
+func (cp *RestChainProxy) NewMessage(path string, data []byte, connectionType string) (*RestMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
+
+	// put only the relevant interface
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
 	nodeMsg := &RestMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
+		cp:           cp,
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		path:         path,
+		msg:          data,
 	}
 
 	return nodeMsg, nil
@@ -110,7 +124,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	if serviceApi.GetParsing().FunctionTemplate != "" {
 		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
 	} else {
-		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, http.MethodGet)
 	}
 
 	if err != nil {
@@ -143,7 +157,7 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := []byte{}
-	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params)
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, http.MethodGet)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
