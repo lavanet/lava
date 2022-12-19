@@ -13,6 +13,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
@@ -30,7 +31,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
-	connectionType string
+	apiInterface   *spectypes.ApiInterface
 }
 
 type RestChainProxy struct {
@@ -93,6 +94,7 @@ func (m RestMessage) ParseBlock(inp string) (int64, error) {
 func (cp *RestChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *RestChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -127,7 +129,11 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	parsedIndexString, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", fmt.Errorf("FetchBlockHashByNum - blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string) - type assertion failed, type:" + fmt.Sprintf("%s", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX]))
+	}
+	return parsedIndexString, nil
 }
 
 func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -186,25 +192,24 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 		return nil, err
 	}
 
-	//put only the relevant interface
-	found := false
-	for _, apiinterface := range serviceApi.ApiInterfaces {
-		if apiinterface.Type == connectionType {
-			serviceApi.ApiInterfaces = []spectypes.ApiInterface{apiinterface}
-			found = true
+	// put only the relevant interface
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
 			break
 		}
 	}
-	if !found {
+	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 	// data contains the query string
 	nodeMsg := &RestMessage{
-		cp:             cp,
-		serviceApi:     serviceApi,
-		path:           path,
-		msg:            data,
-		connectionType: connectionType, // POST,GET etc..
+		cp:           cp,
+		serviceApi:   serviceApi,
+		path:         path,
+		msg:          data,
+		apiInterface: apiInterface, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -215,7 +220,8 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	//
+	app.Use(favicon.New())
+
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
@@ -225,7 +231,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
-		//TODO: fix msgSeed and print it here
+		// TODO: fix msgSeed and print it here
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
@@ -244,17 +250,12 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
 
-		URI := c.Request().URI()
-		if strings.Contains(URI.String(), "favicon.ico") {
-			return nil
-		}
-
-		query := "?" + string(URI.QueryString())
+		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
@@ -292,13 +293,13 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
 	httpClient := http.Client{
-		Timeout: DefaultTimeout, // Timeout after 5 seconds
+		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
 	}
 
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	if nm.connectionType != "" {
-		connectionTypeSlected = nm.connectionType
+	if nm.apiInterface.Interface != "" {
+		connectionTypeSlected = nm.apiInterface.Interface
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
@@ -314,7 +315,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
-	if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
+	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	res, err := httpClient.Do(req)
@@ -328,7 +329,6 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
-
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err

@@ -241,6 +241,29 @@
                             }
                         ]
                     },
+                    {"name": "starknet_getClassAt",
+                    "block_parsing": {
+                      "parserArg": [
+                        ""
+                      ],
+                      "parserFunc": "EMPTY"
+                    },
+                    "compute_units": "1",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                        "category": {
+                            "deterministic": true,
+                            "local": false,
+                            "subscription": false,
+                            "stateful": 0
+                        },
+                        "interface": "jsonrpc",
+                        "type": "get",
+                        "extra_compute_units": "0"
+                      }
+                    ]
+                  },
                     {
                         "name": "starknet_getBlockTransactionCount",
                         "block_parsing": {
@@ -278,7 +301,7 @@
                         "api_interfaces": [
                             {
 		                        "category": {
-		                            "deterministic": true,
+		                            "deterministic": false,
 		                            "local": false,
 		                            "subscription": false,
 		                            "stateful": 0
@@ -408,7 +431,7 @@
                         "api_interfaces": [
                             {
 		                        "category": {
-		                            "deterministic": true,
+		                            "deterministic": false,
 		                            "local": false,
 		                            "subscription": false,
 		                            "stateful": 0

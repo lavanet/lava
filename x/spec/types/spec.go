@@ -14,7 +14,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	for _, api := range spec.Apis {
 		if api.ComputeUnits < minCU || api.ComputeUnits > maxCU {
 			details["api"] = api.Name
-			return details, fmt.Errorf("Compute units out or range")
+			return details, fmt.Errorf("compute units out or range")
 		}
 
 		if api.Parsing.FunctionTag != "" {
@@ -29,7 +29,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 
 			if !result {
 				details["api"] = api.Name
-				return details, fmt.Errorf("Unsupported function tag")
+				return details, fmt.Errorf("unsupported function tag")
 			}
 		}
 	}

@@ -23,18 +23,18 @@ var (
 
 var (
 	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
-	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) //0.1
+	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
 )
 
 var (
 	KeyBurnCoinsPerCU             = []byte("BurnCoinsPerCU")
-	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
+	DefaultBurnCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
 var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
 	// TODO: Determine the default value
-	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) //0
+	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) // 0
 )
 
 var (
@@ -59,8 +59,7 @@ var (
 	KeyStakeToMaxCUList = []byte("StakeToMaxCUList")
 	// TODO: Determine the default value
 	DefaultStakeToMaxCUList StakeToMaxCUList = StakeToMaxCUList{List: []StakeToMaxCU{
-
-		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(0)}, 5000},
+		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(1)}, 5000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(500)}, 15000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(2000)}, 50000},
 		{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.NewIntFromUint64(5000)}, 250000},
@@ -71,21 +70,22 @@ var (
 
 var (
 	KeyUnpayLimit             = []byte("UnpayLimit")
-	DefaultUnpayLimit sdk.Dec = sdk.NewDecWithPrec(1, 1) //0.1 = 10%
+	DefaultUnpayLimit sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1 = 10%
 )
+
 var (
 	KeySlashLimit             = []byte("SlashLimit")
-	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) //0.2 = 20%
+	DefaultSlashLimit sdk.Dec = sdk.NewDecWithPrec(2, 1) // 0.2 = 20%
 )
 
 var (
 	KeyDataReliabilityReward             = []byte("DataReliabilityReward")
-	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) //0.05
+	DefaultDataReliabilityReward sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
 var (
 	KeyQoSWeight             = []byte("QoSWeight")
-	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) //0.5
+	DefaultQoSWeight sdk.Dec = sdk.NewDecWithPrec(5, 1) // 0.5
 )
 
 // ParamKeyTable the param key table for launch module
@@ -339,6 +339,9 @@ func validateStakeToMaxCUList(v interface{}) error {
 	}
 
 	for i, stakeToMaxCU := range stakeToMaxCUList.List {
+		if stakeToMaxCU.StakeThreshold.Amount.Sign() == -1 || stakeToMaxCU.StakeThreshold.Amount.Int64() == 0 {
+			return fmt.Errorf("invalid stakeThreshold %v. Must be non-zero positive integer", stakeToMaxCU.StakeThreshold)
+		}
 		if i > 0 {
 			if stakeToMaxCU.StakeThreshold.IsLT(stakeToMaxCUList.List[i-1].StakeThreshold) ||
 				stakeToMaxCU.MaxComputeUnits <= stakeToMaxCUList.List[i-1].MaxComputeUnits {

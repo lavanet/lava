@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -44,10 +43,9 @@ func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance i
 }
 
 func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64, isProvider bool) {
-
 	if isProvider {
-		endpoints := []epochtypes.Endpoint{}
-		endpoints = append(endpoints, epochtypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
+		endpoints := []epochstoragetypes.Endpoint{}
+		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", UseType: spec.GetApis()[0].ApiInterfaces[0].Interface, Geolocation: 1})
 		_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
 		require.Nil(t, err)
 	} else {
@@ -62,7 +60,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account, provider1 Account, spec spectypes.Spec) (conflicttypes.MsgDetection, error) {
 	var msg conflicttypes.MsgDetection
 	msg.Creator = consumer.Addr.String()
-	//request 0
+	// request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &types.RelayReply{}}}
 	msg.ResponseConflict.ConflictRelayData0.Request.ConnectionType = ""
 	msg.ResponseConflict.ConflictRelayData0.Request.ApiUrl = ""
@@ -85,7 +83,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 
 	msg.ResponseConflict.ConflictRelayData0.Request.Sig = sig
 
-	//request 1
+	// request 1
 	temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
 	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Request.Provider = provider1.Addr.String()
@@ -96,7 +94,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	}
 	msg.ResponseConflict.ConflictRelayData1.Request.Sig = sig
 
-	//reply 0
+	// reply 0
 	msg.ResponseConflict.ConflictRelayData0.Reply.Nonce = 10
 	msg.ResponseConflict.ConflictRelayData0.Reply.FinalizedBlocksHashes = []byte{}
 	msg.ResponseConflict.ConflictRelayData0.Reply.LatestBlock = msg.ResponseConflict.ConflictRelayData0.Request.RequestBlock + int64(spec.BlockDistanceForFinalizedData)
@@ -112,7 +110,7 @@ func CreateMsgDetection(ctx context.Context, consumer Account, provider0 Account
 	}
 	msg.ResponseConflict.ConflictRelayData0.Reply.SigBlocks = sigBlocks
 
-	//reply 1
+	// reply 1
 	temp, _ = msg.ResponseConflict.ConflictRelayData0.Reply.Marshal()
 	msg.ResponseConflict.ConflictRelayData1.Reply.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Reply.Data = append(msg.ResponseConflict.ConflictRelayData1.Reply.Data, []byte("DIFF")...)

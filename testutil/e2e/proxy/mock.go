@@ -1,4 +1,4 @@
-package main
+package mockproxy
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 )
 
 type mockMap struct {
-	requests map[string]string //`json:"requests"`
+	requests map[string]string // `json:"requests"`
 }
 
 func mapToJsonFile(mMap mockMap, outfile string) error {
@@ -34,13 +34,19 @@ func mapToJsonFile(mMap mockMap, outfile string) error {
 
 	return nil
 }
-func jsonFileToMap(jsonfile string) (m map[string]string) {
+
+func jsonFileToMap(jsonfile string) map[string]string {
 	// open json file
-	m = map[string]string{}
-	jsonFile, err := os.Open(jsonfile)
+	m := map[string]string{}
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println(" ::: XXX ::: Could not get pwd ::: ", err)
+		return m
+	}
+	jsonFile, err := os.Open(path + "/" + jsonfile)
 	if err != nil {
 		fmt.Println(" ::: XXX ::: Could not open "+jsonfile+" ::: ", err)
-		return
+		return m
 	}
 	defer jsonFile.Close()
 
@@ -68,5 +74,5 @@ func jsonFileToMap(jsonfile string) (m map[string]string) {
 	fmt.Println("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
 	println()
 
-	return
+	return m
 }

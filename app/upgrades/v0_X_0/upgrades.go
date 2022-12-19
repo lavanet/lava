@@ -22,7 +22,7 @@ func CreateUpgradeHandler(
 		log.Println("#   STARTING UPGRADE   #")
 		log.Println("########################")
 
-		//delete all existing conflicts
+		// delete all existing conflicts
 
 		migrator := migrations.NewMigrator(keepers.SpecKeeper)
 		migrator.MigrateToV0X0(ctx)

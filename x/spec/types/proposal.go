@@ -35,7 +35,6 @@ func checkSpecProposal(spec Spec) error {
 }
 
 func stringSpec(spec Spec, b strings.Builder) strings.Builder {
-
 	b.WriteString(fmt.Sprintf(`    Spec name:
 	Name: %s, Spec index: %s, Enabled: %t, Apis: %d
 `, spec.Name, spec.Index, spec.Enabled, len(spec.Apis)))

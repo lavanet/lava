@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
+  rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
   rpc StakeClient(MsgStakeClient) returns (MsgStakeClientResponse);
   rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
   rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
@@ -25,6 +25,7 @@ message MsgStakeProvider {
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   repeated lavanet.lava.epochstorage.Endpoint endpoints = 4 [(gogoproto.nullable) = false];
   uint64 geolocation = 5;
+  string moniker = 6;
 }
 
 message MsgStakeProviderResponse {

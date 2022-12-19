@@ -35,7 +35,6 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 }
 
 func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
-
 	for _, c := range p.Changes {
 		ss, ok := k.GetSubspace(c.Subspace)
 		if !ok {
@@ -61,7 +60,7 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 	if !ok {
 		return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, epochstoragetypes.ModuleName)
 	}
-	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
+	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) // set the LatestParamChange
 
 	return nil
 }
@@ -82,18 +81,16 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 
 func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
 	for _, spec := range p.Specs {
-
 		_, found := k.GetSpec(ctx, spec.Index)
 
 		logger := k.Logger(ctx)
 
 		details, err := spec.ValidateSpec(k.MaxCU(ctx))
-
 		if err != nil {
 			return utils.LavaError(ctx, logger, "invalid_spec", details, err.Error())
 		}
 		k.SetSpec(ctx, spec)
-		//TODO: add api types once its implemented to the event
+		// TODO: add api types once its implemented to the event
 
 		var name string
 		if found {

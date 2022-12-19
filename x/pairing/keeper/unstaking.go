@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -17,7 +18,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		}
 		return epochstoragetypes.ClientKey
 	}
-	//TODO: validate chainID basic validation
+	// TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
 	_, found := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
@@ -35,7 +36,11 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		details := map[string]string{stake_type(): creator, "spec": chainID}
 		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
 	}
-	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type(), chainID, indexInStakeStorage)
+	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type(), chainID, indexInStakeStorage)
+	if err != nil {
+		details := map[string]string{stake_type(): creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
+		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
+	}
 	blockHeight := uint64(ctx.BlockHeight())
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
 	if err != nil {
@@ -51,18 +56,18 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
-	//this pops all the entries that had their deadline pass
+	// this pops all the entries that had their deadline pass
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ProviderKey, uint64(ctx.BlockHeight()))
 	if unstakingEntriesToCredit != nil {
-		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) //true for providers
+		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) // true for providers
 		if err != nil {
 			panic(err.Error())
 		}
 	}
-	//no providers entries to handle, check clients
+	// no providers entries to handle, check clients
 	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ClientKey, uint64(ctx.BlockHeight()))
 	if unstakingEntriesToCredit != nil {
-		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) //false for clients
+		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) // false for clients
 		if err != nil {
 			panic(err.Error())
 		}
@@ -98,7 +103,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 				panic(fmt.Sprintf("error getting AccAddress from : %s error: %s", unstakingEntry.Address, err))
 			}
 			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
-				//transfer stake money to the stake entry account
+				// transfer stake money to the stake entry account
 				valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
 				if !valid {
 					details["error"] = err.Error()

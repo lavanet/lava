@@ -23,7 +23,7 @@ type ChainSentry struct {
 	quit chan bool
 	// Spec blockQueueMu (rw mutex)
 	blockQueueMu utils.LavaMutex
-	blocksQueue  []string //holds all past hashes up until latest block
+	blocksQueue  []string // holds all past hashes up until latest block
 }
 
 func (cs *ChainSentry) GetLatestBlockNum() int64 {
@@ -48,7 +48,7 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 	if requestedBlock < 0 {
 		requestedBlock = sentry.ReplaceRequestedBlock(requestedBlock, latestBlockNum)
 	}
-	var hashes = make(map[int64]interface{}, len(cs.blocksQueue))
+	hashes := make(map[int64]interface{}, len(cs.blocksQueue))
 
 	for indexInQueue := 0; indexInQueue < cs.numFinalBlocks; indexInQueue++ {
 		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(indexInQueue+1)
@@ -56,10 +56,10 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 			continue
 		}
 		if indexInQueue < cs.numFinalBlocks {
-			//only return numFinalBlocks in the finalization guarantee
+			// only return numFinalBlocks in the finalization guarantee
 			hashes[blockNum] = cs.blocksQueue[indexInQueue]
 		}
-		//keep iterating on the others to find a match for the request
+		// keep iterating on the others to find a match for the request
 		if blockNum == requestedBlock {
 			requestedBlockHash = cs.blocksQueue[indexInQueue]
 		}
@@ -73,7 +73,6 @@ func (cs *ChainSentry) fetchLatestBlockNum(ctx context.Context) (int64, error) {
 
 func (cs *ChainSentry) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	return cs.chainProxy.FetchBlockHashByNum(ctx, blockNum)
-
 }
 
 func (cs *ChainSentry) Init(ctx context.Context) error {
@@ -92,7 +91,7 @@ func (cs *ChainSentry) Init(ctx context.Context) error {
 
 func (cs *ChainSentry) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) error {
 	tmpArr := []string{}
-	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock; i++ { //save all blocks from the past up until latest block
+	for i := latestBlock - int64(cs.finalizedBlockDistance+cs.numFinalBlocks) + 1; i <= latestBlock; i++ { // save all blocks from the past up until latest block
 		result, err := cs.fetchBlockHashByNum(ctx, i)
 		if err != nil {
 			utils.LavaFormatError("could not get block data in chainSentry", err, &map[string]string{"block": strconv.FormatInt(i, 10)})
@@ -149,7 +148,7 @@ func (cs *ChainSentry) GetLatestBlockHash() string {
 func (cs *ChainSentry) Start(ctx context.Context) error {
 	// how often to query latest block.
 	ticker := time.NewTicker(
-		time.Millisecond * time.Duration(int64(cs.chainProxy.GetSentry().GetAverageBlockTime())))
+		time.Millisecond * time.Duration(cs.chainProxy.GetSentry().GetAverageBlockTime()))
 
 	// Polls blocks and keeps a queue of them
 	go func() {

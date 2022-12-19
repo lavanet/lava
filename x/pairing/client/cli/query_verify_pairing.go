@@ -34,7 +34,6 @@ func CmdVerifyPairing() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryVerifyPairingRequest{
-
 				ChainID:  reqChainID,
 				Client:   reqClient,
 				Provider: reqProvider,

@@ -31,7 +31,6 @@ func (k Keeper) SpecAll(c context.Context, req *types.QueryAllSpecRequest) (*typ
 		Specs = append(Specs, Spec)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

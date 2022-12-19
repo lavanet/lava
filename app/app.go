@@ -97,7 +97,6 @@ import (
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
-	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	specmoduletypes "github.com/lavanet/lava/x/spec/types"
@@ -115,10 +114,8 @@ const (
 	Name                 = "lava"
 )
 
-var (
-	// add here future upgrades (upgrades.Upgrade)
-	Upgrades = []upgrades.Upgrade{}
-)
+// Upgrades add here future upgrades (upgrades.Upgrade)
+var Upgrades = []upgrades.Upgrade{}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
@@ -165,7 +162,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		specmodule.AppModuleBasic{},
+		spec.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
@@ -347,7 +344,7 @@ func New(
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
 	)
-	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
+	specModule := spec.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -437,7 +434,7 @@ func New(
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
 	// we prefer to be more strict in what arguments the modules expect.
-	var skipGenesisInvariants = cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -490,7 +487,7 @@ func New(
 		ibctransfertypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
-		conflictmoduletypes.ModuleName, //conflict needs to change state before pairing changes stakes
+		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		pairingmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -546,7 +543,7 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		conflictmoduletypes.ModuleName, //NOTICE: the last module to initgenesis needs to push fixation in epoch storage
+		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 

@@ -20,11 +20,10 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	var apiInterfacesStructList []*types.ApiList
 	var interfaceList []string
 	var chainID string
-	var foundChain bool = false
+	foundChain := false
 
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
-
 		// get info by chain name
 		if spec.GetName() == req.GetChainName() {
 			foundChain = true
@@ -39,7 +38,6 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 				// iterate over APIs
 				for _, apiInterface := range apiInterfaces {
-
 					interfaceApiStructIndex := checkInterfaceExistence(apiInterfacesStructList, apiInterface.GetInterface())
 
 					// found an API with a new interface
@@ -52,15 +50,12 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 						// found an API with an existent interface
 						apiInterfacesStructList[interfaceApiStructIndex].SupportedApis = append(apiInterfacesStructList[interfaceApiStructIndex].SupportedApis, api.GetName())
 					}
-
 				}
-
 			}
 
 			// found the chain, there is no need to further iterate
 			break
 		}
-
 	}
 
 	// Didn't find the chain
