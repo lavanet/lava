@@ -41,6 +41,7 @@ const (
 )
 
 func GetDefaultParametersConfig(faviconFilePath string) *Config {
+
 	return &Config{
 		Next:            nil,
 		Data:            lavaIcon,
@@ -62,19 +63,10 @@ func (cfg *Config) parseFaviconIconFromPath() {
 }
 
 // New creates a new middleware handler
-func New(config ...*Config) fiber.Handler {
+func New(optionalFaviconPath string) fiber.Handler {
 	var cfg *Config
 
-	if config != nil {
-		// Override config if provided
-		if len(config) != 1 {
-			panic("Wrong Favicon Config Length")
-		}
-		cfg = config[0]
-	} else {
-		cfg = GetDefaultParametersConfig("")
-	}
-
+	cfg = GetDefaultParametersConfig(optionalFaviconPath)
 	// Load icon if provided
 	cfg.parseFaviconIconFromPath()
 

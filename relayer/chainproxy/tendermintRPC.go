@@ -212,7 +212,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use(favicon.New(favicon.GetDefaultParametersConfig(faviconPath)))
+	app.Use(favicon.New(faviconPath))
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("tendermint-WebSocket")

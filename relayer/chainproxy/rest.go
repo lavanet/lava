@@ -203,7 +203,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use(favicon.New(favicon.GetDefaultParametersConfig(faviconPath)))
+	app.Use(favicon.New(faviconPath))
 
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {

@@ -250,7 +250,7 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 
-	app.Use(favicon.New(favicon.GetDefaultParametersConfig(faviconPath)))
+	app.Use(favicon.New(faviconPath))
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-WebSocket")
