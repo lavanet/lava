@@ -99,8 +99,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		for _, api := range spec.Apis {
-			for _, apiInterface := range api.ApiInterfaces {
-				expectedInterfaces[apiInterface.Interface] = true
+			if api.Enabled {
+				for _, apiInterface := range api.ApiInterfaces {
+					expectedInterfaces[apiInterface.Interface] = true
+				}
 			}
 		}
 	}
