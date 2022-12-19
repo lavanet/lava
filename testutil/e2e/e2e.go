@@ -32,6 +32,7 @@ import (
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type lavaTest struct {
@@ -666,7 +667,7 @@ func runE2E() {
 	if gopath == "" {
 		gopath = build.Default.GOPATH
 	}
-	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithInsecure())
+	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		// Just log because grpc redials
 		fmt.Println(err)
