@@ -21,6 +21,10 @@ python3 scripts/automation_scripts/grpc_spec_builder.py
 
 Read the results carefully to understand if any Rest API's were missing / more than necessary. take a look at the new grpc spec file that was created 
 
+You can also uncomment the block of code at the bottom of the script that sets the grpc_server and spec_current_file_path variables to different values. This will allow you to switch between different gRPC servers and JSON files by simply commenting out the block of code that you are not using.
+
+Note that you will need to have the grpcurl command-line tool installed and available in your system's PATH in order to run the script. grpcurl is a command-line tool for interacting with gRPC servers. You can download it from the gRPC GitHub page: https://github.com/grpc/grpc
+
 # gRPC Scaffolder: 
 
 Used for Scaffolding grpc interface. 
