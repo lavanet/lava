@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	v020 "github.com/lavanet/lava/x/spec/migrations/v0.2.0"
 	"github.com/stretchr/testify/suite"
 )
 

@@ -15,6 +15,11 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	SPEC_ADD    = "add_spec"
+	SPEC_MODIFY = "spec_modify"
+)
+
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
 func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
@@ -92,9 +97,9 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 
 		var name string
 		if found {
-			name = "spec_add"
+			name = SPEC_ADD
 		} else {
-			name = "spec_modify"
+			name = SPEC_MODIFY
 		}
 
 		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")
