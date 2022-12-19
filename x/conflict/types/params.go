@@ -37,7 +37,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64, rewards Rewards) Params {
+	majorityPercent sdk.Dec, voteStartSpan uint64, votePeriod uint64, rewards Rewards,
+) Params {
 	return Params{
 		MajorityPercent: majorityPercent,
 		VoteStartSpan:   voteStartSpan,

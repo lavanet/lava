@@ -31,6 +31,7 @@ func (k Keeper) RemoveEpochDetails(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochDetailsKey))
 	store.Delete([]byte{0})
 }
+
 func (k Keeper) SetEpochDetailsStart(ctx sdk.Context, block uint64) {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {

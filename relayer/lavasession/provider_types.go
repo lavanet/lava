@@ -45,7 +45,6 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadBlockedEpoch() (blockStatus 
 }
 
 func (pswc *ProviderSessionsWithConsumer) readBlockListedAtomic() {
-
 }
 
 type SingleProviderSession struct {

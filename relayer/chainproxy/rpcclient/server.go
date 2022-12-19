@@ -18,6 +18,7 @@ package rpcclient
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync/atomic"
 
@@ -25,8 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-const MetadataApi = "rpc"
-const EngineApi = "engine"
+const (
+	MetadataApi = "rpc"
+	EngineApi   = "engine"
+)
 
 // CodecOption specifies which type of messages a codec supports.
 //
@@ -123,7 +126,11 @@ func (s *Server) Stop() {
 	if atomic.CompareAndSwapInt32(&s.run, 1, 0) {
 		log.Debug("RPC server shutting down")
 		s.codecs.Each(func(c interface{}) bool {
-			c.(ServerCodec).close()
+			serverCodec, ok := c.(ServerCodec)
+			if !ok {
+				panic("(s *Server) Stop() - serverCodec, ok := c.(ServerCodec) - type assertion failed: " + fmt.Sprintf("%s", c))
+			}
+			serverCodec.close()
 			return true
 		})
 	}

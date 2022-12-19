@@ -76,8 +76,8 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
-	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error) {
-
+	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error,
+) {
 	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
 		initUnwantedProviders = make(map[string]struct{})
 	}
@@ -442,7 +442,6 @@ func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddr
 	}
 	// if address is valid return the ConsumerSessionsWithProvider
 	return csm.pairing[providerAddress], providerAddress, currentEpoch, nil
-
 }
 
 func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderForDR(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
@@ -473,7 +472,7 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 	}
 	if !connected { // if we are not connected at the end
 		// failed to get an endpoint connection from that provider. return an error.
-		return nil, FailedToConnectToEndPointForDataReliabilityError
+		return nil, utils.LavaFormatError("Not Connected", FailedToConnectToEndPointForDataReliabilityError, &map[string]string{"provider": providerAddress})
 	}
 	return endpoint, nil
 }

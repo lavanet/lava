@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -34,7 +33,6 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
 }
 
 func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *paramproposal.ParameterChangeProposal) error {
-
 	for _, c := range p.Changes {
 		ss, ok := k.GetSubspace(c.Subspace)
 		if !ok {
@@ -60,7 +58,7 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 	if !ok {
 		return sdkerrors.Wrap(paramproposal.ErrUnknownSubspace, epochstoragetypes.ModuleName)
 	}
-	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) //set the LatestParamChange
+	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) // set the LatestParamChange
 
 	return nil
 }
@@ -69,10 +67,10 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
-		case *types.SpecAddProposal:
+		case *spectypes.SpecAddProposal:
 			return handleSpecAddProposal(ctx, k, c)
 
-		case *types.SpecModifyProposal:
+		case *spectypes.SpecModifyProposal:
 			return handleSpecModifyProposal(ctx, k, c)
 
 		default:
@@ -82,7 +80,7 @@ func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
 	}
 }
 
-func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddProposal) error {
+func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *spectypes.SpecAddProposal) error {
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
 		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
@@ -128,7 +126,7 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 		}
 
 		k.SetSpec(ctx, spec)
-		//TODO: add api types once its implemented to the event
+		// TODO: add api types once its implemented to the event
 
 		utils.LogLavaEvent(ctx, logger, "spec_add", details, "Gov Proposal Accepted Spec Added")
 	}
@@ -136,10 +134,9 @@ func handleSpecAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPro
 	return nil
 }
 
-func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecModifyProposal) error {
+func handleSpecModifyProposal(ctx sdk.Context, k keeper.Keeper, p *spectypes.SpecModifyProposal) error {
 	logger := k.Logger(ctx)
 	for _, spec := range p.Specs {
-
 		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 		//
 		// Find by name

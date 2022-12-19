@@ -30,7 +30,7 @@ func main() {
 		// this line is used by starport scaffolding # root/arguments
 	)
 
-	var cmdServer = &cobra.Command{
+	cmdServer := &cobra.Command{
 		Use:   "server [listen-ip] [listen-port] [node-url] [node-chain-id] [api-interface]",
 		Short: "server",
 		Long:  `server`,
@@ -70,7 +70,7 @@ func main() {
 		},
 	}
 
-	var cmdPortalServer = &cobra.Command{
+	cmdPortalServer := &cobra.Command{
 		Use:   "portal_server [listen-ip] [listen-port] [relayer-chain-id] [api-interface]",
 		Short: "portal server",
 		Long:  `portal server`,
@@ -103,7 +103,7 @@ func main() {
 		},
 	}
 
-	var cmdTestClient = &cobra.Command{
+	cmdTestClient := &cobra.Command{
 		Use:   "test_client [chain-id] [api-interface] [duration-seconds]",
 		Short: "test client",
 		Long:  `test client`,

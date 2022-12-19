@@ -31,7 +31,6 @@ func (k Keeper) EpochPaymentsAll(c context.Context, req *types.QueryAllEpochPaym
 		epochPaymentss = append(epochPaymentss, epochPayments)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

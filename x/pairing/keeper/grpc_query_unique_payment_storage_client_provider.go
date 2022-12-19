@@ -31,7 +31,6 @@ func (k Keeper) UniquePaymentStorageClientProviderAll(c context.Context, req *ty
 		uniquePaymentStorageClientProviders = append(uniquePaymentStorageClientProviders, uniquePaymentStorageClientProvider)
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

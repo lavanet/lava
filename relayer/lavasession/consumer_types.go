@@ -53,7 +53,7 @@ type Endpoint struct {
 
 type ConsumerSessionsWithProvider struct {
 	Lock             utils.LavaMutex
-	Acc              string //public lava address // change at the end to PublicLavaAddress
+	Acc              string // public lava address // change at the end to PublicLavaAddress
 	Endpoints        []*Endpoint
 	Sessions         map[int64]*SingleConsumerSession
 	MaxComputeUnits  uint64
@@ -127,7 +127,7 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64) error {
 func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if (cswp.UsedComputeUnits - cu) < 0 {
+	if cswp.UsedComputeUnits < cu {
 		return NegativeComputeUnitsAmountError
 	}
 	cswp.UsedComputeUnits -= cu
@@ -153,14 +153,14 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
-	//try to lock an existing session, if can't create a new one
+	// try to lock an existing session, if can't create a new one
 	numberOfBlockedSessions := 0
 	for sessionID, session := range cswp.Sessions {
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
 		}
 		if session.Endpoint != endpoint {
-			//skip sessions that don't belong to the active connection
+			// skip sessions that don't belong to the active connection
 			continue
 		}
 		if numberOfBlockedSessions >= MaxAllowedBlockListedSessionPerProvider {
@@ -183,7 +183,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 	}
 
 	randomSessionId := int64(0)
-	for randomSessionId == 0 { //we don't allow 0
+	for randomSessionId == 0 { // we don't allow 0
 		randomSessionId = rand.Int63()
 	}
 
@@ -210,7 +210,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if endpoint.Client == nil {
-				connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnectionInMS)
+				connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 				conn, err := cswp.connectRawClient(connectCtx, endpoint.Addr)
 				cancel()
 				if err != nil {
@@ -268,7 +268,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 		utils.LavaFormatInfo("QoS Availability report", &map[string]string{"Availability": cs.QoSInfo.LastQoSReport.Availability.String(), "down percent": downtimePercentage.String()})
 	}
 
-	var latencyThreshold time.Duration = LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
+	latencyThreshold := LatencyThresholdStatic + time.Duration(cu)*LatencyThresholdSlope
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(latencyThreshold))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))
 
 	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
@@ -286,7 +286,7 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
 	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
-		if blockHeightDiff <= 0 { //if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
+		if blockHeightDiff <= 0 { // if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
 	} else {
@@ -298,9 +298,11 @@ func (cs *SingleConsumerSession) CalculateQoS(cu uint64, latency time.Duration, 
 
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
 		utils.LavaFormatInfo("QoS Sync report",
-			&map[string]string{"Sync": cs.QoSInfo.LastQoSReport.Sync.String(),
+			&map[string]string{
+				"Sync":       cs.QoSInfo.LastQoSReport.Sync.String(),
 				"block diff": strconv.FormatInt(blockHeightDiff, 10),
-				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)})
+				"sync score": strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10),
+			})
 	}
 
 }
