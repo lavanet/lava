@@ -83,16 +83,12 @@ func (connector *Connector) Close() {
 func (connector *Connector) GetRpc(block bool) (*rpcclient.Client, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
-	countPrint := 0
 
 	if len(connector.freeClients) == 0 {
 		if !block {
 			return nil, errors.New("out of clients")
 		} else {
 			for {
-				if countPrint < 3 {
-					countPrint++
-				}
 				connector.lock.Unlock()
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()
@@ -156,17 +152,12 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 func (connector *GRPCConnector) GetRpc(block bool) (*grpc.ClientConn, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
-	countPrint := 0
 
 	if len(connector.freeClients) == 0 {
 		if !block {
 			return nil, errors.New("out of clients")
 		} else {
 			for {
-				if countPrint < 3 {
-					countPrint++
-					// Print that client is busy? (same implementation as other connector)
-				}
 				connector.lock.Unlock()
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()

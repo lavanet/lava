@@ -76,7 +76,7 @@ func (m GrpcMessage) GetParams() interface{} {
 	return m.msg
 }
 
-func (m GrpcMessage) GetResult() json.RawMessage { // Todo return errors here as well
+func (m GrpcMessage) GetResult() json.RawMessage {
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 	msg := msgFactory.NewMessage(m.methodDesc.GetOutputType())
 	if err := proto.Unmarshal(m.Result, msg); err != nil {
