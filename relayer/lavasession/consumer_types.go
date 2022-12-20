@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ignoredProviders struct {
@@ -40,7 +41,7 @@ type SingleConsumerSession struct {
 	RelayNum                    uint64
 	LatestBlock                 int64
 	Endpoint                    *Endpoint
-	Blocklisted                 bool   // if session lost sync we blacklist it.
+	BlockListed                 bool   // if session lost sync we blacklist it.
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
 }
 
@@ -137,7 +138,8 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
+
+	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +170,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 		}
 
 		if session.lock.TryLock() {
-			if session.Blocklisted { // this session cannot be used.
+			if session.BlockListed { // this session cannot be used.
 				numberOfBlockedSessions += 1 // increase the number of blocked sessions so we can block this provider is too many are blocklisted
 				session.lock.Unlock()
 				continue

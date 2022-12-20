@@ -1,15 +1,23 @@
 package sentry
 
 import (
+	"strconv"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 )
 
+const (
+	defaultGasPrice      = "0.000000001ulava"
+	defaultGasAdjustment = 1.5
+	maximumGasAllowed    = 5000000
+)
+
 func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
-	txf = txf.WithGasPrices("0.000000001ulava")
-	txf = txf.WithGasAdjustment(1.5)
+	txf = txf.WithGasPrices(defaultGasPrice)
+	txf = txf.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
@@ -21,6 +29,10 @@ func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Ms
 
 	_, gasUsed, err := tx.CalculateGas(clientCtx, txf, msg)
 	if err != nil {
+		return err
+	}
+
+	if err := validateGas(gasUsed); err != nil {
 		return err
 	}
 
@@ -60,9 +72,19 @@ func prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error
 	return txf, nil
 }
 
+func validateGas(gas uint64) error {
+	if gas > maximumGasAllowed {
+		return utils.LavaFormatError("SimulateAndBroadCastTx - Maximum gas allowed Reached", nil, &map[string]string{
+			"maximumGasAllowed": strconv.FormatUint(maximumGasAllowed, 10),
+			"gasUsed":           strconv.FormatUint(gas, 10),
+		})
+	}
+	return nil
+}
+
 func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) error {
-	txf = txf.WithGasPrices("0.000000001ulava")
-	txf = txf.WithGasAdjustment(1.5)
+	txf = txf.WithGasPrices(defaultGasPrice)
+	txf = txf.WithGasAdjustment(defaultGasAdjustment)
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
@@ -94,7 +116,11 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 		}
 	}
 
-	txf.WithGas(gasUsed)
+	if err := validateGas(gasUsed); err != nil {
+		return err
+	}
+
+	txf = txf.WithGas(gasUsed)
 
 	gasFee := txf.GasPrices()[0]
 	gasFee.Amount = gasFee.Amount.MulInt64(int64(gasUsed))
