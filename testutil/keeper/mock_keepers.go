@@ -113,11 +113,16 @@ func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) 
 }
 
 type MockBlockStore struct {
-	height int64
+	height       int64
+	blockHistory map[int64]tenderminttypes.Block
 }
 
 func (b *MockBlockStore) SetHeight(height int64) {
 	b.height = height
+}
+
+func (b *MockBlockStore) SetBlockHistoryEntry(height int64, blockCore *tenderminttypes.Block) {
+	b.blockHistory[height] = *blockCore
 }
 
 func (b *MockBlockStore) Base() int64 {
@@ -137,7 +142,8 @@ func (b *MockBlockStore) LoadBlockMeta(height int64) *tenderminttypes.BlockMeta 
 	return &tenderminttypes.BlockMeta{}
 }
 func (b *MockBlockStore) LoadBlock(height int64) *tenderminttypes.Block {
-	return &tenderminttypes.Block{}
+	block := b.blockHistory[height]
+	return &block
 }
 
 func (b *MockBlockStore) SaveBlock(block *tenderminttypes.Block, blockParts *tenderminttypes.PartSet, seenCommit *tenderminttypes.Commit) {

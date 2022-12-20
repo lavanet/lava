@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -23,6 +24,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/rpc/core"
+	tenderminttypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 )
 
@@ -34,6 +36,7 @@ type Keepers struct {
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
+	BlockStore    MockBlockStore
 }
 
 type Servers struct {
@@ -121,6 +124,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 
+	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
+
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -173,9 +178,9 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
 //Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
+	block := uint64(unwrapedCtx.BlockHeight())
 
-		block := uint64(unwrapedCtx.BlockHeight())
+	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
 
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		//begin block
@@ -193,7 +198,16 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
 
-	blockstore := MockBlockStore{}
-	blockstore.SetHeight(sdk.UnwrapSDKContext(ctx).BlockHeight())
-	core.SetEnvironment(&core.Environment{BlockStore: &blockstore})
+	// keep block height in mock blockstore
+	blockInt64 := int64(block)
+	ks.BlockStore.SetHeight(blockInt64)
+
+	// create mock block header
+	blockHeader := tenderminttypes.Header{}
+	blockHeader.Height = blockInt64
+	blockHeader.Time = time.Now()
+
+	// update the blockstore's block history with current block
+	blockCore := tenderminttypes.Block{Header: blockHeader}
+	ks.BlockStore.SetBlockHistoryEntry(blockInt64, &blockCore)
 }
