@@ -367,7 +367,7 @@
 		                            "stateful": 0
 		                        },
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -402,7 +402,7 @@
 		                            "stateful": 0
 		                        },
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -498,7 +498,7 @@
 		                            "stateful": 0
 		                        },
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -522,7 +522,7 @@
 		                            "stateful": 0
 		                        },
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]
@@ -546,7 +546,7 @@
 		                            "stateful": 0
 		                        },
                                 "interface": "rest",
-                                "type": "post",
+                                "type": "POST",
                                 "extra_compute_units": "0"
                             }
                         ]

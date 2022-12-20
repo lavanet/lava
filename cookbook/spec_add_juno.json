@@ -33,7 +33,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -59,7 +59,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -85,7 +85,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -121,7 +121,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -147,7 +147,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -171,7 +171,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -197,7 +197,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -221,7 +221,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -245,7 +245,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -269,7 +269,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -293,7 +293,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -317,7 +317,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -343,7 +343,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -369,7 +369,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -393,7 +393,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -417,7 +417,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -441,7 +441,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -465,7 +465,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -489,7 +489,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -513,7 +513,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -537,7 +537,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -561,7 +561,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -597,7 +597,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -621,7 +621,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -645,7 +645,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -669,7 +669,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -693,7 +693,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -717,7 +717,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -743,7 +743,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -767,7 +767,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -791,7 +791,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -815,7 +815,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -852,7 +852,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -888,7 +888,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -912,7 +912,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -936,7 +936,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -960,7 +960,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -984,7 +984,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1008,7 +1008,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1032,7 +1032,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1056,7 +1056,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1080,7 +1080,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1104,7 +1104,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1128,7 +1128,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1152,7 +1152,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1176,7 +1176,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1200,7 +1200,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1224,7 +1224,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1248,7 +1248,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1272,7 +1272,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1296,7 +1296,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1320,7 +1320,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1344,7 +1344,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1368,7 +1368,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1392,7 +1392,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -1403,7 +1403,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -1427,7 +1427,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1451,7 +1451,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1475,7 +1475,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1499,7 +1499,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1523,7 +1523,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1547,7 +1547,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1571,7 +1571,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1595,7 +1595,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1619,7 +1619,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1643,7 +1643,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1667,7 +1667,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1691,7 +1691,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1715,7 +1715,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1739,7 +1739,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1763,7 +1763,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1787,7 +1787,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1811,7 +1811,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1835,7 +1835,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1859,7 +1859,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1883,7 +1883,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1907,7 +1907,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1931,7 +1931,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1955,7 +1955,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -1979,7 +1979,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2003,7 +2003,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2027,7 +2027,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2051,7 +2051,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2075,7 +2075,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2099,7 +2099,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2123,7 +2123,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2147,7 +2147,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2171,7 +2171,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2195,7 +2195,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2219,7 +2219,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2243,7 +2243,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2267,7 +2267,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2291,7 +2291,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2315,7 +2315,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2339,7 +2339,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2363,7 +2363,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2387,7 +2387,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2411,7 +2411,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2435,7 +2435,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2459,7 +2459,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2483,7 +2483,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2507,7 +2507,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2531,7 +2531,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2555,7 +2555,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2579,7 +2579,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2603,7 +2603,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2627,7 +2627,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2651,7 +2651,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2675,7 +2675,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2699,7 +2699,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2723,7 +2723,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2747,7 +2747,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2771,7 +2771,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2795,7 +2795,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2819,7 +2819,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2843,7 +2843,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2867,7 +2867,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2891,7 +2891,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2915,7 +2915,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2939,7 +2939,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2963,7 +2963,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -2987,7 +2987,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3011,7 +3011,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3035,7 +3035,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3059,7 +3059,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3083,7 +3083,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3107,7 +3107,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3131,7 +3131,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3155,7 +3155,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3179,7 +3179,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3203,7 +3203,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3227,7 +3227,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3251,7 +3251,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3275,7 +3275,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3299,7 +3299,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3323,7 +3323,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3347,7 +3347,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3371,7 +3371,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3395,7 +3395,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3419,7 +3419,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3443,7 +3443,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3467,7 +3467,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3491,7 +3491,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3515,7 +3515,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3539,7 +3539,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3563,7 +3563,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3587,7 +3587,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3611,7 +3611,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3635,7 +3635,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3659,7 +3659,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3683,7 +3683,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3707,7 +3707,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3730,7 +3730,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3753,7 +3753,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3776,7 +3776,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3799,7 +3799,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3822,7 +3822,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3845,7 +3845,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3868,7 +3868,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3891,7 +3891,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3914,7 +3914,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3937,7 +3937,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3960,7 +3960,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -3983,7 +3983,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4006,7 +4006,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4029,7 +4029,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4052,7 +4052,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4077,7 +4077,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -4112,7 +4112,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -4148,7 +4148,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4171,7 +4171,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4194,7 +4194,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4217,7 +4217,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4240,7 +4240,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4263,7 +4263,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4286,7 +4286,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4309,7 +4309,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4332,7 +4332,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4355,7 +4355,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4378,7 +4378,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4401,7 +4401,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4424,7 +4424,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4447,7 +4447,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4470,7 +4470,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4493,7 +4493,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4516,7 +4516,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4539,7 +4539,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4562,7 +4562,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4585,7 +4585,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4608,7 +4608,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4631,7 +4631,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4654,7 +4654,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4677,7 +4677,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4700,7 +4700,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4723,7 +4723,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4746,7 +4746,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4769,7 +4769,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4792,7 +4792,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4815,7 +4815,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4838,7 +4838,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4861,7 +4861,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4884,7 +4884,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4907,7 +4907,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4930,7 +4930,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4953,7 +4953,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4976,7 +4976,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -4999,7 +4999,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5022,7 +5022,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5045,7 +5045,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5068,7 +5068,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5091,7 +5091,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5114,7 +5114,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5137,7 +5137,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5160,7 +5160,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -5171,7 +5171,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -5194,7 +5194,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5217,7 +5217,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5240,7 +5240,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -5251,7 +5251,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -5274,7 +5274,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5297,7 +5297,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5320,7 +5320,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5343,7 +5343,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5366,7 +5366,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5389,7 +5389,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5412,7 +5412,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5435,7 +5435,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5458,7 +5458,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5481,7 +5481,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5504,7 +5504,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5527,7 +5527,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5550,7 +5550,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5573,7 +5573,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5596,7 +5596,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]    
@@ -5619,7 +5619,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5642,7 +5642,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5665,7 +5665,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5688,7 +5688,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5711,7 +5711,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5734,7 +5734,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5757,7 +5757,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5780,7 +5780,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5803,7 +5803,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5826,7 +5826,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5849,7 +5849,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5872,7 +5872,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5895,7 +5895,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5918,7 +5918,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5941,7 +5941,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5964,7 +5964,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -5987,7 +5987,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6010,7 +6010,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6033,7 +6033,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6056,7 +6056,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6079,7 +6079,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6102,7 +6102,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6125,7 +6125,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6148,7 +6148,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6171,7 +6171,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6194,7 +6194,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6217,7 +6217,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6240,7 +6240,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6263,7 +6263,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6286,7 +6286,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6309,7 +6309,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6332,7 +6332,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6355,7 +6355,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6378,7 +6378,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6401,7 +6401,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6424,7 +6424,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6461,7 +6461,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6487,7 +6487,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6513,7 +6513,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -6549,7 +6549,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6575,7 +6575,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6599,7 +6599,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6625,7 +6625,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6649,7 +6649,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6673,7 +6673,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6697,7 +6697,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6721,7 +6721,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6745,7 +6745,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6771,7 +6771,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6797,7 +6797,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6821,7 +6821,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6845,7 +6845,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6869,7 +6869,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6893,7 +6893,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6917,7 +6917,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6941,7 +6941,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6965,7 +6965,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -6989,7 +6989,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -7025,7 +7025,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7049,7 +7049,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7073,7 +7073,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7097,7 +7097,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7121,7 +7121,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7145,7 +7145,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7171,7 +7171,7 @@
 		            "stateful": 0
 		          },
               "interface": "tendermintrpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7195,7 +7195,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7219,7 +7219,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7243,7 +7243,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -7280,7 +7280,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -7316,7 +7316,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7340,7 +7340,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7364,7 +7364,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -7388,7 +7388,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7412,7 +7412,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7436,7 +7436,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7460,7 +7460,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7484,7 +7484,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7508,7 +7508,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7532,7 +7532,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7556,7 +7556,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7580,7 +7580,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7604,7 +7604,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7628,7 +7628,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7652,7 +7652,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7676,7 +7676,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7700,7 +7700,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7724,7 +7724,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7748,7 +7748,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7772,7 +7772,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7796,7 +7796,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7820,7 +7820,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -7831,7 +7831,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -7855,7 +7855,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7879,7 +7879,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7903,7 +7903,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7927,7 +7927,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7951,7 +7951,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7975,7 +7975,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -7999,7 +7999,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8023,7 +8023,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8047,7 +8047,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8071,7 +8071,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8095,7 +8095,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8119,7 +8119,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8143,7 +8143,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8167,7 +8167,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8191,7 +8191,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8215,7 +8215,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8239,7 +8239,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8263,7 +8263,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8287,7 +8287,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8311,7 +8311,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8335,7 +8335,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8359,7 +8359,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8383,7 +8383,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8407,7 +8407,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8431,7 +8431,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8455,7 +8455,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8479,7 +8479,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8503,7 +8503,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8527,7 +8527,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8551,7 +8551,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8575,7 +8575,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8599,7 +8599,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8623,7 +8623,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8647,7 +8647,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8671,7 +8671,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8695,7 +8695,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8719,7 +8719,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8743,7 +8743,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8767,7 +8767,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8791,7 +8791,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8815,7 +8815,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8839,7 +8839,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8863,7 +8863,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8887,7 +8887,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8911,7 +8911,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8935,7 +8935,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8959,7 +8959,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -8983,7 +8983,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9007,7 +9007,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9031,7 +9031,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9055,7 +9055,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9079,7 +9079,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9103,7 +9103,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9127,7 +9127,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9151,7 +9151,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9175,7 +9175,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9199,7 +9199,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9223,7 +9223,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9247,7 +9247,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9271,7 +9271,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9295,7 +9295,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9319,7 +9319,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9343,7 +9343,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9367,7 +9367,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9391,7 +9391,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9415,7 +9415,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9439,7 +9439,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9463,7 +9463,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9487,7 +9487,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9511,7 +9511,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9535,7 +9535,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9559,7 +9559,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9583,7 +9583,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9607,7 +9607,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9631,7 +9631,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9655,7 +9655,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9679,7 +9679,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9703,7 +9703,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9727,7 +9727,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9751,7 +9751,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9775,7 +9775,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9799,7 +9799,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9823,7 +9823,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9847,7 +9847,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9871,7 +9871,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9895,7 +9895,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9919,7 +9919,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9943,7 +9943,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9967,7 +9967,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -9991,7 +9991,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10015,7 +10015,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10039,7 +10039,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10063,7 +10063,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10087,7 +10087,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10111,7 +10111,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10135,7 +10135,7 @@
 		            "stateful": 0
 		          },
               "interface": "rest",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10158,7 +10158,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10181,7 +10181,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10204,7 +10204,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10227,7 +10227,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10250,7 +10250,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10273,7 +10273,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10296,7 +10296,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10319,7 +10319,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10342,7 +10342,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10365,7 +10365,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10388,7 +10388,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10411,7 +10411,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10434,7 +10434,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10457,7 +10457,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10480,7 +10480,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10505,7 +10505,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -10540,7 +10540,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ],
@@ -10576,7 +10576,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10599,7 +10599,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10622,7 +10622,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10645,7 +10645,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10668,7 +10668,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10691,7 +10691,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10714,7 +10714,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10737,7 +10737,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10760,7 +10760,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10783,7 +10783,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10806,7 +10806,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10829,7 +10829,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10852,7 +10852,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10875,7 +10875,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10898,7 +10898,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10921,7 +10921,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10944,7 +10944,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10967,7 +10967,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -10990,7 +10990,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11013,7 +11013,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11036,7 +11036,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11059,7 +11059,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11082,7 +11082,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11105,7 +11105,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11128,7 +11128,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11151,7 +11151,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11174,7 +11174,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11197,7 +11197,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11220,7 +11220,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11243,7 +11243,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11266,7 +11266,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11289,7 +11289,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11312,7 +11312,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11335,7 +11335,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11358,7 +11358,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11381,7 +11381,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11404,7 +11404,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11427,7 +11427,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11450,7 +11450,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11473,7 +11473,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11496,7 +11496,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11519,7 +11519,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11542,7 +11542,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11565,7 +11565,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11588,7 +11588,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -11599,7 +11599,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -11622,7 +11622,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11645,7 +11645,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11668,7 +11668,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             },
             {
@@ -11679,7 +11679,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "post",
+              "type": "POST",
               "extra_compute_units": "0"
             }
           ]
@@ -11702,7 +11702,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11725,7 +11725,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11748,7 +11748,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11771,7 +11771,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11794,7 +11794,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11817,7 +11817,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11840,7 +11840,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11863,7 +11863,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11886,7 +11886,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11909,7 +11909,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11932,7 +11932,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11955,7 +11955,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -11978,7 +11978,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12001,7 +12001,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12024,7 +12024,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]    
@@ -12047,7 +12047,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12070,7 +12070,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12093,7 +12093,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12116,7 +12116,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12139,7 +12139,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12162,7 +12162,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12185,7 +12185,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12208,7 +12208,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12231,7 +12231,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12254,7 +12254,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12277,7 +12277,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12300,7 +12300,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12323,7 +12323,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12346,7 +12346,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12369,7 +12369,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12392,7 +12392,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12415,7 +12415,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12438,7 +12438,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12461,7 +12461,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12484,7 +12484,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12507,7 +12507,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12530,7 +12530,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12553,7 +12553,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12576,7 +12576,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12599,7 +12599,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12622,7 +12622,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12645,7 +12645,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12668,7 +12668,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12691,7 +12691,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12714,7 +12714,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12737,7 +12737,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12760,7 +12760,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12783,7 +12783,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12806,7 +12806,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12829,7 +12829,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
@@ -12852,7 +12852,7 @@
 		            "stateful": 0
 		          },
               "interface": "grpc",
-              "type": "get",
+              "type": "GET",
               "extra_compute_units": "0"
             }
           ]
