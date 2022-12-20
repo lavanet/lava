@@ -36,7 +36,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	// Get pairing list for latest block
 	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr)
 	if err != nil {
-		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, err: %s", req.ChainID, clientAddr, err)
+		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, ctx.BlockHeight(), err)
 	}
 
 	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)

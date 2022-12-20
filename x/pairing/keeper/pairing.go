@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -258,23 +260,6 @@ func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
 // Function to calculate the average block time (i.e., how much time it takes to create a new block, in average)
 func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (float64, error) {
 
-	// Check if a previous epoch exists (on the first epoch or after a chain fork, there is no previous epoch)
-	prevEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
-	prevEpochExists := true
-	if err != nil {
-		prevEpochExists = false
-	}
-
-	// If previous epoch can't be retrieved, return averageBlockTime = 0
-	if !prevEpochExists {
-		return 0, nil
-	}
-
-	// Make sure epoch is larger than prevEpoch
-	if epoch < prevEpoch {
-		return 0, fmt.Errorf("previous reference start block height is larger than the present reference start block height")
-	}
-
 	// Get epochBlocks (the number of blocks in an epoch)
 	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, epoch)
 	if err != nil {
@@ -287,51 +272,82 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (float6
 	if MinSampleStep > epochBlocks {
 		return 0, fmt.Errorf("invalid MinSampleStep value since it's larger than epochBlocks. MinSampleStep: %v, epochBlocks: %v", MinSampleStep, epochBlocks)
 	}
-	sampleStep := int64(MinSampleStep)
+	sampleStepInt64 := int64(MinSampleStep)
 	if epochBlocks > EpochBlocksDivider {
-		sampleStep = int64(epochBlocks) / EpochBlocksDivider
+		sampleStepInt64 = int64(epochBlocks) / EpochBlocksDivider
 	}
+	sampleStep := uint64(sampleStepInt64)
 
-	// To get a block's timestamp, we use core.Block(). core.Block() can't get block 0 (results in error from Tendermint code)
-	startBlock := int64(prevEpoch)
-	if startBlock == 0 {
-		startBlock++
-	}
-
-	// Get the timestamp of the startBlock
-	startBlockCore, err := core.Block(nil, &startBlock)
+	// Get a list of the previous epoch's blocks timestamp and height
+	prevEpochTimestampAndHeightList, err := k.getPreviousEpochTimestampsByHeight(ctx, epoch, sampleStep)
 	if err != nil {
-		return 0, fmt.Errorf("could not get startBlock's header, err: %s", err)
+		return 0, fmt.Errorf("couldn't get prevEpochTimestampAndHeightList. err: %v", err)
 	}
 
-	// Init prevBlockTimestamp (used in the loop below)
-	prevBlockTimestamp := startBlockCore.Block.Header.Time.UTC()
+	// Calculate the average block time from prevEpochTimestampAndHeightList
+	averageBlockTime, err := calculateAverageBlockTimeFromList(ctx, prevEpochTimestampAndHeightList, sampleStep)
+	if err != nil {
+		return 0, fmt.Errorf("couldn't get calculate average block time. err: %v", err)
+	}
 
-	// Get the timestamps of the blocks between prevEpoch and epoch according to sampleStep.
-	// Then, calculate the difference between currentBlockTimestamp and prevBlockTimestamp and divide by the sample step (the number of block between them).
-	// The averageBlockTime will be the minimal value found (must be a non-zero positive number)
-	epochInt64 := int64(epoch)
-	averageBlockTime := float64(0)
-	for block := startBlock + sampleStep; block < epochInt64; block = block + sampleStep {
+	return averageBlockTime, nil
+}
 
-		// Get current block timestamp
-		blockCore, err := core.Block(nil, &block)
+type blockHeightAndTime struct {
+	blockHeight uint64
+	blockTime   time.Time
+}
+
+// Function to get a list of the timestamps of the blocks in the previous epoch of the input (so it'll be deterministic)
+func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64, sampleStep uint64) ([]blockHeightAndTime, error) {
+
+	// Check if a previous epoch exists (on the first epoch or after a chain fork, there is no previous epoch. In this case, return an error since this function only calculates the average block time on epochs that fully passed).
+	prevEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
+	if err != nil {
+		return nil, fmt.Errorf("can't get previous epoch for current epoch. epoch: %d", epoch)
+	}
+
+	// Get previous epoch timestamps, in sampleStep steps
+	prevEpochTimestampAndHeightList := make([]blockHeightAndTime, EpochBlocksDivider)
+	loopCounter := 0
+	for block := prevEpoch; block < epoch; block = block + sampleStep {
+
+		// Get current block's height and timestamp
+		blockInt64 := int64(block)
+		blockCore, err := core.Block(nil, &blockInt64)
 		if err != nil {
-			return 0, fmt.Errorf("could not get current block header, err: %s", err)
+			return nil, fmt.Errorf("could not get current block header, err: %s", err)
 		}
 		currentBlockTimestamp := blockCore.Block.Header.Time.UTC()
+		currentBlockHeight := uint64(blockCore.Block.Height)
+		blockHeightAndTimeStruct := blockHeightAndTime{blockHeight: currentBlockHeight, blockTime: currentBlockTimestamp}
 
-		// Calculate time difference
-		currentAverageBlockTime := currentBlockTimestamp.Sub(prevBlockTimestamp).Seconds() / float64(sampleStep)
+		// Append the timestamp to the timestamp list
+		prevEpochTimestampAndHeightList[loopCounter] = blockHeightAndTimeStruct
+		loopCounter++
+	}
+
+	return prevEpochTimestampAndHeightList, nil
+
+}
+
+func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList []blockHeightAndTime, sampleStep uint64) (float64, error) {
+
+	if blockHeightAndTimeList == nil {
+		return 0, fmt.Errorf("empty blockHeightAndTimeList")
+	}
+
+	averageBlockTime := math.MaxFloat64
+	for i := 1; i < len(blockHeightAndTimeList); i++ {
+
+		// Calculate time difference (the average block time will be the minimum difference)
+		currentAverageBlockTime := blockHeightAndTimeList[i].blockTime.Sub(blockHeightAndTimeList[i-1].blockTime).Seconds() / float64(sampleStep)
 		if currentAverageBlockTime <= 0 {
-			prevBlock := block - sampleStep
-			return 0, fmt.Errorf("calculated average block time is less than or equal to zero. block %v timestamp: %s, block %v timestamp: %s", block, currentBlockTimestamp.String(), prevBlock, prevBlockTimestamp.String())
+			return 0, fmt.Errorf("calculated average block time is less than or equal to zero. block %v timestamp: %s, block %v timestamp: %s", blockHeightAndTimeList[i].blockHeight, blockHeightAndTimeList[i].blockTime.String(), blockHeightAndTimeList[i-1].blockHeight, blockHeightAndTimeList[i-1].blockTime.String())
 		}
 		if averageBlockTime > currentAverageBlockTime || averageBlockTime == 0 {
 			averageBlockTime = currentAverageBlockTime
 		}
-
-		prevBlockTimestamp = currentBlockTimestamp
 	}
 
 	return averageBlockTime, nil
