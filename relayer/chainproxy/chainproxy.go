@@ -54,6 +54,8 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *Po
 		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	case "rest":
 		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
+	case "grpc":
+		return NewGrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
 }
@@ -288,6 +290,7 @@ func SendRelay(
 	if reply.Data == nil && err == nil {
 		return nil, nil, utils.LavaFormatError("invalid handling of an error reply Data is nil & error is nil", nil, nil)
 	}
+
 	return reply, replyServer, err
 }
 

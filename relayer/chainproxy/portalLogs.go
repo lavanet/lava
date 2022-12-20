@@ -43,12 +43,15 @@ func NewPortalLogs() (*PortalLogs, error) {
 	return &PortalLogs{newRelicApplication}, err
 }
 
+func (cp *PortalLogs) GetMessageSeed() string {
+	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
+}
+
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
-func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string {
-	guID := fmt.Sprintf("GUID%d", rand.Int63())
+func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	var ret string
-	ret = "Error GUID: " + guID
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"GUID": guID})
+	ret = "Error GUID: " + msgSeed
+	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}
@@ -57,13 +60,14 @@ func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error) string 
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
-func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string) {
+func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, "+err.Error(), nil)
 			return
 		}
-		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err)))
+		cp.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
+		c.WriteMessage(mt, []byte("Error Received: "+cp.GetUniqueGuidResponseForError(err, msgSeed)))
 	}
 }
 

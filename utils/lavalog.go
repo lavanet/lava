@@ -109,7 +109,11 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 }
 
 func LavaFormatFatal(description string, err error, extraAttributes *map[string]string) {
-	(*extraAttributes)["StackTrace"] = string(debug.Stack())
+	if extraAttributes != nil {
+		(*extraAttributes)["StackTrace"] = string(debug.Stack())
+	} else {
+		LavaFormatLog("StackTrace:"+string(debug.Stack()), nil, nil, 3)
+	}
 	LavaFormatLog(description, err, extraAttributes, 4)
 	os.Exit(1)
 }
