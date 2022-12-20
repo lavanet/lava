@@ -270,7 +270,7 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	}
 }
 
-func descriptorSourceFromServer(refClient *grpcreflect.Client) DescriptorSource {
+func descriptorSourceFromServer(refClient *grpcreflect.Client) grpcurl.DescriptorSource {
 	return ServerSource{Client: refClient}
 }
 
@@ -297,9 +297,12 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl, "descriptor": fmt.Sprintf("%v", descriptor)})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	if methodDescriptor == nil {
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"addr": nm.cp.nodeUrl, "methodName": methodName})
+	}
 	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
@@ -348,18 +351,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	reply := &pairingtypes.RelayReply{
 		Data: respBytes,
 	}
-
 	return reply, "", nil, nil
-}
-
-type DescriptorSource interface {
-	// ListServices returns a list of fully-qualified service names. It will be all services in a set of
-	// descriptor files or the set of all services exposed by a gRPC server.
-	ListServices() ([]string, error)
-	// FindSymbol returns a descriptor for the given fully-qualified symbol name.
-	FindSymbol(fullyQualifiedName string) (desc.Descriptor, error)
-	// AllExtensionsForType returns all known extension fields that extend the given message type name.
-	AllExtensionsForType(typeName string) ([]*desc.FieldDescriptor, error)
 }
 
 type ServerSource struct {
