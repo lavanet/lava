@@ -6,6 +6,7 @@ import (
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Cache struct {
@@ -16,7 +17,7 @@ type Cache struct {
 func ConnectGRPCConnectionToRelayerCacheService(ctx context.Context, addr string) (*pairingtypes.RelayerCacheClient, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -37,21 +38,21 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 
 func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, finalized bool) (reply *pairingtypes.RelayReply, err error) {
 	if cache == nil {
-		//TODO: try to connect again once in a while
+		// TODO: try to connect again once in a while
 		return nil, NotInitialisedError
 	}
 	if cache.client == nil {
 		return nil, NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
 	}
-	//TODO: handle disconnections and error types here
+	// TODO: handle disconnections and error types here
 	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Finalized: finalized})
 }
 
 func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, bucketID string, reply *pairingtypes.RelayReply, finalized bool) {
 	if cache == nil {
-		//TODO: try to connect again once in a while
+		// TODO: try to connect again once in a while
 		return
 	}
-	//TODO: handle disconnections and SetRelay error types here
+	// TODO: handle disconnections and SetRelay error types here
 	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, Response: reply, Finalized: finalized, BucketID: bucketID})
 }

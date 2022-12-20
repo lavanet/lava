@@ -8,7 +8,6 @@ import (
 )
 
 func RegisterJunoProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	junomint := &implementedJunoMint{cb: cb}
 	pb_pkg.RegisterQueryServer(s, junomint)
 

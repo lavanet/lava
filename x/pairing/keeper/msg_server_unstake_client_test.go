@@ -33,7 +33,6 @@ func TestUnstakeClient(t *testing.T) {
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: nil})
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 	_, err := servers.PairingServer.StakeClient(ctx, &types.MsgStakeClient{Creator: clientAddr.String(), ChainID: spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount/10)), Geolocation: 1, Vrfpk: vrfPk.String()})
 	require.Nil(t, err)
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
@@ -82,8 +81,6 @@ func TestUnstakeNotStakedClient(t *testing.T) {
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
 
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-
 	specName := "mockSpec"
 	spec := spectypes.Spec{}
 	spec.Name = specName
@@ -125,8 +122,6 @@ func TestDoubleUnstakeClient(t *testing.T) {
 	_, pk, _ := utils.GeneratePrivateVRFKey()
 	vrfPk := &utils.VrfPubKey{}
 	vrfPk.Unmarshal(pk)
-
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	specName := "mockSpec"
 	spec := spectypes.Spec{}

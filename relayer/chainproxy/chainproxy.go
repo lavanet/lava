@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultTimeout            = 5 * time.Second
+	TimePerCU                 = uint64(time.Second)
 	ContextUserValueKeyDappID = "dappID"
 )
 
@@ -60,7 +61,6 @@ func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *Po
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string, comparesHashes bool) error {
-
 	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
 	if err != nil {
 		return err
@@ -105,14 +105,13 @@ func SendRelay(
 	connectionType string,
 	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
-
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, nil, err
 	}
 	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
-	blockHeight := int64(-1) //to sync reliability blockHeight in case it changes
+	blockHeight := int64(-1) // to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
@@ -122,8 +121,8 @@ func SendRelay(
 	}
 	// consumerSession is locked here.
 
-	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, error) {
-		//client session is locked here
+	callback_send_relay := func(consumerSession *lavasession.SingleConsumerSession) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, *pairingtypes.RelayRequest, time.Duration, bool, error) {
+		// client session is locked here
 		blockHeight = int64(epoch) // epochs heights only
 
 		// we need to apply CuSum and relay number that we plan to add in  the relay request. even if we didn't yet apply them to the consumerSession.
@@ -144,18 +143,18 @@ func SendRelay(
 		}
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, nil, 0, err
+			return nil, nil, nil, 0, false, err
 		}
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		relaySentTime := time.Now()
 		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient
 		var reply *pairingtypes.RelayReply
 
+		relaySentTime := time.Now()
 		if isSubscription {
 			replyServer, err = c.RelaySubscribe(ctx, relayRequest)
 		} else {
@@ -166,44 +165,48 @@ func SendRelay(
 					utils.LavaFormatError("cache not connected", err, nil)
 				}
 				reply, err = c.Relay(connectCtx, relayRequest)
+			} else {
+				// Info was fetched from cache, so we need to change the state
+				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+				return reply, nil, relayRequest, 0, true, nil
 			}
 		}
 		currentLatency := time.Since(relaySentTime)
 		if err != nil {
-			return nil, nil, nil, 0, err
+			return nil, nil, nil, 0, false, err
 		}
 
 		if !isSubscription {
-			//update relay request requestedBlock to the provided one in case it was arbitrary
+			// update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
 			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
 			if err != nil {
-				return nil, nil, nil, 0, err
+				return nil, nil, nil, 0, false, err
 			}
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
 			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
-			return reply, nil, relayRequest, currentLatency, nil
+			return reply, nil, relayRequest, currentLatency, false, nil
 		}
 		// isSubscription
-		return reply, &replyServer, relayRequest, currentLatency, nil
+		return reply, &replyServer, relayRequest, currentLatency, false, nil
 	}
 
-	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, error) {
-		//client session is locked here
+	callback_send_reliability := func(consumerSession *lavasession.SingleConsumerSession, dataReliability *pairingtypes.VRFData, providerAddress string) (*pairingtypes.RelayReply, *pairingtypes.RelayRequest, time.Duration, error) {
+		// client session is locked here
 		sentry := cp.GetSentry()
 		if blockHeight < 0 {
-			return nil, nil, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
+			return nil, nil, 0, fmt.Errorf("expected callback_send_relay to be called first and set blockHeight")
 		}
 
 		relayRequest := &pairingtypes.RelayRequest{
 			Provider:              providerAddress,
 			ApiUrl:                url,
 			Data:                  []byte(req),
-			SessionId:             uint64(0), //sessionID for reliability is 0
+			SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
 			ChainID:               sentry.ChainID,
-			CuSum:                 0, // consumerSession.CuSum == 0
+			CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
 			BlockHeight:           blockHeight,
 			RelayNum:              0, // consumerSession.RelayNum == 0
 			RequestBlock:          requestedBlock,
@@ -215,30 +218,31 @@ func SendRelay(
 
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 		relayRequest.Sig = sig
 
 		sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 		relayRequest.DataReliability.Sig = sig
 		c := *consumerSession.Endpoint.Client
+		relaySentTime := time.Now()
 		reply, err := c.Relay(ctx, relayRequest)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
-
+		currentLatency := time.Since(relaySentTime)
 		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, err
 		}
 
-		return reply, relayRequest, nil
+		return reply, relayRequest, currentLatency, nil
 	}
 
-	reply, replyServer, relayLatency, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, replyServer, relayLatency, isCachedResult, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 	if firstSessionError != nil {
 		// on session failure here
 		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, firstSessionError)
@@ -253,7 +257,7 @@ func SendRelay(
 				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
 			}
 			var secondSessionError error
-			reply, replyServer, relayLatency, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+			reply, replyServer, relayLatency, isCachedResult, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
 			if secondSessionError != nil {
 				errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
 				if errReport != nil {
@@ -273,6 +277,10 @@ func SendRelay(
 		}
 	}
 	if !isSubscription {
+		if isCachedResult {
+			err = cp.GetConsumerSessionManager().OnSessionUnUsed(singleConsumerSession)
+			return reply, replyServer, err
+		}
 		latestBlock := reply.LatestBlock
 		expectedBH, numOfProviders := cp.GetSentry().ExpectedBlockHeight()
 		err = cp.GetConsumerSessionManager().OnSessionDone(singleConsumerSession, epoch, latestBlock, nodeMsg.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, cp.GetSentry().GetProvidersCount()) // session done successfully
@@ -292,17 +300,18 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 		dappID := ""
 		if len(c.Route().Params) > 1 {
 			dappID = c.Route().Params[1]
-			dappID = strings.Replace(dappID, "*", "", -1)
+			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
-		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) //this sets a user value in context and this is given to the callback
-		return webSocketCallback(c)                                 //uses external dappID
+		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
+		return webSocketCallback(c)                                 // uses external dappID
 	}
 	return handler
 }
+
 func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 	dappIDLocal := c.Locals(ContextUserValueKeyDappID)
 	if dappID, ok := dappIDLocal.(string); ok {
-		//zeroallocation policy for fiber.Ctx
+		// zeroallocation policy for fiber.Ctx
 		buffer := make([]byte, len(dappID))
 		copy(buffer, dappID)
 		return string(buffer)
@@ -313,8 +322,12 @@ func ExtractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	if len(c.Route().Params) > 1 {
 		dappID = c.Route().Params[1]
-		dappID = strings.Replace(dappID, "*", "", -1)
+		dappID = strings.ReplaceAll(dappID, "*", "")
 		return
 	}
 	return "NoDappID"
+}
+
+func getTimePerCu(cu uint64) time.Duration {
+	return time.Duration(cu * TimePerCU)
 }

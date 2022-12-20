@@ -9,6 +9,7 @@ import (
 	pairing "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Test for Lava grpc client.
@@ -22,7 +23,7 @@ func TestLavaGRPC(t *testing.T) {
 	req := &pairing.QueryClientsRequest{ChainID: "LAV1"}
 	resp := &pairing.QueryClientsResponse{}
 
-	conn, err := grpc.DialContext(ctx, lavaGRPC, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, lavaGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.Nil(t, err)
 
 	defer conn.Close()
@@ -43,7 +44,7 @@ func TestJunGRPC(t *testing.T) {
 	req := &pb_pkg.QueryParamsRequest{}
 	resp := &pb_pkg.QueryParamsResponse{}
 
-	conn, err := grpc.DialContext(ctx, JunGRPC, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, JunGRPC, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.Nil(t, err)
 
 	defer conn.Close()

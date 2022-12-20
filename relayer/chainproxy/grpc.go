@@ -77,7 +77,7 @@ func (m GrpcMessage) GetParams() interface{} {
 	return m.msg
 }
 
-func (m GrpcMessage) GetResult() json.RawMessage { // Todo return errors here as well
+func (m GrpcMessage) GetResult() json.RawMessage {
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 	msg := msgFactory.NewMessage(m.methodDesc.GetOutputType())
 	if err := proto.Unmarshal(m.Result, msg); err != nil {
@@ -158,7 +158,11 @@ func (cp *GrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 
 	// blockData is an interface array with the parsed result in index 0.
 	// we know to expect a string result for a hash.
-	return blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string), nil
+	ret, ok := blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
+	if !ok {
+		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, &map[string]string{"blockData": fmt.Sprintf("%v", blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX])})
+	}
+	return ret, nil
 }
 
 func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -230,6 +234,7 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 func (cp *GrpcChainProxy) SetCache(cache *performance.Cache) {
 	cp.cache = cache
 }
+
 func (cp *GrpcChainProxy) GetCache() *performance.Cache {
 	return cp.cache
 }
@@ -265,12 +270,9 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": cp.sentry.GetChainID()})
 	}
-	// if err = s.Serve(lis); err != nil {
-	// 	utils.LavaFormatFatal("portal failed to serve", err, &map[string]string{"Address": lis.Addr().String()})
-	// }
 }
 
-func descriptorSourceFromServer(refClient *grpcreflect.Client) DescriptorSource {
+func descriptorSourceFromServer(refClient *grpcreflect.Client) grpcurl.DescriptorSource {
 	return ServerSource{Client: refClient}
 }
 
@@ -297,9 +299,12 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl, "descriptor": fmt.Sprintf("%v", descriptor)})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	if methodDescriptor == nil {
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"addr": nm.cp.nodeUrl, "methodName": methodName})
+	}
 	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
@@ -348,18 +353,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	reply := &pairingtypes.RelayReply{
 		Data: respBytes,
 	}
-
 	return reply, "", nil, nil
-}
-
-type DescriptorSource interface {
-	// ListServices returns a list of fully-qualified service names. It will be all services in a set of
-	// descriptor files or the set of all services exposed by a gRPC server.
-	ListServices() ([]string, error)
-	// FindSymbol returns a descriptor for the given fully-qualified symbol name.
-	FindSymbol(fullyQualifiedName string) (desc.Descriptor, error)
-	// AllExtensionsForType returns all known extension fields that extend the given message type name.
-	AllExtensionsForType(typeName string) ([]*desc.FieldDescriptor, error)
 }
 
 type ServerSource struct {

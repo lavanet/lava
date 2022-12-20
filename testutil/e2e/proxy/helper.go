@@ -1,4 +1,4 @@
-package main
+package mockproxy
 
 import (
 	"bytes"
@@ -28,6 +28,7 @@ func formatURL(u string) (scheme string, user string, password string, finalURL 
 	}
 	return scheme, "", "", u
 }
+
 func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRequest *http.Request, err error) {
 	reqUrl := req.URL
 	scheme, user, password, hostURL := formatURL(hostURL)
@@ -60,11 +61,10 @@ func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRe
 	}
 	return proxyReq, nil
 }
-func sendRequest(request *http.Request) (*http.Response, error) {
 
+func sendRequest(request *http.Request) (*http.Response, error) {
 	client := &http.Client{}
 	proxyRes, err := client.Do(request)
-
 	// proxyReq.Header.Set("Content-Length", )
 	if err != nil {
 		println(" ::: XXX ::: Reply From Host Error ::: "+request.Host+" ::: ", err.Error())

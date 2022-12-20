@@ -3,6 +3,9 @@ package cosmos_thirdparty
 import (
 	"context"
 
+	auth "cosmossdk.io/api/cosmos/auth/v1beta1"
+	authz "cosmossdk.io/api/cosmos/authz/v1beta1"
+	bank "cosmossdk.io/api/cosmos/bank/v1beta1"
 	tendermint "cosmossdk.io/api/cosmos/base/tendermint/v1beta1"
 	dist "cosmossdk.io/api/cosmos/distribution/v1beta1"
 	evidence "cosmossdk.io/api/cosmos/evidence/v1beta1"
@@ -13,15 +16,11 @@ import (
 	slashing "cosmossdk.io/api/cosmos/slashing/v1beta1"
 	staking "cosmossdk.io/api/cosmos/staking/v1beta1"
 	upgrade "cosmossdk.io/api/cosmos/upgrade/v1beta1"
-	auth "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/auth/types"
-	authz "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/authz"
-	bank "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/bank/types"
 	tx "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/cosmos/tx/v1beta1"
 	"google.golang.org/grpc"
 )
 
 func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosbasetendermintv1beta1 := &implementedCosmosBaseTendermintV1beta1{cb: cb}
 	tendermint.RegisterServiceServer(s, cosmosbasetendermintv1beta1)
 
@@ -65,7 +64,6 @@ func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method s
 }
 
 func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 
@@ -106,7 +104,6 @@ func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, metho
 }
 
 func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 
@@ -153,7 +150,6 @@ func RegisterCosmosProtobufs(s *grpc.Server, cb func(ctx context.Context, method
 }
 
 func RegisterJunoProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmosauthv1beta1 := &implementedCosmosAuthV1beta1{cb: cb}
 	auth.RegisterQueryServer(s, cosmosauthv1beta1)
 

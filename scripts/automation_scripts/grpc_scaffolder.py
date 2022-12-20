@@ -24,7 +24,7 @@ chain = "Juno"
 
 result_dir = "/home/user/go/src/lava/scripts/automation_scripts/automation_results/grpcClientProtobufs"
 
-os.makedirs("/home/user/go/src/lava/scripts/automation_scripts/automation_results/grpcClientProtobufs",exist_ok=True,mode = 0o777)
+os.makedirs(result_dir,exist_ok=True,mode = 0o777)
 
 with open(spec_current_file_path, 'r') as spec:
   spec_data = spec.read()

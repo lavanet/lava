@@ -59,7 +59,6 @@ func TestStakeStorageRemove(t *testing.T) {
 func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	// keeper, ctx := keepertest.EpochstorageKeeper(t)
 	_, allkeepers, ctxx := testkeeper.InitAllKeepers(t)
-	allkeepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctxx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	keeper := allkeepers.Epochstorage
 	ctx := sdk.UnwrapSDKContext(ctxx)

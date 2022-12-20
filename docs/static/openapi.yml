@@ -29843,6 +29843,8 @@ paths:
                             type: string
                           vrfpk:
                             type: string
+                          moniker:
+                            type: string
               pagination:
                 type: object
                 properties:
@@ -30007,6 +30009,8 @@ paths:
                           type: string
                         vrfpk:
                           type: string
+                        moniker:
+                          type: string
         default:
           description: An unexpected error response.
           schema:
@@ -30085,6 +30089,8 @@ paths:
                     chain:
                       type: string
                     vrfpk:
+                      type: string
+                    moniker:
                       type: string
               output:
                 type: string
@@ -30381,6 +30387,8 @@ paths:
                     chain:
                       type: string
                     vrfpk:
+                      type: string
+                    moniker:
                       type: string
         default:
           description: An unexpected error response.
@@ -30732,6 +30740,8 @@ paths:
                       type: string
                     vrfpk:
                       type: string
+                    moniker:
+                      type: string
               output:
                 type: string
         default:
@@ -30983,6 +30993,8 @@ paths:
                   chain:
                     type: string
                   vrfpk:
+                    type: string
+                  moniker:
                     type: string
               maxCU:
                 type: string
@@ -53085,6 +53097,8 @@ definitions:
                     type: string
                   vrfpk:
                     type: string
+                  moniker:
+                    type: string
       pagination:
         type: object
         properties:
@@ -53193,6 +53207,8 @@ definitions:
                   type: string
                 vrfpk:
                   type: string
+                moniker:
+                  type: string
   lavanet.lava.epochstorage.QueryParamsResponse:
     type: object
     properties:
@@ -53252,6 +53268,8 @@ definitions:
         type: string
       vrfpk:
         type: string
+      moniker:
+        type: string
   lavanet.lava.epochstorage.StakeStorage:
     type: object
     properties:
@@ -53300,6 +53318,8 @@ definitions:
             chain:
               type: string
             vrfpk:
+              type: string
+            moniker:
               type: string
   lavanet.lava.pairing.CacheUsage:
     type: object
@@ -53617,6 +53637,8 @@ definitions:
               type: string
             vrfpk:
               type: string
+            moniker:
+              type: string
       output:
         type: string
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
@@ -53700,6 +53722,8 @@ definitions:
             chain:
               type: string
             vrfpk:
+              type: string
+            moniker:
               type: string
   lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse:
     type: object
@@ -53827,6 +53851,8 @@ definitions:
               type: string
             vrfpk:
               type: string
+            moniker:
+              type: string
       output:
         type: string
   lavanet.lava.pairing.QueryUserEntryResponse:
@@ -53873,6 +53899,8 @@ definitions:
           chain:
             type: string
           vrfpk:
+            type: string
+          moniker:
             type: string
       maxCU:
         type: string

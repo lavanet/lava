@@ -1,4 +1,6 @@
 package types
 
-type IdentifiedClientStates []IdentifiedClientState
-type ClientsConsensusStates []ClientConsensusStates
+type (
+	IdentifiedClientStates []IdentifiedClientState
+	ClientsConsensusStates []ClientConsensusStates
+)

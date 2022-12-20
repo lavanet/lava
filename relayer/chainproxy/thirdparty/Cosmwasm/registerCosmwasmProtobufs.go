@@ -8,7 +8,6 @@ import (
 )
 
 func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmwasmwasmv1 := &implementedCosmwasmWasmV1{cb: cb}
 	pkg.RegisterQueryServer(s, cosmwasmwasmv1)
 
@@ -16,7 +15,6 @@ func RegisterOsmosisProtobufs(s *grpc.Server, cb func(ctx context.Context, metho
 }
 
 func RegisterJunoProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	cosmwasmwasmv1 := &implementedCosmwasmWasmV1{cb: cb}
 	pkg.RegisterQueryServer(s, cosmwasmwasmv1)
 

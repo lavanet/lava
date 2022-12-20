@@ -35,7 +35,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	case "finalized":
 		return spectypes.FINALIZED_BLOCK, nil
 	default:
-		//try to parse a number
+		// try to parse a number
 	}
 	blockNum, err := strconv.ParseInt(block, 0, 64)
 	if err != nil {
@@ -47,7 +47,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	return blockNum, nil
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
 	var retval []interface{}
 	var err error
@@ -75,25 +75,28 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 	}
 
 	return retval, nil
-
 }
 
 func ParseDefault(rpcInput RPCInput, input []string, dataSource int) []interface{} {
 	retArr := make([]interface{}, 0)
-	retArr = append(retArr, fmt.Sprintf("%s", input[0]))
+	retArr = append(retArr, input[0])
 	return retArr
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_PARAMS)
 	if err != nil || result == nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
-	return rpcInput.ParseBlock(result[0].(string))
+	resString, ok := result[0].(string)
+	if !ok {
+		return spectypes.NOT_APPLICABLE, fmt.Errorf("ParseBlockFromParams - result[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", result[0]))
+	}
+	return rpcInput.ParseBlock(resString)
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := Parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
@@ -110,12 +113,11 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 		if err != nil {
 			return spectypes.NOT_APPLICABLE, err
 		}
-
 	}
 	return rpcInput.ParseBlock(blockstr)
 }
 
-//this function returns the block that was requested,
+// this function returns the block that was requested,
 func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser) ([]interface{}, error) {
 	return Parse(rpcInput, resultParser, PARSE_RESULT)
 }
@@ -147,7 +149,7 @@ func GetDataToParse(rpcInput RPCInput, dataSource int) (interface{}, error) {
 }
 
 func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	//specified block is one of the direct parameters, input should be one string defining the location of the block
+	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
 		return nil, fmt.Errorf("invalid input format, input length: %d", len(input))
 	}
@@ -165,10 +167,9 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, utils.LavaFormatInfo("invalid rpc input and input index", &map[string]string{"wanted param": fmt.Sprintf("%d", param_index), "params": fmt.Sprintf("%s", unmarshalledData)})
-
 		}
 		block := unmarshaledDataTyped[param_index]
-		//TODO: turn this into type assertion instead
+		// TODO: turn this into type assertion instead
 
 		retArr := make([]interface{}, 0)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
@@ -177,17 +178,18 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		// Parse by arg can be only list as we dont have the name of the height property.
 		return nil, utils.LavaFormatInfo("Parse type unsupported in parse by arg, only list parameters are currently supported", &map[string]string{"request": fmt.Sprintf("%s", unmarshaledDataTyped)})
 	}
-
 }
 
-//expect input to be keys[a,b,c] and a canonical object such as
-// {
-//   "a": {
-//       "b": {
-//          "c": "wanted result"
-//        }
-//    }
-// }
+// expect input to be keys[a,b,c] and a canonical object such as
+//
+//	{
+//	  "a": {
+//	      "b": {
+//	         "c": "wanted result"
+//	       }
+//	   }
+//	}
+//
 // should output an interface array with "wanted result" in first index 0
 func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	inp := input[0]
@@ -238,14 +240,13 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				default:
 					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
 				}
-
 			} else {
 				return nil, fmt.Errorf("invalid parser input format, %s missing from %s", key, unmarshaledDataTyped)
 			}
 		}
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, fmt.Errorf("Not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
+		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
 	}
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
 }
@@ -285,9 +286,8 @@ func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 		}
 		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
 	default:
-		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
-
 }
 
 func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
@@ -321,12 +321,12 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 				}
 			}
 		}
-		//did not find a named property
+		// did not find a named property
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
 		}
 		block := unmarshaledDataTyped[param_index]
-		//TODO: turn this into type assertion instead
+		// TODO: turn this into type assertion instead
 		retArr := make([]interface{}, 0)
 		retArr = append(retArr, fmt.Sprintf("%s", block))
 		return retArr, nil
@@ -343,7 +343,6 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 		retArr = append(retArr, value)
 		return retArr, nil
 	default:
-		return nil, fmt.Errorf("Not Supported ParseDictionary with other types")
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
-
 }

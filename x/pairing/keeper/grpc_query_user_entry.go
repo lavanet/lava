@@ -16,7 +16,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	//Process the query
+	// Process the query
 	userAddr, err := sdk.AccAddressFromBech32(req.Address)
 	if err != nil {
 		return nil, status.Error(codes.Unavailable, "invalid address")

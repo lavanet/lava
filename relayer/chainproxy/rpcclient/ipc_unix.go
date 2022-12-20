@@ -29,19 +29,17 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-var (
-	max_path_size_rpc_client = 108 //C.max_socket_path_size()
-)
+var max_path_size_rpc_client = 108 // C.max_socket_path_size()
 
 // ipcListen will create a Unix socket on the given endpoint.
 func ipcListen(endpoint string) (net.Listener, error) {
-	if len(endpoint) > int(max_path_size_rpc_client) {
+	if len(endpoint) > max_path_size_rpc_client {
 		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", max_path_size_rpc_client),
 			"endpoint", endpoint)
 	}
 
 	// Ensure the IPC path exists and remove any previous leftover
-	if err := os.MkdirAll(filepath.Dir(endpoint), 0751); err != nil {
+	if err := os.MkdirAll(filepath.Dir(endpoint), 0o751); err != nil {
 		return nil, err
 	}
 	os.Remove(endpoint)
@@ -49,7 +47,7 @@ func ipcListen(endpoint string) (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	os.Chmod(endpoint, 0600)
+	os.Chmod(endpoint, 0o600)
 	return l, nil
 }
 

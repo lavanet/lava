@@ -32,7 +32,6 @@ func CmdUserMaxCu() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryUserEntryRequest{
-
 				Address: reqAddress,
 				ChainID: reqChainID,
 				Block:   reqBlock,

@@ -82,9 +82,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		payReliability := false
-		//validate data reliability
+		// validate data reliability
 		if relay.DataReliability != nil {
-
 			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
 			if !found {
@@ -97,7 +96,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
 			}
 
-			//verify user signed this data reliability
+			// verify user signed this data reliability
 			valid, err := sigs.ValidateSignerOnVRFData(clientAddr, *relay.DataReliability)
 			if err != nil || !valid {
 				details["error"] = err.Error()
@@ -105,15 +104,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 			otherProviderAddress, err := sigs.RecoverProviderPubKeyFromVrfDataOnly(relay.DataReliability)
 			if err != nil {
-
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message")
 			}
 			if otherProviderAddress.Equals(providerAddr) {
-				//provider signed his own stuff
+				// provider signed his own stuff
 				details["error"] = "provider attempted to claim data reliability sent by himself"
 				return errorLogAndFormat("relay_data_reliability_other_provider", details, "invalid signature by other provider on data reliability message, provider signed his own message")
 			}
-			//check this other provider is indeed legitimate
+			// check this other provider is indeed legitimate
 			isValidPairing, _, _, err := k.Keeper.ValidatePairingForClient(
 				ctx,
 				relay.ChainID,
@@ -136,7 +134,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["vrf_bech32"] = userStake.Vrfpk
 				return errorLogAndFormat("relay_data_reliability_client_vrf_pk", details, "invalid parsing of vrf pk form bech32")
 			}
-			//signatures valid, validate VRF signing
+			// signatures valid, validate VRF signing
 			valid = utils.VerifyVrfProofFromVRFData(relay.DataReliability, *vrfPk, epochStart)
 			if !valid {
 				details["error"] = "vrf signing is invalid, proof result mismatch"
@@ -160,16 +158,21 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				details["thisProviderIndex"] = strconv.FormatInt(int64(thisProviderIndex), 10)
 				return errorLogAndFormat("relay_payment_reliability_vrf_data", details, details["error"])
 			}
-			//all checks passed
+			// all checks passed
 			payReliability = true
 		}
 
-		//this prevents double spend attacks, and tracks the CU per session a client can use
+		// this prevents double spend attacks, and tracks the CU per session a client can use
 		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.ChainID, epochStart, clientAddr, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
-			//double spending on user detected!
-			details := map[string]string{"epoch": strconv.FormatUint(epochStart, 10), "client": clientAddr.String(), "provider": providerAddr.String(),
-				"error": err.Error(), "unique_ID": strconv.FormatUint(relay.SessionId, 16)}
+			// double spending on user detected!
+			details := map[string]string{
+				"epoch":     strconv.FormatUint(epochStart, 10),
+				"client":    clientAddr.String(),
+				"provider":  providerAddr.String(),
+				"error":     err.Error(),
+				"unique_ID": strconv.FormatUint(relay.SessionId, 16),
+			}
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
 		allowedCU, err := k.GetAllowedCUForBlock(ctx, uint64(relay.BlockHeight), userStake)
@@ -178,8 +181,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, relay.CuSum, relay.BlockHeight, allowedCU, clientAddr, totalCUInEpochForUserProvider, providerAddr, epochStart)
 		if err != nil {
-			//TODO: maybe give provider money but burn user, colluding?
-			//TODO: display correct totalCU and usedCU for provider
+			// TODO: maybe give provider money but burn user, colluding?
+			// TODO: display correct totalCU and usedCU for provider
 			details := map[string]string{
 				"epoch":                         strconv.FormatUint(epochStart, 10),
 				"client":                        clientAddr.String(),
@@ -187,15 +190,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"error":                         err.Error(),
 				"CU":                            strconv.FormatUint(relay.CuSum, 10),
 				"cuToPay":                       strconv.FormatUint(cuToPay, 10),
-				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10)}
+				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10),
+			}
 			return errorLogAndFormat("relay_payment_user_limit", details, "user bypassed CU limit")
 		}
 		if cuToPay > relay.CuSum {
 			panic("cuToPay should never be higher than relay.CuSum")
 		}
-		//
 
-		//pairing is valid, we can pay provider for work
+		// pairing is valid, we can pay provider for work
 		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 		if reward.IsZero() {
 			continue
@@ -221,7 +224,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 		}
 
-		//first check we can burn user before we give money to the provider
+		// first check we can burn user before we give money to the provider
 		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
 
 		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
@@ -276,7 +279,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, "UnresponsiveProviders", map[string]string{"err:": err.Error()}, "Error UnresponsiveProviders could not unstake")
 		}
-
 	}
 	return &types.MsgRelayPaymentResponse{}, nil
 }
@@ -335,12 +337,10 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments including this epoch
 			if err != nil {
 				utils.LavaFormatError("lava_unresponsive_providers: couldnt fetch getTotalPaymentsForPreviousEpochs", err, nil)
-			} else {
-				if int(totalPaymentRequests*providerPaymentMultiplier) < len(providerPaymentStorage.UnresponsivenessComplaints) {
-					// unstake provider
-					utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-					k.unSafeUnstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
-				}
+			} else if totalPaymentRequests*providerPaymentMultiplier < len(providerPaymentStorage.UnresponsivenessComplaints) {
+				// unstake provider
+				utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
+				k.unSafeUnstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
 			}
 		}
 		// set the final provider payment storage state including the complaints
@@ -368,6 +368,10 @@ func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEp
 }
 
 func (k msgServer) unSafeUnstakeProviderEntry(ctx sdk.Context, providerKey string, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) {
-	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
+	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
+	if err != nil {
+		utils.LavaError(ctx, k.Logger(ctx), "relay_payment_unstake", map[string]string{"existingEntry": fmt.Sprintf("%+v", existingEntry)}, "tried to unstake unsafe but didnt find entry")
+	} else {
+		k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
+	}
 }

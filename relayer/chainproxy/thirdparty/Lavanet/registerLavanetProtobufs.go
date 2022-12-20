@@ -11,7 +11,6 @@ import (
 )
 
 func RegisterLavaProtobufs(s *grpc.Server, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) {
-
 	lavanetlavaconflict := &implementedLavanetLavaConflict{cb: cb}
 	conflict.RegisterQueryServer(s, lavanetlavaconflict)
 
