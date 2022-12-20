@@ -6432,7 +6432,7 @@
       ]
     },
     {
-      "chainid": "JUNT1",
+      "index": "JUNT1",
       "name": "juno testnet",
       "enabled": true,
       "reliability_threshold": 268435455,

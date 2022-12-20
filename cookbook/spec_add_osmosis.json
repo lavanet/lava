@@ -9325,7 +9325,7 @@
       ]
     },
     {
-      "chainid": "COS4",
+      "index": "COS4",
       "name": "osmosis testnet",
       "enabled": true,
       "reliability_threshold": 268435455,

@@ -5679,7 +5679,7 @@
       ]
     },
     {
-      "chainid": "COS5T",
+      "index": "COS5T",
       "name": "cosmos hub testnet",
       "enabled": true,
       "reliability_threshold": 268435455,
