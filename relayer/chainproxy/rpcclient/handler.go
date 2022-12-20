@@ -295,9 +295,9 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 		return
 	}
 
-	if op.subid != "" {
+	if op.subId != "" {
 		go op.sub.run()
-		h.clientSubs[op.subid] = op.sub
+		h.clientSubs[op.subId] = op.sub
 	} else if op.err = json.Unmarshal(msg.Result, &op.sub.subid); op.err == nil {
 		go op.sub.run()
 		h.clientSubs[op.sub.subid] = op.sub

@@ -17,9 +17,11 @@ import (
 
 var _ = strconv.Itoa(0)
 
+const FlagMoniker = "moniker"
+
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation]",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [optional: moniker/name]",
 		Short: "Broadcast message stakeProvider",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -33,7 +35,7 @@ func CmdStakeProvider() *cobra.Command {
 			for _, endpointStr := range tmpArg {
 				splitted := strings.Split(endpointStr, ",")
 				if len(splitted) != 3 {
-					return fmt.Errorf("invalid argument format in endpoints, must be: IP:PORT,useType,geolocation IP:PORT,useType,geolocation ...")
+					return fmt.Errorf("invalid argument format in endpoints, must be: IP:PORT,useType,geolocation IP:PORT,useType,geolocation")
 				}
 				geoloc, err := strconv.ParseUint(splitted[2], 10, 64)
 				if err != nil {
@@ -52,12 +54,15 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			moniker, _ := cmd.Flags().GetString(FlagMoniker)
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
 				argAmount,
 				argEndpoints,
 				argGeolocation,
+				moniker,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -65,7 +70,7 @@ func CmdStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-
+	cmd.Flags().String(FlagMoniker, "", "The provider's name")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

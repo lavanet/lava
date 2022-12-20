@@ -76,8 +76,8 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
-	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error) {
-
+	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error,
+) {
 	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
 		initUnwantedProviders = make(map[string]struct{})
 	}
@@ -189,7 +189,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	for index := 0; index < validAddressesLength; index++ {
 		if _, ok := ignoredProvidersList[csm.validAddresses[index]]; !ok { // not ignored -> yes valid
 			if validAddressesCounter == validAddressIndex {
-				return csm.validAddresses[validAddressIndex], nil
+				return csm.validAddresses[index], nil
 			}
 			validAddressesCounter += 1
 		}
@@ -202,6 +202,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	defer csm.lock.RUnlock()
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
+		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
 		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
@@ -325,6 +326,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 func (csm *ConsumerSessionManager) GetSessionFromAllExcept(ctx context.Context, bannedAddresses map[string]struct{}, cuNeeded uint64, bannedAddressesEpoch uint64) (consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, err error) {
 	// if bannedAddressesEpoch != current epoch, we just return GetSession. locks...
 	if bannedAddressesEpoch != csm.atomicReadCurrentEpoch() {
+		utils.LavaFormatDebug("Getting session ignores banned addresses due to epoch mismatch", &map[string]string{"bannedAddresses": fmt.Sprintf("%+v", bannedAddresses), "bannedAddressesEpoch": strconv.FormatUint(bannedAddressesEpoch, 10), "currentEpoch": strconv.FormatUint(csm.atomicReadCurrentEpoch(), 10)})
 		return csm.GetSession(ctx, cuNeeded, nil)
 	} else {
 		return csm.GetSession(ctx, cuNeeded, bannedAddresses)
@@ -397,7 +399,6 @@ func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddr
 	}
 	// if address is valid return the ConsumerSessionsWithProvider
 	return csm.pairing[providerAddress], providerAddress, currentEpoch, nil
-
 }
 
 func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderForDR(ctx context.Context, consumerSessionWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64, providerAddress string) (endpoint *Endpoint, err error) {
@@ -428,7 +429,7 @@ func (csm *ConsumerSessionManager) getEndpointFromConsumerSessionWithProviderFor
 	}
 	if !connected { // if we are not connected at the end
 		// failed to get an endpoint connection from that provider. return an error.
-		return nil, FailedToConnectToEndPointForDataReliabilityError
+		return nil, utils.LavaFormatError("Not Connected", FailedToConnectToEndPointForDataReliabilityError, &map[string]string{"provider": providerAddress})
 	}
 	return endpoint, nil
 }

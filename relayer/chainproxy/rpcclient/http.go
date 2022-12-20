@@ -140,7 +140,10 @@ func DialHTTP(endpoint string) (*Client, error) {
 }
 
 func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) error {
-	hc := c.writeConn.(*httpConn)
+	hc, ok := c.writeConn.(*httpConn)
+	if !ok {
+		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed" + fmt.Sprintf("%s", c.writeConn))
+	}
 	respBody, err := hc.doRequest(ctx, msg)
 	if err != nil {
 		return err
@@ -156,7 +159,10 @@ func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) e
 }
 
 func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*JsonrpcMessage) error {
-	hc := c.writeConn.(*httpConn)
+	hc, ok := c.writeConn.(*httpConn)
+	if !ok {
+		return fmt.Errorf("sendBatchHTTP - c.writeConn.(*httpConn) - type assertion failed, type:" + fmt.Sprintf("%s", c.writeConn))
+	}
 	respBody, err := hc.doRequest(ctx, msgs)
 	if err != nil {
 		return err

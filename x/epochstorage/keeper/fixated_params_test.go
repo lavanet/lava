@@ -80,10 +80,6 @@ func TestParamFixation(t *testing.T) {
 	// servers, keepers, ctx := keepertest.InitAllKeepers(t)
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
 
-	//init keepers state
-
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
-
 	// ctx = keepertest.AdvanceEpoch(ctx, keepers)
 	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
@@ -123,10 +119,6 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 
 	// servers, keepers, ctx := keepertest.InitAllKeepers(t)
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
-
-	//init keepers state
-
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
 
 	// ctx = keepertest.AdvanceEpoch(ctx, keepers)
 	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
@@ -280,9 +272,6 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 
 func TestParamFixationWithEpochToSaveChange(t *testing.T) {
 	_, keepers, ctx := keepertest.InitAllKeepers(t)
-
-	//init keepers state
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *types.DefaultGenesis().EpochDetails)
 
 	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))

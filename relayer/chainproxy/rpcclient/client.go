@@ -131,7 +131,7 @@ type requestOp struct {
 	err   error
 	resp  chan *JsonrpcMessage // receives up to len(ids) responses
 	sub   *ClientSubscription  // only set for EthSubscribe requests
-	subid string               // this is only set for tendermint subscription
+	subId string               // this is only set for tendermint subscription
 }
 
 func (op *requestOp) wait(ctx context.Context, c *Client) (*JsonrpcMessage, error) {
@@ -259,7 +259,10 @@ func (c *Client) SetHeader(key, value string) {
 	if !c.isHTTP {
 		return
 	}
-	conn := c.writeConn.(*httpConn)
+	conn, ok := c.writeConn.(*httpConn)
+	if !ok {
+		panic("SetHeader - c.writeConn.(*httpConn) - type assertion failed")
+	}
 	conn.mu.Lock()
 	conn.headers.Set(key, value)
 	conn.mu.Unlock()
@@ -425,13 +428,17 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 	}
 	var msg *JsonrpcMessage
 	var err error
-	var subid string
+	var subId string
+	var ok bool
 	switch p := params.(type) {
 	case []interface{}:
 		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
-		subid = p["query"].(string)
+		subId, ok = p["query"].(string)
+		if !ok {
+			return nil, nil, fmt.Errorf("Subscribe - p['query'].(string) - type assertion failed")
+		}
 	default:
 		return nil, nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
@@ -443,7 +450,7 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 		ids:   []json.RawMessage{msg.ID},
 		resp:  make(chan *JsonrpcMessage),
 		sub:   newClientSubscription(c, method, chanVal),
-		subid: subid,
+		subId: subId,
 	}
 
 	// Send the subscription request.
@@ -512,7 +519,6 @@ func (c *Client) newMessageMapWithID(method string, id json.RawMessage, paramsIn
 		// if msg.Params, err = json.Marshal(paramsMap); err != nil {
 		// 	return nil, err
 		// }
-
 	}
 	return msg, nil
 }

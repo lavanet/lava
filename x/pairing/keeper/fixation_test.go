@@ -5,28 +5,17 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/spec"
 	"github.com/stretchr/testify/require"
 )
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
-}
-
 func TestServicersToPair(t *testing.T) {
 	_, keepers, ctx := testkeeper.InitAllKeepers(t)
-
-	//init keepers state
-	keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
 
 	blocksInEpoch := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
 	epochsMemory := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
@@ -67,7 +56,7 @@ func TestServicersToPair(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ServicersToPair != 0 {
-				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyServicersToPairCount), "\""+strconv.FormatUint(tt.ServicersToPair, 10)+"\"")
+				err := testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, pairingtypes.ModuleName, string(pairingtypes.KeyServicersToPairCount), "\""+strconv.FormatUint(tt.ServicersToPair, 10)+"\"")
 				require.NoError(t, err)
 			}
 
@@ -136,7 +125,7 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	require.Nil(t, err)
 
 	//shorten memory
-	err = SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSave/2, 10)+"\"")
+	err = testkeeper.SimulateParamChange(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.ParamsKeeper, epochstoragetypes.ModuleName, string(epochstoragetypes.KeyEpochsToSave), "\""+strconv.FormatUint(epochsToSave/2, 10)+"\"")
 	require.NoError(t, err)
 
 	//advance epoch

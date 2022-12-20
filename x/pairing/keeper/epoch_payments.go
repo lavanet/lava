@@ -22,7 +22,6 @@ func (k Keeper) SetEpochPayments(ctx sdk.Context, epochPayments types.EpochPayme
 func (k Keeper) GetEpochPayments(
 	ctx sdk.Context,
 	index string,
-
 ) (val types.EpochPayments, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochPaymentsKeyPrefix))
 
@@ -41,7 +40,6 @@ func (k Keeper) GetEpochPayments(
 func (k Keeper) RemoveEpochPayments(
 	ctx sdk.Context,
 	index string,
-
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochPaymentsKeyPrefix))
 	store.Delete(types.EpochPaymentsKey(
@@ -96,7 +94,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 }
 
 func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) error {
-	//remove the old epochs
+	// remove the old epochs
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, blockForDelete)
 	if !found {
 		// return fmt.Errorf("did not find any epochPayments for block %d", blockForDelete.Num)
@@ -106,13 +104,13 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 	for _, userPaymentStorage := range userPaymentsStorages {
 		uniquePaymentStoragesCliPro := userPaymentStorage.UniquePaymentStorageClientProvider
 		for _, uniquePaymentStorageCliPro := range uniquePaymentStoragesCliPro {
-			//validate its an old entry, for sanity
+			// validate its an old entry, for sanity
 			if uniquePaymentStorageCliPro.Block > blockForDelete {
 				errMsg := "trying to delete a new entry in epoch payments for block"
 				k.Logger(ctx).Error(errMsg)
 				panic(errMsg)
 			}
-			//delete all payment storages
+			// delete all payment storages
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorageCliPro.Index)
 		}
 		k.RemoveProviderPaymentStorage(ctx, userPaymentStorage.Index)
