@@ -1,6 +1,8 @@
 import glob
 import json
-all_specs = glob.glob("/home/user/go/src/lava/cookbook/*.json")
+import os 
+
+all_specs = glob.glob(os.path.join(os.getcwd() + "cookbook/*.json"))
 
 for spec in all_specs:
     with open(spec,"r") as fr:
