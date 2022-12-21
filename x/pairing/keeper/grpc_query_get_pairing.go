@@ -13,13 +13,12 @@ import (
 
 // Gets a client's provider list in a specific chain. Also returns the start block of the current epoch, time (in seconds) until there's a new pairing, the block that the chain in the request's spec was changed
 func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequest) (*types.QueryGetPairingResponse, error) {
-
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	//TODO: validate chainID
+	// TODO: validate chainID
 	// check client address
 	clientAddr, err := sdk.AccAddressFromBech32(req.Client)
 	if err != nil {

@@ -30,6 +30,8 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
+const BLOCK_TIME = 30 * time.Second
+
 type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
 	Spec          speckeeper.Keeper
@@ -115,7 +117,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
-	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]tenderminttypes.Block)}
+	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
@@ -191,7 +193,6 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 	block := uint64(unwrapedCtx.BlockHeight())
 
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		// begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
@@ -208,16 +209,5 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
 
-	// keep block height in mock blockstore
-	blockInt64 := int64(block)
-	ks.BlockStore.SetHeight(blockInt64)
-
-	// create mock block header
-	blockHeader := tenderminttypes.Header{}
-	blockHeader.Height = blockInt64
-	blockHeader.Time = time.Now()
-
-	// update the blockstore's block history with current block
-	blockCore := tenderminttypes.Block{Header: blockHeader}
-	ks.BlockStore.SetBlockHistoryEntry(blockInt64, &blockCore)
+	ks.BlockStore.AdvanceBlock(BLOCK_TIME)
 }
