@@ -341,8 +341,10 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 				// unstake provider
 				utils.LogLavaEvent(ctx, logger, "jailing_event", map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
 				err = k.unSafeUnstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
-				utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, &map[string]string{"chainID": chainID, "indexInStakeStorage": strconv.FormatUint(indexInStakeStorage, 10), "existingEntry": existingEntry.GetStake().String()})
-				continue
+				if err != nil {
+					utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, &map[string]string{"chainID": chainID, "indexInStakeStorage": strconv.FormatUint(indexInStakeStorage, 10), "existingEntry": existingEntry.GetStake().String()})
+					continue
+				}
 			}
 		}
 		// set the final provider payment storage state including the complaints
