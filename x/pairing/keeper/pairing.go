@@ -351,3 +351,11 @@ func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList [
 
 	return averageBlockTime, nil
 }
+
+func (k Keeper) GetEpochBlockDivider() uint64 {
+	return EpochBlocksDivider
+}
+
+func (k Keeper) GetMinSampleTime() uint64 {
+	return MinSampleStep
+}
