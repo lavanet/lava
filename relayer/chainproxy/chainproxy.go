@@ -28,6 +28,7 @@ const (
 
 type NodeMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
+	GetInterface() *spectypes.ApiInterface
 	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 	RequestedBlock() int64
 	GetMsg() interface{}
@@ -110,7 +111,7 @@ func SendRelay(
 	if err != nil {
 		return nil, nil, err
 	}
-	isSubscription := nodeMsg.GetServiceApi().Category.Subscription
+	isSubscription := nodeMsg.GetInterface().Category.Subscription
 	blockHeight := int64(-1) // to sync reliability blockHeight in case it changes
 	requestedBlock := int64(0)
 
@@ -180,7 +181,7 @@ func SendRelay(
 			// update relay request requestedBlock to the provided one in case it was arbitrary
 			sentry.UpdateRequestedBlock(relayRequest, reply)
 			finalized := cp.GetSentry().IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock)
-			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecComparesHashes())
+			err = VerifyRelayReply(reply, relayRequest, providerPublicAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 			if err != nil {
 				return nil, nil, nil, 0, false, err
 			}
@@ -234,7 +235,7 @@ func SendRelay(
 			return nil, nil, 0, err
 		}
 		currentLatency := time.Since(relaySentTime)
-		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecComparesHashes())
+		err = VerifyRelayReply(reply, relayRequest, providerAddress, cp.GetSentry().GetSpecDataReliabilityEnabled())
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -242,7 +243,7 @@ func SendRelay(
 		return reply, relayRequest, currentLatency, nil
 	}
 
-	reply, replyServer, relayLatency, isCachedResult, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+	reply, replyServer, relayLatency, isCachedResult, firstSessionError := cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetInterface().Category)
 	if firstSessionError != nil {
 		// on session failure here
 		errReport := cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, firstSessionError)
@@ -257,7 +258,7 @@ func SendRelay(
 				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
 			}
 			var secondSessionError error
-			reply, replyServer, relayLatency, isCachedResult, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetServiceApi().Category)
+			reply, replyServer, relayLatency, isCachedResult, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetInterface().Category)
 			if secondSessionError != nil {
 				errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
 				if errReport != nil {

@@ -114,5 +114,5 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 	if !found {
 		return false
 	}
-	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.FinalizationCriteria)
+	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.BlockDistanceForFinalizedData)
 }

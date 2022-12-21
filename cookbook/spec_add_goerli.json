@@ -1,1291 +1,1293 @@
 {
-  "title": "Add Specs: Goerli",
-  "description": "Adding new specification support for relaying Goerli data on Lava",
-  "specs": [
-    {
-      "chainid": "GTH1",
-      "name": "Goerli Testnet",
-      "enabled": true,
-      "reliability_threshold": 268435455,
-      "compares_hashes": true,
-      "finalization_criteria": 7,
-      "saved_blocks": 3,
-      "average_block_time": "13000",
-      "allowed_block_lag_for_qos_sync": "5",
-      "apis": [
-        {
-          "name": "rpc_modules",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
+    "proposal": {
+        "title": "Add Specs: Goerli",
+        "description": "Adding new specification support for relaying Goerli data on Lava",
+        "specs": [
             {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
+                "index": "GTH1",
+                "name": "Goerli Testnet",
+                "enabled": true,
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 7,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": "13000",
+                "allowed_block_lag_for_qos_sync": "5",
+                "apis": [
+                    {
+                        "name": "rpc_modules",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "net_version",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_chainId",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_syncing",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_protocolVersion",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_mining",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_hashrate",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_coinbase",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "net_listening",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "net_peerCount",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_uninstallFilter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_accounts",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_blockNumber",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+                            "function_tag": "getBlockNumber",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0"
+                                ],
+                                "parser_func": "PARSE_BY_ARG"
+                            }
+                        }
+                    },
+                    {
+                        "name": "eth_subscribe",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": true,
+		                            "subscription": true,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_unsubscribe",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": true,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_feeHistory",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_maxPriorityFeePerGas",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_createAccessList",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getTransactionReceipt",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getCompilers",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getWork",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_compileLLL",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getUncleByBlockHashAndIndex",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getUncleByBlockNumberAndIndex",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getTransactionByBlockHashAndIndex",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getTransactionByBlockNumberAndIndex",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getUncleCountByBlockHash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getUncleCountByBlockNumber",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "web3_clientVersion",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "web3_sha3",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "15",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getBlockByNumber",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "16",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ],
+                        "parsing": {
+                            "function_tag": "getBlockByNumber",
+                            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+                            "result_parsing": {
+                                "parser_arg": [
+                                    "0",
+                                    "hash"
+                                ],
+                                "parser_func": "PARSE_CANONICAL"
+                            }
+                        }
+                    },
+                    {
+                        "name": "eth_getStorageAt",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "2"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "17",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getTransactionByHash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "17",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_gasPrice",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "19",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getBalance",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "1"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "19",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getCode",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "1"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "19",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_sign",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_signTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_sendTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "10",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getFilterChanges",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_newBlockFilter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_newFilter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0",
+                                "toBlock"
+                            ],
+                            "parser_func": "PARSE_CANONICAL"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_newPendingTransactionFilter",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getBlockTransactionCountByHash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getBlockTransactionCountByNumber",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "20",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getBlockByHash",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "21",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getTransactionCount",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "1"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "26",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_call",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "1"
+                            ],
+                            "parser_func": "PARSE_BY_ARG"
+                        },
+                        "compute_units": "26",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getFilterLogs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "75",
+                        "enabled": false,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_getLogs",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "0",
+                                "toBlock"
+                            ],
+                            "parser_func": "PARSE_CANONICAL"
+                        },
+                        "compute_units": "75",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": false,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_estimateGas",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "87",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "eth_sendRawTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                ""
+                            ],
+                            "parser_func": "EMPTY"
+                        },
+                        "compute_units": "250",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+		                        "category": {
+		                            "deterministic": true,
+		                            "local": false,
+		                            "subscription": false,
+		                            "stateful": 0
+		                        },
+                                "interface": "jsonrpc",
+                                "type": "GET",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    }
+                ]
             }
-          ]
-        },
-        {
-          "name": "net_version",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_chainId",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_syncing",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_protocolVersion",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_mining",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_hashrate",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_coinbase",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "net_listening",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "net_peerCount",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "1",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_uninstallFilter",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": false,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_accounts",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_blockNumber",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "latest"
-            ],
-            "parserFunc": "DEFAULT"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ],
-          "parsing": {
-            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
-            "function_tag": "getBlockNumber",
-            "result_parsing": {
-              "parserArg": [
-                "0"
-              ],
-              "parserFunc": "PARSE_BY_ARG"
-            }
-          }
-        },
-        {
-          "name": "eth_subscribe",
-          "category": {
-            "deterministic": false,
-            "local": true,
-            "subscription": true,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_unsubscribe",
-          "category": {
-            "deterministic": false,
-            "local": true,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_feeHistory",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_maxPriorityFeePerGas",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_createAccessList",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getTransactionReceipt",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getCompilers",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getWork",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_compileLLL",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getUncleByBlockHashAndIndex",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getUncleByBlockNumberAndIndex",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getTransactionByBlockHashAndIndex",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getTransactionByBlockNumberAndIndex",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getUncleCountByBlockHash",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getUncleCountByBlockNumber",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "web3_clientVersion",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "web3_sha3",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "15",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getBlockByNumber",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "16",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ],
-          "parsing": {
-            "function_tag": "getBlockByNumber",
-            "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
-            "result_parsing": {
-              "parserArg": [
-                "0",
-                "hash"
-              ],
-              "parserFunc": "PARSE_CANONICAL"
-            }
-          }
-        },
-        {
-          "name": "eth_getStorageAt",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "2"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "17",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getTransactionByHash",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "17",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_gasPrice",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "19",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getBalance",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "1"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "19",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getCode",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "1"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "19",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_sign",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_signTransaction",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_sendTransaction",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "10",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getFilterChanges",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_newBlockFilter",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_newFilter",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0",
-              "toBlock"
-            ],
-            "parserFunc": "PARSE_CANONICAL"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_newPendingTransactionFilter",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getBlockTransactionCountByHash",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getBlockTransactionCountByNumber",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "20",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getBlockByHash",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "21",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getTransactionCount",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "1"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "26",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_call",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "1"
-            ],
-            "parserFunc": "PARSE_BY_ARG"
-          },
-          "compute_units": "26",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getFilterLogs",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "75",
-          "enabled": false,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_getLogs",
-          "category": {
-            "deterministic": false,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              "0",
-              "toBlock"
-            ],
-            "parserFunc": "PARSE_CANONICAL"
-          },
-          "compute_units": "75",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_estimateGas",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "87",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        },
-        {
-          "name": "eth_sendRawTransaction",
-          "category": {
-            "deterministic": true,
-            "local": false,
-            "subscription": false,
-            "stateful": 0
-          },
-          "block_parsing": {
-            "parserArg": [
-              ""
-            ],
-            "parserFunc": "EMPTY"
-          },
-          "compute_units": "250",
-          "enabled": true,
-          "apiInterfaces": [
-            {
-              "interface": "jsonrpc",
-              "type": "get",
-              "extra_compute_units": "0"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "deposit": "10000000ulava"
+        ]
+    },
+    "deposit": "10000000ulava"
 }

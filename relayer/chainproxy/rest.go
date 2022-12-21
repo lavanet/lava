@@ -30,7 +30,7 @@ type RestMessage struct {
 	msg            []byte
 	requestedBlock int64
 	Result         json.RawMessage
-	connectionType string
+	apiInterface   *spectypes.ApiInterface
 }
 
 type RestChainProxy struct {
@@ -59,18 +59,31 @@ func (cp *RestChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessi
 	return cp.csm
 }
 
-func (cp *RestChainProxy) NewMessage(path string, data []byte) (*RestMessage, error) {
+func (cp *RestChainProxy) NewMessage(path string, data []byte, connectionType string) (*RestMessage, error) {
 	//
 	// Check api is supported an save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, err
 	}
+
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
 	nodeMsg := &RestMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
+		cp:           cp,
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		path:         path,
+		msg:          data,
 	}
 
 	return nodeMsg, nil
@@ -109,7 +122,7 @@ func (cp *RestChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	if serviceApi.GetParsing().FunctionTemplate != "" {
 		nodeMsg, err = cp.ParseMsg(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum), nil, http.MethodGet)
 	} else {
-		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, http.MethodGet)
 	}
 
 	if err != nil {
@@ -142,7 +155,7 @@ func (cp *RestChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := []byte{}
-	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params)
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, http.MethodGet)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
@@ -190,13 +203,24 @@ func (cp *RestChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, err
 	}
+
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
 	// data contains the query string
 	nodeMsg := &RestMessage{
-		cp:             cp,
-		serviceApi:     serviceApi,
-		path:           path,
-		msg:            data,
-		connectionType: connectionType, // POST,GET etc..
+		cp:           cp,
+		serviceApi:   serviceApi,
+		path:         path,
+		msg:          data,
+		apiInterface: apiInterface, // POST,GET etc..
 	}
 
 	return nodeMsg, nil
@@ -272,6 +296,10 @@ func (nm *RestMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *RestMessage) GetInterface() *spectypes.ApiInterface {
+	return nm.apiInterface
+}
+
 func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
@@ -282,8 +310,8 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 
 	var connectionTypeSlected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
-	if nm.connectionType != "" {
-		connectionTypeSlected = nm.connectionType
+	if nm.apiInterface.Type != "" {
+		connectionTypeSlected = nm.apiInterface.Type
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
@@ -299,7 +327,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	}
 
 	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
-	if connectionTypeSlected == "POST" || connectionTypeSlected == "PUT" {
+	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	res, err := httpClient.Do(req)

@@ -774,7 +774,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	latestBlock := int64(0)
 	finalizedBlockHashes := map[int64]interface{}{}
 	var requestedBlockHash []byte = nil
-	if g_sentry.GetSpecComparesHashes() {
+	if g_sentry.GetSpecDataReliabilityEnabled() {
 		// Add latest block and finalized data
 		var requestedBlockHashStr string
 		var err error
@@ -836,7 +836,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		}
 		reply.Sig = sig
 
-		if g_sentry.GetSpecComparesHashes() {
+		if g_sentry.GetSpecDataReliabilityEnabled() {
 			// update sig blocks signature
 			sigBlocks, err := sigs.SignResponseFinalizationData(g_privKey, reply, &request, userAddr)
 			if err != nil {
@@ -1169,7 +1169,7 @@ func Server(
 	chainProxy.Start(ctx)
 	g_chainProxy = chainProxy
 
-	if g_sentry.GetSpecComparesHashes() {
+	if g_sentry.GetSpecDataReliabilityEnabled() {
 		// Start chain sentry
 		chainSentry := chainsentry.NewChainSentry(clientCtx, chainProxy, chainID)
 		var chainSentryInitError error

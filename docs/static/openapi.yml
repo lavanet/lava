@@ -31241,14 +31241,14 @@ paths:
                         properties:
                           name:
                             type: string
-                          blockParsing:
+                          block_parsing:
                             type: object
                             properties:
-                              parserArg:
+                              parser_arg:
                                 type: array
                                 items:
                                   type: string
-                              parserFunc:
+                              parser_func:
                                 type: string
                                 enum:
                                   - EMPTY
@@ -31267,12 +31267,12 @@ paths:
                                    - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                                    - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                    - DEFAULT: means parameters are non related to block, and should fetch latest block
-                          computeUnits:
+                          compute_units:
                             type: string
                             format: uint64
                           enabled:
                             type: boolean
-                          apiInterfaces:
+                          api_interfaces:
                             type: array
                             items:
                               type: object
@@ -31281,10 +31281,22 @@ paths:
                                   type: string
                                 type:
                                   type: string
-                                extraComputeUnits:
+                                extra_compute_units:
                                   type: string
                                   format: uint64
-                          category:
+                                category:
+                                  type: object
+                                  properties:
+                                    deterministic:
+                                      type: boolean
+                                    local:
+                                      type: boolean
+                                    subscription:
+                                      type: boolean
+                                    stateful:
+                                      type: integer
+                                      format: int64
+                          reserved:
                             type: object
                             properties:
                               deterministic:
@@ -31306,11 +31318,11 @@ paths:
                               result_parsing:
                                 type: object
                                 properties:
-                                  parserArg:
+                                  parser_arg:
                                     type: array
                                     items:
                                       type: string
-                                  parserFunc:
+                                  parser_func:
                                     type: string
                                     enum:
                                       - EMPTY
@@ -31331,21 +31343,21 @@ paths:
                                        - DEFAULT: means parameters are non related to block, and should fetch latest block
                     enabled:
                       type: boolean
-                    reliabilityThreshold:
+                    reliability_threshold:
                       type: integer
                       format: int64
-                    comparesHashes:
+                    data_reliability_enabled:
                       type: boolean
-                    finalizationCriteria:
+                    block_distance_for_finalized_data:
                       type: integer
                       format: int64
-                    saved_blocks:
+                    blocks_in_finalization_proof:
                       type: integer
                       format: int64
-                    averageBlockTime:
+                    average_block_time:
                       type: string
                       format: int64
-                    allowedBlockLagForQosSync:
+                    allowed_block_lag_for_qos_sync:
                       type: string
                       format: int64
               pagination:
@@ -31476,14 +31488,14 @@ paths:
                       properties:
                         name:
                           type: string
-                        blockParsing:
+                        block_parsing:
                           type: object
                           properties:
-                            parserArg:
+                            parser_arg:
                               type: array
                               items:
                                 type: string
-                            parserFunc:
+                            parser_func:
                               type: string
                               enum:
                                 - EMPTY
@@ -31501,12 +31513,12 @@ paths:
                                  - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                                  - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                                  - DEFAULT: means parameters are non related to block, and should fetch latest block
-                        computeUnits:
+                        compute_units:
                           type: string
                           format: uint64
                         enabled:
                           type: boolean
-                        apiInterfaces:
+                        api_interfaces:
                           type: array
                           items:
                             type: object
@@ -31515,10 +31527,22 @@ paths:
                                 type: string
                               type:
                                 type: string
-                              extraComputeUnits:
+                              extra_compute_units:
                                 type: string
                                 format: uint64
-                        category:
+                              category:
+                                type: object
+                                properties:
+                                  deterministic:
+                                    type: boolean
+                                  local:
+                                    type: boolean
+                                  subscription:
+                                    type: boolean
+                                  stateful:
+                                    type: integer
+                                    format: int64
+                        reserved:
                           type: object
                           properties:
                             deterministic:
@@ -31540,11 +31564,11 @@ paths:
                             result_parsing:
                               type: object
                               properties:
-                                parserArg:
+                                parser_arg:
                                   type: array
                                   items:
                                     type: string
-                                parserFunc:
+                                parser_func:
                                   type: string
                                   enum:
                                     - EMPTY
@@ -31565,21 +31589,21 @@ paths:
                                      - DEFAULT: means parameters are non related to block, and should fetch latest block
                   enabled:
                     type: boolean
-                  reliabilityThreshold:
+                  reliability_threshold:
                     type: integer
                     format: int64
-                  comparesHashes:
+                  data_reliability_enabled:
                     type: boolean
-                  finalizationCriteria:
+                  block_distance_for_finalized_data:
                     type: integer
                     format: int64
-                  saved_blocks:
+                  blocks_in_finalization_proof:
                     type: integer
                     format: int64
-                  averageBlockTime:
+                  average_block_time:
                     type: string
                     format: int64
-                  allowedBlockLagForQosSync:
+                  allowed_block_lag_for_qos_sync:
                     type: string
                     format: int64
         default:
@@ -53931,17 +53955,29 @@ definitions:
         type: string
       type:
         type: string
-      extraComputeUnits:
+      extra_compute_units:
         type: string
         format: uint64
+      category:
+        type: object
+        properties:
+          deterministic:
+            type: boolean
+          local:
+            type: boolean
+          subscription:
+            type: boolean
+          stateful:
+            type: integer
+            format: int64
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
-      parserArg:
+      parser_arg:
         type: array
         items:
           type: string
-      parserFunc:
+      parser_func:
         type: string
         enum:
           - EMPTY
@@ -53996,11 +54032,11 @@ definitions:
       result_parsing:
         type: object
         properties:
-          parserArg:
+          parser_arg:
             type: array
             items:
               type: string
-          parserFunc:
+          parser_func:
             type: string
             enum:
               - EMPTY
@@ -54037,14 +54073,14 @@ definitions:
                 properties:
                   name:
                     type: string
-                  blockParsing:
+                  block_parsing:
                     type: object
                     properties:
-                      parserArg:
+                      parser_arg:
                         type: array
                         items:
                           type: string
-                      parserFunc:
+                      parser_func:
                         type: string
                         enum:
                           - EMPTY
@@ -54062,12 +54098,12 @@ definitions:
                            - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                            - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                            - DEFAULT: means parameters are non related to block, and should fetch latest block
-                  computeUnits:
+                  compute_units:
                     type: string
                     format: uint64
                   enabled:
                     type: boolean
-                  apiInterfaces:
+                  api_interfaces:
                     type: array
                     items:
                       type: object
@@ -54076,10 +54112,22 @@ definitions:
                           type: string
                         type:
                           type: string
-                        extraComputeUnits:
+                        extra_compute_units:
                           type: string
                           format: uint64
-                  category:
+                        category:
+                          type: object
+                          properties:
+                            deterministic:
+                              type: boolean
+                            local:
+                              type: boolean
+                            subscription:
+                              type: boolean
+                            stateful:
+                              type: integer
+                              format: int64
+                  reserved:
                     type: object
                     properties:
                       deterministic:
@@ -54101,11 +54149,11 @@ definitions:
                       result_parsing:
                         type: object
                         properties:
-                          parserArg:
+                          parser_arg:
                             type: array
                             items:
                               type: string
-                          parserFunc:
+                          parser_func:
                             type: string
                             enum:
                               - EMPTY
@@ -54125,21 +54173,21 @@ definitions:
                                - DEFAULT: means parameters are non related to block, and should fetch latest block
             enabled:
               type: boolean
-            reliabilityThreshold:
+            reliability_threshold:
               type: integer
               format: int64
-            comparesHashes:
+            data_reliability_enabled:
               type: boolean
-            finalizationCriteria:
+            block_distance_for_finalized_data:
               type: integer
               format: int64
-            saved_blocks:
+            blocks_in_finalization_proof:
               type: integer
               format: int64
-            averageBlockTime:
+            average_block_time:
               type: string
               format: int64
-            allowedBlockLagForQosSync:
+            allowed_block_lag_for_qos_sync:
               type: string
               format: int64
       pagination:
@@ -54184,14 +54232,14 @@ definitions:
               properties:
                 name:
                   type: string
-                blockParsing:
+                block_parsing:
                   type: object
                   properties:
-                    parserArg:
+                    parser_arg:
                       type: array
                       items:
                         type: string
-                    parserFunc:
+                    parser_func:
                       type: string
                       enum:
                         - EMPTY
@@ -54209,12 +54257,12 @@ definitions:
                          - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                          - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
-                computeUnits:
+                compute_units:
                   type: string
                   format: uint64
                 enabled:
                   type: boolean
-                apiInterfaces:
+                api_interfaces:
                   type: array
                   items:
                     type: object
@@ -54223,10 +54271,22 @@ definitions:
                         type: string
                       type:
                         type: string
-                      extraComputeUnits:
+                      extra_compute_units:
                         type: string
                         format: uint64
-                category:
+                      category:
+                        type: object
+                        properties:
+                          deterministic:
+                            type: boolean
+                          local:
+                            type: boolean
+                          subscription:
+                            type: boolean
+                          stateful:
+                            type: integer
+                            format: int64
+                reserved:
                   type: object
                   properties:
                     deterministic:
@@ -54248,11 +54308,11 @@ definitions:
                     result_parsing:
                       type: object
                       properties:
-                        parserArg:
+                        parser_arg:
                           type: array
                           items:
                             type: string
-                        parserFunc:
+                        parser_func:
                           type: string
                           enum:
                             - EMPTY
@@ -54272,21 +54332,21 @@ definitions:
                              - DEFAULT: means parameters are non related to block, and should fetch latest block
           enabled:
             type: boolean
-          reliabilityThreshold:
+          reliability_threshold:
             type: integer
             format: int64
-          comparesHashes:
+          data_reliability_enabled:
             type: boolean
-          finalizationCriteria:
+          block_distance_for_finalized_data:
             type: integer
             format: int64
-          saved_blocks:
+          blocks_in_finalization_proof:
             type: integer
             format: int64
-          averageBlockTime:
+          average_block_time:
             type: string
             format: int64
-          allowedBlockLagForQosSync:
+          allowed_block_lag_for_qos_sync:
             type: string
             format: int64
   lavanet.lava.spec.QueryParamsResponse:
@@ -54335,14 +54395,14 @@ definitions:
     properties:
       name:
         type: string
-      blockParsing:
+      block_parsing:
         type: object
         properties:
-          parserArg:
+          parser_arg:
             type: array
             items:
               type: string
-          parserFunc:
+          parser_func:
             type: string
             enum:
               - EMPTY
@@ -54360,12 +54420,12 @@ definitions:
                - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                - DEFAULT: means parameters are non related to block, and should fetch latest block
-      computeUnits:
+      compute_units:
         type: string
         format: uint64
       enabled:
         type: boolean
-      apiInterfaces:
+      api_interfaces:
         type: array
         items:
           type: object
@@ -54374,10 +54434,22 @@ definitions:
               type: string
             type:
               type: string
-            extraComputeUnits:
+            extra_compute_units:
               type: string
               format: uint64
-      category:
+            category:
+              type: object
+              properties:
+                deterministic:
+                  type: boolean
+                local:
+                  type: boolean
+                subscription:
+                  type: boolean
+                stateful:
+                  type: integer
+                  format: int64
+      reserved:
         type: object
         properties:
           deterministic:
@@ -54399,11 +54471,11 @@ definitions:
           result_parsing:
             type: object
             properties:
-              parserArg:
+              parser_arg:
                 type: array
                 items:
                   type: string
-              parserFunc:
+              parser_func:
                 type: string
                 enum:
                   - EMPTY
@@ -54435,14 +54507,14 @@ definitions:
           properties:
             name:
               type: string
-            blockParsing:
+            block_parsing:
               type: object
               properties:
-                parserArg:
+                parser_arg:
                   type: array
                   items:
                     type: string
-                parserFunc:
+                parser_func:
                   type: string
                   enum:
                     - EMPTY
@@ -54460,12 +54532,12 @@ definitions:
                      - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
                      - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
                      - DEFAULT: means parameters are non related to block, and should fetch latest block
-            computeUnits:
+            compute_units:
               type: string
               format: uint64
             enabled:
               type: boolean
-            apiInterfaces:
+            api_interfaces:
               type: array
               items:
                 type: object
@@ -54474,10 +54546,22 @@ definitions:
                     type: string
                   type:
                     type: string
-                  extraComputeUnits:
+                  extra_compute_units:
                     type: string
                     format: uint64
-            category:
+                  category:
+                    type: object
+                    properties:
+                      deterministic:
+                        type: boolean
+                      local:
+                        type: boolean
+                      subscription:
+                        type: boolean
+                      stateful:
+                        type: integer
+                        format: int64
+            reserved:
               type: object
               properties:
                 deterministic:
@@ -54499,11 +54583,11 @@ definitions:
                 result_parsing:
                   type: object
                   properties:
-                    parserArg:
+                    parser_arg:
                       type: array
                       items:
                         type: string
-                    parserFunc:
+                    parser_func:
                       type: string
                       enum:
                         - EMPTY
@@ -54523,21 +54607,21 @@ definitions:
                          - DEFAULT: means parameters are non related to block, and should fetch latest block
       enabled:
         type: boolean
-      reliabilityThreshold:
+      reliability_threshold:
         type: integer
         format: int64
-      comparesHashes:
+      data_reliability_enabled:
         type: boolean
-      finalizationCriteria:
+      block_distance_for_finalized_data:
         type: integer
         format: int64
-      saved_blocks:
+      blocks_in_finalization_proof:
         type: integer
         format: int64
-      averageBlockTime:
+      average_block_time:
         type: string
         format: int64
-      allowedBlockLagForQosSync:
+      allowed_block_lag_for_qos_sync:
         type: string
         format: int64
   lavanet.lava.spec.SpecCategory:

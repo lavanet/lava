@@ -6,8 +6,5 @@ import (
 	"github.com/lavanet/lava/x/spec/client/rest"
 )
 
-// ProposalHandler is the param change proposal handler.
-var (
-	SpecAddProposalHandler    = govclient.NewProposalHandler(cli.NewSubmitSpecAddProposalTxCmd, rest.ProposalRESTHandler)
-	SpecModifyProposalHandler = govclient.NewProposalHandler(cli.NewSubmitSpecModifyProposalTxCmd, rest.ProposalRESTHandler)
-)
+// SpecAddProposalHandler is the param change proposal handler.
+var SpecAddProposalHandler = govclient.NewProposalHandler(cli.NewSubmitSpecAddProposalTxCmd, rest.ProposalRESTHandler)

@@ -38,6 +38,7 @@ type GrpcMessage struct {
 
 	cp             *GrpcChainProxy
 	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
 	path           string
 	msg            interface{}
 	requestedBlock int64
@@ -106,11 +107,15 @@ func (nm *GrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
 }
 
+func (nm *GrpcMessage) GetInterface() *spectypes.ApiInterface {
+	return nm.apiInterface
+}
+
 func (cp *GrpcChainProxy) GetConsumerSessionManager() *lavasession.ConsumerSessionManager {
 	return cp.csm
 }
 
-func (cp *GrpcChainProxy) NewMessage(path string, data []byte) (*GrpcMessage, error) {
+func (cp *GrpcChainProxy) NewMessage(path string, data []byte, connectionType string) (*GrpcMessage, error) {
 	//
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(path)
@@ -118,11 +123,23 @@ func (cp *GrpcChainProxy) NewMessage(path string, data []byte) (*GrpcMessage, er
 		return nil, utils.LavaFormatError("failed to get supported api in NewMessage", err, &map[string]string{"path": path})
 	}
 
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
 	nodeMsg := &GrpcMessage{
-		cp:         cp,
-		serviceApi: serviceApi,
-		path:       path,
-		msg:        data,
+		cp:           cp,
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		path:         path,
+		msg:          data,
 	}
 
 	return nodeMsg, nil
@@ -137,9 +154,9 @@ func (cp *GrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
+		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), http.MethodGet)
 	} else {
-		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil)
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, http.MethodGet)
 	}
 
 	if err != nil {
@@ -172,7 +189,7 @@ func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := make(json.RawMessage, 0)
-	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params)
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, http.MethodGet)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("new Message creation Failed at FetchLatestBlockNum", err, nil)
 	}
@@ -218,6 +235,17 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	serviceApi, err := cp.getSupportedApi(path)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to getSupportedApi gRPC", err, nil)
+	}
+
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
 	nodeMsg := &GrpcMessage{
