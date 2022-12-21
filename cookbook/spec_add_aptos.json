@@ -2,212 +2,221 @@
     "title": "Add Specs: Aptos",
     "description": "Adding new specification support for relaying Aptos data on Lava",
     "specs": [
-      {
-        "chainid": "APT1",
-        "name": "Aptos Mainnet",
-        "enabled": true,
-        "reliability_threshold": 268435455,
-        "compares_hashes": true,
-        "finalization_criteria": 0,
-        "saved_blocks": 1,
-        "average_block_time": "100",
-        "allowed_block_lag_for_qos_sync": "2",
-        "apis": [{
-            "name": "/accounts/{address}",
-            "category": {
-              "deterministic": true,
-              "local": false,
-              "subscription": false,
-              "stateful": 0
-            },
-            "block_parsing": {
-              "parserArg": [
-              "latest"
-              ],
-              "parserFunc": "DEFAULT"
-            },
-            "compute_units": "10",
+        {
+            "chainid": "APT1",
+            "name": "Aptos Mainnet",
             "enabled": true,
-            "apiInterfaces": [
-              {
-                "interface": "rest",
-                "type": "get",
-                "extra_compute_units": "0"
-              }
-            ]
-          },{
-            "name": "/accounts/{address}/resources",
-            "category": {
-              "deterministic": true,
-              "local": false,
-              "subscription": false,
-              "stateful": 0
-            },
-            "block_parsing": {
-              "parserArg": [
-              "latest"
-              ],
-              "parserFunc": "DEFAULT"
-            },
-            "compute_units": "10",
-            "enabled": true,
-            "apiInterfaces": [
-              {
-                "interface": "rest",
-                "type": "get",
-                "extra_compute_units": "0"
-              }
-            ]
-            },{
-                "name": "/accounts/{address}/modules",
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
+            "reliability_threshold": 268435455,
+            "compares_hashes": true,
+            "finalization_criteria": 0,
+            "saved_blocks": 1,
+            "average_block_time": "100",
+            "allowed_block_lag_for_qos_sync": "2",
+            "apis": [
+                {
+                    "name": "/accounts/{address}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "block_parsing": {
-                  "parserArg": [
-                  "latest"
-                  ],
-                  "parserFunc": "DEFAULT"
+                {
+                    "name": "/accounts/{address}/resources",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ]
-            },{
-                "name": "/accounts/{address}/resource/{resource_type}",
-                "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
+                {
+                    "name": "/accounts/{address}/modules",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
+                {
+                    "name": "/accounts/{address}/resource/{resource_type}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
+                    "name": "/accounts/{address}/module/{module_name}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
+                    "name": "/blocks/by_height/{block_height}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "0"
+                        ],
+                        "parserFunc": "PARSE_BY_ARG"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
                     ],
-                    "parserFunc": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
+                    "parsing": {
+                        "function_template": "/blocks/by_height/%d",
+                        "function_tag": "getBlockByNumber",
+                        "result_parsing": {
+                            "parserArg": [
+                                "0",
+                                "block_height"
+                            ],
+                            "parserFunc": "PARSE_CANONICAL"
+                        }
                     }
-                ]
-            },{
-                "name": "/accounts/{address}/module/{module_name}",
-                "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
                 },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
-                    ],
-                    "parserFunc": "DEFAULT"
+                {
+                    "name": "/blocks/by_version/{version}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    }
-                ]
-            },{
-                "name": "/blocks/by_height/{block_height}",
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
+                {
+                    "name": "/events/{event_key}",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "block_parsing": {
-                  "parserArg": [
-                    "0"
-                  ],
-                  "parserFunc": "PARSE_BY_ARG"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                  {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                  }
-                ],
-                "parsing": {
-                  "function_template": "/blocks/by_height/%d",
-                  "function_tag": "getBlockByNumber",
-                  "result_parsing": {
-                    "parserArg": [
-                      "0",
-                      "block_height"
-                    ],
-                    "parserFunc": "PARSE_CANONICAL"
-                  }
-                }
-            },{
-                "name": "/blocks/by_version/{version}",
-                "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
-                },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
-                    ],
-                    "parserFunc": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    }
-                ]
-            },{
-                "name": "/events/{event_key}",
-                "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
-                },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
-                    ],
-                    "parserFunc": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    }
-                ]
-                },{
+                {
                     "name": "/accounts/{address}/events/{creation_number}",
                     "category": {
                         "deterministic": true,
@@ -217,7 +226,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -225,12 +234,13 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
                         }
                     ]
-                },{
+                },
+                {
                     "name": "/accounts/{address}/events/{event_handle}/{field_name}",
                     "category": {
                         "deterministic": true,
@@ -240,7 +250,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -248,12 +258,13 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
                         }
                     ]
-                },{
+                },
+                {
                     "name": "/spec",
                     "category": {
                         "deterministic": false,
@@ -263,7 +274,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -271,12 +282,13 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
                         }
                     ]
-                },{
+                },
+                {
                     "name": "/-/healthy",
                     "category": {
                         "deterministic": false,
@@ -286,7 +298,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -294,12 +306,13 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
                         }
                     ]
-                },{
+                },
+                {
                     "name": "/",
                     "category": {
                         "deterministic": false,
@@ -309,7 +322,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -317,23 +330,24 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
                         }
                     ],
                     "parsing": {
                         "function_template": "/",
                         "function_tag": "getBlockNumber",
                         "result_parsing": {
-                          "parserArg": [
-                            "0",
-                            "block_height"
-                          ],
-                          "parserFunc": "PARSE_CANONICAL"
+                            "parserArg": [
+                                "0",
+                                "block_height"
+                            ],
+                            "parserFunc": "PARSE_CANONICAL"
                         }
-                      }
-                },{
+                    }
+                },
+                {
                     "name": "/tables/{table_handle}/item",
                     "category": {
                         "deterministic": false,
@@ -343,7 +357,7 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
@@ -351,12 +365,13 @@
                     "enabled": true,
                     "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "post",
-                        "extra_compute_units": "0"
+                            "interface": "rest",
+                            "type": "post",
+                            "extra_compute_units": "0"
                         }
                     ]
-                },{
+                },
+                {
                     "name": "/transactions",
                     "category": {
                         "deterministic": false,
@@ -366,25 +381,26 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
                     "compute_units": "10",
                     "enabled": true,
                     "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    },
-                    {
-                        "interface": "rest",
-                        "type": "post",
-                        "extra_compute_units": "0"
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        },
+                        {
+                            "interface": "rest",
+                            "type": "post",
+                            "extra_compute_units": "0"
                         }
-                ]
-                },{
+                    ]
+                },
+                {
                     "name": "/transactions/by_hash/{txn_hash}",
                     "category": {
                         "deterministic": true,
@@ -394,20 +410,21 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
                     "compute_units": "10",
                     "enabled": true,
                     "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    }                    
-                ]
-                },{
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
                     "name": "/transactions/by_version/{txn_version}",
                     "category": {
                         "deterministic": true,
@@ -417,65 +434,69 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
                     "compute_units": "10",
                     "enabled": true,
                     "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "get",
-                    "extra_compute_units": "0"
-                    }                    
-                ]
-            },{
-                "name": "/accounts/{address}/transactions",
-                "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
-                    ],
-                    "parserFunc": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
                 {
-                "interface": "rest",
-                "type": "get",
-                "extra_compute_units": "0"
-                }                    
-            ]
-            },{
-                "name": "/transactions/batch",
-                "category": {
-                    "deterministic": false,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
+                    "name": "/accounts/{address}/transactions",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 },
-                "block_parsing": {
-                    "parserArg": [
-                    "latest"
-                    ],
-                    "parserFunc": "DEFAULT"
-                },
-                "compute_units": "10",
-                "enabled": true,
-                "apiInterfaces": [
                 {
-                "interface": "rest",
-                "type": "post",
-                "extra_compute_units": "0"
-                }]
-                },{
+                    "name": "/transactions/batch",
+                    "category": {
+                        "deterministic": false,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "post",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
                     "name": "/transactions/simulate",
                     "category": {
                         "deterministic": false,
@@ -485,65 +506,70 @@
                     },
                     "block_parsing": {
                         "parserArg": [
-                        "latest"
+                            "latest"
                         ],
                         "parserFunc": "DEFAULT"
                     },
                     "compute_units": "10",
                     "enabled": true,
                     "apiInterfaces": [
-                    {
-                    "interface": "rest",
-                    "type": "post",
-                    "extra_compute_units": "0"
-                    }]
-                    },{
-                        "name": "/transactions/encode_submission",
-                        "category": {
-                            "deterministic": false,
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
-                        "block_parsing": {
-                            "parserArg": [
-                            "latest"
-                            ],
-                            "parserFunc": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "post",
-                        "extra_compute_units": "0"
-                        }]
-                    },{
-                        "name": "/estimate_gas_price",
-                        "category": {
-                            "deterministic": true,
-                            "local": false,
-                            "subscription": false,
-                            "stateful": 0
-                        },
-                        "block_parsing": {
-                            "parserArg": [
+                            "interface": "rest",
+                            "type": "post",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
+                    "name": "/transactions/encode_submission",
+                    "category": {
+                        "deterministic": false,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
                             "latest"
-                            ],
-                            "parserFunc": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "apiInterfaces": [
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
                         {
-                        "interface": "rest",
-                        "type": "get",
-                        "extra_compute_units": "0"
-                        }]
+                            "interface": "rest",
+                            "type": "post",
+                            "extra_compute_units": "0"
+                        }
+                    ]
+                },
+                {
+                    "name": "/estimate_gas_price",
+                    "category": {
+                        "deterministic": true,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 0
+                    },
+                    "block_parsing": {
+                        "parserArg": [
+                            "latest"
+                        ],
+                        "parserFunc": "DEFAULT"
+                    },
+                    "compute_units": "10",
+                    "enabled": true,
+                    "apiInterfaces": [
+                        {
+                            "interface": "rest",
+                            "type": "get",
+                            "extra_compute_units": "0"
+                        }
+                    ]
                 }
-        ]
-      }
+            ]
+        }
     ],
     "deposit": "10000000ulava"
-  }
+}

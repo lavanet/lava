@@ -53330,8 +53330,6 @@ definitions:
       CacheMisses:
         type: string
         format: uint64
-  lavanet.lava.pairing.Empty:
-    type: object
   lavanet.lava.pairing.EpochPayments:
     type: object
     properties:
