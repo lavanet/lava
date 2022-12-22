@@ -1,17 +1,17 @@
 {
-  "title": "Epoch params change",
-  "description": "to validate we support param changes",
-  "changes": [
-    {
-      "subspace": "user",
-      "key": "SessionBlocks",
-      "value": "21"
-    },
-    {
-        "subspace": "user",
-        "key": "SessionsToSave",
-        "value": "8"
-      }
-  ],
-  "deposit": "10000000ulava"
+    "title": "Epoch params change",
+    "description": "to validate we support param changes",
+    "changes": [
+        {
+            "subspace": "user",
+            "key": "SessionBlocks",
+            "value": "21"
+        },
+        {
+            "subspace": "user",
+            "key": "SessionsToSave",
+            "value": "8"
+        }
+    ],
+    "deposit": "10000000ulava"
 }

@@ -141,11 +141,11 @@ screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_
 screen -S portals -X screen -t win18 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3351 POLYGON1 jsonrpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3351.log"
 
 # grpc portals
-screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3352 LAV1 grpc $EXTRA_PORTAL_FLAGS--log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3352.log"
-screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3353 COS3 grpc $EXTRA_PORTAL_FLAGS--log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3353.log"
-screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3354 COS4 grpc $EXTRA_PORTAL_FLAGS--log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3354.log"
-screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3355 JUN1 grpc $EXTRA_PORTAL_FLAGS--log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3355.log"
-screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3356 COS5 grpc $EXTRA_PORTAL_FLAGS--log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3356.log"
+screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3352 LAV1 grpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3352.log"
+screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3353 COS3 grpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3353.log"
+screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3354 COS4 grpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3354.log"
+screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3355 JUN1 grpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3355.log"
+screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3356 COS5 grpc $EXTRA_PORTAL_FLAGS --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3356.log"
 
 
 

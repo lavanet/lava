@@ -539,6 +539,13 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	}
 
 	// Checks
+	if g_sentry.Acc != request.Provider {
+		return nil, nil, nil, nil, utils.LavaFormatError("User is trying to communicate with the wrong provider address.", nil, &map[string]string{
+			"ProviderWhoGotTheRequest": g_sentry.Acc,
+			"ProviderInTheRequest":     request.Provider,
+		})
+	}
+
 	user, err := getRelayUser(request)
 	if err != nil {
 		return nil, nil, nil, nil, utils.LavaFormatError("get relay user", err, &map[string]string{})

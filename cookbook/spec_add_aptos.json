@@ -26,12 +26,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -50,12 +50,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -74,12 +74,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -98,12 +98,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -122,12 +122,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -146,12 +146,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -181,12 +181,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -205,12 +205,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -229,12 +229,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -253,12 +253,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -277,12 +277,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -301,12 +301,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -325,12 +325,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -360,12 +360,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "POST",
                                 "extra_compute_units": "0"
@@ -384,23 +384,23 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
                             },
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "POST",
                                 "extra_compute_units": "0"
@@ -419,12 +419,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -443,12 +443,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -467,12 +467,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"
@@ -491,12 +491,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "POST",
                                 "extra_compute_units": "0"
@@ -515,12 +515,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "POST",
                                 "extra_compute_units": "0"
@@ -539,12 +539,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": false,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "POST",
                                 "extra_compute_units": "0"
@@ -563,12 +563,12 @@
                         "enabled": true,
                         "api_interfaces": [
                             {
-		                        "category": {
-		                            "deterministic": true,
-		                            "local": false,
-		                            "subscription": false,
-		                            "stateful": 0
-		                        },
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
                                 "interface": "rest",
                                 "type": "GET",
                                 "extra_compute_units": "0"

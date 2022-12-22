@@ -998,9 +998,6 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	}
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
 	require.Equal(t, uint64(relayRequest.GetBlockHeight()), providerPaymentStorageFromEpochPayments.GetEpoch())
-	usedCUFromproviderPaymentStorageFromEpochPayments, err := ts.keepers.Pairing.GetTotalUsedCUForConsumerPerEpoch(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].address.String(), providerPaymentStorageFromEpochPayments.UniquePaymentStorageClientProvider, ts.providers[0].address.String())
-	require.Nil(t, err)
-	require.Equal(t, relayRequest.GetCuSum(), usedCUFromproviderPaymentStorageFromEpochPayments)
 
 	// Get the UniquePaymentStorageClientProvider key
 	uniquePaymentStorageClientProviderKey := ts.keepers.Pairing.EncodeUniquePaymentKey(sdk.UnwrapSDKContext(ts.ctx), ts.clients[0].address, ts.providers[0].address, strconv.FormatUint(relayRequest.SessionId, 16), ts.spec.Name)
@@ -1014,6 +1011,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	}
 	require.NotEmpty(t, uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetIndex())
 	require.Equal(t, uint64(relayRequest.GetBlockHeight()), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetBlock())
+	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetUsedCU())
 
 	// when checking CU, the client may be trying to use a relay request with more CU than his MaxCU (determined by StakeThreshold)
 	clientStakeEntry, err := ts.keepers.Epochstorage.GetStakeEntryForClientEpoch(sdk.UnwrapSDKContext(ts.ctx), relayRequest.GetChainID(), ts.clients[0].address, uint64(relayRequest.GetBlockHeight()))
@@ -1041,4 +1039,5 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 	} else {
 		require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProvider.GetUsedCU())
 	}
+	require.Equal(t, relayRequest.GetCuSum(), uniquePaymentStorageClientProvider.GetUsedCU())
 }
