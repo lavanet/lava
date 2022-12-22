@@ -99,8 +99,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		for _, api := range spec.Apis {
-			for _, apiInterface := range api.ApiInterfaces {
-				expectedInterfaces[apiInterface.Interface] = true
+			if api.Enabled {
+				for _, apiInterface := range api.ApiInterfaces {
+					expectedInterfaces[apiInterface.Interface] = true
+				}
 			}
 		}
 	}
@@ -112,5 +114,5 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 	if !found {
 		return false
 	}
-	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.FinalizationCriteria)
+	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.BlockDistanceForFinalizedData)
 }

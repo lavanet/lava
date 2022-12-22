@@ -2,6 +2,7 @@ package testclients
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/lavanet/lava/utils"
@@ -20,13 +21,13 @@ func StarknetTests(ctx context.Context, chainID string, rpcURL string, chainProx
 
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for j := 0; j < 10; j++ {
-			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, JSONRPC_STRK_BLOCKNUMBER, "", "starkner_test")
+			reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, JSONRPC_STRK_BLOCKNUMBER, http.MethodGet, "starknet_test")
 			if err != nil {
 				return utils.LavaFormatError("error starknet_blockNumber", err, nil)
 			}
 			prettyPrintReply(*reply, "JSONRPC_STRK_BLOCKNUMBER")
 
-			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, JSONRPC_STRK_BLOCKHASHANDNUMBER, "", "starkner_test")
+			reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, JSONRPC_STRK_BLOCKHASHANDNUMBER, http.MethodGet, "starknet_test")
 			if err != nil {
 				return utils.LavaFormatError("error starknet_blockHashAndNumber", err, nil)
 			}

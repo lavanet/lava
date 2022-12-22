@@ -44,7 +44,7 @@ func CmdListSpec() *cobra.Command {
 
 func CmdShowSpec() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show-Spec [index]",
+		Use:   "show-spec [index]",
 		Short: "shows a Spec",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {

@@ -1,0 +1,4 @@
+FROM golang:1.18.3-alpine as build
+
+WORKDIR /lava
+COPY . .

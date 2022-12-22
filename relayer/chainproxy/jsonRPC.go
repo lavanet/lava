@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"math/rand"
+	"net/http"
 	"strconv"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -35,6 +34,7 @@ type JsonrpcMessage struct {
 type JrpcMessage struct {
 	cp             *JrpcChainProxy
 	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
 	msg            *JsonrpcMessage
 	requestedBlock int64
 }
@@ -139,7 +139,7 @@ func (cp *JrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
+		nodeMsg, err = cp.ParseMsg("", []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), http.MethodGet)
 	} else {
 		params := make([]interface{}, 0)
 		params = append(params, blockNum)
@@ -223,6 +223,18 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
+
+	var apiInterface *spectypes.ApiInterface = nil
+	for i := range serviceApi.ApiInterfaces {
+		if serviceApi.ApiInterfaces[i].Type == connectionType {
+			apiInterface = &serviceApi.ApiInterfaces[i]
+			break
+		}
+	}
+	if apiInterface == nil {
+		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
 	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
 	if err != nil {
 		return nil, err
@@ -230,6 +242,7 @@ func (cp *JrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	nodeMsg := &JrpcMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
 		msg:            &msg,
 		requestedBlock: requestedBlock,
 	}
@@ -281,11 +294,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			msg []byte
 			err error
 		)
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), "", "", msgSeed, err)
-				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 				break
 			}
 			utils.LavaFormatInfo("ws in <<<", &map[string]string{"seed": msgSeed, "msg": string(msg)})
@@ -293,10 +305,9 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), "", dappID)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
 			if err != nil {
-				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 				continue
 			}
 
@@ -305,42 +316,37 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				var reply pairingtypes.RelayReply
 				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
-					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 					continue
 				}
-				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
-						cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-						cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+						cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 						break
 					}
 
 					// If portal cant write to the client
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
 						cancel()
-						cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-						cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+						cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 						// break
 					}
 
-					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
 				}
 			} else {
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
-					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed)
+					cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "jsonrpc")
 					continue
 				}
-				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), "", nil)
+				cp.portalLogs.LogRequestAndResponse("jsonrpc ws msg", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
 			}
 		}
 	})
@@ -350,28 +356,32 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
-		msgSeed := strconv.Itoa(rand.Intn(10000000000))
+		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), "", dappID)
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
 		if err != nil {
-			msgSeed := cp.portalLogs.GetUniqueGuidResponseForError(err)
-			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), "", msgSeed, err)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, err))
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
 		}
-		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), "", nil)
+		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
 		return c.SendString(string(reply.Data))
 	})
 
 	// Go
 	err := app.Listen(listenAddr)
 	if err != nil {
-		log.Println(err)
+		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
 }
 
 func (nm *JrpcMessage) GetServiceApi() *spectypes.ServiceApi {
 	return nm.serviceApi
+}
+
+func (nm *JrpcMessage) GetInterface() *spectypes.ApiInterface {
+	return nm.apiInterface
 }
 
 func (nm *JrpcMessage) RequestedBlock() int64 {

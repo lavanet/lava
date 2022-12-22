@@ -32,6 +32,7 @@ import (
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type lavaTest struct {
@@ -140,6 +141,7 @@ func (lt *lavaTest) checkStakeLava() {
 			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) == 0 {
+			fmt.Println("ProviderQueryRes: ", providerQueryRes)
 			panic("Staking Failed PROVIDER")
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
@@ -665,7 +667,7 @@ func runE2E() {
 	if gopath == "" {
 		gopath = build.Default.GOPATH
 	}
-	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithInsecure())
+	grpcConn, err := grpc.Dial("127.0.0.1:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		// Just log because grpc redials
 		fmt.Println(err)

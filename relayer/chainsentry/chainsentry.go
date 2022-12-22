@@ -181,8 +181,8 @@ func NewChainSentry(
 	return &ChainSentry{
 		chainProxy:             cp,
 		ChainID:                chainID,
-		numFinalBlocks:         int(cp.GetSentry().GetSpecSavedBlocks()),
-		finalizedBlockDistance: int(cp.GetSentry().GetSpecFinalizationCriteria()),
+		numFinalBlocks:         int(cp.GetSentry().GetSpecBlocksInFinalizationProof()),
+		finalizedBlockDistance: int(cp.GetSentry().GetSpecBlockDistanceForFinalizedData()),
 		quit:                   make(chan bool),
 	}
 }

@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
+  rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
   rpc StakeClient(MsgStakeClient) returns (MsgStakeClientResponse);
   rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
   rpc UnstakeClient(MsgUnstakeClient) returns (MsgUnstakeClientResponse);
