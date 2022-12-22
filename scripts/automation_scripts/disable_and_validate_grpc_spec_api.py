@@ -10,7 +10,7 @@ input_files = [
 for f in input_files:
     with open(f,"r") as fr:
         data = json.load(fr)
-    for spec in data["specs"]:
+    for spec in data['proposal']['specs']:
         for api in spec["apis"]:
             for apiInterface in api["api_interfaces"]:
                 if apiInterface["interface"] == "grpc":
