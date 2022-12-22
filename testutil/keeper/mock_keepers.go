@@ -120,7 +120,7 @@ func (b *MockBlockStore) SetHeight(height int64) {
 	b.height = height
 }
 
-func (b *MockBlockStore) AdvanceBlock(blockTimeLen time.Duration) {
+func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
 	// keep block height in mock blockstore
 	blockInt64 := b.height + 1
 	b.SetHeight(blockInt64)
@@ -129,7 +129,7 @@ func (b *MockBlockStore) AdvanceBlock(blockTimeLen time.Duration) {
 	blockHeader := tenderminttypes.Header{}
 	blockHeader.Height = blockInt64
 	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
-		blockHeader.Time = prevBlock.Time.Add(blockTimeLen)
+		blockHeader.Time = prevBlock.Time.Add(blockTime)
 	} else {
 		blockHeader.Time = time.Now()
 	}
@@ -163,8 +163,7 @@ func (b *MockBlockStore) LoadBlockMeta(height int64) *tenderminttypes.BlockMeta 
 }
 
 func (b *MockBlockStore) LoadBlock(height int64) *tenderminttypes.Block {
-	block := b.blockHistory[height]
-	return block
+	return b.blockHistory[height]
 }
 
 func (b *MockBlockStore) SaveBlock(block *tenderminttypes.Block, blockParts *tenderminttypes.PartSet, seenCommit *tenderminttypes.Commit) {
