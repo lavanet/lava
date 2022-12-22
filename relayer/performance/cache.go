@@ -54,5 +54,5 @@ func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayReq
 		return
 	}
 	// TODO: handle disconnections and SetRelay error types here
-	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, Response: reply, Finalized: finalized, BucketID: bucketID})
+	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Response: reply, Finalized: finalized, BucketID: bucketID})
 }
