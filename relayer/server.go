@@ -539,6 +539,13 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	}
 
 	// Checks
+	if g_sentry.Acc != request.Provider {
+		return nil, nil, nil, nil, utils.LavaFormatError("User is trying to communicate with the wrong provider address.", nil, &map[string]string{
+			"ProviderWhoGotTheRequest": g_sentry.Acc,
+			"ProviderInTheRequest":     request.Provider,
+		})
+	}
+
 	user, err := getRelayUser(request)
 	if err != nil {
 		return nil, nil, nil, nil, utils.LavaFormatError("get relay user", err, &map[string]string{})
@@ -1238,11 +1245,6 @@ func Server(
 
 	pairingtypes.RegisterRelayerServer(s, Server)
 
-	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
-	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": chainID})
-	}
-
 	cacheAddr, err := flagSet.GetString(performance.CacheFlagName)
 	if err != nil {
 		utils.LavaFormatError("Failed To Get Cache Address flag", err, &map[string]string{"flags": fmt.Sprintf("%v", flagSet)})
@@ -1255,5 +1257,12 @@ func Server(
 			chainProxy.SetCache(cache)
 		}
 	}
+
+	utils.LavaFormatInfo("Server listening", &map[string]string{"Address": lis.Addr().String()})
+	// serve is blocking, until terminated
+	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+		utils.LavaFormatFatal("provider failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": chainID})
+	}
+	// in case we stop serving, claim rewards
 	askForRewards(int64(g_sentry.GetCurrentEpochHeight()))
 }
