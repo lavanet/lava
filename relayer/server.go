@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -694,9 +693,8 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 
 		relaySession.Lock.Lock()
 
-		// Make copy of relay request and save it as session proof
-		relaySession.Proof = &pairingtypes.RelayRequest{}
-		reflect.ValueOf(relaySession.Proof).Elem().Set(reflect.ValueOf(request).Elem())
+		// Make a shallow copy of relay request and save it as session proof
+		relaySession.Proof = request.ShallowCopy()
 
 		relaySession.Lock.Unlock()
 	}
