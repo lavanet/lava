@@ -12,7 +12,7 @@ for f in input_files:
         data = json.load(fr)
     for spec in data["specs"]:
         for api in spec["apis"]:
-            for apiInterface in api["apiInterfaces"]:
+            for apiInterface in api["api_interfaces"]:
                 if apiInterface["interface"] == "grpc":
                     api["enabled"] = False
 
