@@ -104,7 +104,6 @@ func main() {
 			enablePprofFlagUsed := cmd.Flags().Lookup("enable-pprof").Changed
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
 			if enablePprofFlagUsed {
-
 				// get pprof server ip address (default value: 127.0.0.1:8080)
 				pprofServerAddress, err := cmd.Flags().GetString("pprof-address")
 				if err != nil {
@@ -116,7 +115,6 @@ func main() {
 				if err != nil {
 					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
 				}
-
 			} else if pprofAddressFlagUsed {
 				return fmt.Errorf("cannot assign pprof server address. use the --enable-pprof flag to enable pprof")
 			}

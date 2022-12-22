@@ -13,7 +13,6 @@ const PprofAddressFlagName = "pprof-address"
 const PprofAddressDefaultValue = "127.0.0.1:8080"
 
 func StartPprofServer(addr string) error {
-
 	// Set up the Fiber app
 	app := fiber.New()
 
