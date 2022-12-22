@@ -71,9 +71,9 @@ screen -S cos3_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad s
 screen -S cos3_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2241 $OSMO_RPC COS3 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2241.log"
 screen -S cos3_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2242 $OSMO_RPC COS3 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS3_2242.log"
 screen -S cos3_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2243 $OSMO_RPC COS3 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS3_2243.log"
-screen -S cos3_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2234 $OSMO_GRPC COS3 grpc --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2234.log"
-screen -S cos3_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2235 $OSMO_GRPC COS3 grpc --from servicer2 2>&1 | tee $LOGS_DIR/COS3_2235.log"
-screen -S cos3_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2236 $OSMO_GRPC COS3 grpc --from servicer3 2>&1 | tee $LOGS_DIR/COS3_2236.log"
+screen -S cos3_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2234 $OSMO_GRPC COS3 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS3_2234.log"
+screen -S cos3_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2235 $OSMO_GRPC COS3 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS3_2235.log"
+screen -S cos3_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2236 $OSMO_GRPC COS3 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS3_2236.log"
 
 # Osmosis testnet providers
 screen -d -m -S cos4_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 4231 $OSMO_TEST_REST COS4 rest $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4231.log" && sleep 0.25
@@ -82,9 +82,9 @@ screen -S cos4_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad s
 screen -S cos4_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4241 $OSMO_TEST_RPC COS4 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4241.log"
 screen -S cos4_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4242 $OSMO_TEST_RPC COS4 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS4_4242.log"
 screen -S cos4_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4243 $OSMO_TEST_RPC COS4 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS4_4243.log"
-screen -S cos4_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4234 $OSMO_TEST_GRPC COS4 grpc --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4234.log"
-screen -S cos4_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4235 $OSMO_TEST_GRPC COS4 grpc --from servicer2 2>&1 | tee $LOGS_DIR/COS4_4235.log"
-screen -S cos4_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4236 $OSMO_TEST_GRPC COS4 grpc --from servicer3 2>&1 | tee $LOGS_DIR/COS4_4236.log"
+screen -S cos4_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4234 $OSMO_TEST_GRPC COS4 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS4_4234.log"
+screen -S cos4_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4235 $OSMO_TEST_GRPC COS4 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS4_4235.log"
+screen -S cos4_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 4236 $OSMO_TEST_GRPC COS4 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS4_4236.log"
 
 # Lava providers
 screen -d -m -S lav1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2271 $LAVA_REST LAV1 rest $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2271.log" && sleep 0.25
@@ -93,9 +93,9 @@ screen -S lav1_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad s
 screen -S lav1_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2261 $LAVA_RPC LAV1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2261.log"
 screen -S lav1_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2262 $LAVA_RPC LAV1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2262.log"
 screen -S lav1_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2263 $LAVA_RPC LAV1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2263.log"
-screen -S lav1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2274 $LAVA_GRPC LAV1 grpc --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2274.log"
-screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2275 $LAVA_GRPC LAV1 grpc --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2275.log"
-screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2276 $LAVA_GRPC LAV1 grpc --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2276.log"
+screen -S lav1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2274 $LAVA_GRPC LAV1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/LAV1_2274.log"
+screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2275 $LAVA_GRPC LAV1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/LAV1_2275.log"
+screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2276 $LAVA_GRPC LAV1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2276.log"
 
 # Cosmoshub providers
 screen -d -m -S cos5_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2331 $GAIA_REST COS5 rest $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2331.log"
@@ -104,9 +104,9 @@ screen -S cos5_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad s
 screen -S cos5_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2344 $GAIA_RPC COS5 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2341.log"
 screen -S cos5_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2342 $GAIA_RPC COS5 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2342.log"
 screen -S cos5_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2343 $GAIA_RPC COS5 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2343.log"
-screen -S cos5_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2334 $GAIA_GRPC COS5 grpc --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2334.log"
-screen -S cos5_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2335 $GAIA_GRPC COS5 grpc --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2335.log"
-screen -S cos5_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2336 $GAIA_GRPC COS5 grpc --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2336.log"
+screen -S cos5_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2334 $GAIA_GRPC COS5 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/COS5_2334.log"
+screen -S cos5_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2335 $GAIA_GRPC COS5 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/COS5_2335.log"
+screen -S cos5_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2336 $GAIA_GRPC COS5 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/COS5_2336.log"
 
 # Juno providers
 screen -d -m -S jun1_providers bash -c "source ~/.bashrc; lavad server 127.0.0.1 2371 $JUNO_REST JUN1 rest $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2371.log"
@@ -115,9 +115,9 @@ screen -S jun1_providers -X screen -t win2 -X bash -c "source ~/.bashrc; lavad s
 screen -S jun1_providers -X screen -t win3 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2361 $JUNO_RPC JUN1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2361.log"
 screen -S jun1_providers -X screen -t win4 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2362 $JUNO_RPC JUN1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2362.log"
 screen -S jun1_providers -X screen -t win5 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2363 $JUNO_RPC JUN1 tendermintrpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2363.log"
-screen -S jun1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2374 $JUNO_GRPC JUN1 grpc --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2374.log"
-screen -S jun1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2375 $JUNO_GRPC JUN1 grpc --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2375.log"
-screen -S jun1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2376 $JUNO_GRPC JUN1 grpc --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2376.log"
+screen -S jun1_providers -X screen -t win6 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2374 $JUNO_GRPC JUN1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/JUN1_2374.log"
+screen -S jun1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2375 $JUNO_GRPC JUN1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/JUN1_2375.log"
+screen -S jun1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2376 $JUNO_GRPC JUN1 grpc $EXTRA_PROVIDER_FLAGS --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/JUN1_2376.log"
 
 # Setup Portals
 screen -d -m -S portals bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_ETH_3333.log" && sleep 0.25
@@ -141,11 +141,11 @@ screen -S portals -X screen -t win17 -X bash -c "source ~/.bashrc; lavad portal_
 screen -S portals -X screen -t win18 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3351 POLYGON1 jsonrpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3351.log"
 
 # grpc portals
-screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3352 LAV1 grpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3352.log"
-screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3353 COS3 grpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3353.log"
-screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3354 COS4 grpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3354.log"
-screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3355 JUN1 grpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3355.log"
-screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3356 COS5 grpc --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3356.log"
+screen -S portals -X screen -t win19 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3352 LAV1 grpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3352.log"
+screen -S portals -X screen -t win20 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3353 COS3 grpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3353.log"
+screen -S portals -X screen -t win21 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3354 COS4 grpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3354.log"
+screen -S portals -X screen -t win22 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3355 JUN1 grpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3355.log"
+screen -S portals -X screen -t win23 -X bash -c "source ~/.bashrc; lavad portal_server 127.0.0.1 3356 COS5 grpc --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_3356.log"
 
 
 
