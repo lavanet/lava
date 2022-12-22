@@ -8,9 +8,11 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-const EnablePprofFlagName = "enable-pprof"
-const PprofAddressFlagName = "pprof-address"
-const PprofAddressDefaultValue = "127.0.0.1:8080"
+const (
+	EnablePprofFlagName      = "enable-pprof"
+	PprofAddressFlagName     = "pprof-address"
+	PprofAddressDefaultValue = "127.0.0.1:8080"
+)
 
 func StartPprofServer(addr string) error {
 	// Set up the Fiber app
