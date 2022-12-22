@@ -699,7 +699,10 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 		}
 
 		relaySession.Lock.Lock()
-		relaySession.Proof = request
+
+		// Make a shallow copy of relay request and save it as session proof
+		relaySession.Proof = request.ShallowCopy()
+
 		relaySession.Lock.Unlock()
 	}
 	if userSessions == nil {
