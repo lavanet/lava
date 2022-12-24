@@ -1,62 +1,40 @@
-# lava
-**lava** is a blockchain built using Cosmos SDK and Tendermint and created with [Ignite (Starport)](https://ignite.com/cli).
+<!--
+parent:
+  order: false
+-->
 
-## Get started
+<div align="center">
+  <h1> Lava Network </h1>
+</div>
 
-* install starport on your computer from the starport repository: https://docs.starport.com/guide/install.html
-* install Go Version 1.18 , follow the go installation instructions: https://go.dev/doc/install
-* make sure you set your go environment properly: https://go.dev/doc/gopath_code#GOPATH
-* checkout the repository, you might need a personal token: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+![image](https://user-images.githubusercontent.com/2770565/203528359-dced4d06-f020-4b6a-bb5f-319124924689.png)
 
-## build your chain
-```
-ignite chain serve
-```
-you might want to provide arguments like -v for verbosity or -r for restart, use the help for more
+### What is Lava?
+The Lava Protocol aims to provide decentralized and scalable access to blockchain data through the use of a network of providers and consumers. It utilizes a proof-of-stake consensus mechanism and incentivizes participants through the use of its native LAVA token. The protocol includes features such as a stake-weighted pseudorandom pairing function, backfilling, and a lazy settlement process to improve scalability and efficiency. The roadmap for the Lava Protocol includes further development of governance, conflict resolution, privacy, and quality of service, as well as support for additional API specifications. It is designed to be a public good that enables decentralized access to the Web3 ecosystem.
 
-`serve` command installs dependencies, builds, initializes, and starts your blockchain in development.
+Read more about Lava in the [litepaper](https://lavanet.xyz/assets/lava_litepaper_v0_1.pdf) and visit the [Docs](https://docs.lavanet.xyz/)
 
-### Configure
+## Lava blockchain
 
-Your blockchain in development can be configured with `config.yml`. To learn more, see the [Starport docs](https://docs.starport.com).
+Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
 
-### Web Frontend
+**Note**: Requires [Go 1.19+](https://golang.org/dl/)
 
-Starport has scaffolded a Vue.js-based web app in the `vue` directory. Run the following commands to install dependencies and start the app:
+### Build `lavad`
 
-```
-cd vue
-npm install
-npm run serve
+```bash
+make install
 ```
 
-The frontend app is built using the `@starport/vue` and `@starport/vuex` packages. For details, see the [monorepo for Starport front-end development](https://github.com/tendermint/vue).
+Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
-## Release
-To release a new version of your blockchain, create and push a new tag with `v` prefix. A new draft release with the configured targets will be created.
+### Quick Start
 
-```
-git tag v0.1
-git push origin v0.1
-```
+Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet)
 
-After a draft release is created, make your final changes from the release page and publish it.
-## Learn more
+⚠️ THERE'S NO MAINNET LAVA TOKEN, BE AWARE OF SCAMS.
 
-- [Starport](https://starport.com)
-- [Tutorials](https://docs.starport.com/guide)
-- [Starport docs](https://docs.starport.com)
-- [Cosmos SDK docs](https://docs.cosmos.network)
-- [Developer Chat](https://discord.gg/H6wGTY8sxw)
+## Community
 
-# running the chain
-* during dev your chain is running locally with a single validator
-* when compiling a binary called: "lavad", is created by starport on your $GOPATH (and if you configured go environment properly,
-    it should be ~/go/bin/lavad)
-* you can interact with the binary to send transactions and queries
-* ./scripts/init_chain_commands.sh has examples on how to set up an initial chain with 5 servicers and 1 user,
-    for basic testing of pairing on ethereum mainnet, you can run it or have a look at the commands to learn more
-
-
-# Lava e2e Test & Mock Proxy 
-* check out ./testutils/e2e/Readme.md
+- [Discord](https://discord.gg/5VcqgwMmkA)
+- [Twitter](https://twitter.com/lavanetxyz)
