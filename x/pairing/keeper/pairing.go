@@ -8,9 +8,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/rpc/core"
 )
@@ -277,7 +277,7 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (uint64
 
 	// Get a list of the previous epoch's blocks timestamp and height
 	prevEpochTimestampAndHeightList, err := k.getPreviousEpochTimestampsByHeight(ctx, epoch, sampleStep)
-	if lavasession.NoPreviousEpochForAverageBlockTimeCalculationError.Is(err) || lavasession.PreviousEpochStartIsBlockZeroError.Is(err) {
+	if pairingtypes.NoPreviousEpochForAverageBlockTimeCalculationError.Is(err) || pairingtypes.PreviousEpochStartIsBlockZeroError.Is(err) {
 		// if the errors indicate that we're on the first epoch / after a fork or previous epoch start is 0, we return averageBlockTime=0 without an error
 		return 0, nil
 	}
@@ -287,8 +287,12 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (uint64
 
 	// Calculate the average block time from prevEpochTimestampAndHeightList
 	averageBlockTime, err := calculateAverageBlockTimeFromList(ctx, prevEpochTimestampAndHeightList, sampleStep)
+	if pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError.Is(err) || pairingtypes.AverageBlockTimeIsLessOrEqualToZeroError.Is(err) {
+		// we shouldn't fail the get-pairing query because the average block time calculation failed (to indicate the fail, we return 0)
+		return 0, nil
+	}
 	if err != nil {
-		return 0, fmt.Errorf("couldn't get calculate average block time. err: %v", err)
+		return 0, fmt.Errorf("couldn't calculate average block time. err: %v", err)
 	}
 
 	return averageBlockTime, nil
@@ -306,9 +310,9 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64
 	// 2. start of previous epoch is block 0 - we're on the second epoch. To get the block's header using the "core" module, the block height can't be zero (causes panic). In this case, we also return an empty slice and no error
 	prevEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
 	if err != nil {
-		return nil, lavasession.NoPreviousEpochForAverageBlockTimeCalculationError
+		return nil, pairingtypes.NoPreviousEpochForAverageBlockTimeCalculationError
 	} else if prevEpoch == 0 {
-		return nil, lavasession.PreviousEpochStartIsBlockZeroError
+		return nil, pairingtypes.PreviousEpochStartIsBlockZeroError
 	}
 
 	// Get previous epoch timestamps, in sampleStep steps
@@ -318,7 +322,7 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64
 		blockInt64 := int64(block)
 		blockCore, err := core.Block(nil, &blockInt64)
 		if err != nil {
-			return nil, fmt.Errorf("could not get current block header, err: %s", err)
+			return nil, fmt.Errorf("could not get current block header, block: %v, err: %s", blockInt64, err)
 		}
 		currentBlockTimestamp := blockCore.Block.Header.Time.UTC()
 		blockHeightAndTimeStruct := blockHeightAndTime{blockHeight: block, blockTime: currentBlockTimestamp}
@@ -332,7 +336,7 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64
 
 func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList []blockHeightAndTime, sampleStep uint64) (uint64, error) {
 	if len(blockHeightAndTimeList) <= 1 {
-		return 0, fmt.Errorf("not enough elements in blockHeightAndTimeList to calculate averageBlockTime")
+		return 0, utils.LavaFormatError("There isn't enough blockHeight structs in the previous epoch to calculate average block time", pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError, nil)
 	}
 
 	averageBlockTime := time.Duration(math.MaxInt64)
@@ -340,7 +344,7 @@ func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList [
 		// Calculate the average block time creation over sampleStep blocks
 		currentAverageBlockTime := blockHeightAndTimeList[i].blockTime.Sub(blockHeightAndTimeList[i-1].blockTime) / time.Duration(sampleStep)
 		if currentAverageBlockTime <= 0 {
-			return 0, fmt.Errorf("calculated average block time is less than or equal to zero. block %v timestamp: %s, block %v timestamp: %s", blockHeightAndTimeList[i].blockHeight, blockHeightAndTimeList[i].blockTime.String(), blockHeightAndTimeList[i-1].blockHeight, blockHeightAndTimeList[i-1].blockTime.String())
+			return 0, utils.LavaFormatError("calculated average block time is less than or equal to zero", pairingtypes.AverageBlockTimeIsLessOrEqualToZeroError, &map[string]string{"block": fmt.Sprintf("%v", blockHeightAndTimeList[i].blockHeight), "block timestamp": blockHeightAndTimeList[i].blockTime.String(), "prevBlock": fmt.Sprintf("%v", blockHeightAndTimeList[i-1].blockHeight), "prevBlock timestamp": blockHeightAndTimeList[i-1].blockTime.String()})
 		}
 		// save the minimal average block time
 		if averageBlockTime > currentAverageBlockTime {
