@@ -805,7 +805,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply = nil
 	var err error = nil
-	if requestedBlockHash != nil {
+	if requestedBlockHash != nil || finalized {
 		reply, err = cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
 	}
 	if err != nil || reply == nil {
@@ -817,7 +817,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 		}
-		if requestedBlockHash != nil {
+		if requestedBlockHash != nil || finalized {
 			cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
 		}
 	}
