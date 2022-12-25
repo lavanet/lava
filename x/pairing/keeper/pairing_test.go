@@ -75,12 +75,14 @@ func TestGetPairing(t *testing.T) {
 
 	// define tests - different epoch, valid tells if the payment request should work
 	tests := []struct {
-		name string
+		name                string
+		validPairingExists  bool
+		isEpochTimesChanged bool
 	}{
-		{"zeroEpoch"},
-		{"firstEpoch"},
-		{"commonEpoch"},
-		{"epochTimesChanged"},
+		{"zeroEpoch", false, false},
+		{"firstEpoch", true, false},
+		{"commonEpoch", true, false},
+		{"epochTimesChanged", true, true},
 	}
 
 	for _, tt := range tests {
@@ -110,66 +112,67 @@ func TestGetPairing(t *testing.T) {
 
 			// get pairing for client (for epoch zero there is no pairing -> expect to fail)
 			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
-			if tt.name == "zeroEpoch" {
+			if !tt.validPairingExists {
 				require.NotNil(t, err)
 				return
-			}
-			require.Nil(t, err)
-
-			// verify the expected provider
-			require.Equal(t, ts.providers[0].address.String(), pairing.Providers[0].Address)
-
-			// verify the current epoch
-			currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-			require.Equal(t, currentEpoch, pairing.CurrentEpoch)
-
-			// verify the SpecLastUpdatedBlock
-			specLastUpdatedBlock := ts.spec.BlockLastUpdated
-			require.Equal(t, specLastUpdatedBlock, pairing.SpecLastUpdatedBlock)
-
-			// get timestamps from previous epoch
-			prevEpoch, err := ts.keepers.Epochstorage.GetPreviousEpochStartForBlock(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
-			require.Nil(t, err)
-
-			// if prevEpoch == 0 -> averageBlockTime = 0, else calculate the time (like the actual get-pairing function)
-			averageBlockTime := uint64(0)
-			if prevEpoch != 0 {
-				// get timestamps
-				timestampList := []time.Time{}
-				for block := prevEpoch; block <= currentEpoch; block++ {
-					blockCore := ts.keepers.BlockStore.LoadBlock(int64(block))
-					timestampList = append(timestampList, blockCore.Time)
-				}
-
-				// calculate average block time
-				totalTime := uint64(0)
-				for i := 1; i < len(timestampList); i++ {
-					totalTime += uint64(timestampList[i].Sub(timestampList[i-1]).Seconds())
-				}
-				averageBlockTime = totalTime / epochBlocks
-			}
-
-			// Get the next epoch
-			nextEpochStart, err := ts.keepers.Epochstorage.GetNextEpoch(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
-			require.Nil(t, err)
-
-			// Get epochBlocksOverlap
-			overlapBlocks := ts.keepers.Pairing.EpochBlocksOverlap(sdk.UnwrapSDKContext(ts.ctx))
-
-			// Get number of blocks from the current block to the next epoch
-			blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
-
-			// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
-			timeLeftToNextPairing := blocksUntilNewEpoch * averageBlockTime
-
-			// verify the TimeLeftToNextPairing
-			if tt.name != "epochTimesChanged" {
-				require.Equal(t, timeLeftToNextPairing, pairing.TimeLeftToNextPairing)
 			} else {
-				// averageBlockTime in get-pairing query -> minimal average across sampled epoch
-				// averageBlockTime in this test -> normal average across epoch
-				// we've used a smaller blocktime some of the time -> averageBlockTime from get-pairing is smaller than the averageBlockTime calculated in this test
-				require.Less(t, pairing.TimeLeftToNextPairing, timeLeftToNextPairing)
+				require.Nil(t, err)
+
+				// verify the expected provider
+				require.Equal(t, ts.providers[0].address.String(), pairing.Providers[0].Address)
+
+				// verify the current epoch
+				currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
+				require.Equal(t, currentEpoch, pairing.CurrentEpoch)
+
+				// verify the SpecLastUpdatedBlock
+				specLastUpdatedBlock := ts.spec.BlockLastUpdated
+				require.Equal(t, specLastUpdatedBlock, pairing.SpecLastUpdatedBlock)
+
+				// get timestamps from previous epoch
+				prevEpoch, err := ts.keepers.Epochstorage.GetPreviousEpochStartForBlock(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
+				require.Nil(t, err)
+
+				// if prevEpoch == 0 -> averageBlockTime = 0, else calculate the time (like the actual get-pairing function)
+				averageBlockTime := uint64(0)
+				if prevEpoch != 0 {
+					// get timestamps
+					timestampList := []time.Time{}
+					for block := prevEpoch; block <= currentEpoch; block++ {
+						blockCore := ts.keepers.BlockStore.LoadBlock(int64(block))
+						timestampList = append(timestampList, blockCore.Time)
+					}
+
+					// calculate average block time
+					totalTime := uint64(0)
+					for i := 1; i < len(timestampList); i++ {
+						totalTime += uint64(timestampList[i].Sub(timestampList[i-1]).Seconds())
+					}
+					averageBlockTime = totalTime / epochBlocks
+				}
+
+				// Get the next epoch
+				nextEpochStart, err := ts.keepers.Epochstorage.GetNextEpoch(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
+				require.Nil(t, err)
+
+				// Get epochBlocksOverlap
+				overlapBlocks := ts.keepers.Pairing.EpochBlocksOverlap(sdk.UnwrapSDKContext(ts.ctx))
+
+				// Get number of blocks from the current block to the next epoch
+				blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+
+				// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
+				timeLeftToNextPairing := blocksUntilNewEpoch * averageBlockTime
+
+				// verify the TimeLeftToNextPairing
+				if !tt.isEpochTimesChanged {
+					require.Equal(t, timeLeftToNextPairing, pairing.TimeLeftToNextPairing)
+				} else {
+					// averageBlockTime in get-pairing query -> minimal average across sampled epoch
+					// averageBlockTime in this test -> normal average across epoch
+					// we've used a smaller blocktime some of the time -> averageBlockTime from get-pairing is smaller than the averageBlockTime calculated in this test
+					require.Less(t, pairing.TimeLeftToNextPairing, timeLeftToNextPairing)
+				}
 			}
 
 		})

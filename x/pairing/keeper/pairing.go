@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -276,8 +277,8 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (uint64
 
 	// Get a list of the previous epoch's blocks timestamp and height
 	prevEpochTimestampAndHeightList, err := k.getPreviousEpochTimestampsByHeight(ctx, epoch, sampleStep)
-	if prevEpochTimestampAndHeightList == nil {
-		// if the slice is nil, it means that we're on the first epoch / after a fork, so we return averageBlockTime=0 without an error
+	if lavasession.NoPreviousEpochForAverageBlockTimeCalculationError.Is(err) || lavasession.PreviousEpochStartIsBlockZeroError.Is(err) {
+		// if the errors indicate that we're on the first epoch / after a fork or previous epoch start is 0, we return averageBlockTime=0 without an error
 		return 0, nil
 	}
 	if err != nil {
@@ -304,8 +305,10 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64
 	// 1. no previous epoch - we're on the first epoch / after a fork. Since there is no previous epoch to calculate average time on, return an empty slice and no error
 	// 2. start of previous epoch is block 0 - we're on the second epoch. To get the block's header using the "core" module, the block height can't be zero (causes panic). In this case, we also return an empty slice and no error
 	prevEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
-	if err != nil || prevEpoch == 0 {
-		return nil, nil
+	if err != nil {
+		return nil, lavasession.NoPreviousEpochForAverageBlockTimeCalculationError
+	} else if prevEpoch == 0 {
+		return nil, lavasession.PreviousEpochStartIsBlockZeroError
 	}
 
 	// Get previous epoch timestamps, in sampleStep steps

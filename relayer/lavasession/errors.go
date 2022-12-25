@@ -25,6 +25,8 @@ var ( // Consumer Side Errors
 	DataReliabilityAlreadySentThisEpochError             = sdkerrors.New("DataReliabilityAlreadySentThisEpoch Error", 682, "Trying to send data reliability more than once per provider per epoch")
 	FailedToConnectToEndPointForDataReliabilityError     = sdkerrors.New("FailedToConnectToEndPointForDataReliability Error", 683, "Failed to connect to a providers endpoints")
 	DataReliabilityEpochMismatchError                    = sdkerrors.New("DataReliabilityEpochMismatch Error", 684, "Data reliability epoch mismatch original session epoch.")
+	NoPreviousEpochForAverageBlockTimeCalculationError   = sdkerrors.New("NoPreviousEpochForAverageBlockTimeCalculationError Error", 685, "Can't get previous epoch for average block time calculation.")
+	PreviousEpochStartIsBlockZeroError                   = sdkerrors.New("PreviousEpochStartIsBlockZeroError Error", 686, "Previous epoch start is block 0, can't be used for average block time calculation (core.Block(0) panics).")
 )
 
 var ( // Provider Side Errors
