@@ -323,7 +323,7 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryGetSpecResponse) (retServer
 					// spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
 					continue
 				}
-				if apiInterface.Interface == "rest" {
+				if apiInterface.Interface == spectypes.APIInterfaceRest {
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)

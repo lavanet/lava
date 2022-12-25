@@ -49,13 +49,13 @@ type ChainProxy interface {
 func GetChainProxy(nodeUrl string, nConns uint, sentry *sentry.Sentry, pLogs *PortalLogs) (ChainProxy, error) {
 	consumerSessionManagerInstance := &lavasession.ConsumerSessionManager{}
 	switch sentry.ApiInterface {
-	case "jsonrpc":
+	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
-	case "tendermintrpc":
+	case spectypes.APIInterfaceTendermintRPC:
 		return NewtendermintRpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
-	case "rest":
+	case spectypes.APIInterfaceRest:
 		return NewRestChainProxy(nodeUrl, sentry, consumerSessionManagerInstance, pLogs), nil
-	case "grpc":
+	case spectypes.APIInterfaceGrpc:
 		return NewGrpcChainProxy(nodeUrl, nConns, sentry, consumerSessionManagerInstance, pLogs), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", sentry.ApiInterface)
