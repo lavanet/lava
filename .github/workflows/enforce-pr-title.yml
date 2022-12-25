@@ -1,0 +1,12 @@
+name: Enforce Pull Request Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  enforce-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Pull Request Title includes Jira Issue Key
+        uses: ryanvade/enforce-pr-title-style-action@v1
