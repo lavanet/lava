@@ -114,7 +114,6 @@ func TestGetPairing(t *testing.T) {
 			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
 			if !tt.validPairingExists {
 				require.NotNil(t, err)
-				return
 			} else {
 				require.Nil(t, err)
 
