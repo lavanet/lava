@@ -30390,6 +30390,15 @@ paths:
                       type: string
                     moniker:
                       type: string
+              currentEpoch:
+                type: string
+                format: uint64
+              timeLeftToNextPairing:
+                type: string
+                format: uint64
+              specLastUpdatedBlock:
+                type: string
+                format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -31360,6 +31369,9 @@ paths:
                     allowed_block_lag_for_qos_sync:
                       type: string
                       format: int64
+                    block_last_updated:
+                      type: string
+                      format: uint64
               pagination:
                 type: object
                 properties:
@@ -31606,6 +31618,9 @@ paths:
                   allowed_block_lag_for_qos_sync:
                     type: string
                     format: int64
+                  block_last_updated:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -53354,8 +53369,6 @@ definitions:
       CacheMisses:
         type: string
         format: uint64
-  lavanet.lava.pairing.Empty:
-    type: object
   lavanet.lava.pairing.EpochPayments:
     type: object
     properties:
@@ -53749,6 +53762,15 @@ definitions:
               type: string
             moniker:
               type: string
+      currentEpoch:
+        type: string
+        format: uint64
+      timeLeftToNextPairing:
+        type: string
+        format: uint64
+      specLastUpdatedBlock:
+        type: string
+        format: uint64
   lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse:
     type: object
     properties:
@@ -54190,6 +54212,9 @@ definitions:
             allowed_block_lag_for_qos_sync:
               type: string
               format: int64
+            block_last_updated:
+              type: string
+              format: uint64
       pagination:
         type: object
         properties:
@@ -54349,6 +54374,9 @@ definitions:
           allowed_block_lag_for_qos_sync:
             type: string
             format: int64
+          block_last_updated:
+            type: string
+            format: uint64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
@@ -54624,6 +54652,9 @@ definitions:
       allowed_block_lag_for_qos_sync:
         type: string
         format: int64
+      block_last_updated:
+        type: string
+        format: uint64
   lavanet.lava.spec.SpecCategory:
     type: object
     properties:

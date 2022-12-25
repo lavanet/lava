@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -111,11 +112,34 @@ func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) 
 }
 
 type MockBlockStore struct {
-	height int64
+	height       int64
+	blockHistory map[int64]*tenderminttypes.Block
 }
 
 func (b *MockBlockStore) SetHeight(height int64) {
 	b.height = height
+}
+
+func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
+	// keep block height in mock blockstore
+	blockInt64 := b.height + 1
+	b.SetHeight(blockInt64)
+
+	// create mock block header
+	blockHeader := tenderminttypes.Header{}
+	blockHeader.Height = blockInt64
+	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
+		blockHeader.Time = prevBlock.Time.Add(blockTime)
+	} else {
+		blockHeader.Time = time.Now()
+	}
+
+	// update the blockstore's block history with current block
+	b.SetBlockHistoryEntry(blockInt64, &tenderminttypes.Block{Header: blockHeader})
+}
+
+func (b *MockBlockStore) SetBlockHistoryEntry(height int64, blockCore *tenderminttypes.Block) {
+	b.blockHistory[height] = blockCore
 }
 
 func (b *MockBlockStore) Base() int64 {
@@ -139,7 +163,7 @@ func (b *MockBlockStore) LoadBlockMeta(height int64) *tenderminttypes.BlockMeta 
 }
 
 func (b *MockBlockStore) LoadBlock(height int64) *tenderminttypes.Block {
-	return &tenderminttypes.Block{}
+	return b.blockHistory[height]
 }
 
 func (b *MockBlockStore) SaveBlock(block *tenderminttypes.Block, blockParts *tenderminttypes.PartSet, seenCommit *tenderminttypes.Commit) {

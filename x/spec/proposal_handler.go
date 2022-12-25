@@ -89,6 +89,9 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 		if err != nil {
 			return utils.LavaError(ctx, logger, "invalid_spec", details, err.Error())
 		}
+
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+
 		k.SetSpec(ctx, spec)
 		// TODO: add api types once its implemented to the event
 
@@ -98,6 +101,7 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 		} else {
 			name = SPEC_ADD
 		}
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 
 		utils.LogLavaEvent(ctx, logger, name, details, "Gov Proposal Accepted Spec")
 	}

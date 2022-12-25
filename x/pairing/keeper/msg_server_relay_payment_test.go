@@ -1037,8 +1037,10 @@ func TestRelayPaymentDataReliability(t *testing.T) {
 				require.Nil(t, err)
 
 				vrfRes0, _ := utils.CalculateVrfOnRelay(relayRequest, relayReply, ts.clients[0].vrfSk, currentEpoch)
+				require.Nil(t, err)
 
-				index0, _ = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+				index0, err = utils.GetIndexForVrf(vrfRes0, uint32(ts.keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ts.ctx))), ts.spec.ReliabilityThreshold)
+				require.Nil(t, err)
 
 				providers, err = ts.keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ts.ctx), relayRequest.ChainID, ts.clients[0].address)
 				require.Nil(t, err)

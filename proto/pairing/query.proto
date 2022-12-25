@@ -111,6 +111,9 @@ message QueryGetPairingRequest {
 
 message QueryGetPairingResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
+	uint64 currentEpoch = 2;
+	uint64 timeLeftToNextPairing = 3;
+	uint64 specLastUpdatedBlock = 4;
 }
 
 message QueryVerifyPairingRequest {

@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -25,8 +26,11 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/rpc/core"
+	tenderminttypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 )
+
+const BLOCK_TIME = 30 * time.Second
 
 type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
@@ -36,6 +40,7 @@ type Keepers struct {
 	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
 	ParamsKeeper  paramskeeper.Keeper
+	BlockStore    MockBlockStore
 }
 
 type Servers struct {
@@ -112,6 +117,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
+	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
 
@@ -129,62 +135,80 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 
+	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
+
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 	NewBlock(sdk.WrapSDKContext(ctx), &ks)
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
-func AdvanceBlock(ctx context.Context, ks *Keepers) context.Context {
+func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
 	block := uint64(unwrapedCtx.BlockHeight() + 1)
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
-
-	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
-
+	if len(customBlockTime) > 0 {
+		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks, customBlockTime...)
+	} else {
+		NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	}
 	return sdk.WrapSDKContext(unwrapedCtx)
 }
 
-func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int) context.Context {
-	for i := 0; i < blocks; i++ {
-		ctx = AdvanceBlock(ctx, ks)
+func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int, customBlockTime ...time.Duration) context.Context {
+	if len(customBlockTime) > 0 {
+		for i := 0; i < blocks; i++ {
+			ctx = AdvanceBlock(ctx, ks, customBlockTime...)
+		}
+	} else {
+		for i := 0; i < blocks; i++ {
+			ctx = AdvanceBlock(ctx, ks)
+		}
 	}
 
 	return ctx
 }
 
-func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64) context.Context {
+func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	if uint64(unwrapedCtx.BlockHeight()) == block {
 		return ctx
 	}
 
-	for uint64(unwrapedCtx.BlockHeight()) < block {
-		ctx = AdvanceBlock(ctx, ks)
-		unwrapedCtx = sdk.UnwrapSDKContext(ctx)
+	if len(customBlockTime) > 0 {
+		for uint64(unwrapedCtx.BlockHeight()) < block {
+			ctx = AdvanceBlock(ctx, ks, customBlockTime...)
+			unwrapedCtx = sdk.UnwrapSDKContext(ctx)
+		}
+	} else {
+		for uint64(unwrapedCtx.BlockHeight()) < block {
+			ctx = AdvanceBlock(ctx, ks)
+			unwrapedCtx = sdk.UnwrapSDKContext(ctx)
+		}
 	}
 
 	return ctx
 }
 
 // Make sure you save the new context
-func AdvanceEpoch(ctx context.Context, ks *Keepers) context.Context {
+func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
 	nextEpochBlockNum, err := ks.Epochstorage.GetNextEpoch(unwrapedCtx, ks.Epochstorage.GetEpochStart(unwrapedCtx))
 	if err != nil {
 		panic(err)
 	}
-
+	if len(customBlockTime) > 0 {
+		return AdvanceToBlock(ctx, ks, nextEpochBlockNum, customBlockTime...)
+	}
 	return AdvanceToBlock(ctx, ks, nextEpochBlockNum)
 }
 
 // Make sure you save the new context
-func NewBlock(ctx context.Context, ks *Keepers) {
+func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+	block := uint64(unwrapedCtx.BlockHeight())
 	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		block := uint64(unwrapedCtx.BlockHeight())
-
 		ks.Epochstorage.FixateParams(unwrapedCtx, block)
 		// begin block
 		ks.Epochstorage.SetEpochDetailsStart(unwrapedCtx, block)
@@ -201,7 +225,9 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
 
-	blockstore := MockBlockStore{}
-	blockstore.SetHeight(sdk.UnwrapSDKContext(ctx).BlockHeight())
-	core.SetEnvironment(&core.Environment{BlockStore: &blockstore})
+	if len(customTime) > 0 {
+		ks.BlockStore.AdvanceBlock(customTime[0])
+	} else {
+		ks.BlockStore.AdvanceBlock(BLOCK_TIME)
+	}
 }
