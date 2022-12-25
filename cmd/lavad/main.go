@@ -100,11 +100,10 @@ func main() {
 			}
 			utils.LoggingLevel(logLevel)
 
-			// check if the command includes --enable-pprof
-			enablePprofFlagUsed := cmd.Flags().Lookup("enable-pprof").Changed
+			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
-			if enablePprofFlagUsed {
-				// get pprof server ip address (default value: 127.0.0.1:8080)
+			if pprofAddressFlagUsed {
+				// get pprof server ip address (default value: "")
 				pprofServerAddress, err := cmd.Flags().GetString("pprof-address")
 				if err != nil {
 					utils.LavaFormatFatal("failed to read pprof address flag", err, nil)
@@ -115,8 +114,6 @@ func main() {
 				if err != nil {
 					return utils.LavaFormatError("failed to start pprof HTTP server", err, nil)
 				}
-			} else if pprofAddressFlagUsed {
-				return fmt.Errorf("cannot assign pprof server address. use the --enable-pprof flag to enable pprof")
 			}
 
 			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface, cmd.Flags())
@@ -169,8 +166,7 @@ func main() {
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
-	cmdPortalServer.Flags().Bool(performance.EnablePprofFlagName, false, "enable code profiling using pprof")
-	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, performance.PprofAddressDefaultValue, "address for a pprof server to perform code profiling")
+	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	rootCmd.AddCommand(cmdServer)

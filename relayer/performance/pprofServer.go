@@ -9,9 +9,7 @@ import (
 )
 
 const (
-	EnablePprofFlagName      = "enable-pprof"
-	PprofAddressFlagName     = "pprof-address"
-	PprofAddressDefaultValue = "127.0.0.1:8080"
+	PprofAddressFlagName = "pprof-address"
 )
 
 func StartPprofServer(addr string) error {
