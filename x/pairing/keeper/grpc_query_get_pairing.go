@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -41,7 +42,9 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)
 	timeLeftToNextPairing, err := k.calculateNextEpochTime(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could not calculate time to next pairing, err: %s", err)
+		// we don't want to fail the query if the calculateNextEpochTime function fails. This shouldn't happen, it's a fail-safe
+		utils.LavaFormatError("calculate next epoch time failed. Returning default time=0", err, nil)
+		timeLeftToNextPairing = 0
 	}
 
 	// Get current epoch start block
