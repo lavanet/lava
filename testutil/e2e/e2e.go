@@ -40,7 +40,7 @@ type lavaTest struct {
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
 	logs                 map[string]*bytes.Buffer
-	commands             []exec.Cmd
+	commands             map[string]exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 }
 
@@ -182,9 +182,9 @@ func (lt *lavaTest) startJSONRPCProxy() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["2_jsonProxy"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startJSONRPCProxy process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startJSONRPCProxy process returned unexpectedly", "startJSONRPCProxy")
 	}()
 }
 
@@ -208,9 +208,9 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["3_jsonProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startJSONRPCProvider")
 		}(idx)
 	}
 }
@@ -230,23 +230,27 @@ func (lt *lavaTest) startJSONRPCGateway() {
 		panic(err)
 	}
 
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["4_jsonGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly", "startJSONRPCGateway")
 	}()
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
 	lt.testFinishedProperly = true
-	for _, cmd := range lt.commands { // kill all the project commands
-		cmd.Process.Kill()
+	for processName, cmd := range lt.commands { // kill all the project commands
+		if processName == "2_jsonProxy" {
+			cmd.Process.Signal(os.Interrupt) //call interrupt on jsonproxy to properly free the port
+		} else {
+			cmd.Process.Kill()
+		}
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string) {
+func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
-	if err != nil {
-		utils.LavaFormatError("cmd wait err", err, nil)
+	if err != nil && !lt.testFinishedProperly {
+		utils.LavaFormatError(functionName+" cmd wait err", err, nil)
 	}
 	if lt.testFinishedProperly {
 		return
@@ -396,9 +400,9 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["7_tendermintProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startTendermintProvider")
 		}(idx)
 	}
 }
@@ -416,9 +420,9 @@ func (lt *lavaTest) startTendermintGateway() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["8_tendermintGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly", "startTendermintGateway")
 	}()
 }
 
@@ -509,9 +513,9 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["5_restProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startRESTProvider")
 		}(idx)
 	}
 }
@@ -529,9 +533,9 @@ func (lt *lavaTest) startRESTGateway() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["6_restGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly", "startRESTGateway")
 	}()
 }
 
@@ -676,6 +680,7 @@ func runE2E() {
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
 		logs:         make(map[string]*bytes.Buffer),
+		commands:     make(map[string]exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 	}
 	// use defer to save logs in case the tests fail
