@@ -6,16 +6,19 @@ import (
 )
 
 const (
-	NOT_APPLICABLE            int64 = -1
-	LATEST_BLOCK              int64 = -2
-	EARLIEST_BLOCK            int64 = -3
-	PENDING_BLOCK             int64 = -4
-	SAFE_BLOCK                int64 = -5
-	FINALIZED_BLOCK           int64 = -6
-	APIInterfaceJsonRPC             = "jsonrpc"
-	APIInterfaceTendermintRPC       = "tendermintrpc"
-	APIInterfaceRest                = "rest"
-	APIInterfaceGrpc                = "grpc"
+	NOT_APPLICABLE  int64 = -1
+	LATEST_BLOCK    int64 = -2
+	EARLIEST_BLOCK  int64 = -3
+	PENDING_BLOCK   int64 = -4
+	SAFE_BLOCK      int64 = -5
+	FINALIZED_BLOCK int64 = -6
+)
+
+const (
+	APIInterfaceJsonRPC       = "jsonrpc"
+	APIInterfaceTendermintRPC = "tendermintrpc"
+	APIInterfaceRest          = "rest"
+	APIInterfaceGrpc          = "grpc"
 )
 
 const (
