@@ -187,7 +187,10 @@ func SendRelay(
 			}
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
-			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
+			err := cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
+			if err != nil && !performance.NotInitialisedError.Is(err) {
+				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
+			}
 			return reply, nil, relayRequest, currentLatency, false, nil
 		}
 		// isSubscription

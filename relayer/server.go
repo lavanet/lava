@@ -818,7 +818,10 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 		}
 		if requestedBlockHash != nil || finalized {
-			cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
+			err := cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
+			if err != nil && !performance.NotInitialisedError.Is(err) {
+				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
+			}
 		}
 	}
 
