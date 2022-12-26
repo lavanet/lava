@@ -11,11 +11,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
-	restString       string = "rest"
-	tendermintString string = "tendermintrpc"
+	restString       string = spectypes.APIInterfaceRest
+	tendermintString string = spectypes.APIInterfaceTendermintRPC
 )
 
 // AptosTests
