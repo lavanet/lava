@@ -598,6 +598,35 @@ func getRequest(url string) ([]byte, error) {
 	return body, nil
 }
 
+// This would submit a proposal, vote then stake providers and clients for that network over lava
+func (lt *lavaTest) lavaOverLava(rpcURL string) {
+	utils.LavaFormatInfo("Starting Lava Over Lava", nil)
+	lavaOverLavaCommands := []string{
+		lt.lavadPath + " tx gov submit-proposal spec-add ./cookbook/spec_add_goerli.json -y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava --node " + rpcURL,
+		lt.lavadPath + " tx gov vote 2 yes -y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava --node " + rpcURL,
+		lt.lavadPath + " tx pairing stake-provider GTH1 2010ulava 127.0.0.1:2121,jsonrpc,1 1 -y --from servicer1 --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava --node " + rpcURL,
+		lt.lavadPath + " tx pairing stake-client GTH1 200000ulava 1 -y --from user1 --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava --node " + rpcURL,
+	}
+
+	lt.logs["9_lavaOverLava"] = new(bytes.Buffer)
+	for idx, providerCommand := range lavaOverLavaCommands {
+		cmd := exec.Cmd{
+			Path:   lt.lavadPath,
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: lt.logs["9_lavaOverLava"],
+			Stderr: lt.logs["9_lavaOverLava"],
+		}
+		err := cmd.Start()
+		if err != nil {
+			panic(utils.LavaFormatError("LavaOverLava command didnt complete idx:"+strconv.Itoa(idx), err, nil))
+		}
+		cmd.Wait()
+		if idx == 1 {
+			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
 func (lt *lavaTest) saveLogs() {
 	logsFolder := "./testutil/e2e/logs/"
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
@@ -615,7 +644,7 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		utils.LavaFormatInfo(logBuffer.String(), nil)
+		// utils.LavaFormatInfo(logBuffer.String(), nil)
 	}
 }
 
@@ -746,5 +775,8 @@ func runE2E() {
 	}
 
 	lt.checkPayments(time.Minute * 10)
+
+	lt.lavaOverLava("http://127.0.0.1:3340/1")
+
 	lt.finishTestSuccessfully()
 }
