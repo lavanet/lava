@@ -1,10 +1,7 @@
 #!/bin/bash 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
-. ${__dir}/vars/variables.sh
-# Making sure old screens are not running
-killall screen
-screen -wipe
+
 GASPRICE="0.000000001ulava"
 lavad tx gov submit-proposal spec-add ./cookbook/spec_add_ethereum.json,./cookbook/spec_add_lava.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
