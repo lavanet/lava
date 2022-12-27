@@ -243,7 +243,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	lt.testFinishedProperly = true
 	for processName, cmd := range lt.commands { // kill all the project commands
 		if processName == "2_jsonProxy" {
-			cmd.Process.Signal(os.Interrupt) //call interrupt on jsonproxy to properly free the port
+			cmd.Process.Signal(os.Interrupt) // git call interrupt on jsonproxy to properly free the port
 		} else {
 			cmd.Process.Kill()
 		}
