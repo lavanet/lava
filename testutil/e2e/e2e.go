@@ -116,7 +116,9 @@ func (lt *lavaTest) stakeLava() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) checkStakeLava() {
+func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, successMessage string) {
+	// providerCount and clientCount refers to number and providers and client for each spec
+	// number of providers and clients should be the same for all specs for for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
 	// query all specs
@@ -127,7 +129,7 @@ func (lt *lavaTest) checkStakeLava() {
 
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
-	if len(specQueryRes.Spec) == 0 {
+	if len(specQueryRes.Spec) != specCount {
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
@@ -140,7 +142,7 @@ func (lt *lavaTest) checkStakeLava() {
 		if err != nil {
 			panic(err)
 		}
-		if len(providerQueryRes.StakeEntry) == 0 {
+		if len(providerQueryRes.StakeEntry) != providerCount {
 			fmt.Println("ProviderQueryRes: ", providerQueryRes)
 			panic("Staking Failed PROVIDER")
 		}
@@ -156,13 +158,14 @@ func (lt *lavaTest) checkStakeLava() {
 		if err != nil {
 			panic(err)
 		}
-		if len(clientQueryRes.StakeEntry) == 0 {
+		if len(clientQueryRes.StakeEntry) != clientCount {
 			panic("Staking Failed CLIENT")
 		}
 		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
 			fmt.Println("client", clientStakeEntry)
 		}
 	}
+	utils.LavaFormatInfo(successMessage, nil)
 }
 
 func (lt *lavaTest) startJSONRPCProxy() {
@@ -521,7 +524,7 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user3 --log_level debug"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --log_level debug"
 	lt.logs["6_restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
@@ -600,7 +603,7 @@ func getRequest(url string) ([]byte, error) {
 
 // This would submit a proposal, vote then stake providers and clients for that network over lava
 func (lt *lavaTest) lavaOverLava() {
-	utils.LavaFormatInfo("Starting Lava over Lva Tests", nil)
+	utils.LavaFormatInfo("Starting Lava over Lava Tests", nil)
 	stakeCommand := "./scripts/init_e2e_lava_over_lava.sh"
 	lt.logs["9_lavaOverLava"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
@@ -611,9 +614,13 @@ func (lt *lavaTest) lavaOverLava() {
 	}
 	err := cmd.Start()
 	if err != nil {
-		panic("Staking Failed " + err.Error())
+		panic("Lava over Lava Failed " + err.Error())
 	}
-	cmd.Wait()
+	err = cmd.Wait()
+	if err != nil {
+		panic("Lava over Lava Failed " + err.Error())
+	}
+	lt.checkStakeLava(3, 5, 1, "Lava Over Lava Test Successful")
 }
 
 func (lt *lavaTest) saveLogs() {
@@ -633,7 +640,7 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		// utils.LavaFormatInfo(logBuffer.String(), nil)
+		utils.LavaFormatInfo(logBuffer.String(), nil)
 	}
 }
 
@@ -717,8 +724,7 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
-	lt.checkStakeLava()
-	utils.LavaFormatInfo("Staking Lava OK", nil)
+	lt.checkStakeLava(2, 5, 1, "Staking Lava OK")
 	lt.startJSONRPCProxy()
 	lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	lt.startJSONRPCGateway()
