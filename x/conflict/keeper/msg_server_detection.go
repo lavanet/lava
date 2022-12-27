@@ -101,7 +101,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	}
 
 	eventData := map[string]string{"client": msg.Creator}
-	utils.LogLavaEvent(ctx, logger, "conflict_detection_received", eventData, "Simulation: Got a new valid conflict detection from consumer")
+	utils.LogLavaEvent(ctx, logger, types.ConflictDetectionRecievedEventName, eventData, "Simulation: Got a new valid conflict detection from consumer")
 	return &types.MsgDetectionResponse{}, nil
 }
 

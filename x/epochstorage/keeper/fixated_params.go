@@ -126,7 +126,7 @@ func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
 			}
 			fixatedParamsToPush = olderParams
 		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), "fixated_params_after_change", map[string]string{"moduleName": types.ModuleName, "block": strconv.FormatUint(block, 10), "fixatedParametersListLen": strconv.FormatUint(idx, 10), "fixationKey": fixationKey}, "params fixated after a change")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FixatedParamChangeEventName, map[string]string{"moduleName": types.ModuleName, "block": strconv.FormatUint(block, 10), "fixatedParametersListLen": strconv.FormatUint(idx, 10), "fixationKey": fixationKey}, "params fixated after a change")
 	}
 }
 
@@ -147,7 +147,7 @@ func (k Keeper) CleanOlderFixatedParams(ctx sdk.Context, fixationKey string, sta
 		}
 		k.RemoveFixatedParams(ctx, thisIdxKey)
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), "clean_fixated_params", map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": thisIdxKey}, "fixation cleaned")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.FixatedParamCleanedEventName, map[string]string{"moduleName": types.ModuleName, "fixatedParametersListLen": thisIdxKey}, "fixation cleaned")
 }
 
 func (k Keeper) GetFixatedParamsForBlock(ctx sdk.Context, fixationKey string, block uint64) (fixated types.FixatedParams, err error) {

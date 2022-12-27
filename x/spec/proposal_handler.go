@@ -15,11 +15,6 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	SPEC_ADD    = "add_spec"
-	SPEC_MODIFY = "spec_modify"
-)
-
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
 func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
@@ -45,15 +40,15 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 		details := map[string]string{"param": c.Key, "value": c.Value}
 		if c.Key == string(epochstoragetypes.KeyLatestParamChange) {
 			details["error"] = "tried to modify " + string(epochstoragetypes.KeyLatestParamChange)
-			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
+			return utils.LavaError(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Param Change Error")
 		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
 			details["error"] = err.Error()
-			return utils.LavaError(ctx, logger, "param_change", details, "Gov Proposal Param Change Error")
+			return utils.LavaError(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Param Change Error")
 		}
 
 		details[epochstoragetypes.ModuleName] = strconv.FormatInt(ctx.BlockHeight(), 10)
-		utils.LogLavaEvent(ctx, logger, "param_change", details, "Gov Proposal Accepted Param Changed")
+		utils.LogLavaEvent(ctx, logger, types.ParamChangeEventName, details, "Gov Proposal Accepted Param Changed")
 	}
 
 	ss, ok := k.GetSubspace(epochstoragetypes.ModuleName)
@@ -97,9 +92,9 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 
 		var name string
 		if found {
-			name = SPEC_MODIFY
+			name = types.SpecModifyEventName
 		} else {
-			name = SPEC_ADD
+			name = types.SpecAddEventName
 		}
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 
