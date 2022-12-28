@@ -117,6 +117,7 @@ type Sentry struct {
 	serverID                uint64
 	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
 	authorizationCacheMutex sync.RWMutex
+	txFactory               tx.Factory
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -775,8 +776,8 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
-	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-	err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+	// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+	err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 	if err != nil {
 		utils.LavaFormatError("CompareRelaysAndReportConflict - SimulateAndBroadCastTx Failed", err, nil)
 	}
@@ -825,8 +826,8 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				// TODO:: Fill msg with incriminating data
 				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
-				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-				err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+				// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+				err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 				if err != nil {
 					return false, utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err, nil)
 				}
@@ -881,8 +882,8 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		// TODO:: Fill msg with incriminating data
 		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
-		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-		err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+		// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+		err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 		if err != nil {
 			return utils.LavaFormatError("validateProviderReply - SimulateAndBroadCastTx Failed", err, nil)
 		}
@@ -1438,6 +1439,7 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 
 func NewSentry(
 	clientCtx client.Context,
+	txFactory tx.Factory,
 	chainID string,
 	isUser bool,
 	voteInitiationCb func(ctx context.Context, voteID string, voteDeadline uint64, voteParams *VoteParams),
@@ -1464,6 +1466,7 @@ func NewSentry(
 		pairingQueryClient:      pairingQueryClient,
 		epochStorageQueryClient: epochStorageQueryClient,
 		ChainID:                 chainID,
+		txFactory:               txFactory,
 		isUser:                  isUser,
 		Acc:                     acc,
 		newEpochCb:              newEpochCb,
