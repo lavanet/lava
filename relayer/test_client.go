@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -18,7 +17,6 @@ import (
 
 func TestClient(
 	ctx context.Context,
-	txFactory tx.Factory,
 	clientCtx client.Context,
 	chainID string,
 	apiInterface string,
@@ -34,7 +32,7 @@ func TestClient(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)

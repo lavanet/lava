@@ -47,13 +47,8 @@ func main() {
 			//
 			// TODO: there has to be a better way to send txs
 			// (cosmosclient was a fail)
-
 			clientCtx.SkipConfirm = true
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
-			}
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID("lava")
 
 			port, err := strconv.Atoi(args[1])
 			if err != nil {
@@ -121,13 +116,7 @@ func main() {
 				}
 			}
 
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
-			}
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
-
-			relayer.PortalServer(ctx, clientCtx, txFactory, listenAddr, chainID, apiInterface, cmd.Flags())
+			relayer.PortalServer(ctx, clientCtx, listenAddr, chainID, apiInterface, cmd.Flags())
 
 			return nil
 		},
@@ -163,14 +152,7 @@ func main() {
 				utils.LavaFormatFatal("failed to read log level flag", err, nil)
 			}
 			utils.LoggingLevel(logLevel)
-
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
-			if err != nil {
-				return err
-			}
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
-
-			relayer.TestClient(ctx, txFactory, clientCtx, chainID, apiInterface, duration, cmd.Flags())
+			relayer.TestClient(ctx, clientCtx, chainID, apiInterface, duration, cmd.Flags())
 
 			return nil
 		},
@@ -181,11 +163,6 @@ func main() {
 	flags.AddTxFlagsToCmd(cmdPortalServer)
 	cmdPortalServer.MarkFlagRequired(flags.FlagFrom)
 	flags.AddTxFlagsToCmd(cmdTestClient)
-
-	cmdPortalServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdTestClient.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")

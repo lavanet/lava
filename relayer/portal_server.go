@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/performance"
@@ -21,7 +20,6 @@ import (
 func PortalServer(
 	ctx context.Context,
 	clientCtx client.Context,
-	txFactory tx.Factory,
 	listenAddr string,
 	chainID string,
 	apiInterface string,
@@ -35,7 +33,7 @@ func PortalServer(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
+	sentry := sentry.NewSentry(clientCtx, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
