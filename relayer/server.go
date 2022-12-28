@@ -1129,7 +1129,7 @@ func Server(
 	//
 
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, chainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
+	newSentry := sentry.NewSentry(clientCtx, txFactory, chainID, false, voteEventHandler, askForRewards, apiInterface, nil, nil, g_serverID)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		utils.LavaFormatError("sentry init failure to initialize", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
