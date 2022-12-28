@@ -803,17 +803,26 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	cache := g_chainProxy.GetCache()
 	// TODO: handle cache on fork for dataReliability = false
-	reply, err := cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
+	var reply *pairingtypes.RelayReply = nil
+	var err error = nil
+	if requestedBlockHash != nil || finalized {
+		reply, err = cache.GetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, finalized)
+	}
 	if err != nil || reply == nil {
-		if performance.NotConnectedError.Is(err) {
+		if err != nil && performance.NotConnectedError.Is(err) {
 			utils.LavaFormatError("cache not connected", err, nil)
 		}
-		// cache miss
+		// cache miss or invalid
 		reply, _, _, err = nodeMsg.Send(ctx, nil)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending nodeMsg failed", err, nil)
 		}
-		cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
+		if requestedBlockHash != nil || finalized {
+			err := cache.SetEntry(ctx, request, g_sentry.ApiInterface, requestedBlockHash, g_sentry.ChainID, userAddr.String(), reply, finalized)
+			if err != nil && !performance.NotInitialisedError.Is(err) {
+				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
+			}
+		}
 	}
 
 	apiName := nodeMsg.GetServiceApi().Name
