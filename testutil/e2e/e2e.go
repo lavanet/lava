@@ -611,7 +611,27 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		utils.LavaFormatInfo(logBuffer.String(), nil)
+		// utils.LavaFormatInfo(logBuffer.String(), nil)
+		lines := strings.Split(logBuffer.String(), "\n")
+		errorLines := []string{}
+		for _, line := range lines {
+			if strings.Contains(line, " ERR ") {
+				errorLines = append(errorLines, line)
+			}
+		}
+		if len(errorLines) == 0 {
+			continue
+		}
+		errors := strings.Join(errorLines, "\n")
+		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
+		if err != nil {
+			panic(err)
+		}
+		writer = bufio.NewWriter(errFile)
+		writer.Write([]byte(errors))
+		writer.Flush()
+		errFile.Close()
+
 	}
 }
 
