@@ -12,11 +12,11 @@ import (
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error {
 	logger := k.Logger(ctx)
-	stake_type := func() string {
-		if provider {
-			return epochstoragetypes.ProviderKey
-		}
-		return epochstoragetypes.ClientKey
+	var stake_type string
+	if provider {
+		stake_type = epochstoragetypes.ProviderKey
+	} else {
+		stake_type = epochstoragetypes.ClientKey
 	}
 	// TODO: validate chainID basic validation
 
@@ -27,32 +27,32 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		details := map[string]string{stake_type(): creator, "error": err.Error()}
-		return utils.LavaError(ctx, logger, "unstake_"+stake_type()+"_addr", details, "invalid "+stake_type()+" address")
+		details := map[string]string{stake_type: creator, "error": err.Error()}
+		return utils.LavaError(ctx, logger, "unstake_"+stake_type+"_addr", details, "invalid "+stake_type+" address")
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type(), chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, stake_type, chainID, senderAddr)
 	if !entryExists {
-		details := map[string]string{stake_type(): creator, "spec": chainID}
-		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
+		details := map[string]string{stake_type: creator, "spec": chainID}
+		return utils.LavaError(ctx, logger, stake_type+"_unstake_entry", details, "can't unstake Entry, stake entry not found for address")
 	}
-	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type(), chainID, indexInStakeStorage)
+	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, stake_type, chainID, indexInStakeStorage)
 	if err != nil {
-		details := map[string]string{stake_type(): creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
-		return utils.LavaError(ctx, logger, stake_type()+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
+		details := map[string]string{stake_type: creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
+		return utils.LavaError(ctx, logger, stake_type+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
 	}
 	blockHeight := uint64(ctx.BlockHeight())
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
 	if err != nil {
-		details := map[string]string{stake_type(): creator, "error": err.Error()}
-		return utils.LavaError(ctx, logger, "unstake_param_read", details, "invalid "+stake_type()+" param read failure")
+		details := map[string]string{stake_type: creator, "error": err.Error()}
+		return utils.LavaError(ctx, logger, "unstake_param_read", details, "invalid "+stake_type+" param read failure")
 	}
 	existingEntry.Deadline = blockHeight + blocksToSave
 	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx, blockHeight)
 	if existingEntry.Deadline < holdBlocks {
 		existingEntry.Deadline = holdBlocks
 	}
-	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type(), existingEntry)
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
@@ -77,11 +77,11 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 
 func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesToUnstake []epochstoragetypes.StakeEntry) error {
 	logger := k.Logger(ctx)
-	stake_type := func() string {
-		if provider {
-			return epochstoragetypes.ProviderKey
-		}
-		return epochstoragetypes.ClientKey
+	var stake_type string
+	if provider {
+		stake_type = epochstoragetypes.ProviderKey
+	} else {
+		stake_type = epochstoragetypes.ClientKey
 	}
 	verifySufficientAmountAndSendFromModuleToAddress := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) (bool, error) {
 		moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
@@ -95,7 +95,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 		return true, nil
 	}
 	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{"spec": unstakingEntry.Chain, stake_type(): unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
+		details := map[string]string{"spec": unstakingEntry.Chain, stake_type: unstakingEntry.Address, "stake": unstakingEntry.Stake.String()}
 		if unstakingEntry.Deadline <= uint64(ctx.BlockHeight()) {
 			// found an entry that needs handling
 			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
@@ -107,14 +107,14 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 				valid, err := verifySufficientAmountAndSendFromModuleToAddress(ctx, k, receiverAddr, unstakingEntry.Stake)
 				if !valid {
 					details["error"] = err.Error()
-					utils.LavaError(ctx, logger, stake_type()+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
+					utils.LavaError(ctx, logger, stake_type+"_unstaking_credit", details, "verifySufficientAmountAndSendFromModuleToAddress Failed,")
 					panic(fmt.Sprintf("error unstaking : %s", err))
 				}
-				utils.LogLavaEvent(ctx, logger, stake_type()+"_unstake_commit", details, "Unstaking Providers Commit")
+				utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, "Unstaking Providers Commit")
 			}
 		} else {
 			// found an entry that isn't handled now, but later because its deadline isnt current block
-			utils.LavaError(ctx, logger, stake_type()+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
+			utils.LavaError(ctx, logger, stake_type+"_unstaking", details, "trying to unstake while its deadline wasn't reached")
 		}
 	}
 	return nil
