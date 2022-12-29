@@ -438,12 +438,13 @@ func (s *Sentry) Init(ctx context.Context) error {
 			return utils.LavaFormatError("failed querying providers for spec", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
 		}
 		found := false
+	endpointsLoop:
 		for _, provider := range providers.GetStakeEntry() {
 			if provider.Address == s.Acc {
 				for _, endpoint := range provider.Endpoints {
 					if endpoint.Geolocation == s.geolocation && endpoint.UseType == s.ApiInterface {
 						found = true
-						break
+						break endpointsLoop
 					}
 				}
 				//if we reached here we didnt find a geolocation appropriate endpoint
