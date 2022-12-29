@@ -3,9 +3,9 @@ package chaintracker
 import "time"
 
 type ChainTrackerConfig struct {
-	ForkCallback      *func() //a function to be called when a fork is detected
-	NewLatestCallback *func() //a function to be called when a new block is detected
-	ServerAddress     string  //if not empty will open up a grpc server for that address
+	ForkCallback      func() //a function to be called when a fork is detected
+	NewLatestCallback func() //a function to be called when a new block is detected
+	ServerAddress     string //if not empty will open up a grpc server for that address
 	blocksToSave      uint64
 	averageBlockTime  time.Duration // how often to query latest block
 }
