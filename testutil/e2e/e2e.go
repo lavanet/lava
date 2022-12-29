@@ -625,7 +625,6 @@ func (lt *lavaTest) saveLogs() {
 				for errorSubstring, _ := range whitelist {
 					if strings.Contains(line, errorSubstring) {
 						whitelisted = true
-						utils.LavaFormatInfo("WHITELISTED "+line, nil)
 						break
 					}
 				}
