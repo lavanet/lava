@@ -426,7 +426,7 @@ func (s *Sentry) Init(ctx context.Context) error {
 		s.geolocation = geolocation
 	} else {
 		// geolocation is not a power of 2
-		utils.LavaFormatFatal("geolocation flag needs to set only one geolocation, 1<<X where X is the geolocation i.e 1,2,4,8 etc..", err, &map[string]string{"Geolocation": strconv.FormatUint(uint64(geolocation), 10)})
+		utils.LavaFormatFatal("geolocation flag needs to set only one geolocation, 1<<X where X is the geolocation i.e 1,2,4,8 etc..", err, &map[string]string{"Geolocation": strconv.FormatUint(geolocation, 10)})
 	}
 
 	// Sanity
@@ -447,12 +447,12 @@ func (s *Sentry) Init(ctx context.Context) error {
 						break endpointsLoop
 					}
 				}
-				//if we reached here we didnt find a geolocation appropriate endpoint
-				utils.LavaFormatFatal("provider endpoint mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(uint64(geolocation), 10), "StakeEntry": fmt.Sprintf("%+v", provider)})
+				// if we reached here we didnt find a geolocation appropriate endpoint
+				utils.LavaFormatFatal("provider endpoint mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(geolocation, 10), "StakeEntry": fmt.Sprintf("%+v", provider)})
 			}
 		}
 		if !found {
-			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(uint64(geolocation), 10)})
+			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(geolocation, 10)})
 		}
 	}
 
