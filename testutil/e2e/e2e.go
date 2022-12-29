@@ -597,11 +597,16 @@ func getRequest(url string) ([]byte, error) {
 func (lt *lavaTest) saveLogs() {
 	logsFolder := "./testutil/e2e/logs/"
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(logsFolder, os.ModePerm)
+		err := os.RemoveAll(logsFolder)
+		if err != nil {
+			fmt.Println(err)
+		}
+		err = os.Mkdir(logsFolder, os.ModePerm)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
+	errorLineCount := 0
 	for fileName, logBuffer := range lt.logs {
 		file, err := os.Create(logsFolder + fileName + ".log")
 		if err != nil {
@@ -616,7 +621,19 @@ func (lt *lavaTest) saveLogs() {
 		errorLines := []string{}
 		for _, line := range lines {
 			if strings.Contains(line, " ERR ") {
-				errorLines = append(errorLines, line)
+				whitelisted := false
+				for errorSubstring, _ := range whitelist {
+					if strings.Contains(line, errorSubstring) {
+						whitelisted = true
+						utils.LavaFormatInfo("WHITELISTED "+line, nil)
+						break
+					}
+				}
+				// When test did not finish properly save all logs. If test finished properly save only non whitelist.
+				if !lt.testFinishedProperly || !whitelisted {
+					errorLineCount += 1
+					errorLines = append(errorLines, line)
+				}
 			}
 		}
 		if len(errorLines) == 0 {
@@ -631,7 +648,9 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write([]byte(errors))
 		writer.Flush()
 		errFile.Close()
-
+	}
+	if errorLineCount != 0 {
+		panic("Error found in logs")
 	}
 }
 
