@@ -27,3 +27,7 @@ This E2E performs the steps below to test if the system is working as expected.
 17. Check if payments are paid.
 
 After the steps above are finished (even if a step fails and the E2E ends) the E2E will save all the captured logs.
+
+# Error Whitelist
+
+The error whitelist contains a list of errors that is allowed to happen during tests. The key is the error substring that can be seen in the logs. The value is the description on why this error is whitelisted. 
