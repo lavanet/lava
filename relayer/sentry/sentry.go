@@ -41,6 +41,7 @@ const (
 	providerWasntFound     = -1
 	findPairingFailedIndex = -1
 	supportedNumberOfVRFs  = 2
+	GeolocationFlag        = "geolocation"
 )
 
 type VoteParams struct {
@@ -118,6 +119,7 @@ type Sentry struct {
 	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
 	authorizationCacheMutex sync.RWMutex
 	txFactory               tx.Factory
+	geolocation             uint64
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -253,8 +255,8 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
-			// only take into account endpoints that use the same api interface
-			if endpoint.UseType == s.ApiInterface {
+			// only take into account endpoints that use the same api interface and the same geolocation
+			if endpoint.UseType == s.ApiInterface && endpoint.Geolocation == s.geolocation {
 				relevantEndpoints = append(relevantEndpoints, endpoint)
 			}
 		}
@@ -283,7 +285,9 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 			PairingEpoch:    s.GetCurrentEpochHeight(),
 		})
 	}
-
+	if len(pairing) == 0 {
+		utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, &map[string]string{"Address": s.Acc, "ChainID": s.GetChainID(), "geolocation": strconv.FormatUint(s.geolocation, 10)})
+	}
 	// replace previous pairing with new providers
 	return pairing, nil
 }
@@ -413,7 +417,18 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
-	//
+	geolocation, err := s.cmdFlags.GetUint64(GeolocationFlag)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read geolocation flag, required flag", err, nil)
+	}
+	if geolocation > 0 && (geolocation&(geolocation-1)) == 0 {
+		// geolocation is a power of 2
+		s.geolocation = geolocation
+	} else {
+		// geolocation is not a power of 2
+		utils.LavaFormatFatal("geolocation flag needs to set only one geolocation, 1<<X where X is the geolocation i.e 1,2,4,8 etc..", err, &map[string]string{"Geolocation": strconv.FormatUint(uint64(geolocation), 10)})
+	}
+
 	// Sanity
 	if !s.isUser {
 		providers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
@@ -425,12 +440,18 @@ func (s *Sentry) Init(ctx context.Context) error {
 		found := false
 		for _, provider := range providers.GetStakeEntry() {
 			if provider.Address == s.Acc {
-				found = true
-				break
+				for _, endpoint := range provider.Endpoints {
+					if endpoint.Geolocation == s.geolocation && endpoint.UseType == s.ApiInterface {
+						found = true
+						break
+					}
+				}
+				//if we reached here we didnt find a geolocation appropriate endpoint
+				utils.LavaFormatFatal("provider endpoint mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(uint64(geolocation), 10), "StakeEntry": fmt.Sprintf("%+v", provider)})
 			}
 		}
 		if !found {
-			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
+			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(uint64(geolocation), 10)})
 		}
 	}
 

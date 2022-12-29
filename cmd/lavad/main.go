@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
 	"github.com/lavanet/lava/relayer/performance"
+	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
 )
@@ -185,7 +186,12 @@ func main() {
 	cmdPortalServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdTestClient.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdServer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-
+	cmdPortalServer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdTestClient.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdServer.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdTestClient.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdServer.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdPortalServer.MarkFlagRequired(sentry.GeolocationFlag)
 	cmdTestClient.MarkFlagRequired(flags.FlagFrom)
 	cmdTestClient.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdPortalServer.Flags().Bool("secure", false, "secure sends reliability on every message")
