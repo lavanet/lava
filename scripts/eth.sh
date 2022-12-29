@@ -19,12 +19,12 @@ go run ./testutil/e2e/proxy/. $ETH_RPC_HTTP  -p $MOCK_PORT -cache=true -id eth -
 
 echo " ::: RUNNING ETH PROVIDERS :::"
 # SINGLE MOCK PROXY
-lavad server 127.0.0.1 2221 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer1 --log_level debug &
-lavad server 127.0.0.1 2222 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer2 --log_level debug &
-lavad server 127.0.0.1 2223 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer3 --log_level debug &
-lavad server 127.0.0.1 2224 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer4 --log_level debug &
-lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer5 --log_level debug &
-lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --log_level debug
+lavad server 127.0.0.1 2221 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer1 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2222 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer2 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2223 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer3 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2224 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer4 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2225 http://0.0.0.0:$MOCK_PORT ETH1 jsonrpc --from servicer5 --geolocation 1 --log_level debug &
+lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug
 
 # Multi Port Proxy
 # lavad server 127.0.0.1 2221 http://0.0.0.0:2001/$ETH_URL_PATH ETH1 jsonrpc --from servicer1 &
