@@ -2,7 +2,6 @@ syntax = "proto3";
 package chainTracker;
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/empty.proto";
-
 option go_package = "./chaintracker";
 
 service ChainTrackerService {
@@ -13,9 +12,15 @@ service ChainTrackerService {
 message LatestBlockData {
     int64 fromBlock =1;
     int64 toBlock =2;
+    int64 specificBlock =3;
 }
 
 message LatestBlockDataResponse {
     int64 latestBlock =1;
-    map<int64,string> requestedHashes  =2;
+    repeated BlockStore requestedHashes  =2;
+}
+
+message BlockStore {
+    int64 block =1;
+    string hash =2;
 }

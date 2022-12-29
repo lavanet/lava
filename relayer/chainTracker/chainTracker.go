@@ -23,9 +23,9 @@ type ChainTracker struct {
 	blocksToSave      uint64                // how many finalized blocks to keep
 	latestBlockNum    int64
 	blockQueueMu      utils.LavaMutex
-	blocksQueue       []string // holds all past hashes up until latest block
-	forkCallback      *func()  //a function to be called when a fork is detected
-	newLatestCallback *func()  //a function to be called when a new block is detected
+	blocksQueue       []BlockStore // holds all past hashes up until latest block
+	forkCallback      *func()      //a function to be called when a fork is detected
+	newLatestCallback *func()      //a function to be called when a new block is detected
 }
 
 func (cs *ChainTracker) GetLatestBlockNum() int64 {
@@ -37,7 +37,8 @@ func (cs *ChainTracker) setLatestBlockNum(value int64) {
 }
 
 // accepts spec.LATEST_BLOCK and spec.NOT_APPLICABLE as input
-func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64) (latestBlock int64, requestedHashes map[int64]string, err error) {
+// usage example: fromBlock: spec.LATEST_BLOCK-5, toBlock: spec.LATEST_BLOCK-3
+func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, err error) {
 	return
 }
 
