@@ -622,7 +622,7 @@ func (lt *lavaTest) saveLogs() {
 		for _, line := range lines {
 			if strings.Contains(line, " ERR ") {
 				whitelisted := false
-				for errorSubstring, _ := range whitelist {
+				for errorSubstring := range whitelist {
 					if strings.Contains(line, errorSubstring) {
 						whitelisted = true
 						break
