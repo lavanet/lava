@@ -594,6 +594,105 @@ func getRequest(url string) ([]byte, error) {
 	return body, nil
 }
 
+func (lt *lavaTest) startGRPCProvider(rpcURL string) {
+	providerCommands := []string{
+		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug",
+	}
+	lt.logs["9_grpcProvider"] = new(bytes.Buffer)
+	for idx, providerCommand := range providerCommands {
+		cmd := exec.Cmd{
+			Path:   lt.lavadPath,
+			Args:   strings.Split(providerCommand, " "),
+			Stdout: lt.logs["9_grpcProvider"],
+			Stderr: lt.logs["9_grpcProvider"],
+		}
+		err := cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+		lt.commands = append(lt.commands, cmd)
+		go func(idx int) {
+			lt.listenCmdCommand(cmd, "startGRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+		}(idx)
+	}
+}
+
+func (lt *lavaTest) startGRPCGateway() {
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3342 LAV1 grpc --from user4 --geolocation 1 --log_level debug"
+	lt.logs["10_grpcGateway"] = new(bytes.Buffer)
+	cmd := exec.Cmd{
+		Path:   lt.lavadPath,
+		Args:   strings.Split(providerCommand, " "),
+		Stdout: lt.logs["10_grpcGateway"],
+		Stderr: lt.logs["10_grpcGateway"],
+	}
+	err := cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+	lt.commands = append(lt.commands, cmd)
+	go func() {
+		lt.listenCmdCommand(cmd, "startGRPCGateway process returned unexpectedly")
+	}()
+}
+
+func (lt *lavaTest) checkGRPCGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting GRPC Gateway", nil)
+		grpcConn, err := grpc.Dial(rpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			continue
+		}
+		specQueryClient := specTypes.NewQueryClient(grpcConn)
+		_, err = specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
+		if err == nil {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+	panic("GRPC Check Failed")
+}
+
+func grpcTests(rpcURL string, testDuration time.Duration) error {
+	ctx := context.Background()
+	utils.LavaFormatInfo("Starting GRPC Tests", nil)
+	errors := []string{}
+	grpcConn, err := grpc.Dial(rpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	specQueryClient := specTypes.NewQueryClient(grpcConn)
+	pairingQueryClient := pairingTypes.NewQueryClient(grpcConn)
+	for start := time.Now(); time.Since(start) < testDuration; {
+		specQueryRes, err := specQueryClient.SpecAll(ctx, &specTypes.QueryAllSpecRequest{})
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		for _, spec := range specQueryRes.Spec {
+			_, err = pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+				ChainID: spec.GetIndex(),
+			})
+			if err != nil {
+				errors = append(errors, err.Error())
+			}
+			_, err = pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
+				ChainID: spec.GetIndex(),
+			})
+			if err != nil {
+				errors = append(errors, err.Error())
+			}
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func (lt *lavaTest) saveLogs() {
 	logsFolder := "./testutil/e2e/logs/"
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
@@ -611,7 +710,7 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		utils.LavaFormatInfo(logBuffer.String(), nil)
+		// utils.LavaFormatInfo(logBuffer.String(), nil)
 	}
 }
 
@@ -696,48 +795,59 @@ func runE2E() {
 	lt.stakeLava()
 	lt.checkStakeLava()
 	utils.LavaFormatInfo("Staking Lava OK", nil)
-	lt.startJSONRPCProxy()
-	lt.startJSONRPCProvider("http://127.0.0.1:1111")
-	lt.startJSONRPCGateway()
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
+	// lt.startJSONRPCProxy()
+	// lt.startJSONRPCProvider("http://127.0.0.1:1111")
+	// lt.startJSONRPCGateway()
+	// lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
 
-	lt.startTendermintProvider("http://0.0.0.0:26657")
-	lt.startTendermintGateway()
-	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
+	// lt.startTendermintProvider("http://0.0.0.0:26657")
+	// lt.startTendermintGateway()
+	// lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
 
-	lt.startRESTProvider("http://127.0.0.1:1317")
-	lt.startRESTGateway()
-	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+	// lt.startRESTProvider("http://127.0.0.1:1317")
+	// lt.startRESTGateway()
+	// lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+
+	lt.startGRPCProvider("127.0.0.1:9090")
+	lt.startGRPCGateway()
+	lt.checkGRPCGateway("127.0.0.1:3342", time.Second*30)
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
-	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
-	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
-	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
-	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
+	// jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
+	// tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
+	// tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
+	// restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
+	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
 
-	if jsonErr != nil {
-		panic(jsonErr)
-	} else {
-		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
-	}
+	// if jsonErr != nil {
+	// 	panic(jsonErr)
+	// } else {
+	// 	utils.LavaFormatInfo("JSONRPC TEST OK", nil)
+	// }
 
-	if tendermintErr != nil {
-		panic(tendermintErr)
-	} else {
-		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
-	}
+	// if tendermintErr != nil {
+	// 	panic(tendermintErr)
+	// } else {
+	// 	utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
+	// }
 
-	if tendermintURIErr != nil {
-		panic(tendermintURIErr)
-	} else {
-		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
-	}
+	// if tendermintURIErr != nil {
+	// 	panic(tendermintURIErr)
+	// } else {
+	// 	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
+	// }
 
-	if restErr != nil {
-		panic(restErr)
+	// if restErr != nil {
+	// 	panic(restErr)
+	// } else {
+	// 	utils.LavaFormatInfo("REST TEST OK", nil)
+	// }
+
+	if grpcErr != nil {
+		panic(grpcErr)
 	} else {
-		utils.LavaFormatInfo("REST TEST OK", nil)
+		utils.LavaFormatInfo("GRPC TEST OK", nil)
 	}
 
 	lt.checkPayments(time.Minute * 10)
