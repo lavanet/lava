@@ -119,7 +119,9 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
 		} else if !connected {
-			// If failed to connect we try again getting a random provider to pick from
+			// If failed to connect we ignore this provider for this get session request only
+			// and try again getting a random provider to pick from
+			tempIgnoredProviders.providers[providerAddress] = struct{}{}
 			continue
 		}
 
@@ -203,7 +205,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
 		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
-		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
+		ignoredProviders.providers = make(map[string]struct{}) // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
 
