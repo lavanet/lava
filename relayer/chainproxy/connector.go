@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const DialTimeout = 1000 * time.Millisecond
+const DialTimeout = 500 * time.Millisecond
 
 type Connector struct {
 	lock        utils.LavaMutex
