@@ -5,3 +5,5 @@ import (
 )
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
+
+const ServerErrorStatusCode = 500

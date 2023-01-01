@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MaxConsecutiveConnectionAttempts                 = 3
-	TimeoutForEstablishingAConnection                = 300 * time.Millisecond
+	MaxConsecutiveConnectionAttempts                 = 10
+	TimeoutForEstablishingAConnection                = 1000 * time.Millisecond
 	MaxSessionsAllowedPerProvider                    = 1000 // Max number of sessions allowed per provider
 	MaxAllowedBlockListedSessionPerProvider          = 3
 	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
