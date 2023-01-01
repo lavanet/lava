@@ -18,6 +18,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const DialTimeout = 500 * time.Millisecond
+
 type Connector struct {
 	lock        utils.LavaMutex
 	freeClients []*rpcclient.Client
@@ -37,7 +39,7 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 				connector.Close()
 				return nil
 			}
-			nctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+			nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 			rpcClient, err = rpcclient.DialContext(nctx, addr)
 			if err != nil {
 				utils.LavaFormatError("Could not connect to the client, retrying", err, nil)
@@ -133,7 +135,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 				connector.Close()
 				return nil
 			}
-			nctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+			nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 			grpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				utils.LavaFormatError("Could not connect to the client, retrying", err, nil)
