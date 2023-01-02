@@ -134,7 +134,7 @@ func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (
 		cs.blockQueueMu.RLock()
 		defer cs.blockQueueMu.RUnlock()
 		latestBlockSaved := cs.getLatestBlockUnsafe()
-		return latestBlockSaved.Hash == hash, nil
+		return latestBlockSaved.Hash != hash, nil
 	}
 	// a new block was received, we need to compare a previous hash
 	cs.blockQueueMu.RLock()
@@ -144,7 +144,7 @@ func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (
 	if err != nil {
 		return false, err
 	}
-	return latestBlockSaved.Hash == prevHash, nil
+	return latestBlockSaved.Hash != prevHash, nil
 }
 
 func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (gotNewBlock bool) {

@@ -233,7 +233,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
 	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
-	t.Run("banana", func(t *testing.T) {
+	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
 			utils.LavaFormatInfo("started test "+tt.name, nil)
 			callbackCalledFork = false
