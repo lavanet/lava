@@ -15,7 +15,6 @@ import (
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/utils"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -88,18 +87,6 @@ func (cs *ChainTracker) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
 
-func parseRequestedBlock(requested int64, latestBlock int64) int64 {
-	//if later we want to support other things like earliest, pending, finalized or safe this needs to change
-	if requested >= latestBlock {
-		return latestBlock
-	}
-	requestedRes := latestBlock + requested - spectypes.LATEST_BLOCK
-	if requestedRes < 0 {
-		return spectypes.NOT_APPLICABLE
-	}
-	return requestedRes
-}
-
 func (cs *ChainTracker) setLatestBlockNum(value int64) {
 	atomic.StoreInt64(&cs.latestBlockNum, value)
 }
@@ -115,15 +102,16 @@ func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64)
 	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
 
+// this function fetches all previous blocks from the node
 func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (err error) {
 	newBlocksQueue := []BlockStore{}
 	for blockNumToFetch := latestBlock - int64(cs.blocksToSave) + 1; blockNumToFetch <= latestBlock; blockNumToFetch++ { // save all blocks from the past up until latest block
 		result, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
 		if err != nil {
-			return utils.LavaFormatError("could not get block data in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10)})
+			return utils.LavaFormatError("could not get block data in Chain Tracker", err, &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10)})
 		}
 
-		utils.LavaFormatDebug("ChainTracker read a block", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "result": result})
+		utils.LavaFormatDebug("Chain Tracker read a block", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "result": result})
 		newBlocksQueue = append(newBlocksQueue, BlockStore{Block: blockNumToFetch, Hash: result}) // save entire block data for now
 	}
 	cs.blockQueueMu.Lock()
@@ -132,7 +120,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	blocksQueueLen := int64(len(cs.blocksQueue))
 	latestHash := cs.getLatestBlockUnsafe().Hash
 	cs.blockQueueMu.Unlock()
-	utils.LavaFormatInfo("ChainSentry Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatInt(blocksQueueLen, 10)})
+	utils.LavaFormatInfo("Chain Tracker Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatInt(blocksQueueLen, 10)})
 	return nil
 }
 
@@ -174,13 +162,18 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(newLatestBlock, 10)})
 	}
 	if gotNewBlock || forked {
+		utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10)})
+		// TODO: if we didn't fork theres really no need to refetch
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {
-			cs.newLatestCallback()
-			//need to check also a fork here
+			if cs.newLatestCallback != nil {
+				cs.newLatestCallback()
+			}
 		}
 		if forked {
-			cs.forkCallback()
+			if cs.forkCallback != nil {
+				cs.forkCallback()
+			}
 		}
 	}
 	return
@@ -225,7 +218,7 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	}()
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		utils.LavaFormatFatal("ChainTracker failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
+		utils.LavaFormatFatal("Chain Tracker failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
 	}
 	s := grpc.NewServer()
 
@@ -245,9 +238,9 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	go func() {
 		select {
 		case <-ctx.Done():
-			utils.LavaFormatInfo("chainTracker Server ctx.Done", nil)
+			utils.LavaFormatInfo("Chain Tracker Server ctx.Done", nil)
 		case <-signalChan:
-			utils.LavaFormatInfo("chainTracker Server signalChan", nil)
+			utils.LavaFormatInfo("Chain Tracker Server signalChan", nil)
 		}
 
 		shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
