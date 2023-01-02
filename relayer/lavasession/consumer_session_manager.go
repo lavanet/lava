@@ -160,6 +160,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
+			utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", &map[string]string{"Error": err.Error()})
 			if MaxComputeUnitsExceededError.Is(err) {
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				// We must unlock the consumer session before continuing.
