@@ -34,6 +34,7 @@ type ChainTracker struct {
 	forkCallback      func(int64)  //a function to be called when a fork is detected
 	newLatestCallback func(int64)  //a function to be called when a new block is detected
 	serverBlockMemory uint64
+	quit              chan bool
 }
 
 // this function returns block hashes of the blocks: [from block - to block) non inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -198,8 +199,12 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 				if err != nil {
 					utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, nil)
 				}
+			case <-cs.quit:
+				ticker.Stop()
+				return
 			}
 		}
+
 	}()
 
 	return nil
