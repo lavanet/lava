@@ -135,6 +135,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
 		if err != nil {
+			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", &map[string]string{"Error": err.Error()})
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
@@ -159,6 +160,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
+			utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", &map[string]string{"Error": err.Error()})
 			if MaxComputeUnitsExceededError.Is(err) {
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				// We must unlock the consumer session before continuing.
