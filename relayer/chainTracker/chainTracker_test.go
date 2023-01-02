@@ -286,10 +286,10 @@ func TestChainTrackerCallbacks(t *testing.T) {
 func TestChainTrackerMaintainMemory(t *testing.T) {
 	mockBlocks := int64(100)
 	requestBlocks := 4
-	fetcherBlocks := 10
+	fetcherBlocks := 50
 	requestBlockFrom := spectypes.LATEST_BLOCK - 6
 	requestBlockTo := spectypes.LATEST_BLOCK - 3
-	specificBlock := spectypes.LATEST_BLOCK - 7 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
+	specificBlock := spectypes.LATEST_BLOCK - 30 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
 	tests := []struct {
 		name        string
 		advancement int64
@@ -349,8 +349,8 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 				// in this test specific is always smaller than requestBlockFrom therefore first
 				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[0].Hash, specificNum), "latestBlock: %d, blockHashes: %v", latestBlock, requestedHashes)
 			}
-			for idx := 0; idx < len(requestedHashes)-1; idx++ {
-				require.Equal(t, requestedHashes[idx].Block+1, requestedHashes[idx+1].Block)
+			for idx := 1; idx < len(requestedHashes)-1; idx++ {
+				require.Equal(t, requestedHashes[idx].Block+1, requestedHashes[idx+1].Block, "latestBlock: %d, blockHashes: %v", latestBlock, requestedHashes)
 				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[idx].Hash, requestedHashes[idx].Block))
 			}
 			require.False(t, callbackCalledFork)
