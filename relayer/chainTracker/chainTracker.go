@@ -3,6 +3,7 @@ package chaintracker
 import (
 	"context"
 	"errors"
+	fmt "fmt"
 	"net"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"golang.org/x/net/http2"
@@ -21,18 +21,26 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+type ChainFetcher interface {
+	FetchLatestBlockNum(ctx context.Context) (int64, error)
+	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+}
+
 type ChainTracker struct {
-	chainProxy        chainproxy.ChainProxy //used to communicate with the node
-	blocksToSave      uint64                // how many finalized blocks to keep
+	chainFetcher      ChainFetcher //used to communicate with the node
+	blocksToSave      uint64       // how many finalized blocks to keep
 	latestBlockNum    int64
 	blockQueueMu      sync.RWMutex
 	blocksQueue       []BlockStore // holds all past hashes up until latest block
 	forkCallback      func()       //a function to be called when a fork is detected
 	newLatestCallback func()       //a function to be called when a new block is detected
+	serverBlockMemory uint64
 }
 
-// returns hashes [fromBlock - toBlock) non inclusive, its sorted from smallest to highest. to get relative to latest it accepts spectypes.LATEST_BLOCK-distance
-// to get only the latest use specific block
+// this function returns block hashes of the blocks: [from block - to block) non inclusive. an additional specific block hash can be provided. order is sorted ascending
+// it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
+// spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
+// if specific block is spectypes.NOT_APPLICABLE it is ignored
 func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, err error) {
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
@@ -41,51 +49,49 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, speci
 	if len(cs.blocksQueue) == 0 {
 		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10)})
 	}
-
-	fromBlock = formatRequestedBlock(fromBlock, latestBlock)
-	toBlock = formatRequestedBlock(toBlock, latestBlock)
-	specificBlock = formatRequestedBlock(specificBlock, latestBlock)
-
-	earliestBlock := cs.blocksQueue[0].Block
-	earliestRes := earliestBlock
-	if fromBlock > 0 && fromBlock < specificBlock {
-		earliestRes = fromBlock
-	} else if specificBlock > 0 && specificBlock < fromBlock {
-		earliestRes = specificBlock
-	} else {
-		//both not applicable, this is wrong
-		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData invalid requested blocks, both specific and from are NOT_APPLICABLE", nil, &map[string]string{"fromBlock": strconv.FormatInt(fromBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10)})
-	}
-	var queueIdx int64 = 0
-	if earliestRes <= earliestBlock {
-		queueIdx = 0
-	} else {
-		queueIdx = earliestRes - earliestBlock
+	earliestBlockSaved := cs.getEarliestBlockUnsafe().Block
+	wantedBlocksData := WantedBlocksData{}
+	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
+	if err != nil {
+		return latestBlock, nil, utils.LavaFormatError("invalid input for GetLatestBlockData", err, &map[string]string{
+			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
+			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
+		})
 	}
 
-	for queueIdx < int64(len(cs.blocksQueue)) {
-		blockStore := cs.blocksQueue[queueIdx]
-		from_block_cond := fromBlock <= blockStore.Block
-		to_block_cond := toBlock == spectypes.NOT_APPLICABLE || blockStore.Block < toBlock
-		specific_block_cond := blockStore.Block == specificBlock
-		if specific_block_cond || (from_block_cond && to_block_cond) {
-			requestedHashes = append(requestedHashes, &blockStore)
+	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
+		blockStore := cs.blocksQueue[blocksQueueIdx]
+		if !wantedBlocksData.IsWanted(blockStore.Block) {
+			return latestBlock, nil, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, &map[string]string{
+				"blocksQueueIdx": strconv.FormatInt(int64(blocksQueueIdx), 10), "blockStore": fmt.Sprintf("%+v", blockStore), "wantedBlocksData": wantedBlocksData.String(),
+			})
 		}
+		requestedHashes = append(requestedHashes, &blockStore)
 	}
 	return
+}
+
+// blockQueueMu must be locked
+func (cs *ChainTracker) getEarliestBlockUnsafe() BlockStore {
+	return cs.blocksQueue[0]
+}
+
+// blockQueueMu must be locked
+func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
+	if len(cs.blocksQueue) == 0 {
+		return BlockStore{Hash: "BAD-HASH"}
+	}
+	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
 func (cs *ChainTracker) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
 
-func formatRequestedBlock(requested int64, latestBlock int64) int64 {
+func parseRequestedBlock(requested int64, latestBlock int64) int64 {
 	//if later we want to support other things like earliest, pending, finalized or safe this needs to change
 	if requested >= latestBlock {
 		return latestBlock
-	}
-	if requested >= spectypes.NOT_APPLICABLE {
-		return spectypes.NOT_APPLICABLE
 	}
 	requestedRes := latestBlock + requested - spectypes.LATEST_BLOCK
 	if requestedRes < 0 {
@@ -99,11 +105,14 @@ func (cs *ChainTracker) setLatestBlockNum(value int64) {
 }
 
 func (cs *ChainTracker) fetchLatestBlockNum(ctx context.Context) (int64, error) {
-	return cs.chainProxy.FetchLatestBlockNum(ctx)
+	return cs.chainFetcher.FetchLatestBlockNum(ctx)
 }
 
 func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	return cs.chainProxy.FetchBlockHashByNum(ctx, blockNum)
+	if blockNum < cs.GetLatestBlockNum()-int64(cs.serverBlockMemory) {
+		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.GetLatestBlockNum(), cs.serverBlockMemory)
+	}
+	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
 
 func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (err error) {
@@ -121,21 +130,33 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	cs.setLatestBlockNum(latestBlock)
 	cs.blocksQueue = newBlocksQueue
 	blocksQueueLen := int64(len(cs.blocksQueue))
-	latestHash := cs.blocksQueue[blocksQueueLen-1].Hash
+	latestHash := cs.getLatestBlockUnsafe().Hash
 	cs.blockQueueMu.Unlock()
 	utils.LavaFormatInfo("ChainSentry Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatInt(blocksQueueLen, 10)})
 	return nil
 }
 
 func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
-	hash, err := cs.fetchBlockHashByNum(ctx, newLatestBlock)
-	if err != nil {
-		return
+	if newLatestBlock == cs.GetLatestBlockNum() {
+		// no new block arrived, compare the last hash
+		hash, err := cs.fetchBlockHashByNum(ctx, newLatestBlock)
+		if err != nil {
+			return false, err
+		}
+		cs.blockQueueMu.RLock()
+		defer cs.blockQueueMu.RUnlock()
+		latestBlockSaved := cs.getLatestBlockUnsafe()
+		return latestBlockSaved.Hash == hash, nil
 	}
+	// a new block was received, we need to compare a previous hash
 	cs.blockQueueMu.RLock()
-	defer cs.blockQueueMu.RUnlock()
-	latestHash := cs.blocksQueue[len(cs.blocksQueue)-1].Hash
-	return latestHash == hash, nil
+	latestBlockSaved := cs.getLatestBlockUnsafe()
+	cs.blockQueueMu.RUnlock() // not with defer because we are going to call an external function here
+	prevHash, err := cs.fetchBlockHashByNum(ctx, latestBlockSaved.Block)
+	if err != nil {
+		return false, err
+	}
+	return latestBlockSaved.Hash == prevHash, nil
 }
 
 func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (gotNewBlock bool) {
@@ -147,15 +168,16 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 	if err != nil {
 		return utils.LavaFormatError("could not fetchLatestBlockNum in ChainTracker", err, nil)
 	}
+	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
 		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(newLatestBlock, 10)})
 	}
-	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	if gotNewBlock || forked {
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {
 			cs.newLatestCallback()
+			//need to check also a fork here
 		}
 		if forked {
 			cs.forkCallback()
@@ -164,11 +186,16 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 	return
 }
 
-func (cs *ChainTracker) start(ctx context.Context, averageBlockTime time.Duration) error {
+func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
 	//TODO: subscribe instead of repeatedly fetching
-	ticker := time.NewTicker(averageBlockTime / 3) //sample it three times as much
+	ticker := time.NewTicker(pollingBlockTime) //sample it three times as much
 
+	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("could not fetchLatestBlockNum in ChainTracker", err, nil)
+	}
+	cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	// Polls blocks and keeps a queue of them
 	go func() {
 		for {
@@ -242,10 +269,10 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
-func New(ctx context.Context, cp chainproxy.ChainProxy, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+func New(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
 	config.validate()
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.blocksToSave, chainProxy: cp}
-	chainTracker.start(ctx, config.averageBlockTime)
+	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory}
+	chainTracker.start(ctx, config.AverageBlockTime)
 	chainTracker.serve(ctx, config.ServerAddress)
 	return
 }
