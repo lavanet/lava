@@ -220,13 +220,13 @@ func TestChainTrackerCallbacks(t *testing.T) {
 
 	//used to identify if the fork callback was called
 	callbackCalledFork := false
-	forkCallback := func() {
+	forkCallback := func(arg int64) {
 		utils.LavaFormatDebug("fork callback called", nil)
 		callbackCalledFork = true
 	}
 	//used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
-	newBlockCallback := func() {
+	newBlockCallback := func(arg int64) {
 		utils.LavaFormatDebug("new latest callback called", nil)
 		callbackCalledNewLatest = true
 	}

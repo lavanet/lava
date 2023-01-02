@@ -31,8 +31,8 @@ type ChainTracker struct {
 	latestBlockNum    int64
 	blockQueueMu      sync.RWMutex
 	blocksQueue       []BlockStore // holds all past hashes up until latest block
-	forkCallback      func()       //a function to be called when a fork is detected
-	newLatestCallback func()       //a function to be called when a new block is detected
+	forkCallback      func(int64)  //a function to be called when a fork is detected
+	newLatestCallback func(int64)  //a function to be called when a new block is detected
 	serverBlockMemory uint64
 }
 
@@ -167,12 +167,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {
 			if cs.newLatestCallback != nil {
-				cs.newLatestCallback()
+				cs.newLatestCallback(newLatestBlock)
 			}
 		}
 		if forked {
 			if cs.forkCallback != nil {
-				cs.forkCallback()
+				cs.forkCallback(newLatestBlock)
 			}
 		}
 	}
