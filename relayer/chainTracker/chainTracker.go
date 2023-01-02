@@ -204,7 +204,6 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 				return
 			}
 		}
-
 	}()
 
 	return nil
