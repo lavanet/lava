@@ -109,7 +109,7 @@ func TestChainTracker(t *testing.T) {
 				for i := 0; i < int(advancement); i++ {
 					currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
 				}
-				time.Sleep(timeForPollingMock * 2) // statTracker polls asynchronously
+				time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
 				latestBlock := chainTracker.GetLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 

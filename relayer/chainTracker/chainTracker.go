@@ -183,7 +183,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
 	// TODO: subscribe instead of repeatedly fetching
-	ticker := time.NewTicker(pollingBlockTime) //sample it three times as much
+	ticker := time.NewTicker(pollingBlockTime)
 
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
