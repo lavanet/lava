@@ -218,13 +218,13 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 	timeForPollingMock := time.Millisecond * 2
 
-	//used to identify if the fork callback was called
+	// used to identify if the fork callback was called
 	callbackCalledFork := false
 	forkCallback := func(arg int64) {
 		utils.LavaFormatDebug("fork callback called", nil)
 		callbackCalledFork = true
 	}
-	//used to identify if the newLatest callback was called
+	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
 	newBlockCallback := func(arg int64) {
 		utils.LavaFormatDebug("new latest callback called", nil)
@@ -242,7 +242,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
 			}
 			mockChainFetcher.Fork(tt.fork)
-			time.Sleep(timeForPollingMock * 2) // statTracker polls asynchronously
+			time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
 			latestBlock := chainTracker.GetLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 

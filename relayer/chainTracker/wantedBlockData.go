@@ -10,7 +10,7 @@ type BlockRange struct {
 	fromBlock              int64
 	toBlock                int64
 	startIndexFromEarliest uint64
-	endIndexFromEarliest   uint64 //not inclusive
+	endIndexFromEarliest   uint64 // not inclusive
 }
 
 type WantedBlocksData struct {
@@ -42,7 +42,7 @@ func (wbd *WantedBlocksData) New(fromBlock int64, toBlock int64, specificBlock i
 	if !ignoreSpecific {
 		fromBlockArg := LatestArgToBlockNum(specificBlock, latestBlock)
 		if wbd.rangeBlocks.IsWanted(fromBlockArg) {
-			//this means the specific block is within the range of [from-to) and there is no reason to create specific block range
+			// this means the specific block is within the range of [from-to) and there is no reason to create specific block range
 			wbd.specificBlock = nil
 		} else {
 			toBlockArg := fromBlockArg + 1
@@ -76,7 +76,7 @@ func (wbd *WantedBlocksData) IterationIndexes() (returnedIdxs []int) {
 	if wbd.specificBlock != nil {
 		return wbd.specificBlock.IterationIndexes()
 	}
-	//empty iteration indexes list
+	// empty iteration indexes list
 	return
 }
 
@@ -89,7 +89,7 @@ func (wbd *WantedBlocksData) IsWanted(blockNum int64) bool {
 	if wbd.specificBlock.IsWanted(blockNum) {
 		return true
 	}
-	//if is in range [from,to) return true
+	// if is in range [from,to) return true
 	if wbd.rangeBlocks.IsWanted(blockNum) {
 		return true
 	}
@@ -143,7 +143,7 @@ func (br *BlockRange) IsWanted(blockNum int64) bool {
 }
 
 func LatestArgToBlockNum(request int64, latestBlock int64) int64 {
-	//only modify latest - X requests
+	// only modify latest - X requests
 	if request > spectypes.LATEST_BLOCK {
 		return request
 	}

@@ -26,13 +26,13 @@ type ChainFetcher interface {
 }
 
 type ChainTracker struct {
-	chainFetcher      ChainFetcher //used to communicate with the node
+	chainFetcher      ChainFetcher // used to communicate with the node
 	blocksToSave      uint64       // how many finalized blocks to keep
 	latestBlockNum    int64
 	blockQueueMu      sync.RWMutex
 	blocksQueue       []BlockStore // holds all past hashes up until latest block
-	forkCallback      func(int64)  //a function to be called when a fork is detected
-	newLatestCallback func(int64)  //a function to be called when a new block is detected
+	forkCallback      func(int64)  // a function to be called when a fork is detected
+	newLatestCallback func(int64)  // a function to be called when a new block is detected
 	serverBlockMemory uint64
 	quit              chan bool
 }
@@ -182,7 +182,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
-	//TODO: subscribe instead of repeatedly fetching
+	// TODO: subscribe instead of repeatedly fetching
 	ticker := time.NewTicker(pollingBlockTime) //sample it three times as much
 
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
