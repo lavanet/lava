@@ -112,10 +112,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 		return utils.LavaFormatError("invalid latestBlock provided to fetch, it is older than the current state latest block", err, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10), "currentLatestBlock": strconv.FormatInt(currentLatestBlock, 10)})
 	}
 	readIndexDiff := latestBlock - currentLatestBlock
+	blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex := int64(0), int64(0), int64(0)
 	cs.blockQueueMu.RLock()
-	savedBlocks := int64(len(cs.blocksQueue))
-	blocksQueueIdx := savedBlocks - 1 + readIndexDiff
-	overwriteElements := int64(0)
 	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
 	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
 		blockNumToFetch := latestBlock - idx // reading the blocks from the newest to oldest
@@ -123,25 +121,11 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 		if err != nil {
 			return utils.LavaFormatError("could not get block data in Chain Tracker", err, &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10)})
 		}
-
-		if blocksQueueIdx-idx > 0 && blocksQueueIdx-idx <= savedBlocks-1 {
-			existingBlockStore := cs.blocksQueue[blocksQueueIdx-idx]
-			if existingBlockStore.Block != blockNumToFetch { // sanity
-				return utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, &map[string]string{
-					"block": strconv.FormatInt(blockNumToFetch, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-					"blocksQueueIdx": strconv.FormatInt(blocksQueueIdx, 10), "idx": strconv.FormatInt(idx, 10)})
-			}
-			if existingBlockStore.Hash == newHashForBlock { // means we already have that hash, since its a blockchain, this means all previous hashes are the same too
-				overwriteElements = blocksQueueIdx - idx + 1
-				utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "hash": existingBlockStore.Hash, "overwriteIndex": strconv.FormatInt(overwriteElements, 10)})
-				if overwriteElements < int64(cs.blocksToSave)-1-idx { // make sure that in the tail we updated and the existing block we have at least cs.blocksToSave
-					return utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, &map[string]string{
-						"block": strconv.FormatInt(blockNumToFetch, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-						"overwriteElements": strconv.FormatInt(overwriteElements, 10), "idx": strconv.FormatInt(idx, 10)})
-				} else {
-					break
-				}
-			}
+		var foundOverlap bool
+		foundOverlap, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex = cs.hashesOverlapIndexes(readIndexDiff, idx, blockNumToFetch, newHashForBlock)
+		if foundOverlap {
+			utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "hash": newHashForBlock, "KeptBlocks": strconv.FormatInt(blocksQueueEndIndex-blocksQueueStartIndex, 10)})
+			break
 		}
 		// there is no existing hash for this block
 		utils.LavaFormatDebug("Chain Tracker read a new block hash", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "newHash": newHashForBlock})
@@ -151,11 +135,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	blocksCopied := int64(cs.blocksToSave)
 	cs.blockQueueMu.Lock()
 	cs.setLatestBlockNum(latestBlock)
-	if readIndexDiff < int64(len(cs.blocksQueue)) && readIndexDiff <= overwriteElements {
-		cs.blocksQueue = append(cs.blocksQueue[readIndexDiff:overwriteElements], newBlocksQueue[overwriteElements-readIndexDiff:]...)
-		blocksCopied = int64(cs.blocksToSave) - readIndexDiff - overwriteElements
+	if newQueueStartIndex > 0 {
+		// means we copy previous blocks
+		cs.blocksQueue = append(cs.blocksQueue[blocksQueueStartIndex:blocksQueueEndIndex], newBlocksQueue[newQueueStartIndex:]...)
+		blocksCopied = blocksQueueEndIndex - blocksQueueStartIndex
 	} else {
-		// this only happens if we lost connection for a really long time
+		// this should only happens if we lost connection for a really long time and readIndexDiff is big, or there was a bigger fork than memory
 		cs.blocksQueue = newBlocksQueue
 	}
 	blocksQueueLen := uint64(len(cs.blocksQueue))
@@ -167,6 +152,37 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 		utils.LavaFormatInfo("Chain Tracker Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(blocksCopied, 10)})
 	}
 	return nil
+}
+
+func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx int64, fetchedBlockNum int64, newHashForBlock string) (foundOverlap bool, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64) {
+	savedBlocks := int64(len(cs.blocksQueue))
+	if readIndexDiff >= savedBlocks {
+		// we are too far ahead, there is no overlap for sure
+		return false, 0, 0, 0
+	}
+	blocksQueueEnd := savedBlocks - 1 + readIndexDiff // this is not the real end of the queue, its incremented by readIndexDiff so we traverse it together with newBlockQueue
+	blocksQueueIdx := blocksQueueEnd - newQueueIdx
+	if blocksQueueIdx > 0 && blocksQueueIdx <= savedBlocks-1 {
+		existingBlockStore := cs.blocksQueue[blocksQueueIdx]
+		if existingBlockStore.Block != fetchedBlockNum { // sanity
+			utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, &map[string]string{
+				"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
+				"blocksQueueIdx": strconv.FormatInt(blocksQueueEnd, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10)})
+			return false, 0, 0, 0
+		}
+		if existingBlockStore.Hash == newHashForBlock { // means we already have that hash, since its a blockchain, this means all previous hashes are the same too
+			overwriteElements := blocksQueueIdx + 1
+			if overwriteElements < int64(cs.blocksToSave)-1-newQueueIdx || readIndexDiff > overwriteElements { // make sure that in the tail we updated and the existing block we have at least cs.blocksToSave
+				utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, &map[string]string{
+					"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
+					"overwriteElements": strconv.FormatInt(overwriteElements, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10)})
+				return false, 0, 0, 0
+			} else {
+				return true, readIndexDiff, overwriteElements, overwriteElements - readIndexDiff
+			}
+		}
+	}
+	return false, 0, 0, 0
 }
 
 func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
@@ -207,7 +223,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return utils.LavaFormatError("could not fetchLatestBlock Hash in ChainTracker", err, &map[string]string{"block": strconv.FormatInt(newLatestBlock, 10)})
 	}
 	if gotNewBlock || forked {
-		utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10)})
+		utils.LavaFormatDebug("ChainTracker should update state", &map[string]string{"gotNewBlock": fmt.Sprintf("%t", gotNewBlock), "forked": fmt.Sprintf("%t", forked), "newLatestBlock": strconv.FormatInt(newLatestBlock, 10), "currentBlock": strconv.FormatInt(cs.GetLatestBlockNum(), 10)})
 		// TODO: if we didn't fork theres really no need to refetch
 		cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if gotNewBlock {
