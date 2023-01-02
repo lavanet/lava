@@ -103,25 +103,69 @@ func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64)
 	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
 
-// this function fetches all previous blocks from the node
+// this function fetches all previous blocks from the node starting at the latest provided going backwards blocksToSave blocks
+// if it reaches a hash that it already has it stops reading
 func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (err error) {
-	newBlocksQueue := []BlockStore{}
-	for blockNumToFetch := latestBlock - int64(cs.blocksToSave) + 1; blockNumToFetch <= latestBlock; blockNumToFetch++ { // save all blocks from the past up until latest block
-		result, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
+	newBlocksQueue := make([]BlockStore, int64(cs.blocksToSave))
+	currentLatestBlock := cs.GetLatestBlockNum()
+	if latestBlock < currentLatestBlock {
+		return utils.LavaFormatError("invalid latestBlock provided to fetch, it is older than the current state latest block", err, &map[string]string{"latestBlock": strconv.FormatInt(latestBlock, 10), "currentLatestBlock": strconv.FormatInt(currentLatestBlock, 10)})
+	}
+	readIndexDiff := latestBlock - currentLatestBlock
+	cs.blockQueueMu.RLock()
+	savedBlocks := int64(len(cs.blocksQueue))
+	blocksQueueIdx := savedBlocks - 1 + readIndexDiff
+	overwriteElements := int64(0)
+	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
+	for idx := int64(0); idx < int64(cs.blocksToSave); idx++ {
+		blockNumToFetch := latestBlock - idx // reading the blocks from the newest to oldest
+		newHashForBlock, err := cs.fetchBlockHashByNum(ctx, blockNumToFetch)
 		if err != nil {
 			return utils.LavaFormatError("could not get block data in Chain Tracker", err, &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10)})
 		}
 
-		utils.LavaFormatDebug("Chain Tracker read a block", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "result": result})
-		newBlocksQueue = append(newBlocksQueue, BlockStore{Block: blockNumToFetch, Hash: result}) // save entire block data for now
+		if blocksQueueIdx-idx > 0 && blocksQueueIdx-idx <= savedBlocks-1 {
+			existingBlockStore := cs.blocksQueue[blocksQueueIdx-idx]
+			if existingBlockStore.Block != blockNumToFetch { // sanity
+				return utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, &map[string]string{
+					"block": strconv.FormatInt(blockNumToFetch, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
+					"blocksQueueIdx": strconv.FormatInt(blocksQueueIdx, 10), "idx": strconv.FormatInt(idx, 10)})
+			}
+			if existingBlockStore.Hash == newHashForBlock { // means we already have that hash, since its a blockchain, this means all previous hashes are the same too
+				overwriteElements = blocksQueueIdx - idx + 1
+				utils.LavaFormatDebug("Chain Tracker read a block Hash, and it existed, stopping fetch", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "hash": existingBlockStore.Hash, "overwriteIndex": strconv.FormatInt(overwriteElements, 10)})
+				if overwriteElements < int64(cs.blocksToSave)-1-idx { // make sure that in the tail we updated and the existing block we have at least cs.blocksToSave
+					return utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, &map[string]string{
+						"block": strconv.FormatInt(blockNumToFetch, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
+						"overwriteElements": strconv.FormatInt(overwriteElements, 10), "idx": strconv.FormatInt(idx, 10)})
+				} else {
+					break
+				}
+			}
+		}
+		// there is no existing hash for this block
+		utils.LavaFormatDebug("Chain Tracker read a new block hash", &map[string]string{"block": strconv.FormatInt(blockNumToFetch, 10), "newHash": newHashForBlock})
+		newBlocksQueue[int64(cs.blocksToSave)-1-idx] = BlockStore{Block: blockNumToFetch, Hash: newHashForBlock}
 	}
+	cs.blockQueueMu.RUnlock()
+	blocksCopied := int64(cs.blocksToSave)
 	cs.blockQueueMu.Lock()
 	cs.setLatestBlockNum(latestBlock)
-	cs.blocksQueue = newBlocksQueue
-	blocksQueueLen := int64(len(cs.blocksQueue))
+	if readIndexDiff < int64(len(cs.blocksQueue)) && readIndexDiff <= overwriteElements {
+		cs.blocksQueue = append(cs.blocksQueue[readIndexDiff:overwriteElements], newBlocksQueue[overwriteElements-readIndexDiff:]...)
+		blocksCopied = int64(cs.blocksToSave) - readIndexDiff - overwriteElements
+	} else {
+		// this only happens if we lost connection for a really long time
+		cs.blocksQueue = newBlocksQueue
+	}
+	blocksQueueLen := uint64(len(cs.blocksQueue))
 	latestHash := cs.getLatestBlockUnsafe().Hash
 	cs.blockQueueMu.Unlock()
-	utils.LavaFormatInfo("Chain Tracker Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatInt(blocksQueueLen, 10)})
+	if blocksQueueLen < cs.blocksToSave {
+		return utils.LavaFormatError("fetchAllPreviousBlocks didn't save enough blocks in Chain Tracker", nil, &map[string]string{"blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10)})
+	} else {
+		utils.LavaFormatInfo("Chain Tracker Updated latest block", &map[string]string{"block": strconv.FormatInt(latestBlock, 10), "latestHash": latestHash, "blocksQueueLen": strconv.FormatUint(blocksQueueLen, 10), "blocksQueried": strconv.FormatInt(blocksCopied, 10)})
+	}
 	return nil
 }
 
