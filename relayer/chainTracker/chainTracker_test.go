@@ -72,6 +72,17 @@ func (mcf *MockChainFetcher) Fork(fork string) {
 	}
 }
 
+func (mcf *MockChainFetcher) Shrink(newSize int) {
+	mcf.mutex.Lock()
+	defer mcf.mutex.Unlock()
+	currentSize := len(mcf.blockHashes)
+	if currentSize <= newSize {
+		return
+	}
+	newHashes := make([]*chaintracker.BlockStore, newSize)
+	copy(newHashes, mcf.blockHashes[currentSize-newSize:])
+}
+
 func NewMockChainFetcher(startBlock int64, blocksToSave int64) *MockChainFetcher {
 	mockCHainFetcher := MockChainFetcher{}
 	for i := int64(0); i < blocksToSave; i++ {
@@ -268,6 +279,82 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			} else {
 				require.False(t, callbackCalledNewLatest)
 			}
+		}
+	})
+}
+
+func TestChainTrackerMaintainMemory(t *testing.T) {
+	mockBlocks := int64(100)
+	requestBlocks := 4
+	fetcherBlocks := 10
+	requestBlockFrom := spectypes.LATEST_BLOCK - 6
+	requestBlockTo := spectypes.LATEST_BLOCK - 3
+	specificBlock := spectypes.LATEST_BLOCK - 7 //needs to be smaller than requestBlockFrom, can't be NOT_APPLICABLE
+	tests := []struct {
+		name        string
+		advancement int64
+		shrink      bool
+	}{
+		{name: "[t00]", shrink: false, advancement: 0},
+		{name: "[t01]", shrink: false, advancement: 1},
+		{name: "[t02]", shrink: false, advancement: 0},
+		{name: "[t03]", shrink: false, advancement: 0},
+		{name: "[t04]", shrink: false, advancement: 1},
+		{name: "[t05]", shrink: true, advancement: 1},
+		{name: "[t06]", shrink: false, advancement: 1},
+		{name: "[t07]", shrink: false, advancement: 0},
+		{name: "[t08]", shrink: false, advancement: 2},
+		{name: "[t09]", shrink: false, advancement: 0},
+		{name: "[t10]", shrink: false, advancement: 5},
+		{name: "[t11]", shrink: false, advancement: 1},
+	}
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
+	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
+	timeForPollingMock := time.Millisecond * 2
+
+	// used to identify if the fork callback was called
+	callbackCalledFork := false
+	forkCallback := func(arg int64) {
+		utils.LavaFormatDebug("fork callback called", nil)
+		callbackCalledFork = true
+	}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
+	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
+	require.NoError(t, err)
+	t.Run("one long test", func(t *testing.T) {
+		for _, tt := range tests {
+			utils.LavaFormatInfo("started test "+tt.name, nil)
+			callbackCalledFork = false
+			for i := 0; i < int(tt.advancement); i++ {
+				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
+			}
+			if tt.shrink {
+				mockChainFetcher.Shrink(50) // do not allow previous block fetches
+			}
+			time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
+			latestBlock := chainTracker.GetLatestBlockNum()
+			require.Equal(t, currentLatestBlockInMock, latestBlock)
+
+			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
+			require.Equal(t, currentLatestBlockInMock, latestBlock)
+			require.NoError(t, err)
+			require.Equal(t, requestBlocks, len(requestedHashes))
+			if requestBlockFrom != spectypes.NOT_APPLICABLE {
+				fromNum := chaintracker.LatestArgToBlockNum(requestBlockFrom, latestBlock)
+				// in this test specific is always smaller than requestBlockFrom therefore from starts on index 1
+				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[1].Hash, fromNum), "incompatible hash %s on block %d", requestedHashes[1].Hash, fromNum)
+			}
+			if specificBlock != spectypes.NOT_APPLICABLE {
+				specificNum := chaintracker.LatestArgToBlockNum(specificBlock, latestBlock)
+				// in this test specific is always smaller than requestBlockFrom therefore first
+				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[0].Hash, specificNum), "latestBlock: %d, blockHashes: %v", latestBlock, requestedHashes)
+			}
+			for idx := 0; idx < len(requestedHashes)-1; idx++ {
+				require.Equal(t, requestedHashes[idx].Block+1, requestedHashes[idx+1].Block)
+				require.True(t, mockChainFetcher.IsCorrectHash(requestedHashes[idx].Hash, requestedHashes[idx].Block))
+			}
+			require.False(t, callbackCalledFork)
+
 		}
 	})
 }
