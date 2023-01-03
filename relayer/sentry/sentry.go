@@ -151,7 +151,7 @@ type Sentry struct {
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
-	providerDataContainersMu         utils.LavaMutex
+	providerDataContainersMu         sync.RWMutex
 
 	consumerSessionManager *lavasession.ConsumerSessionManager
 }
@@ -1406,6 +1406,8 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 }
 
 func (s *Sentry) ExpectedBlockHeight() (int64, int) {
+	s.providerDataContainersMu.RLock()
+	defer s.providerDataContainersMu.RUnlock()
 	averageBlockTime_ms := s.serverSpec.AverageBlockTime
 	listExpectedBlockHeights := []int64{}
 
