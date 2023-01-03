@@ -2,6 +2,8 @@ package chainproxy
 
 import (
 	"fmt"
+	"github.com/lavanet/lava/relayer/common"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"math/rand"
 	"os"
 	"strconv"
@@ -19,28 +21,29 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
+	epochErrorWhitelist *common.EpochErrorWhitelist
 }
 
-func NewPortalLogs() (*PortalLogs, error) {
+func NewPortalLogs(epochErrorWhitelist *common.EpochErrorWhitelist) (*PortalLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file", nil)
 
-		return &PortalLogs{}, nil
+		return &PortalLogs{nil, epochErrorWhitelist}, nil
 	}
 
 	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
 	NEW_RELIC_LICENSE_KEY := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if NEW_RELIC_APP_NAME == "" || NEW_RELIC_LICENSE_KEY == "" {
 		utils.LavaFormatInfo("New relic missing environment variables", nil)
-		return &PortalLogs{}, nil
+		return &PortalLogs{nil, epochErrorWhitelist}, nil
 	}
 	newRelicApplication, err := newrelic.NewApplication(
 		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
 		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
 		newrelic.ConfigFromEnvironment(),
 	)
-	return &PortalLogs{newRelicApplication}, err
+	return &PortalLogs{newRelicApplication, epochErrorWhitelist}, err
 }
 
 func (cp *PortalLogs) GetMessageSeed() string {
@@ -49,9 +52,13 @@ func (cp *PortalLogs) GetMessageSeed() string {
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (cp *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
+	// Only log error if it is not whitelisted for the current epoch
+	if responseError != nil && !cp.epochErrorWhitelist.IsErrorSet(responseError.Error()) {
+		utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
+	}
+
 	var ret string
 	ret = "Error GUID: " + msgSeed
-	utils.LavaFormatError("UniqueGuidResponseForError", responseError, &map[string]string{"msgSeed": msgSeed})
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}
@@ -73,7 +80,16 @@ func (cp *PortalLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt
 
 func (cp *PortalLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
 	if hasError && err != nil {
-		utils.LavaFormatError(module, err, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+		// Only log error if it is not whitelisted for the current epoch
+		if !cp.epochErrorWhitelist.IsErrorSet(err.Error()) {
+			utils.LavaFormatError(module, err, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})
+		}
+
+		// On first occurrence of no pairing list error add it to the whitelist
+		if err.Error() == lavasession.PairingListEmptyError.Error() && !cp.epochErrorWhitelist.IsErrorSet(lavasession.PairingListEmptyError.Error()) {
+			cp.epochErrorWhitelist.SetError(lavasession.PairingListEmptyError.Error())
+		}
+
 		return
 	}
 	utils.LavaFormatDebug(module, &map[string]string{"GUID": msgSeed, "request": req, "response": parser.CapStringLen(resp), "method": method, "path": path, "HasError": strconv.FormatBool(hasError)})

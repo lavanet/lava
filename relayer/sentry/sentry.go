@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/lavanet/lava/relayer/common"
 	"regexp"
 	"sort"
 	"strconv"
@@ -154,11 +155,18 @@ type Sentry struct {
 	providerDataContainersMu         utils.LavaMutex
 
 	consumerSessionManager *lavasession.ConsumerSessionManager
+
+	// Whitelists
+	epochErrorWhitelist *common.EpochErrorWhitelist // whitelist for all errors which shouldn't be logged in the current epoch
 }
 
-func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
+func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, epochErrorWhitelist *common.EpochErrorWhitelist) error {
 	utils.LavaFormatInfo("Setting up ConsumerSessionManager", nil)
 	s.consumerSessionManager = consumerSessionManager
+
+	// Add epoch error whitelist to the consumer Session manager
+	s.consumerSessionManager.EpochErrorWhitelist = epochErrorWhitelist
+
 	// Get pairing for the first time, for clients
 	pairingList, err := s.getPairing(ctx)
 	if err != nil {
@@ -611,6 +619,9 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				utils.LavaFormatInfo("New Epoch Event", nil)
 				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
+
+				// Reset epochErrorWhitelist
+				s.epochErrorWhitelist.Reset()
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
@@ -1470,6 +1481,7 @@ func NewSentry(
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
 	serverID uint64,
+	epochErrorWhitelist *common.EpochErrorWhitelist,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -1500,6 +1512,7 @@ func NewSentry(
 		voteInitiationCb:        voteInitiationCb,
 		serverID:                serverID,
 		authorizationCache:      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse{},
+		epochErrorWhitelist:     epochErrorWhitelist,
 	}
 }
 

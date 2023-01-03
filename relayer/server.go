@@ -1138,7 +1138,7 @@ func Server(
 	//
 
 	// Start newSentry
-	newSentry := sentry.NewSentry(clientCtx, txFactory, chainID, false, voteEventHandler, askForRewards, apiInterface, nil, flagSet, g_serverID)
+	newSentry := sentry.NewSentry(clientCtx, txFactory, chainID, false, voteEventHandler, askForRewards, apiInterface, nil, flagSet, g_serverID, nil)
 	err := newSentry.Init(ctx)
 	if err != nil {
 		utils.LavaFormatError("sentry init failure to initialize", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
@@ -1177,7 +1177,7 @@ func Server(
 	//
 	// Node
 	// get portal logs
-	pLogs, err := chainproxy.NewPortalLogs()
+	pLogs, err := chainproxy.NewPortalLogs(nil)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 	}
