@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/lavanet/lava/relayer/common"
 	"math/rand"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lavanet/lava/relayer/common"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"

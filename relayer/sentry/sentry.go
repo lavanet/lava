@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/lavanet/lava/relayer/common"
 	"regexp"
 	"sort"
 	"strconv"
@@ -14,6 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lavanet/lava/relayer/common"
 
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"

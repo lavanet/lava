@@ -3,11 +3,12 @@ package relayer
 import (
 	context "context"
 	"fmt"
-	"github.com/lavanet/lava/relayer/common"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/lavanet/lava/relayer/common"
+	"github.com/lavanet/lava/relayer/lavasession"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"

@@ -2,11 +2,12 @@ package chainproxy
 
 import (
 	"fmt"
-	"github.com/lavanet/lava/relayer/common"
-	"github.com/lavanet/lava/relayer/lavasession"
 	"math/rand"
 	"os"
 	"strconv"
+
+	"github.com/lavanet/lava/relayer/common"
+	"github.com/lavanet/lava/relayer/lavasession"
 
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
