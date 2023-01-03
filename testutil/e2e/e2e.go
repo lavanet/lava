@@ -118,7 +118,7 @@ func (lt *lavaTest) stakeLava() {
 
 func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, successMessage string) {
 	// providerCount and clientCount refers to number and providers and client for each spec
-	// number of providers and clients should be the same for all specs for for simplicity's sake
+	// number of providers and clients should be the same for all specs for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
 	// query all specs
