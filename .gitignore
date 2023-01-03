@@ -3,6 +3,7 @@ vue/dist
 release/
 .idea/
 .vscode/
+.*.sw?
 .DS_Store
 notes.txt
 vue/src/store/generated/*
