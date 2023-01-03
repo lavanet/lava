@@ -28,6 +28,7 @@ const (
 	ConflictVoteUnresolvedEventName    = "conflict_detection_vote_unresolved"
 	ConflictVoteGotCommitEventName     = "conflict_vote_got_commit"
 	ConflictVoteGotRevealEventName     = "conflict_vote_got_reveal"
+	ConflictUnstakeFraudVoterEventName = "conflict_unstake_fraud_voter"
 )
 
 func CommitVoteData(nonce int64, dataHash []byte) []byte {
