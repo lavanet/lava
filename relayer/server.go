@@ -784,6 +784,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	latestBlock := int64(0)
 	finalizedBlockHashes := map[int64]interface{}{}
 	var requestedBlockHash []byte = nil
+	finalized := false
 	if g_sentry.GetSpecDataReliabilityEnabled() {
 		// Add latest block and finalized data
 		var requestedBlockHashStr string
@@ -798,9 +799,14 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		} else {
 			requestedBlockHash = []byte(requestedBlockHashStr)
 		}
+		request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
+		if request.RequestBlock > latestBlock {
+			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
+			return nil, utils.LavaFormatError("Requested a block that is too new", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+
+		finalized = g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	}
-	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
-	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	cache := g_chainProxy.GetCache()
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply = nil
@@ -810,7 +816,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	}
 	if err != nil || reply == nil {
 		if err != nil && performance.NotConnectedError.Is(err) {
-			utils.LavaFormatError("cache not connected", err, nil)
+			utils.LavaFormatWarning("cache not connected", err, nil)
 		}
 		// cache miss or invalid
 		reply, _, _, err = nodeMsg.Send(ctx, nil)
