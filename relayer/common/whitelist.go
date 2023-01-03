@@ -52,7 +52,7 @@ func (wl *EpochErrorWhitelist) IsErrorSet(name string) bool {
 	}
 
 	// Check if the value for the specified error name is set to true.
-	if val, ok := (*wl)[name]; ok && val == true {
+	if val, ok := (*wl)[name]; ok && val {
 		return true
 	}
 	return false
