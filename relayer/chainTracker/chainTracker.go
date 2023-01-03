@@ -167,7 +167,8 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx in
 		if existingBlockStore.Block != fetchedBlockNum { // sanity
 			utils.LavaFormatError("mismatching blocksQueue Index and fetch index, blockStore isn't the right block", nil, &map[string]string{
 				"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-				"blocksQueueIdx": strconv.FormatInt(blocksQueueEnd, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10)})
+				"blocksQueueIdx": strconv.FormatInt(blocksQueueEnd, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10),
+			})
 			return false, 0, 0, 0
 		}
 		if existingBlockStore.Hash == newHashForBlock { // means we already have that hash, since its a blockchain, this means all previous hashes are the same too
@@ -175,7 +176,8 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx in
 			if overwriteElements < int64(cs.blocksToSave)-1-newQueueIdx || readIndexDiff > overwriteElements { // make sure that in the tail we updated and the existing block we have at least cs.blocksToSave
 				utils.LavaFormatError("mismatching blocksQueue Index and fetch index, there aren't enough blocks", nil, &map[string]string{
 					"block": strconv.FormatInt(fetchedBlockNum, 10), "existingBlockStore": fmt.Sprintf("%+v", existingBlockStore),
-					"overwriteElements": strconv.FormatInt(overwriteElements, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10)})
+					"overwriteElements": strconv.FormatInt(overwriteElements, 10), "newQueueIdx": strconv.FormatInt(newQueueIdx, 10), "readIndexDiff": strconv.FormatInt(readIndexDiff, 10),
+				})
 				return false, 0, 0, 0
 			} else {
 				return true, readIndexDiff, overwriteElements, overwriteElements - readIndexDiff
