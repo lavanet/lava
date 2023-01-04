@@ -32,7 +32,7 @@ type ConsumerSessionManager struct {
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 
-	EpochErrorWhitelist *common.EpochErrorWhitelist // whitelist for all errors which shouldn't be logged in the current epoch
+	EpochErrorAllowlist *common.EpochErrorAllowlist // allow-list for all errors which shouldn't be logged in the current epoch
 }
 
 // Update the provider pairing list for the ConsumerSessionManager
@@ -217,8 +217,8 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 
 	providerAddress, err = csm.getValidProviderAddress(ignoredProviders.providers)
 	if err != nil {
-		// Only log error if it is not whitelisted for the current epoch
-		if !csm.EpochErrorWhitelist.IsErrorSet(err.Error()) {
+		// Only log error if it is not allow-listed for the current epoch
+		if !csm.EpochErrorAllowlist.IsErrorSet(err.Error()) {
 			utils.LavaFormatError("could not get a provider address", err, nil)
 		}
 

@@ -38,12 +38,12 @@ func PortalServer(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 
-	// Whitelists
+	// Allow-list
 	epochErrors := []string{lavasession.PairingListEmptyError.Error()}
-	epochErrorWhitelist := common.NewEpochErrorWhitelist(epochErrors)
+	epochErrorAllowlist := common.NewEpochErrorAllowlist(epochErrors)
 
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0, epochErrorWhitelist)
+	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0, epochErrorAllowlist)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -56,7 +56,7 @@ func PortalServer(
 	g_serverChainID = chainID
 
 	// Node
-	pLogs, err := chainproxy.NewPortalLogs(epochErrorWhitelist)
+	pLogs, err := chainproxy.NewPortalLogs(epochErrorAllowlist)
 	if err != nil {
 		log.Fatalln("error: NewPortalLogs", err)
 	}
@@ -65,7 +65,7 @@ func PortalServer(
 		log.Fatalln("error: GetChainProxy", err)
 	}
 	// Setting up the sentry callback
-	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager(), epochErrorWhitelist)
+	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager(), epochErrorAllowlist)
 	if err != nil {
 		log.Fatalln("error: SetupConsumerSessionManager", err)
 	}

@@ -157,16 +157,16 @@ type Sentry struct {
 
 	consumerSessionManager *lavasession.ConsumerSessionManager
 
-	// Whitelists
-	epochErrorWhitelist *common.EpochErrorWhitelist // whitelist for all errors which shouldn't be logged in the current epoch
+	// Allowlists
+	epochErrorAllowlist *common.EpochErrorAllowlist // allow-list for all errors which shouldn't be logged in the current epoch
 }
 
-func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, epochErrorWhitelist *common.EpochErrorWhitelist) error {
+func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, epochErrorAllowlist *common.EpochErrorAllowlist) error {
 	utils.LavaFormatInfo("Setting up ConsumerSessionManager", nil)
 	s.consumerSessionManager = consumerSessionManager
 
-	// Add epoch error whitelist to the consumer Session manager
-	s.consumerSessionManager.EpochErrorWhitelist = epochErrorWhitelist
+	// Add epoch error allow-list to the consumer Session manager
+	s.consumerSessionManager.EpochErrorAllowlist = epochErrorAllowlist
 
 	// Get pairing for the first time, for clients
 	pairingList, err := s.getPairing(ctx)
@@ -621,8 +621,8 @@ func (s *Sentry) Start(ctx context.Context) {
 				utils.LavaFormatInfo("New Epoch Event", nil)
 				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
 
-				// Reset epochErrorWhitelist
-				s.epochErrorWhitelist.Reset()
+				// Reset epochErrorAllowlist
+				s.epochErrorAllowlist.Reset()
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
@@ -1482,7 +1482,7 @@ func NewSentry(
 	vrf_sk vrf.PrivateKey,
 	flagSet *pflag.FlagSet,
 	serverID uint64,
-	epochErrorWhitelist *common.EpochErrorWhitelist,
+	epochErrorAllowlist *common.EpochErrorAllowlist,
 ) *Sentry {
 	rpcClient := clientCtx.Client
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
@@ -1513,7 +1513,7 @@ func NewSentry(
 		voteInitiationCb:        voteInitiationCb,
 		serverID:                serverID,
 		authorizationCache:      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse{},
-		epochErrorWhitelist:     epochErrorWhitelist,
+		epochErrorAllowlist:     epochErrorAllowlist,
 	}
 }
 
