@@ -621,15 +621,15 @@ func (lt *lavaTest) saveLogs() {
 		errorLines := []string{}
 		for _, line := range lines {
 			if strings.Contains(line, " ERR ") {
-				whitelisted := false
-				for errorSubstring := range whitelist {
+				isAllowedError := false
+				for errorSubstring := range allowedErrors {
 					if strings.Contains(line, errorSubstring) {
-						whitelisted = true
+						isAllowedError = true
 						break
 					}
 				}
-				// When test did not finish properly save all logs. If test finished properly save only non whitelist.
-				if !lt.testFinishedProperly || !whitelisted {
+				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
+				if !lt.testFinishedProperly || !isAllowedError {
 					errorLineCount += 1
 					errorLines = append(errorLines, line)
 				}
