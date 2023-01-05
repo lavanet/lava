@@ -25,6 +25,7 @@ const (
 	TimePerCU                 = uint64(100 * time.Millisecond)
 	ContextUserValueKeyDappID = "dappID"
 	MinimumTimePerRelayDelay  = time.Second
+	AverageWorldLatency       = 100 * time.Millisecond
 )
 
 type NodeMessage interface {
@@ -150,7 +151,7 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		connectCtx, cancel := context.WithTimeout(ctx, 5*time.Second) // getTimePerCu(consumerSession.LatestRelayCu)+100*time.Millisecond
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient
