@@ -796,7 +796,6 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
 			"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
 			"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
-			"providerSession":     strconv.FormatUint(relaySession.atomicReadRelayNum(), 10),
 		})
 	}
 	return reply, s.handleRelayErrorStatus(err)
