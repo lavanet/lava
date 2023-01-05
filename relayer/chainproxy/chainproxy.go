@@ -25,7 +25,7 @@ const (
 	TimePerCU                 = uint64(100 * time.Millisecond)
 	ContextUserValueKeyDappID = "dappID"
 	MinimumTimePerRelayDelay  = time.Second
-	AverageWorldLatency       = 100 * time.Millisecond
+	AverageWorldLatency       = 200 * time.Millisecond
 )
 
 type NodeMessage interface {
