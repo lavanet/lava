@@ -366,7 +366,15 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			c.Status(fiber.StatusInternalServerError)
 			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
 		}
-		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+		cp.portalLogs.LogRequestAndResponse("jsonrpc http",
+			false,
+			"POST",
+			c.Request().URI().String(),
+			string(c.Body()),
+			string(reply.Data),
+			msgSeed,
+			nil,
+		)
 		return c.SendString(string(reply.Data))
 	})
 

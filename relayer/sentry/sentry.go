@@ -982,7 +982,10 @@ func (s *Sentry) SendRelay(
 	reply, replyServer, request, latency, fromCache, err := cb_send_relay(consumerSession)
 	// error using this provider
 	if err != nil {
-		return nil, nil, 0, fromCache, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+		// Lava format error overrides the error status code.
+		// so in this case we just want to return the error as it is
+		utils.LavaFormatError("failed sending relay", err, nil)
+		return nil, nil, 0, fromCache, err
 	}
 
 	if s.GetSpecDataReliabilityEnabled() && reply != nil && !fromCache {
