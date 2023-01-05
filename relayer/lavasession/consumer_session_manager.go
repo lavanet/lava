@@ -11,7 +11,9 @@ import (
 	"time"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/gogo/status"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc/codes"
 )
 
 type ConsumerSessionManager struct {
@@ -185,6 +187,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	validAddressesLength := len(csm.validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
+		utils.LavaFormatDebug("Pairing list empty", &map[string]string{"Provider list": fmt.Sprintf("%v", csm.validAddresses), "IgnoredProviderList": fmt.Sprintf("%v", ignoredProvidersList)})
 		err = PairingListEmptyError
 		return
 	}
@@ -300,6 +303,8 @@ func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsum
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
+	code := status.Code(errorReceived)
+
 	if err := csm.verifyLock(consumerSession); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
@@ -313,8 +318,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
-	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || SessionOutOfSyncError.Is(errorReceived) {
+	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || code == codes.Code(SessionOutOfSyncError.ABCICode()) {
+		utils.LavaFormatDebug("Blocking consumer session", &map[string]string{"id": strconv.FormatInt(consumerSession.SessionId, 10)})
 		consumerSession.BlockListed = true // block this session from future usages
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
