@@ -1,6 +1,24 @@
 #!/usr/bin/make -f
 
-VERSION ?= $(shell echo $(shell git describe --tags) | sed 's/^v//')
+VERSION ?= $(shell git describe --tags 2> /dev/null)
+
+# verify that the currently checked-out code is:
+# - clean (no local uncommitted changed, no untracked files)
+# - matching in version to the desired tag (no extra commit)
+
+VERSION_DIRTY := $(shell git status --porcelain)
+VERSION_REAL := $(shell git describe --tags --exact-match 2> /dev/null || echo "none")
+
+ifneq '$(VERSION)' '$(VERSION_REAL)'
+  $(error Current checked-out code does not match requested version)
+endif
+ifneq '$(VERSION_DIRTY)' ''
+  $(warning Current checked-out code is not clean (has uncommitted changes or untracked files))
+endif
+
+# strip the leading 'v'
+VERSION := $(subst v,,$(VERSION))
+
 COMMIT ?= $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
