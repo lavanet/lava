@@ -50,7 +50,7 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 	}
 	hashes := make(map[int64]interface{}, len(cs.blocksQueue))
 
-	for indexInQueue := 0; indexInQueue < cs.numFinalBlocks; indexInQueue++ {
+	for indexInQueue := 0; indexInQueue < cs.numFinalBlocks+cs.finalizedBlockDistance; indexInQueue++ {
 		blockNum := latestBlockNum - int64(cs.finalizedBlockDistance) - int64(cs.numFinalBlocks) + int64(indexInQueue+1)
 		if blockNum < 0 {
 			continue
@@ -60,10 +60,12 @@ func (cs *ChainSentry) GetLatestBlockData(requestedBlock int64) (latestBlock int
 			hashes[blockNum] = cs.blocksQueue[indexInQueue]
 		}
 		// keep iterating on the others to find a match for the request
+		// utils.LavaFormatDebug("blocksCompare", &map[string]string{"blocksQueue": fmt.Sprintf("%+v", blockNum), "requestedBlock": strconv.FormatInt(requestedBlock, 10), "indexInQueue": strconv.FormatUint(uint64(indexInQueue), 10)})
 		if blockNum == requestedBlock {
 			requestedBlockHash = cs.blocksQueue[indexInQueue]
 		}
 	}
+	// utils.LavaFormatDebug("ChainSentry LatestBlockData", &map[string]string{"blocksQueue": fmt.Sprintf("%+v", cs.blocksQueue), "requestedBlock": strconv.FormatInt(requestedBlock, 10), "initialBlocknum": strconv.FormatInt(latestBlockNum-int64(cs.finalizedBlockDistance)-int64(cs.numFinalBlocks)+int64(0+1), 10)})
 	return latestBlockNum, hashes, requestedBlockHash, nil
 }
 

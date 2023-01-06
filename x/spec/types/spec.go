@@ -11,10 +11,23 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
 	functionTags := map[string]bool{}
 
+	availableAPIInterface := map[string]struct{}{
+		APIInterfaceJsonRPC:       {},
+		APIInterfaceTendermintRPC: {},
+		APIInterfaceRest:          {},
+		APIInterfaceGrpc:          {},
+	}
+
 	for _, api := range spec.Apis {
 		if api.ComputeUnits < minCU || api.ComputeUnits > maxCU {
 			details["api"] = api.Name
 			return details, fmt.Errorf("compute units out or range")
+		}
+
+		for _, apiInterface := range api.ApiInterfaces {
+			if _, ok := availableAPIInterface[apiInterface.Interface]; !ok {
+				return details, fmt.Errorf("unsupported api interface %v", apiInterface.Interface)
+			}
 		}
 
 		if api.Parsing.FunctionTag != "" {

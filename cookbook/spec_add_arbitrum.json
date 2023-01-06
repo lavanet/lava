@@ -306,9 +306,9 @@
                         "name": "eth_blockNumber",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -1590,9 +1590,9 @@
                         "name": "eth_blockNumber",
                         "block_parsing": {
                             "parser_arg": [
-                                ""
+                                "latest"
                             ],
-                            "parser_func": "EMPTY"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,

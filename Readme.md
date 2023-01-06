@@ -24,7 +24,7 @@ Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) whic
 ### Build `lavad`
 
 ```bash
-make install
+make build
 ```
 
 Or check out the latest [release](https://github.com/lavanet/lava/releases).

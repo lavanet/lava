@@ -22,8 +22,10 @@ import (
 
 const (
 	DefaultTimeout            = 5 * time.Second
-	TimePerCU                 = uint64(time.Second)
+	TimePerCU                 = uint64(100 * time.Millisecond)
 	ContextUserValueKeyDappID = "dappID"
+	MinimumTimePerRelayDelay  = time.Second
+	AverageWorldLatency       = 200 * time.Millisecond
 )
 
 type NodeMessage interface {
@@ -149,7 +151,7 @@ func SendRelay(
 		relayRequest.Sig = sig
 		c := *consumerSession.Endpoint.Client
 
-		connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(consumerSession.LatestRelayCu)+AverageWorldLatency)
 		defer cancel()
 
 		var replyServer pairingtypes.Relayer_RelaySubscribeClient
@@ -187,7 +189,10 @@ func SendRelay(
 			}
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
-			cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
+			err := cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
+			if err != nil && !performance.NotInitialisedError.Is(err) {
+				utils.LavaFormatWarning("error updating cache with new entry", err, nil)
+			}
 			return reply, nil, relayRequest, currentLatency, false, nil
 		}
 		// isSubscription
@@ -250,32 +255,28 @@ func SendRelay(
 		if errReport != nil {
 			return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
 		}
-		if lavasession.SendRelayError.Is(firstSessionError) {
-			// Retry
-			originalProviderAddress := providerPublicAddress
-			singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err = cp.GetConsumerSessionManager().GetSessionFromAllExcept(ctx, map[string]struct{}{providerPublicAddress: {}}, nodeMsg.GetServiceApi().ComputeUnits, epoch)
-			if err != nil {
-				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
-			}
-			var secondSessionError error
-			reply, replyServer, relayLatency, isCachedResult, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetInterface().Category)
-			if secondSessionError != nil {
-				errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
-				if errReport != nil {
-					return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
-				}
-				// compare error1 with error2
-				if secondSessionError.Error() != firstSessionError.Error() {
-					return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error(), "firstProviderAddr": originalProviderAddress, "secondProviderAddr": providerPublicAddress})
-				} else {
-					// if both errors are the same, just return the first error.
-					return nil, nil, firstSessionError
-				}
-			}
-			// retry attempt succeeded! can continue normally
-		} else {
-			return nil, nil, firstSessionError
+		// Retry
+		originalProviderAddress := providerPublicAddress
+		singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err = cp.GetConsumerSessionManager().GetSessionFromAllExcept(ctx, map[string]struct{}{providerPublicAddress: {}}, nodeMsg.GetServiceApi().ComputeUnits, epoch)
+		if err != nil {
+			return nil, nil, utils.LavaFormatError("relay_retry_attempt - Failed to get a second session from a different provider", nil, &map[string]string{"Original Error": firstSessionError.Error(), "GetSessionFromAllExcept Error": err.Error(), "ChainID": cp.GetSentry().ChainID, "Original_Provider_Address": originalProviderAddress})
 		}
+		var secondSessionError error
+		reply, replyServer, relayLatency, isCachedResult, secondSessionError = cp.GetSentry().SendRelay(ctx, singleConsumerSession, epoch, providerPublicAddress, callback_send_relay, callback_send_reliability, nodeMsg.GetInterface().Category)
+		if secondSessionError != nil {
+			errReport = cp.GetConsumerSessionManager().OnSessionFailure(singleConsumerSession, secondSessionError)
+			if errReport != nil {
+				return nil, nil, fmt.Errorf("original error: %v, onSessionFailure: %v", firstSessionError, errReport)
+			}
+			// compare error1 with error2
+			if secondSessionError.Error() != firstSessionError.Error() {
+				return nil, nil, utils.LavaFormatError("relay_retry_attempt - Received two different errors from different providers", nil, &map[string]string{"firstSessionError": firstSessionError.Error(), "secondSessionError": secondSessionError.Error(), "firstProviderAddr": originalProviderAddress, "secondProviderAddr": providerPublicAddress})
+			} else {
+				// if both errors are the same, just return the first error.
+				return nil, nil, firstSessionError
+			}
+		}
+		// retry attempt succeeded! can continue normally
 	}
 	if !isSubscription {
 		if isCachedResult {
@@ -330,5 +331,5 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 }
 
 func getTimePerCu(cu uint64) time.Duration {
-	return time.Duration(cu * TimePerCU)
+	return time.Duration(cu*TimePerCU) + MinimumTimePerRelayDelay
 }
