@@ -601,9 +601,9 @@ func (lt *lavaTest) saveLogs() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		err = os.Mkdir(logsFolder, os.ModePerm)
+		err = os.MkdirAll(logsFolder, os.ModePerm)
 		if err != nil {
-			fmt.Println(err)
+			panic(err)
 		}
 	}
 	errorLineCount := 0
@@ -616,7 +616,7 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		// utils.LavaFormatInfo(logBuffer.String(), nil)
+
 		lines := strings.Split(logBuffer.String(), "\n")
 		errorLines := []string{}
 		for _, line := range lines {
