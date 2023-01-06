@@ -48,11 +48,12 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayReq
 	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Finalized: finalized})
 }
 
-func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, bucketID string, reply *pairingtypes.RelayReply, finalized bool) {
+func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, bucketID string, reply *pairingtypes.RelayReply, finalized bool) error {
 	if cache == nil {
 		// TODO: try to connect again once in a while
-		return
+		return NotInitialisedError
 	}
 	// TODO: handle disconnections and SetRelay error types here
-	cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Response: reply, Finalized: finalized, BucketID: bucketID})
+	_, err := cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Response: reply, Finalized: finalized, BucketID: bucketID})
+	return err
 }

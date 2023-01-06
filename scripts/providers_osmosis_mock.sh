@@ -19,12 +19,12 @@ echo "---------------Setup Providers------------------"
 
 #osmosis providers
 echo " ::: STARTING OSMOSIS PROVIDERS :::"
-lavad server 127.0.0.1 2231 http://0.0.0.0:2031/rest/ COS3 rest --from servicer1 --log_level debug &
-lavad server 127.0.0.1 2232 http://0.0.0.0:2032/rest/ COS3 rest --from servicer2 --log_level debug &
-lavad server 127.0.0.1 2233 http://0.0.0.0:2033/rest/ COS3 rest --from servicer3 --log_level debug &
-lavad server 127.0.0.1 2241 http://0.0.0.0:2041/rpc/ COS3 tendermintrpc --from servicer1 --log_level debug &
-lavad server 127.0.0.1 2242 http://0.0.0.0:2042/rpc/ COS3 tendermintrpc --from servicer2 --log_level debug &
-lavad server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 --log_level debug 
+lavad server 127.0.0.1 2231 http://0.0.0.0:2031/rest/ COS3 rest --from servicer1 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2232 http://0.0.0.0:2032/rest/ COS3 rest --from servicer2 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2233 http://0.0.0.0:2033/rest/ COS3 rest --from servicer3 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2241 http://0.0.0.0:2041/rpc/ COS3 tendermintrpc --from servicer1 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2242 http://0.0.0.0:2042/rpc/ COS3 tendermintrpc --from servicer2 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2243 http://0.0.0.0:2043/rpc/ COS3 tendermintrpc --from servicer3 --geolocation 1 --log_level debug 
 echo " ::: providers done! :::"
 # screen -d -m -S portals zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1"
 # screen -S portals -X screen -t win10 -X zsh -c "source ~/.zshrc; lavad portal_server 127.0.0.1 3334 COS3 rest --from user2"

@@ -16,11 +16,11 @@ echo " ::: STARTING ETH PROVIDERS :::"
 # lavad server 127.0.0.1 2223 http://0.0.0.0:2000/$ETH_URL_PATH ETH1 jsonrpc --from servicer3 &
 # lavad server 127.0.0.1 2224 http://0.0.0.0:2000/$ETH_URL_PATH ETH1 jsonrpc --from servicer4 &
 # lavad server 127.0.0.1 2225 http://0.0.0.0:2000/$ETH_URL_PATH ETH1 jsonrpc --from servicer5 
-lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 --log_level debug &
-lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2 --log_level debug &
-lavad server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3 --log_level debug &
-lavad server 127.0.0.1 2224 $ETH_RPC_WS ETH1 jsonrpc --from servicer4 --log_level debug &
-lavad server 127.0.0.1 2225 $ETH_RPC_WS ETH1 jsonrpc --from servicer5 --log_level debug 
+lavad server 127.0.0.1 2221 $ETH_RPC_WS ETH1 jsonrpc --from servicer1 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2222 $ETH_RPC_WS ETH1 jsonrpc --from servicer2 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2223 $ETH_RPC_WS ETH1 jsonrpc --from servicer3 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2224 $ETH_RPC_WS ETH1 jsonrpc --from servicer4 --geolocation 1 --log_level debug &
+lavad server 127.0.0.1 2225 $ETH_RPC_WS ETH1 jsonrpc --from servicer5 --geolocation 1 --log_level debug 
 
 # Terra providers 
 # screen -S providers -X screen -t win3 -X zsh -c "source ~/.zshrc; lavad server 127.0.0.1 2231 $TERRA_RPC_LCD COS1 rest --from servicer1"

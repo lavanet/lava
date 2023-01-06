@@ -5,7 +5,7 @@ import (
 )
 
 var ( // Consumer Side Errors
-	PairingListEmptyError                                = sdkerrors.New("pairingListEmpty Error", 665, "No pairings available.") // client could'nt connect to any provider.
+	PairingListEmptyError                                = sdkerrors.New("pairingListEmpty Error", 665, "No pairings available.") // client could not connect to any provider.
 	UnreachableCodeError                                 = sdkerrors.New("UnreachableCode Error", 666, "Should not get here.")
 	AllProviderEndpointsDisabledError                    = sdkerrors.New("AllProviderEndpointsDisabled Error", 667, "All endpoints are not available.") // a provider is completely unresponsive all endpoints are not available
 	MaximumNumberOfSessionsExceededError                 = sdkerrors.New("MaximumNumberOfSessionsExceeded Error", 668, "Provider reached maximum number of active sessions.")

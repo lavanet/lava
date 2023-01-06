@@ -135,8 +135,8 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) connectRawClient(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
-	connectCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, error) {
+	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
 
 	conn, err := grpc.DialContext(connectCtx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
@@ -212,9 +212,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if endpoint.Client == nil {
-				connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
-				conn, err := cswp.connectRawClient(connectCtx, endpoint.Addr)
-				cancel()
+				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.Addr)
 				if err != nil {
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": cswp.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})

@@ -41,6 +41,7 @@ const (
 	providerWasntFound     = -1
 	findPairingFailedIndex = -1
 	supportedNumberOfVRFs  = 2
+	GeolocationFlag        = "geolocation"
 )
 
 type VoteParams struct {
@@ -117,6 +118,8 @@ type Sentry struct {
 	serverID                uint64
 	authorizationCache      map[uint64]map[string]*pairingtypes.QueryVerifyPairingResponse
 	authorizationCacheMutex sync.RWMutex
+	txFactory               tx.Factory
+	geolocation             uint64
 	//
 	// expected payments storage
 	PaymentsMu       sync.RWMutex
@@ -148,7 +151,7 @@ type Sentry struct {
 	// every entry in providerHashesConsensus is conflicted with the other entries
 	providerHashesConsensus          []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
-	providerDataContainersMu         utils.LavaMutex
+	providerDataContainersMu         sync.RWMutex
 
 	consumerSessionManager *lavasession.ConsumerSessionManager
 }
@@ -252,8 +255,8 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
-			// only take into account endpoints that use the same api interface
-			if endpoint.UseType == s.ApiInterface {
+			// only take into account endpoints that use the same api interface and the same geolocation
+			if endpoint.UseType == s.ApiInterface && endpoint.Geolocation == s.geolocation {
 				relevantEndpoints = append(relevantEndpoints, endpoint)
 			}
 		}
@@ -282,7 +285,9 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 			PairingEpoch:    s.GetCurrentEpochHeight(),
 		})
 	}
-
+	if len(pairing) == 0 {
+		utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, &map[string]string{"Address": s.Acc, "ChainID": s.GetChainID(), "geolocation": strconv.FormatUint(s.geolocation, 10)})
+	}
 	// replace previous pairing with new providers
 	return pairing, nil
 }
@@ -323,7 +328,7 @@ func (s *Sentry) getServiceApis(spec *spectypes.QueryGetSpecResponse) (retServer
 					// spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
 					continue
 				}
-				if apiInterface.Interface == "rest" {
+				if apiInterface.Interface == spectypes.APIInterfaceRest {
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
@@ -412,7 +417,18 @@ func (s *Sentry) Init(ctx context.Context) error {
 		return err
 	}
 
-	//
+	geolocation, err := s.cmdFlags.GetUint64(GeolocationFlag)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read geolocation flag, required flag", err, nil)
+	}
+	if geolocation > 0 && (geolocation&(geolocation-1)) == 0 {
+		// geolocation is a power of 2
+		s.geolocation = geolocation
+	} else {
+		// geolocation is not a power of 2
+		utils.LavaFormatFatal("geolocation flag needs to set only one geolocation, 1<<X where X is the geolocation i.e 1,2,4,8 etc..", err, &map[string]string{"Geolocation": strconv.FormatUint(geolocation, 10)})
+	}
+
 	// Sanity
 	if !s.isUser {
 		providers, err := s.pairingQueryClient.Providers(ctx, &pairingtypes.QueryProvidersRequest{
@@ -422,14 +438,21 @@ func (s *Sentry) Init(ctx context.Context) error {
 			return utils.LavaFormatError("failed querying providers for spec", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
 		}
 		found := false
+	endpointsLoop:
 		for _, provider := range providers.GetStakeEntry() {
 			if provider.Address == s.Acc {
-				found = true
-				break
+				for _, endpoint := range provider.Endpoints {
+					if endpoint.Geolocation == s.geolocation && endpoint.UseType == s.ApiInterface {
+						found = true
+						break endpointsLoop
+					}
+				}
+				// if we reached here we didnt find a geolocation appropriate endpoint
+				utils.LavaFormatFatal("provider endpoint mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(geolocation, 10), "StakeEntry": fmt.Sprintf("%+v", provider)})
 			}
 		}
 		if !found {
-			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID()})
+			return utils.LavaFormatError("provider stake verification mismatch", err, &map[string]string{"spec name": s.GetSpecName(), "ChainID": s.GetChainID(), "Geolocation": strconv.FormatUint(geolocation, 10)})
 		}
 	}
 
@@ -775,8 +798,8 @@ func (s *Sentry) CompareRelaysAndReportConflict(reply0 *pairingtypes.RelayReply,
 	}
 	msg := conflicttypes.NewMsgDetection(s.Acc, nil, &responseConflict, nil)
 	s.ClientCtx.SkipConfirm = true
-	txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-	err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+	// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+	err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 	if err != nil {
 		utils.LavaFormatError("CompareRelaysAndReportConflict - SimulateAndBroadCastTx Failed", err, nil)
 	}
@@ -825,8 +848,8 @@ func (s *Sentry) discrepancyChecker(finalizedBlocksA map[int64]string, consensus
 				// TODO:: Fill msg with incriminating data
 				msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 				s.ClientCtx.SkipConfirm = true
-				txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-				err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+				// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+				err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 				if err != nil {
 					return false, utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err, nil)
 				}
@@ -881,8 +904,8 @@ func (s *Sentry) validateProviderReply(finalizedBlocks map[int64]string, latestB
 		// TODO:: Fill msg with incriminating data
 		msg := conflicttypes.NewMsgDetection(s.Acc, nil, nil, nil)
 		s.ClientCtx.SkipConfirm = true
-		txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
-		err := SimulateAndBroadCastTx(s.ClientCtx, txFactory, msg)
+		// txFactory := tx.NewFactoryCLI(s.ClientCtx, s.cmdFlags).WithChainID("lava")
+		err := SimulateAndBroadCastTx(s.ClientCtx, s.txFactory, msg)
 		if err != nil {
 			return utils.LavaFormatError("validateProviderReply - SimulateAndBroadCastTx Failed", err, nil)
 		}
@@ -959,7 +982,10 @@ func (s *Sentry) SendRelay(
 	reply, replyServer, request, latency, fromCache, err := cb_send_relay(consumerSession)
 	// error using this provider
 	if err != nil {
-		return nil, nil, 0, fromCache, utils.LavaFormatError("failed sending relay", lavasession.SendRelayError, &map[string]string{"ErrMsg": err.Error()})
+		// Lava format error overrides the error status code.
+		// so in this case we just want to return the error as it is
+		utils.LavaFormatError("failed sending relay", err, nil)
+		return nil, nil, 0, fromCache, err
 	}
 
 	if s.GetSpecDataReliabilityEnabled() && reply != nil && !fromCache {
@@ -1383,6 +1409,8 @@ func (s *Sentry) GetVrfPkAndMaxCuForUser(ctx context.Context, address string, ch
 }
 
 func (s *Sentry) ExpectedBlockHeight() (int64, int) {
+	s.providerDataContainersMu.RLock()
+	defer s.providerDataContainersMu.RUnlock()
 	averageBlockTime_ms := s.serverSpec.AverageBlockTime
 	listExpectedBlockHeights := []int64{}
 
@@ -1438,6 +1466,7 @@ func (s *Sentry) ExpectedBlockHeight() (int64, int) {
 
 func NewSentry(
 	clientCtx client.Context,
+	txFactory tx.Factory,
 	chainID string,
 	isUser bool,
 	voteInitiationCb func(ctx context.Context, voteID string, voteDeadline uint64, voteParams *VoteParams),
@@ -1464,6 +1493,7 @@ func NewSentry(
 		pairingQueryClient:      pairingQueryClient,
 		epochStorageQueryClient: epochStorageQueryClient,
 		ChainID:                 chainID,
+		txFactory:               txFactory,
 		isUser:                  isUser,
 		Acc:                     acc,
 		newEpochCb:              newEpochCb,

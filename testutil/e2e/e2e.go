@@ -193,11 +193,11 @@ func (lt *lavaTest) startJSONRPCProxy() {
 
 func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2223 " + rpcURL + " ETH1 jsonrpc --from servicer3 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2224 " + rpcURL + " ETH1 jsonrpc --from servicer4 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2225 " + rpcURL + " ETH1 jsonrpc --from servicer5 --geolocation 1 --log_level debug",
 	}
 	lt.logs["3_jsonProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
@@ -220,7 +220,7 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 
 func (lt *lavaTest) startJSONRPCGateway() {
 	utils.LavaFormatInfo("startJSONRPCGateway:", nil)
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --log_level debug"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
 	lt.logs["4_jsonGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
@@ -385,11 +385,11 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2263 " + rpcURL + " LAV1 tendermintrpc --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2264 " + rpcURL + " LAV1 tendermintrpc --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2265 " + rpcURL + " LAV1 tendermintrpc --from servicer10 --geolocation 1 --log_level debug",
 	}
 	lt.logs["7_tendermintProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
@@ -411,7 +411,7 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startTendermintGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --log_level debug"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --geolocation 1 --log_level debug"
 	lt.logs["8_tendermintGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
@@ -498,11 +498,11 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 
 func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	providerCommands := []string{
-		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9 --log_level debug",
-		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2273 " + rpcURL + " LAV1 rest --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2274 " + rpcURL + " LAV1 rest --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2275 " + rpcURL + " LAV1 rest --from servicer10 --geolocation 1 --log_level debug",
 	}
 	lt.logs["5_restProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
@@ -524,7 +524,7 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --log_level debug"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
 	lt.logs["6_restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,

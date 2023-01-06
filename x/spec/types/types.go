@@ -6,6 +6,19 @@ import (
 )
 
 const (
+	APIInterfaceJsonRPC       = "jsonrpc"
+	APIInterfaceTendermintRPC = "tendermintrpc"
+	APIInterfaceRest          = "rest"
+	APIInterfaceGrpc          = "grpc"
+)
+
+const (
+	ParamChangeEventName = "param_change"
+	SpecAddEventName     = "spec_add"
+	SpecModifyEventName  = "spec_modify"
+)
+
+const (
 	NOT_APPLICABLE  int64 = -1
 	LATEST_BLOCK    int64 = -2
 	EARLIEST_BLOCK  int64 = -3
