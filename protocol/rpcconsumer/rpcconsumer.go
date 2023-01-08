@@ -16,8 +16,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*RPCEndpoint) (err error) {
-
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint) (err error) {
 	// spawn up ConsumerStateTracker
 	consumerStateTracker := consumerstatetracker.ConsumerStateTracker{}
 	rpcc.consumerStateTracker, err = consumerStateTracker.New(ctx, txFactory, clientCtx)

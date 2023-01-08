@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -202,7 +203,7 @@ func main() {
 			}
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
 			rpcConsumer := rpcconsumer.RPCConsumer{}
-			rpcEndpoints := []*rpcconsumer.RPCEndpoint{}
+			rpcEndpoints := []*lavasession.RPCEndpoint{}
 
 			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints)
 			return nil

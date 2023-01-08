@@ -4,40 +4,42 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/consumerstatetracker"
-	"github.com/lavanet/lava/protocol/rpcconsumer/apiparser"
+	"github.com/lavanet/lava/protocol/rpcconsumer/apilib"
 	"github.com/lavanet/lava/relayer/lavasession"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type RPCConsumerServer struct {
 	txSender *consumerstatetracker.TxSender
 }
 
-func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *RPCEndpoint,
+func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker *consumerstatetracker.ConsumerStateTracker,
-	consumerSessionManager *lavasession.ConsumerSessionManager) (err error) {
-
+	consumerSessionManager *lavasession.ConsumerSessionManager,
+) (err error) {
 	rpccs.txSender = consumerStateTracker.TxSender
-	apiParser, err := NewApiParser(listenEndpoint.ApiInterface)
+	apiParser, err := apilib.NewApiParser(listenEndpoint.ApiInterface)
 	if err != nil {
 		return err
 	}
 	consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, apiParser)
-
+	apiListener, err := apilib.NewApiListener(ctx, listenEndpoint, apiParser, rpccs)
+	if err != nil {
+		return err
+	}
+	apiListener.Serve()
 	return nil
 }
 
-func NewApiParser(apiInterface string) (apiParser apiparser.APIParser, err error) {
-	switch apiInterface {
-	case spectypes.APIInterfaceJsonRPC:
-		return apiparser.NewJrpcAPIParser()
-	case spectypes.APIInterfaceTendermintRPC:
-		return apiparser.NewTendermintRpcAPIParser()
-	case spectypes.APIInterfaceRest:
-		return apiparser.NewRestAPIParser()
-	case spectypes.APIInterfaceGrpc:
-		return apiparser.NewGrpcAPIParser()
-	}
-	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", apiInterface)
+func (rpccs *RPCConsumerServer) SendRelay(
+	ctx context.Context,
+	privKey *btcec.PrivateKey,
+	url string,
+	req string,
+	connectionType string,
+	dappID string,
+) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
+	return nil, nil, fmt.Errorf("not implemented")
 }

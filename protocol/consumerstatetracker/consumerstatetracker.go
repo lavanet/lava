@@ -7,8 +7,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
-	"github.com/lavanet/lava/protocol/rpcconsumer/apiparser"
+	"github.com/lavanet/lava/protocol/rpcconsumer/apilib"
 	"github.com/lavanet/lava/relayer/lavasession"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -22,7 +23,7 @@ type ConsumerStateTracker struct {
 
 func (cst *ConsumerStateTracker) New(ctx context.Context, txFactory tx.Factory, clientCtx client.Context) (ret *ConsumerStateTracker, err error) {
 	// set up StateQuery
-	// Spin up chain tracker on the lava node, its address is in the --node flag (or its default), on new block call to newBlockCallback
+	// Spin up chain tracker on the lava node, its address is in the --node flag (or its default), on new block call to newLavaBlock
 	// use StateQuery to get the lava spec and spin up the chain tracker with the right params
 	// set up txSender the same way
 	stateQuery := StateQuery{}
@@ -52,7 +53,10 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	defer cst.registrationLock.Unlock()
 }
 
-func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apiparser.APIParser) {
+func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser) {
 	// register this apiParser for spec updates
 	// currently just set the first one, and have a TODO to handle spec changes
+	// get the spec and set it into the apiParser
+	spec := spectypes.Spec{}
+	apiParser.SetSpec(spec)
 }
