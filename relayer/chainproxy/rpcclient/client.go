@@ -309,11 +309,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 		return nil, err
 	}
 
-	if len(resp.Result) == 0 {
-		return nil, ErrNoResult
-	} else {
-		return resp, nil
-	}
+	return resp, nil
 }
 
 // BatchCall sends all given requests as a single batch and waits for the server
@@ -378,10 +374,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 			elem.Error = resp.Error
 			continue
 		}
-		if len(resp.Result) == 0 {
-			elem.Error = ErrNoResult
-			continue
-		}
+
 		elem.Error = json.Unmarshal(resp.Result, elem.Result)
 	}
 	return err

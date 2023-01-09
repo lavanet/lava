@@ -455,9 +455,6 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
 		}
 	}
-	if replyMsg.Error != nil {
-		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
-	}
 
 	return reply, subscriptionID, sub, err
 }
