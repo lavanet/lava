@@ -1,8 +1,10 @@
 package apilib
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/lavanet/lava/relayer/lavasession"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -22,6 +24,6 @@ type TendermintRpcAPIListener struct{}
 
 func (apil *TendermintRpcAPIListener) Serve() {}
 
-func NewTendermintRpcAPIListener() (apiListener *TendermintRpcAPIListener) {
+func NewTendermintRpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiPArser APIParser, relaySender RelaySender) (apiListener *TendermintRpcAPIListener) {
 	return nil
 }

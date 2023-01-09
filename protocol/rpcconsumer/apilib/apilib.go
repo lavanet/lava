@@ -24,16 +24,16 @@ func NewApiParser(apiInterface string) (apiParser APIParser, err error) {
 	return nil, fmt.Errorf("apiParser for apiInterface (%s) not found", apiInterface)
 }
 
-func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiPArser APIParser, relaySender RelaySender) (APIListener, error) {
+func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiParser APIParser, relaySender RelaySender) (APIListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcAPIListener(), nil
+		return NewJrpcAPIListener(ctx, listenEndpoint, apiParser, relaySender), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcAPIListener(), nil
+		return NewTendermintRpcAPIListener(ctx, listenEndpoint, apiParser, relaySender), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestAPIListener(), nil
+		return NewRestAPIListener(ctx, listenEndpoint, apiParser, relaySender), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcAPIListener(), nil
+		return NewGrpcAPIListener(ctx, listenEndpoint, apiParser, relaySender), nil
 	}
 	return nil, fmt.Errorf("apiListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
@@ -63,5 +63,5 @@ type RelaySender interface {
 }
 
 type APIListener interface {
-	Serve()
+	Serve() //serve opens up a server for api requests of the required api
 }

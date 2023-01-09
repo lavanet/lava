@@ -1,8 +1,10 @@
 package apilib
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/lavanet/lava/relayer/lavasession"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -22,6 +24,6 @@ type GrpcAPIListener struct{}
 
 func (apil *GrpcAPIListener) Serve() {}
 
-func NewGrpcAPIListener() (apiListener *GrpcAPIListener) {
+func NewGrpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiPArser APIParser, relaySender RelaySender) (apiListener *GrpcAPIListener) {
 	return nil
 }
