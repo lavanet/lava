@@ -28,6 +28,6 @@ This E2E performs the steps below to test if the system is working as expected.
 
 After the steps above are finished (even if a step fails and the E2E ends) the E2E will save all the captured logs.
 
-# Error Whitelist
+# Allowed Error List
 
-The error whitelist contains a list of errors that is allowed to happen during tests. The key is the error substring that can be seen in the logs. The value is the description on why this error is whitelisted. 
+The allowed error list contains a list of errors that is allowed to happen during tests. The key is the error substring that can be seen in the logs. The value is the description on why this error is allowed. 
