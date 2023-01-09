@@ -1,0 +1,95 @@
+# syntax = docker/dockerfile:1.2
+# WARNING! Use `DOCKER_BUILDKIT=1` with `docker build` to enable --mount feature.
+
+#
+# To build the image:
+#   DOCKER_BUILDKIT=1 docker build [--build-arg ...]... \
+#       -t lavanet-release-VERSION -f docker/Dockerfile.release .
+#
+# Build arguments - versions:
+#   GO_VERSION		- golang version
+#   GO_LINT_VERSION     - golangci lint version
+#   IGNITE_VERSION	- ignite version
+#   LAVANET_VERSION     - lavanet version (must be a valid tag)
+
+ARG GO_VERSION=1.18.2
+ARG RUNNER_IMAGE="debian:11-slim"
+
+########################################################################
+## base image: go + ignite
+########################################################################
+
+FROM golang:${GO_VERSION} as base
+
+ARG IGNITE_VERSION=0.22.2
+ARG GO_LINT_VERSION=1.50.1
+
+# install packages
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt \
+    dpkg-reconfigure debconf --frontend=noninteractive && \
+    apt-get update && \
+    apt-get install -yqq --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# install ignite
+RUN curl https://get.ignite.com/cli@v$IGNITE_VERSION! | bash
+
+# install golangci-lint
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+    | sh -s -- -b $(go env GOPATH)/bin v$GO_LINT_VERSION
+
+########################################################################
+## builder image
+########################################################################
+
+FROM base as builder
+
+## TODO ## switch to buildx for multiplatform image builds
+
+ARG LAVANET_VERSION=latest
+
+WORKDIR /lavanet
+
+# enable faster module downloading
+ENV GOPROXY https://proxy.golang.org
+
+# get the lavanet code
+RUN git clone --depth 1 --branch $LAVANET_VERSION https://github.com/lavanet/lava.git /lavanet
+
+# cache dependencies
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/root/go/pkg/mod \
+    go mod download
+
+## TODO ## add here envs that the makefile expects
+
+# build lavanet binary
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/root/go/pkg/mod \
+    GOWORK=off make build
+
+########################################################################
+## runner image
+########################################################################
+
+FROM ${RUNNER_IMAGE}
+
+COPY --from=builder /lavanet/lavad /bin/lavad
+
+ENV HOME /lavanet
+WORKDIR $HOME
+
+## TODO ## expose desired ports
+
+# Token faucet API
+#EXPOSE 4500
+## Blockchain API
+#EXPOSE 1317
+## Tendermint node
+#EXPOSE 26657
+
+ENTRYPOINT ["/bin/lavad"]
