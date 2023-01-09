@@ -1,0 +1,42 @@
+---
+version: '3.9'
+services:
+  lava-node:
+    container_name: lava-node
+    image: ${IMAGE}
+    environment:
+    - KEY=lava_impulse
+    - CHAINID=lava-testnet-1
+    - MONIKER=LavaImpulse
+    - KEYRING=test
+    - KEYALGO=eth_secp256k1
+    - LOGLEVEL=info
+    - CONFIG_PATH=/root/.lava
+    ports:
+    - '1317:1317'
+    - '26656:26656'
+    - '26657:26657'
+    - '26660:26660'
+    volumes:
+    - /opt/lava:/root/.lava
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: '8gb'
+    restart: unless-stopped
+
+  node_exporter:
+    image: prom/node-exporter:v1.4.0
+    container_name: node_exporter
+    volumes:
+      - type: 'bind'
+        source: '/'
+        target: '/rootfs'
+        read_only: true
+    command:
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|run|mnt)($$|/)'
+    pid: 'host'
+    network_mode: host
+    restart: unless-stopped
