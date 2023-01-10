@@ -52,7 +52,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	if existingEntry.Deadline < holdBlocks {
 		existingEntry.Deadline = holdBlocks
 	}
-	details := map[string]string{"stake_entry": existingEntry.String()}
+	details := map[string]string{
+		"address":     existingEntry.GetAddress(),
+		"chainID":     existingEntry.GetChain(),
+		"geolocation": strconv.FormatUint(existingEntry.GetGeolocation(), 10),
+		"moniker":     existingEntry.GetMoniker(),
+		"stake":       existingEntry.GetStake().Amount.String(),
+	}
 	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
 }
