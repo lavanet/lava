@@ -280,11 +280,11 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
 		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID"); err != nil {
-			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(ctx, err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
 		}
-		cp.portalLogs.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
+		cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
 		return relayReply.Data, nil
 	}
 

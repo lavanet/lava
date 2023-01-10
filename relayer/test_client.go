@@ -34,7 +34,7 @@ func TestClient(
 		log.Fatalln("error: GetOrCreateVRFKey", err)
 	}
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0, nil)
+	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -50,7 +50,7 @@ func TestClient(
 	if err != nil {
 		log.Fatalln("error: GetChainProxy", err)
 	}
-	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager(), nil)
+	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager())
 	if err != nil {
 		log.Fatalln("error: SetupConsumerSessionManager", err)
 	}

@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lavanet/lava/relayer/common"
 	"math/rand"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/lavanet/lava/relayer/common"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
@@ -31,8 +30,6 @@ type ConsumerSessionManager struct {
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge map[string]*ConsumerSessionsWithProvider
-
-	EpochErrorAllowlist *common.EpochErrorAllowlist // allow-list for all errors which shouldn't be logged in the current epoch
 }
 
 // Update the provider pairing list for the ConsumerSessionManager
@@ -93,7 +90,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 
 	for {
 		// Get a valid consumerSessionWithProvider
-		consumerSessionWithProvider, providerAddress, sessionEpoch, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession)
+		consumerSessionWithProvider, providerAddress, sessionEpoch, err := csm.getValidConsumerSessionsWithProvider(ctx, tempIgnoredProviders, cuNeededForSession)
 		if err != nil {
 			if PairingListEmptyError.Is(err) {
 				return nil, 0, "", nil, err
@@ -205,7 +202,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	return "", UnreachableCodeError // should not reach here
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64) (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, currentEpoch uint64, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx context.Context, ignoredProviders *ignoredProviders, cuNeededForSession uint64) (consumerSessionWithProvider *ConsumerSessionsWithProvider, providerAddress string, currentEpoch uint64, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
@@ -217,8 +214,10 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 
 	providerAddress, err = csm.getValidProviderAddress(ignoredProviders.providers)
 	if err != nil {
+		// extract epoch error allow-list from context
+		epochErrorAllowlist, ok := ctx.Value("epochErrorAllowList").(*common.EpochErrorAllowlist)
 		// Only log error if it is not allow-listed for the current epoch
-		if !csm.EpochErrorAllowlist.IsErrorSet(err.Error()) {
+		if ok && !epochErrorAllowlist.IsErrorSet(err.Error()) {
 			utils.LavaFormatError("could not get a provider address", err, nil)
 		}
 

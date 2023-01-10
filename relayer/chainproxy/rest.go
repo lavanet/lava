@@ -247,13 +247,13 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
 		if err != nil {
-			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(ctx, err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
 			c.Status(fiber.StatusInternalServerError)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
-		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
+		cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
 
@@ -273,13 +273,13 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
 		if err != nil {
-			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
-			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
+			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(ctx, err, msgSeed)
+			cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
 			c.Status(fiber.StatusInternalServerError)
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
-		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
+		cp.portalLogs.LogRequestAndResponse(ctx, "http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
 	//

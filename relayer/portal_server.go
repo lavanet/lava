@@ -42,8 +42,11 @@ func PortalServer(
 	epochErrors := []string{lavasession.PairingListEmptyError.Error()}
 	epochErrorAllowlist := common.NewEpochErrorAllowlist(epochErrors)
 
+	// Extend context with epoch error allow-list
+	ctx = context.WithValue(ctx, "epochErrorAllowList", epochErrorAllowlist)
+
 	// Start sentry
-	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0, epochErrorAllowlist)
+	sentry := sentry.NewSentry(clientCtx, txFactory, chainID, true, nil, nil, apiInterface, sk, flagSet, 0)
 	err = sentry.Init(ctx)
 	if err != nil {
 		log.Fatalln("error sentry.Init", err)
@@ -56,7 +59,7 @@ func PortalServer(
 	g_serverChainID = chainID
 
 	// Node
-	pLogs, err := chainproxy.NewPortalLogs(epochErrorAllowlist)
+	pLogs, err := chainproxy.NewPortalLogs()
 	if err != nil {
 		log.Fatalln("error: NewPortalLogs", err)
 	}
@@ -65,7 +68,7 @@ func PortalServer(
 		log.Fatalln("error: GetChainProxy", err)
 	}
 	// Setting up the sentry callback
-	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager(), epochErrorAllowlist)
+	err = sentry.SetupConsumerSessionManager(ctx, chainProxy.GetConsumerSessionManager())
 	if err != nil {
 		log.Fatalln("error: SetupConsumerSessionManager", err)
 	}
