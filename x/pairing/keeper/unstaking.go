@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error {
+func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error {
 	logger := k.Logger(ctx)
 	var stake_type string
 	if provider {
@@ -53,7 +53,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		existingEntry.Deadline = holdBlocks
 	}
 	details := map[string]string{"stake_entry": existingEntry.String()}
-	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, " Appending new unstake entry (removing stake entry).")
+	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
 }
 
@@ -62,12 +62,6 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ProviderKey, uint64(ctx.BlockHeight()))
 
 	if unstakingEntriesToCredit != nil {
-		details := map[string]string{"unstake_entities_type": epochstoragetypes.ProviderKey}
-		for i, unstakeEntry := range unstakingEntriesToCredit {
-			details["unstake_entry_"+strconv.Itoa(i)] = unstakeEntry.String()
-		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeCommitNewEventName(true), details, " Crediting "+epochstoragetypes.ProviderKey+" unstake entries.")
-
 		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) // true for providers
 		if err != nil {
 			panic(err.Error())
@@ -76,12 +70,6 @@ func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	// no providers entries to handle, check clients
 	unstakingEntriesToCredit = k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ClientKey, uint64(ctx.BlockHeight()))
 	if unstakingEntriesToCredit != nil {
-		details := map[string]string{"unstake_entities_type": epochstoragetypes.ClientKey}
-		for i, unstakeEntry := range unstakingEntriesToCredit {
-			details["unstake_entry_"+strconv.Itoa(i)] = unstakeEntry.String()
-		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeCommitNewEventName(false), details, " Crediting "+epochstoragetypes.ClientKey+" unstake entries.")
-
 		err := k.creditUnstakingEntries(ctx, false, unstakingEntriesToCredit) // false for clients
 		if err != nil {
 			panic(err.Error())

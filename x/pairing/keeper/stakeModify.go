@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
@@ -13,7 +12,6 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 	if burnAmount.Denom != epochstoragetypes.TokenDenom {
 		return false, fmt.Errorf("burn coin isn't right denom: %s", burnAmount.Denom)
 	}
-	logger := k.Logger(ctx)
 	// find the user in the stake list
 	clientEntry, found, indexFound := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ClientKey, chainID, clientAddressToBurn)
 	if found {
@@ -30,10 +28,8 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 
 		if clientEntry.Stake.IsLT(k.MinStakeClient(ctx)) {
 			// if user doesn't have enough stake to stay staked, we will unstake him now
-			details := map[string]string{"stake_entry": clientEntry.String()}
-			utils.LogLavaEvent(ctx, logger, types.ConsumerInsufficientFundsToStayStakedEventName, details, " insufficient funds to stay staked.")
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})
-			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address)
+			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address, " insufficient funds to stay staked.")
 			if err != nil {
 				return true, fmt.Errorf("error unstaking user after burn: %v , error: %s", clientEntry, err)
 			}
