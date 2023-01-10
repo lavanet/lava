@@ -626,11 +626,16 @@ func (lt *lavaTest) lavaOverLava() {
 func (lt *lavaTest) saveLogs() {
 	logsFolder := "./testutil/e2e/logs/"
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(logsFolder, os.ModePerm)
+		err := os.RemoveAll(logsFolder)
 		if err != nil {
 			fmt.Println(err)
 		}
+		err = os.MkdirAll(logsFolder, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 	}
+	errorLineCount := 0
 	for fileName, logBuffer := range lt.logs {
 		file, err := os.Create(logsFolder + fileName + ".log")
 		if err != nil {
@@ -640,7 +645,40 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		utils.LavaFormatInfo(logBuffer.String(), nil)
+
+		lines := strings.Split(logBuffer.String(), "\n")
+		errorLines := []string{}
+		for _, line := range lines {
+			if strings.Contains(line, " ERR ") {
+				isAllowedError := false
+				for errorSubstring := range allowedErrors {
+					if strings.Contains(line, errorSubstring) {
+						isAllowedError = true
+						break
+					}
+				}
+				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
+				if !lt.testFinishedProperly || !isAllowedError {
+					errorLineCount += 1
+					errorLines = append(errorLines, line)
+				}
+			}
+		}
+		if len(errorLines) == 0 {
+			continue
+		}
+		errors := strings.Join(errorLines, "\n")
+		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
+		if err != nil {
+			panic(err)
+		}
+		writer = bufio.NewWriter(errFile)
+		writer.Write([]byte(errors))
+		writer.Flush()
+		errFile.Close()
+	}
+	if errorLineCount != 0 {
+		panic("Error found in logs")
 	}
 }
 
