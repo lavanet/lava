@@ -5,10 +5,12 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 import "pairing/unique_payment_storage_client_provider.proto"; 
 
 message ProviderPaymentStorage {
+
   string index = 1; 
   repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 2; 
-  uint64 epoch = 3; 
-  repeated string unresponsiveness_complaints = 4;
+  uint64 epoch = 3;
+  reserved 4;
+  uint64 complainers_total_cu = 5; // total CU that were supposed to be served by the provider but didn't because he was unavailable (so consumers complained about him)
 }
 
 // change Client -> consumer
