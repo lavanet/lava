@@ -16,6 +16,7 @@ import (
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -198,6 +199,8 @@ func main() {
 	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, 10, "parallel connections")
+
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
