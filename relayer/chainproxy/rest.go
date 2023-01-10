@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lavanet/lava/relayer/metrics"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -238,20 +239,16 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		cp.portalLogs.LogStartTransaction("rest-http")
 
 		msgSeed := cp.portalLogs.GetMessageSeed()
-		relayAnalytics := NewRelayAnalytics()
-		relayAnalytics.importFromFiberCtx(c)
-		relayAnalytics.importFromSentry(cp.GetSentry())
+
 		path := "/" + c.Params("*")
-		relayAnalytics.Method = path
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
+		relayAnalytics := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, relayAnalytics)
-
-		relayAnalytics.Success = err != nil
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
@@ -277,7 +274,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
-		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
+
+		sentry := cp.GetSentry()
+		analytics := metrics.NewRelayAnalytics(dappID, sentry.ChainID, sentry.ApiInterface)
+
+		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID, analytics)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)

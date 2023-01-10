@@ -3,6 +3,7 @@ package chainproxy
 import (
 	"context"
 	"fmt"
+	"github.com/lavanet/lava/relayer/metrics"
 	"strings"
 	"time"
 
@@ -108,7 +109,7 @@ func SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
-	relayAnalytics *RelayAnalytics,
+	analytics *metrics.RelayAnalytics,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
@@ -147,8 +148,6 @@ func SendRelay(
 			UnresponsiveProviders: reportedProviders,
 		}
 
-		relayAnalytics.importFromRelayRequest(relayRequest)
-
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, nil, nil, 0, false, err
@@ -180,9 +179,12 @@ func SendRelay(
 			}
 		}
 		currentLatency := time.Since(relaySentTime)
-		relayAnalytics.Latency = currentLatency.Milliseconds()
-		relayAnalytics.Success = err != nil
-		relayAnalytics.ResponseContentLength = len(reply.Data)
+
+		if analytics != nil {
+			analytics.Latency = currentLatency.Milliseconds()
+			analytics.Success = err != nil
+
+		}
 
 		if err != nil {
 			return nil, nil, nil, 0, false, err
@@ -314,13 +316,9 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 
-		analytics := NewRelayAnalytics()
-		analytics.importFromFiberCtx(c)
-
 		ctx := c.Context()
 		ctx.SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
-		ctx.SetUserValue(ContextUserValueAnalytics, analytics)
-		return webSocketCallback(c) // uses external dappID
+		return webSocketCallback(c)                         // uses external dappID
 	}
 	return handler
 }

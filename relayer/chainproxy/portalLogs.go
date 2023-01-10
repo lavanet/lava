@@ -2,6 +2,7 @@ package chainproxy
 
 import (
 	"fmt"
+	"github.com/lavanet/lava/relayer/metrics"
 	"math/rand"
 	"os"
 	"strconv"
@@ -19,7 +20,7 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
-	Analytics           *RelayAnalytics
+	Analytics           *metrics.RelayAnalytics
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
@@ -88,5 +89,5 @@ func (cp *PortalLogs) LogStartTransaction(name string) {
 }
 
 func (cp *PortalLogs) ResetAnalytics() {
-	cp.Analytics = &RelayAnalytics{}
+	cp.Analytics = &metrics.RelayAnalytics{}
 }
