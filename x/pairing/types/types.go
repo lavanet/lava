@@ -14,6 +14,13 @@ const (
 	ProviderJailedEventName                        = "provider_jailed"
 )
 
+// unstake description strings
+const (
+	UnstakeDescriptionClientUnstake     = "Client unstaked entry"
+	UnstakeDescriptionProviderUnstake   = "Provider unstaked entry"
+	UnstakeDescriptionInsufficientFunds = "client stake is below the minimum stake required"
+)
+
 func StakeNewEventName(isProvider bool) string {
 	if isProvider {
 		return ProviderStakeEventName

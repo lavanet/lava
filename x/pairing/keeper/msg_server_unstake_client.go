@@ -9,6 +9,6 @@ import (
 
 func (k msgServer) UnstakeClient(goCtx context.Context, msg *types.MsgUnstakeClient) (*types.MsgUnstakeClientResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.UnstakeEntry(ctx, false, msg.ChainID, msg.Creator, " Appending new client unstake entry (removing stake entry).")
+	err := k.Keeper.UnstakeEntry(ctx, false, msg.ChainID, msg.Creator, types.UnstakeDescriptionClientUnstake)
 	return &types.MsgUnstakeClientResponse{}, err
 }

@@ -31,6 +31,11 @@ const (
 	ConflictUnstakeFraudVoterEventName = "conflict_unstake_fraud_voter"
 )
 
+// unstake description
+const (
+	UnstakeDescriptionFraudVote = "fraud provider found in conflict detection"
+)
+
 func CommitVoteData(nonce int64, dataHash []byte) []byte {
 	commitData := make([]byte, 8) // nonce bytes
 	binary.LittleEndian.PutUint64(commitData, uint64(nonce))

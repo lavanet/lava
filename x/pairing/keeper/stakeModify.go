@@ -29,7 +29,7 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		if clientEntry.Stake.IsLT(k.MinStakeClient(ctx)) {
 			// if user doesn't have enough stake to stay staked, we will unstake him now
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})
-			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address, " insufficient funds to stay staked.")
+			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address, types.UnstakeDescriptionInsufficientFunds)
 			if err != nil {
 				return true, fmt.Errorf("error unstaking user after burn: %v , error: %s", clientEntry, err)
 			}
