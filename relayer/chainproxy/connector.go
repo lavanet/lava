@@ -20,6 +20,7 @@ import (
 
 const DialTimeout = 500 * time.Millisecond
 const ParallelConnectionsFlag = "parallel-connections"
+const DefaultNumberOfParallelConnections = 10
 
 type Connector struct {
 	lock        utils.LavaMutex

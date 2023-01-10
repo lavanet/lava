@@ -199,7 +199,7 @@ func main() {
 	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, 10, "parallel connections")
+	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.DefaultNumberOfParallelConnections, "parallel connections")
 
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
