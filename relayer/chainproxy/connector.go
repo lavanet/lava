@@ -19,10 +19,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const DialTimeout = 500 * time.Millisecond
-const ParallelConnectionsFlag = "parallel-connections"
-const DefaultNumberOfParallelConnections = 10
-const MaximumNumberOfParallelConnectionsAttempts = 10
+const (
+	DialTimeout                                = 500 * time.Millisecond
+	ParallelConnectionsFlag                    = "parallel-connections"
+	DefaultNumberOfParallelConnections         = 10
+	MaximumNumberOfParallelConnectionsAttempts = 10
+)
 
 type Connector struct {
 	lock        utils.LavaMutex
