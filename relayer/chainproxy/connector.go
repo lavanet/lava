@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,7 +19,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const DialTimeout = 500 * time.Millisecond
+const (
+	DialTimeout                                = 500 * time.Millisecond
+	ParallelConnectionsFlag                    = "parallel-connections"
+	DefaultNumberOfParallelConnections         = 10
+	MaximumNumberOfParallelConnectionsAttempts = 10
+)
 
 type Connector struct {
 	lock        utils.LavaMutex
@@ -34,7 +40,15 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 	for i := uint(0); i < nConns; i++ {
 		var rpcClient *rpcclient.Client
 		var err error
+		numberOfConnectionAttempts := 0
 		for {
+			numberOfConnectionAttempts += 1
+			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
+				utils.LavaFormatFatal("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
+					nil,
+					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10)},
+				)
+			}
 			if ctx.Err() != nil {
 				connector.Close()
 				return nil
@@ -42,7 +56,12 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 			nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 			rpcClient, err = rpcclient.DialContext(nctx, addr)
 			if err != nil {
-				utils.LavaFormatError("Could not connect to the client, retrying", err, nil)
+				utils.LavaFormatWarning("Could not connect to the node, retrying",
+					err,
+					&map[string]string{
+						"Current Number Of Connections": strconv.FormatUint(uint64(i), 10),
+						"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
+					})
 				cancel()
 				continue
 			}
@@ -51,7 +70,7 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 		}
 		connector.freeClients = append(connector.freeClients, rpcClient)
 	}
-
+	utils.LavaFormatInfo("Number of parallel connections created: "+strconv.Itoa(len(connector.freeClients)), nil)
 	go connector.connectorLoop(ctx)
 	return connector
 }
@@ -130,7 +149,15 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 	for i := uint(0); i < nConns; i++ {
 		var grpcClient *grpc.ClientConn
 		var err error
+		numberOfConnectionAttempts := 0
 		for {
+			numberOfConnectionAttempts += 1
+			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
+				utils.LavaFormatFatal("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
+					nil,
+					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10)},
+				)
+			}
 			if ctx.Err() != nil {
 				connector.Close()
 				return nil
@@ -138,7 +165,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 			nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 			grpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
-				utils.LavaFormatError("Could not connect to the client, retrying", err, nil)
+				utils.LavaFormatWarning("Could not connect to the client, retrying", err, nil)
 				cancel()
 				continue
 			}

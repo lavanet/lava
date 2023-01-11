@@ -433,9 +433,6 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 			return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil, nil)
 		}
 	}
-	if replyMsg.Error != nil {
-		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
-	}
 
 	return reply, subscriptionID, sub, err
 }

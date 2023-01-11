@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/relayer"
+	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
@@ -231,6 +232,8 @@ func main() {
 	cmdPortalServer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdPortalServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdServer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.DefaultNumberOfParallelConnections, "parallel connections")
+
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)

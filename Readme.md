@@ -18,7 +18,7 @@ Read more about Lava in the [litepaper](https://lavanet.xyz/assets/lava_litepape
 
 Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
 
-**Note**: Requires [Go 1.18+](https://golang.org/dl/)
+**Note**: Requires [Go 1.18](https://golang.org/dl/)
 
 
 ### Build `lavad`
