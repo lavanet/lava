@@ -40,7 +40,7 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 }
 
 // Update the provider pairing list for the ConsumerSessionManager
-func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
+func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 
 	csm.lock.Lock()         // start by locking the class lock.

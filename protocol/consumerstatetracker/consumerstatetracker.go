@@ -2,6 +2,7 @@ package consumerstatetracker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -10,23 +11,24 @@ import (
 	"github.com/lavanet/lava/protocol/apilib"
 	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-)
-
-const (
-	CallbackKeyForPairingUpdate = "pairing-update"
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
-	consumerAddress                   sdk.AccAddress
-	chainTracker                      *chaintracker.ChainTracker
-	StateQuery                        *StateQuery
-	TxSender                          *TxSender
-	registrationLock                  sync.RWMutex
-	newLavaBlockCallbacks             map[string]func(int64)
-	registeredConsumerSessionManagers []*lavasession.ConsumerSessionManager
+	consumerAddress      sdk.AccAddress
+	chainTracker         *chaintracker.ChainTracker
+	StateQuery           *StateQuery
+	TxSender             *TxSender
+	registrationLock     sync.RWMutex
+	newLavaBlockUpdaters map[string]Updater
+}
+
+type Updater interface {
+	Update(int64)
+	UpdaterKey() string
 }
 
 func (cst *ConsumerStateTracker) New(ctx context.Context, txFactory tx.Factory, clientCtx client.Context) (ret *ConsumerStateTracker, err error) {
@@ -46,25 +48,17 @@ func (cst *ConsumerStateTracker) New(ctx context.Context, txFactory tx.Factory, 
 	if err != nil {
 		return nil, err
 	}
-	cst.registeredConsumerSessionManagers = []*lavasession.ConsumerSessionManager{}
 	cst.consumerAddress = clientCtx.FromAddress
 	return cst, nil
 }
 
 func (cst *ConsumerStateTracker) newLavaBlock(latestBlock int64) {
-	// go over the registered callbacks and call them if relevant
+	// go over the registered updaters and trigger update
 	cst.registrationLock.RLock()
 	defer cst.registrationLock.RUnlock()
-}
-
-func (cst *ConsumerStateTracker) updatePairingForRegistered(block int64) {
-	// check if we need to update pairing (rule for pairing update - overlap)
-	// add the necessary data to perform the getPairing query
-	// when updating go over the endpoints and make sure only the right endpoints in terms of geolocation and apiInterfaces are sent
-	// get the pairing data
-	// to over registered consumerSessionManagers fetch their RPCEndpoint
-	// create the consumerSessionWithProvider list for each of the consumer session managers accordig to its requirements and RPCEndpoint
-	// call the function to update pairing
+	for _, updater := range cst.newLavaBlockUpdaters {
+		updater.Update(latestBlock)
+	}
 }
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
@@ -73,11 +67,18 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	defer cst.registrationLock.Unlock()
 	// make sure new lava block exists as a callback in stateTracker
 	// add updatePairingForRegistered as a callback on a new block
-	if _, ok := cst.newLavaBlockCallbacks[CallbackKeyForPairingUpdate]; !ok {
-		cst.newLavaBlockCallbacks[CallbackKeyForPairingUpdate] = cst.updatePairingForRegistered
+
+	var pairingUpdater *PairingUpdater = nil // UpdaterKey is nil safe
+	pairingUpdater_raw, ok := cst.newLavaBlockUpdaters[pairingUpdater.UpdaterKey()]
+	if !ok {
+		pairingUpdater = NewPairingUpdater(cst.consumerAddress, cst.StateQuery)
+		cst.newLavaBlockUpdaters[pairingUpdater.UpdaterKey()] = pairingUpdater
 	}
-	// add consumerSessionManager to the list of consumerSessionManagers that need an update
-	cst.registeredConsumerSessionManagers = append(cst.registeredConsumerSessionManagers, consumerSessionManager)
+	pairingUpdater, ok = pairingUpdater_raw.(*PairingUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid_updater_key", nil, &map[string]string{"updaters_map": fmt.Sprintf("%+v", cst.newLavaBlockUpdaters)})
+	}
+	pairingUpdater.RegisterPairing(consumerSessionManager)
 }
 
 func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser) {

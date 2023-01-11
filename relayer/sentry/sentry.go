@@ -164,7 +164,7 @@ func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessio
 	if err != nil {
 		utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 	}
-	err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+	err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 	if err != nil {
 		utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 	}
@@ -642,7 +642,7 @@ func (s *Sentry) Start(ctx context.Context) {
 					if err != nil {
 						utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 					}
-					err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+					err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 					if err != nil {
 						utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 					}
