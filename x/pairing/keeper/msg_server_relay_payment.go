@@ -12,7 +12,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/tendermint/tendermint/libs/log"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -273,9 +272,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
-		//
-		// deal with unresponsive providers
-		err = k.dealWithUnresponsiveProviders(ctx, relay.UnresponsiveProviders, logger, clientAddr, epochStart, relay.ChainID)
+		// update provider payment storage with complainer's CU
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, clientAddr, epochStart, relay.ChainID, relay.CuSum)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -283,99 +281,56 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, clientAddr sdk.AccAddress, epoch uint64, chainID string) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, clientAddr sdk.AccAddress, epoch uint64, chainID string, cuSum uint64) error {
 	var unresponsiveProviders []string
+
+	// check that unresponsiveData exists
 	if len(unresponsiveData) == 0 {
 		return nil
 	}
+
+	// unmarshel the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
 		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
 	}
+
+	// check there are unresponsive providers
 	if len(unresponsiveProviders) == 0 {
 		// nothing to do.
 		return nil
 	}
+
+	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
+		// get provider address
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
 			continue
 		}
-		existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, epochstoragetypes.ProviderKey, chainID, sdkUnresponsiveProviderAddress)
-		// if !entryExists provider is alraedy unstaked
-		if !entryExists {
-			continue // if provider is not staked, nothing to do.
-		}
 
+		// get the providerPaymentStorage object using the providerStorageKey
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
 		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
 
 		if !found {
-			// currently this provider has not payments in this epoch and also no complaints, we need to add one complaint here
+			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint
 			emptyProviderPaymentStorageWithComplaint := types.ProviderPaymentStorage{
 				Index:                              providerStorageKey,
 				UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{},
 				Epoch:                              epoch,
-				UnresponsivenessComplaints:         []string{clientAddr.String()},
+				ComplainersTotalCu:                 cuSum,
 			}
 			k.SetProviderPaymentStorage(ctx, emptyProviderPaymentStorageWithComplaint)
 			continue
 		}
-		// providerPaymentStorage was found for epoch, start analyzing if unstake is necessary
-		// check if the same consumer is trying to complain a second time for this epoch
-		if slices.Contains(providerPaymentStorage.UnresponsivenessComplaints, clientAddr.String()) {
-			continue
-		}
 
-		providerPaymentStorage.UnresponsivenessComplaints = append(providerPaymentStorage.UnresponsivenessComplaints, clientAddr.String())
+		// providerPaymentStorage was found for epoch -> add complainer's used CU
+		providerPaymentStorage.ComplainersTotalCu += cuSum
 
-		// now we check if we have more UnresponsivenessComplaints than maxComplaintsPerEpoch
-		if len(providerPaymentStorage.UnresponsivenessComplaints) >= maxComplaintsPerEpoch {
-			// we check if we have double complaints than previous "collectPaymentsFromNumberOfPreviousEpochs" epochs (including this one) payment requests
-			totalPaymentsInPreviousEpochs, err := k.getTotalPaymentsForPreviousEpochs(ctx, collectPaymentsFromNumberOfPreviousEpochs, epoch, chainID, sdkUnresponsiveProviderAddress)
-			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments including this epoch
-			if err != nil {
-				utils.LavaFormatError("lava_unresponsive_providers: couldnt fetch getTotalPaymentsForPreviousEpochs", err, nil)
-			} else if totalPaymentRequests*providerPaymentMultiplier < len(providerPaymentStorage.UnresponsivenessComplaints) {
-				// unstake provider
-				utils.LogLavaEvent(ctx, logger, types.ProviderJailedEventName, map[string]string{"provider_address": sdkUnresponsiveProviderAddress.String(), "chain_id": chainID}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-				err = k.unSafeUnstakeProviderEntry(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage, existingEntry)
-				if err != nil {
-					utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, &map[string]string{"chainID": chainID, "indexInStakeStorage": strconv.FormatUint(indexInStakeStorage, 10), "existingEntry": existingEntry.GetStake().String()})
-					continue
-				}
-			}
-		}
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}
-	return nil
-}
-
-func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEpochs int, currentEpoch uint64, chainID string, sdkUnresponsiveProviderAddress sdk.AccAddress) (totalPaymentsReceived int, errorsGettingEpochs error) {
-	var totalPaymentRequests int
-	epochTemp := currentEpoch
-	for payment := 0; payment < numberOfEpochs; payment++ {
-		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
-		if err != nil {
-			return 0, err
-		}
-		previousEpochProviderStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, previousEpoch, sdkUnresponsiveProviderAddress)
-		previousEpochProviderPaymentStorage, providerPaymentStorageFound := k.GetProviderPaymentStorage(ctx, previousEpochProviderStorageKey)
-		if providerPaymentStorageFound {
-			totalPaymentRequests += len(previousEpochProviderPaymentStorage.UniquePaymentStorageClientProvider) // increase by the amount of previous epoch
-		}
-		epochTemp = previousEpoch
-	}
-	return totalPaymentRequests, nil
-}
-
-func (k msgServer) unSafeUnstakeProviderEntry(ctx sdk.Context, providerKey string, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) error {
-	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, epochstoragetypes.ProviderKey, chainID, indexInStakeStorage)
-	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "relay_payment_unstake", map[string]string{"existingEntry": fmt.Sprintf("%+v", existingEntry)}, "tried to unstake unsafe but didnt find entry")
-	}
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
 	return nil
 }
