@@ -1,0 +1,32 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - amd64
+          - arm64
+
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v3
+      # TODO MACOS
+
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - amd64
+          - arm64
+
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v3
+      # TODO LINUX
