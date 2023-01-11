@@ -154,6 +154,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	return nil
 }
 
+// this function finds if there is an existing block data by hash at the existing data, this allows us to stop querying for further data backwards since when there is a match all former blocks are the same
+// it goes over the list backwards looking for a match. when one is found it returns how many blocks are needed from the memory in order to get the required length of queue
 func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx int64, fetchedBlockNum int64, newHashForBlock string) (foundOverlap bool, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64) {
 	savedBlocks := int64(len(cs.blocksQueue))
 	if readIndexDiff >= savedBlocks {
@@ -187,6 +189,7 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx in
 	return false, 0, 0, 0
 }
 
+// this function reads the hash of the latest block and finds wether there was a fork, if it identifies a newer block arrived it goes backwards to the block in memory and reads again
 func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
 	if newLatestBlock == cs.GetLatestBlockNum() {
 		// no new block arrived, compare the last hash
@@ -214,6 +217,7 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 	return newLatestBlock > cs.GetLatestBlockNum()
 }
 
+// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
@@ -242,6 +246,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 	return
 }
 
+// this function starts the fetching timer periodically checking by polling if updates are necessary
 func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
 	// how often to query latest block.
 	// TODO: subscribe instead of repeatedly fetching
@@ -271,6 +276,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 	return nil
 }
 
+// this function serves a grpc server if configuration for it was provided, the goal is to enable stateTracker to serve several processes and minimize node queries
 func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	if listenAddr == "" {
 		return nil
