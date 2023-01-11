@@ -301,6 +301,9 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		return nil
 	}
 
+	// the added complainer CU takes into account the number of providers the client complained on
+	complainerCuToAdd := cuSum / uint64(len(unresponsiveProviders))
+
 	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
 		// get provider address
@@ -320,14 +323,14 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 				Index:                              providerStorageKey,
 				UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{},
 				Epoch:                              epoch,
-				ComplainersTotalCu:                 cuSum,
+				ComplainersTotalCu:                 complainerCuToAdd,
 			}
 			k.SetProviderPaymentStorage(ctx, emptyProviderPaymentStorageWithComplaint)
 			continue
 		}
 
 		// providerPaymentStorage was found for epoch -> add complainer's used CU
-		providerPaymentStorage.ComplainersTotalCu += cuSum
+		providerPaymentStorage.ComplainersTotalCu += complainerCuToAdd
 
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)

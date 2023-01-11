@@ -180,6 +180,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		// 1. remove old session payments
 		// 2. unstake any unstaking providers
 		// 3. unstake any unstaking users
+		// 4. unstake/jail unresponsive providers
 
 		// 1.
 		err := am.keeper.RemoveOldEpochPayment(ctx)
@@ -188,6 +189,15 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		// 2+3.
 		err = am.keeper.CheckUnstakingForCommit(ctx)
 		logOnErr(err, "CheckUnstakingForCommit")
+
+		// consts TODO: where to put it?
+		const (
+			epochsNumToCheckCUForUnresponsiveProvider = 4 // number of epochs to sum CU that the provider serviced
+			epochsNumToCheckCUForComplainers          = 2 // number of epochs to sum CU of complainers against the provider
+		)
+		// 4. unstake unresponsive providers
+		err = am.keeper.UnstakeUnresponsiveProviders(ctx, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers)
+		logOnErr(err, "UnstakeUnresponsiveProviders")
 	}
 }
 
