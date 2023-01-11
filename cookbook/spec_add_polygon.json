@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "POLYGON1",
-                "name": "Poligon Mainnet",
+                "name": "Polygon Mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
