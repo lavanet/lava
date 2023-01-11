@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/apilib"
 	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
-	"github.com/lavanet/lava/protocol/rpcconsumer/apilib"
 	"github.com/lavanet/lava/relayer/lavasession"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )

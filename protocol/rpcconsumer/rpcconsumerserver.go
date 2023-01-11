@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/lavanet/lava/protocol/rpcconsumer/apilib"
+	"github.com/lavanet/lava/protocol/apilib"
 	"github.com/lavanet/lava/relayer/chainproxy"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"

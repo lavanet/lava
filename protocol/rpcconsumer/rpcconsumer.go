@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/protocol/apilib"
 	"github.com/lavanet/lava/protocol/consumerstatetracker"
-	"github.com/lavanet/lava/protocol/rpcconsumer/apilib"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 )
