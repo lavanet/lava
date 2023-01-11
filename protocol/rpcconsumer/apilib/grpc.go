@@ -24,6 +24,8 @@ type GrpcAPIListener struct{}
 
 func (apil *GrpcAPIListener) Serve() {}
 
-func NewGrpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiPArser APIParser, relaySender RelaySender) (apiListener *GrpcAPIListener) {
+func NewGrpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (apiListener *GrpcAPIListener) {
+	// open up server for grpc implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint
+	// when receiving the data such as url, rpc data, headers (connectionType), use relaySender to wrap verify and send that data
 	return nil
 }

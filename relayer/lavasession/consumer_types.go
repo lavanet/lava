@@ -46,22 +46,22 @@ type SingleConsumerSession struct {
 }
 
 type Endpoint struct {
-	Addr               string // change at the end to NetworkAddress
+	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
 	Client             *pairingtypes.RelayerClient
 	ConnectionRefusals uint64
 }
 
 type RPCEndpoint struct {
-	Address      string // IP:PORT
-	ChainID      string // spec chain identifier
-	ApiInterface string
-	Geolocation  uint64
+	NetworkAddress string // IP:PORT
+	ChainID        string // spec chain identifier
+	ApiInterface   string
+	Geolocation    uint64
 }
 
 func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
 	// TODO: validate correct url address
-	rpce.Address = address
+	rpce.NetworkAddress = address
 	rpce.ChainID = chainID
 	rpce.ApiInterface = apiInterface
 	rpce.Geolocation = geolocation
@@ -73,14 +73,14 @@ func (rpce *RPCEndpoint) Key() string {
 }
 
 type ConsumerSessionsWithProvider struct {
-	Lock             utils.LavaMutex
-	Acc              string // public lava address // change at the end to PublicLavaAddress
-	Endpoints        []*Endpoint
-	Sessions         map[int64]*SingleConsumerSession
-	MaxComputeUnits  uint64
-	UsedComputeUnits uint64
-	ReliabilitySent  bool
-	PairingEpoch     uint64
+	Lock              utils.LavaMutex
+	PublicLavaAddress string
+	Endpoints         []*Endpoint
+	Sessions          map[int64]*SingleConsumerSession
+	MaxComputeUnits   uint64
+	UsedComputeUnits  uint64
+	ReliabilitySent   bool
+	PairingEpoch      uint64
 }
 
 // verify data reliability session exists or not
@@ -120,7 +120,7 @@ func (cswp *ConsumerSessionsWithProvider) GetPairingEpoch() uint64 {
 func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
 	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is changed
 	defer cswp.Lock.Unlock()
-	return cswp.Acc, cswp.PairingEpoch
+	return cswp.PublicLavaAddress, cswp.PairingEpoch
 }
 
 // Validate the compute units for this provider
@@ -232,13 +232,13 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if endpoint.Client == nil {
-				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.Addr)
+				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": cswp.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
+					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.NetworkAddress, "provider address": cswp.PublicLavaAddress, "endpoint": fmt.Sprintf("%+v", endpoint)})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": cswp.Acc, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.NetworkAddress, "address": cswp.PublicLavaAddress, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
 					}
 					continue
 				}
@@ -265,7 +265,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.Acc})
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.PublicLavaAddress})
 		// report provider.
 		return connected, endpointPtr, AllProviderEndpointsDisabledError
 	}

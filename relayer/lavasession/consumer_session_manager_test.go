@@ -47,15 +47,15 @@ func createPairingList() []*ConsumerSessionsWithProvider {
 	cswpList := make([]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
-	pairingEndpoints[0] = &Endpoint{Addr: grpcListener, Enabled: true, Client: nil, ConnectionRefusals: 0}
+	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Client: nil, ConnectionRefusals: 0}
 	for p := 0; p < numberOfProviders; p++ {
 		cswpList = append(cswpList, &ConsumerSessionsWithProvider{
-			Acc:             "provider" + strconv.Itoa(p),
-			Endpoints:       pairingEndpoints,
-			Sessions:        map[int64]*SingleConsumerSession{},
-			MaxComputeUnits: 200,
-			ReliabilitySent: false,
-			PairingEpoch:    firstEpochHeight,
+			PublicLavaAddress: "provider" + strconv.Itoa(p),
+			Endpoints:         pairingEndpoints,
+			Sessions:          map[int64]*SingleConsumerSession{},
+			MaxComputeUnits:   200,
+			ReliabilitySent:   false,
+			PairingEpoch:      firstEpochHeight,
 		})
 	}
 	return cswpList
@@ -307,8 +307,8 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	require.Equal(t, cs.RelayNum, relayNumberAfterFirstFail)
 
 	// verify provider is blocked and reported
-	require.Contains(t, csm.addedToPurgeAndReport, cs.Client.Acc) // address is reported
-	require.NotContains(t, csm.validAddresses, cs.Client.Acc)     // address isn't in valid addresses list
+	require.Contains(t, csm.addedToPurgeAndReport, cs.Client.PublicLavaAddress) // address is reported
+	require.NotContains(t, csm.validAddresses, cs.Client.PublicLavaAddress)     // address isn't in valid addresses list
 
 	reported, err := csm.GetReportedProviders(firstEpochHeight)
 	require.Nil(t, err)

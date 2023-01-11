@@ -16,7 +16,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
+	rpcEndpoint  *RPCEndpoint // used to filter out endpoints
 	lock         sync.RWMutex
 	pairing      map[string]*ConsumerSessionsWithProvider // key == provider address
 	currentEpoch uint64
@@ -31,6 +33,10 @@ type ConsumerSessionManager struct {
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge map[string]*ConsumerSessionsWithProvider
+}
+
+func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
+	return *csm.rpcEndpoint
 }
 
 // Update the provider pairing list for the ConsumerSessionManager
@@ -57,8 +63,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
-		csm.pairingAddresses[idx] = provider.Acc
-		csm.pairing[provider.Acc] = provider
+		csm.pairingAddresses[idx] = provider.PublicLavaAddress
+		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	copy(csm.validAddresses, csm.pairingAddresses) // the starting point is that valid addresses are equal to pairing addresses.
 
@@ -581,4 +587,10 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 	}
 
 	return nil
+}
+
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint) *ConsumerSessionManager {
+	csm := ConsumerSessionManager{}
+	csm.rpcEndpoint = rpcEndpoint
+	return &csm
 }

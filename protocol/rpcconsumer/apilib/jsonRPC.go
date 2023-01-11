@@ -24,6 +24,8 @@ type JsonRPCAPIListener struct{}
 
 func (apil *JsonRPCAPIListener) Serve() {}
 
-func NewJrpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, apiPArser APIParser, relaySender RelaySender) (apiListener *JsonRPCAPIListener) {
+func NewJrpcAPIListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (apiListener *JsonRPCAPIListener) {
+	// open up server for http implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint
+	// when receiving the data such as url, rpc data, headers (connectionType), use relaySender to wrap verify and send that data
 	return nil
 }
