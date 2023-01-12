@@ -17,10 +17,10 @@ import (
 )
 
 type ConsumerSessionManager struct {
-	lock         sync.RWMutex
-	pairing      map[string]*ConsumerSessionsWithProvider // key == provider address
-	currentEpoch uint64
-
+	lock           sync.RWMutex
+	pairing        map[string]*ConsumerSessionsWithProvider // key == provider address
+	currentEpoch   uint64
+	numberOfResets uint64
 	// pairingAddresses for Data reliability
 	pairingAddresses       []string // contains all addresses from the initial pairing.
 	pairingAddressesLength uint64
@@ -51,6 +51,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.pairingAddresses = make([]string, pairingListLength)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
+	csm.numberOfResets = 0
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
@@ -76,8 +77,9 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 }
 
 // validating we still have providers, otherwise reset valid addresses list
-func (csm *ConsumerSessionManager) validatePairingListNotEmpty() {
+func (csm *ConsumerSessionManager) validatePairingListNotEmpty() uint64 {
 	csm.lock.RLock() // lock read to validate length
+	numberOfResets := csm.numberOfResets
 	if len(csm.validAddresses) == 0 {
 		csm.lock.RUnlock()                // unlock read
 		csm.lock.Lock()                   // lock write
@@ -85,11 +87,14 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty() {
 			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
 			csm.validAddresses = make([]string, csm.pairingAddressesLength)
 			copy(csm.validAddresses, csm.pairingAddresses) // reset the list of valid addresses
+			csm.numberOfResets += 1
+			numberOfResets = csm.numberOfResets // update numberOfResets with the new value
 		}
 		csm.lock.Unlock() // unlock write
 	} else {
 		csm.lock.RUnlock() // unlock read if length was larger than zero.
 	}
+	return numberOfResets
 }
 
 // GetSession will return a ConsumerSession, given cu needed for that session.
@@ -97,7 +102,7 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty() {
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
 	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error,
 ) {
-	csm.validatePairingListNotEmpty() // if pairing list is empty we reset the state.
+	numberOfResets := csm.validatePairingListNotEmpty() // if pairing list is empty we reset the state.
 
 	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
 		initUnwantedProviders = make(map[string]struct{})
@@ -154,7 +159,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		}
 
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
-		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
+		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
 		if err != nil {
 			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", &map[string]string{"Error": err.Error()})
 			if MaximumNumberOfSessionsExceededError.Is(err) {

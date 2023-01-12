@@ -106,6 +106,35 @@ func TestPairingReset(t *testing.T) {
 	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
 }
 
+func TestPairingResetWithFailures(t *testing.T) {
+	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
+	defer s.Stop()           // stop the server when finished.
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList()
+	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+	for {
+		fmt.Printf("%v", len(csm.validAddresses))
+		cs, _, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+		if err != nil {
+			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
+				break
+			}
+			require.True(t, false) // fail test.
+		}
+		err = csm.OnSessionFailure(cs, nil)
+
+	}
+	require.Equal(t, len(csm.validAddresses), 0)
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	require.Nil(t, err)
+	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
+	require.NotNil(t, cs)
+	require.Equal(t, epoch, csm.currentEpoch)
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+}
+
 // Test the basic functionality of the consumerSessionManager
 func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	s := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
