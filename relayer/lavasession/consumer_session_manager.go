@@ -75,11 +75,30 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&csm.currentEpoch)
 }
 
+// validating we still have providers, otherwise reset valid addresses list
+func (csm *ConsumerSessionManager) validatePairingListNotEmpty() {
+	csm.lock.RLock() // lock read to validate length
+	if len(csm.validAddresses) == 0 {
+		csm.lock.RUnlock()                // unlock read
+		csm.lock.Lock()                   // lock write
+		if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
+			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
+			csm.validAddresses = make([]string, csm.pairingAddressesLength)
+			copy(csm.validAddresses, csm.pairingAddresses) // reset the list of valid addresses
+		}
+		csm.lock.Unlock() // unlock write
+	} else {
+		csm.lock.RUnlock() // unlock read if length was larger than zero.
+	}
+}
+
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
 	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error,
 ) {
+	csm.validatePairingListNotEmpty() // if pairing list is empty we reset the state.
+
 	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
 		initUnwantedProviders = make(map[string]struct{})
 	}
