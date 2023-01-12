@@ -273,7 +273,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, clientAddr, epochStart, relay.ChainID, relay.CuSum)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.ChainID, relay.CuSum)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -281,7 +281,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, clientAddr sdk.AccAddress, epoch uint64, chainID string, cuSum uint64) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum uint64) error {
 	var unresponsiveProviders []string
 
 	// check that unresponsiveData exists

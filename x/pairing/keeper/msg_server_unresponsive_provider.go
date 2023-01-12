@@ -37,6 +37,11 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 
 // Function that punishes providers. Current punishment is unstake
 func (k Keeper) punishUnresponsiveProviders(ctx sdk.Context, providersToPunish map[string]string) error {
+	// if providersToPunish map is empty, do nothing
+	if len(providersToPunish) == 0 {
+		return nil
+	}
+
 	// Go over providers
 	for providerAddress, chainID := range providersToPunish {
 		// Get provider's sdk.Account address
@@ -66,6 +71,11 @@ func (k Keeper) punishUnresponsiveProviders(ctx sdk.Context, providersToPunish m
 
 // Function that returns a map that links between a provider that should be punished and its punishEntry
 func (k Keeper) getUnresponsiveProvidersToPunish(ctx sdk.Context, currentEpoch uint64, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) (map[string]string, error) {
+	// check the epochsNum consts
+	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
+		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_unresponsive_providers_to_punish", nil, "epochsNumToCheckCUForUnresponsiveProvider or epochsNumToCheckCUForComplainers are smaller or equal than zero")
+	}
+
 	providersPunishEntryMap := make(map[string]punishEntry)
 	providersToPunishMap := make(map[string]string)
 	epochTemp := currentEpoch
