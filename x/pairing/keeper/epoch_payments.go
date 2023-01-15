@@ -86,7 +86,17 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 	if !found {
 		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{userPaymentProviderStorage}}
 	} else {
-		epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
+		found = false
+		for _, providerEpochStorage := range epochPayments.GetClientsPayments() {
+			if providerEpochStorage.Index == userPaymentProviderStorage.Index {
+				*providerEpochStorage = *userPaymentProviderStorage
+				found = true
+				break
+			}
+		}
+		if !found {
+			epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
+		}
 	}
 
 	k.SetEpochPayments(ctx, epochPayments)
