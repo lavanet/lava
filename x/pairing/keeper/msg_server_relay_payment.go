@@ -289,7 +289,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		return nil
 	}
 
-	// unmarshel the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
+	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
 	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
 	if err != nil {
 		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, &map[string]string{"UnresponsiveProviders": string(unresponsiveData), "dataLength": strconv.Itoa(len(unresponsiveData))})
@@ -325,8 +325,18 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 				Epoch:                              epoch,
 				ComplainersTotalCu:                 complainerCuToAdd,
 			}
-			k.SetProviderPaymentStorage(ctx, emptyProviderPaymentStorageWithComplaint)
-			continue
+
+			// add the new empty providerPaymentStorage to epochPayments
+			epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+			if !found {
+				epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{&emptyProviderPaymentStorageWithComplaint}}
+			} else {
+				epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, &emptyProviderPaymentStorageWithComplaint)
+			}
+			k.SetEpochPayments(ctx, epochPayments)
+
+			// assign providerPaymentStorage with the new empty providerPaymentStorage
+			providerPaymentStorage = emptyProviderPaymentStorageWithComplaint
 		}
 
 		// providerPaymentStorage was found for epoch -> add complainer's used CU

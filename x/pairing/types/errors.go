@@ -13,4 +13,5 @@ var (
 	PreviousEpochStartIsBlockZeroError                 = sdkerrors.New("PreviousEpochStartIsBlockZeroError Error", 686, "Previous epoch start is block 0, can't be used for average block time calculation (core.Block(0) panics).")
 	AverageBlockTimeIsLessOrEqualToZeroError           = sdkerrors.New("AverageBlockTimeIsLessOrEqualToZeroError Error", 687, "The calculated average block time is less or equal to zero")
 	NotEnoughBlocksToCalculateAverageBlockTimeError    = sdkerrors.New("NotEnoughBlocksToCalculateAverageBlockTimeError Error", 688, "There isn't enough blocks in the previous epoch to calculate average block time")
+	EpochTooEarlyForUnresponsiveProviderJailError      = sdkerrors.New("EpochTooEarlyForUnresponsiveProviderJailError Error", 689, "The epoch is too early for jailing a provider due to unersponsiveness")
 )
