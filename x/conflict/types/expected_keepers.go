@@ -7,7 +7,7 @@ import (
 )
 
 type PairingKeeper interface {
-	UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error
+	UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error
 	CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin, isProvider bool) (bool, error)
 	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
 	JailEntry(ctx sdk.Context, account sdk.AccAddress, isProvider bool, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
