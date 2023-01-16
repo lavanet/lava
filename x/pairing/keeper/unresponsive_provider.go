@@ -121,16 +121,18 @@ func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, is
 			return 0, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
 		}
 
-		// Get previous epoch's epochPayments
-		epochPayments, found, _ := k.GetEpochPaymentsFromBlock(ctx, previousEpoch)
-		if !found {
-			// No epochPayments found -> continue to the next iteration
-			epochTemp = previousEpoch
-			continue
+		// Get the current stake storages (from all chains)
+		stakeStorageList := k.getCurrentProviderStakeStorageList(ctx)
+		if len(stakeStorageList) == 0 {
+			// no provider is staked -> CU = 0
+			return 0, nil
 		}
 
-		// Get providerPaymentStorage list
-		providerPaymentStorageList := epochPayments.GetClientsPayments()
+		// Get a providerPaymentStorage of all staked providers
+		providerPaymentStorageList, err := k.getProviderPaymentStorageFromStakeStorageList(ctx, previousEpoch, stakeStorageList)
+		if err != nil {
+			return 0, utils.LavaError(ctx, k.Logger(ctx), "get_provider_payment_storage_from_stake_storage_list", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", previousEpoch)}, "couldn't get providerPaymentStorageList from stakeStorageList")
+		}
 
 		// Go over providerPaymentStorage list
 		for _, providerPaymentStorage := range providerPaymentStorageList {
@@ -187,6 +189,56 @@ func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, is
 	}
 
 	return epochTemp, nil
+}
+
+// Function that return the current stake storage for all chains
+func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstoragetypes.StakeStorage {
+	var stakeStorageList []epochstoragetypes.StakeStorage
+
+	// get all chain IDs
+	chainIdList := k.specKeeper.GetAllChainIDs(ctx)
+
+	// go over all chain IDs and keep their stake storage. If there is no stake storage for a specific chain, continue to the next one
+	for _, chainID := range chainIdList {
+		stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, epochstoragetypes.ProviderKey, chainID)
+		if !found {
+			continue
+		}
+		stakeStorageList = append(stakeStorageList, stakeStorage)
+	}
+
+	return stakeStorageList
+}
+
+// Function that returns a list of pointers to ProviderPaymentStorage objects by iterating on all the staked providers
+func (k Keeper) getProviderPaymentStorageFromStakeStorageList(ctx sdk.Context, epoch uint64, stakeStorageList []epochstoragetypes.StakeStorage) ([]*types.ProviderPaymentStorage, error) {
+	var providerPaymentStorageList []*types.ProviderPaymentStorage
+
+	// Go over the provider list
+	for _, stakeStorage := range stakeStorageList {
+		for _, stakeEntry := range stakeStorage.GetStakeEntries() {
+			sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(stakeEntry.Address)
+			if err != nil {
+				// if bad data was given, we cant parse it so we ignore it and continue this protects from spamming wrong information.
+				utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": stakeEntry.Address})
+				continue
+			}
+
+			// get providerPaymentStorageKey from the stake entry details
+			providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, stakeEntry.GetChain(), epoch, sdkStakeEntryProviderAddress)
+
+			// get providerPaymentStorage with providerPaymentStorageKey
+			providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+			if !found {
+				continue
+			}
+
+			// add a pointer to the providerPaymentStorage to the providerPaymentStorageList
+			providerPaymentStorageList = append(providerPaymentStorageList, &providerPaymentStorage)
+		}
+	}
+
+	return providerPaymentStorageList, nil
 }
 
 // Function that punishes providers. Current punishment is unstake
