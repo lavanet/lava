@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string) error {
+func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error {
 	logger := k.Logger(ctx)
 	var stake_type string
 	if provider {
@@ -52,12 +52,21 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	if existingEntry.Deadline < holdBlocks {
 		existingEntry.Deadline = holdBlocks
 	}
+	details := map[string]string{
+		"address":     existingEntry.GetAddress(),
+		"chainID":     existingEntry.GetChain(),
+		"geolocation": strconv.FormatUint(existingEntry.GetGeolocation(), 10),
+		"moniker":     existingEntry.GetMoniker(),
+		"stake":       existingEntry.GetStake().Amount.String(),
+	}
+	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
 	// this pops all the entries that had their deadline pass
 	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, epochstoragetypes.ProviderKey, uint64(ctx.BlockHeight()))
+
 	if unstakingEntriesToCredit != nil {
 		err := k.creditUnstakingEntries(ctx, true, unstakingEntriesToCredit) // true for providers
 		if err != nil {
