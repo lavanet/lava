@@ -19,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	singletonLogger "github.com/lavanet/lava/relayer/common/logger"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
@@ -611,6 +612,12 @@ func (s *Sentry) Start(ctx context.Context) {
 			if _, ok := e.Events["lava_new_epoch.height"]; ok {
 				utils.LavaFormatInfo("New Epoch Event", nil)
 				utils.LavaFormatInfo("New Epoch Info:", &map[string]string{"Height": strconv.FormatInt(data.Block.Height, 10)})
+
+				// Get logger instance
+				logger := singletonLogger.GetInstance()
+
+				// Reset logger allow list
+				logger.ResetErrorAllowList()
 
 				// New epoch height will be set in FetchChainParams
 				s.SetPrevEpochHeight(s.GetCurrentEpochHeight())
