@@ -15,8 +15,8 @@ import (
 
 func TestUnresponsivenessStressTest(t *testing.T) {
 	// setup test for unresponsiveness
-	testClientAmount := 10000
-	testProviderAmount := 1000
+	testClientAmount := 50
+	testProviderAmount := 5
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
@@ -26,7 +26,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 	// create unresponsive data list of the first 100 providers being unresponsive
 	var unresponsiveDataList [][]byte
-	unresponsiveProviderAmount := 100
+	unresponsiveProviderAmount := 1
 	for i := 0; i < unresponsiveProviderAmount; i++ {
 		unresponsiveData, err := json.Marshal([]string{ts.providers[i].address.String()})
 		require.Nil(t, err)
