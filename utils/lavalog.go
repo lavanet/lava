@@ -7,6 +7,8 @@ import (
 	"runtime/debug"
 	"time"
 
+	singletonLogger "github.com/lavanet/lava/relayer/common/logger"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	zerolog "github.com/rs/zerolog"
@@ -99,7 +101,16 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 		}
 		output = fmt.Sprintf("%s -- %+v", output, *extraAttributes)
 	}
-	logEvent.Msg(description)
+
+	// Get logger instance
+	logger := singletonLogger.GetInstance()
+
+	// Create log message
+	msg := singletonLogger.LogMessage{Description: description, Err: err, LogEvent: logEvent}
+
+	// Send log message to the channel for async logging
+	logger.Log(msg)
+
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
