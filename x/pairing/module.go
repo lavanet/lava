@@ -27,6 +27,11 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
+const (
+	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER = 4 // number of epochs to sum CU that the provider serviced
+	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              = 2 // number of epochs to sum CU of complainers against the provider
+)
+
 // ----------------------------------------------------------------------------
 // AppModuleBasic
 // ----------------------------------------------------------------------------
@@ -190,13 +195,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 		err = am.keeper.CheckUnstakingForCommit(ctx)
 		logOnErr(err, "CheckUnstakingForCommit")
 
-		// consts TODO: where to put it?
-		const (
-			epochsNumToCheckCUForUnresponsiveProvider = 4 // number of epochs to sum CU that the provider serviced
-			epochsNumToCheckCUForComplainers          = 2 // number of epochs to sum CU of complainers against the provider
-		)
 		// 4. unstake unresponsive providers
-		err = am.keeper.UnstakeUnresponsiveProviders(ctx, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers)
+		err = am.keeper.UnstakeUnresponsiveProviders(ctx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 		logOnErr(err, "UnstakeUnresponsiveProviders")
 	}
 }

@@ -51,14 +51,26 @@ func (k Keeper) getUnresponsiveProvidersToPunish(ctx sdk.Context, currentEpoch u
 	providersPunishEntryMap := make(map[string]punishEntry) // map of punishEntryKey keys (string) with punishEntry values (punishEntryKey = providerAddress_chainID)
 	providersToPunishMap := make(map[string][]string)       // map of punishEntryKey keys (string) with list of providerPaymentStorage indices values (string array) (punishEntryKey = providerAddress_chainID)
 
+	// Get recommendedEpochNumToCollectPayment
+	recommendedEpochNumToCollectPayment := k.RecommendedEpochNumToCollectPayment(ctx)
+
 	// handle very early epochs (basically, don't punish)
 	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, currentEpoch)
 	if err != nil {
 		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_epoch_blocks", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", currentEpoch)}, "couldn't get epoch blocks param")
 	}
-	if currentEpoch < (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider)*epochBlocks {
+	if currentEpoch < (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider+recommendedEpochNumToCollectPayment)*epochBlocks {
 		// To check for punishment, we have to go back (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider) epochs from the current epoch. If there isn't enough memory, do nothing
 		return nil, types.EpochTooEarlyForUnresponsiveProviderJailError
+	}
+
+	// Go back recommendedEpochNumToCollectPayment
+	for counter := uint64(0); counter < recommendedEpochNumToCollectPayment; counter++ {
+		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, currentEpoch)
+		if err != nil {
+			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", currentEpoch)}, "couldn't get previous epoch")
+		}
+		currentEpoch = previousEpoch
 	}
 
 	// Go over previous epochs to count the CU serviced by the provider
@@ -121,8 +133,9 @@ func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, is
 		providerPaymentStorageList := epochPayments.GetClientsPayments()
 
 		// Go over providerPaymentStorage list
-		cuCount := uint64(0)
 		for _, providerPaymentStorage := range providerPaymentStorageList {
+			cuCount := uint64(0)
+
 			// Get provider address and chainID
 			providerAddress := k.getProviderAddressFromProviderPaymentStorageKey(providerPaymentStorage.Index)
 			chainID := k.getChainIDFromProviderPaymentStorageKey(providerPaymentStorage.Index)
@@ -139,8 +152,9 @@ func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, is
 					cuCount += uniquePayment.GetUsedCU()
 				}
 				if punishEntryFound {
-					// punishEntry found -> add the cuCount to providerServicedCu
+					// punishEntry found -> add the cuCount to providerServicedCu and update the map entry
 					providerPunishEntry.providerServicedCu += cuCount
+					providersPunishEntryMap[punishEntryKey] = providerPunishEntry
 				} else {
 					// punishEntry not found -> create a new one and add it to the map
 					providersPunishEntryMap[punishEntryKey] = punishEntry{complainersUsedCu: 0, providerServicedCu: cuCount, providerPaymentStorageIndexList: []string{providerPaymentStorage.Index}}
@@ -156,8 +170,9 @@ func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, is
 				cuCount = providerPaymentStorage.ComplainersTotalCu / (servicersToPair - 1)
 
 				if punishEntryFound {
-					// punishEntry found -> add the cuCount to complainersUsedCu
+					// punishEntry found -> add the cuCount to complainersUsedCu and update the map entry
 					providerPunishEntry.complainersUsedCu += cuCount
+					providersPunishEntryMap[punishEntryKey] = providerPunishEntry
 				} else {
 					// punishEntry not found -> create a new one and add it to the map
 					providersPunishEntryMap[punishEntryKey] = punishEntry{complainersUsedCu: cuCount, providerServicedCu: 0, providerPaymentStorageIndexList: []string{providerPaymentStorage.Index}}
