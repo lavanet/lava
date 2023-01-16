@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -30,7 +31,11 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
-const BLOCK_TIME = 30 * time.Second
+const (
+	BLOCK_TIME                                       = 30 * time.Second
+	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER = 4 // number of epochs to sum CU that the provider serviced
+	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              = 2 // number of epochs to sum CU of complainers against the provider
+)
 
 type Keepers struct {
 	Epochstorage  epochstoragekeeper.Keeper
@@ -221,6 +226,11 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
+
+		start := time.Now()
+		ks.Pairing.UnstakeUnresponsiveProviders(unwrapedCtx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
+		elapsed_time := time.Since(start)
+		fmt.Printf("elapsed_time: %v\n", elapsed_time)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
