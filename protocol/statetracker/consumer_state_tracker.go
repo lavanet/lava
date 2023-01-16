@@ -1,4 +1,4 @@
-package consumerstatetracker
+package statetracker
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/apilib"
-	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
+	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -100,12 +100,12 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
-func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser) {
-	// register this apiParser for spec updates
+func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser) {
+	// register this chainParser for spec updates
 	// currently just set the first one, and have a TODO to handle spec changes
-	// get the spec and set it into the apiParser
+	// get the spec and set it into the chainParser
 	spec := spectypes.Spec{}
-	apiParser.SetSpec(spec)
+	chainParser.SetSpec(spec)
 }
 
 func (cst *ConsumerStateTracker) ReportProviderForFinalizationData(ctx context.Context, reply *pairingtypes.RelayReply) {

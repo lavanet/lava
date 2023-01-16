@@ -1,4 +1,4 @@
-package apilib
+package chainlib
 
 import (
 	"context"
@@ -10,44 +10,44 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func NewApiParser(apiInterface string) (apiParser APIParser, err error) {
+func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcAPIParser()
+		return NewJrpcChainParser()
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcAPIParser()
+		return NewTendermintRpcChainParser()
 	case spectypes.APIInterfaceRest:
-		return NewRestAPIParser()
+		return NewRestChainParser()
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcAPIParser()
+		return NewGrpcChainParser()
 	}
-	return nil, fmt.Errorf("apiParser for apiInterface (%s) not found", apiInterface)
+	return nil, fmt.Errorf("chainParser for apiInterface (%s) not found", apiInterface)
 }
 
-func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (APIListener, error) {
+func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcAPIListener(ctx, listenEndpoint, relaySender), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcAPIListener(ctx, listenEndpoint, relaySender), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestAPIListener(ctx, listenEndpoint, relaySender), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcAPIListener(ctx, listenEndpoint, relaySender), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender), nil
 	}
 	return nil, fmt.Errorf("apiListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
 
 // this is an interface for parsing and generating messages of the supported APIType
 // it checks for the existence of the method in the spec, and formats the message
-type APIParser interface {
-	ParseMsg(url string, data []byte, connectionType string) (APIMessage, error) // has to be thread safe
-	SetSpec(spec spectypes.Spec)                                                 // has to be thread safe
+type ChainParser interface {
+	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) // has to be thread safe
+	SetSpec(spec spectypes.Spec)                                                   // has to be thread safe
 	DataReliabilityEnabled() bool
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
 }
 
-type APIMessage interface {
+type ChainMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	GetInterface() *spectypes.ApiInterface
 	RequestedBlock() int64
@@ -63,6 +63,6 @@ type RelaySender interface {
 	) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error)
 }
 
-type APIListener interface {
+type ChainListener interface {
 	Serve() //serve opens up a server for api requests of the required api
 }

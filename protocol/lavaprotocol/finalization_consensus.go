@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/apilib"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/exp/slices"
@@ -174,10 +174,10 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	}
 }
 
-func (s *FinalizationConsensus) ExpectedBlockHeight(apiParser apilib.APIParser) (expectedBlockHeight int64, numOfProviders int) {
+func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime, _ := apiParser.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime, _ := chainParser.ChainBlockStats()
 	averageBlockTime_ms := averageBlockTime
 	listExpectedBlockHeights := []int64{}
 

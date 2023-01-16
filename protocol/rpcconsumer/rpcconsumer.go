@@ -9,9 +9,9 @@ import (
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/apilib"
-	"github.com/lavanet/lava/protocol/consumerstatetracker"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sigs"
@@ -21,7 +21,7 @@ import (
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser)
+	RegisterApiParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
 	ReportProviderForFinalizationData(context.Context, *pairingtypes.RelayReply)
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 }
@@ -35,7 +35,7 @@ type RPCConsumer struct {
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey) (err error) {
 	// spawn up ConsumerStateTracker
-	consumerStateTracker := consumerstatetracker.ConsumerStateTracker{}
+	consumerStateTracker := statetracker.ConsumerStateTracker{}
 	rpcc.consumerStateTracker, err = consumerStateTracker.New(ctx, txFactory, clientCtx)
 	if err != nil {
 		return err

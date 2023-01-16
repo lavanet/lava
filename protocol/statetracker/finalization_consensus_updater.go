@@ -1,4 +1,4 @@
-package consumerstatetracker
+package statetracker
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"

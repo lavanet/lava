@@ -1,4 +1,4 @@
-package consumerstatetracker
+package statetracker
 
 import (
 	"context"

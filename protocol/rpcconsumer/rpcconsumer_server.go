@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/lavanet/lava/protocol/apilib"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
@@ -19,9 +19,9 @@ const (
 	MaxRelayRetries = 3
 )
 
-// implements Relay Sender interfaced and uses an APIListener to get it called
+// implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
-	apiParser              apilib.APIParser
+	chainParser            chainlib.ChainParser
 	consumerSessionManager *lavasession.ConsumerSessionManager
 	listenEndpoint         *lavasession.RPCEndpoint
 	rpcConsumerLogs        *lavaprotocol.RPCConsumerLogs
@@ -58,16 +58,16 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	}
 	rpccs.rpcConsumerLogs = pLogs
 	rpccs.privKey = privKey
-	apiParser, err := apilib.NewApiParser(listenEndpoint.ApiInterface)
+	chainParser, err := chainlib.NewChainParser(listenEndpoint.ApiInterface)
 	if err != nil {
 		return err
 	}
-	rpccs.apiParser = apiParser
-	consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, apiParser)
+	rpccs.chainParser = chainParser
+	consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, chainParser)
 	finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 	consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 	rpccs.finalizationConsensus = finalizationConsensus
-	apiListener, err := apilib.NewApiListener(ctx, listenEndpoint, rpccs)
+	apiListener, err := chainlib.NewApiListener(ctx, listenEndpoint, rpccs)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	dappID string,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 
-	// gets the relay request data from the APIListener
+	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
 	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
 	// sends a relay message to a provider
@@ -91,7 +91,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
 
-	apiMessage, err := rpccs.apiParser.ParseMsg(url, []byte(req), connectionType)
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -99,13 +99,13 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	var unwantedProviders = map[string]struct{}{}
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestCommonData := lavaprotocol.NewRelayRequestCommonData(rpccs.listenEndpoint.ChainID, connectionType, url, []byte(req), apiMessage.RequestedBlock())
+	relayRequestCommonData := lavaprotocol.NewRelayRequestCommonData(rpccs.listenEndpoint.ChainID, connectionType, url, []byte(req), chainMessage.RequestedBlock())
 
 	relayResults := []*RelayResult{}
 	relayErrors := []error{}
 	for retries := 0; retries < MaxRelayRetries; retries++ {
 		//TODO: make this async between different providers
-		relayResult, err := rpccs.sendRelayToProvider(ctx, apiMessage, relayRequestCommonData, dappID, &unwantedProviders)
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestCommonData, dappID, &unwantedProviders)
 		if relayResult.providerAddress != "" {
 			unwantedProviders[relayResult.providerAddress] = struct{}{}
 		}
@@ -141,7 +141,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
-	apiMessage apilib.APIMessage,
+	chainMessage chainlib.ChainMessage,
 	relayRequestCommonData lavaprotocol.RelayRequestCommonData,
 	dappID string,
 	unwantedProviders *map[string]struct{},
@@ -158,9 +158,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 
-	isSubscription := apiMessage.GetInterface().Category.Subscription
+	isSubscription := chainMessage.GetInterface().Category.Subscription
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, apiMessage.GetServiceApi().ComputeUnits, *unwantedProviders)
+	singleConsumerSession, epoch, providerPublicAddress, reportedProviders, err := rpccs.consumerSessionManager.GetSession(ctx, chainMessage.GetServiceApi().ComputeUnits, *unwantedProviders)
 	relayResult = &RelayResult{providerAddress: providerPublicAddress}
 	if err != nil {
 		return relayResult, err
@@ -181,7 +181,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// try using cache before sending relay
 	var reply *pairingtypes.RelayReply
 
-	reply, err = rpccs.cache.GetEntry(ctx, relayRequest, apiMessage.GetInterface().Interface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+	reply, err = rpccs.cache.GetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 	if err == nil && reply != nil {
 		// Info was fetched from cache, so we don't need to change the state
 		// so we can return here, no need to update anything and calculate as this info was fetched from the cache
@@ -203,12 +203,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			return relayResult, utils.LavaFormatError("failed relay onSessionFailure errored", errReport, &map[string]string{"original error": err.Error()})
 		}
 	}
-	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.apiParser)
-	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, reply.LatestBlock, apiMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()) // session done successfully
+	expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
+	err = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, epoch, reply.LatestBlock, chainMessage.GetServiceApi().ComputeUnits, relayLatency, expectedBH, numOfProviders, rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()) // session done successfully
 
 	// set cache in a non blocking call
 	go func() {
-		err2 := rpccs.cache.SetEntry(ctx, relayRequest, apiMessage.GetInterface().Interface, nil, chainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
+		err2 := rpccs.cache.SetEntry(ctx, relayRequest, chainMessage.GetInterface().Interface, nil, chainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes
 		if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 			utils.LavaFormatWarning("error updating cache with new entry", err2, nil)
 		}
@@ -230,7 +230,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, endpointClient p
 	}
 	relayResult.reply = reply
 	lavaprotocol.UpdateRequestedBlock(relayRequest, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-	_, _, blockDistanceForFinalizedData := rpccs.apiParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData := rpccs.chainParser.ChainBlockStats()
 	finalized = spectypes.IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
 	err = lavaprotocol.VerifyRelayReply(reply, relayRequest, providerPublicAddress)
 	if err != nil {
@@ -239,7 +239,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, endpointClient p
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
 
-	if rpccs.apiParser.DataReliabilityEnabled() {
+	if rpccs.chainParser.DataReliabilityEnabled() {
 		finalizedBlocks, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
 		if err != nil {
 			if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) {
