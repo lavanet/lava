@@ -16,6 +16,16 @@ func (apip *TendermintAPIParser) ParseMsg(url string, data []byte, connectionTyp
 
 func (apip *TendermintAPIParser) SetSpec(spec spectypes.Spec) {}
 
+func (apip *TendermintAPIParser) DataReliabilityEnabled() bool {
+	// TODO
+	return false
+}
+
+func (apip *TendermintAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+	//TODO
+	return 0
+}
+
 func NewTendermintRpcAPIParser() (apiParser *TendermintAPIParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }

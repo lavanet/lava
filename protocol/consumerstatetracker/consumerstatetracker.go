@@ -12,6 +12,7 @@ import (
 	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -87,4 +88,9 @@ func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Con
 	// get the spec and set it into the apiParser
 	spec := spectypes.Spec{}
 	apiParser.SetSpec(spec)
+}
+
+func (cst *ConsumerStateTracker) ReportProviderForFinalizationData(ctx context.Context, reply *pairingtypes.RelayReply) {
+	//TODO: implement
+	utils.LavaFormatDebug("reporting provider for wrong finalization data", &map[string]string{"reply": fmt.Sprintf("%v", reply)})
 }

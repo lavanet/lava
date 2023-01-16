@@ -42,6 +42,8 @@ func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint
 type APIParser interface {
 	ParseMsg(url string, data []byte, connectionType string) (APIMessage, error) // has to be thread safe
 	SetSpec(spec spectypes.Spec)                                                 // has to be thread safe
+	DataReliabilityEnabled() bool
+	GetBlockDistanceForFinalizedData() uint32
 }
 
 type APIMessage interface {

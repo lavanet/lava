@@ -16,6 +16,16 @@ func (apip *GrpcAPIParser) ParseMsg(url string, data []byte, connectionType stri
 
 func (apip *GrpcAPIParser) SetSpec(spec spectypes.Spec) {}
 
+func (apip *GrpcAPIParser) DataReliabilityEnabled() bool {
+	// TODO
+	return false
+}
+
+func (apip *GrpcAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+	//TODO
+	return 0
+}
+
 func NewGrpcAPIParser() (apiParser *GrpcAPIParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }

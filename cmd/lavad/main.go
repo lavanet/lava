@@ -205,8 +205,8 @@ func main() {
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
 			rpcConsumer := rpcconsumer.RPCConsumer{}
 			rpcEndpoints := []*lavasession.RPCEndpoint{}
-
-			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints)
+			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
+			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses)
 			return nil
 		},
 	}

@@ -16,6 +16,16 @@ func (apip *JsonRPCAPIParser) ParseMsg(url string, data []byte, connectionType s
 
 func (apip *JsonRPCAPIParser) SetSpec(spec spectypes.Spec) {}
 
+func (apip *JsonRPCAPIParser) DataReliabilityEnabled() bool {
+	// TODO
+	return false
+}
+
+func (apip *JsonRPCAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+	//TODO
+	return 0
+}
+
 func NewJrpcAPIParser() (apiParser *JsonRPCAPIParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }

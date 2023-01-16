@@ -16,6 +16,16 @@ func (apip *RestAPIParser) ParseMsg(url string, data []byte, connectionType stri
 
 func (apip *RestAPIParser) SetSpec(spec spectypes.Spec) {}
 
+func (apip *RestAPIParser) DataReliabilityEnabled() bool {
+	// TODO
+	return false
+}
+
+func (apip *RestAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+	//TODO
+	return 0
+}
+
 func NewRestAPIParser() (apiParser *RestAPIParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }

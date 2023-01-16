@@ -9,11 +9,13 @@ import (
 	"github.com/lavanet/lava/protocol/consumerstatetracker"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser)
+	ReportProviderForFinalizationData(context.Context, *pairingtypes.RelayReply)
 }
 
 type RPCConsumer struct {
@@ -23,7 +25,7 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int) (err error) {
 	// spawn up ConsumerStateTracker
 	consumerStateTracker := consumerstatetracker.ConsumerStateTracker{}
 	rpcc.consumerStateTracker, err = consumerStateTracker.New(ctx, txFactory, clientCtx)
@@ -44,7 +46,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		rpcc.consumerSessionManagers[key] = consumerSessionManager
 		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, rpcc.consumerSessionManagers[key])
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, rpcc.consumerSessionManagers[key], publicAddress, cache)
+		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, rpcc.consumerSessionManagers[key], publicAddress, requiredResponses, cache)
 	}
 
 	return nil
