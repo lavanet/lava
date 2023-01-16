@@ -230,7 +230,7 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 		start := time.Now()
 		ks.Pairing.UnstakeUnresponsiveProviders(unwrapedCtx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 		elapsed_time := time.Since(start)
-		fmt.Printf("elapsed_time: %v\n", elapsed_time)
+		fmt.Printf("%v, ", elapsed_time)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
