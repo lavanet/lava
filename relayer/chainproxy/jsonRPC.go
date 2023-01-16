@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lavanet/lava/relayer/metrics"
 	"net/http"
 	"strconv"
 
@@ -304,12 +305,13 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
+			metricsData := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				continue
 			}
-
+			cp.portalLogs.AddMetric(metricsData)
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
@@ -355,17 +357,19 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
-		cp.portalLogs.Analytics.importFromFiberCtx(c)
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
+		metricsData := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
+
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
 			c.Status(fiber.StatusInternalServerError)
 			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
 		}
+		cp.portalLogs.AddMetric(metricsData)
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",

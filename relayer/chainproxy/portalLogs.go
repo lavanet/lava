@@ -20,7 +20,7 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
-	Analytics           *metrics.RelayAnalytics
+	MetricService       *metrics.MetricService
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
@@ -42,7 +42,11 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigLicense(NewRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	return &PortalLogs{newRelicApplication}, err
+	//TODO make this optional
+	metricPortalSqsUrl := os.Getenv("METRICS_PORTAL_SQS_URL")
+	intervalForMetrics, _ := strconv.ParseInt(os.Getenv("METRICS_INTERVAL_FOR_SENDING_DATA_INM"), 10, 32)
+	metricsService := metrics.NewMetricService(metricPortalSqsUrl, int(intervalForMetrics))
+	return &PortalLogs{newRelicApplication: newRelicApplication, MetricService: metricsService}, err
 }
 
 func (cp *PortalLogs) GetMessageSeed() string {
@@ -88,6 +92,8 @@ func (cp *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (cp *PortalLogs) ResetAnalytics() {
-	cp.Analytics = &metrics.RelayAnalytics{}
+func (cp *PortalLogs) AddMetric(data *metrics.RelayAnalytics) {
+	if cp.MetricService != nil {
+		cp.MetricService.SendDataToChannel(*data)
+	}
 }

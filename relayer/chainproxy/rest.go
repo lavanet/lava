@@ -245,10 +245,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
-		relayAnalytics := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
+		metricsData := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		requestBody := string(c.Body())
-		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, relayAnalytics)
+		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, metricsData)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
@@ -256,6 +256,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
+		cp.portalLogs.AddMetric(metricsData)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
@@ -286,6 +287,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
+		cp.portalLogs.AddMetric(analytics)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
