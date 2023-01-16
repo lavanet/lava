@@ -1,9 +1,11 @@
 package logger
 
 import (
+	"testing"
+
 	zerologlog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetInstance tests that GetInstance returns a singleton instance
@@ -26,4 +28,13 @@ func TestLog(t *testing.T) {
 	default:
 		t.Error("log message not received") // if message not received then throws error
 	}
+}
+
+// Test_isInsideEpochErrors tests if the error message is inside epoch errors
+func Test_isInsideEpochErrors(t *testing.T) {
+	logger := GetInstance()
+	logger.ResetErrorAllowList()
+
+	require.True(t, logger.isInsideEpochErrors(NoPairingAvailableError))
+	require.False(t, logger.isInsideEpochErrors("Random Error"))
 }

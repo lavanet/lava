@@ -7,16 +7,22 @@ import (
 	"github.com/rs/zerolog"
 )
 
+var (
+	instance *Logger
+	once     sync.Once
+)
+
+const (
+	NoPairingAvailableError string = "No pairings available."
+)
+
 type LogMessage struct {
 	Description string         // a string describing the log message
 	Err         error          // an error associated with the log message
 	LogEvent    *zerolog.Event // log level
 }
 
-var (
-	instance *Logger
-	once     sync.Once
-)
+var epochErrors = []string{NoPairingAvailableError}
 
 type Logger struct {
 	logChan             chan LogMessage // channel to send log messages
@@ -27,8 +33,6 @@ type Logger struct {
 // and returns it.
 func GetInstance() *Logger {
 	once.Do(func() {
-		epochErrors := []string{"No pairings available."}
-
 		instance = &Logger{
 			logChan:             make(chan LogMessage, 1024), // the channel buffer size is 1024
 			epochErrorAllowList: allowList.NewErrorAllowList(epochErrors),
@@ -67,8 +71,8 @@ func (l *Logger) addErrorInAllowList(err error) {
 		return
 	}
 
-	// If error is pairing list empty add it to the allow-list
-	if err.Error() == "No pairings available." {
+	// If error is inside epoch errors add it into allow-list
+	if l.isInsideEpochErrors(err.Error()) {
 		l.epochErrorAllowList.SetError("No pairings available.")
 	}
 }
@@ -76,6 +80,16 @@ func (l *Logger) addErrorInAllowList(err error) {
 // ResetErrorAllowList resets epoch error allow-list
 func (l *Logger) ResetErrorAllowList() {
 	l.epochErrorAllowList.Reset()
+}
+
+// isInsideEpochErrors checks if the error is inside epochErrors
+func (l *Logger) isInsideEpochErrors(error string) bool {
+	for _, a := range epochErrors {
+		if a == error {
+			return true
+		}
+	}
+	return false
 }
 
 // printLogs function is to print the log messages
