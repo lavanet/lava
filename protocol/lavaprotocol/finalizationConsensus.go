@@ -6,14 +6,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/protocol/apilib"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"golang.org/x/exp/slices"
 )
 
 type FinalizationConsensus struct {
-	providerHashesConsensus          []ProviderHashesConsensus
+	currentProviderHashesConsensus   []ProviderHashesConsensus
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.RWMutex
+	currentEpoch                     uint64
 }
 
 type ProviderHashesConsensus struct {
@@ -75,19 +78,24 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 	}
 }
 
+// Compare finalized block hashes with previous providers
+// Looks for discrepancy with current epoch providers
+// if no conflicts, insert into consensus and break
+// create new consensus group if no consensus matched
+// check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
 func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) error {
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
 
-	if len(fc.providerHashesConsensus) == 0 && len(fc.prevEpochProviderHashesConsensus) == 0 {
+	if len(fc.currentProviderHashesConsensus) == 0 && len(fc.prevEpochProviderHashesConsensus) == 0 {
 		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-		fc.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+		fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
 	} else {
 		matchWithExistingConsensus := false
 
 		// Looks for discrepancy with current epoch providers
-		for idx, consensus := range fc.providerHashesConsensus {
+		for idx, consensus := range fc.currentProviderHashesConsensus {
 			discrepancyResult, err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
 				return utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err, nil)
@@ -111,7 +119,7 @@ func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedD
 		// create new consensus group if no consensus matched
 		if !matchWithExistingConsensus {
 			newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-			fc.providerHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+			fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
 		}
 
 		// check for discrepancy with old epoch
@@ -152,4 +160,73 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 	}
 
 	return false, nil
+}
+
+func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
+	fc.providerDataContainersMu.Lock()
+	defer fc.providerDataContainersMu.Unlock()
+
+	if fc.currentEpoch < epoch {
+		// means it's time to refresh the epoch
+		fc.prevEpochProviderHashesConsensus = fc.currentProviderHashesConsensus
+		fc.currentProviderHashesConsensus = []ProviderHashesConsensus{}
+		fc.currentEpoch = epoch
+	}
+}
+
+func (s *FinalizationConsensus) ExpectedBlockHeight(apiParser apilib.APIParser) (expectedBlockHeight int64, numOfProviders int) {
+	s.providerDataContainersMu.RLock()
+	defer s.providerDataContainersMu.RUnlock()
+	allowedBlockLagForQosSync, averageBlockTime, _ := apiParser.ChainBlockStats()
+	averageBlockTime_ms := averageBlockTime
+	listExpectedBlockHeights := []int64{}
+
+	var highestBlockNumber int64 = 0
+	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				if highestBlockNumber < providerDataContainer.LatestFinalizedBlock {
+					highestBlockNumber = providerDataContainer.LatestFinalizedBlock
+				}
+			}
+		}
+		return highestBlockNumber
+	}
+	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
+	highestBlockNumber = FindHighestBlockNumber(s.currentProviderHashesConsensus)
+
+	now := time.Now()
+	calcExpectedBlocks := func(listProviderHashesConsensus []ProviderHashesConsensus) []int64 {
+		listExpectedBH := []int64{}
+		for _, providerHashesConsensus := range listProviderHashesConsensus {
+			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
+				expected := providerDataContainer.LatestFinalizedBlock + (now.Sub(providerDataContainer.LatestBlockTime) / averageBlockTime_ms).Milliseconds() // interpolation
+				// limit the interpolation to the highest seen block height
+				if expected > highestBlockNumber {
+					expected = highestBlockNumber
+				}
+				listExpectedBH = append(listExpectedBH, expected)
+			}
+		}
+		return listExpectedBH
+	}
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.prevEpochProviderHashesConsensus)...)
+	listExpectedBlockHeights = append(listExpectedBlockHeights, calcExpectedBlocks(s.currentProviderHashesConsensus)...)
+
+	median := func(data []int64) int64 {
+		slices.Sort(data)
+
+		var median int64
+		data_len := len(data)
+		if data_len == 0 {
+			return 0
+		} else if data_len%2 == 0 {
+			median = (data[data_len/2-1] + data[data_len/2]/2.0)
+		} else {
+			median = data[data_len/2]
+		}
+		return median
+	}
+
+	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync, len(listExpectedBlockHeights)
 }

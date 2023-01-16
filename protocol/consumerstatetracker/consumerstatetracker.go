@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/apilib"
 	chaintracker "github.com/lavanet/lava/protocol/chainTracker"
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -77,9 +78,26 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	}
 	pairingUpdater, ok = pairingUpdater_raw.(*PairingUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid_updater_key", nil, &map[string]string{"updaters_map": fmt.Sprintf("%+v", cst.newLavaBlockUpdaters)})
+		utils.LavaFormatFatal("invalid_updater_key in RegisterConsumerSessionManagerForPairingUpdates", nil, &map[string]string{"updaters_map": fmt.Sprintf("%+v", cst.newLavaBlockUpdaters)})
 	}
 	pairingUpdater.RegisterPairing(consumerSessionManager)
+}
+
+func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
+	cst.registrationLock.Lock()
+	defer cst.registrationLock.Unlock()
+
+	var finalizationConsensusUpdater *FinalizationConsensusUpdater = nil // UpdaterKey is nil safe
+	finalizationConsensusUpdater_raw, ok := cst.newLavaBlockUpdaters[finalizationConsensusUpdater.UpdaterKey()]
+	if !ok {
+		finalizationConsensusUpdater = NewFinalizationConsensusUpdater(cst.consumerAddress, cst.StateQuery)
+		cst.newLavaBlockUpdaters[finalizationConsensusUpdater.UpdaterKey()] = finalizationConsensusUpdater
+	}
+	finalizationConsensusUpdater, ok = finalizationConsensusUpdater_raw.(*FinalizationConsensusUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid_updater_key in RegisterFinalizationConsensusForUpdates", nil, &map[string]string{"updaters_map": fmt.Sprintf("%+v", cst.newLavaBlockUpdaters)})
+	}
+	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
 func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Context, apiParser apilib.APIParser) {

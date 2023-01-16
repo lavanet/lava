@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
@@ -181,7 +184,7 @@ func main() {
 	}
 
 	cmdRPCClient := &cobra.Command{
-		Use:     "rpcclient [listen-ip]:[listen-port],[spec-chain-id],[api-interface] repeat...",
+		Use:     "rpcconsumer [listen-ip]:[listen-port],[spec-chain-id],[api-interface] repeat...",
 		Short:   "rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers",
 		Long:    `rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers`,
 		Example: `rpcclient 127.0.0.1:3333,COS3,tendermintrpc 127.0.0.1:3334,COS3,rest`,
@@ -206,7 +209,13 @@ func main() {
 			rpcConsumer := rpcconsumer.RPCConsumer{}
 			rpcEndpoints := []*lavasession.RPCEndpoint{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
-			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses)
+			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
+			rand.Seed(time.Now().UnixNano())
+			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
+			if err != nil {
+				utils.LavaFormatFatal("failed getting or creating a VRF key", err, nil)
+			}
+			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk)
 			return nil
 		},
 	}

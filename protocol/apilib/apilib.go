@@ -3,6 +3,7 @@ package apilib
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lavanet/lava/relayer/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -43,7 +44,7 @@ type APIParser interface {
 	ParseMsg(url string, data []byte, connectionType string) (APIMessage, error) // has to be thread safe
 	SetSpec(spec spectypes.Spec)                                                 // has to be thread safe
 	DataReliabilityEnabled() bool
-	GetBlockDistanceForFinalizedData() uint32
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
 }
 
 type APIMessage interface {

@@ -3,6 +3,7 @@ package apilib
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lavanet/lava/relayer/lavasession"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -21,9 +22,9 @@ func (apip *RestAPIParser) DataReliabilityEnabled() bool {
 	return false
 }
 
-func (apip *RestAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+func (apip *RestAPIParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
 	//TODO
-	return 0
+	return 0, 0, 0
 }
 
 func NewRestAPIParser() (apiParser *RestAPIParser, err error) {

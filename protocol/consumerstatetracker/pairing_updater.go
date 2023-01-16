@@ -21,6 +21,7 @@ func NewPairingUpdater(consumerAddress sdk.AccAddress, stateQuery *StateQuery) *
 }
 
 func (pu *PairingUpdater) RegisterPairing(consumerSessionManager *lavasession.ConsumerSessionManager) {
+	// TODO: also update here for the first time
 	pu.consumerSessionManagers = append(pu.consumerSessionManagers, consumerSessionManager)
 }
 

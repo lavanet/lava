@@ -3,6 +3,7 @@ package apilib
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lavanet/lava/relayer/lavasession"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -21,9 +22,9 @@ func (apip *TendermintAPIParser) DataReliabilityEnabled() bool {
 	return false
 }
 
-func (apip *TendermintAPIParser) GetBlockDistanceForFinalizedData() uint32 {
+func (apip *TendermintAPIParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
 	//TODO
-	return 0
+	return 0, 0, 0
 }
 
 func NewTendermintRpcAPIParser() (apiParser *TendermintAPIParser, err error) {
