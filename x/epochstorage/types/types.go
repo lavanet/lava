@@ -11,7 +11,7 @@ const (
 
 // returns a deep copy of the stake storage with the same index
 func (stksto StakeStorage) Copy() (returnedStorage StakeStorage) {
-	returnedStorage = StakeStorage{Index: stksto.Index, StakeEntries: []StakeEntry{}}
+	returnedStorage = StakeStorage{Index: stksto.Index, StakeEntries: []StakeEntry{}, EpochBlockHash: stksto.EpochBlockHash}
 	for _, stakeEntry := range stksto.StakeEntries {
 		endpoints := make([]Endpoint, len(stakeEntry.Endpoints))
 		copy(endpoints, stakeEntry.Endpoints)
