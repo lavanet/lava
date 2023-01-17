@@ -14,6 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	// TimeForPollingMock = (100 * time.Microsecond)
+	TimeForPollingMock = (2 * time.Millisecond)
+	SleepTime          = TimeForPollingMock * 2
+	SleepChunks        = 5
+)
+
 type MockChainFetcher struct {
 	latestBlock int64
 	blockHashes []*chaintracker.BlockStore
@@ -110,9 +117,8 @@ func TestChainTracker(t *testing.T) {
 			utils.LavaFormatInfo("started test "+tt.name, nil)
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
-			timeForPollingMock := time.Millisecond * 2
 
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(tt.mockBlocks)}
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
 			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 			require.NoError(t, err)
 
@@ -120,7 +126,13 @@ func TestChainTracker(t *testing.T) {
 				for i := 0; i < int(advancement); i++ {
 					currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
 				}
-				time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
+				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
+					time.Sleep(SleepTime) // stateTracker polls asynchronously
+					latestBlock := chainTracker.GetLatestBlockNum()
+					if latestBlock >= currentLatestBlockInMock {
+						break
+					}
+				}
 				latestBlock := chainTracker.GetLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
@@ -163,9 +175,8 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
-			timeForPollingMock := time.Millisecond * 2
 
-			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(tt.mockBlocks)}
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
 			chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 			require.NoError(t, err)
 
@@ -173,7 +184,13 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 				for i := 0; i < int(advancement); i++ {
 					currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
 				}
-				time.Sleep(timeForPollingMock * 2) // statTracker polls asynchronously
+				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
+					time.Sleep(SleepTime) // stateTracker polls asynchronously
+					latestBlock := chainTracker.GetLatestBlockNum()
+					if latestBlock >= currentLatestBlockInMock {
+						break
+					}
+				}
 				latestBlock := chainTracker.GetLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
@@ -227,7 +244,6 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	}
 	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
-	timeForPollingMock := time.Millisecond * 2
 
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
@@ -241,7 +257,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 		utils.LavaFormatDebug("new latest callback called", nil)
 		callbackCalledNewLatest = true
 	}
-	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
 	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
@@ -253,7 +269,13 @@ func TestChainTrackerCallbacks(t *testing.T) {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()
 			}
 			mockChainFetcher.Fork(tt.fork)
-			time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
+			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
+				time.Sleep(SleepTime) // stateTracker polls asynchronously
+				latestBlock := chainTracker.GetLatestBlockNum()
+				if latestBlock >= currentLatestBlockInMock && tt.shouldFork == false {
+					break
+				}
+			}
 			latestBlock := chainTracker.GetLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
@@ -310,7 +332,6 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	}
 	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
-	timeForPollingMock := time.Millisecond * 2
 
 	// used to identify if the fork callback was called
 	callbackCalledFork := false
@@ -318,7 +339,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 		utils.LavaFormatDebug("fork callback called", nil)
 		callbackCalledFork = true
 	}
-	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: timeForPollingMock - time.Microsecond, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
 	chainTracker, err := chaintracker.New(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
@@ -331,7 +352,13 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 			if tt.shrink {
 				mockChainFetcher.Shrink(50) // do not allow previous block fetches
 			}
-			time.Sleep(timeForPollingMock * 2) // stateTracker polls asynchronously
+			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
+				time.Sleep(SleepTime) // stateTracker polls asynchronously
+				latestBlock := chainTracker.GetLatestBlockNum()
+				if latestBlock >= currentLatestBlockInMock && tt.shrink == false {
+					break
+				}
+			}
 			latestBlock := chainTracker.GetLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
