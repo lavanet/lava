@@ -176,14 +176,16 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx contex
 	return &c, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
+	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
+	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (numberOfResets + 1) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
 	// try to lock an existing session, if can't create a new one
-	numberOfBlockedSessions := 0
+	var numberOfBlockedSessions uint64 = 0
 	for sessionID, session := range cswp.Sessions {
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
@@ -192,7 +194,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 			// skip sessions that don't belong to the active connection
 			continue
 		}
-		if numberOfBlockedSessions >= MaxAllowedBlockListedSessionPerProvider {
+		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
 			return nil, 0, MaximumNumberOfBlockListedSessionsError
 		}
 

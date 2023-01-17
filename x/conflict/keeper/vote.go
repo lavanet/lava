@@ -165,7 +165,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 						utils.LavaError(ctx, logger, "slash_failed_vote", map[string]string{"error": err.Error()}, "slashing failed at vote conflict")
 					}
 
-					err = k.pairingKeeper.UnstakeEntry(ctx, true, conflictVote.ChainID, vote.Address)
+					err = k.pairingKeeper.UnstakeEntry(ctx, true, conflictVote.ChainID, vote.Address, types.UnstakeDescriptionFraudVote)
 					if err != nil {
 						utils.LavaError(ctx, logger, "unstake_fraud_failed", map[string]string{"error": err.Error()}, "unstaking fraud voter failed")
 						continue
