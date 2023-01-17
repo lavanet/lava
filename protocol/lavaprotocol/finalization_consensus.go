@@ -123,7 +123,7 @@ func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedD
 		}
 	}
 
-	return nil, nil
+	return finalizationConflict, nil
 }
 
 func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (errRet error) {
@@ -141,7 +141,7 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 	for blockNum, blockHash := range toIterate {
 		if otherHash, ok := otherBlocks[blockNum]; ok {
 			if blockHash != otherHash {
-				//TODO: gather discrepancy data
+				// TODO: gather discrepancy data
 				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
 			}
 		}

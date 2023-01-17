@@ -29,7 +29,6 @@ func (fcu *FinalizationConsensusUpdater) UpdaterKey() string {
 }
 
 func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
-
 	if int64(fcu.nextBlockForUpdate) > latestBlock {
 		return
 	}

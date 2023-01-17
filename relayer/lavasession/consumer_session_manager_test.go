@@ -90,7 +90,7 @@ func TestPairingReset(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList()
-	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	csm.validAddresses = []string{}                                     // set valid addresses to zero
 	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
@@ -114,7 +114,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList()
-	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for {
 		fmt.Printf("%v", len(csm.validAddresses))
@@ -144,7 +144,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList()
-	err := csm.UpdateAllProviders(ctx, firstEpochHeight, pairingList) // update the providers.
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.Nil(t, err)
 	for numberOfResets := 0; numberOfResets < numberOfResetsToTest; numberOfResets++ {
 		for {

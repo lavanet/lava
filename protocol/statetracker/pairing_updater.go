@@ -30,14 +30,12 @@ func (pu *PairingUpdater) UpdaterKey() string {
 }
 
 func (pu *PairingUpdater) Update(latestBlock int64) {
-
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return
 	}
 	pairingList, epoch, nextBlockForUpdate := pu.stateQuery.GetPairing(latestBlock)
 
 	for _, consumerSessionManager := range pu.consumerSessionManagers {
-
 		pairingListForThisCSM := filterPairingListByEndpoint(pairingList, consumerSessionManager.RPCEndpoint())
 		consumerSessionManager.UpdateAllProviders(epoch, pairingListForThisCSM)
 	}

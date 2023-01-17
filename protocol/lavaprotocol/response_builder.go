@@ -110,5 +110,5 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 		})
 	}
 
-	return nil, nil
+	return finalizationConflict, nil
 }

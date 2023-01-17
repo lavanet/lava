@@ -190,7 +190,7 @@ func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResult
 	} else {
 		utils.LavaFormatInfo("Data is not Reliability verified!", &participatingProviders)
 	}
-	return
+	return conflict, conflicts
 }
 
 func compareRelaysFindConflict(result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {

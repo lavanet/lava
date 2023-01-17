@@ -39,7 +39,6 @@ type RPCConsumerServer struct {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
-	PublicAddress string,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
 	vrfSk vrf.PrivateKey,
@@ -65,11 +64,11 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 	consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 	rpccs.finalizationConsensus = finalizationConsensus
-	apiListener, err := chainlib.NewApiListener(ctx, listenEndpoint, rpccs)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs)
 	if err != nil {
 		return err
 	}
-	go apiListener.Serve()
+	go chainListener.Serve()
 	return nil
 }
 
@@ -80,7 +79,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	connectionType string,
 	dappID string,
 ) (relayReply *pairingtypes.RelayReply, relayServer *pairingtypes.Relayer_RelaySubscribeClient, errRet error) {
-
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
 	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
@@ -94,7 +92,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		return nil, nil, err
 	}
 	// Unmarshal request
-	var unwantedProviders = map[string]struct{}{}
+	unwantedProviders := map[string]struct{}{}
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	relayRequestCommonData := lavaprotocol.NewRelayRequestCommonData(rpccs.listenEndpoint.ChainID, connectionType, url, []byte(req), chainMessage.RequestedBlock())
@@ -102,7 +100,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	for retries := 0; retries < MaxRelayRetries; retries++ {
-		//TODO: make this async between different providers
+		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestCommonData, dappID, &unwantedProviders)
 		if relayResult.ProviderAddress != "" {
 			unwantedProviders[relayResult.ProviderAddress] = struct{}{}
@@ -344,6 +342,9 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			utils.LavaFormatError("failed reading reported providers for epoch", err, &map[string]string{"epoch": strconv.FormatInt(epoch, 10)})
 		}
 		reliabilityRequest, err := lavaprotocol.ConstructDataReliabilityRelayRequest(ctx, vrfData, rpccs.privKey, rpccs.listenEndpoint.ChainID, relayRequestCommonData, providerAddress, epoch, reportedProviders)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed creating data reliability relay", err, &map[string]string{"relayRequestCommonData": fmt.Sprintf("%+v", relayRequestCommonData)})
+		}
 		relayResult = &lavaprotocol.RelayResult{Request: reliabilityRequest, ProviderAddress: providerAddress, Finalized: false}
 		relayResult, dataReliabilityLatency, err := rpccs.relayInner(ctx, singleConsumerSession, relayResult)
 		if err != nil {
@@ -383,7 +384,6 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			} else {
 				utils.LavaFormatWarning("failed data reliability relay", err, nil)
 			}
-
 		}
 		if len(dataReliabilityVerifications) > 0 {
 			report, conflicts := lavaprotocol.VerifyReliabilityResults(relayResult, dataReliabilityVerifications, numberOfReliabilitySessions)
