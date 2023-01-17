@@ -2,11 +2,14 @@ package lavaprotocol
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -15,6 +18,7 @@ const (
 	TimePerCU                = uint64(100 * time.Millisecond)
 	MinimumTimePerRelayDelay = time.Second
 	AverageWorldLatency      = 200 * time.Millisecond
+	SupportedNumberOfVRFs    = 2
 )
 
 type RelayRequestCommonData struct {
@@ -80,4 +84,67 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
 	return requestedBlock
+}
+
+func DataReliabilityThresholdToSession(vrfs [][]byte, uniqueIdentifiers []bool, reliabilityThreshold uint32, originalProvidersCount uint32) (indexes map[int64]bool) {
+	// check for the VRF thresholds and if holds true send a relay to the provider
+	// TODO: improve with blocklisted address, and the module-1
+	indexes = make(map[int64]bool, len(vrfs))
+	for vrfIndex, vrf := range vrfs {
+		index, err := utils.GetIndexForVrf(vrf, originalProvidersCount, reliabilityThreshold)
+		if index == -1 || err != nil {
+			continue // no reliability this time.
+		}
+		if _, ok := indexes[index]; !ok {
+			indexes[index] = uniqueIdentifiers[vrfIndex]
+		}
+	}
+	return
+}
+
+func NewVRFData(differentiator bool, vrf_res []byte, vrf_proof []byte, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) *pairingtypes.VRFData {
+	dataReliability := &pairingtypes.VRFData{
+		Differentiator: differentiator,
+		VrfValue:       vrf_res,
+		VrfProof:       vrf_proof,
+		ProviderSig:    reply.Sig,
+		AllDataHash:    sigs.AllDataHash(reply, request),
+		QueryHash:      utils.CalculateQueryHash(*request),
+		Sig:            nil,
+	}
+	return dataReliability
+}
+
+func ConstructDataReliabilityRelayRequest(ctx context.Context, vrfData *pairingtypes.VRFData, privKey *btcec.PrivateKey, chainID string, relayRequestCommonData *RelayRequestCommonData, providerPublicAddress string, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
+	if relayRequestCommonData.RequestBlock < 0 {
+		return nil, utils.LavaFormatError("tried to construct data reliability relay with invalid request block, need to specify exactly what block is required", nil,
+			&map[string]string{"requested_common_data": fmt.Sprintf("%+v", relayRequestCommonData), "epoch": strconv.FormatInt(epoch, 10), "chainID": chainID})
+	}
+	relayRequest := &pairingtypes.RelayRequest{
+		Provider:              providerPublicAddress,
+		ConnectionType:        relayRequestCommonData.ConnectionType,
+		ApiUrl:                relayRequestCommonData.ApiUrl,
+		Data:                  relayRequestCommonData.Data,
+		SessionId:             lavasession.DataReliabilitySessionId, // sessionID for reliability is 0
+		ChainID:               chainID,
+		CuSum:                 lavasession.DataReliabilityCuSum, // consumerSession.CuSum == 0
+		BlockHeight:           epoch,
+		RelayNum:              0, // consumerSession.RelayNum == 0
+		RequestBlock:          relayRequestCommonData.RequestBlock,
+		QoSReport:             nil,
+		DataReliability:       vrfData,
+		UnresponsiveProviders: reportedProviders,
+	}
+	sig, err := sigs.SignRelay(privKey, *relayRequest)
+	if err != nil {
+		return nil, err
+	}
+	relayRequest.Sig = sig
+
+	sig, err = sigs.SignVRFData(privKey, relayRequest.DataReliability)
+	if err != nil {
+		return nil, err
+	}
+	relayRequest.DataReliability.Sig = sig
+	return relayRequest, nil
 }

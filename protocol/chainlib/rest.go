@@ -17,9 +17,9 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {}
 
-func (apip *RestChainParser) DataReliabilityEnabled() bool {
+func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
 	// TODO
-	return false
+	return false, 0
 }
 
 func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {

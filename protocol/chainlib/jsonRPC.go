@@ -17,9 +17,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {}
 
-func (apip *JsonRPCChainParser) DataReliabilityEnabled() bool {
+func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
 	// TODO
-	return false
+	return false, 0
 }
 
 func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {

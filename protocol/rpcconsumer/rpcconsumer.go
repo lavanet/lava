@@ -67,7 +67,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		rpcc.consumerSessionManagers[key] = consumerSessionManager
 		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, rpcc.consumerSessionManagers[key])
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, rpcc.consumerSessionManagers[key], publicAddress, requiredResponses, privKey, cache)
+		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, rpcc.consumerSessionManagers[key], publicAddress, requiredResponses, privKey, vrf_sk, cache)
 	}
 
 	signalChan := make(chan os.Signal, 1)

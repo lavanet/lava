@@ -17,9 +17,9 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {}
 
-func (apip *TendermintChainParser) DataReliabilityEnabled() bool {
+func (apip *TendermintChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
 	// TODO
-	return false
+	return false, 0
 }
 
 func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {

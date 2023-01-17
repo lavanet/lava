@@ -45,6 +45,13 @@ type SingleConsumerSession struct {
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
 }
 
+type DataReliabilitySession struct {
+	SingleConsumerSession *SingleConsumerSession
+	Epoch                 uint64
+	ProviderPublicAddress string
+	UniqueIdentifier      bool
+}
+
 type Endpoint struct {
 	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool

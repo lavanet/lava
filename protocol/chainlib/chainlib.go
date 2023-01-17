@@ -43,7 +43,7 @@ func NewApiListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint
 type ChainParser interface {
 	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) // has to be thread safe
 	SetSpec(spec spectypes.Spec)                                                   // has to be thread safe
-	DataReliabilityEnabled() bool
+	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
 }
 

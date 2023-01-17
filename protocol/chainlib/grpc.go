@@ -17,9 +17,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {}
 
-func (apip *GrpcChainParser) DataReliabilityEnabled() bool {
+func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
 	// TODO
-	return false
+	return false, 0
 }
 
 func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
