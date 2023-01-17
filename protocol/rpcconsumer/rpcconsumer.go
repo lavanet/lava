@@ -16,14 +16,14 @@ import (
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 )
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterApiParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
-	ReportProviderForFinalizationData(context.Context, *pairingtypes.RelayReply)
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
 }
 
 type RPCConsumer struct {

@@ -13,7 +13,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -22,8 +22,8 @@ import (
 type ConsumerStateTracker struct {
 	consumerAddress      sdk.AccAddress
 	chainTracker         *chaintracker.ChainTracker
-	StateQuery           *StateQuery
-	TxSender             *TxSender
+	stateQuery           *StateQuery
+	txSender             *TxSender
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
 }
@@ -40,13 +40,13 @@ func (cst *ConsumerStateTracker) New(ctx context.Context, txFactory tx.Factory, 
 	// set up txSender the same way
 
 	stateQuery := StateQuery{}
-	cst.StateQuery, err = stateQuery.New(ctx, clientCtx)
+	cst.stateQuery, err = stateQuery.New(ctx, clientCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	txSender := TxSender{}
-	cst.TxSender, err = txSender.New(ctx, txFactory, clientCtx)
+	cst.txSender, err = txSender.New(ctx, txFactory, clientCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	var pairingUpdater *PairingUpdater = nil // UpdaterKey is nil safe
 	pairingUpdater_raw, ok := cst.newLavaBlockUpdaters[pairingUpdater.UpdaterKey()]
 	if !ok {
-		pairingUpdater = NewPairingUpdater(cst.consumerAddress, cst.StateQuery)
+		pairingUpdater = NewPairingUpdater(cst.consumerAddress, cst.stateQuery)
 		cst.newLavaBlockUpdaters[pairingUpdater.UpdaterKey()] = pairingUpdater
 	}
 	pairingUpdater, ok = pairingUpdater_raw.(*PairingUpdater)
@@ -90,7 +90,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	var finalizationConsensusUpdater *FinalizationConsensusUpdater = nil // UpdaterKey is nil safe
 	finalizationConsensusUpdater_raw, ok := cst.newLavaBlockUpdaters[finalizationConsensusUpdater.UpdaterKey()]
 	if !ok {
-		finalizationConsensusUpdater = NewFinalizationConsensusUpdater(cst.consumerAddress, cst.StateQuery)
+		finalizationConsensusUpdater = NewFinalizationConsensusUpdater(cst.consumerAddress, cst.stateQuery)
 		cst.newLavaBlockUpdaters[finalizationConsensusUpdater.UpdaterKey()] = finalizationConsensusUpdater
 	}
 	finalizationConsensusUpdater, ok = finalizationConsensusUpdater_raw.(*FinalizationConsensusUpdater)
@@ -108,7 +108,6 @@ func (cst *ConsumerStateTracker) RegisterApiParserForSpecUpdates(ctx context.Con
 	chainParser.SetSpec(spec)
 }
 
-func (cst *ConsumerStateTracker) ReportProviderForFinalizationData(ctx context.Context, reply *pairingtypes.RelayReply) {
-	//TODO: implement
-	utils.LavaFormatDebug("reporting provider for wrong finalization data", &map[string]string{"reply": fmt.Sprintf("%v", reply)})
+func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) {
+	cst.txSender.TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
 }

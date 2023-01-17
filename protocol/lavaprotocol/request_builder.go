@@ -1,6 +1,7 @@
 package lavaprotocol
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -27,6 +29,14 @@ type RelayRequestCommonData struct {
 	ApiUrl         string `protobuf:"bytes,3,opt,name=api_url,json=apiUrl,proto3" json:"api_url,omitempty"`
 	Data           []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
 	RequestBlock   int64  `protobuf:"varint,11,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
+}
+
+type RelayResult struct {
+	Request         *pairingtypes.RelayRequest
+	Reply           *pairingtypes.RelayReply
+	ProviderAddress string
+	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	Finalized       bool
 }
 
 func NewRelayRequestCommonData(chainID string, connectionType string, apiUrl string, data []byte, requestBlock int64) RelayRequestCommonData {
@@ -147,4 +157,53 @@ func ConstructDataReliabilityRelayRequest(ctx context.Context, vrfData *pairingt
 	}
 	relayRequest.DataReliability.Sig = sig
 	return relayRequest, nil
+}
+
+func VerifyReliabilityResults(originalResult *RelayResult, dataReliabilityResults []*RelayResult, totalNumberOfSessions int) (conflict bool, conflicts []*conflicttypes.ResponseConflict) {
+	verificationsLength := len(dataReliabilityResults)
+	participatingProviders := make(map[string]string, verificationsLength+1)
+	participatingProviders["originalAddress"] = originalResult.ProviderAddress
+	for idx, dataReliabilityResult := range dataReliabilityResults {
+		add := dataReliabilityResult.ProviderAddress
+		participatingProviders["address"+strconv.Itoa(idx)] = add
+		conflict_now, detectionMessage := compareRelaysFindConflict(originalResult, dataReliabilityResult)
+		if conflict_now {
+			conflicts = []*conflicttypes.ResponseConflict{detectionMessage}
+			conflict = true
+		}
+	}
+	if conflict {
+		// CompareRelaysAndReportConflict to each one of the data reliability relays to confirm that the first relay was'nt ok
+		for idx1 := 0; idx1 < verificationsLength; idx1++ {
+			for idx2 := (idx1 + 1); idx2 < verificationsLength; idx2++ {
+				conflict_responses, moreDetectionMessages := compareRelaysFindConflict(dataReliabilityResults[idx1], dataReliabilityResults[idx2])
+				if conflict_responses {
+					conflicts = append(conflicts, moreDetectionMessages)
+				}
+			}
+		}
+	}
+
+	if !conflict && totalNumberOfSessions == verificationsLength { // if no conflict was detected data reliability was successful
+		// all reliability sessions succeeded
+		utils.LavaFormatInfo("Reliability verified successfully!", &participatingProviders)
+	} else {
+		utils.LavaFormatInfo("Data is not Reliability verified!", &participatingProviders)
+	}
+	return
+}
+
+func compareRelaysFindConflict(result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
+	compare_result := bytes.Compare(result1.Reply.Data, result2.Reply.Data)
+	if compare_result == 0 {
+		// they have equal data
+		return false, nil
+	}
+	// they have different data! report!
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, &map[string]string{"Data0": string(result1.Reply.Data), "Data1": string(result2.Reply.Data)})
+	responseConflict = &conflicttypes.ResponseConflict{
+		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
+		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},
+	}
+	return
 }

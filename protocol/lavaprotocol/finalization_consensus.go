@@ -8,6 +8,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/exp/slices"
 )
@@ -84,7 +85,7 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 // create new consensus group if no consensus matched
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
-func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) error {
+func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, latestBlock int64, finalizedBlocks map[int64]string, req *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
 
@@ -92,53 +93,40 @@ func (fc *FinalizationConsensus) CheckFinalizedHashes(blockDistanceForFinalizedD
 		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
 		fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
 	} else {
-		matchWithExistingConsensus := false
-
 		// Looks for discrepancy with current epoch providers
-		for idx, consensus := range fc.currentProviderHashesConsensus {
-			discrepancyResult, err := fc.discrepancyChecker(finalizedBlocks, consensus)
+		for _, consensus := range fc.currentProviderHashesConsensus {
+			err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				return utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err, nil)
+				// TODO: bring the other data as proof
+				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
+				// TODO: before returning, we need to create a new ProviderHashesConsensus group if there isn't one that matches
+				// TODO: check there is no matching consensus group and add him to a new one
+				// create new consensus group if no consensus matched
+				// newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
+				// fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+				return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err, nil)
 			}
 
-			// if no conflicts, insert into consensus and break
-			if !discrepancyResult {
-				matchWithExistingConsensus = true
-			} else {
-				utils.LavaFormatError("Simulation: Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAddress})
-			}
-
-			// if no discrepency with this group -> insert into consensus and break
-			if matchWithExistingConsensus {
-				// TODO:: Add more increminiating data to consensus
-				fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
-				break
-			}
-		}
-
-		// create new consensus group if no consensus matched
-		if !matchWithExistingConsensus {
-			newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-			fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
+			// if no discrepency with this group -> insert into consensus
+			fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
+			// keep comparing with other groups, if there is a new message with a conflict we need to report it too
 		}
 
 		// check for discrepancy with old epoch
 		for idx, consensus := range fc.prevEpochProviderHashesConsensus {
-			discrepancyResult, err := fc.discrepancyChecker(finalizedBlocks, consensus)
+			err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
-				return utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, nil)
-			}
-
-			if discrepancyResult {
-				utils.LavaFormatError("Simulation: prev epoch Conflict found between consensus and provider", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAddress})
+				// TODO: bring the other data as proof
+				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
+				return finalizationConflict, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, &map[string]string{"Consensus idx": strconv.Itoa(idx), "provider": providerAddress})
 			}
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (discrepancy bool, errRet error) {
+func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]string, consensus ProviderHashesConsensus) (errRet error) {
 	var toIterate map[int64]string   // the smaller map between the two to compare
 	var otherBlocks map[int64]string // the other map
 
@@ -154,12 +142,12 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 		if otherHash, ok := otherBlocks[blockNum]; ok {
 			if blockHash != otherHash {
 				//TODO: gather discrepancy data
-				return true, utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
+				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, &map[string]string{"blockNum": strconv.FormatInt(blockNum, 10), "Hashes": fmt.Sprintf("%s vs %s", blockHash, otherHash), "toIterate": fmt.Sprintf("%v", toIterate), "otherBlocks": fmt.Sprintf("%v", otherBlocks)})
 			}
 		}
 	}
 
-	return false, nil
+	return nil
 }
 
 func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
