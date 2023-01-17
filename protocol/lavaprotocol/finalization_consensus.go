@@ -162,10 +162,11 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	}
 }
 
+// returns the expected latest block, does the calculation on finalized entries then extrapolates the ending based on blockDistance
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime, _ := chainParser.ChainBlockStats()
+	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData := chainParser.ChainBlockStats()
 	averageBlockTime_ms := averageBlockTime
 	listExpectedBlockHeights := []int64{}
 
@@ -215,6 +216,5 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		}
 		return median
 	}
-
-	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync, len(listExpectedBlockHeights)
+	return median(listExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(listExpectedBlockHeights)
 }
