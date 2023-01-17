@@ -1,0 +1,18 @@
+# lava environment variables for docker-compose
+
+# listen address for services [mandatory]
+# (normally should be to '0.0.0.0' since services run in container network;
+# may set to the host's external address when using 'host' network mode for
+# the container).
+LAVA_LISTEN_IP='0.0.0.0'
+
+# listen ports for services [mandatory: node]
+LAVA_NODE_PORT_API=1317
+LAVA_NODE_PORT_GRPC=9090
+LAVA_NODE_PORT_GRPC_WEB=9091
+LAVA_NODE_PORT_P2P=26656
+LAVA_NODE_PORT_RPC=26657
+
+# lavad log level [mandatory]
+LAVA_LOG_LEVEL='info'
+

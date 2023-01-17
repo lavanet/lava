@@ -1,0 +1,28 @@
+version: '3.9'
+
+x-env: &env-common
+  environment:
+    - LAVA_LISTEN_IP=${LAVA_LISTEN_IP:-0.0.0.0}
+    - LAVA_LOG_LEVEL=${LAVA_LOG_LEVEL:-"info"}
+
+services:
+
+  lava-node:
+    build: ..
+    image: lava:latest
+    command: "node"
+    <<: *env-common
+    ports:
+      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_API:-1317}:1317'
+      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC:-9090}:9090'
+      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC_WEB:-9091}:9091'
+      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_P2P:-26656}:26656'
+      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_RPC:-26657}:26657'
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: '8gb'
+    restart: unless-stopped
+    profiles: ["node"]
+

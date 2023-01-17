@@ -98,11 +98,42 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Download debian packages for runner
 
-FROM ${RUNNER_IMAGE}
+FROM ${RUNNER_IMAGE} as runner-base
 
+RUN apt-get update \
+    && apt-get install -yqq --no-install-recommends \
+        git curl unzip ca-certificates \
+    && apt-get -y purge \
+    && apt-get -y clean \
+    && apt-get -y autoremove \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------------
+# Runner
+# --------------------------------------------------------
+
+FROM runner-base
+
+COPY --from=cosmovisor /go/bin/cosmovisor /bin/cosmovisor
 COPY --from=builder /lava/build/lavad /bin/lavad
 
 ENV HOME /lava
 WORKDIR $HOME
 
-ENTRYPOINT ["/bin/lavad"]
+COPY docker/entrypoint.sh /
+COPY docker/start_node.sh start_node.sh
+
+# lava api
+EXPOSE 1317
+# rosetta
+EXPOSE 8080
+# grpc
+EXPOSE 9090
+# grpc-web
+EXPOSE 9090
+# tendermint p2p
+EXPOSE 26656
+# tendermint rpc
+EXPOSE 26657
+
+ENTRYPOINT ["/entrypoint.sh"]
