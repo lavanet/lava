@@ -8,9 +8,17 @@ const (
 	ProviderUnstakeEventName     = "provider_unstake_commit"
 	ConsumerUnstakeEventName     = "consumer_unstake_commit"
 
-	RelayPaymentEventName                      = "relay_payment"
-	UnresponsiveProviderUnstakeFailedEventName = "unresponsive_provider"
-	ProviderJailedEventName                    = "provider_jailed"
+	ConsumerInsufficientFundsToStayStakedEventName = "consumer_insufficient_funds_to_stay_staked"
+	RelayPaymentEventName                          = "relay_payment"
+	UnresponsiveProviderUnstakeFailedEventName     = "unresponsive_provider"
+	ProviderJailedEventName                        = "provider_jailed"
+)
+
+// unstake description strings
+const (
+	UnstakeDescriptionClientUnstake     = "Client unstaked entry"
+	UnstakeDescriptionProviderUnstake   = "Provider unstaked entry"
+	UnstakeDescriptionInsufficientFunds = "client stake is below the minimum stake required"
 )
 
 func StakeNewEventName(isProvider bool) string {

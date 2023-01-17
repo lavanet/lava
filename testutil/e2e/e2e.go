@@ -40,7 +40,7 @@ type lavaTest struct {
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
 	logs                 map[string]*bytes.Buffer
-	commands             []exec.Cmd
+	commands             map[string]exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 }
 
@@ -101,7 +101,7 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 }
 
 func (lt *lavaTest) stakeLava() {
-	stakeCommand := "./scripts/init.sh"
+	stakeCommand := "./scripts/init_e2e.sh"
 	lt.logs["1_stakeLava"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   stakeCommand,
@@ -116,7 +116,9 @@ func (lt *lavaTest) stakeLava() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) checkStakeLava() {
+func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount int, successMessage string) {
+	// providerCount and clientCount refers to number and providers and client for each spec
+	// number of providers and clients should be the same for all specs for simplicity's sake
 	specQueryClient := specTypes.NewQueryClient(lt.grpcConn)
 
 	// query all specs
@@ -127,7 +129,7 @@ func (lt *lavaTest) checkStakeLava() {
 
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
-	if len(specQueryRes.Spec) == 0 {
+	if len(specQueryRes.Spec) != specCount {
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
@@ -140,7 +142,7 @@ func (lt *lavaTest) checkStakeLava() {
 		if err != nil {
 			panic(err)
 		}
-		if len(providerQueryRes.StakeEntry) == 0 {
+		if len(providerQueryRes.StakeEntry) != providerCount {
 			fmt.Println("ProviderQueryRes: ", providerQueryRes)
 			panic("Staking Failed PROVIDER")
 		}
@@ -156,13 +158,14 @@ func (lt *lavaTest) checkStakeLava() {
 		if err != nil {
 			panic(err)
 		}
-		if len(clientQueryRes.StakeEntry) == 0 {
+		if len(clientQueryRes.StakeEntry) != clientCount {
 			panic("Staking Failed CLIENT")
 		}
 		for _, clientStakeEntry := range clientQueryRes.StakeEntry {
 			fmt.Println("client", clientStakeEntry)
 		}
 	}
+	utils.LavaFormatInfo(successMessage, nil)
 }
 
 func (lt *lavaTest) startJSONRPCProxy() {
@@ -182,9 +185,9 @@ func (lt *lavaTest) startJSONRPCProxy() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["2_jsonProxy"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startJSONRPCProxy process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startJSONRPCProxy process returned unexpectedly", "startJSONRPCProxy")
 	}()
 }
 
@@ -208,9 +211,9 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["3_jsonProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startJSONRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startJSONRPCProvider")
 		}(idx)
 	}
 }
@@ -230,23 +233,27 @@ func (lt *lavaTest) startJSONRPCGateway() {
 		panic(err)
 	}
 
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["4_jsonGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startJSONRPCGateway process returned unexpectedly", "startJSONRPCGateway")
 	}()
 }
 
 func (lt *lavaTest) finishTestSuccessfully() {
 	lt.testFinishedProperly = true
-	for _, cmd := range lt.commands { // kill all the project commands
-		cmd.Process.Kill()
+	for processName, cmd := range lt.commands { // kill all the project commands
+		if processName == "2_jsonProxy" {
+			cmd.Process.Signal(os.Interrupt) // git call interrupt on jsonproxy to properly free the port
+		} else {
+			cmd.Process.Kill()
+		}
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string) {
+func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
-	if err != nil {
-		utils.LavaFormatError("cmd wait err", err, nil)
+	if err != nil && !lt.testFinishedProperly {
+		utils.LavaFormatError(functionName+" cmd wait err", err, nil)
 	}
 	if lt.testFinishedProperly {
 		return
@@ -396,9 +403,9 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["7_tendermintProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startTendermintProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startTendermintProvider")
 		}(idx)
 	}
 }
@@ -416,9 +423,9 @@ func (lt *lavaTest) startTendermintGateway() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["8_tendermintGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startTendermintGateway process returned unexpectedly", "startTendermintGateway")
 	}()
 }
 
@@ -509,15 +516,15 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 		if err != nil {
 			panic(err)
 		}
-		lt.commands = append(lt.commands, cmd)
+		lt.commands["5_restProvider"] = cmd
 		go func(idx int) {
-			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx))
+			lt.listenCmdCommand(cmd, "startRESTProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startRESTProvider")
 		}(idx)
 	}
 }
 
 func (lt *lavaTest) startRESTGateway() {
-	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user3 --geolocation 1 --log_level debug"
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
 	lt.logs["6_restGateway"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
 		Path:   lt.lavadPath,
@@ -529,9 +536,9 @@ func (lt *lavaTest) startRESTGateway() {
 	if err != nil {
 		panic(err)
 	}
-	lt.commands = append(lt.commands, cmd)
+	lt.commands["6_restGateway"] = cmd
 	go func() {
-		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly")
+		lt.listenCmdCommand(cmd, "startRESTGateway process returned unexpectedly", "startRESTGateway")
 	}()
 }
 
@@ -691,16 +698,41 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 		return fmt.Errorf(strings.Join(errors, ",\n"))
 	}
 	return nil
+// This would submit a proposal, vote then stake providers and clients for that network over lava
+func (lt *lavaTest) lavaOverLava() {
+	utils.LavaFormatInfo("Starting Lava over Lava Tests", nil)
+	stakeCommand := "./scripts/init_e2e_lava_over_lava.sh"
+	lt.logs["9_lavaOverLava"] = new(bytes.Buffer)
+	cmd := exec.Cmd{
+		Path:   stakeCommand,
+		Args:   strings.Split(stakeCommand, " "),
+		Stdout: lt.logs["9_lavaOverLava"],
+		Stderr: lt.logs["9_lavaOverLava"],
+	}
+	err := cmd.Start()
+	if err != nil {
+		panic("Lava over Lava Failed " + err.Error())
+	}
+	err = cmd.Wait()
+	if err != nil {
+		panic("Lava over Lava Failed " + err.Error())
+	}
+	lt.checkStakeLava(3, 5, 1, "Lava Over Lava Test Successful")
 }
 
 func (lt *lavaTest) saveLogs() {
 	logsFolder := "./testutil/e2e/logs/"
 	if _, err := os.Stat(logsFolder); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(logsFolder, os.ModePerm)
+		err := os.RemoveAll(logsFolder)
 		if err != nil {
 			fmt.Println(err)
 		}
+		err = os.MkdirAll(logsFolder, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 	}
+	errorLineCount := 0
 	for fileName, logBuffer := range lt.logs {
 		file, err := os.Create(logsFolder + fileName + ".log")
 		if err != nil {
@@ -710,7 +742,40 @@ func (lt *lavaTest) saveLogs() {
 		writer.Write(logBuffer.Bytes())
 		writer.Flush()
 		file.Close()
-		// utils.LavaFormatInfo(logBuffer.String(), nil)
+
+		lines := strings.Split(logBuffer.String(), "\n")
+		errorLines := []string{}
+		for _, line := range lines {
+			if strings.Contains(line, " ERR ") {
+				isAllowedError := false
+				for errorSubstring := range allowedErrors {
+					if strings.Contains(line, errorSubstring) {
+						isAllowedError = true
+						break
+					}
+				}
+				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
+				if !lt.testFinishedProperly || !isAllowedError {
+					errorLineCount += 1
+					errorLines = append(errorLines, line)
+				}
+			}
+		}
+		if len(errorLines) == 0 {
+			continue
+		}
+		errors := strings.Join(errorLines, "\n")
+		errFile, err := os.Create(logsFolder + fileName + "_errors.log")
+		if err != nil {
+			panic(err)
+		}
+		writer = bufio.NewWriter(errFile)
+		writer.Write([]byte(errors))
+		writer.Flush()
+		errFile.Close()
+	}
+	if errorLineCount != 0 {
+		panic("Error found in logs")
 	}
 }
 
@@ -775,6 +840,7 @@ func runE2E() {
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
 		logs:         make(map[string]*bytes.Buffer),
+		commands:     make(map[string]exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 	}
 	// use defer to save logs in case the tests fail
@@ -793,8 +859,7 @@ func runE2E() {
 	utils.LavaFormatInfo("Starting Lava OK", nil)
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
-	lt.checkStakeLava()
-	utils.LavaFormatInfo("Staking Lava OK", nil)
+	lt.checkStakeLava(2, 5, 1, "Staking Lava OK")
 	// lt.startJSONRPCProxy()
 	// lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	// lt.startJSONRPCGateway()
@@ -851,5 +916,8 @@ func runE2E() {
 	}
 
 	lt.checkPayments(time.Minute * 10)
+
+	lt.lavaOverLava()
+
 	lt.finishTestSuccessfully()
 }

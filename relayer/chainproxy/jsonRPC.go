@@ -363,9 +363,18 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+			c.Status(fiber.StatusInternalServerError)
 			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
 		}
-		cp.portalLogs.LogRequestAndResponse("jsonrpc http", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+		cp.portalLogs.LogRequestAndResponse("jsonrpc http",
+			false,
+			"POST",
+			c.Request().URI().String(),
+			string(c.Body()),
+			string(reply.Data),
+			msgSeed,
+			nil,
+		)
 		return c.SendString(string(reply.Data))
 	})
 
@@ -445,9 +454,6 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
 		}
-	}
-	if replyMsg.Error != nil {
-		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
 	}
 
 	return reply, subscriptionID, sub, err

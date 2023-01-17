@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gogo/status"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -43,6 +44,7 @@ import (
 	"github.com/spf13/pflag"
 	tenderbytes "github.com/tendermint/tendermint/libs/bytes"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -92,6 +94,10 @@ type RelaySession struct {
 	Proof              *pairingtypes.RelayRequest // saves last relay request of a session as proof
 	RelayNum           uint64
 	PairingEpoch       uint64
+}
+
+func (rs *RelaySession) atomicReadRelayNum() uint64 {
+	return atomic.LoadUint64(&rs.RelayNum)
 }
 
 type subscription struct {
@@ -424,16 +430,18 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 
 	if relayNum+1 != request.RelayNum {
 		utils.LavaFormatError("consumer requested incorrect relaynum, expected it to increment by 1", nil, &map[string]string{
-			"expected": strconv.FormatUint(relayNum+1, 10),
-			"received": strconv.FormatUint(request.RelayNum, 10),
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"expected":          strconv.FormatUint(relayNum+1, 10),
+			"received":          strconv.FormatUint(request.RelayNum, 10),
 		})
 	}
 
 	// Check that relaynum gets incremented by user
 	if relayNum+1 > request.RelayNum {
-		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", nil, &map[string]string{
-			"expected": strconv.FormatUint(relayNum+1, 10),
-			"received": strconv.FormatUint(request.RelayNum, 10),
+		return utils.LavaFormatError("consumer requested a smaller relay num than expected, trying to overwrite past usage", lavasession.SessionOutOfSyncError, &map[string]string{
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"expected":          strconv.FormatUint(relayNum+1, 10),
+			"received":          strconv.FormatUint(request.RelayNum, 10),
 		})
 	}
 
@@ -441,20 +449,22 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	sess.RelayNum++
 	sess.Lock.Unlock()
 
-	utils.LavaFormatInfo("updateSessionCu", &map[string]string{
-		"serviceApi.Name":   serviceApi.Name,
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
-	})
+	// utils.LavaFormatDebug("updateSessionCu", &map[string]string{
+	// 	"serviceApi.Name":   serviceApi.Name,
+	// 	"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+	// })
 	//
 	// TODO: do we worry about overflow here?
 	if cuSum >= request.CuSum {
-		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
-			"cuSum":         strconv.FormatUint(cuSum, 10),
-			"request.CuSum": strconv.FormatUint(request.CuSum, 10),
+		return utils.LavaFormatError("bad CU sum", lavasession.SessionOutOfSyncError, &map[string]string{
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"cuSum":             strconv.FormatUint(cuSum, 10),
+			"request.CuSum":     strconv.FormatUint(request.CuSum, 10),
 		})
 	}
 	if cuSum+serviceApi.ComputeUnits != request.CuSum {
-		return utils.LavaFormatError("bad CU sum", nil, &map[string]string{
+		return utils.LavaFormatError("bad CU sum", lavasession.SessionOutOfSyncError, &map[string]string{
+			"request.SessionId":       strconv.FormatUint(request.SessionId, 10),
 			"cuSum":                   strconv.FormatUint(cuSum, 10),
 			"request.CuSum":           strconv.FormatUint(request.CuSum, 10),
 			"serviceApi.ComputeUnits": strconv.FormatUint(serviceApi.ComputeUnits, 10),
@@ -467,6 +477,7 @@ func updateSessionCu(sess *RelaySession, userSessions *UserSessions, serviceApi 
 	if epochData.UsedComputeUnits+serviceApi.ComputeUnits > epochData.MaxComputeUnits {
 		userSessions.Lock.Unlock()
 		return utils.LavaFormatError("client cu overflow", nil, &map[string]string{
+			"request.SessionId":          strconv.FormatUint(request.SessionId, 10),
 			"epochData.MaxComputeUnits":  strconv.FormatUint(epochData.MaxComputeUnits, 10),
 			"epochData.UsedComputeUnits": strconv.FormatUint(epochData.UsedComputeUnits, 10),
 			"serviceApi.ComputeUnits":    strconv.FormatUint(request.CuSum, 10),
@@ -576,8 +587,7 @@ func (s *relayServer) initRelay(ctx context.Context, request *pairingtypes.Relay
 	var authorisedUserResponse *pairingtypes.QueryVerifyPairingResponse
 	authorisedUserResponse, nodeMsg, err = authorizeAndParseMessage(ctx, userAddr, request, uint64(request.BlockHeight))
 	if err != nil {
-		utils.LavaFormatError("failed authorizing user request", nil, nil)
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, utils.LavaFormatError("failed authorizing user request", err, nil)
 	}
 	var relaySession *RelaySession
 	var userSessions *UserSessions
@@ -750,13 +760,25 @@ func (s *relayServer) onRelayFailure(userSessions *UserSessions, relaySession *R
 	return retError
 }
 
+func (s *relayServer) handleRelayErrorStatus(err error) error {
+	if err == nil {
+		return nil
+	}
+	if lavasession.SessionOutOfSyncError.Is(err) {
+		err = status.Error(codes.Code(lavasession.SessionOutOfSyncError.ABCICode()), err.Error())
+	}
+	return err
+}
+
 func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	utils.LavaFormatInfo("Provider got relay request", &map[string]string{
-		"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+	utils.LavaFormatDebug("Provider got relay request", &map[string]string{
+		"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+		"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		"request.cu":          strconv.FormatUint(request.CuSum, 10),
 	})
 	userAddr, nodeMsg, userSessions, relaySession, err := s.initRelay(ctx, request)
 	if err != nil {
-		return nil, err
+		return nil, s.handleRelayErrorStatus(err)
 	}
 
 	reply, err := s.TryRelay(ctx, request, userAddr, nodeMsg)
@@ -764,10 +786,19 @@ func (s *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequ
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := s.onRelayFailure(userSessions, relaySession, nodeMsg)
 		if relayFailureError != nil {
-			err = sdkerrors.Wrapf(relayFailureError, "Relay Error: "+err.Error())
+			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+err.Error())
 		}
+		utils.LavaFormatError("TryRelay Failed", err, &map[string]string{
+			"request.SessionId": strconv.FormatUint(request.SessionId, 10),
+			"request.userAddr":  userAddr.String(),
+		})
+	} else {
+		utils.LavaFormatDebug("Provider Finished Relay Successfully", &map[string]string{
+			"request.SessionId":   strconv.FormatUint(request.SessionId, 10),
+			"request.relayNumber": strconv.FormatUint(request.RelayNum, 10),
+		})
 	}
-	return reply, err
+	return reply, s.handleRelayErrorStatus(err)
 }
 
 func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, userAddr sdk.AccAddress, nodeMsg chainproxy.NodeMessage) (*pairingtypes.RelayReply, error) {
@@ -784,6 +815,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	latestBlock := int64(0)
 	finalizedBlockHashes := map[int64]interface{}{}
 	var requestedBlockHash []byte = nil
+	finalized := false
 	if g_sentry.GetSpecDataReliabilityEnabled() {
 		// Add latest block and finalized data
 		var requestedBlockHashStr string
@@ -798,9 +830,14 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 		} else {
 			requestedBlockHash = []byte(requestedBlockHashStr)
 		}
+		request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
+		if request.RequestBlock > latestBlock {
+			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
+			return nil, utils.LavaFormatError("Requested a block that is too new", err, &map[string]string{"requestedBlock": strconv.FormatInt(request.RequestBlock, 10), "latestBlock": strconv.FormatInt(latestBlock, 10)})
+		}
+
+		finalized = g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	}
-	request.RequestBlock = sentry.ReplaceRequestedBlock(request.RequestBlock, latestBlock)
-	finalized := g_sentry.IsFinalizedBlock(request.RequestBlock, latestBlock)
 	cache := g_chainProxy.GetCache()
 	// TODO: handle cache on fork for dataReliability = false
 	var reply *pairingtypes.RelayReply = nil
@@ -810,7 +847,7 @@ func (s *relayServer) TryRelay(ctx context.Context, request *pairingtypes.RelayR
 	}
 	if err != nil || reply == nil {
 		if err != nil && performance.NotConnectedError.Is(err) {
-			utils.LavaFormatError("cache not connected", err, nil)
+			utils.LavaFormatWarning("cache not connected", err, nil)
 		}
 		// cache miss or invalid
 		reply, _, _, err = nodeMsg.Send(ctx, nil)
@@ -1181,7 +1218,12 @@ func Server(
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 	}
-	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, 1, newSentry, pLogs)
+	numberOfNodeParallelConnections, err := flagSet.GetUint(chainproxy.ParallelConnectionsFlag)
+	if err != nil {
+		utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
+	}
+
+	chainProxy, err := chainproxy.GetChainProxy(nodeUrl, numberOfNodeParallelConnections, newSentry, pLogs)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to GetChainProxy", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 	}

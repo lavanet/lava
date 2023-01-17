@@ -5,7 +5,7 @@ accounts:
   - name: alice
     coins: ["200000000000ulava"]
   - name: bob
-    coins: ["100000000ulava"]
+    coins: ["10000ulava"]
   - name: user1
     coins: ["200000000ulava"]
   - name: user2

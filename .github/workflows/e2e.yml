@@ -74,3 +74,9 @@ jobs:
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
+
+    ######################################################
+    ### Run relayer unitests
+    ######################################################
+   - name: Run Relayer unit Tests
+      run: go test ./relayer/lavasession/ ./relayer/chainTracker/ -v

@@ -11,7 +11,9 @@ import (
 	"time"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/gogo/status"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc/codes"
 )
 
 type ConsumerSessionManager struct {
@@ -119,7 +121,9 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				utils.LavaFormatFatal("Unsupported Error", err, nil)
 			}
 		} else if !connected {
-			// If failed to connect we try again getting a random provider to pick from
+			// If failed to connect we ignore this provider for this get session request only
+			// and try again getting a random provider to pick from
+			tempIgnoredProviders.providers[providerAddress] = struct{}{}
 			continue
 		}
 
@@ -133,6 +137,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
 		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
 		if err != nil {
+			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", &map[string]string{"Error": err.Error()})
 			if MaximumNumberOfSessionsExceededError.Is(err) {
 				// we can get a different provider, adding this provider to the list of providers to skip on.
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
@@ -157,6 +162,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
 		err = consumerSessionWithProvider.addUsedComputeUnits(cuNeededForSession)
 		if err != nil {
+			utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", &map[string]string{"Error": err.Error()})
 			if MaxComputeUnitsExceededError.Is(err) {
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				// We must unlock the consumer session before continuing.
@@ -181,6 +187,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddress(ignoredProvidersList 
 	validAddressesLength := len(csm.validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
+		utils.LavaFormatDebug("Pairing list empty", &map[string]string{"Provider list": fmt.Sprintf("%v", csm.validAddresses), "IgnoredProviderList": fmt.Sprintf("%v", ignoredProvidersList)})
 		err = PairingListEmptyError
 		return
 	}
@@ -203,13 +210,13 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	currentEpoch = csm.atomicReadCurrentEpoch() // reading the epoch here while locked, to get the epoch of the pairing.
 	if ignoredProviders.currentEpoch < currentEpoch {
 		utils.LavaFormatDebug("ignoredProviders epoch is not the current epoch, resetting ignoredProviders", &map[string]string{"ignoredProvidersEpoch": strconv.FormatUint(ignoredProviders.currentEpoch, 10), "currentEpoch": strconv.FormatUint(currentEpoch, 10)})
-		ignoredProviders.providers = nil // reset the old providers as epochs changed so we have a new pairing list.
+		ignoredProviders.providers = make(map[string]struct{}) // reset the old providers as epochs changed so we have a new pairing list.
 		ignoredProviders.currentEpoch = currentEpoch
 	}
 
 	providerAddress, err = csm.getValidProviderAddress(ignoredProviders.providers)
 	if err != nil {
-		utils.LavaFormatError("could'nt get a provider address", err, nil)
+		utils.LavaFormatError("could not get a provider address", err, nil)
 		return nil, "", 0, err
 	}
 	consumerSessionWithProvider = csm.pairing[providerAddress]
@@ -296,6 +303,8 @@ func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsum
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
+	code := status.Code(errorReceived)
+
 	if err := csm.verifyLock(consumerSession); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
@@ -309,8 +318,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
 
-	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || SessionOutOfSyncError.Is(errorReceived) {
+	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || code == codes.Code(SessionOutOfSyncError.ABCICode()) {
+		utils.LavaFormatDebug("Blocking consumer session", &map[string]string{"id": strconv.FormatInt(consumerSession.SessionId, 10)})
 		consumerSession.BlockListed = true // block this session from future usages
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
