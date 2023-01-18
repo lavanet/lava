@@ -76,23 +76,36 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&csm.currentEpoch)
 }
 
+// validate if reset is needed for valid addresses list.
+func (csm *ConsumerSessionManager) shouldResetValidAddresses() (reset bool, numberOfResets uint64) {
+	csm.lock.RLock() // lock read to validate length
+	defer csm.lock.RUnlock()
+	numberOfResets = csm.numberOfResets
+	if len(csm.validAddresses) == 0 {
+		reset = true
+	}
+	return
+}
+
+// reset the valid addresses list and increase numberOfResets
+func (csm *ConsumerSessionManager) resetValidAddresses(numberOfResets uint64) uint64 {
+	csm.lock.Lock() // lock write
+	defer csm.lock.Unlock()
+	if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
+		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
+		csm.validAddresses = make([]string, csm.pairingAddressesLength)
+		copy(csm.validAddresses, csm.pairingAddresses) // reset the list of valid addresses
+		csm.numberOfResets += 1
+		numberOfResets = csm.numberOfResets // update numberOfResets with the new value
+	}
+	return numberOfResets
+}
+
 // validating we still have providers, otherwise reset valid addresses list
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty() uint64 {
-	csm.lock.RLock() // lock read to validate length
-	numberOfResets := csm.numberOfResets
-	if len(csm.validAddresses) == 0 {
-		csm.lock.RUnlock()                // unlock read
-		csm.lock.Lock()                   // lock write
-		if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
-			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
-			csm.validAddresses = make([]string, csm.pairingAddressesLength)
-			copy(csm.validAddresses, csm.pairingAddresses) // reset the list of valid addresses
-			csm.numberOfResets += 1
-			numberOfResets = csm.numberOfResets // update numberOfResets with the new value
-		}
-		csm.lock.Unlock() // unlock write
-	} else {
-		csm.lock.RUnlock() // unlock read if length was larger than zero.
+	reset, numberOfResets := csm.shouldResetValidAddresses()
+	if reset {
+		numberOfResets = csm.resetValidAddresses(numberOfResets)
 	}
 	return numberOfResets
 }

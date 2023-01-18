@@ -104,6 +104,7 @@ func TestPairingReset(t *testing.T) {
 	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
 	require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
 	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
+	require.Equal(t, csm.numberOfResets, uint64(0x1)) // verify we had one reset only
 }
 
 func TestPairingResetWithFailures(t *testing.T) {
@@ -133,6 +134,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 	require.NotNil(t, cs)
 	require.Equal(t, epoch, csm.currentEpoch)
 	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+	require.Equal(t, csm.numberOfResets, uint64(0x1)) // verify we had one reset only
 }
 
 // Test the basic functionality of the consumerSessionManager

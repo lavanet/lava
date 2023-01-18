@@ -149,10 +149,11 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx contex
 	return &c, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, maximumBlockedSessionsMultiplier uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
-	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (maximumBlockedSessionsMultiplier + 1) // +1 as we start from 0
+	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
+	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (numberOfResets + 1) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
