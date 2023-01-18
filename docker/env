@@ -50,6 +50,9 @@ LAVA_RELAY_IFACE=jsonrpc
 # relay node URL [mandatory: provider]
 LAVA_RELAY_NODE_URL=
 
+# relay endpoint(s) [mandatory: provider]
+LAVA_RELAY_ENDPOINT=
+
 # lavad log level [mandatory]
 LAVA_LOG_LEVEL=info
 
