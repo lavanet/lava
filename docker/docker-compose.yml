@@ -25,7 +25,7 @@ services:
         limits:
           cpus: '4'
           memory: '8gb'
-    restart: unless-stopped
+    restart: on-failure:5
     profiles: ["node"]
 
   lava-portal:
@@ -59,6 +59,6 @@ services:
         limits:
           cpus: '2'
           memory: '2gb'
-    restart: unless-stopped
+    restart: on-failure:5
     profiles: ["portal"]
 

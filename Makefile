@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 # Usage: and targets:
-#   [LAVA_BUILD_OPTIONS=...] make [TARGET...]
+#   [LAVA_BUILD_OPTIONS=...] [ENV...] make [TARGET...]
 #
 # Targets:
 #
@@ -20,10 +20,17 @@
 #
 #   static		- build static binary
 #   release		- generate release build
-#   nostrip		- do not strip binary from paths)
+#   nostrip		- do not strip binary from paths
 #
 #   debug_mutex	- (debug) enable debug mutex
 #   mask_consumer_logs	- (debug) enable debug mutex
+#
+#   cleveldb, rocksdb   - (not to be used)
+#
+# Environment
+#   LAVA_VERSION=...	- select lava version (for 'release')
+#   BUILDDIR=...	- select local directory for build output
+#   LEDGER_ENABLED	- (not to be used)
 #
 # Examples:
 #

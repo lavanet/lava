@@ -48,8 +48,8 @@ ENV LAVA_BUILD_OPTIONS=${BUILD_OPTIONS}
 # Download go dependencies
 WORKDIR /lava
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
+RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
+    --mount=type=cache,sharing=private,target=/go/pkg/mod \
     go mod download
 
 # Copy the remaining files
@@ -80,20 +80,23 @@ ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
 # Build lavad binary
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    LAVA_BUILD_OPTIONS="static" make build
+RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
+    --mount=type=cache,sharing=private,target=/go/pkg/mod \
+    LAVA_BUILD_OPTIONS="${LAVA_BUILD_OPTIONS},static" make build
 
 # --------------------------------------------------------
 # Cosmovisor
 # --------------------------------------------------------
 
-FROM --platform=$BUILDPLATFORM builder as cosmovisor
+FROM --platform=$BUILDPLATFORM base as cosmovisor
+
+WORKDIR /lava
 
 # Download Cosmovisor
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    go get github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0 \
+RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
+    --mount=type=cache,sharing=private,target=/go/pkg/mod \
+    go mod init disposable \
+    && go get github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0 \
     && go install github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v1.0.0
 
 
