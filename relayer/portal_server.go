@@ -48,7 +48,7 @@ func PortalServer(
 	g_serverChainID = chainID
 
 	// Node
-	pLogs, err := chainproxy.NewPortalLogs()
+	pLogs, err := chainproxy.NewPortalLogs(true)
 	if err != nil {
 		log.Fatalln("error: NewPortalLogs", err)
 	}

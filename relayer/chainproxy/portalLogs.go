@@ -21,13 +21,13 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
 	MetricService       *metrics.MetricService
+	StoreMetricData     bool
 }
 
-func NewPortalLogs() (*PortalLogs, error) {
+func NewPortalLogs(storeMetricData bool) (*PortalLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file", nil)
-
 		return &PortalLogs{}, nil
 	}
 
@@ -42,11 +42,12 @@ func NewPortalLogs() (*PortalLogs, error) {
 		newrelic.ConfigLicense(NewRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	//TODO make this optional
-	metricPortalSqsUrl := os.Getenv("METRICS_PORTAL_SQS_URL")
-	intervalForMetrics, _ := strconv.ParseInt(os.Getenv("METRICS_INTERVAL_FOR_SENDING_DATA_INM"), 10, 32)
-	metricsService := metrics.NewMetricService(metricPortalSqsUrl, int(intervalForMetrics))
-	return &PortalLogs{newRelicApplication: newRelicApplication, MetricService: metricsService}, err
+	metricsService := &metrics.MetricService{}
+	if storeMetricData {
+		metricsService = metrics.NewMetricService()
+	}
+
+	return &PortalLogs{newRelicApplication: newRelicApplication, MetricService: metricsService, StoreMetricData: storeMetricData}, err
 }
 
 func (cp *PortalLogs) GetMessageSeed() string {
@@ -93,7 +94,12 @@ func (cp *PortalLogs) LogStartTransaction(name string) {
 }
 
 func (cp *PortalLogs) AddMetric(data *metrics.RelayAnalytics) {
+	if cp.MetricService == nil && cp.StoreMetricData {
+		utils.LavaFormatDebug("new service will be created", nil)
+		cp.MetricService = metrics.NewMetricService()
+	}
 	if cp.MetricService != nil {
+		utils.LavaFormatDebug("Adding new Metric", nil)
 		cp.MetricService.SendDataToChannel(*data)
 	}
 }

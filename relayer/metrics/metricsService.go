@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/lavanet/lava/utils"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -22,19 +24,27 @@ type MetricService struct {
 	sqsUrl              string
 }
 
-func NewMetricService(portalHttpSqsUrl string, intervalForSendingMetricsInM int) *MetricService {
+func NewMetricService() *MetricService {
+	metricPortalSqsUrl := os.Getenv("METRICS_PORTAL_SQS_URL")
+	intervalData := os.Getenv("METRICS_INTERVAL_FOR_SENDING_DATA_INM")
+	if metricPortalSqsUrl == "" || intervalData == "" {
+		return nil
+	}
+	intervalForMetrics, _ := strconv.ParseInt(intervalData, 10, 32)
+
 	mChannel := make(chan RelayAnalytics)
 	result := &MetricService{
-		metricsChannel: mChannel,
-		sqsUrl:         portalHttpSqsUrl,
+		metricsChannel:      mChannel,
+		sqsUrl:              metricPortalSqsUrl,
+		aggregatedMetricMap: make(map[string]map[string]map[string]AggregatedMetric),
 	}
 	//setup reader
 	go result.ReadFromChannel()
 	//setup sending of the results into the query
 	//TODO update this with select
-	for range time.Tick(time.Duration(intervalForSendingMetricsInM * 60 * 1000000000)) {
+	for range time.Tick(time.Duration(intervalForMetrics * 60 * 1000000000)) {
+		data := result.ConvertDataToArray()
 		go func() {
-			data := result.ConvertDataToArray()
 			err := result.SendTo(data)
 			if err != nil {
 				utils.LavaFormatError("error sending metrics data portal app.", err, nil)
@@ -51,6 +61,8 @@ func (m *MetricService) SendTo(data []RelayAnalyticsDTO) error {
 	if err != nil {
 		return err
 	}
+	utils.LavaFormatDebug("Sending Data to url:", &map[string]string{
+		"body": string(jsonValue)})
 	resp, err := http.Post(m.sqsUrl, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
@@ -94,6 +106,8 @@ func (m *MetricService) CloseChannel() {
 
 func (m *MetricService) SendDataToChannel(data RelayAnalytics) {
 	if m.metricsChannel != nil {
+		utils.LavaFormatDebug("Metric to be stored", &map[string]string{
+			"Latency": strconv.Itoa(int(data.Latency))})
 		m.metricsChannel <- data
 	}
 }
@@ -103,9 +117,10 @@ func (m *MetricService) ReadFromChannel() {
 		for {
 			data, newMessageInserted := <-m.metricsChannel
 			if !newMessageInserted {
-				//TODO check if this will work
 				continue
 			}
+			utils.LavaFormatDebug("new Message on chain", &map[string]string{
+				"Latency": strconv.Itoa(int(data.Latency))})
 			toInsertData := AggregatedMetric{
 				TotalLatency: data.Latency,
 				RelaysCount:  data.ComputeUnits,
