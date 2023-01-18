@@ -19,6 +19,7 @@ ARG GIT_VERSION
 ARG GIT_COMMIT
 
 # Download debian packages for building
+ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,target=/var/cache/apt \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     apt-get update && \
@@ -100,6 +101,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM ${RUNNER_IMAGE} as runner-base
 
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -yqq --no-install-recommends \
         git curl unzip ca-certificates \
@@ -122,6 +124,30 @@ WORKDIR $HOME
 
 COPY docker/entrypoint.sh /
 COPY docker/start_node.sh start_node.sh
+COPY docker/start_portal.sh start_portal.sh
+
+ENV LAVA_HOME_DIR= \
+    LAVA_USER= \
+    LAVA_ADDRESS= \
+    LAVA_KEYRING= \
+    LAVA_STAKE_AMOUNT= \
+    LAVA_GAS_MODE= \
+    LAVA_GAS_ADJUST= \
+    LAVA_GAS_PRICE= \
+    LAVA_GEOLOCATION= \
+    LAVA_RPC_NODE= \
+    LAVA_CHAIN_ID= \
+    LAVA_LISTEN_IP= \
+    LAVA_NODE_PORT_API= \
+    LAVA_NODE_PORT_GRPC= \
+    LAVA_NODE_PORT_GRPC_WEB= \
+    LAVA_NODE_PORT_P2P= \
+    LAVA_NODE_PORT_RPC= \
+    LAVA_PORTAL_PORT= \
+    LAVA_RELAY_CHAIN_ID= \
+    LAVA_RELAY_IFACE= \
+    LAVA_RELAY_NODE_URL= \
+    LAVA_LOG_LEVEL=
 
 # lava api
 EXPOSE 1317

@@ -37,6 +37,7 @@ fi
 
 case _"$1" in
     _node) cmd="/lava/start_node.sh" ;;
+    _portal) cmd="/lava/start_portal.sh" ;;
     *) cmd="$1" ;;
 esac
 
