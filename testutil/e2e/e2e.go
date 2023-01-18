@@ -781,10 +781,9 @@ func (lt *lavaTest) saveLogs() {
 	}
 }
 
-func (lt *lavaTest) checkPayments(testDuration time.Duration) {
+func (lt *lavaTest) checkPayments(testDuration time.Duration, networkName string) {
 	utils.LavaFormatInfo("Checking Payments", nil)
-	ethPaid := false
-	lavaPaid := false
+	paid := false
 	for start := time.Now(); time.Since(start) < testDuration; {
 		pairingClient := pairingTypes.NewQueryClient(lt.grpcConn)
 		pairingRes, err := pairingClient.EpochPaymentsAll(context.Background(), &pairingTypes.QueryAllEpochPaymentsRequest{})
@@ -799,32 +798,50 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 		}
 		for _, epochPayment := range pairingRes.EpochPayments {
 			for _, clientsPayment := range epochPayment.ClientsPayments {
-				if strings.Contains(clientsPayment.Index, "ETH") {
-					ethPaid = true
-				} else if strings.Contains(clientsPayment.Index, "LAV") {
-					lavaPaid = true
+				if strings.Contains(clientsPayment.Index, networkName) {
+					paid = true
 				}
 			}
 		}
-		if ethPaid && lavaPaid {
+		if paid {
 			break
 		}
 	}
 
-	if !ethPaid && !lavaPaid {
-		panic("PAYMENT FAILED FOR ETH AND LAVA")
+	if !paid {
+		panic("PAYMENT FAILED FOR " + networkName)
 	}
 
-	if ethPaid {
-		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR ETH", nil)
+	if paid {
+		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR "+networkName, nil)
 	} else {
-		panic("PAYMENT FAILED FOR ETH")
+		panic("PAYMENT FAILED FOR " + networkName)
 	}
+}
 
-	if lavaPaid {
-		utils.LavaFormatInfo("PAYMENT SUCCESSFUL FOR LAVA", nil)
-	} else {
-		panic("PAYMENT FAILED FOR LAVA")
+// This function continuously queries the lava grpc to check if the epoch changed.
+func (lt *lavaTest) epochWait(numEpochsToWait int) {
+	utils.LavaFormatInfo("Waiting for epoch change", nil)
+	epochClient := epochStorageTypes.NewQueryClient(lt.grpcConn)
+	res, err := epochClient.EpochDetails(context.Background(), &epochStorageTypes.QueryGetEpochDetailsRequest{})
+	if err != nil {
+		panic(err)
+	}
+	currentEpochStartBlock := res.EpochDetails.StartBlock
+	waitedEpochs := 0
+	for {
+		res, err := epochClient.EpochDetails(context.Background(), &epochStorageTypes.QueryGetEpochDetailsRequest{})
+		if err != nil {
+			panic(err)
+		}
+		if currentEpochStartBlock != res.EpochDetails.StartBlock {
+			waitedEpochs += 1
+			currentEpochStartBlock = res.EpochDetails.StartBlock
+			if waitedEpochs == numEpochsToWait {
+				return
+			}
+		}
+		time.Sleep(time.Second)
 	}
 }
 
@@ -882,42 +899,49 @@ func runE2E() {
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
-	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
-	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
-	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
-	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
-
 	if jsonErr != nil {
 		panic(jsonErr)
 	} else {
 		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
 	}
 
+	lt.checkPayments(time.Minute*10, "ETH")
+
+	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintErr != nil {
 		panic(tendermintErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
 	}
 
+	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintURIErr != nil {
 		panic(tendermintURIErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
 	}
 
+	lt.checkPayments(time.Minute*10, "LAV")
+	lt.epochWait(3)
+
+	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 	if restErr != nil {
 		panic(restErr)
 	} else {
 		utils.LavaFormatInfo("REST TEST OK", nil)
 	}
 
+	lt.checkPayments(time.Minute*10, "LAV")
+	lt.epochWait(3)
+
+	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
 	if grpcErr != nil {
 		panic(grpcErr)
 	} else {
 		utils.LavaFormatInfo("GRPC TEST OK", nil)
 	}
 
-	// lt.checkPayments(time.Minute * 10)
+	lt.checkPayments(time.Minute*10, "LAV")
 
 	lt.lavaOverLava()
 
