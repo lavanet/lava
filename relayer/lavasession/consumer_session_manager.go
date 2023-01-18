@@ -93,15 +93,13 @@ func (csm *ConsumerSessionManager) shouldResetValidAddresses() (reset bool, numb
 }
 
 // reset the valid addresses list and increase numberOfResets
-func (csm *ConsumerSessionManager) resetValidAddresses(numberOfResets uint64) uint64 {
+func (csm *ConsumerSessionManager) resetValidAddresses() uint64 {
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
 	if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
 		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
 		csm.setValidAddressesToDefaultValue()
 		csm.numberOfResets += 1
-		numberOfResets = csm.numberOfResets // update numberOfResets with the new value
-		return numberOfResets
 	}
 	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
 	return csm.numberOfResets
@@ -111,7 +109,7 @@ func (csm *ConsumerSessionManager) resetValidAddresses(numberOfResets uint64) ui
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty() uint64 {
 	reset, numberOfResets := csm.shouldResetValidAddresses()
 	if reset {
-		numberOfResets = csm.resetValidAddresses(numberOfResets)
+		numberOfResets = csm.resetValidAddresses()
 	}
 	return numberOfResets
 }
