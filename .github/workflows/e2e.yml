@@ -78,5 +78,5 @@ jobs:
     ######################################################
     ### Run relayer unitests
     ######################################################
-   - name: Run Relayer unit Tests
+    - name: Run Relayer unit Tests
       run: go test ./relayer/lavasession/ ./relayer/chainTracker/ -v
