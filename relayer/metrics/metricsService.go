@@ -19,7 +19,7 @@ type AggregatedMetric struct {
 
 type MetricService struct {
 	numberOfRelays      int64
-	aggregatedMetricMap map[string]map[string]map[string]AggregatedMetric
+	aggregatedMetricMap *map[string]map[string]map[string]*AggregatedMetric
 	metricsChannel      chan RelayAnalytics
 	sqsUrl              string
 }
@@ -31,38 +31,44 @@ func NewMetricService() *MetricService {
 		return nil
 	}
 	intervalForMetrics, _ := strconv.ParseInt(intervalData, 10, 32)
-
+	utils.LavaFormatDebug("env variables:", &map[string]string{
+		"url":      metricPortalSqsUrl,
+		"interval": intervalData})
 	mChannel := make(chan RelayAnalytics)
 	result := &MetricService{
 		metricsChannel:      mChannel,
 		sqsUrl:              metricPortalSqsUrl,
-		aggregatedMetricMap: make(map[string]map[string]map[string]AggregatedMetric),
+		aggregatedMetricMap: &map[string]map[string]map[string]*AggregatedMetric{},
 	}
 	//setup reader
 	go result.ReadFromChannel()
 	//setup sending of the results into the query
-	//TODO update this with select
-	for range time.Tick(time.Duration(intervalForMetrics * 60 * 1000000000)) {
-		data := result.ConvertDataToArray()
-		go func() {
-			err := result.SendTo(data)
-			if err != nil {
-				utils.LavaFormatError("error sending metrics data portal app.", err, nil)
+	ticker := time.NewTicker(time.Duration(intervalForMetrics * time.Minute.Nanoseconds()))
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				{
+					data := result.ConvertDataToArray()
+					err := result.SendTo(data)
+					if err != nil {
+						utils.LavaFormatError("error sending metrics data portal app.", err, nil)
+					}
+				}
 			}
-		}()
-	}
+		}
+	}()
 	return result
 }
+
 func (m *MetricService) SendTo(data []RelayAnalyticsDTO) error {
-	if len(data) > 0 {
+	if data == nil || len(data) == 0 {
 		return nil
 	}
 	jsonValue, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	utils.LavaFormatDebug("Sending Data to url:", &map[string]string{
-		"body": string(jsonValue)})
 	resp, err := http.Post(m.sqsUrl, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
@@ -74,26 +80,28 @@ func (m *MetricService) SendTo(data []RelayAnalyticsDTO) error {
 }
 
 func (m *MetricService) ConvertDataToArray() []RelayAnalyticsDTO {
-	//project-chain-apiType
-	toSendData := make([]RelayAnalyticsDTO, m.numberOfRelays)
-	if m.numberOfRelays == 0 {
-		return toSendData
+	if m.numberOfRelays == 0 || m.aggregatedMetricMap == nil {
+		return nil
 	}
-	for projectKey, projectData := range m.aggregatedMetricMap {
+	toSendData := make([]RelayAnalyticsDTO, m.numberOfRelays)
+	counter := 0
+	//project-chain-apiType
+	for projectKey, projectData := range *m.aggregatedMetricMap {
 		for chainKey, chainData := range projectData {
 			for apiTypekey, apiTypeData := range chainData {
-				toSendData = append(toSendData, RelayAnalyticsDTO{
+				toSendData[counter] = RelayAnalyticsDTO{
 					ProjectHash:  projectKey,
 					APIType:      apiTypekey,
 					ChainID:      chainKey,
 					Latency:      apiTypeData.TotalLatency,
 					ComputeUnits: apiTypeData.RelaysCount,
 					SuccessCount: apiTypeData.SuccessCount,
-				})
+				}
+				counter++
 			}
 		}
 	}
-	m.aggregatedMetricMap = make(map[string]map[string]map[string]AggregatedMetric)
+	m.aggregatedMetricMap = &map[string]map[string]map[string]*AggregatedMetric{}
 	m.numberOfRelays = 0
 	return toSendData
 }
@@ -106,8 +114,6 @@ func (m *MetricService) CloseChannel() {
 
 func (m *MetricService) SendDataToChannel(data RelayAnalytics) {
 	if m.metricsChannel != nil {
-		utils.LavaFormatDebug("Metric to be stored", &map[string]string{
-			"Latency": strconv.Itoa(int(data.Latency))})
 		m.metricsChannel <- data
 	}
 }
@@ -119,9 +125,7 @@ func (m *MetricService) ReadFromChannel() {
 			if !newMessageInserted {
 				continue
 			}
-			utils.LavaFormatDebug("new Message on chain", &map[string]string{
-				"Latency": strconv.Itoa(int(data.Latency))})
-			toInsertData := AggregatedMetric{
+			toInsertData := &AggregatedMetric{
 				TotalLatency: data.Latency,
 				RelaysCount:  data.ComputeUnits,
 				SuccessCount: 0,
@@ -135,31 +139,31 @@ func (m *MetricService) ReadFromChannel() {
 	}
 }
 
-func (m *MetricService) StoreAggregatedData(projectHash string, chainId string, apiType string, data AggregatedMetric) error {
-	//TODO: refactor this for better readibility
+func (m *MetricService) StoreAggregatedData(projectHash string, chainId string, apiType string, data *AggregatedMetric) error {
 	//project-chain-apiType
-	projectData, exists := m.aggregatedMetricMap[projectHash]
+	store := *m.aggregatedMetricMap
+	projectData, exists := store[projectHash]
 	if !exists {
-		projectData = map[string]map[string]AggregatedMetric{
+		projectData = map[string]map[string]*AggregatedMetric{
 			chainId: {
 				apiType: data,
 			},
 		}
-		m.numberOfRelays++
-		m.aggregatedMetricMap[projectHash] = projectData
+		m.numberOfRelays = m.numberOfRelays + 1
+		store[projectHash] = projectData
 	} else {
 		chainIdData, exists := projectData[chainId]
 		if !exists {
-			chainIdData = map[string]AggregatedMetric{
+			chainIdData = map[string]*AggregatedMetric{
 				chainId: data,
 			}
-			m.numberOfRelays++
-			m.aggregatedMetricMap[projectHash][chainId] = chainIdData
+			m.numberOfRelays = m.numberOfRelays + 1
+			store[projectHash][chainId] = chainIdData
 		} else {
 			apiTypesData, exists := chainIdData[apiType]
 			if !exists {
-				m.numberOfRelays++
-				m.aggregatedMetricMap[projectHash][chainId][apiType] = data
+				m.numberOfRelays = m.numberOfRelays + 1
+				store[projectHash][chainId][apiType] = data
 			} else {
 				apiTypesData.TotalLatency += data.TotalLatency
 				apiTypesData.SuccessCount += data.SuccessCount

@@ -42,12 +42,11 @@ func NewPortalLogs(storeMetricData bool) (*PortalLogs, error) {
 		newrelic.ConfigLicense(NewRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	metricsService := &metrics.MetricService{}
+	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: storeMetricData}
 	if storeMetricData {
-		metricsService = metrics.NewMetricService()
+		portal.MetricService = metrics.NewMetricService()
 	}
-
-	return &PortalLogs{newRelicApplication: newRelicApplication, MetricService: metricsService, StoreMetricData: storeMetricData}, err
+	return portal, err
 }
 
 func (cp *PortalLogs) GetMessageSeed() string {
@@ -93,13 +92,9 @@ func (cp *PortalLogs) LogStartTransaction(name string) {
 	}
 }
 
-func (cp *PortalLogs) AddMetric(data *metrics.RelayAnalytics) {
-	if cp.MetricService == nil && cp.StoreMetricData {
-		utils.LavaFormatDebug("new service will be created", nil)
-		cp.MetricService = metrics.NewMetricService()
-	}
-	if cp.MetricService != nil {
-		utils.LavaFormatDebug("Adding new Metric", nil)
+func (cp *PortalLogs) AddMetric(data *metrics.RelayAnalytics, IsNotSuccessful bool) {
+	if cp.StoreMetricData {
+		data.Success = !IsNotSuccessful
 		cp.MetricService.SendDataToChannel(*data)
 	}
 }

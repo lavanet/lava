@@ -182,8 +182,7 @@ func SendRelay(
 
 		if analytics != nil {
 			analytics.Latency = currentLatency.Milliseconds()
-			analytics.Success = err != nil
-
+			analytics.ComputeUnits = relayRequest.CuSum
 		}
 
 		if err != nil {

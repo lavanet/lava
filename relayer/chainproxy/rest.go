@@ -249,6 +249,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, metricsData)
+		cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
@@ -256,7 +257,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
-		cp.portalLogs.AddMetric(metricsData)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
@@ -280,6 +280,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		analytics := metrics.NewRelayAnalytics(dappID, sentry.ChainID, sentry.ApiInterface)
 
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID, analytics)
+		cp.portalLogs.AddMetric(analytics, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
@@ -287,7 +288,6 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
 		}
 		responseBody := string(reply.Data)
-		cp.portalLogs.AddMetric(analytics)
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
 		return c.SendString(responseBody)
 	})
