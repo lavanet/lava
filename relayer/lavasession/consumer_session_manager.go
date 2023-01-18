@@ -263,15 +263,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 		}
 	}
 
-	// before we report the provider, we check that we're currently paired to it
-	consumerPairedWithProvider := false
-	for _, pairingAddr := range csm.pairingAddresses {
-		if pairingAddr == address {
-			consumerPairedWithProvider = true
-		}
-	}
-
-	if reportProvider && consumerPairedWithProvider { // Report provider flow
+	if reportProvider { // Report provider flow
 		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 			csm.addedToPurgeAndReport[address] = struct{}{}
 		}

@@ -11,7 +11,8 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-type punishEntry struct {
+// This struct's goal is to keep track of the CU required for unresponsiveness for a specific provider and a specific chain ID (the CUs are counted over several epochs)
+type providerCuCounterForUnreponsiveness struct {
 	providerPaymentStorageIndexList []string // index list of providerPaymentStorage objects that share providerAddress + chainID (but not epoch)
 	complainersUsedCu               uint64   // sum of the complainers' CU over epochsNumToCheckCUForComplainers epochs back (start counting from currentEpoch-epochsNumToCheckCUForUnresponsiveProvider)
 	providerServicedCu              uint64   // sum of the unresponsive provider's serviced CU over epochsNumToCheckCUForUnresponsiveProvider epochs back (start counting from current epoch)
@@ -41,68 +42,65 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	return nil
 }
 
-// Function that returns a map that links between a provider that should be punished and its punishEntry
+// Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
 func (k Keeper) getUnresponsiveProvidersToPunish(ctx sdk.Context, currentEpoch uint64, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) (map[string][]string, error) {
 	// check the epochsNum consts
 	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
 		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_unresponsive_providers_to_punish", nil, "epochsNumToCheckCUForUnresponsiveProvider or epochsNumToCheckCUForComplainers are smaller or equal than zero")
 	}
 
-	providersPunishEntryMap := make(map[string]punishEntry) // map of punishEntryKey keys (string) with punishEntry values (punishEntryKey = providerAddress_chainID)
-	providersToPunishMap := make(map[string][]string)       // map of punishEntryKey keys (string) with list of providerPaymentStorage indices values (string array) (punishEntryKey = providerAddress_chainID)
-
 	// Get recommendedEpochNumToCollectPayment
 	recommendedEpochNumToCollectPayment := k.RecommendedEpochNumToCollectPayment(ctx)
 
-	// handle very early epochs (basically, don't punish)
-	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, currentEpoch)
-	if err != nil {
-		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_epoch_blocks", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", currentEpoch)}, "couldn't get epoch blocks param")
+	// To check for punishment, we have to go back (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider) epochs from the current epoch. If there isn't enough memory, do nothing
+	epochTemp := currentEpoch
+	for counter := uint64(0); counter < epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider+recommendedEpochNumToCollectPayment; counter++ {
+		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
+		if err != nil {
+			return nil, types.EpochTooEarlyForUnresponsiveProviderJailError
+		}
+		epochTemp = previousEpoch
 	}
-	if currentEpoch < (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider+recommendedEpochNumToCollectPayment)*epochBlocks {
-		// To check for punishment, we have to go back (epochsNumToCheckCUForComplainers+epochsNumToCheckCUForUnresponsiveProvider) epochs from the current epoch. If there isn't enough memory, do nothing
-		return nil, types.EpochTooEarlyForUnresponsiveProviderJailError
+
+	providerCuCounterForUnreponsivenessMap := make(map[string]providerCuCounterForUnreponsiveness) // map of providerCuCounterForUnreponsiveness keys (string) with providerCuCounterForUnreponsiveness values (providerCuCounterForUnreponsiveness = providerAddress_chainID)
+	providersToPunishMap := make(map[string][]string)                                              // map of providerCuCounterForUnreponsiveness keys (string) with list of providerPaymentStorage indices values (string array) (providerCuCounterForUnreponsiveness = providerAddress_chainID)
+
+	// Get the current stake storages (from all chains). stake storages contain a list of stake entries. Each stake storage is for a different chain
+	providerStakeStorageList := k.getCurrentProviderStakeStorageList(ctx)
+	if len(providerStakeStorageList) == 0 {
+		// no provider is staked -> no one to punish
+		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_current_provider_stake_storage_list", nil, "no provider is staked, no one to punish")
 	}
 
 	// Go back recommendedEpochNumToCollectPayment
+	epochTemp = currentEpoch
 	for counter := uint64(0); counter < recommendedEpochNumToCollectPayment; counter++ {
-		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, currentEpoch)
+		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
 			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", currentEpoch)}, "couldn't get previous epoch")
 		}
-		currentEpoch = previousEpoch
+		epochTemp = previousEpoch
 	}
 
-	// Go over previous epochs to count the CU serviced by the provider
-	epochAfterCountingProviderCu, err := k.countCuForUnresponsiveProviderAndComplainers(ctx, true, currentEpoch, epochsNumToCheckCUForUnresponsiveProvider, providersPunishEntryMap)
-	if err != nil {
-		return nil, utils.LavaError(ctx, k.Logger(ctx), "count_cu_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't count the CU of the unresponsive provider")
-	}
-
-	// Go over previous epochs (from the point the last loop finished) to count the CU of clients that complained about the provider
-	_, err = k.countCuForUnresponsiveProviderAndComplainers(ctx, false, epochAfterCountingProviderCu, epochsNumToCheckCUForComplainers, providersPunishEntryMap)
-	if err != nil {
-		return nil, utils.LavaError(ctx, k.Logger(ctx), "count_cu_complainers", map[string]string{"err": err.Error()}, "couldn't count the CU of the complainers")
-	}
-
-	// Get providers that should be punished
-	for punishEntryKey, punishEntry := range providersPunishEntryMap {
-		// provider doesn't have payments (serviced CU = 0)
-		if punishEntry.providerServicedCu == 0 {
-			chainID := strings.Split(punishEntryKey, "_")[1]
-
-			// Try getting the provider's stake entry
-			_, foundStakeEntry := k.epochStorageKeeper.GetEpochStakeEntries(ctx, currentEpoch, epochstoragetypes.ProviderKey, chainID)
-
-			// if stake entry is not found -> this is the provider's first epoch (didn't get a chance to stake yet) -> don't punish him
-			if !foundStakeEntry {
-				continue
+	// Go over the staked provider entries (on all chains)
+	for _, providerStakeStorage := range providerStakeStorageList {
+		for _, providerStakeEntry := range providerStakeStorage.GetStakeEntries() {
+			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
+			err := k.updateCuForProviderInProviderCuCounterForUnreponsivenessMap(ctx, epochTemp, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry, providerCuCounterForUnreponsivenessMap)
+			if err != nil {
+				return nil, utils.LavaError(ctx, k.Logger(ctx), "update_cu_for_provider_in_provider_cu_counter_for_unreponsiveness_map", map[string]string{"err": err.Error()}, "couldn't update the CU count in the providerCuCounterForUnreponsivenessMap")
 			}
-		}
 
-		// The provider served less CU than the sum of the complainers CU -> should be punished
-		if punishEntry.complainersUsedCu > punishEntry.providerServicedCu {
-			providersToPunishMap[punishEntryKey] = punishEntry.providerPaymentStorageIndexList
+			// get the provider's providerCuCounterForUnreponsiveness from the providerCuCounterForUnreponsivenessMap
+			providerCuCounterForUnreponsiveness, found, providerCuCounterForUnreponsivenessKey := k.getProviderCuCounterForUnreponsivenessEntryFromMap(providerStakeEntry, providerCuCounterForUnreponsivenessMap)
+			if !found {
+				return nil, utils.LavaError(ctx, k.Logger(ctx), "get_providerCuCounterForUnreponsiveness_entry_from_map", nil, "couldn't get providerCuCounterForUnreponsiveness entry from map")
+			}
+			// check whether this provider should be punished
+			shouldBePunished := k.checkIfProviderShouldBePunishedDueToUnresponsiveness(providerCuCounterForUnreponsiveness)
+			if shouldBePunished {
+				providersToPunishMap[providerCuCounterForUnreponsivenessKey] = providerCuCounterForUnreponsiveness.providerPaymentStorageIndexList
+			}
 		}
 	}
 
@@ -111,84 +109,118 @@ func (k Keeper) getUnresponsiveProvidersToPunish(ctx sdk.Context, currentEpoch u
 
 // Function to count the CU serviced by the unresponsive provider or the CU of the complainers.
 // The function counts CU from <epoch> back. The number of epochs to go back is <epochsNumToGoBack>. The function returns the last visited epoch
-func (k Keeper) countCuForUnresponsiveProviderAndComplainers(ctx sdk.Context, isProvider bool, epoch uint64, epochsNumToGoBack uint64, providersPunishEntryMap map[string]punishEntry) (uint64, error) {
+func (k Keeper) updateCuForProviderInProviderCuCounterForUnreponsivenessMap(ctx sdk.Context, epoch uint64, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry, providerCuCounterForUnreponsivenessMap map[string]providerCuCounterForUnreponsiveness) error {
 	epochTemp := epoch
+	createNewproviderCuCounterForUnreponsivenessEntryFlag := false
+	// get the provider's SDK account address
+	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
+	if err != nil {
+		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+	}
 
-	for counter := uint64(0); counter < epochsNumToGoBack; counter++ {
+	// get the provider's providerCuCounterForUnreponsiveness
+	providerCuCounterForUnreponsivenessEntry, found, providerCuCounterForUnreponsivenessKey := k.getProviderCuCounterForUnreponsivenessEntryFromMap(providerStakeEntry, providerCuCounterForUnreponsivenessMap)
+	if !found {
+		// if providerCuCounterForUnreponsivenessEntry is not found, raise a flag to create new entry in providerCuCounterForUnreponsivenessMap
+		createNewproviderCuCounterForUnreponsivenessEntryFlag = true
+	}
+
+	// count the CU serviced by the unersponsive provider and used CU of the complainers
+	for counter := uint64(0); counter < epochsNumToCheckCUForUnresponsiveProvider+epochsNumToCheckCUForComplainers; counter++ {
+		// get providerPaymentStorageKey for epochTemp (other traits from the stake entry)
+		providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, providerStakeEntry.GetChain(), epochTemp, sdkStakeEntryProviderAddress)
+
+		// try getting providerPaymentStorage using the providerPaymentStorageKey
+		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+		if !found {
+			// Get previous epoch (from epochTemp)
+			previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
+			if err != nil {
+				return utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
+			}
+			// update epochTemp
+			epochTemp = previousEpoch
+
+			// there is no providerPaymentStorage for this provider in this epoch -> continue searching
+			continue
+		}
+
+		// counter is smaller than epochsNumToCheckCUForUnresponsiveProvider -> only count CU serviced by the provider in the epoch
+		if counter < epochsNumToCheckCUForUnresponsiveProvider {
+			// count the CU by iterating through the uniquePaymentStorageClientProvider objects
+			cuCount := uint64(0)
+			for _, uniquePayment := range providerPaymentStorage.GetUniquePaymentStorageClientProvider() {
+				cuCount += uniquePayment.GetUsedCU()
+			}
+
+			// update the CU in the providerCuCounterForUnreponsivenessMap
+			if createNewproviderCuCounterForUnreponsivenessEntryFlag {
+				// providerCuCounterForUnreponsiveness not found -> create a new one and add it to the map
+				providerCuCounterForUnreponsivenessMap[providerCuCounterForUnreponsivenessKey] = providerCuCounterForUnreponsiveness{complainersUsedCu: 0, providerServicedCu: cuCount, providerPaymentStorageIndexList: []string{providerPaymentStorage.GetIndex()}}
+
+				// set the createNewproviderCuCounterForUnreponsivenessEntryFlag to false
+				createNewproviderCuCounterForUnreponsivenessEntryFlag = false
+			} else {
+				// providerCuCounterForUnreponsiveness found -> add the cuCount to providerServicedCu and update the map entry
+				providerCuCounterForUnreponsivenessEntry.providerServicedCu += cuCount
+				providerCuCounterForUnreponsivenessEntry.providerPaymentStorageIndexList = append(providerCuCounterForUnreponsivenessEntry.providerPaymentStorageIndexList, providerPaymentStorage.GetIndex())
+				providerCuCounterForUnreponsivenessMap[providerCuCounterForUnreponsivenessKey] = providerCuCounterForUnreponsivenessEntry
+			}
+		} else {
+			// counter is larger than epochsNumToCheckCUForUnresponsiveProvider -> only count complainer CU
+			// Get servicersToPair param
+			servicersToPair, err := k.ServicersToPairCount(ctx, epoch)
+			if err != nil || servicersToPair == 0 {
+				return utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
+			}
+
+			// Collect complainers CU (divided by servicersToPair)
+			complainersCuCount := providerPaymentStorage.ComplainersTotalCu / (servicersToPair - 1)
+
+			// add the complainersCuCount to complainersUsedCu and update the map entry
+			providerCuCounterForUnreponsivenessEntry.complainersUsedCu += complainersCuCount
+			providerCuCounterForUnreponsivenessEntry.providerPaymentStorageIndexList = append(providerCuCounterForUnreponsivenessEntry.providerPaymentStorageIndexList, providerPaymentStorage.GetIndex())
+			providerCuCounterForUnreponsivenessMap[providerCuCounterForUnreponsivenessKey] = providerCuCounterForUnreponsivenessEntry
+		}
+
 		// Get previous epoch (from epochTemp)
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			return 0, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
+			return utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
 		}
-
-		// Get the current stake storages (from all chains)
-		stakeStorageList := k.getCurrentProviderStakeStorageList(ctx)
-		if len(stakeStorageList) == 0 {
-			// no provider is staked -> CU = 0
-			return 0, nil
-		}
-
-		// Get a providerPaymentStorage of all staked providers
-		providerPaymentStorageList, err := k.getProviderPaymentStorageFromStakeStorageList(ctx, previousEpoch, stakeStorageList)
-		if err != nil {
-			return 0, utils.LavaError(ctx, k.Logger(ctx), "get_provider_payment_storage_from_stake_storage_list", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", previousEpoch)}, "couldn't get providerPaymentStorageList from stakeStorageList")
-		}
-
-		// Go over providerPaymentStorage list
-		for _, providerPaymentStorage := range providerPaymentStorageList {
-			cuCount := uint64(0)
-
-			// Get provider address and chainID
-			providerAddress := k.getProviderAddressFromProviderPaymentStorageKey(providerPaymentStorage.Index)
-			chainID := k.getChainIDFromProviderPaymentStorageKey(providerPaymentStorage.Index)
-
-			// Create a punishEntryKey from the provider's address and the chain ID
-			punishEntryKey := providerAddress + "_" + chainID
-
-			// find the provider's punishEntry in map
-			providerPunishEntry, punishEntryFound := providersPunishEntryMap[punishEntryKey]
-
-			if isProvider {
-				// if isProvider is true, we count the CU serviced by the unersponsive provider
-				for _, uniquePayment := range providerPaymentStorage.GetUniquePaymentStorageClientProvider() {
-					cuCount += uniquePayment.GetUsedCU()
-				}
-				if punishEntryFound {
-					// punishEntry found -> add the cuCount to providerServicedCu and update the map entry
-					providerPunishEntry.providerServicedCu += cuCount
-					providersPunishEntryMap[punishEntryKey] = providerPunishEntry
-				} else {
-					// punishEntry not found -> create a new one and add it to the map
-					providersPunishEntryMap[punishEntryKey] = punishEntry{complainersUsedCu: 0, providerServicedCu: cuCount, providerPaymentStorageIndexList: []string{providerPaymentStorage.Index}}
-				}
-			} else {
-				// Get servicersToPair param
-				servicersToPair, err := k.ServicersToPairCount(ctx, epoch)
-				if err != nil || servicersToPair == 0 {
-					return 0, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
-				}
-
-				// Collect complainers CU (divided by servicersToPair)
-				cuCount = providerPaymentStorage.ComplainersTotalCu / (servicersToPair - 1)
-
-				if punishEntryFound {
-					// punishEntry found -> add the cuCount to complainersUsedCu and update the map entry
-					providerPunishEntry.complainersUsedCu += cuCount
-					providersPunishEntryMap[punishEntryKey] = providerPunishEntry
-				} else {
-					// punishEntry not found -> create a new one and add it to the map
-					providersPunishEntryMap[punishEntryKey] = punishEntry{complainersUsedCu: cuCount, providerServicedCu: 0, providerPaymentStorageIndexList: []string{providerPaymentStorage.Index}}
-				}
-			}
-			// add the providerPaymentStorage index to the providerPaymentStorageIndexList
-			providerPunishEntry.providerPaymentStorageIndexList = append(providerPunishEntry.providerPaymentStorageIndexList, providerPaymentStorage.Index)
-		}
-
 		// update epochTemp
 		epochTemp = previousEpoch
 	}
+	return nil
+}
 
-	return epochTemp, nil
+func (k Keeper) getProviderCuCounterForUnreponsivenessEntryFromMap(providerStakeEntry epochstoragetypes.StakeEntry, providerCuCounterForUnreponsivenessMap map[string]providerCuCounterForUnreponsiveness) (providerCuCounterForUnreponsiveness, bool, string) {
+	// get ProviderCuCounterForUnreponsivenessKey
+	ProviderCuCounterForUnreponsivenessKey := k.getProviderCuCounterForUnreponsivenessKey(providerStakeEntry.GetAddress(), providerStakeEntry.GetChain())
+
+	// get ProviderCuCounterForUnreponsiveness
+	providerCuCounterForUnreponsiveness, found := providerCuCounterForUnreponsivenessMap[ProviderCuCounterForUnreponsivenessKey]
+	return providerCuCounterForUnreponsiveness, found, ProviderCuCounterForUnreponsivenessKey
+}
+
+func (k Keeper) checkIfProviderShouldBePunishedDueToUnresponsiveness(providerCuCounterForUnreponsiveness providerCuCounterForUnreponsiveness) bool {
+	// if the provider served less CU than the sum of the complainers CU -> should be punished
+	return providerCuCounterForUnreponsiveness.complainersUsedCu > providerCuCounterForUnreponsiveness.providerServicedCu
+}
+
+// Function to create a providerCuCounterForUnreponsivenessKey
+func (k Keeper) getProviderCuCounterForUnreponsivenessKey(providerAddress string, chainID string) string {
+	return providerAddress + "_" + chainID
+}
+
+// Function to extract the chain ID from providerCuCounterForUnreponsivenessKey
+func (k Keeper) getChainIDFromProviderCuCounterForUnreponsivenessKey(providerCuCounterForUnreponsivenessKey string) string {
+	return strings.Split(providerCuCounterForUnreponsivenessKey, "_")[1]
+}
+
+// Function to extract the provider address from providerCuCounterForUnreponsivenessKey
+func (k Keeper) getProviderAddressFromProviderCuCounterForUnreponsivenessKey(providerCuCounterForUnreponsivenessKey string) string {
+	return strings.Split(providerCuCounterForUnreponsivenessKey, "_")[0]
 }
 
 // Function that return the current stake storage for all chains
@@ -249,10 +281,10 @@ func (k Keeper) punishUnresponsiveProviders(ctx sdk.Context, providersToPunish m
 	}
 
 	// Go over providers
-	for punishEntryKey, providerPaymentStorageIndexList := range providersToPunish {
-		// extract from punishEntryKey the provider address and the chain ID
-		providerAddress := strings.Split(punishEntryKey, "_")[0]
-		chainID := strings.Split(punishEntryKey, "_")[1]
+	for providerCuCounterForUnreponsivenessKey, providerPaymentStorageIndexList := range providersToPunish {
+		// extract from providerCuCounterForUnreponsivenessKey the provider address and the chain ID
+		providerAddress := strings.Split(providerCuCounterForUnreponsivenessKey, "_")[0]
+		chainID := strings.Split(providerCuCounterForUnreponsivenessKey, "_")[1]
 
 		// Get provider's sdk.Account address
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)

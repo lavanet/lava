@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/spec"
@@ -32,9 +32,7 @@ import (
 )
 
 const (
-	BLOCK_TIME                                       = 30 * time.Second
-	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER = 4 // number of epochs to sum CU that the provider serviced
-	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              = 2 // number of epochs to sum CU of complainers against the provider
+	BLOCK_TIME = 30 * time.Second
 )
 
 type Keepers struct {
@@ -226,11 +224,7 @@ func NewBlock(ctx context.Context, ks *Keepers, customTime ...time.Duration) {
 
 		ks.Pairing.RemoveOldEpochPayment(unwrapedCtx)
 		ks.Pairing.CheckUnstakingForCommit(unwrapedCtx)
-
-		start := time.Now()
-		ks.Pairing.UnstakeUnresponsiveProviders(unwrapedCtx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-		elapsed_time := time.Since(start)
-		fmt.Printf("%v, ", elapsed_time)
+		ks.Pairing.UnstakeUnresponsiveProviders(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
 
 	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)

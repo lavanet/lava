@@ -344,6 +344,19 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
+
+		// update the complainer CU also in epochPayments (providerPaymentStorage objects are saved in a list inside epochPayments and also seperately - need to update both)
+		epochPayments, found, _ := k.GetEpochPaymentsFromBlock(ctx, providerPaymentStorage.GetEpoch())
+		if !found {
+			utils.LavaFormatError("unable to find epochPayments entry of unresponsive provider", nil, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
+			continue
+		}
+		providerPaymentStorageList := epochPayments.GetClientsPayments()
+		for _, providerPaymentStorageElem := range providerPaymentStorageList {
+			if providerPaymentStorage.GetIndex() == providerPaymentStorageElem.GetIndex() {
+				providerPaymentStorageElem.ComplainersTotalCu += complainerCuToAdd
+			}
+		}
 	}
 	return nil
 }
