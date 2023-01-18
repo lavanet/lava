@@ -41,6 +41,10 @@ ARG TARGETARCH
 # (useful to compile a specific version, combined with GIT_VERSION).
 ARG GIT_CLONE=false
 
+# set LAVA_BUILD_OPTIONS to control the Makefile behavior (see there).
+ARG BUILD_OPTIONS
+ENV LAVA_BUILD_OPTIONS=${BUILD_OPTIONS}
+
 # Download go dependencies
 WORKDIR /lava
 COPY go.mod go.sum ./
@@ -52,10 +56,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 COPY . .
 
 # Git clone the sources if requested
-# NOTE TODO: after reset of chain (lava-testnet-1) prefix 'v' to ${GIT_VERISON}
+# NOTE TODO: after reset of chain (lava-testnet-1) prefix 'v' to ${GIT_VERSION}
 RUN if [ "${GIT_CLONE}" = true ]; then \
       find . -mindepth 1 -delete && \
-      git clone --depth 1 --branch ${GIT_VERSION} https://github.com/lavanet/lava . \
+      git clone --depth 1 --branch v${GIT_VERSION} https://github.com/lavanet/lava . \
     ; fi
 
 # Remove tag v0.4.0 (same v0.4.0-rc2, which was used in the upgrade proposal

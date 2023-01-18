@@ -24,6 +24,24 @@
 #
 #   debug_mutex	- (debug) enable debug mutex
 #   mask_consumer_logs	- (debug) enable debug mutex
+#
+# Examples:
+#
+#   Build locally and run unit tests
+#     make test build
+#
+#   Build locally a static binary (runs on any distributions and in containers)
+#     LAVA_BUILD_OPTIONS="static" make build
+#
+#   Build and generate docker image
+#     LAVA_BUILD_OPTIONS="static" make docker-build
+#
+#   Build release [and optionally generate docker image]
+#     LAVA_BUILD_OPTIONS="static,release" make build
+#     LAVA_BUILD_OPTIONS="static,release" make docker-build
+#
+#   Build release of specific version, and generate docker image
+#     LAVA_VERSION=0.4.3 LAVA_BUILD_OPTIONS="static,release" make docker-build
 
 # do we have .git/ directory?
 have_dot_git := $(if $(shell test -d .git && echo true),true,false)
@@ -43,25 +61,43 @@ else
   COMMIT := $(BUILD_COMMIT)
 endif
 
-# If we have .git/ directory and 'release' option selected, then we examine
-# the currently checked-out code to confirm that it is -
+GIT_CLONE := false
+
+# If we have .git/ directory and 'release' option selected, then we consult
+# LAVA_VERSION for the desired version; If not set, then we infer the version
+# from the currnently checked-out code - and then we examine that it is -
 #   - clean (no local uncommitted changes, no untracked files)
 #   - matching in version to the desired tag (no extra commit)
+#
+# Also, if 'release' option selected, then set GIT_COMMIT=true so that that
+# the Dockerfile would clone the repository from scratch.
 
 ifeq (true,$(have_dot_git))
   ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
-    version_real := $(shell git describe --tags --exact-match 2> /dev/null || echo "none")
-    ifneq '$(VERSION)' '$(version_real)'
-      $(error Current checked-out code does not match requested release version)
+    ifneq (,$(LAVA_VERSION))
+      VERSION := v$(LAVA_VERSION)
+      COMMIT := $(shell git log -1 --format='%H' $(VERSION))
+    else
+      version_real := $(shell git describe --tags --exact-match 2> /dev/null || echo "none")
+      ifneq '$(VERSION)' '$(version_real)'
+        $(error Current checked-out code does not match requested release version)
+      endif
+      ifeq (-dirty,$(findstring -dirty,$(VERSION)))
+        $(error Current checked-out code has uncommitted changes or untracked files)
+      endif
     endif
-    ifeq (-dirty,$(findstring -dirty,$(VERSION)))
-      $(error Current checked-out code has uncommitted changes or untracked files)
-    endif
+    GIT_CLONE := true
   endif
 endif
 
 # strip the leading 'v'
 VERSION := $(subst v,,$(VERSION))
+
+ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
+  $(info ----------------------------------------------------------------)
+  $(info Building for release: VERSION=$(VERSION) COMMIT=$(COMMIT))
+  $(info ----------------------------------------------------------------)
+endif
 
 LEDGER_ENABLED ?= true
 SDK_PACK := $(shell go list -m github.com/cosmos/cosmos-sdk | sed  's/ /\@/g')
@@ -193,6 +229,8 @@ build-docker-helper: $(BUILDDIR)/
 		--build-arg GO_VERSION=$(GO_VERSION) \
 		--build-arg GIT_VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(COMMIT) \
+		--build-arg GIT_CLONE=$(GIT_CLONE) \
+		--build-arg BUILD_OPTIONS=$(LAVA_BUILD_OPTIONS) \
 		--build-arg RUNNER_IMAGE=$(RUNNER_IMAGE_DEBIAN) \
 		--platform linux/$(call autogen_targetarch) \
 		-t lava:$(VERSION) \
