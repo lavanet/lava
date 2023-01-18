@@ -47,7 +47,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.atomicWriteCurrentEpoch(epoch)
 
 	// Reset States
-	csm.validAddresses = make([]string, pairingListLength)
+	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make([]string, pairingListLength)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
@@ -61,9 +61,14 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 		csm.pairingAddresses[idx] = provider.Acc
 		csm.pairing[provider.Acc] = provider
 	}
-	copy(csm.validAddresses, csm.pairingAddresses) // the starting point is that valid addresses are equal to pairing addresses.
+	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
 
 	return nil
+}
+
+func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue() {
+	csm.validAddresses = make([]string, len(csm.pairingAddresses))
+	copy(csm.validAddresses, csm.pairingAddresses)
 }
 
 // reads cs.currentEpoch atomically
@@ -93,12 +98,13 @@ func (csm *ConsumerSessionManager) resetValidAddresses(numberOfResets uint64) ui
 	defer csm.lock.Unlock()
 	if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
 		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
-		csm.validAddresses = make([]string, csm.pairingAddressesLength)
-		copy(csm.validAddresses, csm.pairingAddresses) // reset the list of valid addresses
+		csm.setValidAddressesToDefaultValue()
 		csm.numberOfResets += 1
 		numberOfResets = csm.numberOfResets // update numberOfResets with the new value
+		return numberOfResets
 	}
-	return numberOfResets
+	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
+	return csm.numberOfResets
 }
 
 // validating we still have providers, otherwise reset valid addresses list
