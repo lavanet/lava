@@ -16,6 +16,11 @@ func TestSetError(t *testing.T) {
 		t.Error("Expected error with code 11 value to be true, got false")
 	}
 
+	// Check that the value for error with a code 12 is set to false
+	if allowList.IsErrorSet(12) != false {
+		t.Error("Expected error with code 12 value to be false, got true")
+	}
+
 	// Set the value for error with a code 15 to true
 	allowList.SetError(15)
 

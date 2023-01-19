@@ -4,6 +4,7 @@ type AllowList map[uint32]bool
 
 // NewErrorAllowList creates a new AllowList and
 // pre-populate it with specified errors
+// not thread safe
 func NewErrorAllowList(errors []uint32) *AllowList {
 	al := AllowList{}
 	for _, err := range errors {
@@ -51,9 +52,5 @@ func (al *AllowList) IsErrorSet(code uint32) bool {
 		return false
 	}
 
-	// Check if the value for the specified error name is set to true.
-	if val, ok := (*al)[code]; ok && val {
-		return true
-	}
-	return false
+	return (*al)[code]
 }
