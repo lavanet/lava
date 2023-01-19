@@ -108,7 +108,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return MaxComputeUnitsExceededError
+		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, &map[string]string{"cu": strconv.FormatUint((cswp.UsedComputeUnits + cu), 10), "maxCu": strconv.FormatUint(cswp.MaxComputeUnits, 10)})
 	}
 	return nil
 }
