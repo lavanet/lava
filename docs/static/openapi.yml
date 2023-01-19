@@ -29758,6 +29758,9 @@ paths:
                   latestParamChange:
                     type: string
                     format: uint64
+                  unstakeHoldBlocksStatic:
+                    type: string
+                    format: uint64
             description: >-
               QueryParamsResponse is response type for the Query/Params RPC
               method.
@@ -30778,6 +30781,43 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/pairing/static_providers_list/{chainID}':
+    get:
+      summary: Queries a list of StaticProvidersList items.
+      operationId: LavanetLavaPairingStaticProvidersList
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              text:
+                type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: chainID
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/pairing/unique_payment_storage_client_provider:
     get:
       summary: Queries a list of UniquePaymentStorageClientProvider items.
@@ -31372,6 +31412,18 @@ paths:
                     block_last_updated:
                       type: string
                       format: uint64
+                    min_stake_provider:
+                      type: string
+                      format: uint64
+                    min_stake_consumer:
+                      type: string
+                      format: uint64
+                    providers_types:
+                      type: string
+                      enum:
+                        - dynamic
+                        - static
+                      default: dynamic
               pagination:
                 type: object
                 properties:
@@ -31621,6 +31673,18 @@ paths:
                   block_last_updated:
                     type: string
                     format: uint64
+                  min_stake_provider:
+                    type: string
+                    format: uint64
+                  min_stake_consumer:
+                    type: string
+                    format: uint64
+                  providers_types:
+                    type: string
+                    enum:
+                      - dynamic
+                      - static
+                    default: dynamic
         default:
           description: An unexpected error response.
           schema:
@@ -53040,6 +53104,9 @@ definitions:
       latestParamChange:
         type: string
         format: uint64
+      unstakeHoldBlocksStatic:
+        type: string
+        format: uint64
     description: Params defines the parameters for the module.
   lavanet.lava.epochstorage.QueryAllFixatedParamsResponse:
     type: object
@@ -53265,6 +53332,9 @@ definitions:
             type: string
             format: uint64
           latestParamChange:
+            type: string
+            format: uint64
+          unstakeHoldBlocksStatic:
             type: string
             format: uint64
     description: QueryParamsResponse is response type for the Query/Params RPC method.
@@ -53901,6 +53971,11 @@ definitions:
               type: string
       output:
         type: string
+  lavanet.lava.pairing.QueryStaticProvidersListResponse:
+    type: object
+    properties:
+      text:
+        type: string
   lavanet.lava.pairing.QueryUserEntryResponse:
     type: object
     properties:
@@ -54215,6 +54290,18 @@ definitions:
             block_last_updated:
               type: string
               format: uint64
+            min_stake_provider:
+              type: string
+              format: uint64
+            min_stake_consumer:
+              type: string
+              format: uint64
+            providers_types:
+              type: string
+              enum:
+                - dynamic
+                - static
+              default: dynamic
       pagination:
         type: object
         properties:
@@ -54377,6 +54464,18 @@ definitions:
           block_last_updated:
             type: string
             format: uint64
+          min_stake_provider:
+            type: string
+            format: uint64
+          min_stake_consumer:
+            type: string
+            format: uint64
+          providers_types:
+            type: string
+            enum:
+              - dynamic
+              - static
+            default: dynamic
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
@@ -54655,6 +54754,24 @@ definitions:
       block_last_updated:
         type: string
         format: uint64
+      min_stake_provider:
+        type: string
+        format: uint64
+      min_stake_consumer:
+        type: string
+        format: uint64
+      providers_types:
+        type: string
+        enum:
+          - dynamic
+          - static
+        default: dynamic
+  lavanet.lava.spec.Spec.ProvidersTypes:
+    type: string
+    enum:
+      - dynamic
+      - static
+    default: dynamic
   lavanet.lava.spec.SpecCategory:
     type: object
     properties:
