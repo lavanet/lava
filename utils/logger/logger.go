@@ -4,8 +4,9 @@ import (
 	"sync"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/relayer/common/allowList"
+	"github.com/lavanet/lava/utils/allowList"
 	"github.com/rs/zerolog"
+	zerologlog "github.com/rs/zerolog/log"
 )
 
 var (
@@ -109,5 +110,11 @@ func (l *Logger) printLogs(description string, logEvent *zerolog.Event) {
 
 // Log function is to push the log messages to the channel
 func (l *Logger) Log(msg LogMessage) {
+	// Print a log if a channel gets full
+	if len(l.logChan) == cap(l.logChan) {
+		logEvent := zerologlog.Warn()
+		logEvent.Msg("Log channel is full")
+	}
+
 	l.logChan <- msg
 }

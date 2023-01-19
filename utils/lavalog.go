@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	singletonLogger "github.com/lavanet/lava/relayer/common/logger"
+	singletonLogger "github.com/lavanet/lava/utils/logger"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
