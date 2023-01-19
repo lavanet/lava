@@ -73,7 +73,7 @@ func (m *MetricService) SendTo(data []RelayAnalyticsDTO) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("couldn't send the data into the server")
 	}
 	return nil
