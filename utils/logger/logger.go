@@ -38,7 +38,7 @@ type Logger struct {
 func GetInstance() *Logger {
 	once.Do(func() {
 		instance = &Logger{
-			logChan:             make(chan LogMessage, 2048), // the channel buffer size is 1024
+			logChan:             make(chan LogMessage, 2048), // the channel buffer size
 			epochErrorAllowList: allowList.NewErrorAllowList(epochErrors),
 		}
 		go instance.listen()
