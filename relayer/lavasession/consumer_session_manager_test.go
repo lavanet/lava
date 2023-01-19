@@ -168,6 +168,18 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		require.Equal(t, csm.numberOfResets, uint64(numberOfResets+1)) // verify we had one reset only
 	}
 
+	cs, epoch, _, _, err := csm.GetSession(ctx, cuForFirstRequest, nil) // get a session
+	require.Nil(t, err)
+	require.NotNil(t, cs)
+	require.Equal(t, epoch, csm.currentEpoch)
+	require.Equal(t, cs.LatestRelayCu, uint64(cuForFirstRequest))
+	err = csm.OnSessionDone(cs, firstEpochHeight, servicedBlockNumber, cuForFirstRequest, time.Duration(time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders)
+	require.Nil(t, err)
+	require.Equal(t, cs.CuSum, cuForFirstRequest)
+	require.Equal(t, cs.LatestRelayCu, latestRelayCuAfterDone)
+	require.Equal(t, cs.RelayNum, relayNumberAfterFirstCall)
+	require.Equal(t, cs.LatestBlock, servicedBlockNumber)
+
 }
 
 // Test the basic functionality of the consumerSessionManager
