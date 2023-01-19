@@ -131,12 +131,13 @@ type Sentry struct {
 	// server Blocks To Save (atomic)
 	earliestSavedBlock uint64
 	// Block storage (atomic)
-	blockHeight        int64
-	currentEpoch       uint64
-	prevEpoch          uint64
-	EpochSize          uint64
-	EpochBlocksOverlap uint64
-	providersCount     uint64
+	blockHeight                         int64
+	currentEpoch                        uint64
+	prevEpoch                           uint64
+	EpochSize                           uint64
+	EpochBlocksOverlap                  uint64
+	providersCount                      uint64
+	recommendedEpochNumToCollectPayment uint64
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
@@ -204,6 +205,15 @@ func (s *Sentry) FetchOverlapSize(ctx context.Context) error {
 		return err
 	}
 	atomic.StoreUint64(&s.EpochBlocksOverlap, res.GetParams().EpochBlocksOverlap)
+	return nil
+}
+
+func (s *Sentry) FetchRecommendedEpochNumToCollectPayment(ctx context.Context) error {
+	res, err := s.pairingQueryClient.Params(ctx, &pairingtypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	atomic.StoreUint64(&s.recommendedEpochNumToCollectPayment, res.GetParams().RecommendedEpochNumToCollectPayment)
 	return nil
 }
 
@@ -620,7 +630,7 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize())) // Currently this is only askForRewards
+					go s.newEpochCb(data.Block.Height - int64(s.recommendedEpochNumToCollectPayment)*int64(s.GetEpochSize())) // Currently this is only askForRewards
 				}
 
 				//
