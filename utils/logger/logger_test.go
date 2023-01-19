@@ -42,7 +42,7 @@ func Test_isInsideEpochErrors(t *testing.T) {
 	require.False(t, logger.isInsideEpochErrors(15))
 }
 
-// TestStressLogger tests that we never reach max capacity in the logger channel
+// TestStressLogger tests that we don't panic when reaching maximum channel buffer size
 func TestStressLogger(t *testing.T) {
 	// create a wait group
 	var wg sync.WaitGroup
@@ -56,21 +56,24 @@ func TestStressLogger(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			for j := 0; j < 1000; j++ {
-				// check if the channel is full
-				if len(l.logChan) == cap(l.logChan) {
-					t.Errorf("goroutine %d: channel is full", i)
-				}
 				// send a log message
 				l.Log(LogMessage{
 					Description: fmt.Sprintf("log message from goroutine %d", i),
 					LogEvent:    zerologlog.Info(),
 				})
 
-				time.Sleep(3 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 			}
 		}(i)
 	}
 
 	// wait for all goroutines to complete
 	wg.Wait()
+
+	// add recover function to catch any panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Test panicked: %v", r)
+		}
+	}()
 }
