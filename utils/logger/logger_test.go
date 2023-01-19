@@ -1,7 +1,10 @@
 package logger
 
 import (
+	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	zerologlog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -37,4 +40,37 @@ func Test_isInsideEpochErrors(t *testing.T) {
 
 	require.True(t, logger.isInsideEpochErrors(NoPairingAvailableError))
 	require.False(t, logger.isInsideEpochErrors(15))
+}
+
+// TestStressLogger tests that we never reach max capacity in the logger channel
+func TestStressLogger(t *testing.T) {
+	// create a wait group
+	var wg sync.WaitGroup
+
+	// get the logger instance
+	l := GetInstance()
+
+	// start 100 goroutines
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 1000; j++ {
+				// check if the channel is full
+				if len(l.logChan) == cap(l.logChan) {
+					t.Errorf("goroutine %d: channel is full", i)
+				}
+				// send a log message
+				l.Log(LogMessage{
+					Description: fmt.Sprintf("log message from goroutine %d", i),
+					LogEvent:    zerologlog.Info(),
+				})
+
+				time.Sleep(3 * time.Millisecond)
+			}
+		}(i)
+	}
+
+	// wait for all goroutines to complete
+	wg.Wait()
 }
