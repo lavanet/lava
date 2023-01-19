@@ -3,11 +3,13 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

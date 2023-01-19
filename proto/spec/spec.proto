@@ -20,4 +20,14 @@ message Spec {
   int64 average_block_time =9;
   int64 allowed_block_lag_for_qos_sync = 10;
   uint64 block_last_updated = 11;
+  uint64 min_stake_provider = 12;
+  uint64 min_stake_consumer = 13;
+
+  enum ProvidersTypes {
+    dynamic = 0;
+    static = 1;
+  }
+
+  ProvidersTypes providers_types = 14;
 }
+

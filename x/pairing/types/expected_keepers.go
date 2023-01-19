@@ -22,6 +22,7 @@ type EpochstorageKeeper interface {
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
+	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)

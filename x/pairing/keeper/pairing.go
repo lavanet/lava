@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/rpc/core"
 )
@@ -90,7 +91,9 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	if !found {
 		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
 	}
+
 	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation)
+
 	return
 }
 
@@ -144,13 +147,19 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		validProviders = append(validProviders, stakeEntry)
 	}
 
-	// calculates a hash and randomly chooses the providers
-	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
-	if err != nil {
-		return nil, nil, err
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		return nil, nil, fmt.Errorf("spec not found or not enabled")
 	}
-	validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
 
+	if spec.ProvidersTypes == spectypes.Spec_dynamic {
+		// calculates a hash and randomly chooses the providers
+		servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
+		if err != nil {
+			return nil, nil, err
+		}
+		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
+	}
 	for _, stakeEntry := range validProviders {
 		providerAddress := stakeEntry.Address
 		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)

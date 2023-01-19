@@ -29,6 +29,11 @@ var (
 	DefaultLatestParamChange uint64 = 0
 )
 
+var (
+	KeyUnstakeHoldBlocksStatic            = []byte("UnstakeHoldBlocksStatic")
+	DefaultUnstakeHoldBlocksStatic uint64 = 400
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -40,12 +45,14 @@ func NewParams(
 	epochBlocks uint64,
 	epochsToSave uint64,
 	latestParamChange uint64,
+	unstakeHoldBlocksStatic uint64,
 ) Params {
 	return Params{
-		UnstakeHoldBlocks: unstakeHoldBlocks,
-		EpochBlocks:       epochBlocks,
-		EpochsToSave:      epochsToSave,
-		LatestParamChange: latestParamChange,
+		UnstakeHoldBlocks:       unstakeHoldBlocks,
+		EpochBlocks:             epochBlocks,
+		EpochsToSave:            epochsToSave,
+		LatestParamChange:       latestParamChange,
+		UnstakeHoldBlocksStatic: unstakeHoldBlocksStatic,
 	}
 }
 
@@ -56,6 +63,7 @@ func DefaultParams() Params {
 		DefaultEpochBlocks,
 		DefaultEpochsToSave,
 		DefaultLatestParamChange,
+		DefaultUnstakeHoldBlocksStatic,
 	)
 }
 
@@ -66,6 +74,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyEpochBlocks, &p.EpochBlocks, validateEpochBlocks),
 		paramtypes.NewParamSetPair(KeyEpochsToSave, &p.EpochsToSave, validateEpochsToSave),
 		paramtypes.NewParamSetPair(KeyLatestParamChange, &p.LatestParamChange, validateLatestParamChange),
+		paramtypes.NewParamSetPair(KeyUnstakeHoldBlocksStatic, &p.UnstakeHoldBlocksStatic, validateUnstakeHoldBlocksStatic),
 	}
 }
 
@@ -80,6 +89,10 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateEpochsToSave(p.EpochsToSave); err != nil {
+		return err
+	}
+
+	if err := validateUnstakeHoldBlocksStatic(p.UnstakeHoldBlocksStatic); err != nil {
 		return err
 	}
 
@@ -139,6 +152,19 @@ func validateLatestParamChange(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
+
+	return nil
+}
+
+// validateUnstakeHoldBlocks validates the UnstakeHoldBlocks param
+func validateUnstakeHoldBlocksStatic(v interface{}) error {
+	unstakeHoldBlocks, ok := v.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// TODO implement validation
+	_ = unstakeHoldBlocks
 
 	return nil
 }
