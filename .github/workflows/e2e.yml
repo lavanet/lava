@@ -50,9 +50,12 @@ jobs:
 
     # Pre-build with ignite
     - name: ignite build
-      run: ignite chain build -v
-    # - name: starport build
-    #   run: starport chain build -v
+      uses: nick-fields/retry@v2
+      with:
+        max_attempts: 3
+        retry_on: error
+        timeout_minutes: 20
+        command: ignite chain build -v
 
     ######################################################
     ### Run lava unitests
