@@ -44,7 +44,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	providerStakeStorageList := k.getCurrentProviderStakeStorageList(ctx)
 	if len(providerStakeStorageList) == 0 {
 		// no provider is staked -> no one to punish
-		return utils.LavaError(ctx, k.Logger(ctx), "get_current_provider_stake_storage_list", nil, "no provider is staked, no one to punish")
+		return nil
 	}
 
 	// Go back recommendedEpochNumToCollectPayment
@@ -63,11 +63,11 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
 			providerPaymentStorageKeyList, err := k.countCuForUnresponsiveness(ctx, epochTemp, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
 			if err != nil {
-				return utils.LavaError(ctx, k.Logger(ctx), "update_cu_for_provider_in_provider_cu_counter_for_unreponsiveness_map", map[string]string{"err": err.Error()}, "couldn't update the CU count in the providerCuCounterForUnreponsivenessMap")
+				return utils.LavaError(ctx, k.Logger(ctx), "count_cu_for_unresponsiveness", map[string]string{"err": err.Error()}, "couldn't count CU for unreponsiveness")
 			}
 
-			// providerPaymentStorageKeyList is not nil -> provider should be punished
-			if providerPaymentStorageKeyList != nil {
+			// providerPaymentStorageKeyList is not empty -> provider should be punished
+			if len(providerPaymentStorageKeyList) != 0 {
 				err = k.punishUnresponsiveProvider(ctx, providerPaymentStorageKeyList)
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
@@ -85,11 +85,18 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 	providerServicedCu := uint64(0)
 	complainersCu := uint64(0)
 	providerPaymentStorageKeyList := []string{}
+	emptyList := []string{}
 
 	// get the provider's SDK account address
 	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
 	if err != nil {
-		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+		return emptyList, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+	}
+
+	// Get servicersToPair param
+	servicersToPair, err := k.ServicersToPairCount(ctx, epochTemp)
+	if err != nil || servicersToPair == 0 {
+		return emptyList, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
 	}
 
 	// check which of the consts is larger
@@ -116,12 +123,6 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 
 			// counter is smaller than epochsNumToCheckCUForComplainers -> count complainer CU
 			if counter < epochsNumToCheckCUForComplainers {
-				// Get servicersToPair param
-				servicersToPair, err := k.ServicersToPairCount(ctx, epoch)
-				if err != nil || servicersToPair == 0 {
-					return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
-				}
-
 				// update complainersCu
 				complainersCu += providerPaymentStorage.ComplainersTotalCu / (servicersToPair - 1)
 			}
@@ -133,7 +134,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		// Get previous epoch (from epochTemp)
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
+			return emptyList, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
 		}
 		// update epochTemp
 		epochTemp = previousEpoch
@@ -144,7 +145,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		return providerPaymentStorageKeyList, nil
 	}
 
-	return nil, nil
+	return emptyList, nil
 }
 
 // Function that return the current stake storage for all chains
