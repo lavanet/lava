@@ -14,6 +14,7 @@ var (
 	once     sync.Once
 )
 
+// Error codes for specific errors
 const (
 	NoPairingAvailableError uint32 = 665
 )
@@ -24,7 +25,7 @@ type LogMessage struct {
 	LogEvent    *zerolog.Event // log level
 }
 
-// 665 is an error code for PairingListEmptyError
+// List of error codes we want to put in allow-list
 var epochErrors = []uint32{NoPairingAvailableError}
 
 type Logger struct {
