@@ -20,8 +20,17 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	testProviderAmount := 5
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
+	// get recommendedEpochNumToCollectPayment
+	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
+
+	// check which const is larger
+	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	}
+
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
+	for i := uint64(0); i < uint64(largerConst)+recommendedEpochNumToCollectPayment; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -70,11 +79,13 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 	}
 
-	// advance enough epochs so the unresponsive providers will be punished (the check happens every epoch start, the complaints will be accounted for after EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+RecommendedEpochNumToCollectPayment+1 epochs from the payment epoch)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
+	// advance enough epochs so the unresponsive providers will be punished
+	if largerConst < recommendedEpochNumToCollectPayment {
+		largerConst = recommendedEpochNumToCollectPayment
+	}
+	for i := uint64(0); i < largerConst; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 
 	// go over unresponsive providers
 	for i := 0; i < unresponsiveProviderAmount; i++ {
@@ -99,8 +110,17 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	testProviderAmount := 2
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
+	// get recommendedEpochNumToCollectPayment
+	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
+
+	// check which const is larger
+	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	}
+
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
+	for i := uint64(0); i < uint64(largerConst)+recommendedEpochNumToCollectPayment; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -140,8 +160,11 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 
-	// advance enough epochs so the unresponsive provider will be punished (the check happens every epoch start, the complaints will be accounted for after EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+RecommendedEpochNumToCollectPayment+1 epochs from the payment epoch)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))+1; i++ {
+	// advance enough epochs so the unresponsive provider will be punished
+	if largerConst < recommendedEpochNumToCollectPayment {
+		largerConst = recommendedEpochNumToCollectPayment
+	}
+	for i := uint64(0); i < largerConst; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -188,8 +211,17 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	testProviderAmount := 2
 	ts := setupClientsAndProvidersForUnresponsiveness(t, testClientAmount, testProviderAmount)
 
+	// get recommendedEpochNumToCollectPayment
+	recommendedEpochNumToCollectPayment := ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))
+
+	// check which const is larger
+	largerConst := pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	}
+
 	// advance enough epochs so we can check punishment due to unresponsiveness (if the epoch is too early, there's no punishment)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
+	for i := uint64(0); i < uint64(largerConst)+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx)); i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 
@@ -226,8 +258,11 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	_, err = ts.servers.PairingServer.RelayPayment(ts.ctx, &types.MsgRelayPayment{Creator: ts.providers[0].address.String(), Relays: Relays})
 	require.Nil(t, err)
 
-	// advance enough epochs so the unresponsive provider will be punished (the check happens every epoch start, the complaints will be accounted for after EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+RecommendedEpochNumToCollectPayment+1 epochs from the payment epoch)
-	for i := uint64(0); i < pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER+ts.keepers.Pairing.RecommendedEpochNumToCollectPayment(sdk.UnwrapSDKContext(ts.ctx))+1; i++ {
+	// advance enough epochs so the unresponsive provider will be punished
+	if largerConst < recommendedEpochNumToCollectPayment {
+		largerConst = recommendedEpochNumToCollectPayment
+	}
+	for i := uint64(0); i < largerConst; i++ {
 		ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
 	}
 

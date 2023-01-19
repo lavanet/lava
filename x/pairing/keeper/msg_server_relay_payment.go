@@ -357,6 +357,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 				providerPaymentStorageElem.ComplainersTotalCu += complainerCuToAdd
 			}
 		}
+		k.SetEpochPayments(ctx, epochPayments)
 	}
 	return nil
 }
