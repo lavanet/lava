@@ -5,34 +5,34 @@ import "testing"
 // TestSetError tests the SetError method of the AllowList data structure
 func TestSetError(t *testing.T) {
 	// Create a new AllowList with 3 errors
-	errors := []string{"error 1", "error 2", "error 3"}
+	errors := []uint32{10, 11, 12}
 	allowList := NewErrorAllowList(errors)
 
-	// Set the value for "error 1" to true
-	allowList.SetError("error 1")
+	// Set the value for error with a code 11 to true
+	allowList.SetError(11)
 
-	// Check that the value for "error 1" is set to true
-	if allowList.IsErrorSet("error 1") != true {
-		t.Error("Expected error 1 value to be true, got false")
+	// Check that the value for error with a code 11 is set to true
+	if allowList.IsErrorSet(11) != true {
+		t.Error("Expected error with code 11 value to be true, got false")
 	}
 
-	// Set the value for "error 4" to true
-	allowList.SetError("error 4")
+	// Set the value for error with a code 15 to true
+	allowList.SetError(15)
 
-	// Check that the value for "error 4" is not set to true
-	if allowList.IsErrorSet("error 4") != false {
-		t.Error("Expected error 4 value to be false, got true")
+	// Check that the value for error with code 15 is not set to true
+	if allowList.IsErrorSet(15) != false {
+		t.Error("Expected error with a code 15 to be false, got true")
 	}
 }
 
 // TestReset tests the Reset method of the AllowList data structure
 func TestReset(t *testing.T) {
 	// Create a new AllowList with 3 errors
-	errors := []string{"error 1", "error 2", "error 3"}
+	errors := []uint32{10, 11, 12}
 	allowList := NewErrorAllowList(errors)
 
-	// Set the value for "error 1" to true
-	allowList.SetError("error 1")
+	// Set the value for error with a code 11 to true
+	allowList.SetError(11)
 
 	// Reset the values for all errors
 	allowList.Reset()
@@ -40,7 +40,7 @@ func TestReset(t *testing.T) {
 	// Check that the values for all errors are set to false
 	for _, err := range errors {
 		if allowList.IsErrorSet(err) != false {
-			t.Errorf("Expected %s value to be false, got true", err)
+			t.Errorf("Expected error with a code %d to be false, got true", err)
 		}
 	}
 }
@@ -60,11 +60,11 @@ func TestNilPointer(t *testing.T) {
 	// Try to reset the values for all errors on null pointer
 	nilAllowList.Reset()
 
-	// Try to set the value for "error 1" to true on null pointer
-	nilAllowList.SetError("error 1")
+	// Try to set the value for error with a code 11 to true on null pointer
+	nilAllowList.SetError(11)
 
 	// Try to check if error exists on null pointer
-	if nilAllowList.IsErrorSet("error 1") != false {
+	if nilAllowList.IsErrorSet(11) != false {
 		t.Error("Expected false, got true")
 	}
 

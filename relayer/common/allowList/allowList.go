@@ -1,10 +1,10 @@
 package allowList
 
-type AllowList map[string]bool
+type AllowList map[uint32]bool
 
 // NewErrorAllowList creates a new AllowList and
 // pre-populate it with specified errors
-func NewErrorAllowList(errors []string) *AllowList {
+func NewErrorAllowList(errors []uint32) *AllowList {
 	al := AllowList{}
 	for _, err := range errors {
 		al[err] = false
@@ -13,7 +13,7 @@ func NewErrorAllowList(errors []string) *AllowList {
 }
 
 // SetError sets the value for the specified error name in the AllowList map to true
-func (al *AllowList) SetError(name string) {
+func (al *AllowList) SetError(code uint32) {
 	// Check if the pointer is nil.
 	if al == nil {
 		// If the pointer is nil, return without modifying the map.
@@ -21,9 +21,9 @@ func (al *AllowList) SetError(name string) {
 	}
 
 	// Check if the error name exists in the map
-	if _, ok := (*al)[name]; ok {
+	if _, ok := (*al)[code]; ok {
 		// If the error name exists, set its value to true
-		(*al)[name] = true
+		(*al)[code] = true
 	}
 }
 
@@ -44,7 +44,7 @@ func (al *AllowList) Reset() {
 
 // IsErrorSet returns true if the value for the specified error name is set to true in the AllowList map.
 // Returns false otherwise.
-func (al *AllowList) IsErrorSet(name string) bool {
+func (al *AllowList) IsErrorSet(code uint32) bool {
 	// Check if the pointer is nil.
 	if al == nil {
 		// If the pointer is nil, return false.
@@ -52,7 +52,7 @@ func (al *AllowList) IsErrorSet(name string) bool {
 	}
 
 	// Check if the value for the specified error name is set to true.
-	if val, ok := (*al)[name]; ok && val {
+	if val, ok := (*al)[code]; ok && val {
 		return true
 	}
 	return false

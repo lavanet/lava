@@ -36,5 +36,5 @@ func Test_isInsideEpochErrors(t *testing.T) {
 	logger.ResetErrorAllowList()
 
 	require.True(t, logger.isInsideEpochErrors(NoPairingAvailableError))
-	require.False(t, logger.isInsideEpochErrors("Random Error"))
+	require.False(t, logger.isInsideEpochErrors(15))
 }

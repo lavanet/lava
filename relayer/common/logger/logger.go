@@ -3,6 +3,7 @@ package logger
 import (
 	"sync"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/relayer/common/allowList"
 	"github.com/rs/zerolog"
 )
@@ -13,7 +14,7 @@ var (
 )
 
 const (
-	NoPairingAvailableError string = "No pairings available."
+	NoPairingAvailableError uint32 = 665
 )
 
 type LogMessage struct {
@@ -22,7 +23,8 @@ type LogMessage struct {
 	LogEvent    *zerolog.Event // log level
 }
 
-var epochErrors = []string{NoPairingAvailableError}
+// 665 is an error code for PairingListEmptyError
+var epochErrors = []uint32{NoPairingAvailableError}
 
 type Logger struct {
 	logChan             chan LogMessage // channel to send log messages
@@ -50,13 +52,21 @@ func (l *Logger) listen() {
 		msg := <-l.logChan
 
 		// if error is not nil and is inside allow-list don't log the message
-		if msg.Err != nil && l.epochErrorAllowList.IsErrorSet(msg.Err.Error()) {
-			continue
-		}
-
-		// if the error is not nil check if it needs to be added in the allow-list
 		if msg.Err != nil {
-			l.addErrorInAllowList(msg.Err)
+			// try to convert the error to sdkerrors.Error
+			sdkError, ok := msg.Err.(*sdkerrors.Error)
+
+			// We can only add the errors inside allow-list
+			// which are type sdkErrors.Errors
+			if ok {
+				// If the error is inside allow list, skip printing
+				if l.epochErrorAllowList.IsErrorSet(sdkError.ABCICode()) {
+					continue
+				}
+
+				// If not, check if it needs to be added
+				l.addErrorInAllowList(sdkError.ABCICode())
+			}
 		}
 
 		// log the message
@@ -65,15 +75,15 @@ func (l *Logger) listen() {
 }
 
 // addErrorInAllowList adds an error in the epoch error allow-list if needed
-func (l *Logger) addErrorInAllowList(err error) {
+func (l *Logger) addErrorInAllowList(code uint32) {
 	// Make sure that error is not already in allow-list
-	if l.epochErrorAllowList.IsErrorSet(err.Error()) {
+	if l.epochErrorAllowList.IsErrorSet(code) {
 		return
 	}
 
 	// If error is inside epoch errors add it into allow-list
-	if l.isInsideEpochErrors(err.Error()) {
-		l.epochErrorAllowList.SetError("No pairings available.")
+	if l.isInsideEpochErrors(code) {
+		l.epochErrorAllowList.SetError(code)
 	}
 }
 
@@ -83,7 +93,7 @@ func (l *Logger) ResetErrorAllowList() {
 }
 
 // isInsideEpochErrors checks if the error is inside epochErrors
-func (l *Logger) isInsideEpochErrors(error string) bool {
+func (l *Logger) isInsideEpochErrors(error uint32) bool {
 	for _, a := range epochErrors {
 		if a == error {
 			return true
