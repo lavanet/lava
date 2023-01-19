@@ -116,6 +116,7 @@ func LavaFormatLog(description string, err error, extraAttributes *map[string]st
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
 		return fmt.Errorf(output)
 	}
+
 	return errRet
 }
 
