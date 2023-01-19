@@ -112,8 +112,12 @@ func (l *Logger) printLogs(description string, logEvent *zerolog.Event) {
 func (l *Logger) Log(msg LogMessage) {
 	// Print a log if a channel gets full
 	if len(l.logChan) == cap(l.logChan) {
-		logEvent := zerologlog.Warn()
+		logEvent := zerologlog.Error()
 		logEvent.Msg("Log channel is full")
+
+		// Returning will lose log message,
+		// but it would not block running routine
+		return
 	}
 
 	l.logChan <- msg
