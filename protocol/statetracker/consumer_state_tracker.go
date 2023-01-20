@@ -17,7 +17,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-// ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
+// ConsumerStateTracker CST is a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
 	consumerAddress      sdk.AccAddress
