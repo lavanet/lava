@@ -40,7 +40,7 @@ type lavaTest struct {
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
 	logs                 map[string]*bytes.Buffer
-	commands             map[string]exec.Cmd
+	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 }
 
@@ -168,19 +168,20 @@ func (lt *lavaTest) checkStakeLava(specCount int, providerCount int, clientCount
 	utils.LavaFormatInfo(successMessage, nil)
 }
 
-func (lt *lavaTest) startJSONRPCProxy() {
+func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	goExecutablePath, err := exec.LookPath("go")
 	if err != nil {
 		panic("Could not find go executable path")
 	}
 	proxyCommand := goExecutablePath + " test ./testutil/e2e/proxy/. -v eth"
 	lt.logs["2_jsonProxy"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   goExecutablePath,
-		Args:   strings.Split(proxyCommand, " "),
-		Stdout: lt.logs["2_jsonProxy"],
-		Stderr: lt.logs["2_jsonProxy"],
-	}
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = goExecutablePath
+	cmd.Args = strings.Split(proxyCommand, " ")
+	cmd.Stdout = lt.logs["2_jsonProxy"]
+	cmd.Stderr = lt.logs["2_jsonProxy"]
+
 	err = cmd.Start()
 	if err != nil {
 		panic(err)
@@ -191,7 +192,7 @@ func (lt *lavaTest) startJSONRPCProxy() {
 	}()
 }
 
-func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
+func (lt *lavaTest) startJSONRPCProvider(rpcURL string, ctx context.Context) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2221 " + rpcURL + " ETH1 jsonrpc --from servicer1 --geolocation 1 --log_level debug",
 		lt.lavadPath + " server 127.0.0.1 2222 " + rpcURL + " ETH1 jsonrpc --from servicer2 --geolocation 1 --log_level debug",
@@ -201,12 +202,12 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	}
 	lt.logs["3_jsonProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
-		cmd := exec.Cmd{
-			Path:   lt.lavadPath,
-			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["3_jsonProvider"],
-			Stderr: lt.logs["3_jsonProvider"],
-		}
+		cmd := exec.CommandContext(ctx, "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(providerCommand, " ")
+		cmd.Stdout = lt.logs["3_jsonProvider"]
+		cmd.Stderr = lt.logs["3_jsonProvider"]
+
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
@@ -218,16 +219,17 @@ func (lt *lavaTest) startJSONRPCProvider(rpcURL string) {
 	}
 }
 
-func (lt *lavaTest) startJSONRPCGateway() {
+func (lt *lavaTest) startJSONRPCGateway(ctx context.Context) {
 	utils.LavaFormatInfo("startJSONRPCGateway:", nil)
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3333 ETH1 jsonrpc --from user1 --geolocation 1 --log_level debug"
 	lt.logs["4_jsonGateway"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   lt.lavadPath,
-		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["4_jsonGateway"],
-		Stderr: lt.logs["4_jsonGateway"],
-	}
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = lt.lavadPath
+	cmd.Args = strings.Split(providerCommand, " ")
+	cmd.Stdout = lt.logs["4_jsonGateway"]
+	cmd.Stderr = lt.logs["4_jsonGateway"]
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -250,7 +252,7 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd exec.Cmd, panicReason string, functionName string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
 	if err != nil && !lt.testFinishedProperly {
 		utils.LavaFormatError(functionName+" cmd wait err", err, nil)
@@ -383,7 +385,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startTendermintProvider(rpcURL string) {
+func (lt *lavaTest) startTendermintProvider(rpcURL string, ctx context.Context) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2261 " + rpcURL + " LAV1 tendermintrpc --from servicer6 --geolocation 1 --log_level debug",
 		lt.lavadPath + " server 127.0.0.1 2262 " + rpcURL + " LAV1 tendermintrpc --from servicer7 --geolocation 1 --log_level debug",
@@ -393,12 +395,12 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	}
 	lt.logs["7_tendermintProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
-		cmd := exec.Cmd{
-			Path:   lt.lavadPath,
-			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["7_tendermintProvider"],
-			Stderr: lt.logs["7_tendermintProvider"],
-		}
+		cmd := exec.CommandContext(ctx, "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(providerCommand, " ")
+		cmd.Stdout = lt.logs["7_tendermintProvider"]
+		cmd.Stderr = lt.logs["7_tendermintProvider"]
+
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
@@ -410,15 +412,16 @@ func (lt *lavaTest) startTendermintProvider(rpcURL string) {
 	}
 }
 
-func (lt *lavaTest) startTendermintGateway() {
+func (lt *lavaTest) startTendermintGateway(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3340 LAV1 tendermintrpc --from user2 --geolocation 1 --log_level debug"
 	lt.logs["8_tendermintGateway"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   lt.lavadPath,
-		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["8_tendermintGateway"],
-		Stderr: lt.logs["8_tendermintGateway"],
-	}
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = lt.lavadPath
+	cmd.Args = strings.Split(providerCommand, " ")
+	cmd.Stdout = lt.logs["8_tendermintGateway"]
+	cmd.Stderr = lt.logs["8_tendermintGateway"]
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -496,7 +499,7 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startRESTProvider(rpcURL string) {
+func (lt *lavaTest) startRESTProvider(rpcURL string, ctx context.Context) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2271 " + rpcURL + " LAV1 rest --from servicer6 --geolocation 1 --log_level debug",
 		lt.lavadPath + " server 127.0.0.1 2272 " + rpcURL + " LAV1 rest --from servicer7 --geolocation 1 --log_level debug",
@@ -506,12 +509,12 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	}
 	lt.logs["5_restProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
-		cmd := exec.Cmd{
-			Path:   lt.lavadPath,
-			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["5_restProvider"],
-			Stderr: lt.logs["5_restProvider"],
-		}
+		cmd := exec.CommandContext(ctx, "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(providerCommand, " ")
+		cmd.Stdout = lt.logs["5_restProvider"]
+		cmd.Stderr = lt.logs["5_restProvider"]
+
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
@@ -523,15 +526,16 @@ func (lt *lavaTest) startRESTProvider(rpcURL string) {
 	}
 }
 
-func (lt *lavaTest) startRESTGateway() {
+func (lt *lavaTest) startRESTGateway(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3341 LAV1 rest --from user2 --geolocation 1 --log_level debug"
 	lt.logs["6_restGateway"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   lt.lavadPath,
-		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["6_restGateway"],
-		Stderr: lt.logs["6_restGateway"],
-	}
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = lt.lavadPath
+	cmd.Args = strings.Split(providerCommand, " ")
+	cmd.Stdout = lt.logs["6_restGateway"]
+	cmd.Stderr = lt.logs["6_restGateway"]
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -601,7 +605,7 @@ func getRequest(url string) ([]byte, error) {
 	return body, nil
 }
 
-func (lt *lavaTest) startGRPCProvider(rpcURL string) {
+func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
 	providerCommands := []string{
 		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
 		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
@@ -611,12 +615,13 @@ func (lt *lavaTest) startGRPCProvider(rpcURL string) {
 	}
 	lt.logs["9_grpcProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
-		cmd := exec.Cmd{
-			Path:   lt.lavadPath,
-			Args:   strings.Split(providerCommand, " "),
-			Stdout: lt.logs["9_grpcProvider"],
-			Stderr: lt.logs["9_grpcProvider"],
-		}
+
+		cmd := exec.CommandContext(ctx, "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(providerCommand, " ")
+		cmd.Stdout = lt.logs["9_grpcProvider"]
+		cmd.Stderr = lt.logs["9_grpcProvider"]
+
 		err := cmd.Start()
 		if err != nil {
 			panic(err)
@@ -628,15 +633,16 @@ func (lt *lavaTest) startGRPCProvider(rpcURL string) {
 	}
 }
 
-func (lt *lavaTest) startGRPCGateway() {
+func (lt *lavaTest) startGRPCGateway(ctx context.Context) {
 	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
 	lt.logs["10_grpcGateway"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   lt.lavadPath,
-		Args:   strings.Split(providerCommand, " "),
-		Stdout: lt.logs["10_grpcGateway"],
-		Stderr: lt.logs["10_grpcGateway"],
-	}
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = lt.lavadPath
+	cmd.Args = strings.Split(providerCommand, " ")
+	cmd.Stdout = lt.logs["10_grpcGateway"]
+	cmd.Stderr = lt.logs["10_grpcGateway"]
+
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -701,16 +707,16 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 }
 
 // This would submit a proposal, vote then stake providers and clients for that network over lava
-func (lt *lavaTest) lavaOverLava() {
+func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	utils.LavaFormatInfo("Starting Lava over Lava Tests", nil)
 	stakeCommand := "./scripts/init_e2e_lava_over_lava.sh"
 	lt.logs["9_lavaOverLava"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   stakeCommand,
-		Args:   strings.Split(stakeCommand, " "),
-		Stdout: lt.logs["9_lavaOverLava"],
-		Stderr: lt.logs["9_lavaOverLava"],
-	}
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = stakeCommand
+	cmd.Args = strings.Split(stakeCommand, " ")
+	cmd.Stdout = lt.logs["9_lavaOverLava"]
+	cmd.Stderr = lt.logs["9_lavaOverLava"]
+
 	err := cmd.Start()
 	if err != nil {
 		panic("Lava over Lava Failed " + err.Error())
@@ -859,7 +865,7 @@ func runE2E() {
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
 		logs:         make(map[string]*bytes.Buffer),
-		commands:     make(map[string]exec.Cmd),
+		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 	}
 	// use defer to save logs in case the tests fail
@@ -879,24 +885,14 @@ func runE2E() {
 	utils.LavaFormatInfo("Staking Lava", nil)
 	lt.stakeLava()
 	lt.checkStakeLava(2, 5, 1, "Staking Lava OK")
-	lt.startJSONRPCProxy()
-	lt.startJSONRPCProvider("http://127.0.0.1:1111")
-	lt.startJSONRPCGateway()
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
-
-	lt.startTendermintProvider("http://0.0.0.0:26657")
-	lt.startTendermintGateway()
-	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
-
-	lt.startRESTProvider("http://127.0.0.1:1317")
-	lt.startRESTGateway()
-	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
-
-	lt.startGRPCProvider("127.0.0.1:9090")
-	lt.startGRPCGateway()
-	lt.checkGRPCGateway("127.0.0.1:3342", time.Second*30)
 
 	utils.LavaFormatInfo("RUNNING TESTS", nil)
+
+	jsonCTX := context.Background()
+	lt.startJSONRPCProxy(jsonCTX)
+	lt.startJSONRPCProvider("http://127.0.0.1:1111", jsonCTX)
+	lt.startJSONRPCGateway(jsonCTX)
+	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	if jsonErr != nil {
@@ -906,6 +902,13 @@ func runE2E() {
 	}
 
 	lt.checkPayments(time.Minute*10, "ETH")
+	lt.epochWait(1)
+	jsonCTX.Done()
+
+	tendermintCTX := context.Background()
+	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
+	lt.startTendermintGateway(tendermintCTX)
+	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
 
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintErr != nil {
@@ -914,15 +917,22 @@ func runE2E() {
 		utils.LavaFormatInfo("TENDERMINTRPC TEST OK", nil)
 	}
 
+	lt.lavaOverLava(tendermintCTX)
+
 	tendermintURIErr := tendermintURITests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintURIErr != nil {
 		panic(tendermintURIErr)
 	} else {
 		utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK", nil)
 	}
-
 	lt.checkPayments(time.Minute*10, "LAV")
-	lt.epochWait(3)
+	lt.epochWait(1)
+	tendermintCTX.Done()
+
+	restCTX := context.Background()
+	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
+	lt.startRESTGateway(restCTX)
+	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
 
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 	if restErr != nil {
@@ -930,9 +940,14 @@ func runE2E() {
 	} else {
 		utils.LavaFormatInfo("REST TEST OK", nil)
 	}
-
 	lt.checkPayments(time.Minute*10, "LAV")
-	lt.epochWait(3)
+	lt.epochWait(1)
+	restCTX.Done()
+
+	grpcCTX := context.Background()
+	lt.startGRPCProvider("127.0.0.1:9090", grpcCTX)
+	lt.startGRPCGateway(grpcCTX)
+	lt.checkGRPCGateway("127.0.0.1:3342", time.Second*30)
 
 	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
 	if grpcErr != nil {
@@ -942,8 +957,7 @@ func runE2E() {
 	}
 
 	lt.checkPayments(time.Minute*10, "LAV")
-
-	lt.lavaOverLava()
+	grpcCTX.Done()
 
 	lt.finishTestSuccessfully()
 }
