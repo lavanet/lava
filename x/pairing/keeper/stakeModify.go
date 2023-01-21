@@ -26,7 +26,11 @@ func (k Keeper) BurnClientStake(ctx sdk.Context, chainID string, clientAddressTo
 		// now we need to save the entry
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, epochstoragetypes.ClientKey, chainID, clientEntry, indexFound)
 
-		if clientEntry.Stake.IsLT(k.MinStakeClient(ctx)) {
+		spec, found := k.specKeeper.GetSpec(ctx, clientEntry.Chain)
+		if !found {
+			return true, fmt.Errorf("could not fetch spec %s in burn client stake", clientEntry.Chain)
+		}
+		if clientEntry.Stake.IsLT(spec.MinStakeClient) {
 			// if user doesn't have enough stake to stay staked, we will unstake him now
 			// err := k.UnstakeUser(ctx, chainID, specStakeStorage.StakeStorage.StakedUsers[idx].Index, types.BlockNum{Num: 0})
 			err := k.UnstakeEntry(ctx, false, chainID, clientEntry.Address, types.UnstakeDescriptionInsufficientFunds)

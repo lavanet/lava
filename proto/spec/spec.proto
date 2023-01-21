@@ -20,8 +20,14 @@ message Spec {
   int64 average_block_time =9;
   int64 allowed_block_lag_for_qos_sync = 10;
   uint64 block_last_updated = 11;
-  uint64 min_stake_provider = 12;
-  uint64 min_stake_consumer = 13;
+  string min_stake_provider = 12 [(gogoproto.moretags) = "yaml:\"min_stake_provider\"",
+  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+  (gogoproto.nullable)   = false
+  ];
+  string min_stake_client = 13 [(gogoproto.moretags) = "yaml:\"min_stake_client\"",
+  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+  (gogoproto.nullable)   = false
+  ];
 
   enum ProvidersTypes {
     dynamic = 0;

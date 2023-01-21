@@ -27,7 +27,6 @@ func CmdStaticProvidersList() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryStaticProvidersListRequest{
-
 				ChainID: reqChainID,
 			}
 

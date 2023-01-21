@@ -3,20 +3,21 @@ package lavanet.lava.pairing;
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 import "gogoproto/gogo.proto";
-import "cosmos/base/v1beta1/coin.proto";
+import "epochstorage/endpoint.proto";
 
 message StaticProvidersList {
   string chain_id = 1;
-  repeated GeoLocation geolocations = 2;
-}
+  string description = 2;
+  repeated GeoLocation geolocations = 3;
+  }
 
 message GeoLocation {
-    uint64 geo_location = 1;
-    repeated ProviderInfo providers = 2;
-}
+  uint64 geo_location = 1;
+  repeated ProviderInfo providers = 2;
+  }
 
 message ProviderInfo {
-    string address = 1;
-    repeated string endpoints = 2;
-    uint64 expiry_epoch = 3;
-}
+  string address = 1;
+  repeated lavanet.lava.epochstorage.Endpoint endpoints = 2 [(gogoproto.nullable) = false]; 
+  uint64 expiration_epoch = 3;
+  }
