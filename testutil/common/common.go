@@ -30,6 +30,8 @@ func CreateMockSpec() spectypes.Spec {
 	spec.ReliabilityThreshold = 4294967295
 	spec.BlockDistanceForFinalizedData = 0
 	spec.DataReliabilityEnabled = true
+	spec.MinStakeClient = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10))
+	spec.MinStakeProvider = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10))
 	apiInterface := spectypes.ApiInterface{Interface: "mockInt", Type: "GET"}
 	spec.Apis = append(spec.Apis, spectypes.ServiceApi{Name: specName + "API", ComputeUnits: 100, Enabled: true, ApiInterfaces: []spectypes.ApiInterface{apiInterface}})
 	spec.BlockDistanceForFinalizedData = 0
