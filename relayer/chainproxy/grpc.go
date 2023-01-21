@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lavanet/lava/relayer/metrics"
 	"io"
 	"net"
 	"net/http"
@@ -279,8 +280,9 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
-
-		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", nil); err != nil {
+		metricsData := metrics.NewRelayAnalytics("NoDappID", cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
+		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
+			cp.portalLogs.AddMetric(metricsData, err != nil)
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)

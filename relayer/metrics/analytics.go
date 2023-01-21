@@ -4,30 +4,28 @@ import (
 	"time"
 )
 
-type RelayAnalytics struct {
-	ProjectHash string // imported - REST
-	Timestamp   time.Time
-	ChainID     string /// DONE - SendRelay
-	APIType     string /// DONE - SendRelay
-	// latency in ms
-	Latency      int64  // DONE - SendRelay
-	Success      bool   // Done - SendRelay
-	ComputeUnits uint64 // Done - SendRelay
+type RelayMetrics struct {
+	ProjectHash  string
+	Timestamp    time.Time
+	ChainID      string
+	APIType      string
+	Latency      int64
+	Success      bool
+	ComputeUnits uint64
 }
 
 type RelayAnalyticsDTO struct {
-	ProjectHash string // imported - REST
-	Timestamp   time.Time
-	ChainID     string /// DONE - SendRelay
-	APIType     string /// DONE - SendRelay
-	// latency in ms
-	Latency      int64  // DONE - SendRelay
-	SuccessCount int64  // Done - SendRelay
-	ComputeUnits uint64 // Done - SendRelay
+	ProjectHash  string
+	Timestamp    time.Time
+	ChainID      string
+	APIType      string
+	Latency      int64
+	SuccessCount int64
+	RelayCounts  int64
 }
 
-func NewRelayAnalytics(projectHash string, chainId string, apiType string) *RelayAnalytics {
-	return &RelayAnalytics{
+func NewRelayAnalytics(projectHash string, chainId string, apiType string) *RelayMetrics {
+	return &RelayMetrics{
 		Timestamp:   time.Now(),
 		ProjectHash: projectHash,
 		ChainID:     chainId,

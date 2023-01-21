@@ -27,7 +27,6 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 	MinimumTimePerRelayDelay  = time.Second
 	AverageWorldLatency       = 200 * time.Millisecond
-	ContextUserValueAnalytics = "analytics"
 )
 
 type NodeMessage interface {
@@ -109,7 +108,7 @@ func SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
-	analytics *metrics.RelayAnalytics,
+	analytics *metrics.RelayMetrics,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
@@ -314,10 +313,7 @@ func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler
 			dappID = c.Route().Params[1]
 			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
-
-		ctx := c.Context()
-		ctx.SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
-		return webSocketCallback(c)                         // uses external dappID
+		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
