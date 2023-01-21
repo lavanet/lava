@@ -10,6 +10,8 @@
                 "reliability_threshold": 268435455,
                 "average_block_time": "6000",
                 "allowed_block_lag_for_qos_sync": "5",
+                "min_stake_provider" : "1000ulava",
+                "min_stake_client" : "1000ulava",
                 "apis": [
                     {
                         "name": "abci_info",
