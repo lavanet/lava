@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -176,4 +177,35 @@ func TestGetPairing(t *testing.T) {
 
 		})
 	}
+}
+
+func TestPairingStatic(t *testing.T) {
+	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+
+	//init keepers state
+	spec := common.CreateMockSpec()
+	spec.ProvidersTypes = spectypes.Spec_static
+	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	servicersToPair := keepers.Pairing.ServicersToPairCountRaw(sdk.UnwrapSDKContext(ctx))
+
+	consumer := common.CreateNewAccount(ctx, *keepers, balance)
+	common.StakeAccount(t, ctx, *keepers, *servers, consumer, spec, stake, false)
+
+	for i := uint64(0); i < servicersToPair*2; i++ {
+		provider := common.CreateNewAccount(ctx, *keepers, balance)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+	}
+
+	//we expect to get all the providers in static spec
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	providers, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+
+	require.Nil(t, err)
+	require.Equal(t, int(servicersToPair*2), len(providers))
+
 }
