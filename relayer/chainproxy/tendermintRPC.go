@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -23,7 +24,8 @@ import (
 
 type TendemintRpcMessage struct {
 	JrpcMessage
-	cp *tendermintRpcChainProxy
+	cp   *tendermintRpcChainProxy
+	path string
 }
 
 type tendermintRpcChainProxy struct {
@@ -166,50 +168,36 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
-	// connectionType is currently only used only in rest api
-	// Unmarshal request
+
 	var msg JsonrpcMessage
+	var serviceApi *spectypes.ServiceApi
+	var err error
+	var requestedBlock int64
+
 	if string(data) != "" {
-		// assuming jsonrpc
 		err := json.Unmarshal(data, &msg)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		// assuming URI
-		var parsedMethod string
-		idx := strings.Index(path, "?")
-		if idx == -1 {
-			parsedMethod = path
-		} else {
-			parsedMethod = path[0:idx]
+
+		serviceApi, err = cp.getSupportedApi(msg.Method)
+		if err != nil {
+			return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 		}
 
-		msg = JsonrpcMessage{
-			ID:      []byte("1"),
-			Version: "2.0",
-			Method:  parsedMethod,
+		requestedBlock, err = parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+		if err != nil {
+			return nil, err
 		}
-		if strings.Contains(path[idx+1:], "=") {
-			params := make(map[string]interface{})
-			rawParams := strings.Split(path[idx+1:], "&") // list with structure ['height=0x500',...]
-			for _, param := range rawParams {
-				splitParam := strings.Split(param, "=")
-				if len(splitParam) != 2 {
-					return nil, utils.LavaFormatError("Cannot parse query params", nil, &map[string]string{"params": param})
-				}
-				params[splitParam[0]] = splitParam[1]
-			}
-			msg.Params = params
-		} else {
-			msg.Params = make([]interface{}, 0)
+	} else {
+		msg = JsonrpcMessage{}
+
+		method := strings.SplitN(path, "?", 2)[0]
+
+		serviceApi, err = cp.getSupportedApi(method)
+		if err != nil {
+			return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 		}
-	}
-	//
-	// Check api is supported and save it in nodeMsg
-	serviceApi, err := cp.getSupportedApi(msg.Method)
-	if err != nil {
-		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
 	var apiInterface *spectypes.ApiInterface = nil
@@ -223,18 +211,15 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
-	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
-	if err != nil {
-		return nil, err
-	}
-
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
-			serviceApi:   serviceApi,
-			apiInterface: apiInterface,
-			msg:          &msg, requestedBlock: requestedBlock,
+			serviceApi:     serviceApi,
+			apiInterface:   apiInterface,
+			msg:            &msg,
+			requestedBlock: requestedBlock,
 		},
-		cp: cp,
+		path: path,
+		cp:   cp,
 	}
 	return nodeMsg, nil
 }
@@ -372,6 +357,41 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
+	if nm.path != "" {
+		httpClient := http.Client{
+			Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
+		}
+
+		var connectionTypeSelected string = http.MethodGet
+
+		url := nm.cp.nodeUrl + "/" + nm.path
+
+		req, err := http.NewRequest(connectionTypeSelected, url, nil)
+		if err != nil {
+			return nil, "", nil, err
+		}
+
+		res, err := httpClient.Do(req)
+		if err != nil {
+			return nil, "", nil, err
+		}
+
+		if res.Body != nil {
+			defer res.Body.Close()
+		}
+
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, "", nil, err
+		}
+
+		reply := &pairingtypes.RelayReply{
+			Data: body,
+		}
+
+		return reply, "", nil, nil
+	}
+
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
 		return nil, "", nil, err
