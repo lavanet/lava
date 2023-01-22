@@ -17,32 +17,35 @@ const (
 )
 
 // Function to calculate how much time (in seconds) is left until the next epoch
-func (k Keeper) calculateNextEpochTime(ctx sdk.Context) (uint64, error) {
+func (k Keeper) calculateNextEpochTimeAndBlock(ctx sdk.Context) (uint64, uint64, error) {
 	// Get current epoch
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	// Calculate the average block time (i.e., how much time it takes to create a new block, in average)
 	averageBlockTime, err := k.calculateAverageBlockTime(ctx, currentEpoch)
 	if err != nil {
-		return 0, fmt.Errorf("could not calculate average block time, err: %s", err)
+		return 0, 0, fmt.Errorf("could not calculate average block time, err: %s", err)
 	}
 
 	// Get the next epoch
 	nextEpochStart, err := k.epochStorageKeeper.GetNextEpoch(ctx, currentEpoch)
 	if err != nil {
-		return 0, fmt.Errorf("could not get next epoch start, err: %s", err)
+		return 0, 0, fmt.Errorf("could not get next epoch start, err: %s", err)
 	}
 
 	// Get epochBlocksOverlap
 	overlapBlocks := k.EpochBlocksOverlap(ctx)
 
+	// calculate the block in which the next pairing will happen (+overlap)
+	nextPairingBlock := nextEpochStart + overlapBlocks
+
 	// Get number of blocks from the current block to the next epoch
-	blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(ctx.BlockHeight())
+	blocksUntilNewEpoch := nextPairingBlock - uint64(ctx.BlockHeight())
 
 	// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
 	timeLeftToNextEpoch := blocksUntilNewEpoch * averageBlockTime
 
-	return timeLeftToNextEpoch, nil
+	return timeLeftToNextEpoch, nextPairingBlock, nil
 }
 
 // Function to calculate the average block time (i.e., how much time it takes to create a new block, in average)

@@ -40,7 +40,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)
-	timeLeftToNextPairing, err := k.calculateNextEpochTime(ctx)
+	timeLeftToNextPairing, nextPairingBlock, err := k.calculateNextEpochTimeAndBlock(ctx)
 	if err != nil {
 		// we don't want to fail the query if the calculateNextEpochTime function fails. This shouldn't happen, it's a fail-safe
 		utils.LavaFormatError("calculate next epoch time failed. Returning default time=0", err, nil)
@@ -57,5 +57,5 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 	specLastUpdatedBlock := spec.BlockLastUpdated
 
-	return &types.QueryGetPairingResponse{Providers: providers, CurrentEpoch: currentEpoch, TimeLeftToNextPairing: timeLeftToNextPairing, SpecLastUpdatedBlock: specLastUpdatedBlock}, nil
+	return &types.QueryGetPairingResponse{Providers: providers, CurrentEpoch: currentEpoch, TimeLeftToNextPairing: timeLeftToNextPairing, SpecLastUpdatedBlock: specLastUpdatedBlock, BlockOfNextPairing: nextPairingBlock}, nil
 }
