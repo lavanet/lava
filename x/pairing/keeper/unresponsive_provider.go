@@ -67,7 +67,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 {
+			if len(providerPaymentStorageKeyList) != 0 && providerPaymentStorageKeyList != nil {
 				err = k.punishUnresponsiveProvider(ctx, providerPaymentStorageKeyList)
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
@@ -85,18 +85,17 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 	providerServicedCu := uint64(0)
 	complainersCu := uint64(0)
 	providerPaymentStorageKeyList := []string{}
-	emptyList := []string{}
 
 	// get the provider's SDK account address
 	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
 	if err != nil {
-		return emptyList, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
+		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
 	}
 
 	// Get servicersToPair param
 	servicersToPair, err := k.ServicersToPairCount(ctx, epochTemp)
 	if err != nil || servicersToPair == 0 {
-		return emptyList, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
+		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
 	}
 
 	// check which of the consts is larger
@@ -134,7 +133,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		// Get previous epoch (from epochTemp)
 		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
 		if err != nil {
-			return emptyList, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
+			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_previous_epoch", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochTemp)}, "couldn't get previous epoch")
 		}
 		// update epochTemp
 		epochTemp = previousEpoch
@@ -145,7 +144,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		return providerPaymentStorageKeyList, nil
 	}
 
-	return emptyList, nil
+	return nil, nil
 }
 
 // Function that return the current stake storage for all chains

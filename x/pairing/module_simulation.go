@@ -93,6 +93,9 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
 		}),
+		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
+			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
+		}),
 	}
 }
 

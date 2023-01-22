@@ -90,7 +90,7 @@ var (
 
 var (
 	KeyRecommendedEpochNumToCollectPayment            = []byte("RecommendedEpochNumToCollectPayment") // the recommended amount of max epochs that a provider should wait before collecting its payment (if he'll collect later, there's a higher chance to get punished)
-	DefaultRecommendedEpochNumToCollectPayment uint64 = 2
+	DefaultRecommendedEpochNumToCollectPayment uint64 = 3
 )
 
 // ParamKeyTable the param key table for launch module
