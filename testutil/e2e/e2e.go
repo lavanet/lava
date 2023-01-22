@@ -615,7 +615,6 @@ func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
 	}
 	lt.logs["9_grpcProvider"] = new(bytes.Buffer)
 	for idx, providerCommand := range providerCommands {
-
 		cmd := exec.CommandContext(ctx, "", "")
 		cmd.Path = lt.lavadPath
 		cmd.Args = strings.Split(providerCommand, " ")
