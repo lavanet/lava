@@ -24,7 +24,7 @@ type PortalLogs struct {
 	StoreMetricData     bool
 }
 
-func NewPortalLogs(storeMetricData bool) (*PortalLogs, error) {
+func NewPortalLogs() (*PortalLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file", nil)
@@ -42,12 +42,10 @@ func NewPortalLogs(storeMetricData bool) (*PortalLogs, error) {
 		newrelic.ConfigLicense(NewRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: storeMetricData}
+	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
-	if !isMetricEnabled {
-		storeMetricData = false
-	}
-	if storeMetricData {
+	if isMetricEnabled {
+		portal.StoreMetricData = true
 		portal.MetricService = metrics.NewMetricService()
 	}
 	return portal, err

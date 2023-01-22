@@ -1214,7 +1214,7 @@ func Server(
 	//
 	// Node
 	// get portal logs
-	pLogs, err := chainproxy.NewPortalLogs(false)
+	pLogs, err := chainproxy.NewPortalLogs()
 	if err != nil {
 		utils.LavaFormatFatal("provider failure to NewPortalLogs", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 	}
