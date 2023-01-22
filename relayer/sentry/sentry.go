@@ -164,7 +164,7 @@ func (s *Sentry) SetupConsumerSessionManager(ctx context.Context, consumerSessio
 	if err != nil {
 		utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 	}
-	err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+	err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 	if err != nil {
 		utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 	}
@@ -272,17 +272,17 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 		//
 		pairingEndpoints := make([]*lavasession.Endpoint, len(relevantEndpoints))
 		for idx, relevantEndpoint := range relevantEndpoints {
-			endp := &lavasession.Endpoint{Addr: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
+			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
 			pairingEndpoints[idx] = endp
 		}
 
 		pairing = append(pairing, &lavasession.ConsumerSessionsWithProvider{
-			Acc:             provider.Address,
-			Endpoints:       pairingEndpoints,
-			Sessions:        map[int64]*lavasession.SingleConsumerSession{},
-			MaxComputeUnits: maxcu,
-			ReliabilitySent: false,
-			PairingEpoch:    s.GetCurrentEpochHeight(),
+			PublicLavaAddress: provider.Address,
+			Endpoints:         pairingEndpoints,
+			Sessions:          map[int64]*lavasession.SingleConsumerSession{},
+			MaxComputeUnits:   maxcu,
+			ReliabilitySent:   false,
+			PairingEpoch:      s.GetCurrentEpochHeight(),
 		})
 	}
 	if len(pairing) == 0 {
@@ -642,7 +642,7 @@ func (s *Sentry) Start(ctx context.Context) {
 					if err != nil {
 						utils.LavaFormatFatal("Failed getting pairing for consumer in initialization", err, &map[string]string{"Address": s.Acc})
 					}
-					err = s.consumerSessionManager.UpdateAllProviders(ctx, s.GetCurrentEpochHeight(), pairingList)
+					err = s.consumerSessionManager.UpdateAllProviders(s.GetCurrentEpochHeight(), pairingList)
 					if err != nil {
 						utils.LavaFormatFatal("Failed UpdateAllProviders", err, &map[string]string{"Address": s.Acc})
 					}
