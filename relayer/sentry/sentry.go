@@ -630,7 +630,9 @@ func (s *Sentry) Start(ctx context.Context) {
 				}
 
 				if s.newEpochCb != nil {
-					go s.newEpochCb(data.Block.Height - int64(s.recommendedEpochNumToCollectPayment)*int64(s.GetEpochSize())) // Currently this is only askForRewards
+					go s.newEpochCb(data.Block.Height - StaleEpochDistance*int64(s.GetEpochSize()))
+					// fmt.Printf("s.recommendedEpochNumToCollectPayment: %v\n", s.FetchRecommendedEpochNumToCollectPayment(ctx))
+					// go s.newEpochCb(data.Block.Height - int64(s.recommendedEpochNumToCollectPayment)*int64(s.GetEpochSize())) // Currently this is only askForRewards
 				}
 
 				//
