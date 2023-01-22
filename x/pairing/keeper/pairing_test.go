@@ -157,8 +157,11 @@ func TestGetPairing(t *testing.T) {
 				// Get epochBlocksOverlap
 				overlapBlocks := ts.keepers.Pairing.EpochBlocksOverlap(sdk.UnwrapSDKContext(ts.ctx))
 
+				// calculate the block in which the next pairing will happen (+overlap)
+				nextPairingBlock := nextEpochStart + overlapBlocks
+
 				// Get number of blocks from the current block to the next epoch
-				blocksUntilNewEpoch := nextEpochStart + overlapBlocks - uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
+				blocksUntilNewEpoch := nextPairingBlock - uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
 
 				// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
 				timeLeftToNextPairing := blocksUntilNewEpoch * averageBlockTime
@@ -172,6 +175,9 @@ func TestGetPairing(t *testing.T) {
 					// we've used a smaller blocktime some of the time -> averageBlockTime from get-pairing is smaller than the averageBlockTime calculated in this test
 					require.Less(t, pairing.TimeLeftToNextPairing, timeLeftToNextPairing)
 				}
+
+				// verify nextPairingBlock
+				require.Equal(t, nextPairingBlock, pairing.BlockOfNextPairing)
 			}
 
 		})
