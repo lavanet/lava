@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,7 +49,7 @@ import (
 )
 
 const (
-	RETRY_INCORRECT_SEQUENCE      = 3
+	RETRY_INCORRECT_SEQUENCE      = 5
 	TimeWaitInitializeChainSentry = 10
 	RetryInitAttempts             = 10
 )
@@ -255,15 +256,26 @@ func askForRewards(staleEpochHeight int64) {
 	hasSequenceError := false
 	success := false
 	idx := -1
+	sequenceNumberParsed := 0
 	summarizedTransactionResult := ""
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
 		msg := pairingtypes.NewMsgRelayPayment(g_sentry.Acc, relays, strconv.FormatUint(g_serverID, 10))
 		g_sentry.ClientCtx.Output = &myWriter
 		if hasSequenceError { // a retry
-			_, seq, err := g_sentry.ClientCtx.AccountRetriever.GetAccountNumberSequence(g_sentry.ClientCtx, g_sentry.ClientCtx.GetFromAddress())
-			if err != nil {
-				utils.LavaFormatError("failed to get correct sequence number for account, give up", err, nil)
-				break // give up
+			// if sequence number error happened it means that we already sent a tx this block.
+			// we need to wait a block for the tx to be approved,
+			// only then we can ask for a new sequence number continue and try again.
+			var seq uint64
+			if sequenceNumberParsed != 0 {
+				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", &map[string]string{"sequence": strconv.Itoa(sequenceNumberParsed)})
+				seq = uint64(sequenceNumberParsed)
+			} else {
+				var err error
+				_, seq, err = g_sentry.ClientCtx.AccountRetriever.GetAccountNumberSequence(g_sentry.ClientCtx, g_sentry.ClientCtx.GetFromAddress())
+				if err != nil {
+					utils.LavaFormatError("failed to get correct sequence number for account, give up", err, nil)
+					break // give up
+				}
 			}
 			g_txFactory = g_txFactory.WithSequence(seq)
 			myWriter.Reset()
@@ -271,38 +283,29 @@ func askForRewards(staleEpochHeight int64) {
 				"SeqNum": strconv.FormatUint(seq, 10),
 			})
 		}
+		var transactionResult string
 		err := sentry.CheckProfitabilityAndBroadCastTx(g_sentry.ClientCtx, g_txFactory, msg)
 		if err != nil {
-			utils.LavaFormatError("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
+			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, &map[string]string{
 				"msg": fmt.Sprintf("%+v", msg),
 			})
-		}
-
-		transactionResult := myWriter.String()
-		summarized, transactionResults := summarizeTransactionResult(transactionResult)
-		summarizedTransactionResult = summarized
-
-		var returnCode uint64
-		splitted := strings.Split(transactionResults[0], ":")
-		if len(splitted) < 2 {
-			utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
-				"parsing data": transactionResult,
-			})
-			returnCode = 1 // just not zero
+			transactionResult = err.Error() // incase we got an error the tx result is basically the error
 		} else {
-			returnCode, err = strconv.ParseUint(splitted[1], 10, 32)
-			if err != nil {
-				utils.LavaFormatError("Failed to parse transaction result", err, &map[string]string{
-					"parsing data": transactionResult,
-				})
-				returnCode = 1 // just not zero
-			}
+			transactionResult = myWriter.String()
 		}
 
-		if returnCode == 0 { // if we get some other error which isnt then keep retrying
+		var returnCode int
+		summarizedTransactionResult, returnCode = parseTransactionResult(transactionResult)
+
+		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
 			success = true
-		} else if strings.Contains(summarized, "incorrect account sequence") {
+		} else if strings.Contains(transactionResult, "account sequence") {
 			hasSequenceError = true
+			sequenceNumberParsed, err = findSequenceNumber(transactionResult)
+			if err != nil {
+				utils.LavaFormatWarning("Failed findSequenceNumber", err, &map[string]string{"sequence": transactionResult})
+			}
+			summarizedTransactionResult = transactionResult
 		}
 	}
 
@@ -313,7 +316,17 @@ func askForRewards(staleEpochHeight int64) {
 	}
 }
 
-func summarizeTransactionResult(transactionResult string) (string, []string) {
+// extract requested sequence number from tx error.
+func findSequenceNumber(sequence string) (int, error) {
+	re := regexp.MustCompile(`expected (\d+), got (\d+)`)
+	match := re.FindStringSubmatch(sequence)
+	if match == nil {
+		return 0, utils.LavaFormatWarning("Failed to parse sequence number from error", nil, &map[string]string{"sequence": sequence})
+	}
+	return strconv.Atoi(match[1]) // atoi return 0 upon error, so it will be ok when sequenceNumberParsed uses it
+}
+
+func parseTransactionResult(transactionResult string) (string, int) {
 	transactionResult = strings.ReplaceAll(transactionResult, ": ", ":")
 	transactionResults := strings.Split(transactionResult, "\n")
 	summarizedResult := ""
@@ -322,7 +335,17 @@ func summarizeTransactionResult(transactionResult string) (string, []string) {
 			summarizedResult = summarizedResult + str + ", "
 		}
 	}
-	return summarizedResult, transactionResults
+
+	re := regexp.MustCompile(`code:(\d+)`) // extracting code from transaction result (in format code:%d)
+	match := re.FindStringSubmatch(transactionResult)
+	if match == nil {
+		return summarizedResult, 1 // not zero
+	}
+	retCode, err := strconv.Atoi(match[1]) // extract return code.
+	if err != nil {
+		return summarizedResult, 1 // not zero
+	}
+	return summarizedResult, retCode
 }
 
 func getRelayUser(in *pairingtypes.RelayRequest) (tenderbytes.HexBytes, error) {
