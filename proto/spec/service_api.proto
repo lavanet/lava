@@ -24,8 +24,9 @@ message Parsing {
 message ApiInterface {
   string interface = 1;
   string type = 2;
-  uint64 extra_compute_units = 3; 
-  SpecCategory category = 4;
+  uint64 extra_compute_units = 3;
+  BlockParser overwrite_block_parsing = 4;
+  SpecCategory category = 5;
 }
 
 message BlockParser {
@@ -39,7 +40,8 @@ enum PARSER_FUNC{
   PARSE_CANONICAL = 2; //means parameters are ordered and one of them has named properties, expected areguments are: [param index to object,propname in object] (example: PARAMS: ["banana",{propname:<#BlockNum>}])
   PARSE_DICTIONARY = 3; //means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {propname:<#BlockNum>,prop2:"banana"})
   PARSE_DICTIONARY_OR_ORDERED = 4; //means parameters are named expected arguments are [prop_name,separator,parameter order if not found]
-  DEFAULT = 5; //means parameters are non related to block, and should fetch latest block
+  PARSE_DICTIONARY_OR_DEFAULT = 5;
+  DEFAULT = 6; //means parameters are non related to block, and should fetch latest block
 }
 
 message SpecCategory{

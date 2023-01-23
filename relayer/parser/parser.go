@@ -65,7 +65,8 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		retval, err = ParseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
 		retval = ParseDefault(rpcInput, blockParser.ParserArg, dataSource)
-		// case default -> retval, err = ParseByArg(rpcInput, blockParser.ParserArg, dataSource) with default.
+	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_DEFAULT:
+		retval, err = ParseDictionaryOrDefault(rpcInput, blockParser.ParserArg, dataSource)
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
 	}
@@ -249,6 +250,34 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
 	}
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
+}
+
+func ParseDictionaryOrDefault(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+	if len(input) != 4 {
+		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
+	}
+
+	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
+	if err != nil {
+		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
+	}
+
+	prop_name := input[0]
+	default_value := input[3]
+
+	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	case map[string]interface{}:
+		retArr := make([]interface{}, 0)
+		if val, ok := unmarshaledDataTyped[prop_name]; ok {
+			retArr = append(retArr, val)
+			return retArr, nil
+		}
+		retArr = append(retArr, default_value)
+		fmt.Println("retARR", retArr)
+		return retArr, nil
+	default:
+		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
+	}
 }
 
 func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
