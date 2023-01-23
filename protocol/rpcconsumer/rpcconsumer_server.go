@@ -257,7 +257,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			return relayResult, 0, err
 		}
 
-		finalizationConflict, err = rpccs.finalizationConsensus.CheckFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, reply.LatestBlock, finalizedBlocks, relayRequest, reply)
+		finalizationConflict, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, reply.LatestBlock, finalizedBlocks, relayRequest, reply)
 		if err != nil {
 			go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil)
 			return relayResult, 0, err
