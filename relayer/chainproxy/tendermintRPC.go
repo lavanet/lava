@@ -168,7 +168,6 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
-
 	var msg JsonrpcMessage
 	var serviceApi *spectypes.ServiceApi
 	var err error
