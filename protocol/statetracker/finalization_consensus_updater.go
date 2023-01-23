@@ -11,26 +11,27 @@ const (
 	CallbackKeyForFinalizationConsensusUpdate = "finalization-consensus-update"
 )
 
-type FinalizationConsensusUpdater struct {
+type FinalizationConsensusUpdater interface {
+	RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus)
+	Update(latestBlock int64) error
+}
+
+type finalizationConsensusUpdater struct {
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
 	stateQuery                        StateQuery
 }
 
-func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery StateQuery) *FinalizationConsensusUpdater {
-	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
+func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery StateQuery) FinalizationConsensusUpdater {
+	return &finalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 
-func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
+func (fcu *finalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
 	// TODO: also update here for the first time
 	fcu.registeredFinalizationConsensuses = append(fcu.registeredFinalizationConsensuses, finalizationConsensus)
 }
 
-func (fcu *FinalizationConsensusUpdater) UpdaterKey() string {
-	return CallbackKeyForFinalizationConsensusUpdate
-}
-
-func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) error {
+func (fcu *finalizationConsensusUpdater) Update(latestBlock int64) error {
 	if int64(fcu.nextBlockForUpdate) > latestBlock {
 		return fmt.Errorf("%d is not latest block", latestBlock)
 	}

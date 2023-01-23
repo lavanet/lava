@@ -14,7 +14,6 @@ const (
 
 type PairingUpdater interface {
 	RegisterPairing(consumerSessionManager *lavasession.ConsumerSessionManager)
-	UpdaterKey() string
 	Update(int64) error
 }
 
@@ -31,10 +30,6 @@ func NewPairingUpdater(consumerAddress sdk.AccAddress, stateQuery StateQuery) Pa
 func (pu *pairingUpdater) RegisterPairing(consumerSessionManager *lavasession.ConsumerSessionManager) {
 	// TODO: also update here for the first time
 	pu.consumerSessionManagers = append(pu.consumerSessionManagers, consumerSessionManager)
-}
-
-func (pu *pairingUpdater) UpdaterKey() string {
-	return CallbackKeyForPairingUpdate
 }
 
 func (pu *pairingUpdater) Update(latestBlock int64) error {
