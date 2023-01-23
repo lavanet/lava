@@ -1,6 +1,8 @@
 package statetracker
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 )
@@ -12,10 +14,10 @@ const (
 type FinalizationConsensusUpdater struct {
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
-	stateQuery                        *StateQuery
+	stateQuery                        StateQuery
 }
 
-func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery *StateQuery) *FinalizationConsensusUpdater {
+func NewFinalizationConsensusUpdater(consumerAddress sdk.AccAddress, stateQuery StateQuery) *FinalizationConsensusUpdater {
 	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 
@@ -28,13 +30,18 @@ func (fcu *FinalizationConsensusUpdater) UpdaterKey() string {
 	return CallbackKeyForFinalizationConsensusUpdate
 }
 
-func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) {
+func (fcu *FinalizationConsensusUpdater) Update(latestBlock int64) error {
 	if int64(fcu.nextBlockForUpdate) > latestBlock {
-		return
+		return fmt.Errorf("%d is not latest block", latestBlock)
 	}
-	_, epoch, nextBlockForUpdate := fcu.stateQuery.GetPairing(latestBlock)
+	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(latestBlock)
+	if err != nil {
+		return err
+	}
 	fcu.nextBlockForUpdate = nextBlockForUpdate
 	for _, finalizationConsensus := range fcu.registeredFinalizationConsensuses {
 		finalizationConsensus.NewEpoch(epoch)
 	}
+
+	return nil
 }

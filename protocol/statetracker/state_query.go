@@ -5,17 +5,36 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-type StateQuery struct{}
-
-func (sq *StateQuery) New(ctx context.Context, clientCtx client.Context) (ret *StateQuery, err error) {
-	// set up the rpcClient necessary to make queries
-	return sq, nil
+type StateQuery interface {
+	GetPairing(latestBlock int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error)
 }
 
-func (sq *StateQuery) GetPairing(latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64) {
+type stateQuery struct {
+	rpcClient          client.Context
+	pairingQueryClient pairingtypes.QueryClient
+}
+
+func NewStateQuery(ctx context.Context, clientCtx client.Context) StateQuery {
+	// set up the rpcClient necessary to make queries
+	return &stateQuery{
+		rpcClient:          clientCtx,
+		pairingQueryClient: pairingtypes.NewQueryClient(clientCtx),
+	}
+}
+
+func (sq *stateQuery) GetPairing(latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, err error) {
 	// query the node via our clientCtx and run the get pairing query with the client address (in the clientCtx from)
-	// latestBlock arg can be used for caching the result
-	return
+	pairing, err := sq.pairingQueryClient.GetPairing(context.TODO(), &pairingtypes.QueryGetPairingRequest{
+		ChainID: sq.rpcClient.ChainID,
+		Client:  sq.rpcClient.FromName,
+	})
+
+	if err != nil {
+		return []epochstoragetypes.StakeEntry{}, 0, 0, err
+	}
+
+	return pairing.GetProviders(), pairing.GetCurrentEpoch(), pairing.GetCurrentEpoch() + 1, nil
 }

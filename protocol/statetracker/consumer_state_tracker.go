@@ -22,7 +22,7 @@ import (
 type ConsumerStateTracker struct {
 	consumerAddress      sdk.AccAddress
 	chainTracker         *chaintracker.ChainTracker
-	stateQuery           *StateQuery
+	stateQuery           StateQuery
 	txSender             *TxSender
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
@@ -39,11 +39,8 @@ func (cst *ConsumerStateTracker) New(ctx context.Context, txFactory tx.Factory, 
 	// use StateQuery to get the lava spec and spin up the chain tracker with the right params
 	// set up txSender the same way
 
-	stateQuery := StateQuery{}
-	cst.stateQuery, err = stateQuery.New(ctx, clientCtx)
-	if err != nil {
-		return nil, err
-	}
+	stateQuery := NewStateQuery(ctx, clientCtx)
+	cst.stateQuery = stateQuery
 
 	txSender := TxSender{}
 	cst.txSender, err = txSender.New(ctx, txFactory, clientCtx)
