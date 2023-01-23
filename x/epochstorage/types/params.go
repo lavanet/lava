@@ -96,6 +96,10 @@ func (p Params) Validate() error {
 		return err
 	}
 
+	if err := validateBlocksParams(p.UnstakeHoldBlocks, p.UnstakeHoldBlocksStatic, p.EpochBlocks*p.EpochsToSave); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -165,6 +169,15 @@ func validateUnstakeHoldBlocksStatic(v interface{}) error {
 
 	// TODO implement validation
 	_ = unstakeHoldBlocks
+
+	return nil
+}
+
+// validateUnstakeHoldBlocks validates the UnstakeHoldBlocks param
+func validateBlocksParams(unstakeHoldBlocks uint64, unstakeHoldBlocksStatic uint64, blocksToSave uint64) error {
+	if !(unstakeHoldBlocksStatic > unstakeHoldBlocks && unstakeHoldBlocks > blocksToSave) {
+		return fmt.Errorf("parameters do not follow the rule of: unstakeHoldBlocksStatic >  unstakeHoldBlocks > blocksToSave")
+	}
 
 	return nil
 }

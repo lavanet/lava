@@ -19,7 +19,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	spec.ProvidersTypes = spectypes.Spec_static
 	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
 
-	var balance int64 = 10000
+	var balance int64 = 5 * spec.MinStakeProvider.Amount.Int64()
 	provider := common.CreateNewAccount(ctx, *keepers, balance)
 
 	common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, balance/2, true)

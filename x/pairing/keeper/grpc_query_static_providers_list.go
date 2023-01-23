@@ -30,28 +30,9 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	epoch := k.epochStorageKeeper.GetEpochStart(ctx)
 	stakes, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, req.GetChainID())
 
-	geolocationMap := make(map[uint64][]*types.ProviderInfo)
 	if found {
-		geolocationcount := k.specKeeper.GeolocationCount(ctx)
-		for _, stake := range stakes {
-			for geolocation := uint64(1); geolocation <= geolocationcount; geolocation++ {
-				if stake.Geolocation&1 == 1 {
-					if _, ok := geolocationMap[geolocation]; !ok {
-						geolocationMap[geolocation] = []*types.ProviderInfo{}
-					}
-					geolocationMap[geolocation] = append(geolocationMap[geolocation], &types.ProviderInfo{Address: stake.Address, Endpoints: stake.Endpoints, ExpirationEpoch: 0})
-				}
-			}
-		}
+		return &types.QueryStaticProvidersListResponse{}, nil
 	}
 
-	response := types.QueryStaticProvidersListResponse{}
-	response.Config.ChainId = req.GetChainID()
-	response.Config.Description = spec.Name
-	response.Config.Geolocations = []*types.GeoLocation{}
-	for geolocation, providers := range geolocationMap {
-		response.Config.Geolocations = append(response.Config.Geolocations, &types.GeoLocation{GeoLocation: geolocation, Providers: providers})
-	}
-
-	return &response, nil
+	return &types.QueryStaticProvidersListResponse{Providers: stakes}, nil
 }

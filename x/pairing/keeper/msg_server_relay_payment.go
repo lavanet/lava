@@ -175,11 +175,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			}
 			return errorLogAndFormat("relay_payment_claim", details, "double spending detected")
 		}
-		allowedCU, err := k.GetAllowedCUForBlock(ctx, uint64(relay.BlockHeight), userStake)
-		if err != nil {
-			panic(fmt.Sprintf("user %s, allowedCU was not found for stake of: %d", clientAddr, userStake.Stake.Amount.Int64()))
-		}
-		cuToPay, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.ChainID, relay.CuSum, relay.BlockHeight, allowedCU, clientAddr, totalCUInEpochForUserProvider, providerAddr, epochStart)
+
+		err = k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, userStake, totalCUInEpochForUserProvider, epochStart)
 		if err != nil {
 			// TODO: maybe give provider money but burn user, colluding?
 			// TODO: display correct totalCU and usedCU for provider
@@ -189,17 +186,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				"provider":                      providerAddr.String(),
 				"error":                         err.Error(),
 				"CU":                            strconv.FormatUint(relay.CuSum, 10),
-				"cuToPay":                       strconv.FormatUint(cuToPay, 10),
+				"cuToPay":                       strconv.FormatUint(relay.CuSum, 10),
 				"totalCUInEpochForUserProvider": strconv.FormatUint(totalCUInEpochForUserProvider, 10),
 			}
 			return errorLogAndFormat("relay_payment_user_limit", details, "user bypassed CU limit")
 		}
-		if cuToPay > relay.CuSum {
-			panic("cuToPay should never be higher than relay.CuSum")
-		}
 
 		// pairing is valid, we can pay provider for work
-		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(cuToPay))
+		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 		if reward.IsZero() {
 			continue
 		}
@@ -209,7 +203,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(cuToPay, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.ChainID), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
 		if relay.QoSReport != nil {
 			QoS, err := relay.QoSReport.ComputeQoS()
@@ -225,7 +219,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// first check we can burn user before we give money to the provider
-		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(cuToPay))
+		amountToBurnClient := k.Keeper.BurnCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
 
 		burnAmount := sdk.Coin{Amount: amountToBurnClient.TruncateInt(), Denom: epochstoragetypes.TokenDenom}
 		burnSucceeded, err2 := k.BurnClientStake(ctx, relay.ChainID, clientAddr, burnAmount, false)
@@ -376,6 +370,12 @@ func (k msgServer) unSafeUnstakeProviderEntry(ctx sdk.Context, providerKey strin
 	if err != nil {
 		return utils.LavaError(ctx, k.Logger(ctx), "relay_payment_unstake", map[string]string{"existingEntry": fmt.Sprintf("%+v", existingEntry)}, "tried to unstake unsafe but didnt find entry")
 	}
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry)
+
+	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain, true)
+	if err != nil {
+		return err
+	}
+
+	k.epochStorageKeeper.AppendUnstakeEntry(ctx, epochstoragetypes.ProviderKey, existingEntry, unstakeHoldBlocks)
 	return nil
 }

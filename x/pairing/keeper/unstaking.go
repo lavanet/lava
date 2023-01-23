@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error {
@@ -50,7 +51,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}
 	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
-	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
+
+	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain, provider)
+	if err != nil {
+		return err
+	}
+
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry, unstakeHoldBlocks)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
@@ -117,4 +124,17 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 		}
 	}
 	return nil
+}
+
+func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string, isProvider bool) (uint64, error) {
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		return 0, fmt.Errorf("coult not find spec %s", chainID)
+	}
+
+	if isProvider && spec.ProvidersTypes == spectypes.Spec_static {
+		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, uint64(ctx.BlockHeight())), nil
+	} else {
+		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, uint64(ctx.BlockHeight())), nil
+	}
 }

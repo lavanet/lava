@@ -97,7 +97,13 @@ func (k Keeper) CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress 
 
 		// now we need to save the entry
 		k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(creditAmount))
-		return true, k.epochStorageKeeper.AppendUnstakeEntry(ctx, storageType, entry)
+
+		unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, entry.Chain, isProvider)
+		if err != nil {
+			return false, err
+		}
+
+		return true, k.epochStorageKeeper.AppendUnstakeEntry(ctx, storageType, entry, unstakeHoldBlocks)
 	}
 	// didn't find user
 	return false, nil

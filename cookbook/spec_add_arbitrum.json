@@ -14,7 +14,7 @@
                 "average_block_time": "500",
                 "allowed_block_lag_for_qos_sync": "20",
                 "min_stake_provider" : "1000ulava",
-                "min_stake_client" : "1000ulava",
+                "min_stake_client" : "100ulava",
                 "apis": [
                     {
                         "name": "rpc_modules",

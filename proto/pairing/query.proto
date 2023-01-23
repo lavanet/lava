@@ -9,7 +9,6 @@ import "pairing/epoch_payments.proto";
 // this line is used by starport scaffolding # 1
 import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
-import "pairing/static_providers.proto";
 import "epochstorage/stake_entry.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
@@ -204,7 +203,7 @@ message QueryStaticProvidersListRequest {
 }
 
 message QueryStaticProvidersListResponse {
-	StaticProvidersList config = 1 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

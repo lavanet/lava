@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // SetStakeStorage set a specific stakeStorage in the store from its index
@@ -346,29 +345,13 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
 }
 
-func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) error {
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) error {
 	// update unstake deadline to the higher among params (unstakeholdblocks and blockstosave)
-	// TODO validate in paramchange that unstakeholdblocks >= blockstosave and remove redundancy check
-
-	spec, found := k.specKeeper.GetSpec(ctx, stakeEntry.Chain)
-	if !found {
-		return utils.LavaError(ctx, k.Logger(ctx), "unstake_spec_missing", map[string]string{"spec": stakeEntry.Chain}, "trying to unstake an entry on missing spec")
-	}
 
 	blockHeight := uint64(ctx.BlockHeight())
-	blocksToSave, err := k.BlocksToSave(ctx, blockHeight)
-	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "append_stake_blockstosave_get_fail", map[string]string{}, "failed to get BlocksToSave")
-	}
-	stakeEntry.Deadline = blockHeight + blocksToSave
 
-	holdBlocks := blockHeight + k.UnstakeHoldBlocks(ctx, blockHeight)
-	if storageType == types.ProviderKey && spec.ProvidersTypes == spectypes.Spec_static {
-		holdBlocks = blockHeight + k.UnstakeHoldBlocksStatic(ctx, blockHeight)
-	}
-	if stakeEntry.Deadline < holdBlocks {
-		stakeEntry.Deadline = holdBlocks
-	}
+	stakeEntry.Deadline = blockHeight + unstakeHoldBlocks
+
 	// this stake storage entries are sorted by deadline
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	entries := []types.StakeEntry{}
