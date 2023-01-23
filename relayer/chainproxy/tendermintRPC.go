@@ -168,35 +168,50 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
+	// connectionType is currently only used in rest api
+	// Unmarshal request
 	var msg JsonrpcMessage
-	var serviceApi *spectypes.ServiceApi
-	var err error
-	var requestedBlock int64
-
 	if string(data) != "" {
+		// assuming jsonrpc
 		err := json.Unmarshal(data, &msg)
 		if err != nil {
 			return nil, err
 		}
-
-		serviceApi, err = cp.getSupportedApi(msg.Method)
-		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
-		}
-
-		requestedBlock, err = parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
-		if err != nil {
-			return nil, err
-		}
 	} else {
-		msg = JsonrpcMessage{}
-
-		method := strings.SplitN(path, "?", 2)[0]
-
-		serviceApi, err = cp.getSupportedApi(method)
-		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
+		// assuming URI
+		var parsedMethod string
+		idx := strings.Index(path, "?")
+		if idx == -1 {
+			parsedMethod = path
+		} else {
+			parsedMethod = path[0:idx]
 		}
+
+		msg = JsonrpcMessage{
+			ID:      []byte("1"),
+			Version: "2.0",
+			Method:  parsedMethod,
+		}
+		if strings.Contains(path[idx+1:], "=") {
+			params := make(map[string]interface{})
+			rawParams := strings.Split(path[idx+1:], "&") // list with structure ['height=0x500',...]
+			for _, param := range rawParams {
+				splitParam := strings.Split(param, "=")
+				if len(splitParam) != 2 {
+					return nil, utils.LavaFormatError("Cannot parse query params", nil, &map[string]string{"params": param})
+				}
+				params[splitParam[0]] = splitParam[1]
+			}
+			msg.Params = params
+		} else {
+			msg.Params = make([]interface{}, 0)
+		}
+	}
+
+	// Check api is supported and save it in nodeMsg
+	serviceApi, err := cp.getSupportedApi(msg.Method)
+	if err != nil {
+		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
 	var apiInterface *spectypes.ApiInterface = nil
@@ -208,6 +223,11 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	}
 	if apiInterface == nil {
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
+	}
+
+	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+	if err != nil {
+		return nil, err
 	}
 
 	nodeMsg := &TendemintRpcMessage{
