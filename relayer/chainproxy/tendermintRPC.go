@@ -374,66 +374,96 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	}
 }
 
+// Send sends either Tendermint RPC or URI call depending on the type
 func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	// Get node
+	// If path exists then the call is URI
 	if nm.path != "" {
-		httpClient := http.Client{
-			Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
-		}
-
-		var connectionTypeSelected string = http.MethodGet
-
-		url := nm.cp.nodeUrl + "/" + nm.path
-
-		req, err := http.NewRequest(connectionTypeSelected, url, nil)
-		if err != nil {
-			return nil, "", nil, err
-		}
-
-		res, err := httpClient.Do(req)
-		if err != nil {
-			return nil, "", nil, err
-		}
-
-		if res.Body != nil {
-			defer res.Body.Close()
-		}
-
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, "", nil, err
-		}
-
-		reply := &pairingtypes.RelayReply{
-			Data: body,
-		}
-
-		return reply, "", nil, nil
+		return nm.SendURI(ctx, ch)
 	}
 
+	// Else do RPC call
+	return nm.SendRPC(ctx, ch)
+}
+
+// SendURI sends URI HTTP call
+func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// check if the input channel is not nil
+	if ch != nil {
+		// return an error if the channel is not nil
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil, nil)
+	}
+
+	// create a new http client with a timeout set by the getTimePerCu function
+	httpClient := http.Client{
+		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
+	}
+
+	// construct the url by concatenating the node url with the path variable
+	url := nm.cp.nodeUrl + "/" + nm.path
+
+	// create a new http request
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// send the http request and get the response
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// close the response body
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	// read the response body
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// create a new relay reply struct with the response body as the data
+	reply := &pairingtypes.RelayReply{
+		Data: body,
+	}
+
+	return reply, "", nil, nil
+}
+
+// SendRPC sends Tendermint HTTP or WebSockets call
+func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// Get rpc connection from the connection pool
 	rpc, err := nm.cp.conn.GetRpc(true)
 	if err != nil {
 		return nil, "", nil, err
 	}
+
+	// return the rpc connection to the pool after the function completes
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	params := nm.msg.Params
-
-	// Call our node
+	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
-	var replyMessage *JsonrpcMessage
 	var sub *rpcclient.ClientSubscription
+
+	// If ch is not nil do subscription
 	if ch != nil {
+		// subscribe to the rpc call if the channel is not nil
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
+		// create a context with a timeout set by the getTimePerCu function
 		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits))
 		defer cancel()
+		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
 	}
 
+	// create variable for the jsonrpc message
 	var replyMsg JsonrpcMessage
-	// the error check here would only wrap errors not from the rpc
+	// check if there was an error
 	if err != nil {
+		// create a new jsonrpc message with the error message
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,
@@ -443,26 +473,33 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 			Message: fmt.Sprintf("%s", err),
 		}
 	} else {
-		replyMessage, err = convertMsg(rpcMessage)
+		// convert the rpcMessage to jsonrpcMessage
+		replyMessage, err := convertMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
 		}
 
+		// assign the reply message to the msg variable
 		nm.msg = replyMessage
 		replyMsg = *replyMessage
 	}
 
+	// marshal the jsonrpc message to json
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
 	}
 
+	// create a new relay reply struct
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 
 	if ch != nil {
+		// get the params for the rpc call
+		params := nm.msg.Params
+
 		paramsMap, ok := params.(map[string]interface{})
 		if !ok {
 			return nil, "", nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)

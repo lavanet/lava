@@ -328,7 +328,7 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		return nil, "", nil, err
 	}
 
-	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
+	// setting the content-type to be application/json instead of Go's default http.DefaultClient
 	if connectionTypeSelected == http.MethodPost || connectionTypeSelected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
