@@ -772,17 +772,22 @@ func runE2E() {
 	lt.startJSONRPCGateway(jsonCTX)
 	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
 
+	tendermintCTX := context.Background()
+	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
+	lt.startTendermintGateway(tendermintCTX)
+	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
+
+	restCTX := context.Background()
+	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
+	lt.startRESTGateway(restCTX)
+	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	if jsonErr != nil {
 		panic(jsonErr)
 	} else {
 		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
 	}
-
-	tendermintCTX := context.Background()
-	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
-	lt.startTendermintGateway(tendermintCTX)
-	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
 
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintErr != nil {
@@ -799,11 +804,6 @@ func runE2E() {
 	}
 
 	lt.lavaOverLava(tendermintCTX)
-
-	restCTX := context.Background()
-	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
-	lt.startRESTGateway(restCTX)
-	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
 
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 	if restErr != nil {
