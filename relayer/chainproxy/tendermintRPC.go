@@ -178,7 +178,6 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			return nil, err
 		}
 	} else {
-		connectionType = "GET"
 		// assuming URI
 		var parsedMethod string
 		idx := strings.Index(path, "?")
@@ -207,6 +206,9 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		} else {
 			msg.Params = make(map[string]interface{}, 0)
 		}
+
+		// connection type for uri should be GET
+		connectionType = "GET"
 	}
 
 	// Check api is supported and save it in nodeMsg
@@ -215,8 +217,10 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
+	// Extract default block parser
 	blockParser := serviceApi.BlockParsing
 
+	// Find matched api interface by connection type
 	var apiInterface *spectypes.ApiInterface = nil
 	for i := range serviceApi.ApiInterfaces {
 		if serviceApi.ApiInterfaces[i].Type == connectionType {
@@ -228,16 +232,16 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
-	if apiInterface.GetOverwriteBlockParsing() != nil && path != "" {
+	// Check if custom block parser exists in the api interface
+	if apiInterface.GetOverwriteBlockParsing() != nil {
 		blockParser = *apiInterface.GetOverwriteBlockParsing()
 	}
 
+	// Fetch requested block, it is used for data reliability
 	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("RequestedBlock", requestedBlock)
 
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
