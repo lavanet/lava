@@ -154,9 +154,9 @@ func (cp *GrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), http.MethodGet)
+		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
 	} else {
-		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, http.MethodGet)
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, "")
 	}
 
 	if err != nil {
@@ -189,7 +189,7 @@ func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := make(json.RawMessage, 0)
-	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, http.MethodGet)
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, "")
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("new Message creation Failed at FetchLatestBlockNum", err, nil)
 	}
@@ -251,6 +251,7 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	nodeMsg := &GrpcMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
 		path:           path,
 		msg:            data,
 		connectionType: connectionType,
