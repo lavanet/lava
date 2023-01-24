@@ -282,7 +282,7 @@ func ParseDictionaryOrDefault(rpcInput RPCInput, input []string, dataSource int)
 		}
 
 		// if there is no matching prop, return default
-		return appendStringToInterfaceArray(defaultValue), nil
+		return appendInterfaceToInterfaceArray(defaultValue), nil
 	case map[string]interface{}:
 		// If attribute with key propName exists return value
 		if val, ok := unmarshalledDataTyped[propName]; ok {
@@ -290,7 +290,7 @@ func ParseDictionaryOrDefault(rpcInput RPCInput, input []string, dataSource int)
 		}
 
 		// Else return default value
-		return appendStringToInterfaceArray(defaultValue), nil
+		return appendInterfaceToInterfaceArray(defaultValue), nil
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionaryOrDefault with other types")
 	}
@@ -416,19 +416,12 @@ func parseArrayOfInterfaces(data []interface{}, propName string, innerSeparator 
 				continue
 			} else {
 				// if yes return the value
-				return appendStringToInterfaceArray(valueArr[1])
+				return appendInterfaceToInterfaceArray(valueArr[1])
 			}
 		}
 	}
 
 	return nil
-}
-
-// appendStringToInterfaceArray appends string to interface array
-func appendStringToInterfaceArray(value string) []interface{} {
-	retArr := make([]interface{}, 0)
-	retArr = append(retArr, value)
-	return retArr
 }
 
 // appendInterfaceToInterfaceArray appends interface to interface array
