@@ -2,8 +2,10 @@ package rpcconsumer
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -17,6 +19,16 @@ import (
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	"github.com/spf13/viper"
+)
+
+const (
+	EndpointsConfigName = "endpoints"
+)
+
+var (
+	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
+	NumFieldsInConfig      = len(Yaml_config_properties)
 )
 
 type ConsumerStateTrackerInf interface {
@@ -61,20 +73,54 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed unmarshaling public address", err, &map[string]string{"keyName": keyName, "pubkey": clientKey.GetPubKey().Address().String()})
 	}
 	utils.LavaFormatInfo("RPCConsumer pubkey: "+addr.String(), nil)
-
+	utils.LavaFormatInfo("RPCConsumer setting up endpoints", &map[string]string{"length": strconv.Itoa(len(rpcEndpoints))})
 	for _, rpcEndpoint := range rpcEndpoints {
-		// validate uniqueness of endpoint
-		// create ConsumerSessionManager for each endpoint
 		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint)
 		key := rpcEndpoint.Key()
 		rpcc.consumerSessionManagers[key] = consumerSessionManager
 		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, rpcc.consumerSessionManagers[key])
+		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
+		if err != nil {
+			return err
+		}
+		consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, chainParser)
+		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
+		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, rpcc.consumerSessionManagers[key], requiredResponses, privKey, vrf_sk, cache)
+		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": lavasession.PrintRPCEndpoint(rpcEndpoint)})
+		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, rpcc.consumerSessionManagers[key], requiredResponses, privKey, vrf_sk, cache)
 	}
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	return nil
+}
+
+func ParseEndpointArgs(endpoint_strings []string) (viper_endpoints *viper.Viper, err error) {
+	viper_endpoints = viper.New()
+	if len(endpoint_strings)%NumFieldsInConfig != 0 {
+		return nil, fmt.Errorf("invalid endpoint_strings length %d, needs to divide by %d without residue", len(endpoint_strings), NumFieldsInConfig)
+	}
+	endpoints := []map[string]string{}
+	for idx := 0; idx < len(endpoint_strings); idx += NumFieldsInConfig {
+		toAdd := map[string]string{}
+		for inner_idx := 0; inner_idx < NumFieldsInConfig; inner_idx++ {
+			toAdd[Yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
+		}
+		endpoints = append(endpoints, toAdd)
+	}
+	viper_endpoints.Set(EndpointsConfigName, endpoints)
+	return
+}
+
+func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(EndpointsConfigName, &endpoints)
+	if err != nil {
+		utils.LavaFormatFatal("could not unmarshal endpoints", err, &map[string]string{"viper_endpoints": fmt.Sprintf("%v", viper_endpoints.AllSettings())})
+	}
+	for _, endpoint := range endpoints {
+		endpoint.Geolocation = geolocation
+	}
+	return
 }
