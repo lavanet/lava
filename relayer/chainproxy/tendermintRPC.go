@@ -206,9 +206,6 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		} else {
 			msg.Params = make(map[string]interface{}, 0)
 		}
-
-		// connection type for uri should be GET
-		connectionType = "GET"
 	}
 
 	// Check api is supported and save it in nodeMsg
@@ -233,7 +230,8 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 	}
 
 	// Check if custom block parser exists in the api interface
-	if apiInterface.GetOverwriteBlockParsing() != nil {
+	// Use custom block parser only for URI calls
+	if apiInterface.GetOverwriteBlockParsing() != nil && path != "" {
 		blockParser = *apiInterface.GetOverwriteBlockParsing()
 	}
 

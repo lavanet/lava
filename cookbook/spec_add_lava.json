@@ -85,17 +85,6 @@
                                     "stateful": 0
                                 },
                                 "interface": "tendermintrpc",
-                                "type": "POST",
-                                "extra_compute_units": "0"
-                            },
-                            {
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "interface": "tendermintrpc",
                                 "type": "GET",
                                 "extra_compute_units": "0",
                                 "overwrite_block_parsing": {
