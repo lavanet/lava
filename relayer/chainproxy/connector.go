@@ -22,32 +22,44 @@ import (
 const (
 	DialTimeout                                = 500 * time.Millisecond
 	ParallelConnectionsFlag                    = "parallel-connections"
-	DefaultNumberOfParallelConnections         = 10
 	MaximumNumberOfParallelConnectionsAttempts = 10
 )
+
+var NumberOfParallelConnections uint = 10
 
 type Connector struct {
 	lock        utils.LavaMutex
 	freeClients []*rpcclient.Client
 	usedClients int
+	addr        string
 }
 
 func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
+	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
 	connector := &Connector{
 		freeClients: make([]*rpcclient.Client, 0, nConns),
+		addr:        addr,
 	}
+	reachedClientLimit := false
 
 	for i := uint(0); i < nConns; i++ {
+		if reachedClientLimit {
+			break
+		}
 		var rpcClient *rpcclient.Client
 		var err error
 		numberOfConnectionAttempts := 0
 		for {
 			numberOfConnectionAttempts += 1
 			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
-				utils.LavaFormatFatal("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
+				utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
 					nil,
-					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10)},
+					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10),
+						"Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10),
+					},
 				)
+				reachedClientLimit = true
+				break
 			}
 			if ctx.Err() != nil {
 				connector.Close()
@@ -101,9 +113,38 @@ func (connector *Connector) Close() {
 	}
 }
 
-func (connector *Connector) GetRpc(block bool) (*rpcclient.Client, error) {
+func (connector *Connector) increaseNumberOfClients(ctx context.Context) {
+	utils.LavaFormatInfo("No clients are free, increasing number of clients", nil)
+	var rpcClient *rpcclient.Client
+	var err error
+	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
+		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
+		rpcClient, err = rpcclient.DialContext(nctx, connector.addr)
+		if err != nil {
+			utils.LavaFormatWarning("increaseNumberOfClients, Could not connect to the node, retrying",
+				err,
+				&map[string]string{
+					"Number Of Attempts": strconv.Itoa(connectionAttempt),
+				})
+			cancel()
+			continue
+		}
+		cancel()
+
+		connector.lock.Lock() // add connection to free list.
+		defer connector.lock.Unlock()
+		connector.freeClients = append(connector.freeClients, rpcClient)
+		return
+	}
+
+}
+
+func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
+	if len(connector.freeClients) <= connector.usedClients { // if we reached half of the free clients start creating new connections
+		go connector.increaseNumberOfClients(ctx) // increase asynchronously the free list.
+	}
 
 	if len(connector.freeClients) == 0 {
 		if !block {
@@ -111,6 +152,9 @@ func (connector *Connector) GetRpc(block bool) (*rpcclient.Client, error) {
 		} else {
 			for {
 				connector.lock.Unlock()
+				// if we reached 0 connections we need to create more connections
+				// before sleeping, increase asynchronously the free list.
+				go connector.increaseNumberOfClients(ctx)
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()
 				if len(connector.freeClients) != 0 {
@@ -132,7 +176,12 @@ func (connector *Connector) ReturnRpc(rpc *rpcclient.Client) {
 	defer connector.lock.Unlock()
 
 	connector.usedClients--
+	if len(connector.freeClients) > ((connector.usedClients + 1 /* + the one that was currently used */) + int(NumberOfParallelConnections) /* the number we started with */) {
+		rpc.Close() // close connection
+		return      // return without appending back to decrease idle connections
+	}
 	connector.freeClients = append(connector.freeClients, rpc)
+
 }
 
 type GRPCConnector struct {
