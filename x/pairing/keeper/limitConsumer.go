@@ -58,12 +58,11 @@ func (k Keeper) ClientMaxCUProviderForBlock(ctx sdk.Context, blockHeight uint64,
 		if err != nil {
 			return 0, err
 		}
-
 	} else {
 		epoch := k.epochStorageKeeper.GetEpochStart(ctx)
 		stakes, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, clientEntry.Chain)
 
-		if found {
+		if !found {
 			return 0, fmt.Errorf("stake entries for chain %s not found", clientEntry.Chain)
 		}
 		servicersToPairCount = uint64(len(stakes))

@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"golang.org/x/exp/slices"
 )
@@ -54,8 +55,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// TODO: add support for spec changes
-		ok, _ := k.Keeper.specKeeper.IsSpecFoundAndActive(ctx, relay.ChainID)
-		if !ok {
+		spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
+		if !found || !spec.Enabled {
 			return errorLogAndFormat("relay_payment_spec", map[string]string{"chainID": relay.ChainID}, "invalid spec ID specified in proof")
 		}
 
@@ -84,13 +85,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		payReliability := false
 		// validate data reliability
 		if relay.DataReliability != nil {
-			spec, found := k.specKeeper.GetSpec(ctx, relay.ChainID)
 			details := map[string]string{"client": clientAddr.String(), "provider": providerAddr.String()}
-			if !found {
-				details["chainID"] = relay.ChainID
-				errorLogAndFormat("relay_payment_spec", details, "failed to get spec for chain ID")
-				panic(fmt.Sprintf("failed to get spec for index: %s", relay.ChainID))
-			}
 			if !spec.DataReliabilityEnabled {
 				details["chainID"] = relay.ChainID
 				return errorLogAndFormat("relay_payment_data_reliability_disabled", details, "compares_hashes false for spec and reliability was received")
@@ -141,12 +136,30 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			servicersToPairCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
-			if err != nil {
-				details["error"] = err.Error()
-				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, details["error"])
+			var providersCount uint64
+			if spec.ProvidersTypes == spectypes.Spec_dynamic {
+				providersCount, err = k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
+				if err != nil {
+					details["error"] = err.Error()
+					return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
+				}
+			} else {
+				epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
+				if err != nil {
+					details["error"] = err.Error()
+					return errorLogAndFormat("relay_payment_reliability_epoch_start", details, err.Error())
+				}
+				stakes, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, spec.Index)
+
+				if found {
+					details["error"] = fmt.Errorf("no stake entries found for epoch %d for chain %s", epoch, spec.Index).Error()
+					return errorLogAndFormat("relay_payment_reliability_stake_entries", details, err.Error())
+				}
+
+				providersCount = uint64(len(stakes))
 			}
-			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(servicersToPairCount), spec.ReliabilityThreshold)
+
+			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
 			if vrfErr != nil {
 				details["error"] = vrfErr.Error()
 				details["VRF_index"] = strconv.FormatInt(index, 10)
