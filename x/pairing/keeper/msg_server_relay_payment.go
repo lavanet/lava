@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"golang.org/x/exp/slices"
 )
@@ -136,27 +135,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return errorLogAndFormat("relay_data_reliability_vrf_proof", details, "invalid vrf proof by consumer, result doesn't correspond to proof")
 			}
 
-			var providersCount uint64
-			if spec.ProvidersTypes == spectypes.Spec_dynamic {
-				providersCount, err = k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
-				if err != nil {
-					details["error"] = err.Error()
-					return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
-				}
-			} else {
-				epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.BlockHeight))
-				if err != nil {
-					details["error"] = err.Error()
-					return errorLogAndFormat("relay_payment_reliability_epoch_start", details, err.Error())
-				}
-				stakes, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, spec.Index)
-
-				if found {
-					details["error"] = fmt.Errorf("no stake entries found for epoch %d for chain %s", epoch, spec.Index).Error()
-					return errorLogAndFormat("relay_payment_reliability_stake_entries", details, err.Error())
-				}
-
-				providersCount = uint64(len(stakes))
+			providersCount, err := k.ServicersToPairCount(ctx, uint64(relay.BlockHeight))
+			if err != nil {
+				details["error"] = err.Error()
+				return errorLogAndFormat("relay_payment_reliability_servicerstopaircount", details, err.Error())
 			}
 
 			index, vrfErr := utils.GetIndexForVrf(relay.DataReliability.VrfValue, uint32(providersCount), spec.ReliabilityThreshold)
