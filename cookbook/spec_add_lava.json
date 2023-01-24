@@ -91,7 +91,6 @@
                                     "parser_arg": [
                                         "height",
                                         "=",
-                                        "0",
                                         "latest"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_DEFAULT"
