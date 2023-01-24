@@ -16,7 +16,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
+	rpcEndpoint    *RPCEndpoint // used to filter out endpoints
 	lock           sync.RWMutex
 	pairing        map[string]*ConsumerSessionsWithProvider // key == provider address
 	currentEpoch   uint64
@@ -33,8 +35,12 @@ type ConsumerSessionManager struct {
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 }
 
+func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
+	return *csm.rpcEndpoint
+}
+
 // Update the provider pairing list for the ConsumerSessionManager
-func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
+func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 
 	csm.lock.Lock()         // start by locking the class lock.
@@ -58,8 +64,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
-		csm.pairingAddresses[idx] = provider.Acc
-		csm.pairing[provider.Acc] = provider
+		csm.pairingAddresses[idx] = provider.PublicLavaAddress
+		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
 
@@ -138,6 +144,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
+				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, &map[string]string{"providerAddress": providerAddress})
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
@@ -622,4 +629,10 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 	}
 
 	return nil
+}
+
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint) *ConsumerSessionManager {
+	csm := ConsumerSessionManager{}
+	csm.rpcEndpoint = rpcEndpoint
+	return &csm
 }
