@@ -153,6 +153,15 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 	}
 
+	for _, stakeEntry := range validProviders {
+		providerAddress := stakeEntry.Address
+		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
+		if err != nil {
+			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
+		}
+		addrList = append(addrList, providerAccAddr)
+	}
+
 	return validProviders, addrList, nil
 }
 

@@ -196,7 +196,7 @@ func TestPairingStatic(t *testing.T) {
 
 	for i := uint64(0); i < servicersToPair*2; i++ {
 		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake, true)
+		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i), true)
 	}
 
 	//we expect to get all the providers in static spec
@@ -204,8 +204,10 @@ func TestPairingStatic(t *testing.T) {
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
 	providers, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
-
 	require.Nil(t, err)
-	require.Equal(t, int(servicersToPair*2), len(providers))
+
+	for i, provider := range providers {
+		require.Equal(t, provider.Stake.Amount.Int64(), stake+int64(i))
+	}
 
 }
