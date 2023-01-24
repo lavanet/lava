@@ -320,7 +320,7 @@ func askForRewards(staleEpochHeight int64) {
 func findSequenceNumber(sequence string) (int, error) {
 	re := regexp.MustCompile(`expected (\d+), got (\d+)`)
 	match := re.FindStringSubmatch(sequence)
-	if match == nil {
+	if match == nil || len(match) < 2 {
 		return 0, utils.LavaFormatWarning("Failed to parse sequence number from error", nil, &map[string]string{"sequence": sequence})
 	}
 	return strconv.Atoi(match[1]) // atoi return 0 upon error, so it will be ok when sequenceNumberParsed uses it
@@ -338,7 +338,7 @@ func parseTransactionResult(transactionResult string) (string, int) {
 
 	re := regexp.MustCompile(`code:(\d+)`) // extracting code from transaction result (in format code:%d)
 	match := re.FindStringSubmatch(transactionResult)
-	if match == nil {
+	if match == nil || len(match) < 2 {
 		return summarizedResult, 1 // not zero
 	}
 	retCode, err := strconv.Atoi(match[1]) // extract return code.
