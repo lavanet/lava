@@ -8,7 +8,6 @@ import (
 
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) GetAllowedCUForBlock(ctx sdk.Context, blockHeight uint64, entry *epochstoragetypes.StakeEntry) (uint64, error) {
@@ -47,25 +46,9 @@ func (k Keeper) ClientMaxCUProviderForBlock(ctx sdk.Context, blockHeight uint64,
 		return 0, fmt.Errorf("user %s, MaxCU was not found for stake of: %d", clientEntry, clientEntry.Stake.Amount.Int64())
 	}
 
-	spec, found := k.specKeeper.GetSpec(ctx, clientEntry.Chain)
-	if !found {
-		return 0, fmt.Errorf("spec %s not found", clientEntry.Chain)
-	}
-
-	var servicersToPairCount uint64
-	if spec.ProvidersTypes == spectypes.Spec_dynamic {
-		servicersToPairCount, err = k.ServicersToPairCount(ctx, blockHeight)
-		if err != nil {
-			return 0, err
-		}
-	} else {
-		epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-		stakes, found := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, epochstoragetypes.ProviderKey, clientEntry.Chain)
-
-		if !found {
-			return 0, fmt.Errorf("stake entries for chain %s not found", clientEntry.Chain)
-		}
-		servicersToPairCount = uint64(len(stakes))
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, blockHeight)
+	if err != nil {
+		return 0, err
 	}
 
 	allowedCU /= servicersToPairCount

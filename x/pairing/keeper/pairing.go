@@ -152,22 +152,19 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		return nil, nil, fmt.Errorf("spec not found or not enabled")
 	}
 
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	if spec.ProvidersTypes == spectypes.Spec_dynamic {
 		// calculates a hash and randomly chooses the providers
-		servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
-		if err != nil {
-			return nil, nil, err
-		}
+
 		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
+	} else {
+		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
 	}
-	for _, stakeEntry := range validProviders {
-		providerAddress := stakeEntry.Address
-		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
-		if err != nil {
-			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
-		}
-		addrList = append(addrList, providerAccAddr)
-	}
+
 	return validProviders, addrList, nil
 }
 
@@ -229,6 +226,14 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
 	return returnedProviders
+}
+
+func (k Keeper) returnSubsetOfProvidersByHighestStake(ctx sdk.Context, providersEntries []epochstoragetypes.StakeEntry, count uint64) (returnedProviders []epochstoragetypes.StakeEntry) {
+	if uint64(len(providersEntries)) <= count {
+		return providersEntries
+	} else {
+		return providersEntries[0:count]
+	}
 }
 
 const (
