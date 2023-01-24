@@ -29848,6 +29848,9 @@ paths:
                             type: string
                           moniker:
                             type: string
+                    epochBlockHash:
+                      type: string
+                      format: byte
               pagination:
                 type: object
                 properties:
@@ -30014,6 +30017,9 @@ paths:
                           type: string
                         moniker:
                           type: string
+                  epochBlockHash:
+                    type: string
+                    format: byte
         default:
           description: An unexpected error response.
           schema:
@@ -30402,6 +30408,9 @@ paths:
               specLastUpdatedBlock:
                 type: string
                 format: uint64
+              blockOfNextPairing:
+                type: string
+                format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -30445,10 +30454,6 @@ paths:
                 description: params holds all the parameters of this module.
                 type: object
                 properties:
-                  minStakeProvider:
-                    type: string
-                  minStakeClient:
-                    type: string
                   mintCoinsPerCU:
                     type: string
                   burnCoinsPerCU:
@@ -30791,8 +30796,52 @@ paths:
           schema:
             type: object
             properties:
-              text:
-                type: string
+              providers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stake:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    address:
+                      type: string
+                    deadline:
+                      type: string
+                      format: uint64
+                    endpoints:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          iPPORT:
+                            type: string
+                          useType:
+                            type: string
+                          geolocation:
+                            type: string
+                            format: uint64
+                    geolocation:
+                      type: string
+                      format: uint64
+                    chain:
+                      type: string
+                    vrfpk:
+                      type: string
+                    moniker:
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -31414,10 +31463,8 @@ paths:
                       format: uint64
                     min_stake_provider:
                       type: string
-                      format: uint64
-                    min_stake_consumer:
+                    min_stake_client:
                       type: string
-                      format: uint64
                     providers_types:
                       type: string
                       enum:
@@ -31675,10 +31722,8 @@ paths:
                     format: uint64
                   min_stake_provider:
                     type: string
-                    format: uint64
-                  min_stake_consumer:
+                  min_stake_client:
                     type: string
-                    format: uint64
                   providers_types:
                     type: string
                     enum:
@@ -53205,6 +53250,9 @@ definitions:
                     type: string
                   moniker:
                     type: string
+            epochBlockHash:
+              type: string
+              format: byte
       pagination:
         type: object
         properties:
@@ -53315,6 +53363,9 @@ definitions:
                   type: string
                 moniker:
                   type: string
+          epochBlockHash:
+            type: string
+            format: byte
   lavanet.lava.epochstorage.QueryParamsResponse:
     type: object
     properties:
@@ -53430,6 +53481,9 @@ definitions:
               type: string
             moniker:
               type: string
+      epochBlockHash:
+        type: string
+        format: byte
   lavanet.lava.pairing.CacheUsage:
     type: object
     properties:
@@ -53484,10 +53538,6 @@ definitions:
   lavanet.lava.pairing.Params:
     type: object
     properties:
-      minStakeProvider:
-        type: string
-      minStakeClient:
-        type: string
       mintCoinsPerCU:
         type: string
       burnCoinsPerCU:
@@ -53841,6 +53891,9 @@ definitions:
       specLastUpdatedBlock:
         type: string
         format: uint64
+      blockOfNextPairing:
+        type: string
+        format: uint64
   lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse:
     type: object
     properties:
@@ -53890,10 +53943,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
         properties:
-          minStakeProvider:
-            type: string
-          minStakeClient:
-            type: string
           mintCoinsPerCU:
             type: string
           burnCoinsPerCU:
@@ -53974,8 +54023,52 @@ definitions:
   lavanet.lava.pairing.QueryStaticProvidersListResponse:
     type: object
     properties:
-      text:
-        type: string
+      providers:
+        type: array
+        items:
+          type: object
+          properties:
+            stake:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
+            address:
+              type: string
+            deadline:
+              type: string
+              format: uint64
+            endpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  iPPORT:
+                    type: string
+                  useType:
+                    type: string
+                  geolocation:
+                    type: string
+                    format: uint64
+            geolocation:
+              type: string
+              format: uint64
+            chain:
+              type: string
+            vrfpk:
+              type: string
+            moniker:
+              type: string
   lavanet.lava.pairing.QueryUserEntryResponse:
     type: object
     properties:
@@ -54292,10 +54385,8 @@ definitions:
               format: uint64
             min_stake_provider:
               type: string
-              format: uint64
-            min_stake_consumer:
+            min_stake_client:
               type: string
-              format: uint64
             providers_types:
               type: string
               enum:
@@ -54466,10 +54557,8 @@ definitions:
             format: uint64
           min_stake_provider:
             type: string
-            format: uint64
-          min_stake_consumer:
+          min_stake_client:
             type: string
-            format: uint64
           providers_types:
             type: string
             enum:
@@ -54756,10 +54845,8 @@ definitions:
         format: uint64
       min_stake_provider:
         type: string
-        format: uint64
-      min_stake_consumer:
+      min_stake_client:
         type: string
-        format: uint64
       providers_types:
         type: string
         enum:

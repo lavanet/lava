@@ -119,6 +119,7 @@ message QueryGetPairingResponse {
 	uint64 currentEpoch = 2;
 	uint64 timeLeftToNextPairing = 3;
 	uint64 specLastUpdatedBlock = 4;
+	uint64 blockOfNextPairing = 5;
 }
 
 message QueryVerifyPairingRequest {

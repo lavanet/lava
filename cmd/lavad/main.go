@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -13,10 +15,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/ignite-hq/cli/ignite/pkg/cosmoscmd"
 	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/relayer"
 	"github.com/lavanet/lava/relayer/chainproxy"
+	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sentry"
 	"github.com/lavanet/lava/utils"
@@ -178,6 +183,43 @@ func main() {
 		},
 	}
 
+	cmdRPCClient := &cobra.Command{
+		Use:     "rpcconsumer [listen-ip]:[listen-port],[spec-chain-id],[api-interface] repeat...",
+		Short:   "rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers",
+		Long:    `rpcconsumer sets up a server to perform api requests and sends them through the lava protocol to data providers`,
+		Example: `rpcclient 127.0.0.1:3333,COS3,tendermintrpc 127.0.0.1:3334,COS3,rest`,
+		Args:    cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo("Gateway Proxy process started", &map[string]string{"args": strings.Join(args, ",")})
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			// decide on cli input method
+			// write good documentation for usage
+			// parse requested inputs into RPCEndpoint list
+			// handle flags, pass necessary fields
+			ctx := context.Background()
+			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			if err != nil {
+				return err
+			}
+			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithChainID(networkChainId)
+			rpcConsumer := rpcconsumer.RPCConsumer{}
+			rpcEndpoints := []*lavasession.RPCEndpoint{}
+			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
+			utils.LavaFormatInfo("lavad Binary Version: "+version.Version, nil)
+			rand.Seed(time.Now().UnixNano())
+			vrf_sk, _, err := utils.GetOrCreateVRFKey(clientCtx)
+			if err != nil {
+				utils.LavaFormatFatal("failed getting or creating a VRF key", err, nil)
+			}
+			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk)
+			return nil
+		},
+	}
+
 	flags.AddTxFlagsToCmd(cmdServer)
 	cmdServer.MarkFlagRequired(flags.FlagFrom)
 	flags.AddTxFlagsToCmd(cmdPortalServer)
@@ -204,6 +246,17 @@ func main() {
 	rootCmd.AddCommand(cmdServer)
 	rootCmd.AddCommand(cmdPortalServer)
 	rootCmd.AddCommand(cmdTestClient)
+
+	// RPCConsumer command flags
+	flags.AddTxFlagsToCmd(cmdRPCClient)
+	cmdRPCClient.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCClient.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdRPCClient.Flags().Uint64(sentry.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCClient.MarkFlagRequired(sentry.GeolocationFlag)
+	cmdRPCClient.Flags().Bool("secure", false, "secure sends reliability on every message")
+	cmdRPCClient.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCClient.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	// rootCmd.AddCommand(cmdRPCClient) // Remove this when ready
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		os.Exit(1)

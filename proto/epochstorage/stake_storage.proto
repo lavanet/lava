@@ -8,6 +8,6 @@ import "gogoproto/gogo.proto";
 message StakeStorage {
   string index = 1; 
   repeated StakeEntry stakeEntries = 2 [(gogoproto.nullable) = false]; 
-  
+  bytes epochBlockHash = 3;
 }
 
