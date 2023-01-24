@@ -263,3 +263,43 @@ jobs:
     - name: cat testutil/e2e/logs/09_restGateway_errors.log
       if: steps.check_09_restGateway_errors.outputs.files_exists == 'true'
       run: cat testutil/e2e/logs/09_restGateway_errors.log
+
+    - name: Check 10_grpcProvider.log
+      id: check_10_grpcProvider
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/10_grpcProvider.log"
+
+    - name: cat testutil/e2e/logs/10_grpcProvider.log
+      if: steps.check_10_grpcProvider.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/10_grpcProvider.log
+
+    - name: Check 10_grpcProvider_errors.log
+      id: check_10_grpcProvider_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/10_grpcProvider_errors.log"
+
+    - name: cat testutil/e2e/logs/10_grpcProvider_errors.log
+      if: steps.check_10_grpcProvider_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/10_grpcProvider_errors.log
+
+    - name: Check 11_grpcGateway.log
+      id: check_11_grpcGateway
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/11_grpcGateway.log"
+
+    - name: cat testutil/e2e/logs/11_grpcGateway.log
+      if: steps.check_11_grpcGateway.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/11_grpcGateway.log
+
+    - name: Check 11_grpcGateway_errors.log
+      id: check_11_grpcGateway_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/11_grpcGateway_errors.log"
+
+    - name: cat testutil/e2e/logs/11_grpcGateway_errors.log
+      if: steps.check_11_grpcGateway_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/11_grpcGateway_errors.log
