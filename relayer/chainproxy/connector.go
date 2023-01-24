@@ -136,7 +136,6 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context) {
 		connector.freeClients = append(connector.freeClients, rpcClient)
 		return
 	}
-
 }
 
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
@@ -176,7 +175,7 @@ func (connector *Connector) ReturnRpc(rpc *rpcclient.Client) {
 	defer connector.lock.Unlock()
 
 	connector.usedClients--
-	if len(connector.freeClients) > ((connector.usedClients + 1 /* + the one that was currently used */) + int(NumberOfParallelConnections) /* the number we started with */) {
+	if len(connector.freeClients) > (connector.usedClients + int(NumberOfParallelConnections) /* the number we started with */) {
 		rpc.Close() // close connection
 		return      // return without appending back to decrease idle connections
 	}
@@ -188,24 +187,36 @@ type GRPCConnector struct {
 	lock        sync.RWMutex
 	freeClients []*grpc.ClientConn
 	usedClients int
+	addr        string
 }
 
 func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnector {
 	connector := &GRPCConnector{
 		freeClients: make([]*grpc.ClientConn, 0, nConns),
+		addr:        addr,
 	}
 
+	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
+	reachedClientLimit := false
+
 	for i := uint(0); i < nConns; i++ {
+		if reachedClientLimit {
+			break
+		}
 		var grpcClient *grpc.ClientConn
 		var err error
 		numberOfConnectionAttempts := 0
 		for {
 			numberOfConnectionAttempts += 1
 			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
-				utils.LavaFormatFatal("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
+				utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
 					nil,
-					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10)},
+					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10),
+						"Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10),
+					},
 				)
+				reachedClientLimit = true
+				break
 			}
 			if ctx.Err() != nil {
 				connector.Close()
@@ -227,9 +238,38 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 	return connector
 }
 
-func (connector *GRPCConnector) GetRpc(block bool) (*grpc.ClientConn, error) {
+func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context) {
+	utils.LavaFormatInfo("No clients are free, increasing number of clients", nil)
+	var grpcClient *grpc.ClientConn
+	var err error
+	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
+		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
+		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			utils.LavaFormatWarning("increaseNumberOfClients, Could not connect to the node, retrying",
+				err,
+				&map[string]string{
+					"Number Of Attempts": strconv.Itoa(connectionAttempt),
+				})
+			cancel()
+			continue
+		}
+		cancel()
+
+		connector.lock.Lock() // add connection to free list.
+		defer connector.lock.Unlock()
+		connector.freeClients = append(connector.freeClients, grpcClient)
+		return
+	}
+}
+
+func (connector *GRPCConnector) GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
+
+	if len(connector.freeClients) <= connector.usedClients { // if we reached half of the free clients start creating new connections
+		go connector.increaseNumberOfClients(ctx) // increase asynchronously the free list.
+	}
 
 	if len(connector.freeClients) == 0 {
 		if !block {
@@ -237,6 +277,9 @@ func (connector *GRPCConnector) GetRpc(block bool) (*grpc.ClientConn, error) {
 		} else {
 			for {
 				connector.lock.Unlock()
+				// if we reached 0 connections we need to create more connections
+				// before sleeping, increase asynchronously the free list.
+				go connector.increaseNumberOfClients(ctx)
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()
 				if len(connector.freeClients) != 0 {
@@ -258,6 +301,10 @@ func (connector *GRPCConnector) ReturnRpc(rpc *grpc.ClientConn) {
 	defer connector.lock.Unlock()
 
 	connector.usedClients--
+	if len(connector.freeClients) > (connector.usedClients + int(NumberOfParallelConnections) /* the number we started with */) {
+		rpc.Close() // close connection
+		return      // return without appending back to decrease idle connections
+	}
 	connector.freeClients = append(connector.freeClients, rpc)
 }
 
