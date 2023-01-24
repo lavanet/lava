@@ -3,7 +3,6 @@ package metrics
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/lavanet/lava/utils"
 	"net/http"
 	"os"
@@ -30,7 +29,9 @@ func NewMetricService() *MetricService {
 		return nil
 	}
 	intervalForMetrics, _ := strconv.ParseInt(intervalData, 10, 32)
-	mChannel := make(chan RelayMetrics)
+	metricChannelBufferSizeData := os.Getenv("METRICS_BUFFER_SIZE_NR")
+	metricChannelBufferSize, _ := strconv.ParseInt(metricChannelBufferSizeData, 10, 64)
+	mChannel := make(chan RelayMetrics, metricChannelBufferSize)
 	result := &MetricService{
 		MetricsChannel:      mChannel,
 		ReportUrl:           reportMetricsUrl,
@@ -47,9 +48,8 @@ func NewMetricService() *MetricService {
 					utils.LavaFormatInfo("metric triggered, sending accumulated data to server", nil)
 					result.SendEachProjectMetricData()
 				}
-			}
-			select {
 			case metricData := <-mChannel:
+				utils.LavaFormatInfo("reading from chanel data", nil)
 				result.storeAggregatedData(metricData)
 			}
 		}
@@ -59,7 +59,15 @@ func NewMetricService() *MetricService {
 
 func (m *MetricService) SendData(data RelayMetrics) {
 	if m.MetricsChannel != nil {
-		m.MetricsChannel <- data
+		select {
+		case m.MetricsChannel <- data:
+		default:
+			utils.LavaFormatInfo("channel is full, ignoring these data", &map[string]string{
+				"projectHash": data.ProjectHash,
+				"chainId":     data.ChainID,
+				"apiType":     data.APIType,
+			})
+		}
 	}
 }
 
@@ -70,12 +78,7 @@ func (m *MetricService) SendEachProjectMetricData() {
 
 	for projectKey, projectData := range *m.AggregatedMetricMap {
 		toSendData := prepareArrayForProject(projectData, projectKey)
-		err := sendMetricsViaHttp(m.ReportUrl, toSendData)
-		if err != nil {
-			utils.LavaFormatError("error sending project metrics data", err, &map[string]string{
-				"projectHash": projectKey,
-			})
-		}
+		go sendMetricsViaHttp(m.ReportUrl, toSendData)
 	}
 	// we reset to be ready for new metric data
 	m.AggregatedMetricMap = &map[string]map[string]map[string]*AggregatedMetric{}
@@ -106,14 +109,16 @@ func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
 	}
 	jsonValue, err := json.Marshal(data)
 	if err != nil {
+		utils.LavaFormatError("error converting data to json", err, nil)
 		return err
 	}
 	resp, err := http.Post(reportUrl, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
+		utils.LavaFormatError("error posting data to report url.", err, &map[string]string{"url": reportUrl})
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("couldn't send the data into the server")
+		utils.LavaFormatError("error status code returned from server.", nil, &map[string]string{"url": reportUrl})
 	}
 	return nil
 }
@@ -132,7 +137,9 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 
 	store := *m.AggregatedMetricMap // for simplicity during operations
 	projectData, exists := store[data.ProjectHash]
-	if !exists {
+	if exists {
+		m.storeChainIdData(projectData, data, successCount)
+	} else {
 		// means we haven't stored any data yet for this project, so we build all the maps
 		projectData = map[string]map[string]*AggregatedMetric{
 			data.ChainID: {
@@ -144,39 +151,37 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 			},
 		}
 		store[data.ProjectHash] = projectData
-	} else {
-		m.storeChainIdData(projectData, data, successCount)
 	}
 	return nil
 }
 
 func (m *MetricService) storeChainIdData(projectData map[string]map[string]*AggregatedMetric, data RelayMetrics, successCount int64) {
 	chainIdData, exists := projectData[data.ChainID]
-	if !exists {
+	if exists {
+		m.storeApiTypeData(chainIdData, data, successCount)
+	} else {
 		chainIdData = map[string]*AggregatedMetric{
-			data.ChainID: &AggregatedMetric{
+			data.APIType: &AggregatedMetric{
 				TotalLatency: data.Latency,
 				RelaysCount:  1,
 				SuccessCount: successCount,
 			},
 		}
 		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID] = chainIdData
-	} else {
-		m.storeApiTypeData(chainIdData, data, successCount)
 	}
 }
 
 func (m *MetricService) storeApiTypeData(chainIdData map[string]*AggregatedMetric, data RelayMetrics, successCount int64) {
 	apiTypesData, exists := chainIdData[data.APIType]
-	if !exists {
+	if exists {
+		apiTypesData.TotalLatency += data.Latency
+		apiTypesData.SuccessCount += successCount
+		apiTypesData.RelaysCount += 1
+	} else {
 		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType] = &AggregatedMetric{
 			TotalLatency: data.Latency,
 			RelaysCount:  1,
 			SuccessCount: successCount,
 		}
-	} else {
-		apiTypesData.TotalLatency += data.Latency
-		apiTypesData.SuccessCount += successCount
-		apiTypesData.RelaysCount += 1
 	}
 }
