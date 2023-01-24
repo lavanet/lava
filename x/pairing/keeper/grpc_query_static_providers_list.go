@@ -34,5 +34,19 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 		return &types.QueryStaticProvidersListResponse{}, nil
 	}
 
-	return &types.QueryStaticProvidersListResponse{Providers: stakes}, nil
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	finalProviders := []epochstoragetypes.StakeEntry{}
+	geolocation := uint64(1)
+	for i := uint64(0); i < k.specKeeper.GeolocationCount(ctx); i++ {
+		validProviders := k.getGeolocationProviders(ctx, stakes, geolocation)
+		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
+		finalProviders = append(finalProviders, validProviders...)
+		geolocation <<= 1
+	}
+
+	return &types.QueryStaticProvidersListResponse{Providers: finalProviders}, nil
 }

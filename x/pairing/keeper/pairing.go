@@ -133,24 +133,12 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
 	}
 
-	// create a list of valid providers (deadline reached)
-	for _, stakeEntry := range providers {
-		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
-			// provider deadline wasn't reached yet
-			continue
-		}
-		geolocationSupported := stakeEntry.Geolocation & geolocation
-		if geolocationSupported == 0 {
-			// no match in geolocation bitmap
-			continue
-		}
-		validProviders = append(validProviders, stakeEntry)
-	}
-
 	spec, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
 		return nil, nil, fmt.Errorf("spec not found or not enabled")
 	}
+
+	validProviders = k.getGeolocationProviders(ctx, providers, geolocation)
 
 	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
 	if err != nil {
@@ -166,6 +154,24 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 	}
 
 	return validProviders, addrList, nil
+}
+
+func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
+	validProviders := []epochstoragetypes.StakeEntry{}
+	// create a list of valid providers (deadline reached)
+	for _, stakeEntry := range providers {
+		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
+			// provider deadline wasn't reached yet
+			continue
+		}
+		geolocationSupported := stakeEntry.Geolocation & geolocation
+		if geolocationSupported == 0 {
+			// no match in geolocation bitmap
+			continue
+		}
+		validProviders = append(validProviders, stakeEntry)
+	}
+	return validProviders
 }
 
 // this function randomly chooses count providers by weight
