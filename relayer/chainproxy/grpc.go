@@ -309,7 +309,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
-	conn, err := nm.cp.conn.GetRpc(true)
+	conn, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, nil)
 	}
