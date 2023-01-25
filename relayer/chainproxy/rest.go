@@ -262,7 +262,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				"more_information": errMasking,
 			})
 			if err != nil {
-				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
 			}
 
 			// Return error json response
@@ -306,7 +306,7 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 				"more_information": errMasking,
 			})
 			if err != nil {
-				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
 			}
 
 			// Return error json response

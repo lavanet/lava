@@ -343,7 +343,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				"more_information": errMasking,
 			})
 			if err != nil {
-				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
 			}
 
 			// Return error json response
@@ -388,7 +388,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 					"more_information": errMasking,
 				})
 				if err != nil {
-					return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+					return c.SendString(`{"error": "Failed to marshal error response to json"}`)
 				}
 
 				// Return error json response
@@ -401,7 +401,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 				"more_information": errMasking,
 			})
 			if err != nil {
-				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
 			}
 
 			// Return error json response
