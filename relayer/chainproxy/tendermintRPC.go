@@ -446,7 +446,7 @@ func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{})
 // SendRPC sends Tendermint HTTP or WebSockets call
 func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get rpc connection from the connection pool
-	rpc, err := nm.cp.conn.GetRpc(true)
+	rpc, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
