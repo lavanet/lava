@@ -196,6 +196,7 @@ func SendRelay(
 			if err != nil {
 				return nil, nil, nil, 0, false, err
 			}
+			requestedBlock = relayRequest.RequestBlock
 			cache := cp.GetCache()
 			// TODO: response sanity, check its under an expected format add that format to spec
 			err := cache.SetEntry(ctx, relayRequest, cp.GetSentry().ApiInterface, nil, cp.GetSentry().ChainID, dappID, reply, finalized) // caching in the portal doesn't care about hashes

@@ -2,10 +2,11 @@ package chainproxy
 
 import (
 	"fmt"
-	"github.com/lavanet/lava/relayer/metrics"
 	"math/rand"
 	"os"
 	"strconv"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
@@ -51,7 +52,7 @@ func NewPortalLogs() (*PortalLogs, error) {
 	return portal, err
 }
 
-func (cp *PortalLogs) GetMessageSeed() string {
+func (pl *PortalLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
 
