@@ -61,9 +61,9 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			ProjectHash:  "1",
 			ChainID:      "testChain",
 			APIType:      "testApiType",
-			SuccessCount: 2,
-			Latency:      100,
-			RelayCounts:  2,
+			SuccessCount: 3,
+			Latency:      150,
+			RelayCounts:  3,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -81,9 +81,9 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 			ProjectHash:  "1",
 			ChainID:      "testChain",
 			APIType:      "testApiType",
-			SuccessCount: 2,
-			Latency:      150,
-			RelayCounts:  3,
+			SuccessCount: 3,
+			Latency:      200,
+			RelayCounts:  4,
 		}
 		// arrange
 		metricService.storeAggregatedData(metricData)
@@ -139,7 +139,7 @@ func Test_StorAaggregatedata_OnMetricService(t *testing.T) {
 	//Scenario 6 (another chain id)
 	t.Run("SuccessRelay_WithNewApiType_NonEmptyMap", func(t *testing.T) {
 		metricData.Success = true
-		metricData.APIType = "testChain2"
+		metricData.APIType = "testApiType2"
 		expectedMetricData = RelayAnalyticsDTO{
 			ProjectHash:  "2",
 			ChainID:      "testChain2",
