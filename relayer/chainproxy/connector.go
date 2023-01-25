@@ -53,10 +53,7 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 			numberOfConnectionAttempts += 1
 			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 				utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
-					nil,
-					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10),
-						"Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10),
-					},
+					nil, &map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10), "Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10)},
 				)
 				reachedClientLimit = true
 				break
@@ -68,12 +65,10 @@ func NewConnector(ctx context.Context, nConns uint, addr string) *Connector {
 			nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 			rpcClient, err = rpcclient.DialContext(nctx, addr)
 			if err != nil {
-				utils.LavaFormatWarning("Could not connect to the node, retrying",
-					err,
-					&map[string]string{
-						"Current Number Of Connections": strconv.FormatUint(uint64(i), 10),
-						"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
-					})
+				utils.LavaFormatWarning("Could not connect to the node, retrying", err, &map[string]string{
+					"Current Number Of Connections": strconv.FormatUint(uint64(i), 10),
+					"Number Of Attempts Remaining":  strconv.Itoa(numberOfConnectionAttempts),
+				})
 				cancel()
 				continue
 			}
@@ -114,18 +109,16 @@ func (connector *Connector) Close() {
 }
 
 func (connector *Connector) increaseNumberOfClients(ctx context.Context) {
-	utils.LavaFormatInfo("No clients are free, increasing number of clients", nil)
+	utils.LavaFormatDebug("No clients are free, increasing number of clients", nil)
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 		rpcClient, err = rpcclient.DialContext(nctx, connector.addr)
 		if err != nil {
-			utils.LavaFormatWarning("increaseNumberOfClients, Could not connect to the node, retrying",
-				err,
-				&map[string]string{
-					"Number Of Attempts": strconv.Itoa(connectionAttempt),
-				})
+			utils.LavaFormatDebug(
+				"increaseNumberOfClients, Could not connect to the node, retrying",
+				&map[string]string{"err": err.Error(), "Number Of Attempts": strconv.Itoa(connectionAttempt)})
 			cancel()
 			continue
 		}
@@ -210,10 +203,7 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 			numberOfConnectionAttempts += 1
 			if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 				utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
-					nil,
-					&map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10),
-						"Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10),
-					},
+					nil, &map[string]string{"Number of parallel connections": strconv.FormatUint(uint64(nConns), 10), "Currently Connected": strconv.FormatUint(uint64(len(connector.freeClients)), 10)},
 				)
 				reachedClientLimit = true
 				break
@@ -239,18 +229,14 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 }
 
 func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context) {
-	utils.LavaFormatInfo("No clients are free, increasing number of clients", nil)
+	utils.LavaFormatDebug("No clients are free, increasing number of clients", nil)
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := context.WithTimeout(ctx, DialTimeout)
 		grpcClient, err = grpc.DialContext(nctx, connector.addr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			utils.LavaFormatWarning("increaseNumberOfClients, Could not connect to the node, retrying",
-				err,
-				&map[string]string{
-					"Number Of Attempts": strconv.Itoa(connectionAttempt),
-				})
+			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", &map[string]string{"err": err.Error(), "Number Of Attempts": strconv.Itoa(connectionAttempt)})
 			cancel()
 			continue
 		}
