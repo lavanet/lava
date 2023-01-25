@@ -173,7 +173,6 @@ func (connector *Connector) ReturnRpc(rpc *rpcclient.Client) {
 		return      // return without appending back to decrease idle connections
 	}
 	connector.freeClients = append(connector.freeClients, rpc)
-
 }
 
 type GRPCConnector struct {
