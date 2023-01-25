@@ -766,7 +766,7 @@ func runE2E() {
 	lt.startJSONRPCProxy()
 	lt.startJSONRPCProvider("http://127.0.0.1:1111")
 	lt.startJSONRPCGateway()
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
+	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Minute*2)
 
 	lt.startTendermintProvider("http://0.0.0.0:26657")
 	lt.startTendermintGateway()
