@@ -108,8 +108,8 @@ func (connector *Connector) Close() {
 	}
 }
 
-func (connector *Connector) increaseNumberOfClients(ctx context.Context) {
-	utils.LavaFormatDebug("No clients are free, increasing number of clients", nil)
+func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
+	utils.LavaFormatDebug("increasing number of clients", &map[string]string{"numberOfFreeClients": strconv.Itoa(numberOfFreeClients)})
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
@@ -129,16 +129,18 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context) {
 		connector.freeClients = append(connector.freeClients, rpcClient)
 		return
 	}
+	utils.LavaFormatDebug("Failed increasing number of clients", nil)
 }
 
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
-	if len(connector.freeClients) <= connector.usedClients { // if we reached half of the free clients start creating new connections
-		go connector.increaseNumberOfClients(ctx) // increase asynchronously the free list.
+	numberOfFreeClients := len(connector.freeClients)
+	if numberOfFreeClients <= connector.usedClients { // if we reached half of the free clients start creating new connections
+		go connector.increaseNumberOfClients(ctx, numberOfFreeClients) // increase asynchronously the free list.
 	}
 
-	if len(connector.freeClients) == 0 {
+	if numberOfFreeClients == 0 {
 		if !block {
 			return nil, errors.New("out of clients")
 		} else {
@@ -146,18 +148,19 @@ func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.
 				connector.lock.Unlock()
 				// if we reached 0 connections we need to create more connections
 				// before sleeping, increase asynchronously the free list.
-				go connector.increaseNumberOfClients(ctx)
+				go connector.increaseNumberOfClients(ctx, numberOfFreeClients)
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()
-				if len(connector.freeClients) != 0 {
+				numberOfFreeClients = len(connector.freeClients)
+				if numberOfFreeClients != 0 {
 					break
 				}
 			}
 		}
 	}
 
-	ret := connector.freeClients[len(connector.freeClients)-1]
-	connector.freeClients = connector.freeClients[:len(connector.freeClients)-1]
+	ret := connector.freeClients[0]
+	connector.freeClients = connector.freeClients[1:]
 	connector.usedClients++
 
 	return ret, nil
@@ -227,8 +230,8 @@ func NewGRPCConnector(ctx context.Context, nConns uint, addr string) *GRPCConnec
 	return connector
 }
 
-func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context) {
-	utils.LavaFormatDebug("No clients are free, increasing number of clients", nil)
+func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, numberOfFreeClients int) {
+	utils.LavaFormatDebug("increasing number of clients", &map[string]string{"numberOfFreeClients": strconv.Itoa(numberOfFreeClients)})
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
@@ -246,17 +249,19 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context) {
 		connector.freeClients = append(connector.freeClients, grpcClient)
 		return
 	}
+	utils.LavaFormatDebug("increasing number of clients failed", nil)
 }
 
 func (connector *GRPCConnector) GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error) {
 	connector.lock.Lock()
 	defer connector.lock.Unlock()
 
-	if len(connector.freeClients) <= connector.usedClients { // if we reached half of the free clients start creating new connections
-		go connector.increaseNumberOfClients(ctx) // increase asynchronously the free list.
+	numberOfFreeClients := len(connector.freeClients)
+	if numberOfFreeClients <= connector.usedClients { // if we reached half of the free clients start creating new connections
+		go connector.increaseNumberOfClients(ctx, numberOfFreeClients) // increase asynchronously the free list.
 	}
 
-	if len(connector.freeClients) == 0 {
+	if numberOfFreeClients == 0 {
 		if !block {
 			return nil, errors.New("out of clients")
 		} else {
@@ -264,18 +269,19 @@ func (connector *GRPCConnector) GetRpc(ctx context.Context, block bool) (*grpc.C
 				connector.lock.Unlock()
 				// if we reached 0 connections we need to create more connections
 				// before sleeping, increase asynchronously the free list.
-				go connector.increaseNumberOfClients(ctx)
+				go connector.increaseNumberOfClients(ctx, numberOfFreeClients)
 				time.Sleep(50 * time.Millisecond)
 				connector.lock.Lock()
-				if len(connector.freeClients) != 0 {
+				numberOfFreeClients = len(connector.freeClients)
+				if numberOfFreeClients != 0 {
 					break
 				}
 			}
 		}
 	}
 
-	ret := connector.freeClients[len(connector.freeClients)-1]
-	connector.freeClients = connector.freeClients[:len(connector.freeClients)-1]
+	ret := connector.freeClients[0]
+	connector.freeClients = connector.freeClients[1:]
 	connector.usedClients++
 
 	return ret, nil
