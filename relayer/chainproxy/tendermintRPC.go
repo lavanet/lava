@@ -423,7 +423,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 
 func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
-	rpc, err := nm.cp.conn.GetRpc(true)
+	rpc, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
