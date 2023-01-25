@@ -328,12 +328,31 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, errMasking))
+
+			// construct json response
+			jsonResponse, err := json.Marshal(fiber.Map{
+				"error":            "unsupported api",
+				"more_information": errMasking,
+			})
+			if err != nil {
+				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+			}
+
+			// Return error json response
+			return c.SendString(string(jsonResponse))
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
 	})
 
@@ -351,15 +370,47 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
+
+			// If the requested had a body, return error message to point that the POST should be used
 			if string(c.Body()) != "" {
-				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, errMasking))
+				// Construct json response
+				jsonResponse, err := json.Marshal(fiber.Map{
+					"error":            "unsupported api",
+					"recommendation":   "For jsonRPC use POST",
+					"more_information": errMasking,
+				})
+				if err != nil {
+					return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+				}
+
+				// Return error json response
+				return c.SendString(string(jsonResponse))
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, errMasking))
+
+			// construct json response
+			jsonResponse, err := json.Marshal(fiber.Map{
+				"error":            "unsupported api",
+				"more_information": errMasking,
+			})
+			if err != nil {
+				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+			}
+
+			// Return error json response
+			return c.SendString(string(jsonResponse))
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
 	})
 	//

@@ -361,11 +361,30 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
 		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
+
+			// Construct json response
+			jsonResponse, err := json.Marshal(fiber.Map{
+				"error": map[string]interface{}{
+					"code":    -32000,
+					"message": errMasking,
+				},
+			})
+			if err != nil {
+				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+			}
+
+			// Return error json response
+			return c.SendString(string(jsonResponse))
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
@@ -375,7 +394,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			msgSeed,
 			nil,
 		)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
+
 	})
 
 	// Go

@@ -55,6 +55,7 @@ func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}
+
 	return ret
 }
 

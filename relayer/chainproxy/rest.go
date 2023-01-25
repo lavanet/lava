@@ -247,14 +247,32 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information:" "%s"}`, errMasking))
+
+			// construct json response
+			jsonResponse, err := json.Marshal(fiber.Map{
+				"error":            "unsupported api",
+				"more_information": errMasking,
+			})
+			if err != nil {
+				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+			}
+
+			// Return error json response
+			return c.SendString(string(jsonResponse))
 		}
-		responseBody := string(reply.Data)
-		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, responseBody, msgSeed, nil)
-		return c.SendString(responseBody)
+		// Log request and response
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
+
+		// Return json response
+		return c.SendString(string(reply.Data))
 	})
 
 	//
@@ -273,14 +291,32 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": "%s"}`, errMasking))
+
+			// construct json response
+			jsonResponse, err := json.Marshal(fiber.Map{
+				"error":            "unsupported api",
+				"more_information": errMasking,
+			})
+			if err != nil {
+				return c.SendString(fmt.Sprintf(`{"error": "Failed to marshal error response to json"}`))
+			}
+
+			// Return error json response
+			return c.SendString(string(jsonResponse))
 		}
-		responseBody := string(reply.Data)
-		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", responseBody, msgSeed, nil)
-		return c.SendString(responseBody)
+		// Log request and response
+		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
+
+		// Return json response
+		return c.SendString(string(reply.Data))
 	})
 	//
 	// Go
