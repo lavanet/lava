@@ -3,11 +3,12 @@ package metrics
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/lavanet/lava/utils"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/lavanet/lava/utils"
 )
 
 type AggregatedMetric struct {
@@ -82,7 +83,6 @@ func (m *MetricService) SendEachProjectMetricData() {
 	}
 	// we reset to be ready for new metric data
 	m.AggregatedMetricMap = &map[string]map[string]map[string]*AggregatedMetric{}
-	return
 }
 
 func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric, projectKey string) []RelayAnalyticsDTO {
@@ -103,7 +103,7 @@ func prepareArrayForProject(projectData map[string]map[string]*AggregatedMetric,
 }
 
 func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
-	if data == nil || len(data) == 0 {
+	if len(data) == 0 {
 		utils.LavaFormatDebug("no metrics found for this project.", nil)
 		return nil
 	}
@@ -161,7 +161,7 @@ func (m *MetricService) storeChainIdData(projectData map[string]map[string]*Aggr
 		m.storeApiTypeData(chainIdData, data, successCount)
 	} else {
 		chainIdData = map[string]*AggregatedMetric{
-			data.APIType: &AggregatedMetric{
+			data.APIType: {
 				TotalLatency: data.Latency,
 				RelaysCount:  1,
 				SuccessCount: successCount,

@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/lavanet/lava/relayer/metrics"
 	"io"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/fullstorydev/grpcurl"

@@ -3,9 +3,10 @@ package chainproxy
 import (
 	"context"
 	"fmt"
-	"github.com/lavanet/lava/relayer/metrics"
 	"strings"
 	"time"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -309,11 +310,11 @@ func SendRelay(
 func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
+		// dappID := ""
+		// if len(c.Route().Params) > 1 {
+		// 	dappID = c.Route().Params[1]
+		// 	dappID = strings.ReplaceAll(dappID, "*", "")
+		// }
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler

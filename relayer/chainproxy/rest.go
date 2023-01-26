@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lavanet/lava/relayer/metrics"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"

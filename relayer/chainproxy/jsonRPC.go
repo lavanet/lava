@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lavanet/lava/relayer/metrics"
 	"net/http"
 	"strconv"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
