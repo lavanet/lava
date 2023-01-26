@@ -1,26 +1,27 @@
+build/
+release/
+
+# Intellij
+.idea/
+
+# macOS
+.DS_Store
+
+# vscode
+.vscode/
+
+# vim
+.*.sw?
+
+# Vue
+vue/src/store/generated/
 vue/node_modules
 vue/dist
-release/
-.idea/
-.vscode/
-.DS_Store
-notes.txt
-vue/src/store/generated/*
-vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/index.js
-vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/index.ts
-vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.d.ts
-vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.js
-vue/src/store/generated/lavanet/lava/lavanet.lava.servicer/module/index.ts
-vue/src/store/generated/lavanet/lava/lavanet.lava.user/index.js
-vue/src/store/generated/lavanet/lava/lavanet.lava.user/index.ts
-vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.d.ts
-vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.js
-vue/src/store/generated/lavanet/lava/lavanet.lava.user/module/index.ts
-relayer/cmd/relayer/__debug_bin
-relayer/.env
-testutil/e2e/logs/
-ptnet/
-scripts/vars/
-testutil/debugging/
-ts-client/
+
+# Logs and debug
 scripts/automation_scripts/automation_results*
+testutil/e2e/logs/
+testutil/debugging/
+
+# Misc
+scripts/vars/
