@@ -2,6 +2,7 @@ package chainproxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -342,4 +343,19 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 
 func getTimePerCu(cu uint64) time.Duration {
 	return time.Duration(cu*TimePerCU) + MinimumTimePerRelayDelay
+}
+
+func addAttributeToError(key string, value string, errorMessage string) string {
+	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+}
+
+func convertToJsonError(errorMsg string) string {
+	jsonResponse, err := json.Marshal(fiber.Map{
+		"error": errorMsg,
+	})
+	if err != nil {
+		return `{"error": "Failed to marshal error response to json"}`
+	}
+
+	return string(jsonResponse)
 }
