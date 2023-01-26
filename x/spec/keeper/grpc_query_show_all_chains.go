@@ -24,7 +24,9 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 	for _, spec := range allSpec {
 		// get the spec's APIs
 		apis := spec.GetApis()
-		var apiInterfacesNames []string
+
+		// create API interface names map to efficiently check if an interface already exists in it
+		apiInterfacesNamesMap := make(map[string]int)
 
 		// iterate over the APIs
 		for _, api := range apis {
@@ -36,11 +38,20 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 				// get the interface's name
 				apiInterfaceName := apiInterface.GetInterface()
 
-				// if the name wasn't already added to the apiInterfacesNames list, add it
-				if !checkIfInterfaceInList(apiInterfacesNames, apiInterfaceName) {
-					apiInterfacesNames = append(apiInterfacesNames, apiInterfaceName)
+				// check if the interface exists in the map
+				_, found := apiInterfacesNamesMap[apiInterfaceName]
+
+				// if the interface name wasn't found, add it to the map (put dummy value 0)
+				if !found {
+					apiInterfacesNamesMap[apiInterfaceName] = 0
 				}
 			}
+		}
+
+		// copy the apiInterfacesNamesMap's keys (which are the interface names) to a string list
+		var apiInterfacesNames []string
+		for apiInterfacesName := range apiInterfacesNamesMap {
+			apiInterfacesNames = append(apiInterfacesNames, apiInterfacesName)
 		}
 
 		// create a chainInfoEntry which includes the chain's name, ID and enabled interfaces
@@ -51,13 +62,4 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 	}
 
 	return &types.QueryShowAllChainsResponse{ChainInfoList: chainInfoList}, nil
-}
-
-func checkIfInterfaceInList(apiInterfacesNames []string, apiInterfaceToCheck string) bool {
-	for _, apiInterface := range apiInterfacesNames {
-		if apiInterfaceToCheck == apiInterface {
-			return true
-		}
-	}
-	return false
 }
