@@ -31,15 +31,15 @@ func NewPortalLogs() (*PortalLogs, error) {
 		return &PortalLogs{}, nil
 	}
 
-	NewRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
-	NewRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
-	if NewRelicAppName == "" || NewRelicLicenseKey == "" {
+	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
+	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables", nil)
 		return &PortalLogs{}, nil
 	}
 	newRelicApplication, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(NewRelicAppName),
-		newrelic.ConfigLicense(NewRelicLicenseKey),
+		newrelic.ConfigAppName(newRelicAppName),
+		newrelic.ConfigLicense(newRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
 	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}

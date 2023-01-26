@@ -234,6 +234,8 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Use(favicon.New())
 
+	chainID := cp.GetSentry().ChainID
+	apiInterface := cp.GetSentry().ApiInterface
 	// Catch Post
 	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("rest-http")
@@ -245,11 +247,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := ExtractDappIDFromFiberContext(c)
-		metricsData := metrics.NewRelayAnalytics(dappID, cp.GetSentry().ChainID, cp.GetSentry().ApiInterface)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
 		requestBody := string(c.Body())
 		reply, _, err := SendRelay(ctx, cp, privKey, path, requestBody, http.MethodPost, dappID, metricsData)
-		cp.portalLogs.AddMetric(metricsData, err != nil)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
@@ -275,12 +277,10 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			dappID = strings.ReplaceAll(dappID, "*", "")
 		}
 		utils.LavaFormatInfo("in <<<", &map[string]string{"path": path, "dappID": dappID, "msgSeed": msgSeed})
-
-		sentry := cp.GetSentry()
-		analytics := metrics.NewRelayAnalytics(dappID, sentry.ChainID, sentry.ApiInterface)
+		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
 		reply, _, err := SendRelay(ctx, cp, privKey, path, query, http.MethodGet, dappID, analytics)
-		cp.portalLogs.AddMetric(analytics, err != nil)
+		go cp.portalLogs.AddMetric(analytics, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
