@@ -376,6 +376,7 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			if string(c.Body()) != "" {
 				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
 			}
+
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
