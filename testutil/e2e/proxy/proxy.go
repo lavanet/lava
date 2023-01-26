@@ -12,7 +12,7 @@ import (
 )
 
 // var mockFolder string = "testutil/e2e/proxy/mockMaps/"
-var mockFolder string = "/mockMaps/"
+var mockFolder string = "./mockMaps/"
 
 var (
 	responsesChanged bool = false

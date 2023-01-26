@@ -50,9 +50,12 @@ jobs:
 
     # Pre-build with ignite
     - name: ignite build
-      run: ignite chain build -v
-    # - name: starport build
-    #   run: starport chain build -v
+      uses: nick-fields/retry@v2
+      with:
+        max_attempts: 3
+        retry_on: error
+        timeout_minutes: 20
+        command: ignite chain build -v
 
     ######################################################
     ### Run lava unitests
@@ -68,17 +71,199 @@ jobs:
 
     - name: lava conflict unit Tests
       run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
-      
+
+    ######################################################
+    ### Run relayer unitests
+    ######################################################
+    - name: Run Relayer unit Tests
+      run: go test ./relayer/lavasession/ ./protocol/chaintracker/ ./relayer/chainproxy/ -v
+
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
 
-    ######################################################
-    ### Run relayer unitests
-    ######################################################
-    - name: Run Relayer unit Tests
-      run: go test ./relayer/lavasession/ ./relayer/chainTracker/ -v
-    - name: Run Relayer Metrics Unit Tests
-      run: go test ./relayer/metrics/  -v
+    - name: Check 01_stakeLava.log
+      id: check_01_stakeLava
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/01_stakeLava.log"
+
+    - name: cat testutil/e2e/logs/01_stakeLava.log
+      if: steps.check_01_stakeLava.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/01_stakeLava.log
+
+    - name: Check 01_stakeLava_errors.log
+      id: check_01_stakeLava_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/01_stakeLava_errors.log"
+
+    - name: cat testutil/e2e/logs/01_stakeLava_errors.log
+      if: steps.check_01_stakeLava_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/01_stakeLava_errors.log
+
+    - name: Check 02_jsonProxy.log
+      id: check_02_jsonProxy
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/02_jsonProxy.log"
+
+    - name: head -n 300 testutil/e2e/logs/02_jsonProxy.log
+      if: steps.check_02_jsonProxy.outputs.files_exists == 'true'
+      run: head -n 300 testutil/e2e/logs/02_jsonProxy.log
+
+    - name: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
+      if: steps.check_02_jsonProxy.outputs.files_exists == 'true'
+      run: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
+
+    - name: Check 02_jsonProxy_errors.log
+      id: check_02_jsonProxy_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/02_jsonProxy_errors.log"
+
+    - name: cat testutil/e2e/logs/02_jsonProxy_errors.log
+      if: steps.check_02_jsonProxy_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/02_jsonProxy_errors.log
+
+    - name: Check 03_jsonProvider.log
+      id: check_03_jsonProvider
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/03_jsonProvider.log"
+
+    - name: cat testutil/e2e/logs/03_jsonProvider.log
+      if: steps.check_03_jsonProvider.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/03_jsonProvider.log
+
+    - name: Check 03_jsonProvider_errors.log
+      id: check_03_jsonProvider_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/03_jsonProvider_errors.log"
+
+    - name: cat testutil/e2e/logs/03_jsonProvider_errors.log
+      if: steps.check_03_jsonProvider_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/03_jsonProvider_errors.log
+
+    - name: Check 04_jsonGateway.log
+      id: check_04_jsonGateway
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/04_jsonGateway.log"
+
+    - name: cat testutil/e2e/logs/04_jsonGateway.log
+      if: steps.check_04_jsonGateway.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/04_jsonGateway.log
+
+    - name: Check 04_jsonGateway_errors.log
+      id: check_04_jsonGateway_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/04_jsonGateway_errors.log"
+
+    - name: cat testutil/e2e/logs/04_jsonGateway_errors.log
+      if: steps.check_04_jsonGateway_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/04_jsonGateway_errors.log
+
+    - name: Check 05_tendermintProvider.log
+      id: check_05_tendermintProvider
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/05_tendermintProvider.log"
+
+    - name: cat testutil/e2e/logs/05_tendermintProvider.log
+      if: steps.check_05_tendermintProvider.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/05_tendermintProvider.log
+
+    - name: Check 05_tendermintProvider_errors.log
+      id: check_05_tendermintProvider_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/05_tendermintProvider_errors.log"
+
+    - name: cat testutil/e2e/logs/05_tendermintProvider_errors.log
+      if: steps.check_05_tendermintProvider_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/05_tendermintProvider_errors.log
+
+    - name: Check 06_tendermintGateway.log
+      id: check_06_tendermintGateway
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/06_tendermintGateway.log"
+
+    - name: cat testutil/e2e/logs/06_tendermintGateway.log
+      if: steps.check_06_tendermintGateway.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/06_tendermintGateway.log
+
+    - name: Check 06_tendermintGateway_errors.log
+      id: check_06_tendermintGateway_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/06_tendermintGateway_errors.log"
+
+    - name: cat testutil/e2e/logs/06_tendermintGateway_errors.log
+      if: steps.check_06_tendermintGateway_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/06_tendermintGateway_errors.log
+
+    - name: Check 07_lavaOverLava.log
+      id: check_07_lavaOverLava
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/07_lavaOverLava.log"
+
+    - name: cat testutil/e2e/logs/07_lavaOverLava.log
+      if: steps.check_07_lavaOverLava.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/07_lavaOverLava.log
+
+    - name: Check 07_lavaOverLava_errors.log
+      id: check_07_lavaOverLava_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/07_lavaOverLava_errors.log"
+
+    - name: cat testutil/e2e/logs/07_lavaOverLava_errors.log
+      if: steps.check_07_lavaOverLava_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/07_lavaOverLava_errors.log
+
+    - name: Check 08_restProvider.log
+      id: check_08_restProvider
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/08_restProvider.log"
+
+    - name: cat testutil/e2e/logs/08_restProvider.log
+      if: steps.check_08_restProvider.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/08_restProvider.log
+
+    - name: Check 08_restProvider_errors.log
+      id: check_08_restProvider_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/08_restProvider_errors.log"
+
+    - name: cat testutil/e2e/logs/08_restProvider_errors.log
+      if: steps.check_08_restProvider_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/08_restProvider_errors.log
+
+    - name: Check 09_restGateway.log
+      id: check_09_restGateway
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/09_restGateway.log"
+
+    - name: cat testutil/e2e/logs/09_restGateway.log
+      if: steps.check_09_restGateway.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/09_restGateway.log
+
+    - name: Check 09_restGateway_errors.log
+      id: check_09_restGateway_errors
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "testutil/e2e/logs/09_restGateway_errors.log"
+
+    - name: cat testutil/e2e/logs/09_restGateway_errors.log
+      if: steps.check_09_restGateway_errors.outputs.files_exists == 'true'
+      run: cat testutil/e2e/logs/09_restGateway_errors.log
