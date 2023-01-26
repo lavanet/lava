@@ -116,9 +116,9 @@ func CheckProfitabilityAndBroadCastTx(clientCtx client.Context, txf tx.Factory, 
 		}
 	}
 
-	if err := validateGas(gasUsed); err != nil {
-		return err
-	}
+	// if err := validateGas(gasUsed); err != nil {
+	// 	return err
+	// }
 
 	txf = txf.WithGas(gasUsed)
 
