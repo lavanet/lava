@@ -22,40 +22,21 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 
 	// iterate over specs and extract the chains' info
 	for _, spec := range allSpec {
-		// get the spec's APIs
-		apis := spec.GetApis()
+		// get the spec's name and chain ID
+		chainName := spec.GetName()
+		chainId := spec.GetIndex()
 
-		// create API interface names map to efficiently check if an interface already exists in it
-		apiInterfacesNamesMap := make(map[string]int)
+		// get the spec's expected interfaces
+		expectedInterfaces := k.GetExpectedInterfacesForSpec(ctx, chainId)
 
-		// iterate over the APIs
-		for _, api := range apis {
-			// get the API interfaces
-			apiInterfaces := api.GetApiInterfaces()
-
-			// iterate over the API interfaces
-			for _, apiInterface := range apiInterfaces {
-				// get the interface's name
-				apiInterfaceName := apiInterface.GetInterface()
-
-				// check if the interface exists in the map
-				_, found := apiInterfacesNamesMap[apiInterfaceName]
-
-				// if the interface name wasn't found, add it to the map (put dummy value 0)
-				if !found {
-					apiInterfacesNamesMap[apiInterfaceName] = 0
-				}
-			}
-		}
-
-		// copy the apiInterfacesNamesMap's keys (which are the interface names) to a string list
+		// copy the expectedInterfaces's keys (which are the interface names) to a string list
 		var apiInterfacesNames []string
-		for apiInterfacesName := range apiInterfacesNamesMap {
+		for apiInterfacesName := range expectedInterfaces {
 			apiInterfacesNames = append(apiInterfacesNames, apiInterfacesName)
 		}
 
 		// create a chainInfoEntry which includes the chain's name, ID and enabled interfaces
-		chainInfoEntry := types.ShowAllChainsInfoStruct{ChainName: spec.GetName(), ChainID: spec.GetIndex(), EnabledApiInterfaces: apiInterfacesNames}
+		chainInfoEntry := types.ShowAllChainsInfoStruct{ChainName: chainName, ChainID: chainId, EnabledApiInterfaces: apiInterfacesNames}
 
 		// add the chainInfoEntry to the chainInfoList
 		chainInfoList = append(chainInfoList, &chainInfoEntry)
