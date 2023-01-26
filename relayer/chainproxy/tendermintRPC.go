@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/lavanet/lava/relayer/metrics"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -243,6 +245,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
+	chainID := cp.GetSentry().ChainID
+	apiInterface := cp.GetSentry().ApiInterface
 
 	app.Use(favicon.New())
 
@@ -273,12 +277,13 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
+			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
+			go cp.portalLogs.AddMetric(metricsData, err != nil)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				continue
 			}
-
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
@@ -326,7 +331,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
@@ -349,7 +356,9 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID, metricsData)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
