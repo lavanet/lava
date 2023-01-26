@@ -371,18 +371,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			c.Status(fiber.StatusInternalServerError)
 
 			// Construct json response
-			jsonResponse, err := json.Marshal(fiber.Map{
-				"error": map[string]interface{}{
-					"code":    -32000,
-					"message": errMasking,
-				},
-			})
-			if err != nil {
-				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-			}
+			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(string(jsonResponse))
+			return c.SendString(response)
 		}
 		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http",

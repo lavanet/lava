@@ -256,17 +256,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
 
-			// construct json response
-			jsonResponse, err := json.Marshal(fiber.Map{
-				"error":            "unsupported api",
-				"more_information": errMasking,
-			})
-			if err != nil {
-				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-			}
+			// Construct json response
+			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(string(jsonResponse))
+			return c.SendString(response)
 		}
 		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
@@ -300,17 +294,11 @@ func (cp *RestChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
 
-			// construct json response
-			jsonResponse, err := json.Marshal(fiber.Map{
-				"error":            "unsupported api",
-				"more_information": errMasking,
-			})
-			if err != nil {
-				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-			}
+			// Construct json response
+			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(string(jsonResponse))
+			return c.SendString(response)
 		}
 		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)

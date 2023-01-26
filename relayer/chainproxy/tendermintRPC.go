@@ -337,17 +337,11 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
 
-			// construct json response
-			jsonResponse, err := json.Marshal(fiber.Map{
-				"error":            "unsupported api",
-				"more_information": errMasking,
-			})
-			if err != nil {
-				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-			}
+			// Construct json response
+			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(string(jsonResponse))
+			return c.SendString(response)
 		}
 		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
@@ -379,33 +373,14 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
 
-			// If the requested had a body, return error message to point that the POST should be used
 			if string(c.Body()) != "" {
-				// Construct json response
-				jsonResponse, err := json.Marshal(fiber.Map{
-					"error":            "unsupported api",
-					"recommendation":   "For jsonRPC use POST",
-					"more_information": errMasking,
-				})
-				if err != nil {
-					return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-				}
-
-				// Return error json response
-				return c.SendString(string(jsonResponse))
+				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
 			}
-
-			// construct json response
-			jsonResponse, err := json.Marshal(fiber.Map{
-				"error":            "unsupported api",
-				"more_information": errMasking,
-			})
-			if err != nil {
-				return c.SendString(`{"error": "Failed to marshal error response to json"}`)
-			}
+			// Construct json response
+			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(string(jsonResponse))
+			return c.SendString(response)
 		}
 		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
