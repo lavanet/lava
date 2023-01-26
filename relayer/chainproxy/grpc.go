@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/lavanet/lava/relayer/metrics"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -275,12 +277,14 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
 	}
-
+	apiInterface := cp.GetSentry().ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
-		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID"); err != nil {
+		metricsData := metrics.NewRelayAnalytics("NoDappID", cp.chainID, apiInterface)
+		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
+			go cp.portalLogs.AddMetric(metricsData, err != nil)
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
