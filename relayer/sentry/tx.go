@@ -32,9 +32,9 @@ func SimulateAndBroadCastTx(clientCtx client.Context, txf tx.Factory, msg sdk.Ms
 		return err
 	}
 
-	if err := validateGas(gasUsed); err != nil {
-		return err
-	}
+	// if err := validateGas(gasUsed); err != nil {
+	// 	return err
+	// }
 
 	txf = txf.WithGas(gasUsed)
 
