@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -45,12 +46,17 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)                                                   // has to be thread safe
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
+	CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
 type ChainMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	GetInterface() *spectypes.ApiInterface
 	RequestedBlock() int64
+}
+
+type NodeMessage interface {
+	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
 }
 
 type RelaySender interface {

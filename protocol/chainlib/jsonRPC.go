@@ -27,6 +27,10 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	return 0, 0, 0
 }
 
+func (apip *JsonRPCChainParser) CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) { // has to be thread safe, reuse code within ParseMsg as common functionality
+	return nil, fmt.Errorf("not implemented")
+}
+
 func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }

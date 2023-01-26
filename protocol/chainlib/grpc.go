@@ -22,6 +22,10 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 	return false, 0
 }
 
+func (apip *GrpcChainParser) CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) { // has to be thread safe, reuse code within ParseMsg as common functionality
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
 	return 0, 0, 0
 }

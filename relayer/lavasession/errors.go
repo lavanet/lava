@@ -31,4 +31,5 @@ var ( // Provider Side Errors
 	InvalidEpochError           = sdkerrors.New("InvalidEpoch Error", 881, "Requested Epoch Is Too Old")
 	NewSessionWithRelayNumError = sdkerrors.New("NewSessionWithRelayNum Error", 882, "Requested Session With Relay Number Is Invalid")
 	ConsumerIsBlockListed       = sdkerrors.New("ConsumerIsBlockListed Error", 883, "This Consumer Is Blocked.")
+	ConsumerNotActive           = sdkerrors.New("ConsumerNotActive Error", 884, "This Consumer Is Not Active.")
 )

@@ -33,29 +33,25 @@ var (
 
 type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
-	RegisterApiParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
+	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
 }
 
 type RPCConsumer struct {
-	consumerSessionManagers map[string]*lavasession.ConsumerSessionManager
-	consumerStateTracker    ConsumerStateTrackerInf
-	rpcConsumerServers      map[string]*RPCConsumerServer
+	consumerStateTracker ConsumerStateTrackerInf
+	rpcConsumerServers   map[string]*RPCConsumerServer
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
 	// spawn up ConsumerStateTracker
 	consumerStateTracker := statetracker.ConsumerStateTracker{}
 	rpcc.consumerStateTracker, err = consumerStateTracker.New(ctx, txFactory, clientCtx)
 	if err != nil {
 		return err
 	}
-	rpcc.consumerSessionManagers = make(map[string]*lavasession.ConsumerSessionManager, len(rpcEndpoints))
 	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
-
-	cache := &performance.Cache{} // TODO
 
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -77,18 +73,17 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	for _, rpcEndpoint := range rpcEndpoints {
 		consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint)
 		key := rpcEndpoint.Key()
-		rpcc.consumerSessionManagers[key] = consumerSessionManager
-		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, rpcc.consumerSessionManagers[key])
+		rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
-		consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, chainParser)
+		consumerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
 		finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
 		consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 		rpcc.rpcConsumerServers[key] = &RPCConsumerServer{}
 		utils.LavaFormatInfo("RPCConsumer Listening", &map[string]string{"endpoints": lavasession.PrintRPCEndpoint(rpcEndpoint)})
-		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, rpcc.consumerSessionManagers[key], requiredResponses, privKey, vrf_sk, cache)
+		rpcc.rpcConsumerServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, vrf_sk, cache)
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -97,20 +92,21 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	return nil
 }
 
-func ParseEndpointArgs(endpoint_strings []string) (viper_endpoints *viper.Viper, err error) {
+func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
+	numFieldsInConfig := len(yaml_config_properties)
 	viper_endpoints = viper.New()
-	if len(endpoint_strings)%NumFieldsInConfig != 0 {
+	if len(endpoint_strings)%numFieldsInConfig != 0 {
 		return nil, fmt.Errorf("invalid endpoint_strings length %d, needs to divide by %d without residue", len(endpoint_strings), NumFieldsInConfig)
 	}
 	endpoints := []map[string]string{}
-	for idx := 0; idx < len(endpoint_strings); idx += NumFieldsInConfig {
+	for idx := 0; idx < len(endpoint_strings); idx += numFieldsInConfig {
 		toAdd := map[string]string{}
-		for inner_idx := 0; inner_idx < NumFieldsInConfig; inner_idx++ {
-			toAdd[Yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
+		for inner_idx := 0; inner_idx < numFieldsInConfig; inner_idx++ {
+			toAdd[yaml_config_properties[inner_idx]] = endpoint_strings[idx+inner_idx]
 		}
 		endpoints = append(endpoints, toAdd)
 	}
-	viper_endpoints.Set(EndpointsConfigName, endpoints)
+	viper_endpoints.Set(endpointsConfigName, endpoints)
 	return
 }
 
