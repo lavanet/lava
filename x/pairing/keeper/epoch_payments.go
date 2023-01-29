@@ -84,10 +84,10 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 	if !found {
-		epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{userPaymentProviderStorage}}
+		epochPayments = types.EpochPayments{Index: key, ProviderPaymentStorages: []*types.ProviderPaymentStorage{userPaymentProviderStorage}}
 	} else {
 		found = false
-		for _, providerEpochStorage := range epochPayments.GetClientsPayments() {
+		for _, providerEpochStorage := range epochPayments.GetProviderPaymentStorages() {
 			if providerEpochStorage.Index == userPaymentProviderStorage.Index {
 				*providerEpochStorage = *userPaymentProviderStorage
 				found = true
@@ -95,7 +95,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 			}
 		}
 		if !found {
-			epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, userPaymentProviderStorage)
+			epochPayments.ProviderPaymentStorages = append(epochPayments.GetProviderPaymentStorages(), userPaymentProviderStorage)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 		// return fmt.Errorf("did not find any epochPayments for block %d", blockForDelete.Num)
 		return nil
 	}
-	userPaymentsStorages := epochPayments.ClientsPayments
+	userPaymentsStorages := epochPayments.GetProviderPaymentStorages()
 	for _, userPaymentStorage := range userPaymentsStorages {
 		uniquePaymentStoragesCliPro := userPaymentStorage.UniquePaymentStorageClientProvider
 		for _, uniquePaymentStorageCliPro := range uniquePaymentStoragesCliPro {

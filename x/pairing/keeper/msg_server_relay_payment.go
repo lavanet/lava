@@ -340,9 +340,9 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 			// add the new empty providerPaymentStorage to epochPayments
 			epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
 			if !found {
-				epochPayments = types.EpochPayments{Index: key, ClientsPayments: []*types.ProviderPaymentStorage{&emptyProviderPaymentStorageWithComplaint}}
+				epochPayments = types.EpochPayments{Index: key, ProviderPaymentStorages: []*types.ProviderPaymentStorage{&emptyProviderPaymentStorageWithComplaint}}
 			} else {
-				epochPayments.ClientsPayments = append(epochPayments.ClientsPayments, &emptyProviderPaymentStorageWithComplaint)
+				epochPayments.ProviderPaymentStorages = append(epochPayments.GetProviderPaymentStorages(), &emptyProviderPaymentStorageWithComplaint)
 			}
 			k.SetEpochPayments(ctx, epochPayments)
 
@@ -362,7 +362,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 			utils.LavaFormatError("unable to find epochPayments entry of unresponsive provider", nil, &map[string]string{"unresponsive_provider_address": unresponsiveProvider})
 			continue
 		}
-		providerPaymentStorageList := epochPayments.GetClientsPayments()
+		providerPaymentStorageList := epochPayments.GetProviderPaymentStorages()
 		for _, providerPaymentStorageElem := range providerPaymentStorageList {
 			if providerPaymentStorage.GetIndex() == providerPaymentStorageElem.GetIndex() {
 				providerPaymentStorageElem.ComplainersTotalCu += complainerCuToAdd

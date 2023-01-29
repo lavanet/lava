@@ -991,7 +991,7 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 
 	// Get the providerPaymentStorage struct from epochPayments
 	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
-	for _, providerPaymentStorageFromEpochPaymentsElem := range epochPayments.GetClientsPayments() {
+	for _, providerPaymentStorageFromEpochPaymentsElem := range epochPayments.GetProviderPaymentStorages() {
 		if providerPaymentStorageFromEpochPaymentsElem.GetIndex() == providerPaymentStorageKey {
 			providerPaymentStorageFromEpochPayments = *providerPaymentStorageFromEpochPaymentsElem
 		}
