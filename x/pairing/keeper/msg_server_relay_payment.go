@@ -272,8 +272,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, details, "New Proof Of Work Was Accepted")
 
+		// Get servicersToPair param
+		servicersToPair, err := k.ServicersToPairCount(ctx, epochStart)
+		if err != nil {
+			return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epochStart)}, "couldn't get servicers to pair")
+		}
+
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.ChainID, relay.CuSum)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.ChainID, relay.CuSum, servicersToPair)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -281,12 +287,17 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum uint64) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum uint64, servicersToPair uint64) error {
 	var unresponsiveProviders []string
 
 	// check that unresponsiveData exists
 	if len(unresponsiveData) == 0 {
 		return nil
+	}
+
+	// check that servicersToPair is bigger than 1
+	if servicersToPair <= 1 {
+		return utils.LavaFormatError("servicersToPair is less than or equal to one. The value is invalid", nil, &map[string]string{"servicersToPair": strconv.FormatUint(servicersToPair, 10)})
 	}
 
 	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
@@ -301,8 +312,8 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		return nil
 	}
 
-	// the added complainer CU takes into account the number of providers the client complained on
-	complainerCuToAdd := cuSum / uint64(len(unresponsiveProviders))
+	// the added complainer CU takes into account the number of providers the client complained on and the number
+	complainerCuToAdd := cuSum / (uint64(len(unresponsiveProviders)) * (servicersToPair - 1))
 
 	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {

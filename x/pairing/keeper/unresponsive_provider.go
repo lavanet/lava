@@ -92,12 +92,6 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 		return nil, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, &map[string]string{"provider_address": providerStakeEntry.Address})
 	}
 
-	// Get servicersToPair param
-	servicersToPair, err := k.ServicersToPairCount(ctx, epochTemp)
-	if err != nil || servicersToPair == 0 {
-		return nil, utils.LavaError(ctx, k.Logger(ctx), "get_servicers_to_pair", map[string]string{"err": err.Error(), "epoch": fmt.Sprintf("%+v", epoch)}, "couldn't get servicers to pair")
-	}
-
 	// check which of the consts is larger
 	largerEpochsNumConst := epochsNumToCheckCUForComplainers
 	if epochsNumToCheckCUForUnresponsiveProvider > epochsNumToCheckCUForComplainers {
@@ -123,7 +117,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochs
 			// counter is smaller than epochsNumToCheckCUForComplainers -> count complainer CU
 			if counter < epochsNumToCheckCUForComplainers {
 				// update complainersCu
-				complainersCu += providerPaymentStorage.ComplainersTotalCu / (servicersToPair - 1)
+				complainersCu += providerPaymentStorage.ComplainersTotalCu
 			}
 
 			// save the providerPaymentStorageKey in the providerPaymentStorageKeyList
