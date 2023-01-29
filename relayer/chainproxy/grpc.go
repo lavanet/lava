@@ -327,16 +327,16 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	svc, methodName := ParseSymbol(nm.path)
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)
 	}
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl, "descriptor": fmt.Sprintf("%v", descriptor)})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"descriptor": fmt.Sprintf("%v", descriptor)})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"addr": nm.cp.nodeUrl, "methodName": methodName})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"methodName": methodName})
 	}
 	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
@@ -360,7 +360,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		AllowUnknownFields:    true,
 	})
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
 	}
 	nm.formatter = formatter
 	if formatMessage {
@@ -373,13 +373,13 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nm.path, msg, response, conn)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"addr": nm.cp.nodeUrl, "Method": nm.path, "msg": fmt.Sprintf("%s", nm.msg)})
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"Method": nm.path, "msg": fmt.Sprintf("%s", nm.msg)})
 	}
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, nil)
 	}
 
 	nm.Result = respBytes

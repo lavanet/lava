@@ -1263,7 +1263,7 @@ func Server(
 			if chainSentryInitError != nil {
 				if chainsentry.ErrorFailedToFetchLatestBlock.Is(chainSentryInitError) { // we allow ErrorFailedToFetchLatestBlock. to retry
 					utils.LavaFormatWarning(fmt.Sprintf("chainSentry Init failed. Attempt Number: %d/%d, Retrying in %d seconds",
-						attempt+1, RetryInitAttempts, TimeWaitInitializeChainSentry), nil, nil)
+						attempt+1, RetryInitAttempts, TimeWaitInitializeChainSentry), chainSentryInitError, nil)
 					time.Sleep(TimeWaitInitializeChainSentry * time.Second)
 					continue
 				} else { // other errors are currently fatal.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/lavanet/lava/relayer/metrics"
 
@@ -442,6 +443,10 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	var replyMsg JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
+		}
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,
