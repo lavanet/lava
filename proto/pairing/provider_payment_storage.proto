@@ -10,7 +10,7 @@ message ProviderPaymentStorage {
   repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 2; 
   uint64 epoch = 3;
   reserved 4;
-  uint64 complainers_total_cu = 5; // total CU that were supposed to be served by the provider but didn't because he was unavailable (so consumers complained about him)
+  uint64 complainersTotalCu = 5; // total CU that were supposed to be served by the provider but didn't because he was unavailable (so consumers complained about him)
 }
 
 // change Client -> consumer
