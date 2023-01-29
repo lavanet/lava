@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/metrics"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -24,10 +26,10 @@ func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	return nil, fmt.Errorf("chainParser for apiInterface (%s) not found", apiInterface)
 }
 
-func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (ChainListener, error) {
+func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *lavaprotocol.RPCConsumerLogs) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
 		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender), nil
 	case spectypes.APIInterfaceRest:
@@ -60,9 +62,29 @@ type RelaySender interface {
 		req string,
 		connectionType string,
 		dappID string,
+		analytics *metrics.RelayMetrics,
 	) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error)
 }
 
 type ChainListener interface {
-	Serve()
+	Serve(ctx context.Context)
+}
+
+// TODO move somewhere else
+type parsedMessage struct {
+	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
+	requestedBlock int64
+}
+
+func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
+	return pm.serviceApi
+}
+
+func (pm parsedMessage) GetInterface() *spectypes.ApiInterface {
+	return pm.apiInterface
+}
+
+func (pm parsedMessage) RequestedBlock() int64 {
+	return pm.requestedBlock
 }

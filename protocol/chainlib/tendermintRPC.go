@@ -33,7 +33,7 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 
 type TendermintRpcChainListener struct{}
 
-func (apil *TendermintRpcChainListener) Serve() {}
+func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {}
 
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (chainListener *TendermintRpcChainListener) {
 	// open up server for http implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint

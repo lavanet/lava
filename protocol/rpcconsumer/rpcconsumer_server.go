@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -41,7 +42,9 @@ type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
 }
 
-func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
+func (rpccs *RPCConsumerServer) ServeRPCRequests(
+	ctx context.Context,
+	listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
 	finalizationConsensus *lavaprotocol.FinalizationConsensus,
@@ -64,11 +67,11 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, pLogs)
 	if err != nil {
 		return err
 	}
-	go chainListener.Serve()
+	go chainListener.Serve(ctx)
 	return nil
 }
 
@@ -78,6 +81,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
+	analytics *metrics.RelayMetrics,
 ) (relayReply *pairingtypes.RelayReply, relayServer *pairingtypes.Relayer_RelaySubscribeClient, errRet error) {
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use

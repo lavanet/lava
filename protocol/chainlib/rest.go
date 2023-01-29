@@ -33,7 +33,7 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 
 type RestChainListener struct{}
 
-func (apil *RestChainListener) Serve() {}
+func (apil *RestChainListener) Serve(ctx context.Context) {}
 
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (chainListener *RestChainListener) {
 	// open up server for http implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint

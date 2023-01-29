@@ -32,7 +32,7 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 
 type GrpcChainListener struct{}
 
-func (apil *GrpcChainListener) Serve() {}
+func (apil *GrpcChainListener) Serve(ctx context.Context) {}
 
 func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (chainListener *GrpcChainListener) {
 	// open up server for grpc implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint
