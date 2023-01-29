@@ -16,7 +16,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/client/cli"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -173,31 +172,9 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	logger := am.keeper.Logger(ctx)
-	logOnErr := func(err error, failingFunc string) {
-		if err != nil {
-			attrs := map[string]string{"error": err.Error()}
-			utils.LavaError(ctx, logger, "new_epoch", attrs, failingFunc)
-		}
-	}
 	if am.keeper.IsEpochStart(ctx) {
-		// on session start we need to do:
-		// 1. remove old session payments
-		// 2. unstake any unstaking providers
-		// 3. unstake any unstaking users
-		// 4. unstake/jail unresponsive providers
-
-		// 1.
-		err := am.keeper.RemoveOldEpochPayment(ctx)
-		logOnErr(err, "RemoveOldEpochPayment")
-
-		// 2+3.
-		err = am.keeper.CheckUnstakingForCommit(ctx)
-		logOnErr(err, "CheckUnstakingForCommit")
-
-		// 4. unstake unresponsive providers
-		err = am.keeper.UnstakeUnresponsiveProviders(ctx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-		logOnErr(err, "UnstakeUnresponsiveProviders")
+		// run functions that are supposed to run in epoch start
+		am.keeper.EpochStart(ctx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
 }
 
