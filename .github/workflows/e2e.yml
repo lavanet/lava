@@ -15,14 +15,15 @@ jobs:
     
     # Install Ignite
     - name: ignite install
-      run: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
-      # run: curl https://get.ignite.com/cli! | bash
+      uses: nick-fields/retry@v2
+      with:
+        max_attempts: 3
+        retry_on: error
+        timeout_minutes: 20
+        command: git clone --depth 1 --branch v0.22.2 https://github.com/ignite/cli && cd cli && make install 
+
     - name: ignite version
       run:  ignite version
-    # - name: starport install
-    #   run: curl https://get.starport.network/starport@v0.19.2! | bash
-    # - name: starport version
-    #   run:  starport version
 
     # Setup Paths
     - name: home
