@@ -22,10 +22,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	tendermintRpcInterface = "tendermintrpc"
-)
-
 type TendermintChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
@@ -149,7 +145,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, tendermintRpcInterface)
+	serverApis, taggedApis := getServiceApis(spec, tendermintRPCInterface)
 
 	// Set the spec field of the TendermintChainParser object
 	apip.spec = spec

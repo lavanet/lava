@@ -12,6 +12,13 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	grpcInterface          = "grpc"
+	jsonRPCInterface       = "jsonrpc"
+	restInterface          = "rest"
+	tendermintRPCInterface = "tendermintrpc"
+)
+
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -40,11 +47,9 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
 
-// this is an interface for parsing and generating messages of the supported APIType
-// it checks for the existence of the method in the spec, and formats the message
 type ChainParser interface {
-	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) // has to be thread safe
-	SetSpec(spec spectypes.Spec)                                                   // has to be thread safe
+	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error)
+	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
 }
@@ -68,23 +73,4 @@ type RelaySender interface {
 
 type ChainListener interface {
 	Serve(ctx context.Context)
-}
-
-// TODO move somewhere else
-type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
-	requestedBlock int64
-}
-
-func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
-	return pm.serviceApi
-}
-
-func (pm parsedMessage) GetInterface() *spectypes.ApiInterface {
-	return pm.apiInterface
-}
-
-func (pm parsedMessage) RequestedBlock() int64 {
-	return pm.requestedBlock
 }

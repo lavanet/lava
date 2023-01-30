@@ -8,12 +8,31 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
 	ContextUserValueKeyDappID = "dappID"
 )
+
+type parsedMessage struct {
+	serviceApi     *spectypes.ServiceApi
+	apiInterface   *spectypes.ApiInterface
+	requestedBlock int64
+}
+
+func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
+	return pm.serviceApi
+}
+
+func (pm parsedMessage) GetInterface() *spectypes.ApiInterface {
+	return pm.apiInterface
+}
+
+func (pm parsedMessage) RequestedBlock() int64 {
+	return pm.requestedBlock
+}
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	if len(c.Route().Params) > 1 {
@@ -95,4 +114,19 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 		}
 	}
 	return serverApis, taggedApis
+}
+
+func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
+	// TODO: make it faster and better by not doing a regex instead using a better algorithm
+	for apiName, api := range serverApis {
+		re, err := regexp.Compile(apiName)
+		if err != nil {
+			utils.LavaFormatError("regex Compile api", err, &map[string]string{"apiName": apiName})
+			continue
+		}
+		if re.Match([]byte(name)) {
+			return api, true
+		}
+	}
+	return spectypes.ServiceApi{}, false
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -17,10 +16,6 @@ import (
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-)
-
-const (
-	restInterface = "rest"
 )
 
 type RestChainParser struct {
@@ -74,11 +69,11 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	api, ok := apip.MatchSpecApiByName(name)
+	api, ok := matchSpecApiByName(name, apip.serverApis)
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("JRPC api not supported")
+		return nil, errors.New("rest api not supported")
 	}
 
 	// Return an error if api is disabled
@@ -87,30 +82,6 @@ func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 	}
 
 	return &api, nil
-}
-
-func (apip *RestChainParser) MatchSpecApiByName(name string) (spectypes.ServiceApi, bool) {
-	// Guard that the JsonRPCChainParser instance exists
-	if apip == nil {
-		return spectypes.ServiceApi{}, false
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// TODO: make it faster and better by not doing a regex instead using a better algorithm
-	for apiName, api := range apip.serverApis {
-		re, err := regexp.Compile(apiName)
-		if err != nil {
-			utils.LavaFormatError("regex Compile api", err, &map[string]string{"apiName": apiName})
-			continue
-		}
-		if re.Match([]byte(name)) {
-			return api, true
-		}
-	}
-	return spectypes.ServiceApi{}, false
 }
 
 // SetSpec sets the spec for the RestChainParser

@@ -21,10 +21,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	jsonrpcInterface = "jsonrpc"
-)
-
 type JsonrpcMessage struct {
 	Version string          `json:"jsonrpc,omitempty"` // version of the JSON-RPC protocol used
 	ID      json.RawMessage `json:"id,omitempty"`      // identifier of the request
@@ -113,7 +109,7 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, jsonrpcInterface)
+	serverApis, taggedApis := getServiceApis(spec, jsonRPCInterface)
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec
@@ -137,7 +133,7 @@ func (apip *JsonRPCChainParser) getSupportedApi(name string) (*spectypes.Service
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("JRPC api not supported")
+		return nil, errors.New("jsonRPC api not supported")
 	}
 
 	// Return an error if api is disabled
