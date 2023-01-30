@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	rpcInterface = "jsonrpc"
+	jsonrpcInterface = "jsonrpc"
 )
 
 type JsonrpcMessage struct {
@@ -113,7 +113,7 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, rpcInterface)
+	serverApis, taggedApis := getServiceApis(spec, jsonrpcInterface)
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec

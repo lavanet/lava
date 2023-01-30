@@ -35,7 +35,7 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainListener(ctx, listenEndpoint, relaySender), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	}
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
