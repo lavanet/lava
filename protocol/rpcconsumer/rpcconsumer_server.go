@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -30,14 +31,20 @@ type RPCConsumerServer struct {
 	rpcConsumerLogs        *lavaprotocol.RPCConsumerLogs
 	cache                  *performance.Cache
 	privKey                *btcec.PrivateKey
-	consumerTxSender       ConsumerStateTrackerInf
+	consumerTxSender       ConsumerTxSender
 	requiredResponses      int
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	VrfSk                  vrf.PrivateKey
 }
 
+type ConsumerTxSender interface {
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
+}
+
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
+	chainParser chainlib.ChainParser,
+	finalizationConsensus *lavaprotocol.FinalizationConsensus,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -55,14 +62,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	}
 	rpccs.rpcConsumerLogs = pLogs
 	rpccs.privKey = privKey
-	chainParser, err := chainlib.NewChainParser(listenEndpoint.ApiInterface)
-	if err != nil {
-		return err
-	}
 	rpccs.chainParser = chainParser
-	consumerStateTracker.RegisterApiParserForSpecUpdates(ctx, chainParser)
-	finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
-	consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 	rpccs.finalizationConsensus = finalizationConsensus
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs)
 	if err != nil {

@@ -510,6 +510,11 @@ func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{})
 	var replyMsg JsonrpcMessage
 	// check if there was an error
 	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
+		}
+
 		// create a new jsonrpc message with the error message
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,

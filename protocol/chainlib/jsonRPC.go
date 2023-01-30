@@ -33,10 +33,15 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 
 type JsonRPCChainListener struct{}
 
-func (apil *JsonRPCChainListener) Serve() {}
+func (apil *JsonRPCChainListener) Serve() {
+	// POrtal code replace sendRelay with relaySender.SendRelay()
+}
 
 func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (chainListener *JsonRPCChainListener) {
 	// open up server for http implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint
 	// when receiving the data such as url, rpc data, headers (connectionType), use relaySender to wrap verify and send that data
+
+	// save the relay sender
+
 	return nil
 }
