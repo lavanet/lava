@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -56,6 +57,10 @@ func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
 		return string(buffer)
 	}
 	return "NoDappID"
+}
+
+func addAttributeToError(key string, value string, errorMessage string) string {
+	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
 }
 
 func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {

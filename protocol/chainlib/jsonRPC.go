@@ -60,6 +60,7 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
+// ParseMsg parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
@@ -69,7 +70,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if err != nil {
 		return nil, err
 	}
-	//
+
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := apip.getSupportedApi(msg.Method)
 	if err != nil {
@@ -117,34 +118,33 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	apip.spec = spec
 	apip.serverApis = serverApis
 	apip.taggedApis = taggedApis
-
 }
 
+// getSupportedApi fetches service api from spec by name
 func (apip *JsonRPCChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	if api, ok := apip.GetSpecApiByName(name); ok {
-		if !api.Enabled {
-			return nil, errors.New("api is disabled")
-		}
-		return &api, nil
-	}
-
-	return nil, errors.New("JRPC api not supported")
-}
-
-func (apip *JsonRPCChainParser) GetSpecApiByName(name string) (spectypes.ServiceApi, bool) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return spectypes.ServiceApi{}, false
+		return nil, errors.New("JsonRPCChainParser not defined")
 	}
 
 	// Acquire read lock
 	apip.rwLock.RLock()
 	defer apip.rwLock.RUnlock()
 
-	// fetch server api with name
-	val, ok := apip.serverApis[name]
+	// Fetch server api by name
+	api, ok := apip.serverApis[name]
 
-	return val, ok
+	// Return an error if spec does not exist
+	if !ok {
+		return nil, errors.New("JRPC api not supported")
+	}
+
+	// Return an error if api is disabled
+	if !api.Enabled {
+		return nil, errors.New("api is disabled")
+	}
+
+	return &api, nil
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -185,6 +185,18 @@ type JsonRPCChainListener struct {
 	endpoint    *lavasession.RPCEndpoint
 	relaySender RelaySender
 	logger      *lavaprotocol.RPCConsumerLogs
+}
+
+// NewJrpcChainListener creates a new instance of JsonRPCChainListener
+func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *lavaprotocol.RPCConsumerLogs) (chainListener *JsonRPCChainListener) {
+	// Create a new instance of JsonRPCChainListener
+	chainListener = &JsonRPCChainListener{
+		listenEndpoint,
+		relaySender,
+		rpcConsumerLogs,
+	}
+
+	return chainListener
 }
 
 func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
@@ -319,15 +331,4 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	if err != nil {
 		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
-}
-
-func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *lavaprotocol.RPCConsumerLogs) (chainListener *JsonRPCChainListener) {
-	// Create a new instance of JsonRPCChainListener
-	chainListener = &JsonRPCChainListener{
-		listenEndpoint,
-		relaySender,
-		rpcConsumerLogs,
-	}
-
-	return chainListener
 }
