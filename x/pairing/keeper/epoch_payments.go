@@ -129,7 +129,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 		// get the providerPaymentStorage object
 		userPaymentStorage, found := k.GetProviderPaymentStorage(ctx, userPaymentStorageKey)
 		if !found {
-			return utils.LavaError(ctx, k.Logger(ctx), "get_provider_payment_storage", map[string]string{"providerPaymentStorageKey": userPaymentStorageKey}, "could not get userPaymentStorage")
+			continue
 		}
 
 		// go over the providerPaymentStorage object's uniquePaymentStorageClientProviderKeys
