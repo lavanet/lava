@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -101,16 +100,4 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, consumerAddre
 		}
 	}
 	return usedCUProviderTotal, nil
-}
-
-func (k Keeper) getProviderAddressFromProviderPaymentStorageKey(providerPaymentStorageKey string) string {
-	return strings.Split(providerPaymentStorageKey, "_")[2]
-}
-
-func (k Keeper) getEpochFromProviderPaymentStorageKey(providerPaymentStorageKey string) string {
-	return strings.Split(providerPaymentStorageKey, "_")[1]
-}
-
-func (k Keeper) getChainIDFromProviderPaymentStorageKey(providerPaymentStorageKey string) string {
-	return strings.Split(providerPaymentStorageKey, "_")[0]
 }

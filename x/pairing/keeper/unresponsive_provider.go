@@ -66,9 +66,13 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 				return utils.LavaError(ctx, k.Logger(ctx), "count_cu_for_unresponsiveness", map[string]string{"err": err.Error()}, "couldn't count CU for unreponsiveness")
 			}
 
+			// get the provider address and chain ID of the stake entry
+			providerAddress := providerStakeEntry.Address
+			chainID := providerStakeEntry.Chain
+
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
 			if len(providerPaymentStorageKeyList) != 0 && providerPaymentStorageKeyList != nil {
-				err = k.punishUnresponsiveProvider(ctx, providerPaymentStorageKeyList)
+				err = k.punishUnresponsiveProvider(ctx, providerAddress, chainID, providerPaymentStorageKeyList)
 				if err != nil {
 					return utils.LavaError(ctx, k.Logger(ctx), "punish_unresponsive_provider", map[string]string{"err": err.Error()}, "couldn't punish unresponsive provider")
 				}
@@ -161,11 +165,7 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is unstake
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, providerPaymentStorageKeyList []string) error {
-	// extract from a providerPaymentStorageKey the provider address and the chain ID
-	providerAddress := k.getProviderAddressFromProviderPaymentStorageKey(providerPaymentStorageKeyList[0])
-	chainID := k.getChainIDFromProviderPaymentStorageKey(providerPaymentStorageKeyList[0])
-
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, providerAddress string, chainID string, providerPaymentStorageKeyList []string) error {
 	// Get provider's sdk.Account address
 	sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)
 	if err != nil {
