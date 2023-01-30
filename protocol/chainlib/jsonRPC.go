@@ -92,6 +92,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if err != nil {
 		return nil, err
 	}
+
 	nodeMsg := &parsedMessage{
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,

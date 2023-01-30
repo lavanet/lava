@@ -31,9 +31,9 @@ func NewChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoi
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestChainListener(ctx, listenEndpoint, relaySender), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
 		return NewGrpcChainListener(ctx, listenEndpoint, relaySender), nil
 	}
