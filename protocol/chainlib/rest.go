@@ -19,6 +19,10 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const (
+	restInterface = "rest"
+)
+
 type RestChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
@@ -121,7 +125,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, rpcInterface)
+	serverApis, taggedApis := getServiceApis(spec, restInterface)
 
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
