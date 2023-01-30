@@ -47,3 +47,13 @@ var Upgrade_0_4_5 = Upgrade{
 	}, // create CreateUpgradeHandler in upgrades.go below
 	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
 }
+
+var Upgrade_0_4_6 = Upgrade{
+	UpgradeName: "v0.4.6", // upgrade name defined few lines above
+	CreateUpgradeHandler: func(m *module.Manager, c module.Configurator, bapm BaseAppParamManager, lk *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
+		return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return m.RunMigrations(ctx, c, vm)
+		}
+	}, // create CreateUpgradeHandler in upgrades.go below
+	StoreUpgrades: store.StoreUpgrades{}, // StoreUpgrades has 3 fields: Added/Renamed/Deleted any module that fits these description should be added in the way below
+}

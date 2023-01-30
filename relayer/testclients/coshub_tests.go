@@ -36,7 +36,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 			for httpMethod, api := range mostImportantApisToTest {
 				for _, api_value := range api {
 					for i := 0; i < 100; i++ {
-						reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "coshub_test")
+						reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "coshub_test", nil)
 						if err != nil {
 							log.Println(err)
 							errors = append(errors, fmt.Sprintf("%s", err))
@@ -65,7 +65,7 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 						continue
 					}
 					log.Printf("%s", apiName)
-					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "coshub_test")
+					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "coshub_test", nil)
 					if err != nil {
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
@@ -78,28 +78,28 @@ func CosmoshubTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privK
 	case tendermintString:
 		{
 			for i := 0; i < 100; i++ {
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "coshub_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "coshub_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet, "coshub_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet, "coshub_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet, "coshub_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet, "coshub_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet, "coshub_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet, "coshub_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))

@@ -606,6 +606,106 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
+func (lt *lavaTest) startGRPCProvider(rpcURL string, ctx context.Context) {
+	providerCommands := []string{
+		lt.lavadPath + " server 127.0.0.1 2281 " + rpcURL + " LAV1 grpc --from servicer6 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2282 " + rpcURL + " LAV1 grpc --from servicer7 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2283 " + rpcURL + " LAV1 grpc --from servicer8 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2284 " + rpcURL + " LAV1 grpc --from servicer9 --geolocation 1 --log_level debug",
+		lt.lavadPath + " server 127.0.0.1 2285 " + rpcURL + " LAV1 grpc --from servicer10 --geolocation 1 --log_level debug",
+	}
+	lt.logs["10_grpcProvider"] = new(bytes.Buffer)
+	for idx, providerCommand := range providerCommands {
+		cmd := exec.CommandContext(ctx, "", "")
+		cmd.Path = lt.lavadPath
+		cmd.Args = strings.Split(providerCommand, " ")
+		cmd.Stdout = lt.logs["10_grpcProvider"]
+		cmd.Stderr = lt.logs["10_grpcProvider"]
+
+		err := cmd.Start()
+		if err != nil {
+			panic(err)
+		}
+		lt.commands["10_grpcProvider"] = cmd
+		go func(idx int) {
+			lt.listenCmdCommand(cmd, "startGRPCProvider process returned unexpectedly, provider idx:"+strconv.Itoa(idx), "startGRPCProvider")
+		}(idx)
+	}
+}
+
+func (lt *lavaTest) startGRPCGateway(ctx context.Context) {
+	providerCommand := lt.lavadPath + " portal_server 127.0.0.1 3342 LAV1 grpc --from user2 --geolocation 1 --log_level debug"
+	lt.logs["11_grpcGateway"] = new(bytes.Buffer)
+
+	cmd := exec.CommandContext(ctx, "", "")
+	cmd.Path = lt.lavadPath
+	cmd.Args = strings.Split(providerCommand, " ")
+	cmd.Stdout = lt.logs["11_grpcGateway"]
+	cmd.Stderr = lt.logs["11_grpcGateway"]
+
+	err := cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+	lt.commands["11_grpcGateway"] = cmd
+	go func() {
+		lt.listenCmdCommand(cmd, "startGRPCGateway process returned unexpectedly", "startGRPCGateway")
+	}()
+}
+
+func (lt *lavaTest) checkGRPCGateway(rpcURL string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting GRPC Gateway", nil)
+		grpcConn, err := grpc.Dial(rpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			continue
+		}
+		specQueryClient := specTypes.NewQueryClient(grpcConn)
+		_, err = specQueryClient.SpecAll(context.Background(), &specTypes.QueryAllSpecRequest{})
+		if err == nil {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+	panic("GRPC Check Failed")
+}
+
+func grpcTests(rpcURL string, testDuration time.Duration) error {
+	ctx := context.Background()
+	utils.LavaFormatInfo("Starting GRPC Tests", nil)
+	errors := []string{}
+	grpcConn, err := grpc.Dial(rpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		errors = append(errors, "error client dial")
+	}
+	specQueryClient := specTypes.NewQueryClient(grpcConn)
+	pairingQueryClient := pairingTypes.NewQueryClient(grpcConn)
+	for start := time.Now(); time.Since(start) < testDuration; {
+		specQueryRes, err := specQueryClient.SpecAll(ctx, &specTypes.QueryAllSpecRequest{})
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		for _, spec := range specQueryRes.Spec {
+			_, err = pairingQueryClient.Providers(context.Background(), &pairingTypes.QueryProvidersRequest{
+				ChainID: spec.GetIndex(),
+			})
+			if err != nil {
+				errors = append(errors, err.Error())
+			}
+			_, err = pairingQueryClient.Clients(context.Background(), &pairingTypes.QueryClientsRequest{
+				ChainID: spec.GetIndex(),
+			})
+			if err != nil {
+				errors = append(errors, err.Error())
+			}
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
 func getRequest(url string) ([]byte, error) {
 	res, err := http.Get(url)
 	if err != nil {
@@ -770,7 +870,29 @@ func runE2E() {
 	lt.startJSONRPCProxy(jsonCTX)
 	lt.startJSONRPCProvider("http://127.0.0.1:1111", jsonCTX)
 	lt.startJSONRPCGateway(jsonCTX)
-	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Second*30)
+	lt.checkJSONRPCGateway("http://127.0.0.1:3333/1", time.Minute*2)
+
+	tendermintCTX := context.Background()
+	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
+	lt.startTendermintGateway(tendermintCTX)
+	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
+
+	restCTX := context.Background()
+	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
+	lt.startRESTGateway(restCTX)
+	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
+
+	grpcCTX := context.Background()
+	lt.startGRPCProvider("127.0.0.1:9090", grpcCTX)
+	lt.startGRPCGateway(grpcCTX)
+	lt.checkGRPCGateway("127.0.0.1:3342", time.Second*30)
+
+	grpcErr := grpcTests("127.0.0.1:3342", time.Second*30)
+	if grpcErr != nil {
+		panic(grpcErr)
+	} else {
+		utils.LavaFormatInfo("GRPC TEST OK", nil)
+	}
 
 	jsonErr := jsonrpcTests("http://127.0.0.1:3333/1", time.Second*30)
 	if jsonErr != nil {
@@ -778,11 +900,6 @@ func runE2E() {
 	} else {
 		utils.LavaFormatInfo("JSONRPC TEST OK", nil)
 	}
-
-	tendermintCTX := context.Background()
-	lt.startTendermintProvider("http://0.0.0.0:26657", tendermintCTX)
-	lt.startTendermintGateway(tendermintCTX)
-	lt.checkTendermintGateway("http://127.0.0.1:3340/1", time.Second*30)
 
 	tendermintErr := tendermintTests("http://127.0.0.1:3340/1", time.Second*30)
 	if tendermintErr != nil {
@@ -800,11 +917,6 @@ func runE2E() {
 
 	lt.lavaOverLava(tendermintCTX)
 
-	restCTX := context.Background()
-	lt.startRESTProvider("http://127.0.0.1:1317", restCTX)
-	lt.startRESTGateway(restCTX)
-	lt.checkRESTGateway("http://127.0.0.1:3341/1", time.Second*30)
-
 	restErr := restTests("http://127.0.0.1:3341/1", time.Second*30)
 	if restErr != nil {
 		panic(restErr)
@@ -817,6 +929,7 @@ func runE2E() {
 	jsonCTX.Done()
 	tendermintCTX.Done()
 	restCTX.Done()
+	grpcCTX.Done()
 
 	lt.finishTestSuccessfully()
 }

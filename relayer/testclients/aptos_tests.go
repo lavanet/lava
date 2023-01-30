@@ -43,7 +43,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 		for httpMethod, api := range mostImportantApisToTest {
 			for _, api_value := range api {
 				for i := 0; i < 100; i++ {
-					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "aptos_test")
+					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "aptos_test", nil)
 					if err != nil {
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
@@ -73,7 +73,7 @@ func AptosTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *
 					continue
 				}
 				log.Printf("%s", apiName)
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "aptos_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "aptos_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))

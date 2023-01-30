@@ -60,10 +60,10 @@ type Endpoint struct {
 }
 
 type RPCEndpoint struct {
-	NetworkAddress string // IP:PORT
-	ChainID        string // spec chain identifier
-	ApiInterface   string
-	Geolocation    uint64
+	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // IP:PORT
+	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
+	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 }
 
 func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
