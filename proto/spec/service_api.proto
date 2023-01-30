@@ -25,8 +25,8 @@ message ApiInterface {
   string interface = 1;
   string type = 2;
   uint64 extra_compute_units = 3;
-  BlockParser overwrite_block_parsing = 4;
-  SpecCategory category = 5;
+  SpecCategory category = 4;
+  BlockParser overwrite_block_parsing = 5;
 }
 
 message BlockParser {
