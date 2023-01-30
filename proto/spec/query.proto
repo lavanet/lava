@@ -69,7 +69,13 @@ message QueryShowAllChainsRequest {
 }
 
 message QueryShowAllChainsResponse {
-  repeated string chainNames = 1;
+  reserved 1;
+  repeated showAllChainsInfoStruct chainInfoList = 2;
+}
+message showAllChainsInfoStruct {
+	string chainName = 1;
+	string chainID = 2;
+	repeated string enabledApiInterfaces = 3;
 }
 
 message QueryShowChainInfoRequest {
