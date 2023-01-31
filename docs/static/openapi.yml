@@ -31462,9 +31462,35 @@ paths:
                       type: string
                       format: uint64
                     min_stake_provider:
-                      type: string
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
                     min_stake_client:
-                      type: string
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        Coin defines a token with a denomination and an amount.
+
+
+                        NOTE: The amount field is an Int which implements the
+                        custom method
+
+                        signatures required by gogoproto.
                     providers_types:
                       type: string
                       enum:
@@ -31721,9 +31747,35 @@ paths:
                     type: string
                     format: uint64
                   min_stake_provider:
-                    type: string
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
                   min_stake_client:
-                    type: string
+                    type: object
+                    properties:
+                      denom:
+                        type: string
+                      amount:
+                        type: string
+                    description: >-
+                      Coin defines a token with a denomination and an amount.
+
+
+                      NOTE: The amount field is an Int which implements the
+                      custom method
+
+                      signatures required by gogoproto.
                   providers_types:
                     type: string
                     enum:
@@ -54384,9 +54436,35 @@ definitions:
               type: string
               format: uint64
             min_stake_provider:
-              type: string
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
             min_stake_client:
-              type: string
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                Coin defines a token with a denomination and an amount.
+
+
+                NOTE: The amount field is an Int which implements the custom
+                method
+
+                signatures required by gogoproto.
             providers_types:
               type: string
               enum:
@@ -54556,9 +54634,35 @@ definitions:
             type: string
             format: uint64
           min_stake_provider:
-            type: string
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
           min_stake_client:
-            type: string
+            type: object
+            properties:
+              denom:
+                type: string
+              amount:
+                type: string
+            description: >-
+              Coin defines a token with a denomination and an amount.
+
+
+              NOTE: The amount field is an Int which implements the custom
+              method
+
+              signatures required by gogoproto.
           providers_types:
             type: string
             enum:
@@ -54844,9 +54948,29 @@ definitions:
         type: string
         format: uint64
       min_stake_provider:
-        type: string
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
       min_stake_client:
-        type: string
+        type: object
+        properties:
+          denom:
+            type: string
+          amount:
+            type: string
+        description: |-
+          Coin defines a token with a denomination and an amount.
+
+          NOTE: The amount field is an Int which implements the custom method
+          signatures required by gogoproto.
       providers_types:
         type: string
         enum:
