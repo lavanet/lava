@@ -22,10 +22,6 @@ func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 	return false, 0
 }
 
-func (apip *RestChainParser) CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) { // has to be thread safe, reuse code within ParseMsg as common functionality
-	return nil, fmt.Errorf("not implemented")
-}
-
 func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// TODO:
 	return 0, 0, 0, 0

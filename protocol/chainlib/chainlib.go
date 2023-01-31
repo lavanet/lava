@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -52,10 +53,7 @@ type ChainMessage interface {
 	GetServiceApi() *spectypes.ServiceApi
 	GetInterface() *spectypes.ApiInterface
 	RequestedBlock() int64
-}
-
-type NodeMessage interface {
-	Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error)
+	GetRPCMessage() parser.RPCInput
 }
 
 type RelaySender interface {
@@ -82,9 +80,9 @@ const (
 
 type ChainProxy interface {
 	Start(context.Context) error
-	CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) // has to be thread safe, reuse code within ParseMsg as common functionality
-	FetchLatestBlockNum(ctx context.Context) (int64, error)
-	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+	SendNodeMsg(ctx context.Context, url string, data []byte, connectionType string, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	// FetchLatestBlockNum(ctx context.Context) (int64, error)
+	// FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
 
 func GetChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -99,4 +97,8 @@ func GetChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndp
 		return NewGrpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
 	}
 	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
+}
+
+func LocalNodeTimePerCu(cu uint64) time.Duration {
+	return time.Duration(cu * TimePerCU)
 }

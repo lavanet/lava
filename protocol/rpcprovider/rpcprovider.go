@@ -97,7 +97,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			AverageBlockTime:  avergaeBlockTime, // divide here to make the querying more often so we don't miss block changes by that much
 			ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 		}
-		chainTracker := chaintracker.New(ctx, chainProxy, chainTrackerConfig)
+		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy)
+		chainTracker := chaintracker.New(ctx, chainFetcher, chainTrackerConfig)
 		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
 

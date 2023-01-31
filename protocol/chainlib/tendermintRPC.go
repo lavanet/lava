@@ -27,10 +27,6 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	return 0, 0, 0, 0
 }
 
-func (apip *TendermintChainParser) CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) { // has to be thread safe, reuse code within ParseMsg as common functionality
-	return nil, fmt.Errorf("not implemented")
-}
-
 func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
