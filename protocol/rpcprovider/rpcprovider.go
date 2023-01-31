@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -18,11 +19,13 @@ import (
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/viper"
 )
 
 const (
-	EndpointsConfigName = "endpoints"
+	EndpointsConfigName       = "endpoints"
+	ChainTrackerDefaultMemory = 100
 )
 
 var (
@@ -33,9 +36,9 @@ var (
 type ProviderStateTrackerInf interface {
 	RegisterProviderSessionManagerForEpochUpdates(ctx context.Context, providerSessionManager *lavasession.ProviderSessionManager)
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
-	RegisterRewardServerForEpochUpdates(ctx context.Context, rewardServer rewardserver.RewardServer)
-	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager reliabilitymanager.ReliabilityManager)
+	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager)
 	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
 }
 
 type RPCProvider struct {
@@ -43,13 +46,16 @@ type RPCProvider struct {
 	rpcProviderServers   map[string]*RPCProviderServer
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache) (err error) {
+func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint) (err error) {
+	// single state tracker
 	providerStateTracker := statetracker.ProviderStateTracker{}
 	rpcp.providerStateTracker, err = providerStateTracker.New(ctx, txFactory, clientCtx)
 	if err != nil {
 		return err
 	}
 	rpcp.rpcProviderServers = make(map[string]*RPCProviderServer, len(rpcProviderEndpoints))
+	// single reward server
+	rewardServer := rewardserver.NewRewardServer(&providerStateTracker)
 
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -78,16 +84,27 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
 
-		rewardServer := rewardserver.RewardServer{}
-		providerStateTracker.RegisterRewardServerForEpochUpdates(ctx, rewardServer)
+		chainProxy, err := chainlib.GetChainProxy(parallelConnections, rpcProviderEndpoint, chainParser)
+		if err != nil {
+			utils.LavaFormatFatal("failed creating chain proxy", err, &map[string]string{"parallelConnections": strconv.FormatUint(uint64(parallelConnections), 10), "rpcProviderEndpoint": fmt.Sprintf("%+v", rpcProviderEndpoint)})
+		}
 
-		reliabilityManager := reliabilitymanager.ReliabilityManager{}
+		_, avergaeBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+		chainTrackerConfig := chaintracker.ChainTrackerConfig{
+			ServerAddress:     rpcProviderEndpoint.NodeUrl,
+			BlocksToSave:      blocksToSaveChainTracker,
+			AverageBlockTime:  avergaeBlockTime, // divide here to make the querying more often so we don't miss block changes by that much
+			ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+		}
+		chainTracker := chaintracker.New(ctx, chainProxy, chainTrackerConfig)
+		reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker)
 		providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager)
 
 		rpcp.rpcProviderServers[key] = &RPCProviderServer{}
 		utils.LavaFormatInfo("RPCProvider Listening", &map[string]string{"endpoints": lavasession.PrintRPCProviderEndpoint(rpcProviderEndpoint)})
 		_ = privKey
-		// rpcp.rpcProviderServers[key].ServeRPCRequests(ctx, rpcEndpoint, rpcp.providerStateTracker, chainParser, finalizationConsensus, providerSessionManager, requiredResponses, privKey, vrf_sk, cache)
+		rpcp.rpcProviderServers[key].ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy)
 	}
 
 	signalChan := make(chan os.Signal, 1)

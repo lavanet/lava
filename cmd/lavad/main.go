@@ -421,7 +421,11 @@ func main() {
 					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
 				}
 			}
-			rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache)
+			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
+			if err != nil {
+				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
+			}
+			rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
 			return nil
 		},
 	}
@@ -472,6 +476,7 @@ func main() {
 	cmdRPCProvider.MarkFlagRequired(sentry.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
+	cmdServer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	// rootCmd.AddCommand(cmdRPCProvider) // TODO: DISABLE COMMAND SO IT'S NOT EXPOSED ON MAIN YET
 
 	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {

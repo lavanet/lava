@@ -22,9 +22,9 @@ func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataRelia
 	return false, 0
 }
 
-func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// TODO:
-	return 0, 0, 0
+	return 0, 0, 0, 0
 }
 
 func (apip *JsonRPCChainParser) CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) { // has to be thread safe, reuse code within ParseMsg as common functionality
@@ -47,5 +47,9 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 
 	// save the relay sender
 
+	return nil
+}
+
+func NewJrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
 	return nil
 }

@@ -45,8 +45,7 @@ type ChainParser interface {
 	ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) // has to be thread safe
 	SetSpec(spec spectypes.Spec)                                                   // has to be thread safe
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
-	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32)
-	CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
 }
 
 type ChainMessage interface {
@@ -71,4 +70,33 @@ type RelaySender interface {
 
 type ChainListener interface {
 	Serve()
+}
+
+const (
+	DefaultTimeout            = 5 * time.Second
+	TimePerCU                 = uint64(100 * time.Millisecond)
+	ContextUserValueKeyDappID = "dappID"
+	MinimumTimePerRelayDelay  = time.Second
+	AverageWorldLatency       = 200 * time.Millisecond
+)
+
+type ChainProxy interface {
+	Start(context.Context) error
+	CreateNodeMsg(url string, data []byte, connectionType string) (NodeMessage, error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	FetchLatestBlockNum(ctx context.Context) (int64, error)
+	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
+}
+
+func GetChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
+	switch rpcProviderEndpoint.ApiInterface {
+	case spectypes.APIInterfaceJsonRPC:
+		return NewJrpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
+	case spectypes.APIInterfaceTendermintRPC:
+		return NewtendermintRpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
+	case spectypes.APIInterfaceRest:
+		return NewRestChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
+	case spectypes.APIInterfaceGrpc:
+		return NewGrpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
+	}
+	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
 }

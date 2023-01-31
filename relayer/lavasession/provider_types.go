@@ -40,11 +40,12 @@ const (
 	blockListedConsumer    = 1
 )
 
+// holds all of the data for a consumer for a certain epoch
 type ProviderSessionsWithConsumer struct {
 	Sessions      map[uint64]*SingleProviderSession
 	isBlockListed uint32
-	user          string
-	dataByEpoch   map[uint64]*ProviderSessionsEpochData
+	consumer      string
+	epochData     *ProviderSessionsEpochData
 	Lock          sync.RWMutex
 }
 

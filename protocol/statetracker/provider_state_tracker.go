@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/relayer/lavasession"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.
@@ -38,20 +38,17 @@ func (pst *ProviderStateTracker) RegisterChainParserForSpecUpdates(ctx context.C
 	return
 }
 
-func (pst *ProviderStateTracker) RegisterRewardServerForEpochUpdates(ctx context.Context, rewardServer rewardserver.RewardServer) {
-	// TODO: change to an interface instead of rewardserver.RewardServer
-	return
-}
-
-func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager reliabilitymanager.ReliabilityManager) {
+func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager) {
 	// TODO: change to an interface instead of reliabilitymanager.ReliabilityManager
 	return
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context) {
+func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64) {
+	// TODO: implement
 	return
 }
 
-func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64) {
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest) {
+	// TODO: implement
 	return
 }

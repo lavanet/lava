@@ -26,9 +26,9 @@ func (apip *RestChainParser) CreateNodeMsg(url string, data []byte, connectionTy
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// TODO:
-	return 0, 0, 0
+	return 0, 0, 0, 0
 }
 
 func NewRestChainParser() (chainParser *RestChainParser, err error) {
@@ -42,5 +42,9 @@ func (apil *RestChainListener) Serve() {}
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender) (chainListener *RestChainListener) {
 	// open up server for http implementing the api requested (currently implemented in serve_portal in chainproxy, endpoint at listenEndpoint
 	// when receiving the data such as url, rpc data, headers (connectionType), use relaySender to wrap verify and send that data
+	return nil
+}
+
+func NewRestChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
 	return nil
 }
