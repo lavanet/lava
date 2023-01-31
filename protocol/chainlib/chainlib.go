@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lavanet/lava/relayer/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -80,7 +80,7 @@ const (
 
 type ChainProxy interface {
 	Start(context.Context) error
-	SendNodeMsg(ctx context.Context, url string, data []byte, connectionType string, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	SendNodeMsg(ctx context.Context, path string, data []byte, connectionType string, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 	// FetchLatestBlockNum(ctx context.Context) (int64, error)
 	// FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 }
@@ -88,7 +88,7 @@ type ChainProxy interface {
 func GetChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
 	switch rpcProviderEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
+		return NewJrpcChainProxy(nConns, rpcProviderEndpoint), nil
 	case spectypes.APIInterfaceTendermintRPC:
 		return NewtendermintRpcChainProxy(nConns, rpcProviderEndpoint, chainParser), nil
 	case spectypes.APIInterfaceRest:

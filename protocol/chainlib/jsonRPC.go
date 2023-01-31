@@ -59,8 +59,10 @@ type JrpcChainProxy struct {
 	nodeUrl string
 }
 
-func NewJrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
-	return nil
+func NewJrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) ChainProxy {
+	cp := &JrpcChainProxy{nConns: nConns, nodeUrl: rpcProviderEndpoint.NodeUrl}
+
+	return cp
 }
 
 func (cp *JrpcChainProxy) Start(ctx context.Context) error {
