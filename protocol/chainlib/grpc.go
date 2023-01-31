@@ -51,9 +51,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
-		requestedBlock: -2,
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		msg:          data,
 	}
 	return nodeMsg, nil
 }
@@ -122,10 +122,10 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0, 0, 0
 	}
 
 	// Acquire read lock
@@ -136,7 +136,7 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
 type GrpcChainListener struct {
@@ -189,4 +189,8 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, &map[string]string{"Address": lis.Addr().String(), "ChainID": apil.endpoint.ChainID})
 	}
+}
+
+func NewGrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
+	return nil
 }

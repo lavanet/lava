@@ -43,9 +43,7 @@ type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
 }
 
-func (rpccs *RPCConsumerServer) ServeRPCRequests(
-	ctx context.Context,
-	listenEndpoint *lavasession.RPCEndpoint,
+func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
 	finalizationConsensus *lavaprotocol.FinalizationConsensus,
@@ -243,7 +241,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	}
 	relayResult.Reply = reply
 	lavaprotocol.UpdateRequestedBlock(relayRequest, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-	_, _, blockDistanceForFinalizedData := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
 	finalized := spectypes.IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
 	err = lavaprotocol.VerifyRelayReply(reply, relayRequest, providerPublicAddress)
 	if err != nil {

@@ -102,6 +102,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
+		msg:            &msg,
 	}
 	return nodeMsg, nil
 }
@@ -169,11 +170,11 @@ func (apip *TendermintChainParser) DataReliabilityParams() (enabled bool, dataRe
 }
 
 // ChainBlockStats returns block stats from spec
-// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+// (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData, spec.BlocksInFinalizationProof)
+func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0, 0, 0
 	}
 
 	// Acquire read lock
@@ -184,7 +185,7 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
 type TendermintRpcChainListener struct {
@@ -367,4 +368,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	if err != nil {
 		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
+}
+
+func NewtendermintRpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
+	return nil
 }

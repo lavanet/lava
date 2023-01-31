@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
@@ -16,6 +18,9 @@ import (
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/parser"
+
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -93,6 +98,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
+		msg:            &msg,
 	}
 	return nodeMsg, nil
 }
@@ -161,10 +167,10 @@ func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataRelia
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0, 0, 0
 	}
 
 	// Acquire read lock
@@ -175,7 +181,7 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
 
 	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
 type JsonRPCChainListener struct {
@@ -328,4 +334,88 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	if err != nil {
 		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
+}
+
+type JrpcChainProxy struct {
+	conn    *chainproxy.Connector
+	nConns  uint
+	nodeUrl string
+}
+
+func NewJrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) ChainProxy {
+	cp := &JrpcChainProxy{nConns: nConns, nodeUrl: rpcProviderEndpoint.NodeUrl}
+
+	return cp
+}
+
+func (cp *JrpcChainProxy) Start(ctx context.Context) error {
+	cp.conn = chainproxy.NewConnector(ctx, cp.nConns, cp.nodeUrl)
+	if cp.conn == nil {
+		return errors.New("g_conn == nil")
+	}
+
+	return nil
+}
+
+func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, path string, data []byte, connectionType string, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// Get node
+	rpc, err := cp.conn.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer cp.conn.ReturnRpc(rpc)
+	rpcInputMessage := chainMessage.GetRPCMessage()
+	nodeMessage, ok := rpcInputMessage.(chainproxy.JsonrpcMessage)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+	}
+	// Call our node
+	var rpcMessage *rpcclient.JsonrpcMessage
+	var replyMessage *chainproxy.JsonrpcMessage
+	var sub *rpcclient.ClientSubscription
+	if ch != nil {
+		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+	} else {
+		connectCtx, cancel := context.WithTimeout(ctx, LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits))
+		defer cancel()
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
+	}
+
+	var replyMsg chainproxy.JsonrpcMessage
+	// the error check here would only wrap errors not from the rpc
+	if err != nil {
+		replyMsg = chainproxy.JsonrpcMessage{
+			Version: nodeMessage.Version,
+			ID:      nodeMessage.ID,
+		}
+		replyMsg.Error = &rpcclient.JsonError{
+			Code:    1,
+			Message: fmt.Sprintf("%s", err),
+		}
+		// this later causes returning an error
+	} else {
+		replyMessage, err = chainproxy.ConvertJsonRPCMsg(rpcMessage)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, nil)
+		}
+		replyMsg = *replyMessage
+	}
+
+	retData, err := json.Marshal(replyMsg)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: retData,
+	}
+
+	if ch != nil {
+		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
+		}
+	}
+
+	return reply, subscriptionID, sub, err
 }

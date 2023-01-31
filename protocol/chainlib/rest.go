@@ -50,9 +50,9 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
-		serviceApi:     serviceApi,
-		apiInterface:   apiInterface,
-		requestedBlock: -2,
+		serviceApi:   serviceApi,
+		apiInterface: apiInterface,
+		msg:          data,
 	}
 	return nodeMsg, nil
 }
@@ -121,10 +121,10 @@ func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32) {
+func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
-		return 0, 0, 0
+		return 0, 0, 0, 0
 	}
 
 	// Acquire read lock
@@ -134,8 +134,8 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 	// Convert average block time from int64 -> time.Duration
 	averageBlockTime = time.Duration(apip.spec.AverageBlockTime) * time.Second
 
-	// Return allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData from spec
-	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData
+	// Return values
+	return apip.spec.AllowedBlockLagForQosSync, averageBlockTime, apip.spec.BlockDistanceForFinalizedData, apip.spec.BlocksInFinalizationProof
 }
 
 type RestChainListener struct {
@@ -248,4 +248,8 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	if err != nil {
 		utils.LavaFormatError("app.Listen(listenAddr)", err, nil)
 	}
+}
+
+func NewRestChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
+	return nil
 }
