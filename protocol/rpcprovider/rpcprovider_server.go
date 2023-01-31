@@ -30,5 +30,16 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	reliabilityManager ReliabilityManagerInf,
 	privKey *btcec.PrivateKey,
 	cache *performance.Cache, chainProxy chainlib.ChainProxy) {
-
+	// spin up a grpc listener
+	// verify the relay metadata is valid (epoch, signature)
+	// verify the consumer is authorised
+	// create/bring a session
+	// verify the relay data is valid (cu, chainParser, requested block)
+	// check cache hit
+	// send the relay to the node using chainProxy
+	// send the proof to reward server
+	// set cache entry (async)
+	// attach data reliability finalization data
+	// sign the response
+	// finalize the session
 }
