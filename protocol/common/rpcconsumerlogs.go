@@ -1,4 +1,4 @@
-package lavaprotocol
+package common
 
 import (
 	"fmt"

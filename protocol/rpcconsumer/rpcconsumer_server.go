@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
@@ -29,7 +30,7 @@ type RPCConsumerServer struct {
 	chainParser            chainlib.ChainParser
 	consumerSessionManager *lavasession.ConsumerSessionManager
 	listenEndpoint         *lavasession.RPCEndpoint
-	rpcConsumerLogs        *lavaprotocol.RPCConsumerLogs
+	rpcConsumerLogs        *common.RPCConsumerLogs
 	cache                  *performance.Cache
 	privKey                *btcec.PrivateKey
 	consumerTxSender       ConsumerTxSender
@@ -59,7 +60,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(
 	rpccs.cache = cache
 	rpccs.consumerTxSender = consumerStateTracker
 	rpccs.requiredResponses = requiredResponses
-	pLogs, err := lavaprotocol.NewRPCConsumerLogs()
+	pLogs, err := common.NewRPCConsumerLogs()
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err, nil)
 	}
