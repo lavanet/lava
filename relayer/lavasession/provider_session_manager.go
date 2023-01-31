@@ -140,6 +140,10 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 	return psm.rpcProviderEndpoint
 }
 
+func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
+	// update the epoch to limit consumer usage
+}
+
 // Returning a new provider session manager
 func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, stateQuery StateQuery) *ProviderSessionManager {
 	return &ProviderSessionManager{rpcProviderEndpoint: rpcProviderEndpoint, stateQuery: stateQuery}

@@ -19,7 +19,7 @@ type ReliabilityManagerInf interface {
 }
 
 type RewardServerInf interface {
-	ClaimRewardsForProviderSessions(ctx context.Context, providerSessionsWithConsumer *lavasession.ProviderSessionsWithConsumer, epoch uint64, consumerAddr string)
+	SendNewProof(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, epoch uint64, consumerAddr string)
 }
 
 func (rpcps *RPCProviderServer) ServeRPCRequests(
@@ -37,9 +37,9 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	// verify the relay data is valid (cu, chainParser, requested block)
 	// check cache hit
 	// send the relay to the node using chainProxy
-	// send the proof to reward server
 	// set cache entry (async)
 	// attach data reliability finalization data
 	// sign the response
+	// send the proof to reward server
 	// finalize the session
 }

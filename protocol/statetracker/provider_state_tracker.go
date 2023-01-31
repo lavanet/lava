@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/relayer/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -25,11 +24,9 @@ func (pst *ProviderStateTracker) New(ctx context.Context, txFactory tx.Factory, 
 	return pst, nil
 }
 
-func (pst *ProviderStateTracker) RegisterProviderSessionManagerForEpochUpdates(ctx context.Context, providerSessionManager *lavasession.ProviderSessionManager) {
-	// TODO: change to an interface instead of lavasession.ProviderSessionManager
+func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
 	// create an epoch updater
 	// add epoch updater to the updater map
-
 	return
 }
 

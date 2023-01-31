@@ -34,9 +34,9 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
-	RegisterProviderSessionManagerForEpochUpdates(ctx context.Context, providerSessionManager *lavasession.ProviderSessionManager)
 	RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser)
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager)
+	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64)
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
 }
@@ -77,7 +77,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
 		providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, &providerStateTracker)
 		key := rpcProviderEndpoint.Key()
-		rpcp.providerStateTracker.RegisterProviderSessionManagerForEpochUpdates(ctx, providerSessionManager)
+		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 		chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 		if err != nil {
 			return err

@@ -15,12 +15,15 @@ type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest)
 }
 
-func (rws *RewardServer) ClaimRewardsForProviderSessions(ctx context.Context, providerSessionsWithConsumer *lavasession.ProviderSessionsWithConsumer, epoch uint64, consumerAddr string) {
+func (rws *RewardServer) SendNewProof(ctx context.Context, singleProviderSession *lavasession.SingleProviderSession, epoch uint64, consumerAddr string) {
 	// TODO: implement
+	// get the proof for this consumer for this epoch for this session, update the latest proof
+	// write to a channel the epoch
 	return
 }
 
 func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {
+	//
 	rws := &RewardServer{}
 	rws.rewardsTxSender = rewardsTxSender
 	return rws
