@@ -205,7 +205,7 @@ func init() {
 	//proto.RegisterType((*QueryCurrentEpochResponse)(nil), "osmosis.epochs.v1beta1.QueryCurrentEpochResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/epochs/query.proto", fileDescriptor_574bd176519c765f) }
+func init() {} //proto.RegisterFile("osmosis/epochs/query.proto", fileDescriptor_574bd176519c765f) }
 
 var fileDescriptor_574bd176519c765f = []byte{
 	// 410 bytes of a gzipped FileDescriptorProto

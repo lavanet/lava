@@ -43,12 +43,12 @@ func (m *SetSuperfluidAssetsProposal) XXX_Marshal(b []byte, deterministic bool) 
 	// if deterministic {
 	// 	return xxx_messageInfo_SetSuperfluidAssetsProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *SetSuperfluidAssetsProposal) XXX_Merge(src proto.Message) {
@@ -83,12 +83,12 @@ func (m *RemoveSuperfluidAssetsProposal) XXX_Marshal(b []byte, deterministic boo
 	// if deterministic {
 	// 	return xxx_messageInfo_RemoveSuperfluidAssetsProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *RemoveSuperfluidAssetsProposal) XXX_Merge(src proto.Message) {
@@ -124,12 +124,12 @@ func (m *UpdateUnpoolWhiteListProposal) XXX_Marshal(b []byte, deterministic bool
 	// if deterministic {
 	// 	return xxx_messageInfo_UpdateUnpoolWhiteListProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *UpdateUnpoolWhiteListProposal) XXX_Merge(src proto.Message) {

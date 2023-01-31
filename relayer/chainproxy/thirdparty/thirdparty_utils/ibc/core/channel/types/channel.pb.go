@@ -5,9 +5,9 @@ package types
 
 import (
 	fmt "fmt"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -498,7 +498,7 @@ func init() {
 	//proto.RegisterType((*Acknowledgement)(nil), "ibc.core.channel.v1.Acknowledgement")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/channel.proto", fileDescriptor_c3a07336710636a0) }
+func init() {} //proto.RegisterFile("ibc/core/channel/v1/channel.proto", fileDescriptor_c3a07336710636a0) }
 
 var fileDescriptor_c3a07336710636a0 = []byte{
 	// 925 bytes of a gzipped FileDescriptorProto

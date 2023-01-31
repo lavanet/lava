@@ -204,7 +204,7 @@ func init() {
 	//proto.RegisterType((*GenesisState)(nil), "osmosis.epochs.v1beta1.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("osmosis/epochs/genesis.proto", fileDescriptor_7ecf3e4d59074cbd) }
+func init() {} //proto.RegisterFile("osmosis/epochs/genesis.proto", fileDescriptor_7ecf3e4d59074cbd) }
 
 var fileDescriptor_7ecf3e4d59074cbd = []byte{
 	// 479 bytes of a gzipped FileDescriptorProto

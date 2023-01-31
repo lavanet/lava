@@ -495,7 +495,7 @@ func init() {
 	//proto.RegisterType((*Model)(nil), "cosmwasm.wasm.v1.Model")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/types.proto", fileDescriptor_e6155d98fa173e02) }
+func init() {} //proto.RegisterFile("cosmwasm/wasm/v1/types.proto", fileDescriptor_e6155d98fa173e02) }
 
 var fileDescriptor_e6155d98fa173e02 = []byte{
 	// 1178 bytes of a gzipped FileDescriptorProto

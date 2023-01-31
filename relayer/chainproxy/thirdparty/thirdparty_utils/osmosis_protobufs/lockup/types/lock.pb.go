@@ -314,7 +314,7 @@ func init() {
 	//proto.RegisterType((*SyntheticLock)(nil), "osmosis.lockup.SyntheticLock")
 }
 
-func init() { }//proto.RegisterFile("osmosis/lockup/lock.proto", fileDescriptor_7e9d7527a237b489) }
+func init() {} //proto.RegisterFile("osmosis/lockup/lock.proto", fileDescriptor_7e9d7527a237b489) }
 
 var fileDescriptor_7e9d7527a237b489 = []byte{
 	// 595 bytes of a gzipped FileDescriptorProto

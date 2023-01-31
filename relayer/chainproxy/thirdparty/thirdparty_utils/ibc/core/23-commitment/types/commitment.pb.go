@@ -136,7 +136,7 @@ func (m *MerklePath) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	// 	}
 	// 	return b[:n], nil
 	// }
-	return nil,nil
+	return nil, nil
 }
 func (m *MerklePath) XXX_Merge(src proto.Message) {
 	// xxx_messageInfo_MerklePath.Merge(m, src)

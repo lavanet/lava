@@ -738,7 +738,7 @@ func init() {
 	//proto.RegisterType((*StoreAndInstantiateContractProposal)(nil), "cosmwasm.wasm.v1.StoreAndInstantiateContractProposal")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/proposal.proto", fileDescriptor_be6422d717c730cb) }
+func init() {} //proto.RegisterFile("cosmwasm/wasm/v1/proposal.proto", fileDescriptor_be6422d717c730cb) }
 
 var fileDescriptor_be6422d717c730cb = []byte{
 	// 981 bytes of a gzipped FileDescriptorProto

@@ -457,8 +457,8 @@ func init() {
 	//proto.RegisterType((*AcceptedMessagesFilter)(nil), "cosmwasm.wasm.v1.AcceptedMessagesFilter")
 }
 
-func init() { 
-	// proto.RegisterFile("cosmwasm/wasm/v1/authz.proto", fileDescriptor_36ff3a20cf32b258) 
+func init() {
+	// proto.RegisterFile("cosmwasm/wasm/v1/authz.proto", fileDescriptor_36ff3a20cf32b258)
 }
 
 var fileDescriptor_36ff3a20cf32b258 = []byte{

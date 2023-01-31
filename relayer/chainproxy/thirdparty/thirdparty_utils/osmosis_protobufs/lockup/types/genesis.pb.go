@@ -88,7 +88,7 @@ func init() {
 	//proto.RegisterType((*GenesisState)(nil), "osmosis.lockup.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("osmosis/lockup/genesis.proto", fileDescriptor_648db7c6ebb608b0) }
+func init() {} //proto.RegisterFile("osmosis/lockup/genesis.proto", fileDescriptor_648db7c6ebb608b0) }
 
 var fileDescriptor_648db7c6ebb608b0 = []byte{
 	// 262 bytes of a gzipped FileDescriptorProto

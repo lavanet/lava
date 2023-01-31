@@ -5,11 +5,11 @@ package types
 
 import (
 	fmt "fmt"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
-	types2 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types2 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/channel/types"
+	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
+	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/connection/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -94,7 +94,7 @@ func init() {
 	//proto.RegisterType((*GenesisState)(nil), "ibc.core.types.v1.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/types/v1/genesis.proto", fileDescriptor_b9a49c5663e6fc59) }
+func init() {} //proto.RegisterFile("ibc/core/types/v1/genesis.proto", fileDescriptor_b9a49c5663e6fc59) }
 
 var fileDescriptor_b9a49c5663e6fc59 = []byte{
 	// 324 bytes of a gzipped FileDescriptorProto

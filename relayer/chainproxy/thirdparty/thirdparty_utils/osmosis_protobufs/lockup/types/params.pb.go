@@ -71,7 +71,7 @@ func init() {
 	//proto.RegisterType((*Params)(nil), "osmosis.lockup.Params")
 }
 
-func init() { }//proto.RegisterFile("osmosis/lockup/params.proto", fileDescriptor_4595e58f5e17053c) }
+func init() {} //proto.RegisterFile("osmosis/lockup/params.proto", fileDescriptor_4595e58f5e17053c) }
 
 var fileDescriptor_4595e58f5e17053c = []byte{
 	// 214 bytes of a gzipped FileDescriptorProto

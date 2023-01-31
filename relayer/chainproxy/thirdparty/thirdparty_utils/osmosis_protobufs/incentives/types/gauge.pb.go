@@ -199,7 +199,7 @@ func init() {
 	//proto.RegisterType((*LockableDurationsInfo)(nil), "osmosis.incentives.LockableDurationsInfo")
 }
 
-func init() { }//proto.RegisterFile("osmosis/incentives/gauge.proto", fileDescriptor_c0304e2bb0159901) }
+func init() {} //proto.RegisterFile("osmosis/incentives/gauge.proto", fileDescriptor_c0304e2bb0159901) }
 
 var fileDescriptor_c0304e2bb0159901 = []byte{
 	// 545 bytes of a gzipped FileDescriptorProto

@@ -6,10 +6,10 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -914,7 +914,7 @@ func init() {
 	//proto.RegisterType((*MsgAcknowledgementResponse)(nil), "ibc.core.channel.v1.MsgAcknowledgementResponse")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/channel/v1/tx.proto", fileDescriptor_bc4637e0ac3fc7b7) }
+func init() {} //proto.RegisterFile("ibc/core/channel/v1/tx.proto", fileDescriptor_bc4637e0ac3fc7b7) }
 
 var fileDescriptor_bc4637e0ac3fc7b7 = []byte{
 	// 1294 bytes of a gzipped FileDescriptorProto

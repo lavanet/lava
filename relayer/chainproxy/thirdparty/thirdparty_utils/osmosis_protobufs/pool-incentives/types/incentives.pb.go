@@ -48,12 +48,12 @@ func (m *Params) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	// if deterministic {
 	// 	return xxx_messageInfo_Params.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *Params) XXX_Merge(src proto.Message) {

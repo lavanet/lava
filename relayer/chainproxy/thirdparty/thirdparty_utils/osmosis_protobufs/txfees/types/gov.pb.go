@@ -46,12 +46,12 @@ func (m *UpdateFeeTokenProposal) XXX_Marshal(b []byte, deterministic bool) ([]by
 	// if deterministic {
 	// 	return xxx_messageInfo_UpdateFeeTokenProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *UpdateFeeTokenProposal) XXX_Merge(src proto.Message) {
@@ -70,7 +70,7 @@ func init() {
 	// //proto.RegisterType((*UpdateFeeTokenProposal)(nil), "osmosis.txfees.v1beta1.UpdateFeeTokenProposal")
 }
 
-func init() { }//proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
+func init() {} //proto.RegisterFile("osmosis/txfees/v1beta1/gov.proto", fileDescriptor_2c4a51bafc82863d) }
 
 var fileDescriptor_2c4a51bafc82863d = []byte{
 	// 312 bytes of a gzipped FileDescriptorProto

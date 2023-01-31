@@ -932,7 +932,7 @@ func init() {
 	//proto.RegisterType((*QueryLockableDurationsResponse)(nil), "osmosis.incentives.QueryLockableDurationsResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/incentives/query.proto", fileDescriptor_8124258a89427f98) }
+func init() {} //proto.RegisterFile("osmosis/incentives/query.proto", fileDescriptor_8124258a89427f98) }
 
 var fileDescriptor_8124258a89427f98 = []byte{
 	// 1057 bytes of a gzipped FileDescriptorProto

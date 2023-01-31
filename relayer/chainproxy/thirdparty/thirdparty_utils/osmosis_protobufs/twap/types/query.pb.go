@@ -345,7 +345,7 @@ func init() {
 	//proto.RegisterType((*ParamsResponse)(nil), "osmosis.twap.v1beta1.ParamsResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/twap/v1beta1/query.proto", fileDescriptor_141a22dba58615af) }
+func init() {} //proto.RegisterFile("osmosis/twap/v1beta1/query.proto", fileDescriptor_141a22dba58615af) }
 
 var fileDescriptor_141a22dba58615af = []byte{
 	// 676 bytes of a gzipped FileDescriptorProto

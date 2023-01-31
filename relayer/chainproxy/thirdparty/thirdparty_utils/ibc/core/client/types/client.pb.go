@@ -270,12 +270,12 @@ func (m *UpgradeProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 	// if deterministic {
 	// 	return xxx_messageInfo_UpgradeProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *UpgradeProposal) XXX_Merge(src proto.Message) {
@@ -319,12 +319,12 @@ func (m *Height) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	// if deterministic {
 	// 	return xxx_messageInfo_Height.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *Height) XXX_Merge(src proto.Message) {
@@ -395,7 +395,7 @@ func init() {
 	//proto.RegisterType((*Params)(nil), "ibc.core.client.v1.Params")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/client/v1/client.proto", fileDescriptor_b6bc4c8185546947) }
+func init() {} //proto.RegisterFile("ibc/core/client/v1/client.proto", fileDescriptor_b6bc4c8185546947) }
 
 var fileDescriptor_b6bc4c8185546947 = []byte{
 	// 734 bytes of a gzipped FileDescriptorProto

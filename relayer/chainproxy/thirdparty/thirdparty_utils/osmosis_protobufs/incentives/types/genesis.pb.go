@@ -107,7 +107,7 @@ func init() {
 	//proto.RegisterType((*GenesisState)(nil), "osmosis.incentives.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("osmosis/incentives/genesis.proto", fileDescriptor_a288ccc95d977d2d) }
+func init() {} //proto.RegisterFile("osmosis/incentives/genesis.proto", fileDescriptor_a288ccc95d977d2d) }
 
 var fileDescriptor_a288ccc95d977d2d = []byte{
 	// 341 bytes of a gzipped FileDescriptorProto

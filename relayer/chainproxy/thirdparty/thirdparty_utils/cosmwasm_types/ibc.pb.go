@@ -127,7 +127,7 @@ func init() {
 	//proto.RegisterType((*MsgIBCCloseChannel)(nil), "cosmwasm.wasm.v1.MsgIBCCloseChannel")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/ibc.proto", fileDescriptor_af0d1c43ea53c4b9) }
+func init() {} //proto.RegisterFile("cosmwasm/wasm/v1/ibc.proto", fileDescriptor_af0d1c43ea53c4b9) }
 
 var fileDescriptor_af0d1c43ea53c4b9 = []byte{
 	// 299 bytes of a gzipped FileDescriptorProto

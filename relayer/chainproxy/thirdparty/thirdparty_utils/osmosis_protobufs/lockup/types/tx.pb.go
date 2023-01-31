@@ -559,7 +559,7 @@ func init() {
 	//proto.RegisterType((*MsgForceUnlockResponse)(nil), "osmosis.lockup.MsgForceUnlockResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/lockup/tx.proto", fileDescriptor_bcdad5af0d24735f) }
+func init() {} //proto.RegisterFile("osmosis/lockup/tx.proto", fileDescriptor_bcdad5af0d24735f) }
 
 var fileDescriptor_bcdad5af0d24735f = []byte{
 	// 631 bytes of a gzipped FileDescriptorProto

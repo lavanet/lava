@@ -1610,7 +1610,7 @@ func init() {
 	//proto.RegisterType((*QueryUnpoolWhitelistResponse)(nil), "osmosis.superfluid.QueryUnpoolWhitelistResponse")
 }
 
-func init() { }//proto.RegisterFile("osmosis/superfluid/query.proto", fileDescriptor_e3d9448e4ed3943f) }
+func init() {} //proto.RegisterFile("osmosis/superfluid/query.proto", fileDescriptor_e3d9448e4ed3943f) }
 
 var fileDescriptor_e3d9448e4ed3943f = []byte{
 	// 1858 bytes of a gzipped FileDescriptorProto

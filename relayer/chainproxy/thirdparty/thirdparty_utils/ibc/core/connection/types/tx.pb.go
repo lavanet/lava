@@ -7,10 +7,10 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	types1 "github.com/lavanet/lava/relayer/chainproxy/thirdparty/thirdparty_utils/ibc/core/client/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -384,7 +384,7 @@ func init() {
 	//proto.RegisterType((*MsgConnectionOpenConfirmResponse)(nil), "ibc.core.connection.v1.MsgConnectionOpenConfirmResponse")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
+func init() {} //proto.RegisterFile("ibc/core/connection/v1/tx.proto", fileDescriptor_5d00fde5fc97399e) }
 
 var fileDescriptor_5d00fde5fc97399e = []byte{
 	// 929 bytes of a gzipped FileDescriptorProto

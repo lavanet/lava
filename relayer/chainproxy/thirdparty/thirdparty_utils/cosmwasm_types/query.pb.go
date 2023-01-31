@@ -1106,7 +1106,7 @@ func init() {
 	//proto.RegisterType((*QueryContractsByCreatorResponse)(nil), "cosmwasm.wasm.v1.QueryContractsByCreatorResponse")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/query.proto", fileDescriptor_9677c207036b9f2b) }
+func init() {} //proto.RegisterFile("cosmwasm/wasm/v1/query.proto", fileDescriptor_9677c207036b9f2b) }
 
 var fileDescriptor_9677c207036b9f2b = []byte{
 	// 1331 bytes of a gzipped FileDescriptorProto

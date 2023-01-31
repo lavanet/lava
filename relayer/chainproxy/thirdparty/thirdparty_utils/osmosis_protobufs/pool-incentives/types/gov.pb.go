@@ -48,12 +48,12 @@ func (m *ReplacePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool
 	// if deterministic {
 	// 	return xxx_messageInfo_ReplacePoolIncentivesProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *ReplacePoolIncentivesProposal) XXX_Merge(src proto.Message) {
@@ -93,12 +93,12 @@ func (m *UpdatePoolIncentivesProposal) XXX_Marshal(b []byte, deterministic bool)
 	// if deterministic {
 	// 	return xxx_messageInfo_UpdatePoolIncentivesProposal.Marshal(b, m, deterministic)
 	// } else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
 	// }
 }
 func (m *UpdatePoolIncentivesProposal) XXX_Merge(src proto.Message) {

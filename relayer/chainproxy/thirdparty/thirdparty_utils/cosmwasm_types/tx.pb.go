@@ -717,7 +717,7 @@ func init() {
 	//proto.RegisterType((*MsgClearAdminResponse)(nil), "cosmwasm.wasm.v1.MsgClearAdminResponse")
 }
 
-func init() { }//proto.RegisterFile("cosmwasm/wasm/v1/tx.proto", fileDescriptor_4f74d82755520264) }
+func init() {} //proto.RegisterFile("cosmwasm/wasm/v1/tx.proto", fileDescriptor_4f74d82755520264) }
 
 var fileDescriptor_4f74d82755520264 = []byte{
 	// 840 bytes of a gzipped FileDescriptorProto

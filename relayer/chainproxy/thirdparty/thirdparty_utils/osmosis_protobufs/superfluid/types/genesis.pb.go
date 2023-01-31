@@ -110,7 +110,7 @@ func init() {
 	//proto.RegisterType((*GenesisState)(nil), "osmosis.superfluid.GenesisState")
 }
 
-func init() { }//proto.RegisterFile("osmosis/superfluid/genesis.proto", fileDescriptor_d5256ebb7c83fff3) }
+func init() {} //proto.RegisterFile("osmosis/superfluid/genesis.proto", fileDescriptor_d5256ebb7c83fff3) }
 
 var fileDescriptor_d5256ebb7c83fff3 = []byte{
 	// 382 bytes of a gzipped FileDescriptorProto

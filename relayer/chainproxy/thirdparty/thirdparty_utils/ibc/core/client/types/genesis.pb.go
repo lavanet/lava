@@ -215,7 +215,7 @@ func init() {
 	//proto.RegisterType((*IdentifiedGenesisMetadata)(nil), "ibc.core.client.v1.IdentifiedGenesisMetadata")
 }
 
-func init() { }//proto.RegisterFile("ibc/core/client/v1/genesis.proto", fileDescriptor_bcd0c0f1f2e6a91a) }
+func init() {} //proto.RegisterFile("ibc/core/client/v1/genesis.proto", fileDescriptor_bcd0c0f1f2e6a91a) }
 
 var fileDescriptor_bcd0c0f1f2e6a91a = []byte{
 	// 539 bytes of a gzipped FileDescriptorProto
