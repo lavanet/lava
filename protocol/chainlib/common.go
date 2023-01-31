@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/relayer/parser"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -20,6 +21,7 @@ type parsedMessage struct {
 	serviceApi     *spectypes.ServiceApi
 	apiInterface   *spectypes.ApiInterface
 	requestedBlock int64
+	msg            interface{}
 }
 
 func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
@@ -32,6 +34,14 @@ func (pm parsedMessage) GetInterface() *spectypes.ApiInterface {
 
 func (pm parsedMessage) RequestedBlock() int64 {
 	return pm.requestedBlock
+}
+
+func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
+	rpcInput, ok := pm.msg.(parser.RPCInput)
+	if !ok {
+		return nil
+	}
+	return rpcInput
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
