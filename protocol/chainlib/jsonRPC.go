@@ -54,19 +54,16 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 type JrpcChainProxy struct {
-	conn    *chainproxy.Connector
-	nConns  uint
-	nodeUrl string
+	conn *chainproxy.Connector
 }
 
-func NewJrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) ChainProxy {
-	cp := &JrpcChainProxy{nConns: nConns, nodeUrl: rpcProviderEndpoint.NodeUrl}
-
-	return cp
+func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+	cp := &JrpcChainProxy{}
+	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
 }
 
-func (cp *JrpcChainProxy) Start(ctx context.Context) error {
-	cp.conn = chainproxy.NewConnector(ctx, cp.nConns, cp.nodeUrl)
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl string) error {
+	cp.conn = chainproxy.NewConnector(ctx, nConns, nodeUrl)
 	if cp.conn == nil {
 		return errors.New("g_conn == nil")
 	}

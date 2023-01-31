@@ -41,6 +41,6 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 	return nil
 }
 
-func NewtendermintRpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
-	return nil
+func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+	return nil, fmt.Errorf("not implemented")
 }
