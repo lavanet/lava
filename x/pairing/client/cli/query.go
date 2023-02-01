@@ -41,6 +41,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdShowEpochPayments())
 	cmd.AddCommand(CmdUserMaxCu())
 
+	cmd.AddCommand(CmdStaticProvidersList())
+
 	// this line is used by starport scaffolding # 1
 
 	return cmd

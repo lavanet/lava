@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/rpc/core"
 )
@@ -87,7 +88,9 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	if !found {
 		return nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", currentEpoch, chainID)
 	}
+
 	providers, _, errorRet = k.calculatePairingForClient(ctx, possibleProviders, clientAddress, currentEpoch, chainID, clientStakeEntry.Geolocation)
+
 	return
 }
 
@@ -127,6 +130,40 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
 	}
 
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		return nil, nil, fmt.Errorf("spec not found or not enabled")
+	}
+
+	validProviders = k.getGeolocationProviders(ctx, providers, geolocation)
+
+	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if spec.ProvidersTypes == spectypes.Spec_dynamic {
+		// calculates a hash and randomly chooses the providers
+
+		validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
+	} else {
+		validProviders = k.returnSubsetOfProvidersByHighestStake(ctx, validProviders, servicersToPairCount)
+	}
+
+	for _, stakeEntry := range validProviders {
+		providerAddress := stakeEntry.Address
+		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
+		if err != nil {
+			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
+		}
+		addrList = append(addrList, providerAccAddr)
+	}
+
+	return validProviders, addrList, nil
+}
+
+func (k Keeper) getGeolocationProviders(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, geolocation uint64) []epochstoragetypes.StakeEntry {
+	validProviders := []epochstoragetypes.StakeEntry{}
 	// create a list of valid providers (deadline reached)
 	for _, stakeEntry := range providers {
 		if stakeEntry.Deadline > uint64(ctx.BlockHeight()) {
@@ -140,23 +177,7 @@ func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstor
 		}
 		validProviders = append(validProviders, stakeEntry)
 	}
-
-	// calculates a hash and randomly chooses the providers
-	servicersToPairCount, err := k.ServicersToPairCount(ctx, epochStartBlock)
-	if err != nil {
-		return nil, nil, err
-	}
-	validProviders = k.returnSubsetOfProvidersByStake(ctx, clientAddress, validProviders, servicersToPairCount, epochStartBlock, chainID)
-
-	for _, stakeEntry := range validProviders {
-		providerAddress := stakeEntry.Address
-		providerAccAddr, err := sdk.AccAddressFromBech32(providerAddress)
-		if err != nil {
-			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAddress, err))
-		}
-		addrList = append(addrList, providerAccAddr)
-	}
-	return validProviders, addrList, nil
+	return validProviders
 }
 
 // this function randomly chooses count providers by weight
@@ -217,4 +238,12 @@ func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress sd
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
 	return returnedProviders
+}
+
+func (k Keeper) returnSubsetOfProvidersByHighestStake(ctx sdk.Context, providersEntries []epochstoragetypes.StakeEntry, count uint64) (returnedProviders []epochstoragetypes.StakeEntry) {
+	if uint64(len(providersEntries)) <= count {
+		return providersEntries
+	} else {
+		return providersEntries[0:count]
+	}
 }
