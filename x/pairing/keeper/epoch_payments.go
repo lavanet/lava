@@ -93,6 +93,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 		epochPayments = types.EpochPayments{Index: key, ProviderPaymentStorageKeys: []string{userPaymentProviderStorage.GetIndex()}}
 	} else {
 		// this epoch has a epochPayments object -> make sure this payment is not already in this object
+		// TODO: improve - have it sorted and binary search, store indexes map for the current epoch providers stake and just lookup at the provider index (and turn it on) - assumes most providers will have payments
 		providerPaymentStorageKeyFound := false
 		for _, providerPaymentStorageKey := range epochPayments.GetProviderPaymentStorageKeys() {
 			if providerPaymentStorageKey == userPaymentProviderStorage.GetIndex() {
