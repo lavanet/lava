@@ -303,10 +303,10 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 		if !found {
 			// currently this provider has not payments in this epoch and also no complaints, we need to add one complaint here
 			emptyProviderPaymentStorageWithComplaint := types.ProviderPaymentStorage{
-				Index:                              providerStorageKey,
-				UniquePaymentStorageClientProvider: []*types.UniquePaymentStorageClientProvider{},
-				Epoch:                              epoch,
-				UnresponsivenessComplaints:         []string{clientAddr.String()},
+				Index:                                  providerStorageKey,
+				UniquePaymentStorageClientProviderKeys: []string{},
+				Epoch:                                  epoch,
+				UnresponsivenessComplaints:             []string{clientAddr.String()},
 			}
 			k.SetProviderPaymentStorage(ctx, emptyProviderPaymentStorageWithComplaint)
 			continue
@@ -323,7 +323,7 @@ func (k msgServer) dealWithUnresponsiveProviders(ctx sdk.Context, unresponsiveDa
 		if len(providerPaymentStorage.UnresponsivenessComplaints) >= maxComplaintsPerEpoch {
 			// we check if we have double complaints than previous "collectPaymentsFromNumberOfPreviousEpochs" epochs (including this one) payment requests
 			totalPaymentsInPreviousEpochs, err := k.getTotalPaymentsForPreviousEpochs(ctx, collectPaymentsFromNumberOfPreviousEpochs, epoch, chainID, sdkUnresponsiveProviderAddress)
-			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProvider) // get total number of payments including this epoch
+			totalPaymentRequests := totalPaymentsInPreviousEpochs + len(providerPaymentStorage.UniquePaymentStorageClientProviderKeys) // get total number of payments including this epoch
 			if err != nil {
 				utils.LavaFormatError("lava_unresponsive_providers: couldnt fetch getTotalPaymentsForPreviousEpochs", err, nil)
 			} else if totalPaymentRequests*providerPaymentMultiplier < len(providerPaymentStorage.UnresponsivenessComplaints) {
@@ -353,7 +353,7 @@ func (k msgServer) getTotalPaymentsForPreviousEpochs(ctx sdk.Context, numberOfEp
 		previousEpochProviderStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, previousEpoch, sdkUnresponsiveProviderAddress)
 		previousEpochProviderPaymentStorage, providerPaymentStorageFound := k.GetProviderPaymentStorage(ctx, previousEpochProviderStorageKey)
 		if providerPaymentStorageFound {
-			totalPaymentRequests += len(previousEpochProviderPaymentStorage.UniquePaymentStorageClientProvider) // increase by the amount of previous epoch
+			totalPaymentRequests += len(previousEpochProviderPaymentStorage.UniquePaymentStorageClientProviderKeys) // increase by the amount of previous epoch
 		}
 		epochTemp = previousEpoch
 	}

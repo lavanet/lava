@@ -6,6 +6,7 @@ import "pairing/provider_payment_storage.proto";
 
 message EpochPayments {
   string index = 1; 
-  repeated ProviderPaymentStorage clientsPayments = 2; 
+  reserved 2;
+  repeated string providerPaymentStorageKeys = 3; 
 }
 
