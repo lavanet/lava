@@ -87,94 +87,94 @@ jobs:
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
       
-    - name: cat testutil/e2e/logs/01_stakeLava.log
+    - name: Stake Lava All Logs
       if: always()
       run: cat testutil/e2e/logs/01_stakeLava.log
 
-    - name: cat testutil/e2e/logs/01_stakeLava_errors.log
-      if: always()
+    - name: Stake Lava Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/01_stakeLava_errors.log
 
-    - name: head -n 300 testutil/e2e/logs/02_jsonProxy.log
+    - name: head -n 300 JSON Proxy Logs
       if: always()
       run: head -n 300 testutil/e2e/logs/02_jsonProxy.log
 
-    - name: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
+    - name: tail -n 300 JSON Proxy Logs
       if: always()
       run: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
 
-    - name: cat testutil/e2e/logs/02_jsonProxy_errors.log
-      if: always()
+    - name: JSON Proxy Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/02_jsonProxy_errors.log
 
-    - name: grep "" testutil/e2e/logs/03_jsonProvider* --exclude="*errors*"
+    - name: JSON Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/03_jsonProvider* --exclude="*errors*"
 
-    - name: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
-      if: always()
+    - name: JSON Provider Error Only Logs
+      continue-on-error: true
       run: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
 
-    - name: cat testutil/e2e/logs/04_jsonGateway.log
+    - name: JSON Gateway All Logs
       if: always()
       run: cat testutil/e2e/logs/04_jsonGateway.log
 
-    - name: cat testutil/e2e/logs/04_jsonGateway_errors.log
-      if: always()
+    - name: JSON Gateway Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/04_jsonGateway_errors.log
 
-    - name: grep "" testutil/e2e/logs/05_tendermintProvider* --exclude="*errors*"
+    - name: Tendermint Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --exclude="*errors*"
 
-    - name: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
-      if: always()
+    - name: Tendermint Provider Error Only Logs
+      continue-on-error: true
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
 
-    - name: cat testutil/e2e/logs/06_tendermintGateway.log
+    - name: Tendermint Gateway All Logs
       if: always()
       run: cat testutil/e2e/logs/06_tendermintGateway.log
 
-    - name: cat testutil/e2e/logs/06_tendermintGateway_errors.log
-      if: always()
+    - name: Tendermint Gateway Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/06_tendermintGateway_errors.log
 
-    - name: cat testutil/e2e/logs/07_lavaOverLava.log
+    - name: Lava over Lava All Logs
       if: always()
       run: cat testutil/e2e/logs/07_lavaOverLava.log
 
-    - name: cat testutil/e2e/logs/07_lavaOverLava_errors.log
-      if: always()
+    - name: Lava over Lava Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/07_lavaOverLava_errors.log
 
-    - name: grep "" testutil/e2e/logs/08_restProvider* --exclude="*errors*"
+    - name: Rest Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/08_restProvider* --exclude="*errors*"
 
-    - name: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
-      if: always()
+    - name: Rest Provider Error Only Logs
+      continue-on-error: true
       run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
 
-    - name: cat testutil/e2e/logs/09_restGateway.log
+    - name: Rest Gateway All Logs
       if: always()
       run: cat testutil/e2e/logs/09_restGateway.log
 
-    - name: cat testutil/e2e/logs/09_restGateway_errors.log
-      if: always()
+    - name: Rest Gateway Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/09_restGateway_errors.log
     
-    - name: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
+    - name: GRPC Provider All Logs
       if: always()
       run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
 
-    - name: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
-      if: always()
+    - name: GRPC Provider Error Only Logs
+      continue-on-error: true
       run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
-    - name: cat testutil/e2e/logs/11_grpcGateway.log
+    - name: GRPC Gateway All Logs
       if: always()
       run: cat testutil/e2e/logs/11_grpcGateway.log
 
-    - name: cat testutil/e2e/logs/11_grpcGateway_errors.log
-      if: always()
+    - name: GRPC Gateway Error Only Logs
+      continue-on-error: true
       run: cat testutil/e2e/logs/11_grpcGateway_errors.log
