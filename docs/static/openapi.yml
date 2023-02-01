@@ -31286,6 +31286,10 @@ paths:
                       type: string
                     name:
                       type: string
+                    imports:
+                      type: array
+                      items:
+                        type: string
                     apis:
                       type: array
                       items:
@@ -31607,6 +31611,10 @@ paths:
                     type: string
                   name:
                     type: string
+                  imports:
+                    type: array
+                    items:
+                      type: string
                   apis:
                     type: array
                     items:
@@ -54285,6 +54293,10 @@ definitions:
               type: string
             name:
               type: string
+            imports:
+              type: array
+              items:
+                type: string
             apis:
               type: array
               items:
@@ -54518,6 +54530,10 @@ definitions:
             type: string
           name:
             type: string
+          imports:
+            type: array
+            items:
+              type: string
           apis:
             type: array
             items:
@@ -54911,6 +54927,10 @@ definitions:
         type: string
       name:
         type: string
+      imports:
+        type: array
+        items:
+          type: string
       apis:
         type: array
         items:
