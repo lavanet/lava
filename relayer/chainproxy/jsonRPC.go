@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
@@ -279,7 +282,6 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 
 	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
 		cp.portalLogs.LogStartTransaction("jsonRpc-WebSocket")
-
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -288,6 +290,10 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		}
 		return fiber.ErrUpgradeRequired
 	})
+
+	chainID := cp.GetSentry().ChainID
+	apiInterface := cp.GetSentry().ApiInterface
+
 	webSocketCallback := websocket.New(func(c *websocket.Conn) {
 		var (
 			mt  int
@@ -305,12 +311,13 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
+			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
+			go cp.portalLogs.AddMetric(metricsData, err != nil)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				continue
 			}
-
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
@@ -358,14 +365,28 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 		cp.portalLogs.LogStartTransaction("jsonRpc-http post")
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
+
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("jsonrpc http", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": {"code":-32000,"message":"%s"}}`, errMasking))
+
+			// Construct json response
+			response := convertToJsonError(errMasking)
+
+			// Return error json response
+			return c.SendString(response)
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
@@ -375,6 +396,8 @@ func (cp *JrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 			msgSeed,
 			nil,
 		)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
 	})
 
@@ -399,7 +422,7 @@ func (nm *JrpcMessage) RequestedBlock() int64 {
 
 func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
-	rpc, err := nm.cp.conn.GetRpc(true)
+	rpc, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -420,6 +443,10 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	var replyMsg JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
+		}
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,
@@ -454,9 +481,6 @@ func (nm *JrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, nil)
 		}
-	}
-	if replyMsg.Error != nil {
-		return reply, "", nil, utils.LavaFormatError(replyMsg.Error.Message, nil, nil)
 	}
 
 	return reply, subscriptionID, sub, err

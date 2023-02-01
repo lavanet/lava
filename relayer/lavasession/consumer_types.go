@@ -45,22 +45,49 @@ type SingleConsumerSession struct {
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
 }
 
+type DataReliabilitySession struct {
+	SingleConsumerSession *SingleConsumerSession
+	Epoch                 uint64
+	ProviderPublicAddress string
+	UniqueIdentifier      bool
+}
+
 type Endpoint struct {
-	Addr               string // change at the end to NetworkAddress
+	NetworkAddress     string // change at the end to NetworkAddress
 	Enabled            bool
 	Client             *pairingtypes.RelayerClient
 	ConnectionRefusals uint64
 }
 
+type RPCEndpoint struct {
+	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // IP:PORT
+	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
+	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+}
+
+func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
+	// TODO: validate correct url address
+	rpce.NetworkAddress = address
+	rpce.ChainID = chainID
+	rpce.ApiInterface = apiInterface
+	rpce.Geolocation = geolocation
+	return rpce
+}
+
+func (rpce *RPCEndpoint) Key() string {
+	return rpce.ChainID + rpce.ApiInterface
+}
+
 type ConsumerSessionsWithProvider struct {
-	Lock             utils.LavaMutex
-	Acc              string // public lava address // change at the end to PublicLavaAddress
-	Endpoints        []*Endpoint
-	Sessions         map[int64]*SingleConsumerSession
-	MaxComputeUnits  uint64
-	UsedComputeUnits uint64
-	ReliabilitySent  bool
-	PairingEpoch     uint64
+	Lock              utils.LavaMutex
+	PublicLavaAddress string
+	Endpoints         []*Endpoint
+	Sessions          map[int64]*SingleConsumerSession
+	MaxComputeUnits   uint64
+	UsedComputeUnits  uint64
+	ReliabilitySent   bool
+	PairingEpoch      uint64
 }
 
 // verify data reliability session exists or not
@@ -100,7 +127,7 @@ func (cswp *ConsumerSessionsWithProvider) GetPairingEpoch() uint64 {
 func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
 	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is changed
 	defer cswp.Lock.Unlock()
-	return cswp.Acc, cswp.PairingEpoch
+	return cswp.PublicLavaAddress, cswp.PairingEpoch
 }
 
 // Validate the compute units for this provider
@@ -108,7 +135,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error 
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return MaxComputeUnitsExceededError
+		return utils.LavaFormatError("validateComputeUnits", MaxComputeUnitsExceededError, &map[string]string{"cu": strconv.FormatUint((cswp.UsedComputeUnits + cu), 10), "maxCu": strconv.FormatUint(cswp.MaxComputeUnits, 10)})
 	}
 	return nil
 }
@@ -149,14 +176,16 @@ func (cswp *ConsumerSessionsWithProvider) connectRawClientWithTimeout(ctx contex
 	return &c, nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
+func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint(endpoint *Endpoint, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
+	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
+	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (numberOfResets + 1) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
 	// try to lock an existing session, if can't create a new one
-	numberOfBlockedSessions := 0
+	var numberOfBlockedSessions uint64 = 0
 	for sessionID, session := range cswp.Sessions {
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
@@ -165,7 +194,7 @@ func (cswp *ConsumerSessionsWithProvider) getConsumerSessionInstanceFromEndpoint
 			// skip sessions that don't belong to the active connection
 			continue
 		}
-		if numberOfBlockedSessions >= MaxAllowedBlockListedSessionPerProvider {
+		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
 			return nil, 0, MaximumNumberOfBlockListedSessionsError
 		}
 
@@ -212,13 +241,13 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			if endpoint.Client == nil {
-				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.Addr)
+				conn, err := cswp.connectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.Addr, "provider address": cswp.Acc, "endpoint": fmt.Sprintf("%+v", endpoint)})
+					utils.LavaFormatError("error connecting to provider", err, &map[string]string{"provider endpoint": endpoint.NetworkAddress, "provider address": cswp.PublicLavaAddress, "endpoint": fmt.Sprintf("%+v", endpoint)})
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.Addr, "address": cswp.Acc, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, &map[string]string{"Endpoint": endpoint.NetworkAddress, "address": cswp.PublicLavaAddress, "currentEpoch": strconv.FormatUint(sessionEpoch, 10)})
 					}
 					continue
 				}
@@ -245,7 +274,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.Acc})
+		utils.LavaFormatError("purging provider after all endpoints are disabled", nil, &map[string]string{"provider endpoints": fmt.Sprintf("%v", cswp.Endpoints), "provider address": cswp.PublicLavaAddress})
 		// report provider.
 		return connected, endpointPtr, AllProviderEndpointsDisabledError
 	}

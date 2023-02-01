@@ -76,6 +76,7 @@ func CalculateQueryHash(relayReq pairingtypes.RelayRequest) (queryHash []byte) {
 	relayReq.Sig = nil
 	relayReq.QoSReport = nil
 	relayReq.DataReliability = nil
+	relayReq.UnresponsiveProviders = nil
 	queryHash = tendermintcrypto.Sha256([]byte(relayReq.String()))
 	return
 }

@@ -16,11 +16,13 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
-	lock         sync.RWMutex
-	pairing      map[string]*ConsumerSessionsWithProvider // key == provider address
-	currentEpoch uint64
-
+	rpcEndpoint    *RPCEndpoint // used to filter out endpoints
+	lock           sync.RWMutex
+	pairing        map[string]*ConsumerSessionsWithProvider // key == provider address
+	currentEpoch   uint64
+	numberOfResets uint64
 	// pairingAddresses for Data reliability
 	pairingAddresses       []string // contains all addresses from the initial pairing.
 	pairingAddressesLength uint64
@@ -33,8 +35,12 @@ type ConsumerSessionManager struct {
 	pairingPurge map[string]*ConsumerSessionsWithProvider
 }
 
+func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
+	return *csm.rpcEndpoint
+}
+
 // Update the provider pairing list for the ConsumerSessionManager
-func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
+func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList []*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 
 	csm.lock.Lock()         // start by locking the class lock.
@@ -47,22 +53,28 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(ctx context.Context, epoch
 	csm.atomicWriteCurrentEpoch(epoch)
 
 	// Reset States
-	csm.validAddresses = make([]string, pairingListLength)
+	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make([]string, pairingListLength)
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
+	csm.numberOfResets = 0
 
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
 	csm.pairingPurge = csm.pairing
 	csm.pairing = make(map[string]*ConsumerSessionsWithProvider, pairingListLength)
 	for idx, provider := range pairingList {
-		csm.pairingAddresses[idx] = provider.Acc
-		csm.pairing[provider.Acc] = provider
+		csm.pairingAddresses[idx] = provider.PublicLavaAddress
+		csm.pairing[provider.PublicLavaAddress] = provider
 	}
-	copy(csm.validAddresses, csm.pairingAddresses) // the starting point is that valid addresses are equal to pairing addresses.
+	csm.setValidAddressesToDefaultValue() // the starting point is that valid addresses are equal to pairing addresses.
 
 	return nil
+}
+
+func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue() {
+	csm.validAddresses = make([]string, len(csm.pairingAddresses))
+	copy(csm.validAddresses, csm.pairingAddresses)
 }
 
 // reads cs.currentEpoch atomically
@@ -75,11 +87,46 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&csm.currentEpoch)
 }
 
+// validate if reset is needed for valid addresses list.
+func (csm *ConsumerSessionManager) shouldResetValidAddresses() (reset bool, numberOfResets uint64) {
+	csm.lock.RLock() // lock read to validate length
+	defer csm.lock.RUnlock()
+	numberOfResets = csm.numberOfResets
+	if len(csm.validAddresses) == 0 {
+		reset = true
+	}
+	return
+}
+
+// reset the valid addresses list and increase numberOfResets
+func (csm *ConsumerSessionManager) resetValidAddresses() uint64 {
+	csm.lock.Lock() // lock write
+	defer csm.lock.Unlock()
+	if len(csm.validAddresses) == 0 { // re verify it didn't change while waiting for lock.
+		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, nil)
+		csm.setValidAddressesToDefaultValue()
+		csm.numberOfResets += 1
+	}
+	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
+	return csm.numberOfResets
+}
+
+// validating we still have providers, otherwise reset valid addresses list
+func (csm *ConsumerSessionManager) validatePairingListNotEmpty() uint64 {
+	reset, numberOfResets := csm.shouldResetValidAddresses()
+	if reset {
+		numberOfResets = csm.resetValidAddresses()
+	}
+	return numberOfResets
+}
+
 // GetSession will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}) (
 	consumerSession *SingleConsumerSession, epoch uint64, providerPublicAddress string, reportedProviders []byte, errRet error,
 ) {
+	numberOfResets := csm.validatePairingListNotEmpty() // if pairing list is empty we reset the state.
+
 	if initUnwantedProviders == nil { // verify initUnwantedProviders is not nil
 		initUnwantedProviders = make(map[string]struct{})
 	}
@@ -97,6 +144,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 				return nil, 0, "", nil, err
 			} else if MaxComputeUnitsExceededError.Is(err) {
 				// This provider doesn't have enough compute units for this session, we block it for this session and continue to another provider.
+				utils.LavaFormatError("Max Compute Units Exceeded For provider", err, &map[string]string{"providerAddress": providerAddress})
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			} else {
@@ -135,7 +183,7 @@ func (csm *ConsumerSessionManager) GetSession(ctx context.Context, cuNeededForSe
 		}
 
 		// Get session from endpoint or create new or continue. if more than 10 connections are open.
-		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint)
+		consumerSession, pairingEpoch, err := consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
 		if err != nil {
 			utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", &map[string]string{"Error": err.Error()})
 			if MaximumNumberOfSessionsExceededError.Is(err) {
@@ -581,4 +629,10 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 	}
 
 	return nil
+}
+
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint) *ConsumerSessionManager {
+	csm := ConsumerSessionManager{}
+	csm.rpcEndpoint = rpcEndpoint
+	return &csm
 }

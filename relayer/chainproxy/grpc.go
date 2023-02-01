@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/lavanet/lava/relayer/metrics"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/proto"
@@ -154,9 +156,9 @@ func (cp *GrpcChainProxy) FetchBlockHashByNum(ctx context.Context, blockNum int6
 	var nodeMsg NodeMessage
 	var err error
 	if serviceApi.GetParsing().FunctionTemplate != "" {
-		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), http.MethodGet)
+		nodeMsg, err = cp.ParseMsg(serviceApi.Name, []byte(fmt.Sprintf(serviceApi.GetParsing().FunctionTemplate, blockNum)), "")
 	} else {
-		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, http.MethodGet)
+		nodeMsg, err = cp.NewMessage(serviceApi.Name, nil, "")
 	}
 
 	if err != nil {
@@ -189,7 +191,7 @@ func (cp *GrpcChainProxy) FetchLatestBlockNum(ctx context.Context) (int64, error
 	}
 
 	params := make(json.RawMessage, 0)
-	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, http.MethodGet)
+	nodeMsg, err := cp.NewMessage(serviceApi.GetName(), params, "")
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError("new Message creation Failed at FetchLatestBlockNum", err, nil)
 	}
@@ -251,6 +253,7 @@ func (cp *GrpcChainProxy) ParseMsg(path string, data []byte, connectionType stri
 	nodeMsg := &GrpcMessage{
 		cp:             cp,
 		serviceApi:     serviceApi,
+		apiInterface:   apiInterface,
 		path:           path,
 		msg:            data,
 		connectionType: connectionType,
@@ -274,12 +277,14 @@ func (cp *GrpcChainProxy) PortalStart(ctx context.Context, privKey *btcec.Privat
 	if err != nil {
 		utils.LavaFormatFatal("provider failure setting up listener", err, &map[string]string{"listenAddr": listenAddr})
 	}
-
+	apiInterface := cp.GetSentry().ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, error) {
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("GRPC Got Relay: "+method, nil)
 		var relayReply *pairingtypes.RelayReply
-		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID"); err != nil {
+		metricsData := metrics.NewRelayAnalytics("NoDappID", cp.chainID, apiInterface)
+		if relayReply, _, err = SendRelay(ctx, cp, privKey, method, string(reqBody), "", "NoDappID", metricsData); err != nil {
+			go cp.portalLogs.AddMetric(metricsData, err != nil)
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
 			cp.portalLogs.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
 			return nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking), nil)
@@ -308,7 +313,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
 	}
-	conn, err := nm.cp.conn.GetRpc(true)
+	conn, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, nil)
 	}
@@ -322,16 +327,16 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	svc, methodName := ParseSymbol(nm.path)
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)
 	}
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"addr": nm.cp.nodeUrl, "descriptor": fmt.Sprintf("%v", descriptor)})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"descriptor": fmt.Sprintf("%v", descriptor)})
 	}
 	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
 	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"addr": nm.cp.nodeUrl, "methodName": methodName})
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"methodName": methodName})
 	}
 	nm.methodDesc = methodDescriptor
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
@@ -355,7 +360,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		AllowUnknownFields:    true,
 	})
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
 	}
 	nm.formatter = formatter
 	if formatMessage {
@@ -368,13 +373,13 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	err = grpc.Invoke(connectCtx, nm.path, msg, response, conn)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"addr": nm.cp.nodeUrl, "Method": nm.path, "msg": fmt.Sprintf("%s", nm.msg)})
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"Method": nm.path, "msg": fmt.Sprintf("%s", nm.msg)})
 	}
 
 	var respBytes []byte
 	respBytes, err = proto.Marshal(response)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, &map[string]string{"addr": nm.cp.nodeUrl})
+		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, nil)
 	}
 
 	nm.Result = respBytes

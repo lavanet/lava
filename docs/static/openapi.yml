@@ -29845,6 +29845,9 @@ paths:
                             type: string
                           moniker:
                             type: string
+                    epochBlockHash:
+                      type: string
+                      format: byte
               pagination:
                 type: object
                 properties:
@@ -30011,6 +30014,9 @@ paths:
                           type: string
                         moniker:
                           type: string
+                  epochBlockHash:
+                    type: string
+                    format: byte
         default:
           description: An unexpected error response.
           schema:
@@ -30397,6 +30403,9 @@ paths:
                 type: string
                 format: uint64
               specLastUpdatedBlock:
+                type: string
+                format: uint64
+              blockOfNextPairing:
                 type: string
                 format: uint64
         default:
@@ -53138,6 +53147,9 @@ definitions:
                     type: string
                   moniker:
                     type: string
+            epochBlockHash:
+              type: string
+              format: byte
       pagination:
         type: object
         properties:
@@ -53248,6 +53260,9 @@ definitions:
                   type: string
                 moniker:
                   type: string
+          epochBlockHash:
+            type: string
+            format: byte
   lavanet.lava.epochstorage.QueryParamsResponse:
     type: object
     properties:
@@ -53360,6 +53375,9 @@ definitions:
               type: string
             moniker:
               type: string
+      epochBlockHash:
+        type: string
+        format: byte
   lavanet.lava.pairing.CacheUsage:
     type: object
     properties:
@@ -53769,6 +53787,9 @@ definitions:
         type: string
         format: uint64
       specLastUpdatedBlock:
+        type: string
+        format: uint64
+      blockOfNextPairing:
         type: string
         format: uint64
   lavanet.lava.pairing.QueryGetProviderPaymentStorageResponse:

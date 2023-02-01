@@ -234,7 +234,7 @@ func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, storageType string, cha
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
-		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(storageType, chainID), StakeEntries: entries}
+		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(storageType, chainID), StakeEntries: entries, EpochBlockHash: nil}
 	} else {
 		// the following code inserts stakeEntry into the existing entries by stake
 		entries = stakeStorage.StakeEntries
@@ -364,7 +364,7 @@ func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
-		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyUnstake(storageType), StakeEntries: entries}
+		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyUnstake(storageType), StakeEntries: entries, EpochBlockHash: nil}
 	} else {
 		// the following code inserts stakeEntry into the existing entries by deadline
 		entries = stakeStorage.StakeEntries
@@ -429,6 +429,7 @@ func (k Keeper) StoreCurrentEpochStakeStorage(ctx sdk.Context, block uint64, sto
 		}
 		newStorage := tmpStorage.Copy()
 		newStorage.Index = k.StakeStorageKey(storageType, block, chainID)
+		newStorage.EpochBlockHash = ctx.HeaderHash() // set the current block hash for pairing to work without accessing history
 		k.SetStakeStorage(ctx, newStorage)
 	}
 }
@@ -492,7 +493,7 @@ func (k Keeper) BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storag
 	if !found {
 		entries := []types.StakeEntry{}
 		// create a new one
-		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, epoch, chainID), StakeEntries: entries}
+		storage = types.StakeStorage{Index: k.StakeStorageKey(storageType, epoch, chainID), StakeEntries: entries, EpochBlockHash: nil}
 	}
 	entryAddr, err := sdk.AccAddressFromBech32(stakeEntry.Address)
 	if err != nil {
