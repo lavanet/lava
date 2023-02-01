@@ -92,6 +92,7 @@ jobs:
       run: cat testutil/e2e/logs/01_stakeLava.log
 
     - name: Stake Lava Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/01_stakeLava_errors.log
 
@@ -104,6 +105,7 @@ jobs:
       run: tail -n 300 testutil/e2e/logs/02_jsonProxy.log
 
     - name: JSON Proxy Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/02_jsonProxy_errors.log
 
@@ -112,6 +114,7 @@ jobs:
       run: grep "" testutil/e2e/logs/03_jsonProvider* --exclude="*errors*"
 
     - name: JSON Provider Error Only Logs
+      if: always()
       continue-on-error: true
       run: grep "" testutil/e2e/logs/03_jsonProvider* --include="*errors*"
 
@@ -120,6 +123,7 @@ jobs:
       run: cat testutil/e2e/logs/04_jsonGateway.log
 
     - name: JSON Gateway Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/04_jsonGateway_errors.log
 
@@ -128,6 +132,7 @@ jobs:
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --exclude="*errors*"
 
     - name: Tendermint Provider Error Only Logs
+      if: always()
       continue-on-error: true
       run: grep "" testutil/e2e/logs/05_tendermintProvider* --include="*errors*"
 
@@ -136,6 +141,7 @@ jobs:
       run: cat testutil/e2e/logs/06_tendermintGateway.log
 
     - name: Tendermint Gateway Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/06_tendermintGateway_errors.log
 
@@ -144,6 +150,7 @@ jobs:
       run: cat testutil/e2e/logs/07_lavaOverLava.log
 
     - name: Lava over Lava Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/07_lavaOverLava_errors.log
 
@@ -152,6 +159,7 @@ jobs:
       run: grep "" testutil/e2e/logs/08_restProvider* --exclude="*errors*"
 
     - name: Rest Provider Error Only Logs
+      if: always()
       continue-on-error: true
       run: grep "" testutil/e2e/logs/08_restProvider* --include="*errors*"
 
@@ -160,6 +168,7 @@ jobs:
       run: cat testutil/e2e/logs/09_restGateway.log
 
     - name: Rest Gateway Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/09_restGateway_errors.log
     
@@ -168,6 +177,7 @@ jobs:
       run: grep "" testutil/e2e/logs/10_grpcProvider* --exclude="*errors*"
 
     - name: GRPC Provider Error Only Logs
+      if: always()
       continue-on-error: true
       run: grep "" testutil/e2e/logs/10_grpcProvider* --include="*errors*"
 
@@ -176,5 +186,6 @@ jobs:
       run: cat testutil/e2e/logs/11_grpcGateway.log
 
     - name: GRPC Gateway Error Only Logs
+      if: always()
       continue-on-error: true
       run: cat testutil/e2e/logs/11_grpcGateway_errors.log
