@@ -80,7 +80,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 			}
 			msg.Params = params
 		} else {
-			msg.Params = make([]interface{}, 0)
+			msg.Params = make(map[string]interface{}, 0)
 		}
 	}
 
@@ -90,6 +90,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
+	// Extract default block parser
+	blockParser := serviceApi.BlockParsing
+
+	// Find matched api interface by connection type
 	var apiInterface *spectypes.ApiInterface = nil
 	for i := range serviceApi.ApiInterfaces {
 		if serviceApi.ApiInterfaces[i].Type == connectionType {
@@ -101,7 +105,14 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
-	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+	// Check if custom block parser exists in the api interface
+	// Use custom block parser only for URI calls
+	if apiInterface.GetOverwriteBlockParsing() != nil && url != "" {
+		blockParser = *apiInterface.GetOverwriteBlockParsing()
+	}
+
+	// Fetch requested block, it is used for data reliability
+	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
 	if err != nil {
 		return nil, err
 	}
