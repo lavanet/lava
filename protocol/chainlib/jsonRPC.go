@@ -63,6 +63,11 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 
 // ParseMsg parses message data into chain message object
 func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	// Guard that the JsonRPCChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("JsonRPCChainParser not defined")
+	}
+
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
 	var msg JsonrpcMessage
@@ -203,6 +208,11 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
+	// Guard that the JsonRPCChainListener instance exists
+	if apil == nil {
+		return
+	}
+
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 

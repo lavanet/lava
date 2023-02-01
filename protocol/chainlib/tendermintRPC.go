@@ -36,6 +36,11 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 
 // ParseMsg parses message data into chain message object
 func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	// Guard that the TendermintChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("TendermintChainParser not defined")
+	}
+
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
@@ -109,9 +114,9 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 // getSupportedApi fetches service api from spec by name
 func (apip *TendermintChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the JsonRPCChainParser instance exists
+	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
-		return nil, errors.New("JsonRPCChainParser not defined")
+		return nil, errors.New("TendermintChainParser not defined")
 	}
 
 	// Acquire read lock
@@ -207,6 +212,11 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 }
 
 func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
+	// Guard that the TendermintChainParser instance exists
+	if apil == nil {
+		return
+	}
+
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 	chainID := apil.endpoint.ChainID

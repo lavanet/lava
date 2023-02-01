@@ -31,6 +31,11 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 }
 
 func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	// Guard that the RestChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("RestChainParser not defined")
+	}
+
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := apip.getSupportedApi(url)
 	if err != nil {
@@ -59,7 +64,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 // getSupportedApi fetches service api from spec by name
 func (apip *RestChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the JsonRPCChainParser instance exists
+	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
 	}
@@ -157,6 +162,11 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 func (apil *RestChainListener) Serve(ctx context.Context) {
+	// Guard that the RestChainListener instance exists
+	if apil == nil {
+		return
+	}
+
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
 

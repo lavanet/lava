@@ -32,6 +32,11 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 
 // ParseMsg parses message data into chain message object
 func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("GrpcChainParser not defined")
+	}
+
 	// Check API is supported and save it in nodeMsg.
 	serviceApi, err := apip.getSupportedApi(url)
 	if err != nil {
@@ -60,9 +65,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 // getSupportedApi fetches service api from spec by name
 func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi, error) {
-	// Guard that the JsonRPCChainParser instance exists
+	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
-		return nil, errors.New("RestChainParser not defined")
+		return nil, errors.New("GrpcChainParser not defined")
 	}
 
 	// Acquire read lock
@@ -87,7 +92,7 @@ func (apip *GrpcChainParser) getSupportedApi(name string) (*spectypes.ServiceApi
 
 // SetSpec sets the spec for the GrpcChainParser
 func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
-	// Guard that the JsonRPCChainParser instance exists
+	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return
 	}
@@ -157,6 +162,11 @@ func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 func (apil *GrpcChainListener) Serve(ctx context.Context) {
+	// Guard that the GrpcChainListener instance exists
+	if apil == nil {
+		return
+	}
+
 	utils.LavaFormatInfo("gRPC PortalStart", nil)
 
 	lis, err := net.Listen("tcp", apil.endpoint.NetworkAddress)
