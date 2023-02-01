@@ -250,6 +250,6 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	}
 }
 
-func NewRestChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
-	return nil
+func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+	return nil, fmt.Errorf("not implemented")
 }

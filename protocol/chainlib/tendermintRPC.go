@@ -370,6 +370,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	}
 }
 
-func NewtendermintRpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
-	return nil
+func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+	return nil, fmt.Errorf("not implemented")
 }

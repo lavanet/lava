@@ -191,6 +191,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	}
 }
 
-func NewGrpcChainProxy(nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) ChainProxy {
-	return nil
+func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+	return nil, fmt.Errorf("not implemented")
 }

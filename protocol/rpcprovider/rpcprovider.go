@@ -84,7 +84,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 		providerStateTracker.RegisterChainParserForSpecUpdates(ctx, chainParser)
 
-		chainProxy, err := chainlib.GetChainProxy(parallelConnections, rpcProviderEndpoint, chainParser)
+		chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint)
 		if err != nil {
 			utils.LavaFormatFatal("failed creating chain proxy", err, &map[string]string{"parallelConnections": strconv.FormatUint(uint64(parallelConnections), 10), "rpcProviderEndpoint": fmt.Sprintf("%+v", rpcProviderEndpoint)})
 		}
