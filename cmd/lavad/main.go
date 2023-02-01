@@ -306,8 +306,8 @@ func main() {
 					utils.LavaFormatInfo("cache service connected", &map[string]string{"address": cacheAddr})
 				}
 			}
-			rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
-			return nil
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, vrf_sk, cache)
+			return err
 		},
 	}
 
@@ -425,8 +425,8 @@ func main() {
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err, nil)
 			}
-			rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
-			return nil
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections)
+			return err
 		},
 	}
 

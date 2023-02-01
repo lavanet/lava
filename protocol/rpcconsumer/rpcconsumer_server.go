@@ -40,7 +40,7 @@ type RPCConsumerServer struct {
 }
 
 type ConsumerTxSender interface {
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict)
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -392,7 +392,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			report, conflicts := lavaprotocol.VerifyReliabilityResults(relayResult, dataReliabilityVerifications, numberOfReliabilitySessions)
 			if report {
 				for _, conflict := range conflicts {
-					rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
+					err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil)
+					if err != nil {
+						utils.LavaFormatError("could not send detection Transaction", err, nil)
+					}
 				}
 			}
 			// detectionMessage = conflicttypes.NewMsgDetection(consumerAddress, nil, &responseConflict, nil)
