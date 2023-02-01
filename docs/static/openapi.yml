@@ -30145,33 +30145,10 @@ paths:
                   properties:
                     index:
                       type: string
-                    clientsPayments:
+                    providerPaymentStorageKeys:
                       type: array
                       items:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          uniquePaymentStorageClientProvider:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                index:
-                                  type: string
-                                block:
-                                  type: string
-                                  format: uint64
-                                usedCU:
-                                  type: string
-                                  format: uint64
-                          epoch:
-                            type: string
-                            format: uint64
-                          unresponsiveness_complaints:
-                            type: array
-                            items:
-                              type: string
+                        type: string
               pagination:
                 type: object
                 properties:
@@ -30291,33 +30268,10 @@ paths:
                 properties:
                   index:
                     type: string
-                  clientsPayments:
+                  providerPaymentStorageKeys:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        uniquePaymentStorageClientProvider:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              index:
-                                type: string
-                              block:
-                                type: string
-                                format: uint64
-                              usedCU:
-                                type: string
-                                format: uint64
-                        epoch:
-                          type: string
-                          format: uint64
-                        unresponsiveness_complaints:
-                          type: array
-                          items:
-                            type: string
+                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -30519,23 +30473,14 @@ paths:
                   properties:
                     index:
                       type: string
-                    uniquePaymentStorageClientProvider:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          index:
-                            type: string
-                          block:
-                            type: string
-                            format: uint64
-                          usedCU:
-                            type: string
-                            format: uint64
                     epoch:
                       type: string
                       format: uint64
                     unresponsiveness_complaints:
+                      type: array
+                      items:
+                        type: string
+                    uniquePaymentStorageClientProviderKeys:
                       type: array
                       items:
                         type: string
@@ -30658,23 +30603,14 @@ paths:
                 properties:
                   index:
                     type: string
-                  uniquePaymentStorageClientProvider:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        block:
-                          type: string
-                          format: uint64
-                        usedCU:
-                          type: string
-                          format: uint64
                   epoch:
                     type: string
                     format: uint64
                   unresponsiveness_complaints:
+                    type: array
+                    items:
+                      type: string
+                  uniquePaymentStorageClientProviderKeys:
                     type: array
                     items:
                       type: string
@@ -53622,33 +53558,10 @@ definitions:
     properties:
       index:
         type: string
-      clientsPayments:
+      providerPaymentStorageKeys:
         type: array
         items:
-          type: object
-          properties:
-            index:
-              type: string
-            uniquePaymentStorageClientProvider:
-              type: array
-              items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  block:
-                    type: string
-                    format: uint64
-                  usedCU:
-                    type: string
-                    format: uint64
-            epoch:
-              type: string
-              format: uint64
-            unresponsiveness_complaints:
-              type: array
-              items:
-                type: string
+          type: string
   lavanet.lava.pairing.MsgRelayPaymentResponse:
     type: object
   lavanet.lava.pairing.MsgStakeClientResponse:
@@ -53693,23 +53606,14 @@ definitions:
     properties:
       index:
         type: string
-      uniquePaymentStorageClientProvider:
-        type: array
-        items:
-          type: object
-          properties:
-            index:
-              type: string
-            block:
-              type: string
-              format: uint64
-            usedCU:
-              type: string
-              format: uint64
       epoch:
         type: string
         format: uint64
       unresponsiveness_complaints:
+        type: array
+        items:
+          type: string
+      uniquePaymentStorageClientProviderKeys:
         type: array
         items:
           type: string
@@ -53723,33 +53627,10 @@ definitions:
           properties:
             index:
               type: string
-            clientsPayments:
+            providerPaymentStorageKeys:
               type: array
               items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  uniquePaymentStorageClientProvider:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        index:
-                          type: string
-                        block:
-                          type: string
-                          format: uint64
-                        usedCU:
-                          type: string
-                          format: uint64
-                  epoch:
-                    type: string
-                    format: uint64
-                  unresponsiveness_complaints:
-                    type: array
-                    items:
-                      type: string
+                type: string
       pagination:
         type: object
         properties:
@@ -53785,23 +53666,14 @@ definitions:
           properties:
             index:
               type: string
-            uniquePaymentStorageClientProvider:
-              type: array
-              items:
-                type: object
-                properties:
-                  index:
-                    type: string
-                  block:
-                    type: string
-                    format: uint64
-                  usedCU:
-                    type: string
-                    format: uint64
             epoch:
               type: string
               format: uint64
             unresponsiveness_complaints:
+              type: array
+              items:
+                type: string
+            uniquePaymentStorageClientProviderKeys:
               type: array
               items:
                 type: string
@@ -53930,33 +53802,10 @@ definitions:
         properties:
           index:
             type: string
-          clientsPayments:
+          providerPaymentStorageKeys:
             type: array
             items:
-              type: object
-              properties:
-                index:
-                  type: string
-                uniquePaymentStorageClientProvider:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      index:
-                        type: string
-                      block:
-                        type: string
-                        format: uint64
-                      usedCU:
-                        type: string
-                        format: uint64
-                epoch:
-                  type: string
-                  format: uint64
-                unresponsiveness_complaints:
-                  type: array
-                  items:
-                    type: string
+              type: string
   lavanet.lava.pairing.QueryGetPairingResponse:
     type: object
     properties:
@@ -54026,23 +53875,14 @@ definitions:
         properties:
           index:
             type: string
-          uniquePaymentStorageClientProvider:
-            type: array
-            items:
-              type: object
-              properties:
-                index:
-                  type: string
-                block:
-                  type: string
-                  format: uint64
-                usedCU:
-                  type: string
-                  format: uint64
           epoch:
             type: string
             format: uint64
           unresponsiveness_complaints:
+            type: array
+            items:
+              type: string
+          uniquePaymentStorageClientProviderKeys:
             type: array
             items:
               type: string
