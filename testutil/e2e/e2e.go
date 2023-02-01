@@ -827,10 +827,10 @@ func (lt *lavaTest) checkPayments(testDuration time.Duration) {
 			continue
 		}
 		for _, epochPayment := range pairingRes.EpochPayments {
-			for _, clientsPayment := range epochPayment.ClientsPayments {
-				if strings.Contains(clientsPayment.Index, "ETH") {
+			for _, clientsPaymentKey := range epochPayment.GetProviderPaymentStorageKeys() {
+				if strings.Contains(clientsPaymentKey, "ETH") {
 					ethPaid = true
-				} else if strings.Contains(clientsPayment.Index, "LAV") {
+				} else if strings.Contains(clientsPaymentKey, "LAV") {
 					lavaPaid = true
 				}
 			}
