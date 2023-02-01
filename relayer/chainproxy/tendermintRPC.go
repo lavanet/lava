@@ -533,9 +533,9 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 			// Not an rpc error, return provider error without disclosing the endpoint address
 			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
 		}
-		id, err := idFromRawMessage(nm.msg.ID)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", err, nil)
+		id, idErr := idFromRawMessage(nm.msg.ID)
+		if idErr != nil {
+			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", idErr, nil)
 		}
 		replyMsg = &RPCResponse{
 			JSONRPC: nm.msg.Version,
