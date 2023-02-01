@@ -29,7 +29,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/pflag"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tenderminttypes "github.com/tendermint/tendermint/types"
@@ -149,7 +148,6 @@ type Sentry struct {
 	//
 	// Spec storage (rw mutex)
 	specMu     sync.RWMutex
-	specHash   []byte
 	serverSpec spectypes.Spec
 	serverApis map[string]spectypes.ServiceApi
 	taggedApis map[string]spectypes.ServiceApi
@@ -301,10 +299,21 @@ func (s *Sentry) getPairing(ctx context.Context) ([]*lavasession.ConsumerSession
 	return pairing, nil
 }
 
-func (s *Sentry) GetSpecHash() []byte {
-	s.specMu.Lock()
-	defer s.specMu.Unlock()
-	return s.specHash
+func (s *Sentry) WaitForSpec(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			s.specMu.Lock()
+			block := s.serverSpec.BlockLastUpdated
+			s.specMu.Unlock()
+			if block > 0 {
+				return nil
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
 }
 
 func (s *Sentry) GetAllSpecNames(ctx context.Context) (map[string][]spectypes.ApiInterface, error) {
@@ -368,12 +377,9 @@ func (s *Sentry) getSpec(ctx context.Context) error {
 
 	//
 	// Check if updated
-	hash := tendermintcrypto.Sha256([]byte(spec.String())) // TODO: we use cheaper algo for speed
-	if bytes.Equal(s.specHash, hash) {
-		// spec for chain didnt change
+	if spec.Spec.BlockLastUpdated <= s.serverSpec.BlockLastUpdated {
 		return nil
 	}
-	s.specHash = hash
 
 	//
 	// Update
@@ -1527,7 +1533,6 @@ func NewSentry(
 		ApiInterface:            apiInterface,
 		VrfSk:                   vrf_sk,
 		blockHeight:             currentBlock,
-		specHash:                nil,
 		cmdFlags:                flagSet,
 		voteInitiationCb:        voteInitiationCb,
 		serverID:                serverID,

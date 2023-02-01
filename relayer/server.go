@@ -1202,14 +1202,14 @@ func Server(
 
 	// Start newSentry
 	newSentry := sentry.NewSentry(clientCtx, txFactory, chainID, false, voteEventHandler, askForRewards, apiInterface, nil, flagSet, g_serverID)
-	err := newSentry.Init(ctx)
-	if err != nil {
+	if err := newSentry.Init(ctx); err != nil {
 		utils.LavaFormatError("sentry init failure to initialize", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
 		return
 	}
 	go newSentry.Start(ctx)
-	for newSentry.GetSpecHash() == nil {
-		time.Sleep(1 * time.Second)
+	if err := newSentry.WaitForSpec(ctx); err != nil {
+		utils.LavaFormatError("sentry init failed to get spec", err, &map[string]string{"apiInterface": apiInterface, "ChainID": chainID})
+		return
 	}
 	g_sentry = newSentry
 	g_sessions = map[string]*UserSessions{}
