@@ -35,6 +35,7 @@ func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *Consu
 	csq := &ConsumerStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx, cachedPairings: map[string]*pairingtypes.QueryGetPairingResponse{}}
 	return csq
 }
+
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, errRet error) {
 	if chainID == "" {
 		// the caller doesn;t care which so just return the first

@@ -30,9 +30,11 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		return nil, err
 	}
 	txSender, err := NewConsumerTxSender(ctx, clientCtx, txFactory)
+	if err != nil {
+		return nil, err
+	}
 	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), txSender: txSender}
 	return cst, nil
-
 }
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
