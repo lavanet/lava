@@ -2,8 +2,10 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -13,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
@@ -395,6 +398,158 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	}
 }
 
+type tendermintRpcChainProxy struct {
+	// embedding the jrpc chain proxy because the only diff is on parse message
+	JrpcChainProxy
+	nodeUrl string
+}
+
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	return nil, fmt.Errorf("not implemented")
+	cp := &tendermintRpcChainProxy{nodeUrl: rpcProviderEndpoint.NodeUrl}
+	return cp, cp.start(ctx, nConns, rpcProviderEndpoint.NodeUrl)
+}
+
+func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	rpc, err := cp.conn.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer cp.conn.ReturnRpc(rpc)
+	rpcInputMessage := chainMessage.GetRPCMessage()
+	nodeMessage, ok := rpcInputMessage.(chainproxy.TendermintrpcMessage)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+	}
+	if nodeMessage.Path != "" {
+		return cp.SendURI(ctx, &nodeMessage, ch, chainMessage)
+	}
+
+	// Else do RPC call
+	return cp.SendRPC(ctx, &nodeMessage, ch, chainMessage)
+}
+
+func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *chainproxy.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// check if the input channel is not nil
+	if ch != nil {
+		// return an error if the channel is not nil
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil, nil)
+	}
+
+	// create a new http client with a timeout set by the getTimePerCu function
+	httpClient := http.Client{
+		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+	}
+
+	// construct the url by concatenating the node url with the path variable
+	url := cp.nodeUrl + "/" + nodeMessage.Path
+
+	// create a new http request
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// send the http request and get the response
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// close the response body
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	// read the response body
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// create a new relay reply struct with the response body as the data
+	reply := &pairingtypes.RelayReply{
+		Data: body,
+	}
+
+	return reply, "", nil, nil
+}
+
+// SendRPC sends Tendermint HTTP or WebSockets call
+func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *chainproxy.TendermintrpcMessage, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// Get rpc connection from the connection pool
+	rpc, err := cp.conn.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	// return the rpc connection to the pool after the function completes
+	defer cp.conn.ReturnRpc(rpc)
+
+	// create variables for the rpc message and reply message
+	var rpcMessage *rpcclient.JsonrpcMessage
+	var replyMessage *chainproxy.RPCResponse
+	var sub *rpcclient.ClientSubscription
+
+	// If ch is not nil do subscription
+	if ch != nil {
+		// subscribe to the rpc call if the channel is not nil
+		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+	} else {
+		// create a context with a timeout set by the getTimePerCu function
+		connectCtx, cancel := context.WithTimeout(ctx, LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits))
+		defer cancel()
+		// perform the rpc call
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
+	}
+
+	var replyMsg *chainproxy.RPCResponse
+	// the error check here would only wrap errors not from the rpc
+	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
+		}
+		id, idErr := chainproxy.IdFromRawMessage(nodeMessage.ID)
+		if idErr != nil {
+			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", idErr, nil)
+		}
+		replyMsg = &chainproxy.RPCResponse{
+			JSONRPC: nodeMessage.Version,
+			ID:      id,
+			Error:   chainproxy.ConvertErrorToRPCError(err),
+		}
+	} else {
+		replyMessage, err = chainproxy.ConvertTendermintMsg(rpcMessage)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err, nil)
+		}
+
+		replyMsg = replyMessage
+	}
+
+	// marshal the jsonrpc message to json
+	data, err := json.Marshal(replyMsg)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// create a new relay reply struct
+	reply := &pairingtypes.RelayReply{
+		Data: data,
+	}
+
+	if ch != nil {
+		// get the params for the rpc call
+		params := nodeMessage.Params
+
+		paramsMap, ok := params.(map[string]interface{})
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)
+		}
+		subscriptionID, ok = paramsMap["query"].(string)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil, nil)
+		}
+	}
+
+	return reply, subscriptionID, sub, err
 }
