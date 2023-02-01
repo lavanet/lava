@@ -1,22 +1,33 @@
 package chainlib
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/fullstorydev/grpcurl"
+	"github.com/golang/protobuf/proto"
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
+	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/thirdparty"
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/relayer/chainproxy/thirdparty"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
+	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
 type GrpcChainParser struct {
@@ -209,6 +220,99 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	}
 }
 
+type GrpcChainProxy struct {
+	conn *chainproxy.GRPCConnector
+}
+
 func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	return nil, fmt.Errorf("not implemented")
+	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
+	cp := &GrpcChainProxy{}
+	cp.conn = chainproxy.NewGRPCConnector(ctx, nConns, nodeUrl)
+	if cp.conn == nil {
+		return nil, utils.LavaFormatError("g_conn == nil", nil, nil)
+	}
+
+	return cp, nil
+}
+
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+
+	if ch != nil {
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+	}
+	conn, err := cp.conn.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, nil)
+	}
+	defer cp.conn.ReturnRpc(conn)
+
+	rpcInputMessage := chainMessage.GetRPCMessage()
+	nodeMessage, ok := rpcInputMessage.(chainproxy.GrpcMessage)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+	}
+
+	connectCtx, cancel := context.WithTimeout(ctx, DefaultTimeout)
+	defer cancel()
+
+	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn)) // TODO: improve functionality, this is reading descriptors every send
+	descriptorSource := chainproxy.DescriptorSourceFromServer(cl)
+	svc, methodName := chainproxy.ParseSymbol(nodeMessage.Path)
+	var descriptor desc.Descriptor
+	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
+		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)
+	}
+
+	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, &map[string]string{"descriptor": fmt.Sprintf("%v", descriptor)})
+	}
+	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
+	if methodDescriptor == nil {
+		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, &map[string]string{"methodName": methodName})
+	}
+	msgFactory := dynamic.NewMessageFactoryWithDefaults()
+
+	var reader io.Reader
+	msg := msgFactory.NewMessage(methodDescriptor.GetInputType())
+	formatMessage := false
+	if len(nodeMessage.Msg) > 0 {
+		reader = bytes.NewReader(nodeMessage.Msg)
+		formatMessage = true
+	}
+
+	// nodeMessage.MethodDesc = methodDescriptor // TODO: this is useful for parsing the response
+	// rp, formatter, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+	rp, _, err := grpcurl.RequestParserAndFormatter(grpcurl.FormatJSON, descriptorSource, reader, grpcurl.FormatOptions{
+		EmitJSONDefaultFields: false,
+		IncludeTextSeparator:  false,
+		AllowUnknownFields:    true,
+	})
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Failed to create formatter", err, nil)
+	}
+	// nm.formatter = formatter
+	if formatMessage {
+		err = rp.Next(msg)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, nil)
+		}
+	}
+
+	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
+	err = grpc.Invoke(connectCtx, nodeMessage.Path, msg, response, conn)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Invoke Failed", err, &map[string]string{"Method": nodeMessage.Path, "msg": string(nodeMessage.Msg)})
+	}
+
+	var respBytes []byte
+	respBytes, err = proto.Marshal(response)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, nil)
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: respBytes,
+	}
+	return reply, "", nil, nil
 }
