@@ -470,13 +470,13 @@ func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID strin
 	return &stakeStorage.StakeEntries, nil
 }
 
-func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool) {
+func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []types.StakeEntry, found bool, epochHash []byte) {
 	key := k.StakeStorageKey(storageType, block, chainID)
 	stakeStorage, found := k.GetStakeStorage(ctx, key)
 	if !found {
-		return nil, false
+		return nil, false, nil
 	}
-	return stakeStorage.StakeEntries, true
+	return stakeStorage.StakeEntries, true, stakeStorage.EpochBlockHash
 }
 
 // append to epoch stake entries ONLY if it doesn't exist

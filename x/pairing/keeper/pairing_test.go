@@ -38,6 +38,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
 
+	// test that 2 different clients get different pairings
 	providers1, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
 	require.Nil(t, err)
 
@@ -61,6 +62,17 @@ func TestPairingUniqueness(t *testing.T) {
 	}
 
 	require.True(t, diffrent)
+
+	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+
+	// test that in different epoch we get different pairings for consumer1
+	providers11, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	require.Nil(t, err)
+
+	require.Equal(t, len(providers1), len(providers11))
+	for i := range providers1 {
+		require.NotEqual(t, providers1[i].Address, providers11[i].Address)
+	}
 
 }
 
