@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -27,7 +28,8 @@ import (
 
 type TendemintRpcMessage struct {
 	JrpcMessage
-	cp *tendermintRpcChainProxy
+	cp   *tendermintRpcChainProxy
+	path string
 }
 
 type tendermintRpcChainProxy struct {
@@ -170,7 +172,7 @@ func (cp *tendermintRpcChainProxy) newMessage(serviceApi *spectypes.ServiceApi, 
 }
 
 func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connectionType string) (NodeMessage, error) {
-	// connectionType is currently only used only in rest api
+	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msg JsonrpcMessage
 	if string(data) != "" {
@@ -206,16 +208,20 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 			}
 			msg.Params = params
 		} else {
-			msg.Params = make([]interface{}, 0)
+			msg.Params = make(map[string]interface{}, 0)
 		}
 	}
-	//
+
 	// Check api is supported and save it in nodeMsg
 	serviceApi, err := cp.getSupportedApi(msg.Method)
 	if err != nil {
 		return nil, utils.LavaFormatError("getSupportedApi failed", err, &map[string]string{"method": msg.Method})
 	}
 
+	// Extract default block parser
+	blockParser := serviceApi.BlockParsing
+
+	// Find matched api interface by connection type
 	var apiInterface *spectypes.ApiInterface = nil
 	for i := range serviceApi.ApiInterfaces {
 		if serviceApi.ApiInterfaces[i].Type == connectionType {
@@ -227,18 +233,27 @@ func (cp *tendermintRpcChainProxy) ParseMsg(path string, data []byte, connection
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
-	requestedBlock, err := parser.ParseBlockFromParams(msg, serviceApi.BlockParsing)
+	// Check if custom block parser exists in the api interface
+	// Use custom block parser only for URI calls
+	if apiInterface.GetOverwriteBlockParsing() != nil && path != "" {
+		blockParser = *apiInterface.GetOverwriteBlockParsing()
+	}
+
+	// Fetch requested block, it is used for data reliability
+	requestedBlock, err := parser.ParseBlockFromParams(msg, blockParser)
 	if err != nil {
 		return nil, err
 	}
 
 	nodeMsg := &TendemintRpcMessage{
 		JrpcMessage: JrpcMessage{
-			serviceApi:   serviceApi,
-			apiInterface: apiInterface,
-			msg:          &msg, requestedBlock: requestedBlock,
+			serviceApi:     serviceApi,
+			apiInterface:   apiInterface,
+			msg:            &msg,
+			requestedBlock: requestedBlock,
 		},
-		cp: cp,
+		path: path,
+		cp:   cp,
 	}
 	return nodeMsg, nil
 }
@@ -504,25 +519,89 @@ func convertTendermintMsg(rpcMsg *rpcclient.JsonrpcMessage) (*RPCResponse, error
 	return msg, nil
 }
 
+// Send sends either Tendermint RPC or URI call depending on the type
 func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	// Get node
+	// If path exists then the call is URI
+	if nm.path != "" {
+		return nm.SendURI(ctx, ch)
+	}
+
+	// Else do RPC call
+	return nm.SendRPC(ctx, ch)
+}
+
+// SendURI sends URI HTTP call
+func (nm *TendemintRpcMessage) SendURI(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// check if the input channel is not nil
+	if ch != nil {
+		// return an error if the channel is not nil
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil, nil)
+	}
+
+	// create a new http client with a timeout set by the getTimePerCu function
+	httpClient := http.Client{
+		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
+	}
+
+	// construct the url by concatenating the node url with the path variable
+	url := nm.cp.nodeUrl + "/" + nm.path
+
+	// create a new http request
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// send the http request and get the response
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// close the response body
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	// read the response body
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// create a new relay reply struct with the response body as the data
+	reply := &pairingtypes.RelayReply{
+		Data: body,
+	}
+
+	return reply, "", nil, nil
+}
+
+// SendRPC sends Tendermint HTTP or WebSockets call
+func (nm *TendemintRpcMessage) SendRPC(ctx context.Context, ch chan interface{}) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	// Get rpc connection from the connection pool
 	rpc, err := nm.cp.conn.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
+
+	// return the rpc connection to the pool after the function completes
 	defer nm.cp.conn.ReturnRpc(rpc)
 
-	params := nm.msg.Params
-
-	// Call our node
+	// create variables for the rpc message and reply message
 	var rpcMessage *rpcclient.JsonrpcMessage
 	var replyMessage *RPCResponse
 	var sub *rpcclient.ClientSubscription
+
+	// If ch is not nil do subscription
 	if ch != nil {
+		// subscribe to the rpc call if the channel is not nil
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nm.msg.ID, nm.msg.Method, ch, nm.msg.Params)
 	} else {
+		// create a context with a timeout set by the getTimePerCu function
 		connectCtx, cancel := context.WithTimeout(ctx, getTimePerCu(nm.serviceApi.ComputeUnits))
 		defer cancel()
+		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nm.msg.ID, nm.msg.Method, nm.msg.Params)
 	}
 
@@ -552,17 +631,22 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 		nm.msg.Result = replyMessage.Result
 	}
 
+	// marshal the jsonrpc message to json
 	data, err := json.Marshal(replyMsg)
 	if err != nil {
 		nm.msg.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
 	}
 
+	// create a new relay reply struct
 	reply := &pairingtypes.RelayReply{
 		Data: data,
 	}
 
 	if ch != nil {
+		// get the params for the rpc call
+		params := nm.msg.Params
+
 		paramsMap, ok := params.(map[string]interface{})
 		if !ok {
 			return nil, "", nil, utils.LavaFormatError("unknown params type on tendermint subscribe", nil, nil)

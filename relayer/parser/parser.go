@@ -65,7 +65,8 @@ func Parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		retval, err = ParseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
 		retval = ParseDefault(rpcInput, blockParser.ParserArg, dataSource)
-		// case default -> retval, err = ParseByArg(rpcInput, blockParser.ParserArg, dataSource) with default.
+	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_DEFAULT:
+		retval, err = ParseDictionaryOrDefault(rpcInput, blockParser.ParserArg, dataSource)
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
 	}
@@ -233,7 +234,7 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 					retArr = append(retArr, val)
 					return retArr, nil
 				}
-				// if we didnt get to the last elemnt continue deeper by chaning unmarshaledDataTyped
+				// if we didn't get to the last elemnt continue deeper by chaning unmarshaledDataTyped
 				switch v := val.(type) {
 				case map[string]interface{}:
 					unmarshaledDataTyped = v
@@ -251,98 +252,181 @@ func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
 }
 
-func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	if len(input) != 2 {
-		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
+// ParseDictionaryOrDefault return a value of prop specified in args if exists in dictionary
+// if not it returns default value also specified in args
+func ParseDictionaryOrDefault(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+	// Validate number of arguments
+	// The number of arguments should be 3
+	// [prop_name,separator,default value]
+	if len(input) != 3 {
+		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 3", len(input))
 	}
-	prop_name := input[0]
-	inner_separator := input[1]
 
+	// Unmarshall data
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	// Extract arguments
+	propName := input[0]
+	innerSeparator := input[1]
+	defaultValue := input[2]
+
+	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
-		for _, val := range unmarshaledDataTyped {
-			if prop, ok := val.(string); ok {
-				splitted := strings.SplitN(prop, inner_separator, 2)
-				if splitted[0] != prop_name {
-					continue
-				} else {
-					retArr := make([]interface{}, 0)
-					retArr = append(retArr, splitted[1])
-					return retArr, nil
-				}
-			}
+		// If value attribute with propName exists in array return it
+		value := parseArrayOfInterfaces(unmarshalledDataTyped, propName, innerSeparator)
+		if value != nil {
+			return value, nil
 		}
-		return nil, fmt.Errorf("invalid input format, did not find prop name %s on params: %s", prop_name, unmarshalledData)
+
+		// if there is no matching prop, return default
+		return appendInterfaceToInterfaceArray(defaultValue), nil
 	case map[string]interface{}:
-		if val, ok := unmarshaledDataTyped[prop_name]; ok {
-			retArr := make([]interface{}, 0)
-			retArr = append(retArr, val)
-			return retArr, nil
+		// If attribute with key propName exists return value
+		if val, ok := unmarshalledDataTyped[propName]; ok {
+			return appendInterfaceToInterfaceArray(val), nil
 		}
-		return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+
+		// Else return default value
+		return appendInterfaceToInterfaceArray(defaultValue), nil
+	default:
+		return nil, fmt.Errorf("not Supported ParseDictionaryOrDefault with other types")
+	}
+}
+
+// ParseDictionary return a value of prop specified in args if exists in dictionary
+// if not return an error
+func ParseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+	// Validate number of arguments
+	// The number of arguments should be 2
+	// [prop_name,separator]
+	if len(input) != 2 {
+		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 2", len(input))
+	}
+
+	// Unmarshall data
+	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
+	if err != nil {
+		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
+	}
+
+	// Extract arguments
+	propName := input[0]
+	innerSeparator := input[1]
+
+	switch unmarshalledDataTyped := unmarshalledData.(type) {
+	case []interface{}:
+		// If value attribute with propName exists in array return it
+		value := parseArrayOfInterfaces(unmarshalledDataTyped, propName, innerSeparator)
+		if value != nil {
+			return value, nil
+		}
+
+		// Else return an error
+		return nil, fmt.Errorf("invalid input format, did not find prop name %s on params: %s", propName, unmarshalledData)
+	case map[string]interface{}:
+		// If attribute with key propName exists return value
+		if val, ok := unmarshalledDataTyped[propName]; ok {
+			return appendInterfaceToInterfaceArray(val), nil
+		}
+
+		// Else return an error
+		return nil, fmt.Errorf("%s missing from map %s", propName, unmarshalledDataTyped)
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
 }
 
+// ParseDictionaryOrOrdered return a value of prop specified in args if exists in dictionary
+// if not return an item from specified index
 func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+	// Validate number of arguments
+	// The number of arguments should be 3
+	// [prop_name,separator,parameter order if not found]
 	if len(input) != 3 {
 		return nil, fmt.Errorf("invalid input format, input length: %d and needs to be 3", len(input))
 	}
-	prop_name := input[0]
-	inner_separator := input[1]
-	inp := input[2]
-	param_index, err := strconv.ParseUint(inp, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
-	}
 
+	// Unmarshall data
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	// Extract arguments
+	propName := input[0]
+	innerSeparator := input[1]
+	inp := input[2]
+
+	// Convert prop index to the uint
+	propIndex, err := strconv.ParseUint(inp, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
+	}
+
+	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
-		for _, val := range unmarshaledDataTyped {
-			if prop, ok := val.(string); ok {
-				splitted := strings.SplitN(prop, inner_separator, 2)
-				if splitted[0] != prop_name || len(splitted) < 2 {
-					continue
-				} else {
-					retArr := make([]interface{}, 0)
-					retArr = append(retArr, splitted[1])
-					return retArr, nil
-				}
-			}
+		// If value attribute with propName exists in array return it
+		value := parseArrayOfInterfaces(unmarshalledDataTyped, propName, innerSeparator)
+		if value != nil {
+			return value, nil
 		}
-		// did not find a named property
-		if uint64(len(unmarshaledDataTyped)) <= param_index {
-			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", param_index, unmarshaledDataTyped)
+
+		// If not make sure there are enough elements
+		if uint64(len(unmarshalledDataTyped)) <= propIndex {
+			return nil, fmt.Errorf("invalid rpc input and input index: wanted param idx: %d params: %s", propIndex, unmarshalledDataTyped)
 		}
-		block := unmarshaledDataTyped[param_index]
-		// TODO: turn this into type assertion instead
-		retArr := make([]interface{}, 0)
-		retArr = append(retArr, fmt.Sprintf("%s", block))
-		return retArr, nil
+
+		// Fetch value using prop index
+		block := unmarshalledDataTyped[propIndex]
+
+		return appendInterfaceToInterfaceArray(block), nil
 	case map[string]interface{}:
-		var value interface{}
-		if val, ok := unmarshaledDataTyped[prop_name]; ok {
-			value = val
-		} else if val, ok := unmarshaledDataTyped[inp]; ok {
-			value = val
-		} else {
-			return nil, fmt.Errorf("%s missing from map %s", prop_name, unmarshaledDataTyped)
+		// If attribute with key propName exists return value
+		if val, ok := unmarshalledDataTyped[propName]; ok {
+			return appendInterfaceToInterfaceArray(val), nil
 		}
-		retArr := make([]interface{}, 0)
-		retArr = append(retArr, value)
-		return retArr, nil
+
+		// If attribute with key index exists return value
+		if val, ok := unmarshalledDataTyped[inp]; ok {
+			return appendInterfaceToInterfaceArray(val), nil
+		}
+
+		// Else not return an error
+		return nil, fmt.Errorf("%s missing from map %s", propName, unmarshalledDataTyped)
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types")
 	}
+}
+
+// parseArrayOfInterfaces returns value of item with specified prop name
+// If it doesn't exist return nil
+func parseArrayOfInterfaces(data []interface{}, propName string, innerSeparator string) []interface{} {
+	// Iterate over unmarshalled data
+	for _, val := range data {
+		if prop, ok := val.(string); ok {
+			// split the value by innerSeparator
+			valueArr := strings.SplitN(prop, innerSeparator, 2)
+
+			// Check if the name match prop name
+			if valueArr[0] != propName || len(valueArr) < 2 {
+				// if not continue
+				continue
+			} else {
+				// if yes return the value
+				return appendInterfaceToInterfaceArray(valueArr[1])
+			}
+		}
+	}
+
+	return nil
+}
+
+// appendInterfaceToInterfaceArray appends interface to interface array
+func appendInterfaceToInterfaceArray(value interface{}) []interface{} {
+	retArr := make([]interface{}, 0)
+	retArr = append(retArr, value)
+	return retArr
 }
