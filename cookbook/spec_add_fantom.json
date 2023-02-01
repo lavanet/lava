@@ -1613,6 +1613,14 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": "1500",
                 "allowed_block_lag_for_qos_sync": "5",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "web3_clientVersion",

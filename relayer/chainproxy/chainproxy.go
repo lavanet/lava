@@ -29,6 +29,7 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 	MinimumTimePerRelayDelay  = time.Second
 	AverageWorldLatency       = 200 * time.Millisecond
+	LavaErrorCode             = 555
 )
 
 type NodeMessage interface {
