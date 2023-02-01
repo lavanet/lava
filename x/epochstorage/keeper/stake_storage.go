@@ -345,19 +345,13 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEnt
 	k.SetStakeStorageUnstake(ctx, storageType, stakeStorage)
 }
 
-func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry) error {
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) error {
 	// update unstake deadline to the higher among params (unstakeholdblocks and blockstosave)
-	// TODO validate in paramchange that unstakeholdblocks >= blockstosave and remove redundancy check
+
 	blockHeight := uint64(ctx.BlockHeight())
-	blocksToSave, err := k.BlocksToSave(ctx, blockHeight)
-	if err != nil {
-		return utils.LavaError(ctx, k.Logger(ctx), "append_stake_blockstosave_get_fail", map[string]string{}, "failed to get BlocksToSave")
-	}
-	stakeEntry.Deadline = blockHeight + blocksToSave
-	holdBlocks := blockHeight + k.UnstakeHoldBlocks(ctx, blockHeight)
-	if stakeEntry.Deadline < holdBlocks {
-		stakeEntry.Deadline = holdBlocks
-	}
+
+	stakeEntry.Deadline = blockHeight + unstakeHoldBlocks
+
 	// this stake storage entries are sorted by deadline
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx, storageType)
 	entries := []types.StakeEntry{}

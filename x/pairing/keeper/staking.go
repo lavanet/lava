@@ -21,16 +21,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, provider bool, creator string, ch
 	// TODO: basic validation for chain ID
 	specChainID := chainID
 
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, specChainID)
-	if !foundAndActive {
+	spec, found := k.specKeeper.GetSpec(ctx, specChainID)
+	if !found || !spec.Enabled {
 		details := map[string]string{"spec": specChainID}
 		return utils.LavaError(ctx, logger, "stake_"+stake_type+"_spec", details, "spec not found or not active")
 	}
 	var minStake sdk.Coin
 	if provider {
-		minStake = k.MinStakeProvider(ctx)
+		minStake = spec.MinStakeProvider
 	} else {
-		minStake = k.MinStakeClient(ctx)
+		minStake = spec.MinStakeClient
 	}
 	// if we get here, the spec is active and supported
 

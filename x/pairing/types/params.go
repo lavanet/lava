@@ -12,16 +12,6 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMinStakeProvider              = []byte("MinStakeProvider")
-	DefaultMinStakeProvider sdk.Coin = sdk.NewCoin("ulava", sdk.NewInt(1000))
-)
-
-var (
-	KeyMinStakeClient              = []byte("MinStakeClient")
-	DefaultMinStakeClient sdk.Coin = sdk.NewCoin("ulava", sdk.NewInt(100))
-)
-
-var (
 	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
 	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
 )
@@ -100,8 +90,6 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	minStakeProvider sdk.Coin,
-	minStakeClient sdk.Coin,
 	mintCoinsPerCU sdk.Dec,
 	burnCoinsPerCU sdk.Dec,
 	fraudStakeSlashingFactor sdk.Dec,
@@ -116,28 +104,23 @@ func NewParams(
 	recommendedEpochNumToCollectPayment uint64,
 ) Params {
 	return Params{
-		MinStakeProvider:                    minStakeProvider,
-		MinStakeClient:                      minStakeClient,
-		MintCoinsPerCU:                      mintCoinsPerCU,
-		BurnCoinsPerCU:                      burnCoinsPerCU,
-		FraudStakeSlashingFactor:            fraudStakeSlashingFactor,
-		FraudSlashingAmount:                 fraudSlashingAmount,
-		ServicersToPairCount:                servicersToPairCount,
-		EpochBlocksOverlap:                  epochBlocksOverlap,
-		StakeToMaxCUList:                    stakeToMaxCUList,
-		UnpayLimit:                          unpayLimit,
-		SlashLimit:                          slashLimit,
-		DataReliabilityReward:               dataReliabilityReward,
-		QoSWeight:                           qoSWeight,
-		RecommendedEpochNumToCollectPayment: recommendedEpochNumToCollectPayment,
+		MintCoinsPerCU:           mintCoinsPerCU,
+		BurnCoinsPerCU:           burnCoinsPerCU,
+		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
+		FraudSlashingAmount:      fraudSlashingAmount,
+		ServicersToPairCount:     servicersToPairCount,
+		EpochBlocksOverlap:       epochBlocksOverlap,
+		StakeToMaxCUList:         stakeToMaxCUList,
+		UnpayLimit:               unpayLimit,
+		SlashLimit:               slashLimit,
+		DataReliabilityReward:    dataReliabilityReward,
+		QoSWeight:                qoSWeight,
 	}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		DefaultMinStakeProvider,
-		DefaultMinStakeClient,
 		DefaultMintCoinsPerCU,
 		DefaultBurnCoinsPerCU,
 		DefaultFraudStakeSlashingFactor,
@@ -156,8 +139,6 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyMinStakeProvider, &p.MinStakeProvider, validateMinStakeProvider),
-		paramtypes.NewParamSetPair(KeyMinStakeClient, &p.MinStakeClient, validateMinStakeClient),
 		paramtypes.NewParamSetPair(KeyMintCoinsPerCU, &p.MintCoinsPerCU, validateMintCoinsPerCU),
 		paramtypes.NewParamSetPair(KeyBurnCoinsPerCU, &p.BurnCoinsPerCU, validateBurnCoinsPerCU),
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
@@ -169,20 +150,12 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
 		paramtypes.NewParamSetPair(KeyQoSWeight, &p.QoSWeight, validateQoSWeight),
-		paramtypes.NewParamSetPair(KeyRecommendedEpochNumToCollectPayment, &p.RecommendedEpochNumToCollectPayment, validateRecommendedEpochNumToCollectPayment),
+		// paramtypes.NewParamSetPair(KeyRecommendedEpochNumToCollectPayment, &p.RecommendedEpochNumToCollectPayment, validateRecommendedEpochNumToCollectPayment),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateMinStakeProvider(p.MinStakeProvider); err != nil {
-		return err
-	}
-
-	if err := validateMinStakeClient(p.MinStakeClient); err != nil {
-		return err
-	}
-
 	if err := validateMintCoinsPerCU(p.MintCoinsPerCU); err != nil {
 		return err
 	}
@@ -221,9 +194,9 @@ func (p Params) Validate() error {
 	if err := validateDataReliabilityReward(p.DataReliabilityReward); err != nil {
 		return err
 	}
-	if err := validateRecommendedEpochNumToCollectPayment(p.RecommendedEpochNumToCollectPayment); err != nil {
-		return err
-	}
+	// if err := validateRecommendedEpochNumToCollectPayment(p.RecommendedEpochNumToCollectPayment); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -231,34 +204,6 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
-}
-
-// validateMinStakeProvider validates the MinStakeProvider param
-func validateMinStakeProvider(v interface{}) error {
-	minStakeProvider, ok := v.(sdk.Coin)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	if minStakeProvider.Denom != epochstoragetypes.TokenDenom {
-		return fmt.Errorf("invalid denom %s on provider minstake param, should be %s", minStakeProvider.Denom, epochstoragetypes.TokenDenom)
-	}
-
-	return nil
-}
-
-// validateMinStakeClient validates the MinStakeClient param
-func validateMinStakeClient(v interface{}) error {
-	minStakeClient, ok := v.(sdk.Coin)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	if minStakeClient.Denom != epochstoragetypes.TokenDenom {
-		return fmt.Errorf("invalid denom %s on consumer minstake param,, should be %s", minStakeClient.Denom, epochstoragetypes.TokenDenom)
-	}
-
-	return nil
 }
 
 // validateMintCoinsPerCU validates the MintCoinsPerCU param

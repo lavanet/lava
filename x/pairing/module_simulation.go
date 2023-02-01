@@ -69,12 +69,6 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 	pairingParams := types.DefaultParams()
 	return []simtypes.ParamChange{
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMinStakeProvider), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.MinStakeProvider))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMinStakeClient), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.MinStakeClient))
-		}),
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
 		}),
@@ -93,9 +87,9 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
 		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
-		}),
+		// simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
+		// 	return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
+		// }),
 	}
 }
 

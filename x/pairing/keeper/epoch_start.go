@@ -28,7 +28,7 @@ func (k Keeper) EpochStart(ctx sdk.Context, epochsNumToCheckCuForUnresponsivePro
 	err = k.CheckUnstakingForCommit(ctx)
 	logOnErr(err, "CheckUnstakingForCommit")
 
-	// 4. unstake unresponsive providers
-	err = k.UnstakeUnresponsiveProviders(ctx, epochsNumToCheckCuForUnresponsiveProvider, epochsNumToCheckForComplainers)
-	logOnErr(err, "UnstakeUnresponsiveProviders")
+	// // 4. unstake unresponsive providers
+	// err = k.UnstakeUnresponsiveProviders(ctx, epochsNumToCheckCuForUnresponsiveProvider, epochsNumToCheckForComplainers)
+	// logOnErr(err, "UnstakeUnresponsiveProviders")
 }

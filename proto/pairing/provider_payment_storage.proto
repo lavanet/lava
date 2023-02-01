@@ -7,12 +7,11 @@ import "pairing/unique_payment_storage_client_provider.proto";
 message ProviderPaymentStorage {
 
   string index = 1; 
-  repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 2; 
+  reserved 2;
   uint64 epoch = 3;
-  reserved 4;
-  uint64 complainersTotalCu = 5; // total CU that were supposed to be served by the provider but didn't because he was unavailable (so consumers complained about him)
+  repeated string unresponsiveness_complaints = 4;
+  repeated string uniquePaymentStorageClientProviderKeys = 5; 
 }
-
 // change Client -> consumer
 
 // 1. client -> provider payment storage index = epoch+provider address
