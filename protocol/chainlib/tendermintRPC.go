@@ -337,7 +337,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			c.Status(fiber.StatusInternalServerError)
 
 			// Construct json response
-			response := convertToJsonError(errMasking)
+			response := chainproxy.ConvertToTendermintError(errMasking, c.Body())
 
 			// Return error json response
 			return c.SendString(response)
@@ -515,7 +515,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *cha
 		replyMsg = &chainproxy.RPCResponse{
 			JSONRPC: nodeMessage.Version,
 			ID:      id,
-			Error:   chainproxy.ConvertErrorToRPCError(err),
+			Error:   chainproxy.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
 		}
 	} else {
 		replyMessage, err = chainproxy.ConvertTendermintMsg(rpcMessage)
