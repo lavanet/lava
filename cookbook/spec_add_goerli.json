@@ -13,6 +13,14 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": "13000",
                 "allowed_block_lag_for_qos_sync": "5",
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "1000"
+                },
+                "min_stake_client": {
+                    "denom": "ulava",
+                    "amount": "100"
+                },
                 "apis": [
                     {
                         "name": "rpc_modules",

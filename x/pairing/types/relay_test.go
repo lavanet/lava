@@ -36,7 +36,7 @@ func TestRelayShallowCopy(t *testing.T) {
 		"Only nested values should be shared",
 		func(t *testing.T) {
 			t.Parallel()
-			
+
 			dataReliability := &VRFData{
 				Differentiator: true,
 			}

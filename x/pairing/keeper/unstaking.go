@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, creator string, unstakeDescription string) error {
@@ -21,7 +22,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 	// TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
-	_, found := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	_, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
 		return utils.LavaError(ctx, logger, "unstake_spec_missing", map[string]string{"spec": chainID}, "trying to unstake an entry on missing spec")
 	}
@@ -41,17 +42,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		details := map[string]string{stake_type: creator, "spec": chainID, "index": strconv.FormatUint(indexInStakeStorage, 10)}
 		return utils.LavaError(ctx, logger, stake_type+"_unstake_entry", details, "can't remove stake Entry, stake entry not found in index")
 	}
-	blockHeight := uint64(ctx.BlockHeight())
-	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, blockHeight)
-	if err != nil {
-		details := map[string]string{stake_type: creator, "error": err.Error()}
-		return utils.LavaError(ctx, logger, "unstake_param_read", details, "invalid "+stake_type+" param read failure")
-	}
-	existingEntry.Deadline = blockHeight + blocksToSave
-	holdBlocks := blockHeight + k.epochStorageKeeper.UnstakeHoldBlocks(ctx, blockHeight)
-	if existingEntry.Deadline < holdBlocks {
-		existingEntry.Deadline = holdBlocks
-	}
+
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),
@@ -60,7 +51,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, provider bool, chainID string, cre
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}
 	utils.LogLavaEvent(ctx, logger, types.UnstakeCommitNewEventName(provider), details, unstakeDescription)
-	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry)
+
+	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain, provider)
+	if err != nil {
+		return err
+	}
+
+	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, stake_type, existingEntry, unstakeHoldBlocks)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) error {
@@ -127,4 +124,17 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, provider bool, entriesTo
 		}
 	}
 	return nil
+}
+
+func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string, isProvider bool) (uint64, error) {
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		return 0, fmt.Errorf("coult not find spec %s", chainID)
+	}
+
+	if isProvider && spec.ProvidersTypes == spectypes.Spec_static {
+		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, uint64(ctx.BlockHeight())), nil
+	} else {
+		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, uint64(ctx.BlockHeight())), nil
+	}
 }
