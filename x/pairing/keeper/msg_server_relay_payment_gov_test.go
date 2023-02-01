@@ -991,9 +991,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 
 	// Get the providerPaymentStorage struct from epochPayments
 	providerPaymentStorageFromEpochPayments := pairingtypes.ProviderPaymentStorage{}
-	for _, providerPaymentStorageFromEpochPaymentsElem := range epochPayments.GetClientsPayments() {
-		if providerPaymentStorageFromEpochPaymentsElem.GetIndex() == providerPaymentStorageKey {
-			providerPaymentStorageFromEpochPayments = *providerPaymentStorageFromEpochPaymentsElem
+	for _, providerPaymentStorageFromEpochPaymentsElemKey := range epochPayments.GetProviderPaymentStorageKeys() {
+		if providerPaymentStorageFromEpochPaymentsElemKey == providerPaymentStorageKey {
+			providerPaymentStorageFromEpochPayments, found = ts.keepers.Pairing.GetProviderPaymentStorage(sdk.UnwrapSDKContext(ts.ctx), providerPaymentStorageFromEpochPaymentsElemKey)
+			require.True(t, found)
 		}
 	}
 	require.NotEmpty(t, providerPaymentStorageFromEpochPayments.GetIndex())
@@ -1004,9 +1005,10 @@ func verifyRelayPaymentObjects(t *testing.T, ts *testStruct, relayRequest *pairi
 
 	// Get one of the uniquePaymentStorageClientProvider struct from providerPaymentStorageFromEpochPayments (note, this is one of the unique.. structs. So usedCU was calculated above with a function that takes into account all the structs)
 	uniquePaymentStorageClientProviderFromProviderPaymentStorage := pairingtypes.UniquePaymentStorageClientProvider{}
-	for _, uniquePaymentStorageClientProviderFromProviderPaymentStorageElem := range providerPaymentStorageFromEpochPayments.GetUniquePaymentStorageClientProvider() {
-		if uniquePaymentStorageClientProviderFromProviderPaymentStorageElem.GetIndex() == uniquePaymentStorageClientProviderKey {
-			uniquePaymentStorageClientProviderFromProviderPaymentStorage = *uniquePaymentStorageClientProviderFromProviderPaymentStorageElem
+	for _, uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey := range providerPaymentStorageFromEpochPayments.GetUniquePaymentStorageClientProviderKeys() {
+		if uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey == uniquePaymentStorageClientProviderKey {
+			uniquePaymentStorageClientProviderFromProviderPaymentStorage, found = ts.keepers.Pairing.GetUniquePaymentStorageClientProvider(sdk.UnwrapSDKContext(ts.ctx), uniquePaymentStorageClientProviderFromProviderPaymentStorageElemKey)
+			require.True(t, found)
 		}
 	}
 	require.NotEmpty(t, uniquePaymentStorageClientProviderFromProviderPaymentStorage.GetIndex())
