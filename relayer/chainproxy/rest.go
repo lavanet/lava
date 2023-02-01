@@ -344,26 +344,26 @@ func (nm *RestMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 		Timeout: getTimePerCu(nm.serviceApi.ComputeUnits),
 	}
 
-	var connectionTypeSlected string = http.MethodGet
+	var connectionTypeSelected string = http.MethodGet
 	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
 	if nm.apiInterface.Type != "" {
-		connectionTypeSlected = nm.apiInterface.Type
+		connectionTypeSelected = nm.apiInterface.Type
 	}
 
 	msgBuffer := bytes.NewBuffer(nm.msg)
 	url := nm.cp.nodeUrl + nm.path
 	// Only get calls uses query params the rest uses the body
-	if connectionTypeSlected == http.MethodGet {
+	if connectionTypeSelected == http.MethodGet {
 		url += string(nm.msg)
 	}
-	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+	req, err := http.NewRequest(connectionTypeSelected, url, msgBuffer)
 	if err != nil {
 		nm.Result = []byte(fmt.Sprintf("%s", err))
 		return nil, "", nil, err
 	}
 
-	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
-	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
+	// setting the content-type to be application/json instead of Go's default http.DefaultClient
+	if connectionTypeSelected == http.MethodPost || connectionTypeSelected == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	res, err := httpClient.Do(req)

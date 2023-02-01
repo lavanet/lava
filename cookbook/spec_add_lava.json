@@ -94,7 +94,15 @@
                                 },
                                 "interface": "tendermintrpc",
                                 "type": "GET",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": "0",
+                                "overwrite_block_parsing": {
+                                    "parser_arg": [
+                                        "height",
+                                        "=",
+                                        "latest"
+                                    ],
+                                    "parser_func": "PARSE_DICTIONARY_OR_DEFAULT"
+                                }
                             }
                         ],
                         "parsing": {
