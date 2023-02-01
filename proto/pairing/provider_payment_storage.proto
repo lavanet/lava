@@ -9,8 +9,10 @@ message ProviderPaymentStorage {
   string index = 1; 
   reserved 2;
   uint64 epoch = 3;
-  repeated string unresponsiveness_complaints = 4;
-  repeated string uniquePaymentStorageClientProviderKeys = 5; 
+  reserved 4;
+  reserved 5;
+  repeated string uniquePaymentStorageClientProviderKeys = 6; 
+  uint64 complainersTotalCu = 7; // total CU that were supposed to be served by the provider but didn't because he was unavailable (so consumers complained about him)
 }
 // change Client -> consumer
 
