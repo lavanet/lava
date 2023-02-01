@@ -104,17 +104,18 @@ func NewParams(
 	recommendedEpochNumToCollectPayment uint64,
 ) Params {
 	return Params{
-		MintCoinsPerCU:           mintCoinsPerCU,
-		BurnCoinsPerCU:           burnCoinsPerCU,
-		FraudStakeSlashingFactor: fraudStakeSlashingFactor,
-		FraudSlashingAmount:      fraudSlashingAmount,
-		ServicersToPairCount:     servicersToPairCount,
-		EpochBlocksOverlap:       epochBlocksOverlap,
-		StakeToMaxCUList:         stakeToMaxCUList,
-		UnpayLimit:               unpayLimit,
-		SlashLimit:               slashLimit,
-		DataReliabilityReward:    dataReliabilityReward,
-		QoSWeight:                qoSWeight,
+		MintCoinsPerCU:                      mintCoinsPerCU,
+		BurnCoinsPerCU:                      burnCoinsPerCU,
+		FraudStakeSlashingFactor:            fraudStakeSlashingFactor,
+		FraudSlashingAmount:                 fraudSlashingAmount,
+		ServicersToPairCount:                servicersToPairCount,
+		EpochBlocksOverlap:                  epochBlocksOverlap,
+		StakeToMaxCUList:                    stakeToMaxCUList,
+		UnpayLimit:                          unpayLimit,
+		SlashLimit:                          slashLimit,
+		DataReliabilityReward:               dataReliabilityReward,
+		QoSWeight:                           qoSWeight,
+		RecommendedEpochNumToCollectPayment: recommendedEpochNumToCollectPayment,
 	}
 }
 
@@ -150,7 +151,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashLimit, &p.SlashLimit, validateSlashLimit),
 		paramtypes.NewParamSetPair(KeyDataReliabilityReward, &p.DataReliabilityReward, validateDataReliabilityReward),
 		paramtypes.NewParamSetPair(KeyQoSWeight, &p.QoSWeight, validateQoSWeight),
-		// paramtypes.NewParamSetPair(KeyRecommendedEpochNumToCollectPayment, &p.RecommendedEpochNumToCollectPayment, validateRecommendedEpochNumToCollectPayment),
+		paramtypes.NewParamSetPair(KeyRecommendedEpochNumToCollectPayment, &p.RecommendedEpochNumToCollectPayment, validateRecommendedEpochNumToCollectPayment),
 	}
 }
 
@@ -194,9 +195,9 @@ func (p Params) Validate() error {
 	if err := validateDataReliabilityReward(p.DataReliabilityReward); err != nil {
 		return err
 	}
-	// if err := validateRecommendedEpochNumToCollectPayment(p.RecommendedEpochNumToCollectPayment); err != nil {
-	// 	return err
-	// }
+	if err := validateRecommendedEpochNumToCollectPayment(p.RecommendedEpochNumToCollectPayment); err != nil {
+		return err
+	}
 	return nil
 }
 
