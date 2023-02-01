@@ -203,6 +203,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) (e
 	expectedInterfaces = make(map[string]bool)
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
+		spec, err := k.ExpandSpec(ctx, spec)
+		if err != nil { // should not happen! (all specs on chain must be valid)
+			panic(err)
+		}
 		for _, api := range spec.Apis {
 			if api.Enabled {
 				for _, apiInterface := range api.ApiInterfaces {
