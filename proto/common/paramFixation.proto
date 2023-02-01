@@ -5,9 +5,8 @@ option go_package = "github.com/lavanet/lava/common/types";
 import "gogoproto/gogo.proto"; 
 
 
-message FixatedEntryVersionsStorage {
-  string index = 1; // unique index of FixatedEntryVersionsStorage
-  repeated Entry entryList = 2; // list of entries to track changes (latest change is first in list)
+message entryStorage { // unique index of FixatedEntryVersionsStorage
+  repeated Entry entryList = 1; // list of entries to track changes (latest change is first in list)
 }
 
 message Entry {

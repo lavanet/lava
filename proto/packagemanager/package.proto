@@ -6,15 +6,14 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 message Package {
-    string index = 1; // package index - a unique key identifying this package
-    uint64 duration = 2; // duration of the package's subscription in blocks
-    uint64 epoch = 3; // the epoch that this package was created
-    cosmos.base.v1beta1.Coin price = 4 [(gogoproto.nullable) = false]; // package price (in ulava)
-    uint64 computeUnits = 5; // max CU for the whole package duration
-    uint64 computeUnitsPerEpoch = 6; // max CU per epoch for the whole package duration
-    uint64 servicersToPair = 7; // max providers to be paired in an epoch
-    bool allowOveruse = 8; // allow CU overuse flag
-    uint64 overuseRate = 9; // price of CU overuse
-    uint64 subscriptions = 10; // the amount of users currently subscribed to this package
-    string name = 11; // package name (non-unique "human" name)
+    uint64 duration = 1; // duration of the package's subscription in blocks
+    uint64 epoch = 2; // the epoch that this package was created
+    cosmos.base.v1beta1.Coin price = 3 [(gogoproto.nullable) = false]; // package price (in ulava)
+    uint64 computeUnits = 4; // max CU for the whole package duration
+    uint64 computeUnitsPerEpoch = 5; // max CU per epoch for the whole package duration
+    uint64 servicersToPair = 6; // max providers to be paired in an epoch
+    bool allowOveruse = 7; // allow CU overuse flag
+    uint64 overuseRate = 8; // price of CU overuse
+    uint64 subscriptions = 9; // the amount of users currently subscribed to this package
+    string name = 10; // package name (non-unique "human" name)
 }
