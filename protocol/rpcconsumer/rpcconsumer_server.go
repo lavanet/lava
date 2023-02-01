@@ -10,8 +10,10 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/coniks-sys/coniks-go/crypto/vrf"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/relayer/metrics"
 	"github.com/lavanet/lava/relayer/performance"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -28,7 +30,7 @@ type RPCConsumerServer struct {
 	chainParser            chainlib.ChainParser
 	consumerSessionManager *lavasession.ConsumerSessionManager
 	listenEndpoint         *lavasession.RPCEndpoint
-	rpcConsumerLogs        *lavaprotocol.RPCConsumerLogs
+	rpcConsumerLogs        *common.RPCConsumerLogs
 	cache                  *performance.Cache
 	privKey                *btcec.PrivateKey
 	consumerTxSender       ConsumerTxSender
@@ -56,7 +58,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.cache = cache
 	rpccs.consumerTxSender = consumerStateTracker
 	rpccs.requiredResponses = requiredResponses
-	pLogs, err := lavaprotocol.NewRPCConsumerLogs()
+	pLogs, err := common.NewRPCConsumerLogs()
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err, nil)
 	}
@@ -64,11 +66,11 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, pLogs)
 	if err != nil {
 		return err
 	}
-	go chainListener.Serve()
+	go chainListener.Serve(ctx)
 	return nil
 }
 
@@ -78,6 +80,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
+	analytics *metrics.RelayMetrics,
 ) (relayReply *pairingtypes.RelayReply, relayServer *pairingtypes.Relayer_RelaySubscribeClient, errRet error) {
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
@@ -238,7 +241,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	}
 	relayResult.Reply = reply
 	lavaprotocol.UpdateRequestedBlock(relayRequest, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-	_, _, blockDistanceForFinalizedData := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
 	finalized := spectypes.IsFinalizedBlock(relayRequest.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
 	err = lavaprotocol.VerifyRelayReply(reply, relayRequest, providerPublicAddress)
 	if err != nil {
