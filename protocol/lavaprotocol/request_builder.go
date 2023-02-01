@@ -9,7 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/relayer/sigs"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"

@@ -3,7 +3,7 @@ package rewardserver
 import (
 	"context"
 
-	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
