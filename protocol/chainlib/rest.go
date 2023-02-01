@@ -1,11 +1,19 @@
 package chainlib
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/relayer/lavasession"
+	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -41,6 +49,67 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return nil
 }
 
+type RestChainProxy struct {
+	nodeUrl string
+}
+
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) (ChainProxy, error) {
-	return nil, fmt.Errorf("not implemented")
+	nodeUrl := strings.TrimSuffix(rpcProviderEndpoint.NodeUrl, "/")
+	rcp := &RestChainProxy{nodeUrl: nodeUrl}
+	return rcp, nil
+}
+
+func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, path string, data []byte, connectionType string, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	if ch != nil {
+		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil, nil)
+	}
+	httpClient := http.Client{
+		Timeout: LocalNodeTimePerCu(chainMessage.GetServiceApi().ComputeUnits),
+	}
+
+	rpcInputMessage := chainMessage.GetRPCMessage()
+	nodeMessage, ok := rpcInputMessage.(chainproxy.RestMessage)
+	if !ok {
+		return nil, "", nil, utils.LavaFormatError("invalid message type in rest, failed to cast RPCInput from chainMessage", nil, &map[string]string{"rpcMessage": fmt.Sprintf("%+v", rpcInputMessage)})
+	}
+
+	var connectionTypeSlected string = http.MethodGet
+	// if ConnectionType is default value or empty we will choose http.MethodGet otherwise choosing the header type provided
+	if chainMessage.GetInterface().Type != "" {
+		connectionTypeSlected = chainMessage.GetInterface().Type
+	}
+
+	msgBuffer := bytes.NewBuffer(nodeMessage)
+	url := rcp.nodeUrl + nodeMessage.Path
+	// Only get calls uses query params the rest uses the body
+	if connectionTypeSlected == http.MethodGet {
+		url += string(nodeMessage.Msg)
+	}
+	req, err := http.NewRequest(connectionTypeSlected, url, msgBuffer)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	// setting the content-type to be application/json instead of Go's defult http.DefaultClient
+	if connectionTypeSlected == http.MethodPost || connectionTypeSlected == http.MethodPut {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: body,
+	}
+	return reply, "", nil, nil
 }
