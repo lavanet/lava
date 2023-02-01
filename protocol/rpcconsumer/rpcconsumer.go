@@ -46,12 +46,12 @@ type RPCConsumer struct {
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, vrf_sk vrf.PrivateKey, cache *performance.Cache) (err error) {
 	// spawn up ConsumerStateTracker
-	consumerStateTracker := statetracker.ConsumerStateTracker{}
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	rpcc.consumerStateTracker, err = statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
 		return err
 	}
+	rpcc.consumerStateTracker = consumerStateTracker
 	rpcc.rpcConsumerServers = make(map[string]*RPCConsumerServer, len(rpcEndpoints))
 
 	keyName, err := sigs.GetKeyName(clientCtx)
