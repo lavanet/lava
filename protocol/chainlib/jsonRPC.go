@@ -207,6 +207,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
+// Serve http server for JsonRPCChainListener
 func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	// Guard that the JsonRPCChainListener instance exists
 	if apil == nil {

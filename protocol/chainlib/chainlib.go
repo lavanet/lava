@@ -21,6 +21,13 @@ const (
 	tendermintRPCInterface = "tendermintrpc"
 )
 
+const (
+	DefaultTimeout           = 5 * time.Second
+	TimePerCU                = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay = time.Second
+	AverageWorldLatency      = 200 * time.Millisecond
+)
+
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -77,13 +84,6 @@ type RelaySender interface {
 type ChainListener interface {
 	Serve(ctx context.Context)
 }
-
-const (
-	DefaultTimeout           = 5 * time.Second
-	TimePerCU                = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay = time.Second
-	AverageWorldLatency      = 200 * time.Millisecond
-)
 
 type ChainProxy interface {
 	SendNodeMsg(ctx context.Context, path string, data []byte, connectionType string, ch chan interface{}, chainMessage ChainMessage) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality

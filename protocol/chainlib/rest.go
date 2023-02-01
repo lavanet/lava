@@ -30,6 +30,7 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
+// ParseMsg parses message data into chain message object
 func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
@@ -161,6 +162,7 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
+// Serve http server for RestChainListener
 func (apil *RestChainListener) Serve(ctx context.Context) {
 	// Guard that the RestChainListener instance exists
 	if apil == nil {

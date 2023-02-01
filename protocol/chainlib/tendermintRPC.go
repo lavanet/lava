@@ -211,6 +211,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 	return chainListener
 }
 
+// Serve http server for TendermintRpcChainListener
 func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	// Guard that the TendermintChainParser instance exists
 	if apil == nil {

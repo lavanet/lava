@@ -161,6 +161,7 @@ func NewGrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	return chainListener
 }
 
+// Serve http server for GrpcChainListener
 func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	// Guard that the GrpcChainListener instance exists
 	if apil == nil {
