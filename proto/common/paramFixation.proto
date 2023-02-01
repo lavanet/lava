@@ -1,0 +1,16 @@
+syntax = "proto3";
+package lavanet.lava.common;
+
+option go_package = "github.com/lavanet/lava/common/types";
+import "gogoproto/gogo.proto"; 
+
+
+message FixatedEntryVersionsStorage {
+  string index = 1; // unique index of FixatedEntryVersionsStorage
+  repeated Entry entryList = 2; // list of entries to track changes (latest change is first in list)
+}
+
+message Entry {
+    uint64 epoch = 1; // epoch the entry was created (functions as key)
+    bytes marshaledEntry = 2; // marshaled data of the entry
+}
