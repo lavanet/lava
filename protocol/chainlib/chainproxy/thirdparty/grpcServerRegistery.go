@@ -19,7 +19,6 @@ import (
 )
 
 func RegisterServer(chain string, cb func(ctx context.Context, method string, reqBody []byte) ([]byte, error)) (*grpc.Server, http.Server, error) {
-
 	s := grpc.NewServer()
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {

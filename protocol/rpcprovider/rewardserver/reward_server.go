@@ -19,7 +19,6 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, singleProviderSession
 	// TODO: implement
 	// get the proof for this consumer for this epoch for this session, update the latest proof
 	// write to a channel the epoch
-	return
 }
 
 func NewRewardServer(rewardsTxSender RewardsTxSender) *RewardServer {

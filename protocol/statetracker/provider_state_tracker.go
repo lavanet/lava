@@ -27,25 +27,20 @@ func (pst *ProviderStateTracker) New(ctx context.Context, txFactory tx.Factory, 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
 	// create an epoch updater
 	// add epoch updater to the updater map
-	return
 }
 
 func (pst *ProviderStateTracker) RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser) {
 	// can be moved to base class
-	return
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, reliabilityManager *reliabilitymanager.ReliabilityManager) {
 	// TODO: change to an interface instead of reliabilitymanager.ReliabilityManager
-	return
 }
 
 func (pst *ProviderStateTracker) QueryVerifyPairing(ctx context.Context, consumer string, blockHeight uint64) {
 	// TODO: implement
-	return
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelayRequest) {
 	// TODO: implement
-	return
 }

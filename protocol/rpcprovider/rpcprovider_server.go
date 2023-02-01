@@ -10,8 +10,7 @@ import (
 	"github.com/lavanet/lava/relayer/performance"
 )
 
-type RPCProviderServer struct {
-}
+type RPCProviderServer struct{}
 
 type ReliabilityManagerInf interface {
 	GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
@@ -29,7 +28,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerSessionManager *lavasession.ProviderSessionManager,
 	reliabilityManager ReliabilityManagerInf,
 	privKey *btcec.PrivateKey,
-	cache *performance.Cache, chainProxy chainlib.ChainProxy) {
+	cache *performance.Cache, chainProxy chainlib.ChainProxy,
+) {
 	// spin up a grpc listener
 	// verify the relay metadata is valid (epoch, signature)
 	// verify the consumer is authorised
