@@ -30,6 +30,7 @@ const (
 	MinimumTimePerRelayDelay  = time.Second
 	AverageWorldLatency       = 200 * time.Millisecond
 	LavaErrorCode             = 555
+	InternalErrorString       = "Internal Error"
 )
 
 type NodeMessage interface {

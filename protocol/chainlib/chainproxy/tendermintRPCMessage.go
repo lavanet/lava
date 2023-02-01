@@ -131,7 +131,7 @@ func ConvertToTendermintError(errString string, inputInfo []byte) string {
 		id, errId := IdFromRawMessage(msg.ID)
 		if errId != nil {
 			utils.LavaFormatError("error idFromRawMessage", errId, nil)
-			return "Internal Error"
+			return InternalErrorString
 		}
 		res, merr := json.Marshal(&RPCResponse{
 			JSONRPC: msg.Version,
@@ -140,10 +140,10 @@ func ConvertToTendermintError(errString string, inputInfo []byte) string {
 		})
 		if merr != nil {
 			utils.LavaFormatError("convertToTendermintError json.Marshal", merr, nil)
-			return "Internal Error"
+			return InternalErrorString
 		}
 		return string(res)
 	}
 	utils.LavaFormatError("error convertToTendermintError", err, nil)
-	return "Internal Error"
+	return InternalErrorString
 }
