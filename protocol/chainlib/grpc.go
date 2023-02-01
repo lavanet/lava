@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/relayer/chainproxy/thirdparty"
 	"github.com/lavanet/lava/relayer/lavasession"
@@ -54,11 +55,17 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
+	// Construct grpcMessage
+	grpcMessage := chainproxy.GrpcMessage{
+		Msg:  data,
+		Path: url,
+	}
+
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
 		serviceApi:   serviceApi,
 		apiInterface: apiInterface,
-		msg:          data,
+		msg:          grpcMessage,
 	}
 	return nodeMsg, nil
 }
@@ -102,7 +109,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, grpcInterface)
+	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceGrpc)
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec

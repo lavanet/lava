@@ -15,13 +15,6 @@ import (
 )
 
 const (
-	grpcInterface          = "grpc"
-	jsonRPCInterface       = "jsonrpc"
-	restInterface          = "rest"
-	tendermintRPCInterface = "tendermintrpc"
-)
-
-const (
 	DefaultTimeout           = 5 * time.Second
 	TimePerCU                = uint64(100 * time.Millisecond)
 	MinimumTimePerRelayDelay = time.Second

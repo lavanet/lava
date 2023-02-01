@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/relayer/lavasession"
 	"github.com/lavanet/lava/relayer/metrics"
@@ -43,13 +43,16 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	// connectionType is currently only used in rest api
 	// Unmarshal request
-	var msg JsonrpcMessage
+	var msg chainproxy.JsonrpcMessage
 	if string(data) != "" {
-		// assuming jsonrpc
-		err := json.Unmarshal(data, &msg)
+		// Fetch pointer to message and error
+		msgPtr, err := chainproxy.ParseJsonRPCMsg(data)
 		if err != nil {
 			return nil, err
 		}
+
+		// Assign value of pointer to msg
+		msg = *msgPtr
 	} else {
 		// assuming URI
 		var parsedMethod string
@@ -60,7 +63,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 			parsedMethod = url[0:idx]
 		}
 
-		msg = JsonrpcMessage{
+		msg = chainproxy.JsonrpcMessage{
 			ID:      []byte("1"),
 			Version: "2.0",
 			Method:  parsedMethod,
@@ -107,7 +110,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
-		msg:            &msg,
+		msg:            msg,
 	}
 	return nodeMsg, nil
 }
@@ -151,7 +154,7 @@ func (apip *TendermintChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, tendermintRPCInterface)
+	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceTendermintRPC)
 
 	// Set the spec field of the TendermintChainParser object
 	apip.spec = spec

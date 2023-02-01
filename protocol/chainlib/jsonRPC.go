@@ -26,29 +26,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-type JsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"` // version of the JSON-RPC protocol used
-	ID      json.RawMessage `json:"id,omitempty"`      // identifier of the request
-	Method  string          `json:"method,omitempty"`  // name of the method to be invoked
-	Params  interface{}     `json:"params,omitempty"`  // parameters for the method
-}
-
-// GetParams returns the parameters of the JSON-RPC message
-func (jm JsonrpcMessage) GetParams() interface{} {
-	return jm.Params
-}
-
-// ParseBlock parses the input string and returns a block number
-func (jm JsonrpcMessage) ParseBlock(inp string) (int64, error) {
-	return parser.ParseDefaultBlockParameter(inp)
-}
-
-// GetResult TODO we need it to be able to use parses
-// Remove when we deprecated old code
-func (cp JsonrpcMessage) GetResult() json.RawMessage {
-	return nil
-}
-
 type JsonRPCChainParser struct {
 	spec       spectypes.Spec
 	rwLock     sync.RWMutex
@@ -70,9 +47,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
-	var msg JsonrpcMessage
-
-	err := json.Unmarshal(data, &msg)
+	msg, err := chainproxy.ParseJsonRPCMsg(data)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +78,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		serviceApi:     serviceApi,
 		apiInterface:   apiInterface,
 		requestedBlock: requestedBlock,
-		msg:            &msg,
+		msg:            msg,
 	}
 	return nodeMsg, nil
 }
@@ -120,7 +95,7 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, jsonRPCInterface)
+	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
 
 	// Set the spec field of the JsonRPCChainParser object
 	apip.spec = spec

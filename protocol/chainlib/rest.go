@@ -61,11 +61,17 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, fmt.Errorf("could not find the interface %s in the service %s", connectionType, serviceApi.Name)
 	}
 
+	// Construct restMessage
+	restMessage := chainproxy.RestMessage{
+		Msg:  data,
+		Path: url,
+	}
+
 	// TODO why we don't have requested block here?
 	nodeMsg := &parsedMessage{
 		serviceApi:   serviceApi,
 		apiInterface: apiInterface,
-		msg:          data,
+		msg:          restMessage,
 	}
 	return nodeMsg, nil
 }
@@ -109,7 +115,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis := getServiceApis(spec, restInterface)
+	serverApis, taggedApis := getServiceApis(spec, spectypes.APIInterfaceRest)
 
 	// Set the spec field of the RestChainParser object
 	apip.spec = spec
@@ -299,7 +305,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, path string, data []
 		connectionTypeSlected = chainMessage.GetInterface().Type
 	}
 
-	msgBuffer := bytes.NewBuffer(nodeMessage)
+	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	url := rcp.nodeUrl + nodeMessage.Path
 	// Only get calls uses query params the rest uses the body
 	if connectionTypeSlected == http.MethodGet {
