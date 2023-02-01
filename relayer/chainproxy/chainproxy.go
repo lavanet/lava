@@ -2,9 +2,12 @@ package chainproxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/lavanet/lava/relayer/metrics"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -107,6 +110,7 @@ func SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
+	analytics *metrics.RelayMetrics,
 ) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error) {
 	// Unmarshal request
 	nodeMsg, err := cp.ParseMsg(url, []byte(req), connectionType)
@@ -144,6 +148,7 @@ func SendRelay(
 			DataReliability:       nil,
 			UnresponsiveProviders: reportedProviders,
 		}
+
 		sig, err := sigs.SignRelay(privKey, *relayRequest)
 		if err != nil {
 			return nil, nil, nil, 0, false, err
@@ -175,6 +180,12 @@ func SendRelay(
 			}
 		}
 		currentLatency := time.Since(relaySentTime)
+
+		if analytics != nil {
+			analytics.Latency = currentLatency.Milliseconds()
+			analytics.ComputeUnits = relayRequest.CuSum
+		}
+
 		if err != nil {
 			return nil, nil, nil, 0, false, err
 		}
@@ -300,13 +311,12 @@ func SendRelay(
 func ConstructFiberCallbackWithDappIDExtraction(callbackToBeCalled fiber.Handler) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		dappID := ""
-		if len(c.Route().Params) > 1 {
-			dappID = c.Route().Params[1]
-			dappID = strings.ReplaceAll(dappID, "*", "")
-		}
-		c.Context().SetUserValue(ContextUserValueKeyDappID, dappID) // this sets a user value in context and this is given to the callback
-		return webSocketCallback(c)                                 // uses external dappID
+		// dappID := ""
+		// if len(c.Route().Params) > 1 {
+		// 	dappID = c.Route().Params[1]
+		// 	dappID = strings.ReplaceAll(dappID, "*", "")
+		// }
+		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
 }
@@ -333,4 +343,19 @@ func ExtractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 
 func getTimePerCu(cu uint64) time.Duration {
 	return time.Duration(cu*TimePerCU) + MinimumTimePerRelayDelay
+}
+
+func addAttributeToError(key string, value string, errorMessage string) string {
+	return errorMessage + fmt.Sprintf(", %v: %v", key, value)
+}
+
+func convertToJsonError(errorMsg string) string {
+	jsonResponse, err := json.Marshal(fiber.Map{
+		"error": errorMsg,
+	})
+	if err != nil {
+		return `{"error": "Failed to marshal error response to json"}`
+	}
+
+	return string(jsonResponse)
 }

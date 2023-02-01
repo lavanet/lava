@@ -10,20 +10,43 @@ import (
 )
 
 func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChainsRequest) (*types.QueryShowAllChainsResponse, error) {
+	var chainInfoList []*types.ShowAllChainsInfoStruct
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	var names []string
-
 	// get all spec
 	allSpec := k.GetAllSpec(ctx)
 
-	// iterate over specs and extract the chain's name
+	// iterate over specs and extract the chains' info
 	for _, spec := range allSpec {
-		names = append(names, spec.GetName())
+		// get the spec's name and chain ID
+		chainName := spec.GetName()
+		chainId := spec.GetIndex()
+
+		// get the spec's expected interfaces
+		expectedInterfaces := k.GetExpectedInterfacesForSpec(ctx, chainId)
+
+		// copy the expectedInterfaces's keys (which are the interface names) to a string list
+		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)
+
+		// create a chainInfoEntry which includes the chain's name, ID and enabled interfaces
+		chainInfoEntry := types.ShowAllChainsInfoStruct{ChainName: chainName, ChainID: chainId, EnabledApiInterfaces: apiInterfacesNames}
+
+		// add the chainInfoEntry to the chainInfoList
+		chainInfoList = append(chainInfoList, &chainInfoEntry)
 	}
 
-	return &types.QueryShowAllChainsResponse{ChainNames: names}, nil
+	return &types.QueryShowAllChainsResponse{ChainInfoList: chainInfoList}, nil
+}
+
+func getInterfacesNamesFromMap(expectedInterfaces map[string]bool) []string {
+	var apiInterfacesNames []string
+	for apiInterfacesName := range expectedInterfaces {
+		apiInterfacesNames = append(apiInterfacesNames, apiInterfacesName)
+	}
+
+	return apiInterfacesNames
 }

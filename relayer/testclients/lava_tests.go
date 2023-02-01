@@ -37,7 +37,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 		for httpMethod, api := range mostImportantApisToTest {
 			for _, api_value := range api {
 				for i := 0; i < 100; i++ {
-					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "lava_test")
+					reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "lava_test", nil)
 					if err != nil {
 						log.Println(err)
 						errors = append(errors, fmt.Sprintf("%s", err))
@@ -66,7 +66,7 @@ func LavaTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 					continue
 				}
 				log.Printf("%s", apiName)
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "lava_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, apiName, "", http.MethodGet, "lava_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))

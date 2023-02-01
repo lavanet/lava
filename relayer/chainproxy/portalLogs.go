@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/lavanet/lava/relayer/metrics"
+
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	"github.com/lavanet/lava/relayer/parser"
@@ -19,28 +21,35 @@ const webSocketCloseMessage = "websocket: close 1005 (no status)"
 
 type PortalLogs struct {
 	newRelicApplication *newrelic.Application
+	MetricService       *metrics.MetricService
+	StoreMetricData     bool
 }
 
 func NewPortalLogs() (*PortalLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
-		utils.LavaFormatWarning("missing environment file", nil, nil)
-
+		utils.LavaFormatInfo("New relic missing environment file", nil)
 		return &PortalLogs{}, nil
 	}
 
-	NEW_RELIC_APP_NAME := os.Getenv("NEW_RELIC_APP_NAME")
-	NEW_RELIC_LICENSE_KEY := os.Getenv("NEW_RELIC_LICENSE_KEY")
-	if NEW_RELIC_APP_NAME == "" || NEW_RELIC_LICENSE_KEY == "" {
+	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
+	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables", nil)
 		return &PortalLogs{}, nil
 	}
 	newRelicApplication, err := newrelic.NewApplication(
-		newrelic.ConfigAppName(NEW_RELIC_APP_NAME),
-		newrelic.ConfigLicense(NEW_RELIC_LICENSE_KEY),
+		newrelic.ConfigAppName(newRelicAppName),
+		newrelic.ConfigLicense(newRelicLicenseKey),
 		newrelic.ConfigFromEnvironment(),
 	)
-	return &PortalLogs{newRelicApplication}, err
+	portal := &PortalLogs{newRelicApplication: newRelicApplication, StoreMetricData: false}
+	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
+	if isMetricEnabled {
+		portal.StoreMetricData = true
+		portal.MetricService = metrics.NewMetricService()
+	}
+	return portal, err
 }
 
 func (pl *PortalLogs) GetMessageSeed() string {
@@ -55,6 +64,7 @@ func (pl *PortalLogs) GetUniqueGuidResponseForError(responseError error, msgSeed
 	if ReturnMaskedErrors == "false" {
 		ret += fmt.Sprintf(", Error: %v", responseError)
 	}
+
 	return ret
 }
 
@@ -83,5 +93,12 @@ func (pl *PortalLogs) LogStartTransaction(name string) {
 	if pl.newRelicApplication != nil {
 		txn := pl.newRelicApplication.StartTransaction(name)
 		defer txn.End()
+	}
+}
+
+func (pl *PortalLogs) AddMetric(data *metrics.RelayMetrics, isNotSuccessful bool) {
+	if pl.StoreMetricData {
+		data.Success = !isNotSuccessful
+		pl.MetricService.SendData(*data)
 	}
 }

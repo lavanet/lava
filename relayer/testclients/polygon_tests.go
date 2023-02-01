@@ -41,7 +41,7 @@ func PolygonTests(ctx context.Context, chainID string, rpcURL string, chainProxy
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for j := 0; j < 10; j++ {
 			for _, t := range polygon_tests {
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, t.payload, http.MethodGet, "polygon_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, rpcURL, t.payload, http.MethodGet, "polygon_test", nil)
 				if err != nil {
 					return utils.LavaFormatError("error "+t.name, err, nil)
 				}

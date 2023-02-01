@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/lavanet/lava/relayer/metrics"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -243,6 +245,8 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 	//
 	// Setup HTTP Server
 	app := fiber.New(fiber.Config{})
+	chainID := cp.GetSentry().ChainID
+	apiInterface := cp.GetSentry().ApiInterface
 
 	app.Use(favicon.New())
 
@@ -273,12 +277,13 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			dappID := ExtractDappIDFromWebsocketConnection(c)
-			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID)
+			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+			reply, replyServer, err := SendRelay(ctx, cp, privKey, "", string(msg), http.MethodGet, dappID, metricsData)
+			go cp.portalLogs.AddMetric(metricsData, err != nil)
 			if err != nil {
 				cp.portalLogs.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				continue
 			}
-
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
 			if replyServer != nil {
 				var reply pairingtypes.RelayReply
@@ -326,14 +331,29 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		dappID := ExtractDappIDFromFiberContext(c)
 		utils.LavaFormatInfo("in <<<", &map[string]string{"seed": msgSeed, "msg": string(c.Body()), "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		reply, _, err := SendRelay(ctx, cp, privKey, "", string(c.Body()), http.MethodGet, dappID, metricsData)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
+
+			// Construct json response
+			response := convertToJsonError(errMasking)
+
+			// Return error json response
+			return c.SendString(response)
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
 	})
 
@@ -349,17 +369,33 @@ func (cp *tendermintRpcChainProxy) PortalStart(ctx context.Context, privKey *btc
 		}
 		msgSeed := cp.portalLogs.GetMessageSeed()
 		utils.LavaFormatInfo("urirpc in <<<", &map[string]string{"seed": msgSeed, "msg": path, "dappID": dappID})
-		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID)
+		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		reply, _, err := SendRelay(ctx, cp, privKey, path+query, "", http.MethodGet, dappID, metricsData)
+		go cp.portalLogs.AddMetric(metricsData, err != nil)
 		if err != nil {
+			// Get unique GUID response
 			errMasking := cp.portalLogs.GetUniqueGuidResponseForError(err, msgSeed)
+
+			// Log request and response
 			cp.portalLogs.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
+
+			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
+
 			if string(c.Body()) != "" {
-				return c.SendString(fmt.Sprintf(`{"error": "unsupported api", "recommendation": "For jsonRPC use POST", "more_information": "%s"}`, errMasking))
+				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
 			}
-			return c.SendString(fmt.Sprintf(`{"error": "unsupported api","more_information": %s}`, errMasking))
+
+			// Construct json response
+			response := convertToJsonError(errMasking)
+
+			// Return error json response
+			return c.SendString(response)
 		}
+		// Log request and response
 		cp.portalLogs.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
+
+		// Return json response
 		return c.SendString(string(reply.Data))
 	})
 	//
@@ -395,6 +431,11 @@ func (nm *TendemintRpcMessage) Send(ctx context.Context, ch chan interface{}) (r
 	var replyMsg JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
+		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+			// Not an rpc error, return provider error without disclosing the endpoint address
+			return nil, "", nil, utils.LavaFormatError("Failed Sending Message", context.DeadlineExceeded, nil)
+		}
+
 		replyMsg = JsonrpcMessage{
 			Version: nm.msg.Version,
 			ID:      nm.msg.ID,

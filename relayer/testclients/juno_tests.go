@@ -34,7 +34,7 @@ func JunoTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 			for httpMethod, api := range mostImportantApisToTest {
 				for _, api_value := range api {
 					for i := 0; i < 20; i++ {
-						reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "juno_test")
+						reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, api_value, "", httpMethod, "juno_test", nil)
 						if err != nil {
 							log.Println(err)
 							errors = append(errors, fmt.Sprintf("%s", err))
@@ -47,14 +47,14 @@ func JunoTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 
 			// other juno tests
 			for i := 0; i < 100; i++ {
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet, "juno_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, TERRA_BLOCKS_LATEST_URL_REST, TERRA_BLOCKS_LATEST_DATA_REST, http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println("1:" + err.Error())
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "TERRA_BLOCKS_LATEST_URL_REST")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, OSMOSIS_NUM_POOLS_DATA_REST, http.MethodGet, "juno_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, OSMOSIS_NUM_POOLS_DATA_REST, http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println("1:" + err.Error())
 					errors = append(errors, fmt.Sprintf("%s", err))
@@ -66,28 +66,28 @@ func JunoTests(ctx context.Context, chainProxy chainproxy.ChainProxy, privKey *b
 	case tendermintString:
 		{
 			for i := 0; i < 100; i++ {
-				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "juno_test")
+				reply, _, err := chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_STATUS, http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "JSONRPC_TERRA_STATUS")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet, "juno_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, "", JSONRPC_TERRA_HEALTH, http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "JSONRPC_TERRA_HEALTH")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet, "juno_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_STATUS, "", http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
 				} else {
 					prettyPrintReply(*reply, "URIRPC_TERRA_STATUS")
 				}
-				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet, "juno_test")
+				reply, _, err = chainproxy.SendRelay(ctx, chainProxy, privKey, URIRPC_TERRA_HEALTH, "", http.MethodGet, "juno_test", nil)
 				if err != nil {
 					log.Println(err)
 					errors = append(errors, fmt.Sprintf("%s", err))
