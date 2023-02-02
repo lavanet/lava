@@ -81,6 +81,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	//test that get pairing gives the same results for the whole epoch
 	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	foundIndexMap := map[string]int{}
 	for i := uint64(0); i < epochBlocks-1; i++ {
 		ctx = testkeeper.AdvanceBlock(ctx, keepers)
 
@@ -92,8 +93,13 @@ func TestPairingUniqueness(t *testing.T) {
 
 			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
 			require.Nil(t, err)
-			valid, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			valid, _, foundIndex, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 			require.True(t, valid)
+			if _, ok := foundIndexMap[providers11[i].Address]; !ok {
+				foundIndexMap[providers11[i].Address] = foundIndex
+			} else {
+				require.Equal(t, foundIndexMap[providers11[i].Address], foundIndex)
+			}
 		}
 
 	}
