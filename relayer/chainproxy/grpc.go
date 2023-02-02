@@ -327,7 +327,7 @@ func (nm *GrpcMessage) Send(ctx context.Context, ch chan interface{}) (relayRepl
 	svc, methodName := ParseSymbol(nm.path)
 	var descriptor desc.Descriptor
 	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, nil)
+		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, &map[string]string{"svc": svc, "methodName": methodName})
 	}
 
 	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
